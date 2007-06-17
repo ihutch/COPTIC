@@ -338,3 +338,24 @@ C           endif
 C        enddo
 
 C        end
+
+c*******************************************************************
+c Convert index to multidimensional indices.
+      subroutine indexexpand(ndims,ifull,index,ix)
+c On entry index is the zero-based pointer to the position in the 
+c array whose full dimensions are ifull(ndims). 
+c On exit ix contains the corresponding (ndims)-dimensional indices.
+      integer ndims
+      integer ifull(ndims),ix(ndims)
+      integer index
+
+      ind=index
+      do i=1,ndims-1
+         ind2=ind/ifull(i)
+         ix(i)=ind-ind2*ifull(i)+1
+         ind=ind2
+      enddo
+      ix(ndims)=ind+1
+      if(ind.gt.ifull(3)) write(*,*)'indexexpand index too big',index
+      end
+c********************************************************************

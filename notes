@@ -521,3 +521,20 @@ Got the gradient interpolation working with correction of the node about
 which interpolation is done to use the fraction information to determine
 when we need to use something other than the nearest node. 
 Packaged this into gradinterpcorrect. So the call is packaged.
+
+15 Jun 07
+
+Added ipointer to the idob_sor data: a reverse pointer back to the
+u/c arrays. Created routine:  indexexpand(ndims,ifull,index,ix)
+to obtain the multi-D index ix, from the pointer index.
+Then added routine iregioninit(ndims,ifull) to initialize the 
+iregion flags for the idob_sor to the insideall value telling what
+region they are in. It cycles over all the object data that is
+created by the cijroutine, uses indexexpand.
+
+Thus we now have ipoint_sor and iregion_sor set to sensible values
+after calling cijroutine and iregioninit. Then at any interpolation,
+we can access the region of any point that has object-boundary data.
+A point that does not have such data is not adjacent to any boundary.
+Therefore, it is safe to assume that it is in the same region as
+a nearby point that we might wish to compare with. 

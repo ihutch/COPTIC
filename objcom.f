@@ -6,9 +6,9 @@ c + diagonal + potential contributors + flags.
 
       integer ndims_sor,nobj_sor
 c 3D choice needed for sharing common, I think. 
-      parameter (ndims_sor=3,ndata_sor=3)
+      parameter (ndims_sor=3,ndata_sor=ndims_sor)
 c The total size of the structure member. Last= count of following
-      parameter (nobj_sor=2*ndims_sor*ndata_sor+4)
+      parameter (nobj_sor=2*ndims_sor*ndata_sor+5)
 c Pointer to diagonal contributions
       parameter (idgs_sor=2*ndims_sor*ndata_sor+1)
 c Pointer to boundary contributions
@@ -17,6 +17,8 @@ c Pointer to flags
       parameter (iflag_sor=2*ndims_sor*ndata_sor+3)
 c Pointer to region code
       parameter (iregion_sor=2*ndims_sor*ndata_sor+4)
+c Pointer to reverse pointer within u,cij
+      parameter (ipoint_sor=2*ndims_sor*ndata_sor+5)
       parameter (Lobjmax=100000)
       real dob_sor(nobj_sor,lobjmax)
       integer oi_sor

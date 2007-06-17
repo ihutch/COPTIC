@@ -128,7 +128,8 @@ c
          ii=inside_geom(ndims,x,i)
          insideall=insideall+ii*2**(i-1)
       enddo
-c      write(*,*)'ngeomobj=',ngeomobj,' insideall=',insideall,x
+c      if(insideall.ne.0) write(*,*)
+c     $     'ngeomobj=',ngeomobj,' insideall=',insideall,x
       end
 c*****************************************************************
       function inside_geom(ndims,x,i)
@@ -144,6 +145,8 @@ c Common object geometric data.
       if(i.gt.ngeomobj) return
 
       itype=obj_geom(1,i)
+c Use only bottom 8 bits:
+      itype=itype-256*(itype/256)
       if(itype.eq.0)then
          return
 
@@ -300,3 +303,36 @@ c Address of mesh point.
       dp=abs(xn(ix+ipm)-xn(ix))
       end
 c*************************************************************
+c Initialize the iregion flags of the existing nodes with boundary
+c object data.
+      subroutine iregioninit(ndims,ifull)
+      integer ifull(ndims)
+
+      include 'objcom.f'
+      include 'sormesh.f'
+
+      integer ix(ndims_sor)
+      real x(ndims_sor)
+
+
+      if(ndims.ne.ndims_sor)then 
+         write(*,*)'iregioninit error; incorrect dimensions:',
+     $        ndims,ndims_sor
+         call exit(0)
+      endif
+
+c      write(*,*)'Initializing Object Regions: No, index, iregion'
+      do i=1,oi_sor
+         ipoint=idob_sor(ipoint_sor,i)
+c Convert index to multidimensional indices.
+         call indexexpand(ndims,ifull,ipoint,ix)
+         do k=1,ndims
+            x(k)=xn(ixnp(k)+ix(k))
+         enddo
+c Store in object-data.
+         idob_sor(iregion_sor,i)=insideall(ndims,x)
+
+c         write(*,*)i,ix,x,idob_sor(iregion_sor,i)
+      enddo
+
+      end

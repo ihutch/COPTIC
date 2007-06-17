@@ -108,6 +108,8 @@ c                  q(i,j,k)=1.
 c Remove edges by starting at (2,2,2,...) and using ium2.
       call mditerate(ndims,ifull,ium2,cijroutine,
      $     cij(1,2,2,2),ipoint)
+c Initialize the region flags in the object data
+      call iregioninit(ndims,ifull)
 
 c The following requires include objcom.f, which is now omitted.
 c      write(*,*)'Finished mesh setup. Used No of pointers:',oi_sor

@@ -30,6 +30,8 @@ c Pointer to boundary contributions
 c      parameter (ibdy_sor=2*ndims_sor*ndata_sor+2)
 c Pointer to flags
 c      parameter (iflag_sor=2*ndims_sor*ndata_sor+3)
+c Pointer to region code
+c      parameter (iregion_sor=2*ndims_sor*ndata_sor+4)
 c      parameter (Lobjmax=100000)
 c      real dob_sor(nobj_sor,lobjmax)
 c      integer oi_sor
@@ -79,7 +81,7 @@ c            call potlsect(id,ipm,ndims,indi,fraction(i),potential,dpm(i))
             if(fraction(i).lt.1. .and. fraction(i).ge.0.)then
                ifound=ifound+1
 c Start object data for this point if not already started.
-               call objstart(cij(icij),ist)
+               call objstart(cij(icij),ist,ipoint)
 c Calculate dplus and deff for this direction.
 c dplus becomes dminus for the other direction.
                a=conditions(1,i)
@@ -180,7 +182,7 @@ c ipa(i) defines the direction under consideration.
 c
 c It then calculates the extended intersection fraction for all the
 c directions from indi(ndims) and enters it into the object data.
-c the routine boxedge does the calculations.
+c The routine boxedge does the calculations.
 c If a fraction is already set <1 (in a direction). Use that.  If not,
 c the fraction in each direction represents the axis minimal crossing of
 c bounding planes for that direction. Minimal means the closest to +1,
@@ -218,14 +220,14 @@ c See if this plane actually cuts the cell. If not, don't add it.
 c This drastically reduces the number of boxes counted.
 c Also in 3-D it limits additions to 6-intersection cases.
             if(ftot.gt.2.)then
+               itemp=istart
+c Conditionally start the object: only if it does not alread exist.
+               call objstart(cij(icij),istart,ipoint)
 c Set the flag
                ifl=2**(j-1)
                idob_sor(iflag_sor,oi_sor)=idob_sor(iflag_sor,oi_sor)+ifl
 c               idob_sor(iflag_sor,oi_sor)=
 c     $              ibset(idob_sor(iflag_sor,oi_sor),j-1)
-               itemp=istart
-c Conditionally start the object: only if it does not alread exist.
-               call objstart(cij(icij),istart)
 c-------- Diagnostics
 c               if(istart.ne.itemp)then 
 c                  write(*,*)'Added start',istart,npoints
@@ -316,7 +318,8 @@ c Routine to do the adjustment to dden and dnum for this point (ip)
       end
 c********************************************************************
 c Initialize a specific object. 1s for frac, 0 for diag,potterm.
-      subroutine objinit(dob,idob)
+c Reverse pointer.
+      subroutine objinit(dob,idob,ipoint)
       include 'objcom.f'
       real dob(nobj_sor)
       integer idob(nobj_sor)
@@ -328,9 +331,11 @@ c Initialize a specific object. 1s for frac, 0 for diag,potterm.
       dob(idgs_sor)=0.
       dob(ibdy_sor)=0.
       idob(iflag_sor)=0
+c Set the reverse pointer to the u/c arrays:
+      idob(ipoint_sor)=ipoint
       end
 c******************************************************************
-      subroutine objstart(cijp,istart)
+      subroutine objstart(cijp,istart,ipoint)
       real cijp
       include 'objcom.f'
 c Start object data for this point if not already started.
@@ -342,7 +347,7 @@ c Start object data for this point if not already started.
             stop 
          endif
 c Initialize the object data: 1s for frac, 0 for b/a,c/a,diag,...
-         call objinit(dob_sor(1,oi_sor),idob_sor(1,oi_sor))
+         call objinit(dob_sor(1,oi_sor),idob_sor(1,oi_sor),ipoint)
 c Set the pointer
          cijp=oi_sor
          istart=istart+1

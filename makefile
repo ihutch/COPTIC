@@ -17,11 +17,13 @@ COMPILE-SWITCHES = -Wall  -I. -g  -ffortran-bounds-check
 	$(G77)  -c $(COMPILE-SWITCHES) $*.f
 
 #default target
-#test : sormpitest testing/smt.fixed
+smt.out : sormpitest
+	mv smt.out smt.prev
 #	mpiexec -n 8 ./sormpitest -p
 #	mpiexec -n 1 ./sormpitest -p
-#	./sormpitest -p
+	./sormpitest -p
 #	diff testing/smt.fixed smt.out
+	diff smt.prev smt.out
 
 sormpitest : sormpitest.f makefile $(OBJECTS) $(UTILITIES)
 	$(G77)  -o sormpitest $(COMPILE-SWITCHES) sormpitest.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
