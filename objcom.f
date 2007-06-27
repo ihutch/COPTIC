@@ -17,7 +17,7 @@ c Pointer to flags
       parameter (iflag_sor=2*ndims_sor*ndata_sor+3)
 c Pointer to region code
       parameter (iregion_sor=2*ndims_sor*ndata_sor+4)
-c Pointer to reverse pointer within u,cij
+c Pointer to reverse pointer within u,cij (but relative to 2,2,2...).
       parameter (ipoint_sor=2*ndims_sor*ndata_sor+5)
       parameter (Lobjmax=100000)
       real dob_sor(nobj_sor,lobjmax)

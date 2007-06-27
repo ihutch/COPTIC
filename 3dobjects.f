@@ -130,6 +130,9 @@ c
       enddo
 c      if(insideall.ne.0) write(*,*)
 c     $     'ngeomobj=',ngeomobj,' insideall=',insideall,x
+c Hack for testing
+c      insideall=min(insideall,2)
+
       end
 c*****************************************************************
       function inside_geom(ndims,x,i)
@@ -327,12 +330,30 @@ c      write(*,*)'Initializing Object Regions: No, index, iregion'
 c Convert index to multidimensional indices.
          call indexexpand(ndims,ifull,ipoint,ix)
          do k=1,ndims
-            x(k)=xn(ixnp(k)+ix(k))
+c Recognize that the reverse pointer is relative to (2,2,2) because
+c of the way that cijroutine is called. 
+c So add one to ix(k) for proper registration.
+            x(k)=xn(ixnp(k)+ix(k)+1)
          enddo
 c Store in object-data.
          idob_sor(iregion_sor,i)=insideall(ndims,x)
 
-c         write(*,*)i,ix,x,idob_sor(iregion_sor,i)
+c         write(*,*)i,ipoint,ix,x,idob_sor(iregion_sor,i)
       enddo
+
+      end
+c*******************************************************************
+      function ireg3(i,j,k,ifull,cij)
+      include 'objcom.f'
+      integer ifull(3)
+      real cij(ndims_sor*2+1,ifull(1),ifull(2),ifull(3))
+
+
+      ipoint=cij(ndims_sor*2+1,i,j,k)
+      if(ipoint.ne.0)then
+         ireg3=idob_sor(iregion_sor,ipoint)
+      else
+         ireg3=99
+      endif
 
       end

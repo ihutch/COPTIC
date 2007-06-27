@@ -21,8 +21,11 @@ c      character*10 cxlab,cylab
       common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical lplot
 c testing arrays
+      parameter (ntests=3)
       integer iuds(nd),ifull(nd),idims(nd),ium2(nd)
       real uplot(Li,Li),uprime(Li),xprime(Li),zero(Li),uanal(Li)
+      real upregion(Li),tfield(Li,ntests)
+      real xnd(nd),xfrac(nd)
 
       common /myidcom/myid
 
@@ -33,6 +36,14 @@ c      integer ngeomobjmax,odata,ngeomobj
 c      parameter (ngeomobjmax=63,odata=16)
 c      real obj_geom(odata,ngeomobjmax)
 c      common /objgeomcom/ngeomobj,obj_geom
+
+c Structure vector needed for finding adjacent u values.
+c Set by mditerate.
+      parameter (mdims=10)
+      integer iLs(mdims+1)
+      common /iLscom/iLs
+c Similar set here:
+      integer iLsc(mdims+1)
 
 c Geometry information read in.
       call readgeom('geomtest.dat')
@@ -64,6 +75,12 @@ c This circumlocution quiets warnings.
       n0=nj/2
       n1=nk/2
       if(ndims.lt.3)n1=1
+
+
+      iLsc(1)=nd2+1
+      do n=1,ndims
+         iLsc(n+1)=iLsc(n)*ifull(n)
+      enddo
 
       iof=0
       do id=1,ndims
@@ -111,6 +128,14 @@ c Remove edges by starting at (2,2,2,...) and using ium2.
 c Initialize the region flags in the object data
       call iregioninit(ndims,ifull)
 
+      write(*,*)'iregion:'
+      write(form1,'(''('',i2,''i1)'')')iuds(2)
+c      write(*,form1)((ireg3(iuds(1)/2,j,k,ifull,cij),j=1,iuds(2)),
+c     $           k=1,iuds(3))
+      write(*,form1)((ireg3(j,iuds(2)/2,k,ifull,cij),j=1,iuds(1)),
+     $           k=1,iuds(3))
+
+
 c The following requires include objcom.f, which is now omitted.
 c      write(*,*)'Finished mesh setup. Used No of pointers:',oi_sor
       write(*,*)'Finished mesh setup.'
@@ -135,7 +160,7 @@ c The main solver call. Returns process myid.
      $     ,myid,idims)
 
 
-         if(myid.eq.0)then
+         if(myid.eq.1)then
             if(ierr.lt.0) write(*,*)'Not converged',ierr
             write(*,*) 'mi_sor,k_sor,xjac_sor,del_sor',
      $           mi_sor,k_sor,xjac_sor,del_sor,myid
@@ -247,7 +272,7 @@ c arrow plot showing gradient in this plane.
                   ium2(id2)=j
                   uplot(i,j)=u(ium2(1),ium2(2),ium2(3))
                enddo
-               write(*,'(10f8.4)')(uplot(i,j),j=1,iuds(id2))
+c               write(*,'(10f8.4)')(uplot(i,j),j=1,iuds(id2))
             enddo
             write(*,*)idf,id1,id2,ium2(1),ium2(2),ium2(3)
             call autocolcont(uplot,Li,iuds(id1),iuds(id2))
@@ -269,6 +294,12 @@ c
 c Dimension along which we are interpolating: idf
             ium2(id1)=iuds(id1)/2
             ium2(id2)=iuds(id2)/2
+c Different lines:
+            ium2(id1)=iuds(id1)/2 -3
+            xnd(id1)=xn(ixnp(id1)+ium2(id1))
+            xnd(id2)=xn(ixnp(id2)+ium2(id2))
+            xfrac(id1)=0.
+            xfrac(id2)=0.
             write(*,*)'Starting uprime calculation'
             do i=1,Li
                zero(i)=0.
@@ -281,21 +312,77 @@ c An array of size Li crossing the idf coordinate range
 
 c Packaging the interpolation appears to be working. 
 c Gives identical output.
-               icinc=nd2+1
-               iuinc=1
-               do k=1,idf-1
-                  icinc=icinc*ifull(k)
-                  iuinc=iuinc*ifull(k)
-               enddo
+c               icinc=nd2+1
+c               iuinc=1
+c               do k=1,idf-1
+c                  icinc=icinc*ifull(k)
+c                  iuinc=iuinc*ifull(k)
+c               enddo
+c Alternative:
+               iuinc=iLs(idf)
+               icinc=iLsc(idf)
+
                ium2(idf)=1
                call gradinterpcorrect(
      $              cij(nd2+1,ium2(1),ium2(2),ium2(3))
      $              ,u(ium2(1),ium2(2),ium2(3))
      $              ,idf,icinc,iuinc,
      $              xprime(i),uprime(i),ix,xm)
+
+c Testing of gradinterpregion
+               xnd(idf)=xprime(i)
+               iregion=insideall(ndims,xnd)
+               call gradinterpregion(
+     $              cij(nd2+1,ium2(1),ium2(2),ium2(3))
+     $              ,u(ium2(1),ium2(2),ium2(3))
+     $              ,idf,icinc,iuinc,
+     $              xprime(i),upregion(i),iregion,ix,xm)
+
+c Testing of gradlocalregion
+c Offset to start of idf position array.
+               ioff=ixnp(idf)
+c xn is the position array for each dimension arranged linearly.
+c Find the index of xprime in the array xn:
+               ix=interp(xn(ioff+1),ixnp(idf+1)-ioff,xprime(i),xm)
+               ix=nint(xm)
+               xm=xm-ix
+               ium2(idf)=ix
+               xf=xm
+               xfrac(idf)=xf
+
+              call gradlocalregion(
+     $              cij(nd2+1,ium2(1),ium2(2),ium2(3))
+     $              ,u(ium2(1),ium2(2),ium2(3))
+     $              ,idf,icinc,iuinc,xn(ioff+ix)
+     $              ,xf,uplocal,iregion,ixout,xm)
+ 
+               call getfield(
+     $              ndims
+     $              ,cij(nd2+1,ium2(1),ium2(2),ium2(3))
+     $              ,u(ium2(1),ium2(2),ium2(3))
+     $              ,iLsc,iLs
+     $              ,xn(ioff+ix),idf
+     $              ,xfrac,iregion,field)
+
+               write(*,*)iregion,ix,xm,xprime(i),uprime(i),uplocal
+     $              ,field
+c     $              ,upregion(i)
+
+               do itest=1,ntests
+                  xfrac(id1)=(itest-1.)/(ntests)
+                  call getfield(
+     $                 ndims
+     $                 ,cij(nd2+1,ium2(1),ium2(2),ium2(3))
+     $                 ,u(ium2(1),ium2(2),ium2(3))
+     $                 ,iLsc,iLs
+     $                 ,xn(ioff+ix),idf
+     $                 ,xfrac,iregion,tfield(i,itest))
+               enddo
+               write(*,*)uplocal,(tfield(i,itest),itest=1,ntests)
+
 c Analytic comparison.
                uanal(i)=-phi*rc/((xprime(i)-0.5)*abs(xprime(i)-0.5))
-               write(*,*)i,idf,ioff,ix,xm,uprime(i)
+c               write(*,*)i,idf,ioff,ix,xm,uprime(i)
             enddo
             write(*,*)'Ended uprime calculation'
             call autoplot(xprime,uprime,Li)
@@ -304,6 +391,14 @@ c            call polymark(xprime,uprime,Li,1)
             call winset(.true.)
             call dashset(1)
             call polyline(xprime,uanal,Li)
+            call dashset(2)
+            call color(ired())
+            call polyline(xprime,upregion,Li)
+            call color(iblue())
+            do itest=1,ntests
+               call polyline(xprime,tfield(1,itest),Li)
+            enddo
+            call color(15)
 c Crude differencing to show the improvement in our interpolation.
             do kk=2,nk-2
                x0=xn(ioff+kk)
@@ -488,6 +583,7 @@ c The plotted quantity title is
       character*(*) utitle
 c Needed for perspective plot
       include '/home/hutch/accis/world3.h'
+c      include world3.h
 c Workspace size is problematic.
       character*1 pp(40000)
 c Contour levels

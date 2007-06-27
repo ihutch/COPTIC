@@ -538,3 +538,27 @@ we can access the region of any point that has object-boundary data.
 A point that does not have such data is not adjacent to any boundary.
 Therefore, it is safe to assume that it is in the same region as
 a nearby point that we might wish to compare with. 
+
+20 Jun 07
+Attempting to compare the gradinterpregion call with the other, we find
+that the iregion values are apparently incorrect. Misaligned by 1 in
+all dimensions. This appears to be because when the cijroutine is called,
+it is called by mditerate, and this is relative to the origin
+(2,2,2) in the 3-d cij array. Consequently the reverse pointer is 
+set incorrectly. Or, to put it another way, the reverse pointer is
+relative to the (2,2,2) origin. Fix this in the reverse lookup during
+the regioninit. Now gradinterpregion gives identical results.
+
+22 Jun 07
+Got getfield working. It gives the same value as the raw calls. Also
+seems to give plausible looking interpolations.
+
+23 Jun07
+Constructed fieldtest which plots a field profile along a radius of the
+sphere and a chosen angle. It shows there's a bug in getfield. 
+Made get3simple to do totally simple box interpolation with no 
+gradient extrapolation and neglect of boundaries. 
+Found the bug in getfield logic. Incorrectly handling the construction
+of the inputs to boxinterp for general dimensions. Temporarily use
+the 3-D version from get3simple for iteration. That works and now things
+agree away from the boundaries.

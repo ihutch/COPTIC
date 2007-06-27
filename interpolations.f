@@ -1,4 +1,15 @@
 c Interpolations.
+      function boxinterp(ndm1,f,flags,d)
+      real f(ndm1,ndm1),d(ndm1)
+      integer flags(ndm1)
+      if(ndm1.eq.1)then
+         boxinterp=box1interp(f,flags,d)
+      elseif(ndm1.eq.2)then
+         boxinterp=box2interp(f,flags,d)
+      else
+         write(*,*)'Boxinterp Error. Unknown dimensionality:',ndm1
+      endif
+      end
 c****************************************************************
       function box2interp(f,flags,d)
 c 
@@ -61,7 +72,7 @@ c
 c Given up to two f-values in a 1-D array, and a fraction d
 c between them, interpolate. f00 is always present.
       real f(2)
-      real flags(2)
+      integer flags(2)
       real d
 
       if(flags(2).ne.0)then
@@ -72,6 +83,8 @@ c between them, interpolate. f00 is always present.
       end
 c*************************************************************
 c Routine for interpolating gradient with correct node assignment.
+c Returns the gradient corresponding to the region the assigned point
+c is actually in.
       subroutine gradinterpcorrect(cij,u,idf,icinc,iuinc,
      $     xprime,uprime,ix,xm)
 
@@ -288,58 +301,6 @@ c Now iql and iqr, Ql and Qr bracket Q
       endif
       end
 c**********************************************************************
-c*************************************************************
-C        program box2test
-C        real f(2,2),d(2)
-C        integer flags(2,2)
-
-C        parameter(mx=20)
-C        real fa(mx,mx),x(mx),y(mx)
-
-C        f(1,1)=1.
-C        f(1,2)=2.
-C        f(2,1)=3.
-C        f(2,2)=1.5
-
-C        flags(1,1)=1
-C        flags(1,2)=1
-C        flags(2,1)=1
-C        flags(2,2)=1
-
-C        do k=1,4
-
-C           do j=1,mx
-C              do i=1,mx
-C                 d(1)=(float(i)-1.)/(mx-1)
-C                 d(2)=(float(j)-1.)/(mx-1)
-C                 fa(i,j)=box2interp(f,flags,d)
-C                 x(i)=d(1)
-C                 y(j)=d(2)
-C              enddo
-C           enddo
-C           write(*,*)'Flags=',flags
-C           write(*,*)fa
-C   1       call pltinit(0.,1.,0.,1.)
-C           isw=1 + 256*10 + 256*256*7
-C c          call autocolcont(fa,mx,mx,mx)
-C           call hidweb(x,y,fa,mx,mx,mx,isw)
-C           if(ieye3d().ne.0)goto 1
-
-C           if(k.eq.1)then
-C              flags(2,2)=0
-C           elseif(k.eq.2)then
-C              flags(2,2)=1
-C              f(2,2)=1.5
-C              flags(2,1)=0
-C           elseif(k.eq.3)then
-C              flags(2,2)=0
-C           endif
-         
-C        enddo
-
-C        end
-
-c*******************************************************************
 c Convert index to multidimensional indices.
       subroutine indexexpand(ndims,ifull,index,ix)
 c On entry index is the zero-based pointer to the position in the 
@@ -359,3 +320,159 @@ c On exit ix contains the corresponding (ndims)-dimensional indices.
       if(ind.gt.ifull(3)) write(*,*)'indexexpand index too big',index
       end
 c********************************************************************
+c*******************************************************************
+c Routine for interpolating gradient with correct node assignment.
+c Returns the gradient that would occur in the region iregion at
+c position xprime. If xprime is in region iregion, this is simple. If
+c not, the adjacent point in the direction of the gradient is examined,
+c and if it is in region iregion, extrapolation from that point to
+c xprime is used. If not, ix is returned as negative indicating the
+c interpolation has failed.
+      subroutine gradinterpregion(cij,u,idf,icinc,iuinc,
+     $     xprime,uprime,iregion,ix,xm)
+
+c The cij, and u arrays, start at the 1st element in the idf 
+c direction and the appropriate element in the other dimensions.
+c (Which for cij includes the offset to the object pointer so that
+c in effect cij is simply the array of pointers to object data).
+c Thus the calls generally pass: cij(nd2+1,ium2(1),ium2(2),ium2(3))
+c ,u(ium2(1),ium2(2),ium2(3)), with ium2(idf)=1. But in fact this
+c routine should work for general number of dimensions.
+c The increments to adjacent cij,u-values are icinc, iuinc.
+      real cij(*)
+      real u(*)
+      include 'objcom.f'
+      include 'sormesh.f'
+c The direction in which we are interpolating.
+      integer idf
+c The increments to adjacent values in the direction idf of cij, and u
+      integer icinc,iuinc
+c The position in the interpolated direction: INPUT
+      real xprime
+c The value of gradient: OUTPUT
+      real uprime
+c ix and xm are returned the index and fraction of interpolation.
+
+c Dimension along which we are interpolating: idf
+c Offset to start of idf position array.
+      ioff=ixnp(idf)
+c xn is the position array for each dimension arranged linearly.
+c Find the index of xprime in the array xn:
+      ix=interp(xn(ioff+1),ixnp(idf+1)-ioff,xprime,xm)
+      ix=nint(xm)
+      xm=xm-ix
+c Pointer to object data,
+      icp0=cij(1+(ix-1)*icinc)
+c               write(*,*)'ix,xm,icp0',ix,xm,icp0
+c If we are in wrong region, try to correct:
+      if(icp0.ne.0 .and. idob_sor(iregion_sor,icp0).ne.iregion)then
+c         write(*,*)'Incorrect region',iregion,idob_sor(iregion_sor,icp0)
+c     $        ,icp0,ix,xm
+         jpm=1
+         if(xm.lt.0.)jpm=-1
+         ix=ix+jpm
+         icp1=cij(1+(ix-1)*icinc)
+         if(icp1.eq.0 .or. idob_sor(iregion_sor,icp1).ne.iregion)then
+            ix=-ix
+            uprime=0.
+            return
+         endif
+         write(*,*)'Region Adjusted ix',ix,jpm,xm,fraction,iregion
+         xm=xm-jpm
+         icp0=icp1
+      endif
+c Distance forward and backward along idf-dimension to adjacent
+      dx1=xn(ix+ioff+1)-xn(ix+ioff)
+      dx0=xn(ix+ioff)-xn(ix+ioff-1)
+
+c Values of u at the points to be interpolated.
+      u0=u(1+(ix-1)*iuinc)
+      up=u(1+ix    *iuinc)
+      um=u(1+(ix-2)*iuinc)
+c Do interpolation.
+      uprime=gradinterp(um,u0,up,idf,icp0,xm,dx0,dx1)
+
+      end
+
+c*******************************************************************
+c This routine cannot use fortran-bounds-checking because it needs
+c to access array elements earlier than that passed.
+c
+c Returns the gradient that would occur in the region iregion at the
+c position relative to the passed arrays u,cij, given by node fraction
+c xf in the gradient (idf) dimension.  If position is in region iregion,
+c this is simple. If not, the adjacent point in the direction of the
+c gradient is examined, and if it is in region iregion, extrapolation
+c from that point to xf is used. If not, ix is returned as 99 indicating
+c the interpolation has failed.
+
+      subroutine gradlocalregion(cij,u,idf,icinc,iuinc,xn,
+     $     xf,uprime,iregion,ix,xm)
+
+c The cij, and u arrays, start at the element corresponding to the
+c nearest node in the gradient direction.
+c
+c Here cij includes the offset to the object pointer so that in effect
+c cij is simply the array of pointers to object data but is real.  
+c
+c Thus the calls generally pass: cij(nd2+1,ium2(1),ium2(2),ium2(3))
+c ,u(ium2(1),ium2(2),ium2(3)). But in fact this routine should work for
+c general number of dimensions.  The increments to adjacent cij,u-values
+c are icinc, iuinc.
+c 
+c xn is the array of positions in the idf dimension, relative to point.
+c (i.e. we pass xn(ixnp(idf)+ix)) needed for gradient evaluation.
+
+      real cij(*)
+      real u(*)
+      include 'objcom.f'
+c Not here      include 'sormesh.f'
+c The direction in which we are interpolating.
+      integer idf
+c The increments to adjacent values in the dimension idf of cij, and u
+      integer icinc,iuinc
+c The position array in the idf dimension.
+      real xn(*)
+c The position fraction INPUT
+      real xf
+
+c The value of gradient: OUTPUT
+      real uprime
+c ix and xm are returned the index and fraction of interpolation.
+
+c xn is the position array for each dimension arranged linearly.
+c
+      ix=1
+      xm=xf
+c Pointer to object data,
+      icp0=cij(ix)
+c If we are in wrong region, try to correct:
+      if(icp0.ne.0 .and. idob_sor(iregion_sor,icp0).ne.iregion)then
+c         write(*,*)'Incorrect region',iregion,idob_sor(iregion_sor,icp0)
+c     $        ,icp0,ix,xm
+         jpm=1
+         if(xm.lt.0.)jpm=-1
+         ix=ix+jpm
+         icp1=cij(1+(ix-1)*icinc)
+         if(icp1.eq.0 .or. idob_sor(iregion_sor,icp1).ne.iregion)then
+            ix=99
+            uprime=0.
+            return
+         endif
+         xm=xm-jpm
+         icp0=icp1
+c         write(*,*)'Base Position Adjusted ix',ix,jpm,xm,iregion
+      endif
+c Distance forward and backward along idf-dimension to adjacent
+      dx1=xn(ix+1)-xn(ix)
+      dx0=xn(ix)-xn(ix-1)
+
+c Values of u at the points to be interpolated.
+      u0=u(1+(ix-1)*iuinc)
+      up=u(1+ix    *iuinc)
+      um=u(1+(ix-2)*iuinc)
+c Do interpolation using extrapolation information pointed to by icp0.
+      uprime=gradinterp(um,u0,up,idf,icp0,xm,dx0,dx1)
+
+      end
+
