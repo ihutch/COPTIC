@@ -3,7 +3,8 @@ c
       include 'objcom.f'
       integer Li,ni,nj
 c      parameter (Li=100,ni=40,nj=40,nk=16)
-      parameter (Li=100,ni=16,nj=16,nk=20)
+c      parameter (Li=100,ni=16,nj=16,nk=20)
+      parameter (Li=100,ni=32,nj=32,nk=40)
       integer nblks
       parameter (nblks=1)
       integer nd
@@ -54,6 +55,7 @@ c First object is sphere of radius rc and potential phi.
       phi=-obj_geom(10,1)/obj_geom(8,1)
 
       thetain=.1
+      nth=1
       lplot=.true.
       l1plot=.false.
 c Deal with arguments
@@ -63,6 +65,7 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-p ') lplot=.false.
          if(argument(1:3).eq.'-p1') l1plot=.true.
          if(argument(1:2).eq.'-t')read(argument(3:),*)thetain
+         if(argument(1:2).eq.'-n')read(argument(3:),*)nth
            
       enddo
       ndims=nd
@@ -279,8 +282,9 @@ c
          if(l1plot)then
 c Different lines:
 c Spherical angles in 3-D
+            do iti=1,nth
             itest=1
-            theta=thetain
+            theta=thetain*iti
             varphi=0.
             ct=cos(theta)
             st=sin(theta)
@@ -355,35 +359,40 @@ c Tangential component (magnitude) of field
 
 c Analytic comparison.
                uanal(i)=-phi*rc/(rprime(i)**2)
-               write(*,*)'i,rprime,rfield,uanal(i)',
+               write(*,'(''i,rprime,rfield,uanal(i)'',i4,4f10.5)')
      $              i,rprime(i),rfield(i,itest),uanal(i)
      $              ,rsimple(i,itest)
 
             enddo
             write(*,*)'Ended uprime calculation'
-            call autoplot(rprime,rfield(1,itest),Li)
-c            call polymark(xprime,uprime,Li,1)
-c            call polymark(xn(ioff+1),zero,iuds(idf),10)
-            call dashset(2)
-            call polyline(rprime,tfield(1,itest),Li)
-            call winset(.true.)
-            call dashset(1)
-            call polyline(rprime,uanal,Li)
-c            call polyline(xprime,upregion,Li)
-            call color(iblue())
-            call dashset(3)
-            call polyline(rprime,rsimple(1,itest),Li)
-            do itest=2,ntests
-               call polyline(rprime,rfield(1,itest),Li)
-               call dashset(2)
+            call dashset(0)
+            if(iti.eq.1)then
+               call autoplot(rprime,rfield(1,itest),Li)
+               call winset(.true.)
+               call dashset(1)
                call color(ired())
-            enddo
+               call polyline(rprime,uanal,Li)
+               call winset(.false.)
+c            call polyline(xprime,upregion,Li)
+               call color(iblue())
+               call dashset(3)
+               call polyline(rprime,rsimple(1,itest),Li)
+            else
+               call polyline(rprime,rfield(1,itest),Li)
+            endif
+            call dashset(2)
+            call color(idarkgreen())
+            call polyline(rprime,tfield(1,itest),Li)
+c            do itest=2,ntests
+c               call polyline(rprime,rfield(1,itest),Li)
+c               call dashset(2)
+c            enddo
             call color(15)
             call winset(.false.)
             form1='!Aq!@='
             call fwrite(180*theta/3.1415926,iwdth,1,form1(7:))
             call jdrwstr(.01,.1,form1,1.)
-
+            enddo
 c Crude differencing to show the improvement in our interpolation.
 c            do kk=2,nk-2
 c               x0=xn(ioff+kk)

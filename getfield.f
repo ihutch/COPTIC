@@ -39,16 +39,23 @@ c We DONT include sormesh, because xn is passed
       parameter (pwr2nd=2**(ndims_sor-1))
       integer iflags(pwr2nd)
       real f(pwr2nd),d(ndims_sor-1)
+      logical lextrapolate
+      integer iorder(4),jp1(4),jp2(4),jm1(4),jm2(4)
+      data iorder/1,2,4,3/
+      data jp1,jp2/1,1,0,0,0,1,0,1/
+      data jm1,jm2/0,0,1,1,1,0,1,0/
+      data lextrapolate/.true./
+c      data lextrapolate/.false./
 
 c This is a 3-D only version for now. But needs to be made into a
 c general-dimension version.      
-      icount=0
-      igood=0
       do id1=1,3
          do id2=id1+1,3
             if(id1.ne.idf .and. id2.ne.idf)then
                d(1)=xf(id1)
                d(2)=xf(id2)
+               icount=0
+               igood=0
                do ip2=0,1
                do ip1=0,1
                   icount=icount+1
@@ -59,34 +66,77 @@ c Pass arrays with local origin.
      $              ,idf,icinc(idf),iuinc(idf),xn
      $              ,xf(idf),f(icount),iregion,ix,xm)
 
-c Testing simple mindedly.
-                  if(.false.)then
-c Distance forward and backward along idf-dimension to adjacent
-                  dx1=xn(2)-xn(1)
-                  dx0=xn(1)-xn(0)
-c Values of u at the points to be interpolated.
-                  u0=u(1+ip1*iuinc(id1)+ip2*iuinc(id2))
-                  up=u(1+ip1*iuinc(id1)+ip2*iuinc(id2)+iuinc(idf))
-                  um=u(1+ip1*iuinc(id1)+ip2*iuinc(id2)-iuinc(idf))
-                  ugradp=(up-u0)/dx1
-                  ugradm=(u0-um)/dx0
-             f(icount)=(0.5-xf(idf))*ugradm + (0.5+xf(idf))*ugradp
-                  endif
-c End of testing
-c                  if(ix.ge.99)then
-c                     iflags(icount)=0
-c                  else
+                  if(ix.ge.99)then
+c           write(*,*)'Getfield no-value',icount,ip1,ip2,id1,id2
+                     iflags(icount)=0
+                  else
                      iflags(icount)=1
                      igood=igood+1
-c                  endif            
+                  endif            
                enddo
                enddo
+c Extrapolation section
+               if(lextrapolate.and.igood.ne.icount)then
+c                  write(*,*)'***Extrapolation: iflags=',iflags
+                  icount=0
+                  do ip2=0,1
+                  do ip1=0,1
+                     icount=icount+1
+                     if(iflags(icount).eq.0)then
+c Attempt extrapolation. Examine neighbors.
+                        icp=iorder(mod(iorder(icount),4)+1)
+                        icm=iorder(mod(iorder(icount)+2,4)+1)
+                        ifp=iflags((icp))
+                        ifm=iflags((icm))
+c                        write(*,*)'icp,icm,ifp,ifm',icp,icm,ifp,ifm
+                        if(ifp.eq.1.and.ifm.ne.1)then
+c Only ifp.
+                           ip1p=2*jp1((icount))-ip1
+                           ip2p=2*jp2((icount))-ip2
+                           icl=(icp)
+                        elseif(ifp.ne.1.and.ifm.eq.1)then
+c Only ifm.
+                           ip1p=2*jm1((icount))-ip1
+                           ip2p=2*jm2((icount))-ip2
+                           icl=(icm)
+                        else
+c Skip
+                           goto 100
+                        endif
+                        call gradlocalregion(
+     $                       cij(1+ip1p*icinc(id1)+ip2p*icinc(id2))
+     $                       ,u(1+ip1p*iuinc(id1)+ip2p*iuinc(id2))
+     $                       ,idf,icinc(idf),iuinc(idf),xn
+     $                       ,xf(idf),fextrap,iregion,ix,xm)
+                        if(ix.ne.99)then
+c Extrapolated value present. Use it.
+                           write(*,*)'Extrapolated:',icount,icl,
+     $                          ' to',ip1,ip2,
+     $                          jp1((icount)),jp2((icount)),
+     $                          jm1((icount)),jm2((icount)),
+     $                          ' from',ip1p,ip2p
+                           f(icount)=2*f((icl))- fextrap
+                           iflags(icount)=2
+                        else
+                           write(*,*)'Extrapolation failed',icount,icl,
+     $                          ' to',ip1,ip2,
+     $                          jp1((icount)),jp2((icount)),
+     $                          jm1((icount)),jm2((icount)),
+     $                          ' from',ip1p,ip2p
+                        endif
+ 100                    continue
+                     endif
+                  enddo
+                  enddo
+               endif
+c End of extrapolation section.
             endif
          enddo
       enddo
 
       if(igood.gt.0)then
-         if(iflags(1).eq.0)write(*,*)'Zero iflags(1) error'
+
+c         if(iflags(1).eq.0)write(*,*)'Zero iflags(1) error'
          field=boxinterp(ndims-1,f,iflags,d)
       else
          write(*,*)'getfield error: No good vertices'

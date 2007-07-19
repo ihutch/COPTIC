@@ -562,3 +562,44 @@ Found the bug in getfield logic. Incorrectly handling the construction
 of the inputs to boxinterp for general dimensions. Temporarily use
 the 3-D version from get3simple for iteration. That works and now things
 agree away from the boundaries.
+
+16 July 07
+
+Getting back to this. The fieldtest code is close to working, but it
+currently does not do interpolation correctly, because it produces
+cases where iflags(1)=0, contradicting the assumptions of the
+box2interp version. 
+
+Extended box2interp to cope with f00 absent. Then tests show that the 
+errors are reduced by a factor of 2 in the prior worst cases. So this
+really helps (getting the interpolation right). 
+
+18 July 07
+
+Implemented an extrapolation scheme that is used for a box in which
+more than two nodes are absent. If an absent node has precisely one
+(of two) neighbors present then extrapolate through the present node
+using the value one step further away to the desired (absent) node.
+Otherwise do nothing because if only one node is absent (i.e. a node
+has two present neighbors) we are already doing the sensible extrapolation.
+
+This code has the effect of reducing errors in E-field by about a
+factor of 2 when it kicks in. But there are fairly significant errors
+in which it does not. Generally we find now that the field error is
+less than about 10% for the 16x16x20 mesh near the sphere
+boundary. Since the boundary is at r=0.2, which defines the
+scale-length of the phi-solution there, and the node spacing is 1/16 or 1/20.
+which is 0.05 (optimistically), the ratio of node spacing to characteristic 
+scale-length is 0.25. Therefore if we get 10% errors we aren't doing
+badly. Going to twice the mesh numbers (half the spacing) the errors drop to 
+about 2-3% max. Which seems to be falling like (s/l)^2 (or at least faster
+than linearly). There was a strange result with 
+ fieldtest -p -p1 -t2.4
+some kind of error inside the sphere but not too bad.
+
+Looks like the difference between using extrapolation or not is still only
+about a factor of 2 at smaller s. The extrapolation does not change the 
+order of interpolation (as expected). That order is presumably that we
+are correct to first order, since we are doing linear E-interpolation.
+The error being order (s/l)^2 thus makes sense.
+

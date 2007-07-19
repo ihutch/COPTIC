@@ -22,40 +22,94 @@ c
       real d(2)
 c If one or more of the f-values is absent, indicated by zero flags,
 c then construct fall-back interpolation that minimizes curvature.
-c f00 is never absent.
       integer flags(2,2)
 
-      if(flags(2,2).eq.0)then
-         if(flags(1,2).ne.0)then
-            if(flags(2,1).ne.0)then 
-               f(2,2)=f(2,1)+f(1,2)-f(1,1)
+c      write(*,*)'Box2interp flags:',flags
+      if(flags(1,1).ne.0)then
+c      if(.true.)then
+c  f00 is not absent:
+         if(flags(2,2).eq.0)then
+            if(flags(1,2).ne.0)then
+               if(flags(2,1).ne.0)then 
+                  f(2,2)=f(2,1)+f(1,2)-f(1,1)
+               else
+                  f(2,1)=f(1,1)
+                  f(2,2)=f(1,2)
+               endif
             else
-               f(2,1)=f(1,1)
-               f(2,2)=f(1,2)
+               if(flags(2,1).ne.0)then 
+                  f(1,2)=f(1,1)
+                  f(2,2)=f(2,1)
+               else
+                  f(1,2)=f(1,1)
+                  f(2,1)=f(1,1)
+                  f(2,2)=f(1,1)
+               endif
             endif
          else
             if(flags(2,1).ne.0)then 
-               f(1,2)=f(1,1)
-               f(2,2)=f(2,1)
+               if(flags(1,2).ne.0)then
+c All present
+               else
+                  f(1,2)=f(1,1)+f(2,2)-f(2,1)
+               endif
             else
-               f(1,2)=f(1,1)
-               f(2,1)=f(1,1)
-               f(2,2)=f(1,1)
+               if(flags(1,2).ne.0)then
+                  f(2,1)=f(1,1)+f(2,2)-f(1,2)
+               else
+                  f(2,1)=(f(1,1)+f(2,2))/2.
+                  f(1,2)=(f(1,1)+f(2,2))/2.
+               endif
             endif
          endif
       else
-         if(flags(2,1).ne.0)then 
-            if(flags(1,2).ne.0)then
-c All present
+c f00 is absent
+c         write(*,*)'f00 absent track',flags
+         if(flags(1,2).ne.0)then
+c f01 present
+            if(flags(2,1).eq.0)then
+               if(flags(2,2).eq.0)then
+c all except 01 absent
+                  f(1,1)=f(1,2)
+                  f(2,1)=f(1,2)
+                  f(2,2)=f(1,2)
+               else
+c 01 and 11 only present
+                  f(1,1)=f(1,2)
+                  f(2,1)=f(2,2)                  
+               endif
             else
-               f(1,2)=f(1,1)+f(2,2)-f(2,1)
+c Both 01 and 10 present
+               if(flags(2,2).eq.0)then
+                  f(1,1)=(f(1,2)+f(2,1))/2.
+                  f(2,2)=(f(1,2)+f(2,1))/2.
+               else
+                  f(1,1)=f(1,2)+f(2,1)-f(2,2)
+               endif
             endif
          else
-            if(flags(1,2).ne.0)then
-               f(2,1)=f(1,1)+f(2,2)-f(1,2)
+c f01 absent
+            if(flags(2,1).eq.0)then
+               if(flags(2,2).eq.0)then
+                  write(*,*)'**** Box no vertices!'
+                  stop
+               else
+c all except 11 absent
+                  f(1,1)=f(2,2)
+                  f(1,2)=f(2,2)
+                  f(2,1)=f(2,2)
+               endif
             else
-               f(2,1)=(f(1,1)+f(2,2))/2.
-               f(1,2)=(f(1,1)+f(2,2))/2.
+c f01 absent but f10 present
+               if(flags(2,2).eq.0)then
+c all except 10 absent
+                  f(1,1)=f(2,1)
+                  f(1,2)=f(2,1)
+                  f(2,2)=f(2,1)
+               else
+                  f(1,1)=f(2,1)
+                  f(1,2)=f(2,2)
+               endif
             endif
          endif
       endif
@@ -473,6 +527,7 @@ c Values of u at the points to be interpolated.
       um=u(1+(ix-2)*iuinc)
 c Do interpolation using extrapolation information pointed to by icp0.
       uprime=gradinterp(um,u0,up,idf,icp0,xm,dx0,dx1)
+
 
       end
 
