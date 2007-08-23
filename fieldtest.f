@@ -3,8 +3,8 @@ c
       include 'objcom.f'
       integer Li,ni,nj
 c      parameter (Li=100,ni=40,nj=40,nk=16)
-c      parameter (Li=100,ni=16,nj=16,nk=20)
-      parameter (Li=100,ni=32,nj=32,nk=40)
+      parameter (Li=100,ni=16,nj=16,nk=20)
+c      parameter (Li=100,ni=32,nj=32,nk=40)
       integer nblks
       parameter (nblks=1)
       integer nd
@@ -45,8 +45,8 @@ c Set by mditerate.
       parameter (mdims=10)
       integer iLs(mdims+1)
       common /iLscom/iLs
-c Similar set here:
-      integer iLsc(mdims+1)
+
+      include 'partcom.f'
 
 c Geometry information read in.
       call readgeom('geomtest.dat')
@@ -88,12 +88,6 @@ c Places where plotting occurs.
       n1=nk/2
       if(ndims.lt.3)n1=1
 
-c Initialize cij structure.
-      iLsc(1)=nd2+1
-      do n=1,ndims
-         iLsc(n+1)=iLsc(n)*ifull(n)
-      enddo
-
 c Construct the mesh vector(s)
       iof=0
       do id=1,ndims
@@ -110,9 +104,6 @@ c Mesh data:
       ixnp(ndims+1)=iof
 
 
-c For possibly different jacobi convergence radius parameters.
-c 7 is a pretty good value in 3-d.
-      kk=7
 c This loop good for up to 3 dimensions.
       do k=1,nk
          do j=1,nj
@@ -145,6 +136,9 @@ c The following requires include objcom.f
 c      write(*,*)'Finished mesh setup.'
 c      write(*,'(a,8f8.1)')'cij(*,3,3,3)=',(cij(i,3,3,3),i=1,nd2+1)
 
+c For possibly different jacobi convergence radius parameters.
+c 7 is a pretty good value in 3-d.
+      kk=7
 c This jacobi radius is pretty much optimized for Poisson equation with
 c fixed boundary, 2-dimensional, when kk=5. 3-d not optimized.
       xyimb=(max(ni,nj)*2.)/float(ni+nj) - 1.
@@ -163,19 +157,16 @@ c The main solver call. Returns process myid.
       call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu2,ictl,ierr
      $     ,myid,idims)
 
-
-         if(myid.eq.1)then
-            if(ierr.lt.0) write(*,*)'Not converged',ierr
-            write(*,*) 'mi_sor,k_sor,xjac_sor,del_sor',
-     $           mi_sor,k_sor,xjac_sor,del_sor,myid
-            if(ni+nj.lt.40) then
-               write(form1,'(''('',i4,''f8.5)'')')nj
-               write(*,*)'u='
-               write(*,form1)((u(i,j,n1),j=1,nj),i=1,ni)
-            endif
+      if(myid.eq.1)then
+         if(ierr.lt.0) write(*,*)'Not converged',ierr
+         write(*,*) 'mi_sor,k_sor,xjac_sor,del_sor',
+     $        mi_sor,k_sor,xjac_sor,del_sor,myid
+         if(ni+nj.lt.40) then
+            write(form1,'(''('',i4,''f8.5)'')')nj
+            write(*,*)'u='
+            write(*,form1)((u(i,j,n1),j=1,nj),i=1,ni)
          endif
-c      enddo
-         
+      endif
 
       if(myid.eq.0)then
 c-------------------------------------------------------------------
@@ -300,47 +291,36 @@ c Coordinates relative to center of first object (sphere).
                xprime(2,i)=rp*st*sp + obj_geom(ocenter+1,1)  
                xprime(3,i)=rp*ct + obj_geom(ocenter+2,1)  
                
-c Calculate fractional mesh positions of this point.
+               iregion=insideall(ndims,xprime(1,i))
+c Calculate fractional mesh positions of this point, always positive.
+c Thus the origin of the box is below point in all dimensions.
                do id=1,nd
 c Offset to start of idf position array.
                   ioff=ixnp(id)
 c xn is the position array for each dimension arranged linearly.
 c Find the index of xprime in the array xn:
                   ix=interp(xn(ioff+1),ixnp(id+1)-ioff,xprime(id,i),xm)
-                  ix=xm
+c                  ix=xm
                   xfrac(id)=xm-ix
                   ium2(id)=ix
-                  xnd(id)=xprime(id,i)
                enddo
-               iregion=insideall(ndims,xnd)
 
 c Get the nd field components at this point.
 c               write(*,*)'xfrac',(xfrac(kk),kk=1,nd)
 c     $              ,(xprime(kk,i),kk=1,nd)
                do idf=1,nd
-                  if(xfrac(idf).ge.0.5)then
-                     xfrac(idf)=xfrac(idf)-1.
-                     ium2(idf)=ium2(idf)+1
-                     ifix=1
-                  else
-                     ifix=0
-                  endif
                   ioff=ixnp(idf)
                   call getfield(
-     $              ndims
-     $              ,cij(nd2+1,ium2(1),ium2(2),ium2(3))
-     $              ,u(ium2(1),ium2(2),ium2(3))
-     $              ,iLsc,iLs
-     $              ,xn(ioff+ium2(idf)),idf
-     $              ,xfrac,iregion,upnd(idf,i))
+     $                 ndims
+     $                 ,cij(nd2+1,ium2(1),ium2(2),ium2(3))
+     $                 ,u(ium2(1),ium2(2),ium2(3))
+     $                 ,iLs
+     $                 ,xn(ioff+ium2(idf)),idf
+     $                 ,xfrac,iregion,upnd(idf,i))
                   call getsimple3field(
      $                 ndims,u(ium2(1),ium2(2),ium2(3))
      $                 ,iLs,xn(ioff+ium2(idf)),idf
      $                 ,xfrac,upsimple(idf,i))
-                  if(ifix.eq.1)then
-                     xfrac(idf)=xfrac(idf)+1.
-                     ium2(idf)=ium2(idf)-1
-                  endif
                enddo
 
 c Radial component of field
@@ -393,24 +373,33 @@ c            enddo
             call fwrite(180*theta/3.1415926,iwdth,1,form1(7:))
             call jdrwstr(.01,.1,form1,1.)
             enddo
-c Crude differencing to show the improvement in our interpolation.
-c            do kk=2,nk-2
-c               x0=xn(ioff+kk)
-c               x1=xn(ioff+kk+1)
-c               ium2(idf)=kk
-c               u0=u(ium2(1),ium2(2),ium2(3))
-c               ium2(idf)=kk+1
-c               u1=u(ium2(1),ium2(2),ium2(3))
-c               dudx=(u1-u0)/(x1-x0)
-c               xq=(x1+x0)*0.5
-c               write(*,*)kk,x0,x1,xq
-c               call polymark(xq,dudx,1,4)
-c            enddo
             call pltend()
 c-------------------------------------------------------------------
          endif
 c End of plotting.
       endif
+c------------------------------------------------------------------
+c Orbit testing:
+      npart=1
+      norbits=1
+      dt=.05 
+      x_part(1,1)=.8
+      x_part(2,1)=0.5
+      x_part(3,1)=0.5
+      x_part(4,1)=0.
+      x_part(5,1)=.96
+      x_part(6,1)=0.
+      do j=1,100
+         call padvnc(ndims,cij,u,iLs)
+         write(*,'(6f10.5)') (x_part(k,1),k=1,6)
+      enddo
+      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
+
+      call dashset(0)
+      call autoplot(xorbit,yorbit,iorbitlen(1))
+      call polymark(xorbit,yorbit,iorbitlen(1),1)
+      call pltend()
+
 c-------------------------------------------------------------------
       call MPI_FINALIZE(ierr)
       end

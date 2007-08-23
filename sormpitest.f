@@ -360,7 +360,8 @@ c Find the index of xprime in the array xn:
      $              ndims
      $              ,cij(nd2+1,ium2(1),ium2(2),ium2(3))
      $              ,u(ium2(1),ium2(2),ium2(3))
-     $              ,iLsc,iLs
+c     $              ,iLsc
+     $              ,iLs
      $              ,xn(ioff+ix),idf
      $              ,xfrac,iregion,field)
 
@@ -374,7 +375,8 @@ c     $              ,upregion(i)
      $                 ndims
      $                 ,cij(nd2+1,ium2(1),ium2(2),ium2(3))
      $                 ,u(ium2(1),ium2(2),ium2(3))
-     $                 ,iLsc,iLs
+c     $                 ,iLsc
+     $                 ,iLs
      $                 ,xn(ioff+ix),idf
      $                 ,xfrac,iregion,tfield(i,itest))
                enddo

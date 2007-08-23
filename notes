@@ -603,3 +603,10 @@ order of interpolation (as expected). That order is presumably that we
 are correct to first order, since we are doing linear E-interpolation.
 The error being order (s/l)^2 thus makes sense.
 
+
+23 Aug 07
+
+Started padvnc.f for advancing.
+Updated getfield to use general number of dimensions.
+Removed extrapolation from it, but saved old version.
+Removed passing of iLsc, just multiply iLs by (2*ndims+1).
