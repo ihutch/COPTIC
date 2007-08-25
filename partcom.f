@@ -6,10 +6,12 @@ c Particle position and velocity (3D cartesian) in the order:
 c (x,y,z) (vx,vy,vz) (xm,ym,zm) where xm... is the mesh position.
       real x_part(3*npdim,npartmax)
 c Particle flag(s).
-      integer ipf(npartmax)
+      integer if_part(npartmax)
 c Timestep (unperturbed).
       real dt
-      common/particles/npart,x_part,ipf,dt
+c Control of diagnostics
+      logical ldiags
+      common/particles/npart,x_part,if_part,dt,ldiags
 
 c Orbit plotting storage for tracking the first norbits orbits.
       integer nobsmax,norbits

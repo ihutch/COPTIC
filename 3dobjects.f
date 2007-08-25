@@ -84,7 +84,7 @@ c and total mesh spacing in dp, so that bdy distance is fraction*dp.
       integer indi(ndims)
       real xc(ndims),rc(ndims)
       real fraction,dp
-      include 'sormesh.f'
+      include 'meshcom.f'
       A=0.
       B=0.
       C=-1.
@@ -243,7 +243,7 @@ c reversed signs. (e.g. a=1, b=1, c=-2 -> a=-1, b=-1, c=2)
 c
 c A fraction of 1 causes all the bounding conditions to be ignored.
 
-      include 'sormesh.f'
+      include 'meshcom.f'
       include '3dcom.f'
 
       real xx(10),xd(10)
@@ -312,7 +312,7 @@ c object data.
       integer ifull(ndims)
 
       include 'objcom.f'
-      include 'sormesh.f'
+      include 'meshcom.f'
 
       integer ix(ndims_sor)
       real x(ndims_sor)

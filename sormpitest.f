@@ -11,7 +11,7 @@ c      parameter (Li=100,ni=40,nj=40,nk=16)
       real u(Li,Li,Li),q(Li,Li,Li),cij(nd2+1,Li,Li,Li)
       real error(Li,Li,Li)
       real zp(Li,Li),cijp(nd2+1,Li,Li)
-      include 'sormesh.f'
+      include 'meshcom.f'
 c
       external bdyset,faddu2,cijroutine
 c      real x(Li),y(Li)
@@ -775,7 +775,7 @@ c as a test of correct plane selection, and check base distance.
       integer ifull(mdims),iuds(mdims)
       real cij(ndims*2+1,ifull(1),ifull(2),ifull(3))
       include 'objcom.f'
-      include 'sormesh.f'
+      include 'meshcom.f'
       real xx(3),xc(3),xb(3)
       integer ijk(3)
       real fracts(2*mdims),xfr(mdims),a(mdims)

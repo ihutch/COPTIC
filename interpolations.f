@@ -152,7 +152,7 @@ c routine should work for general number of dimensions.
       real cij(*)
       real u(*)
       include 'objcom.f'
-      include 'sormesh.f'
+      include 'meshcom.f'
 c The direction in which we are interpolating.
       integer idf
 c The increments to adjacent values in the direction idf of cij, and u
@@ -228,7 +228,7 @@ c      real dx0,dx1
 c The object boundary data is in objcom
 c      include 'objcom.f'
 c The mesh vectors are in sormesh may not be needed.
-c      include 'sormesh.f'
+c      include 'meshcom.f'
 c
 c The interpolation is in the form:
 c u' = 2(x+dxf0/2)/(dxf0+dxf1) (up-u0)/dxd1 +
@@ -396,7 +396,7 @@ c The increments to adjacent cij,u-values are icinc, iuinc.
       real cij(*)
       real u(*)
       include 'objcom.f'
-      include 'sormesh.f'
+      include 'meshcom.f'
 c The direction in which we are interpolating.
       integer idf
 c The increments to adjacent values in the direction idf of cij, and u
@@ -480,7 +480,7 @@ c (i.e. we pass xn(ixnp(idf)+ix)) needed for gradient evaluation.
       real cij(*)
       real u(*)
       include 'objcom.f'
-c Not here      include 'sormesh.f'
+c Not here      include 'meshcom.f'
 c The direction in which we are interpolating.
       integer idf
 c The increments to adjacent values in the dimension idf of cij, and u

@@ -4,7 +4,7 @@ c at least the sum of the dimension lengths.
       real xn(1000)
 c Pointer to the start of the dimension vector, which is xn(ixnp(id)+1)
 c ixnp(id)+1 is the start of each dimension vector.
-c ixnp(id)-ixnp(id-1) is the length of dimension id.
+c ixnp(id+1)-ixnp(id) is the length of dimension id.
 c Last element points to the last element of the last dimension, which
 c is equal to the total length used of xn.
       parameter (ndims_mesh=3)

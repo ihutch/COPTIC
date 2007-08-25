@@ -610,3 +610,48 @@ Started padvnc.f for advancing.
 Updated getfield to use general number of dimensions.
 Removed extrapolation from it, but saved old version.
 Removed passing of iLsc, just multiply iLs by (2*ndims+1).
+
+
+24 Aug 07
+
+Further cleaning and confirmation that padvnc is working.
+Changed getfield so that it is permissible to pass the full mesh
+position, not just the fractional mesh position. This gives a version
+that can either be used by passing the local origin of arrays, or
+be used with the global origin and full mesh position.
+
+There is a puzzle about the following. It seem to be using incorrect 
+offset (ought to be (ix-1)*iLs ) but it works as is.
+
+      do id=1,ndims_mesh
+c Offset to start of dimension-id-position array.
+         ioff=ixnp(id)
+c xn is the position array for each dimension arranged linearly.
+c Find the index of xprime in the array xn:
+         ix=interp(xn(ioff+1),ixnp(id+1)-ioff,x_part(id,i),xm)
+         xfrac(id)=xm-ix
+         x_part(ndimsx2+id,i)=xm
+         ixp(id)=ix
+         iu=iu+ix*iLs(id)
+      enddo
+
+Interp returns a value >=1. But if we have ix=1, that is the first 
+value in the array, so the offset should be zero and iu zero.
+In the interpolate.f file (ix-1) is used, correctly.
+In padvnc.f it is not. The getfield calculation in fieldtest appears
+to treat things correctly, because it uses u(ix,ix,ix) explicitly.
+
+I think this is bound up with the fact that I've assumed that we can
+treat the shifted/fractional and full position cases the same, but
+perhaps we can't since the fractional treatment passes 0.5 but the
+full position value at 0.5 is 1.5 reading from a lowest index of 1.
+
+Actually I think the previous result was wrong and the present one is
+right. Played around with the padvnc printing out the force and comparing
+with analytic. The corrected results are within about 2%, but the orbit
+closure stinks.
+
+Yes this is the correct alignment. The orbit closure improves lots
+as one goes to finer mesh. This agrees quite well with analytic approx.
+Fixed some little problems. I think we can declare padvnc working 
+using (ix-1) everywhere.

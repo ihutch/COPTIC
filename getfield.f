@@ -4,10 +4,14 @@ c
 c The interpolation is in the form of box-interpolation in the directions
 c perpendicular to the field. Thus the position can be considered to be
 c given by integer mesh indices plus real fractions of the next mesh node:
-c x(ix)<=x<=x(ix+1), xf=x-x(ix).
-c The arrays cij, u, and xn are passed with local origins at the base
+c x(ix)<=x<=x(ix+1), xf=x-x(ix). We allow passing of the whole position
+c x because we do remaindering internally. 
+c
+c The arrays cij, u, and xn may be passed with local origins at the base
 c of the box in question. Then we don't have to know ix, only xf for each
 c dimension. This approach defeats "-ffortran-bounds-check"ing, though.
+c Alternatively, if the whole position x is passed, then the base:
+c cij(2*ndims+1), and u(1) arrays, not the local origin, should be passed.
 c
 c In the gradient direction, we associate the point with the nearest
 c neighbor and do interpolations from that, but the routine called knows
@@ -17,7 +21,7 @@ c
 c The field region of the point is known and passed.
 
       subroutine getfield(ndims,cij,u,iuinc,xn,idf
-     $     ,xf,iregion,field)
+     $     ,xff,iregion,field)
 
 c Pointers and potential array with origin at the box corner.
       real cij(*),u(*)
@@ -29,12 +33,14 @@ c Direction (dimension) of field component:
       integer idf
 c Fractional position to interpolate to for each dimension from the
 c passed origin within cij,u. 
-      real xf(ndims)
+      real xff(ndims)
 c Region code of particle
       integer iregion
 
 c Local vector storage
-      integer idn(10)
+      parameter (mdims=10)
+      integer idn(mdims)
+      real xf(mdims)
 
       include 'objcom.f'
 
@@ -43,14 +49,26 @@ c We DONT include sormesh, because xn is passed
       integer iflags(pwr2nd)
       real f(pwr2nd),d(ndims_sor-1)
 
+c Allow the passing of the real position, not just fraction.
+c This is the case if ix>=1. For fractions, ix=0. 
+c Calculate offset and remainder the fractions.
+      iux=0
+      do ii=1,ndims
+         ix=int(xff(ii))
+         xf(ii)=xff(ii)-ix
+         if(ix.gt.1)iux=iux+iuinc(ii)*(ix-1)
+      enddo
+
+c      write(*,*)'iux=',iux
+
 c Leading dimension of cij:
       ic1=2*ndims+1
 c Correct the index in field direction if fraction .gt.0.5:
       if(xf(idf).ge.0.5)then
-         iu0=iuinc(idf)
+         iu0=iuinc(idf)+iux
          xfidf=xf(idf)-1.
       else
-         iu0=0
+         iu0=0+iux
          xfidf=xf(idf)
       endif
 
@@ -110,6 +128,8 @@ c but if fraction .ge.0.5 in field direction, this is corrected.
       real f(2,2)
       integer iflags(2,2)
       real d(2)
+c zero circumlocution:
+      data izer0/0/
 
 c Correct the index in field direction if fraction .gt.0.5:
       if(xf(idf).ge.0.5)then
@@ -126,7 +146,8 @@ c      u0=u(1+(ix-1)*iuinc)
 c      up=u(1+ix    *iuinc)
 c      um=u(1+(ix-2)*iuinc)
       dxp=xn(2)-xn(1)
-      dxm=xn(1)-xn(0)
+c Circumlocution to prevent spurious bounds warning 
+      dxm=xn(1)-xn(izer0)
       do id1=1,3
          do id2=id1+1,3
             if(id1.ne.idf .and. id2.ne.idf)then

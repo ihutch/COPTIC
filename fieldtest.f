@@ -10,9 +10,10 @@ c      parameter (Li=100,ni=32,nj=32,nk=40)
       integer nd
       parameter (nd=ndims_sor,nd2=nd*2)
       real u(Li,Li,Li),q(Li,Li,Li),cij(nd2+1,Li,Li,Li)
-      real error(Li,Li,Li), fieldarray(2,Li,Li)
+      real error(Li,Li,Li)
+c      real fieldarray(2,Li,Li)
       real zp(Li,Li),cijp(nd2+1,Li,Li)
-      include 'sormesh.f'
+      include 'meshcom.f'
 c
       external bdyset,faddu2,cijroutine
 c      real x(Li),y(Li)
@@ -24,10 +25,12 @@ c      character*10 cxlab,cylab
 c testing arrays
       parameter (ntests=1)
       integer iuds(nd),ifull(nd),idims(nd),ium2(nd)
-      real uplot(Li,Li),uprime(Li),zero(Li),uanal(Li)
-      real upregion(Li),rfield(Li,ntests),tfield(Li,ntests)
+      real uplot(Li,Li),zero(Li),uanal(Li)
+      real rfield(Li,ntests),tfield(Li,ntests)
       real rprime(Li),xprime(nd,Li)
-      real xnd(nd),xfrac(nd),xcenter(nd),upnd(nd,Li),upsimple(nd,Li)
+      real xfrac(nd),upnd(nd,Li),upsimple(nd,Li)
+c      real xcenter(nd),upregion(Li),uprime(Li),xnd(nd)
+      
       real rsimple(Li,ntests)
 
       common /myidcom/myid
@@ -53,6 +56,7 @@ c Geometry information read in.
 c First object is sphere of radius rc and potential phi.
       rc=obj_geom(5,1)
       phi=-obj_geom(10,1)/obj_geom(8,1)
+      write(*,*)'rc=',rc,'  phi=',phi
 
       thetain=.1
       nth=1
@@ -97,7 +101,7 @@ c Mesh size with the faces removed:
          ium2(id)=iuds(id)-2
 c Mesh data:
          do i=1,iuds(id)
-            xn(i+iof)=(i-1.)/(iuds(id)-1.)
+            xn(i+iof)=(i-1.)/(iuds(id)-1.) - 0.5
          enddo
          iof=iof+iuds(id)
       enddo
@@ -199,15 +203,15 @@ c inside a logarithmic derivative boundary condition. 1/r solution.
                   xr=xn(i)
                   yr=xn(iuds(1)+j)
                   zr=xn(iuds(1)+iuds(2)+k)
-                  r=sqrt((xr-.5)**2+(yr-.5)**2+(zr-.5)**2)
+                  r=sqrt((xr-.0)**2+(yr-.0)**2+(zr-.0)**2)
                   if(u(i,j,k).gt.1.e-4 .and.
      $                 r.ge.rc)then
                      e=u(i,j,k)-phi*rc/r
                      error(i,j,k)=e
                      errvar=errvar+e**2
                      if(abs(e).gt.abs(errmax))errmax=e
-c                  if(abs(e).gt.1.e-3) 
-c                  write(*,'(3i3,10f8.4)')i,j,k,
+c                     if(abs(e).gt.1.e-3)
+c     $                   write(*,'(3i3,10f8.4)')i,j,k,
 c     $                 xr,yr,zr,r,u(i,j,k),2.*rc/r,e
                   else
                      error(i,j,k)=0.
@@ -221,15 +225,33 @@ c Rarely needed printout of u:
 c      iform=7
 c      uscale=10000000.
 c      call udisplay(ndims,u,ifull,iuds,iform,uscale)
+
+c Calculate some stuff for autocolorcontour.
+       idf=3
+       id1=mod(idf,3)+1
+       id2=mod(idf+1,3)+1
+       ifixed=nk/2
+       if(.true.)then
+          do i=1,iuds(id1)
+             do j=1,iuds(id2)
+                ium2(idf)=ifixed
+                ium2(id1)=i
+                ium2(id2)=j
+                uplot(i,j)=u(ium2(1),ium2(2),ium2(3))
+             enddo
+c               write(*,'(10f8.4)')(uplot(i,j),j=1,iuds(id2))
+          enddo
+       endif
 c-------------------------------------------------------------------
 c Start of plotting section.
-         if(lplot .and. abs(errmax).lt..1) then
+c         if(lplot .and. abs(errmax).lt..1) then
+         if(lplot) then
             call yautoplot(u(1,n0,n1),ni)
             do i=1,ni
                xr=xn(i)
                yr=xn(iuds(1)+n0)
                zr=xn(iuds(1)+iuds(2)+n1)
-               r=sqrt((xr-.5)**2+(yr-.5)**2+(zr-.5)**2)
+               r=sqrt((xr-.0)**2+(yr-.0)**2+(zr-.0)**2)
                z(i)=phi*rc/r
                xp(i)=i
             enddo
@@ -245,29 +267,15 @@ c-------------------------------------------------------------------
 c Start of gradient testing. Do a contour plot of u in a fixed plane
 c Then for an array of points finer than the original array, do
 c arrow plot showing gradient in this plane.
-            idf=3
-            id1=mod(idf,3)+1
-            id2=mod(idf+1,3)+1
-            ifixed=6
-            if(.true.)then
-            do i=1,iuds(id1)
-               do j=1,iuds(id2)
-                  ium2(idf)=ifixed
-                  ium2(id1)=i
-                  ium2(id2)=j
-                  uplot(i,j)=u(ium2(1),ium2(2),ium2(3))
-               enddo
-c               write(*,'(10f8.4)')(uplot(i,j),j=1,iuds(id2))
-            enddo
-            write(*,*)idf,id1,id2,ium2(1),ium2(2),ium2(3)
-            call autocolcont(uplot,Li,iuds(id1),iuds(id2))
+c            write(*,*)idf,id1,id2,ium2(1),ium2(2),ium2(3)
+c            call autocolcont(uplot,Li,iuds(id1),iuds(id2))
 c            call contourl(uplot,cworka,Li,,iym,zclv,icl,x,y,icsw)
-            call color(5)
+c            call scalewn(-.5,.5,-.5,.5,.false.,.false.)
+c            call axis()
+c            call color(5)
 c            call arrowplot()
-
-            call color(15)
-            call pltend()
-            endif
+c            call color(15)
+c            call pltend()
 c
          endif
          if(l1plot)then
@@ -339,9 +347,9 @@ c Tangential component (magnitude) of field
 
 c Analytic comparison.
                uanal(i)=-phi*rc/(rprime(i)**2)
-               write(*,'(''i,rprime,rfield,uanal(i)'',i4,4f10.5)')
-     $              i,rprime(i),rfield(i,itest),uanal(i)
-     $              ,rsimple(i,itest)
+c               write(*,'(''i,rprime,rfield,uanal(i)'',i4,4f10.5)')
+c     $              i,rprime(i),rfield(i,itest),uanal(i)
+c     $              ,rsimple(i,itest)
 
             enddo
             write(*,*)'Ended uprime calculation'
@@ -382,21 +390,29 @@ c------------------------------------------------------------------
 c Orbit testing:
       npart=1
       norbits=1
-      dt=.05 
-      x_part(1,1)=.8
-      x_part(2,1)=0.5
-      x_part(3,1)=0.5
-      x_part(4,1)=0.
-      x_part(5,1)=.96
+      dt=.025 
+      x_part(1,1)=.3
+      x_part(2,1)=0.
+      x_part(3,1)=0.
+      x_part(4,1)=2*dt
+      x_part(5,1)=1.1
       x_part(6,1)=0.
-      do j=1,100
-         call padvnc(ndims,cij,u,iLs)
+      if_part(1)=1
+      do j=1,120
          write(*,'(6f10.5)') (x_part(k,1),k=1,6)
+         call padvnc(ndims,cij,u,iLs)
       enddo
-      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
+c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
 
       call dashset(0)
-      call autoplot(xorbit,yorbit,iorbitlen(1))
+      call autocolcont(uplot,Li,iuds(id1),iuds(id2))
+      call scalewn(-.5,.5,-.5,.5,.false.,.false.)
+      call ticset(-.01,-.01,-.03,-.02,0,0,0,0)
+      call color(15)
+      call axis()
+      call ticset(.0 ,.0 ,.0,.0,0,0,0,0)
+      call polyline(xorbit,yorbit,iorbitlen(1))
+c      call autoplot(xorbit,yorbit,iorbitlen(1))
       call polymark(xorbit,yorbit,iorbitlen(1),1)
       call pltend()
 
@@ -756,7 +772,7 @@ c as a test of correct plane selection, and check base distance.
       integer ifull(mdims),iuds(mdims)
       real cij(ndims*2+1,ifull(1),ifull(2),ifull(3))
       include 'objcom.f'
-      include 'sormesh.f'
+      include 'meshcom.f'
       real xx(3),xc(3),xb(3)
       integer ijk(3)
       real fracts(2*mdims),xfr(mdims),a(mdims)

@@ -12,7 +12,7 @@ c Array structure vectors: (1,nx,nx*ny,nx*ny*nz)
       integer iLs(ndims+1)
 
 c sormesh provides ixnp, xn, the mesh spacings. (+ndims_mesh)
-      include 'sormesh.f'
+      include 'meshcom.f'
 c Alternatively they could be passed, but we'd then need parameter.
 c Local storage
       integer ixp(ndims_mesh)
@@ -27,37 +27,43 @@ c Make this always last to use the checks.
 
       ic1=2*ndims+1
 
+      ndimsx2=2*ndims
       do i=1,npart
-
+c Inline version. See also the subroutine.
 c Find out where we are (if we don't already know).
          iregion=insideall(ndims,x_part(1,i))
-c         write(*,*)'iregion=',iregion
          iu=0
          do id=1,ndims
-c Offset to start of idf position array.
+c Offset to start of dimension-id-position-array.
             ioff=ixnp(id)
-c xn is the position array for each dimension arranged linearly.
-c Find the index of xprime in the array xn:
             ix=interp(xn(ioff+1),ixnp(id+1)-ioff,x_part(id,i),xm)
-            xfrac(id)=xm-ix
-            ixp(id)=ix
-            iu=iu+ix*iLs(id)
+            x_part(ndimsx2+id,i)=xm
+c            xfrac(id)=xm-ix
+c            iu=iu+(ix-1)*iLs(id)
          enddo
 
-c Get the ndims field components at this point.
+c         call partlocate(i,iLs,iu,ixp,xfrac,iregion)
+c         write(*,*)(x_part(ndimsx2+kk,i)-xfrac(kk),kk=1,3)
+         r2=x_part(1,i)**2+x_part(2,i)**2+x_part(3,i)**2
+         r=sqrt(r2)
+
+c Get the ndims field components at this point. 
+c We only use x_part information for location.
          do idf=1,ndims
-            ioff=ixnp(idf)
-c            write(*,*)'idf,iu,ioff',idf,iu,ioff,xfrac
             call getfield(
-     $           ndims
-     $           ,cij(ic1+ic1*iu)
-     $           ,u(1+iu)
-     $           ,iLs
-     $           ,xn(ioff+ixp(idf)),idf
-     $           ,xfrac,iregion,field(idf))
+     $           ndims,cij(ic1),u,iLs
+c     $           ndims,cij(ic1+ic1*iu),u(1+iu),iLs
+     $           ,xn(ixnp(idf)+int(x_part(ndimsx2+idf,i)))
+     $           ,idf
+     $           ,x_part(ndimsx2+1,i)
+c     $           ,xfrac
+     $           ,iregion,field(idf))
+c analytic hack for testing.
+c            field(idf)=-x_part(idf,i)*2.*.18/r**3
          enddo
 
-c         write(*,*)'ixp=',ixp,' Field=',field
+c         write(*,'(''iu='',i6,'' field,anal='',6f9.5)')iu,
+c     $        (field(k),-x_part(k,i)*2.*.18/r**3,k=1,3)
 
 c Accelerate          
          do j=4,6
@@ -77,4 +83,40 @@ c Move
 
       enddo
 
+      end
+c***********************************************************************
+      subroutine partlocate(i,iLs,iu,ixp,xfrac,iregion)
+c Locate the particle numbered i (from common partcom) 
+c in the mesh (from common sormesh).
+c Return the offset of the base of its cell in iu.
+c Return the integer cell-base coordinates in ixp(ndims)
+c Return the fractions of cell width at which located in xfrac(ndims)
+c Return the region identifier in iregion.
+c Store the mesh position into common partcom (x_part).
+
+c sormesh provides ixnp, xn, the mesh spacings. (+ndims_mesh)
+      include 'meshcom.f'
+      parameter (ndimsx2=ndims_mesh*2)
+      integer i,iu,iregion
+      integer iLs(ndims_mesh+1)
+      integer ixp(ndims_mesh)
+      real xfrac(ndims_mesh)
+
+      include 'partcom.f'
+
+      iregion=insideall(ndims_mesh,x_part(1,i))
+      iu=0
+      do id=1,ndims_mesh
+c Offset to start of dimension-id-position array.
+         ioff=ixnp(id)
+c xn is the position array for each dimension arranged linearly.
+c Find the index of xprime in the array xn:
+         ix=interp(xn(ioff+1),ixnp(id+1)-ioff,x_part(id,i),xm)
+         xfrac(id)=xm-ix
+         x_part(ndimsx2+id,i)=xm
+         ixp(id)=ix
+c should be ix-1
+c         iu=iu+ix*iLs(id)
+      enddo
+      
       end

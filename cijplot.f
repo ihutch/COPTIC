@@ -6,7 +6,7 @@ c Assumed 3-D routine, plots representation of the cij/obj data.
       integer ifull(mdims),iuds(ndims)
       real cij(ndims*2+1,ifull(1),ifull(2),ifull(3))
       include 'objcom.f'
-      include 'sormesh.f'
+      include 'meshcom.f'
       real xx(3),xt(3)
       integer irx(5),iry(5),ipx(5),ipy(5),ijk(3)
       integer idelta(3,3)
