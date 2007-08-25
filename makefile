@@ -3,13 +3,12 @@ LIBRARIES = -L/usr/X11R6/lib/ -L/home/hutch/accis/ -laccisX -lXt -lX11
 UTILITIES=udisplay.o
 # The sormpi system.
 OBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.f
-HEADERS=bbdydecl.f sormesh.f objcom.f 3dcom.f
+HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f
 TARGETS=mpibbdytest mditeratetest sormpitest
 G77=mpif77
 #COMPILE-SWITCHES = -Wall -O2  -I. 
 COMPILE-SWITCHES = -Wall  -I. -g  -ffortran-bounds-check
 
-# Things to compile without the standard switches
 
 
 % : %.f makefile $(OBJECTS) $(UTILITIES)
@@ -26,6 +25,8 @@ smt.out : sormpitest
 	./sormpitest -p
 #	diff testing/smt.fixed smt.out
 	diff smt.prev smt.out
+
+# Things to compile without the standard switches
 
 interpolations.o : interpolations.f makefile $(HEADERS)
 	$(G77)  -c -Wall $*.f
