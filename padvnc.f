@@ -15,8 +15,9 @@ c sormesh provides ixnp, xn, the mesh spacings. (+ndims_mesh)
       include 'meshcom.f'
 c Alternatively they could be passed, but we'd then need parameter.
 c Local storage
-      integer ixp(ndims_mesh)
-      real field(ndims_mesh),xfrac(ndims_mesh)
+c      integer ixp(ndims_mesh)
+      real field(ndims_mesh)
+c      real xfrac(ndims_mesh)
 
       common /myidcom/myid
 c Make this always last to use the checks.
@@ -29,18 +30,20 @@ c Make this always last to use the checks.
 
       ndimsx2=2*ndims
       do i=1,npart
+         if(if_part(i).ne.0)then
+         iregion=insideall(ndims,x_part(1,i))
 c Inline version. See also the subroutine.
 c Find out where we are (if we don't already know).
-         iregion=insideall(ndims,x_part(1,i))
-         iu=0
-         do id=1,ndims
-c Offset to start of dimension-id-position-array.
-            ioff=ixnp(id)
-            ix=interp(xn(ioff+1),ixnp(id+1)-ioff,x_part(id,i),xm)
-            x_part(ndimsx2+id,i)=xm
-c            xfrac(id)=xm-ix
-c            iu=iu+(ix-1)*iLs(id)
-         enddo
+c Should not be necessary if chargetomesh has been called.
+c         iu=0
+c         do id=1,ndims
+cc Offset to start of dimension-id-position-array.
+c            ioff=ixnp(id)
+c            ix=interp(xn(ioff+1),ixnp(id+1)-ioff,x_part(id,i),xm)
+c            x_part(ndimsx2+id,i)=xm
+cc            xfrac(id)=xm-ix
+cc            iu=iu+(ix-1)*iLs(id)
+c         enddo
 
 c         call partlocate(i,iLs,iu,ixp,xfrac,iregion)
 c         write(*,*)(x_part(ndimsx2+kk,i)-xfrac(kk),kk=1,3)
@@ -81,6 +84,7 @@ c Move
             zorbit(iorbitlen(i),i)=x_part(3,i)
          endif
 
+         endif
       enddo
 
       end
@@ -116,7 +120,7 @@ c Find the index of xprime in the array xn:
          x_part(ndimsx2+id,i)=xm
          ixp(id)=ix
 c should be ix-1
-c         iu=iu+ix*iLs(id)
+         iu=iu+(ix-1)*iLs(id)
       enddo
       
       end

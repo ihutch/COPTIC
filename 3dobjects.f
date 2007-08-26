@@ -13,7 +13,7 @@ c Read the geometric data about objects from the file filename
 c Common data containing the object geometric information. 
 c Each object, i < 64 has: type, data(odata).
 c      integer ngeomobjmax,odata,ngeomobj
-c      parameter (ngeomobjmax=63,odata=16)
+c      parameter (ngeomobjmax=31,odata=16)
 c      real obj_geom(odata,ngeomobjmax)
 c      common /objgeomcom/ngeomobj,obj_geom
 
@@ -116,7 +116,7 @@ c That should exhaust the possibilities.
 c****************************************************************
       function insideall(ndims,x)
 c For an ndims-dimensional point x, return the integer insideall
-c consisting of bits i=1-63 that are zero or one according to whether
+c consisting of bits i=1-31 that are zero or one according to whether
 c the point x is outside or inside object i.
       integer ndims
       real x(ndims)
@@ -206,15 +206,17 @@ c length equal to the distance to the opposite face.
       end
 c************************************************************
 c Specific routine for this problem.
-      subroutine potlsect(id,ipm,ndims,indi,fraction,conditions,dp)
+      subroutine potlsect(id,ipm,ndims,indi,fraction,conditions,dp,
+     $     iobjno)
 c In dimension id, direction ipm, 
 c from mesh point at indi(ndims) (zero-based indices, C-style),
 c find any intersection of the mesh leg from this point to its neighbor
 c with a bounding surface. Return the "fraction" of the leg at which
 c the intersection occurs (1 if no intersection), the "conditions" at
-c the intersection (irrelevant if fraction=1), and the +ve length
-c in computational units of the full leg in dp.
-      integer id,ipm,ndims
+c the intersection (irrelevant if fraction=1), the +ve length
+c in computational units of the full leg in dp, and the object number
+c in iobjno
+      integer id,ipm,ndims,iobjno
       integer indi(ndims)
       real fraction,dp
       real conditions(3)
@@ -250,6 +252,7 @@ c A fraction of 1 causes all the bounding conditions to be ignored.
 
 c Default no intersection.
       fraction=1
+      iobjno=0
 
 c-------------------------------------------------------------
 c Process data stored in obj_geom.
@@ -296,6 +299,7 @@ c Special Zero outside, rather than continuity alternative
             endif
 c            write(*,*)'ABC,projection',(obj_geom(oabc+k,i),k=0,2)
 c     $           ,projection,conditions
+            iobjno=i
             return
          endif
       enddo

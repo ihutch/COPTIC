@@ -1,7 +1,7 @@
 c Common data containing the object geometric information. 
-c Each object, i < 63 has: type, data(odata).
+c Each object, i < 31 has: type, data(odata).
       integer ngeomobjmax,odata,ngeomobj
-      parameter (ngeomobjmax=63,odata=16)
+      parameter (ngeomobjmax=31,odata=16)
       real obj_geom(odata,ngeomobjmax)
 c Index Positions of circle data:
       common /objgeomcom/ngeomobj,obj_geom

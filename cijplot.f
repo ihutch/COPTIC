@@ -26,7 +26,8 @@ c     call pfset(3)
       call pltinit(0.,1.,0.,1.)
       call geteye(x2,y2,z2)
       call pltinit(0.,1.,0.,1.)
-      call scale3(0.,1.,0.,1.,0.,1.)
+c      call scale3(0.,1.,0.,1.,0.,1.)
+      call scale3(-.5,.5,-.5,.5,-.5,.5)
       call trn32(0.,0.,0.,x2,y2,z2,1)
       xb=0
       yb=0
@@ -92,7 +93,7 @@ c     Wireframe drawing.
             do k=1,iuds(3)
                iobj=cij(2*ndims+1,i,j,k)
                if(iobj.ne.0)then
-c Origin point.
+c Origin point
                   xx(1)=xn(ixnp(1)+i)
                   xx(2)=xn(ixnp(2)+j)
                   xx(3)=xn(ixnp(3)+k)
@@ -111,6 +112,8 @@ c Draw joins between common fractions in plane normal to id.
      $                       +ipx(ipm)+ipy(ipm))+1
 c                        call color((no+2)/ndata_sor)
                         call color(15)
+c                        write(*,*)'iinter',idob_sor(iinter_sor,iobj)
+                        call color(idob_sor(iinter_sor,iobj))
                         frac=dob_sor(no,iobj)
                         if(frac.lt.1. .and. frac.ge.0.)then
 c This a true intersection. Draw to it.

@@ -39,7 +39,8 @@ c But likely not by very much since the main cost is divide+mult by 2
                      fac=fac*(1.-xfrac(ik))
                   endif
                enddo 
-c Add to the particle sum the fraction for this vertex.           
+c Add to the particle sum the fraction for this vertex.
+c               write(*,*)'ii,iu,iinc,fac',ii,iu,iinc,fac
                psum(1+iinc)=fac
                if(ldiags)then
 

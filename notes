@@ -655,3 +655,40 @@ Yes this is the correct alignment. The orbit closure improves lots
 as one goes to finer mesh. This agrees quite well with analytic approx.
 Fixed some little problems. I think we can declare padvnc working 
 using (ix-1) everywhere.
+
+25 Aug 07
+
+Completed the initial chargetomesh assignment code.
+
+Thinking about how to handle changes to the boundary potential between
+steps, which would be needed for floating cases. Introduced a new
+iinter flag in dob_sor to indicate which object was intersected. (Not 
+yet populated.)
+
+There seem to be three levels of cij update that would make sense, in
+increasing level of computational cost.
+
+1. Directly scale the C/A and ibdy components by the changed potential
+for a specific object whose potential is varying. Assumes that objects
+are not moving and that the changing BC is fixed potential. And that
+each node that intersects the changing object intersects no others.
+Involves searching the existing dob_sor data.
+
+2. Rerun cijroutine for those nodes which intersect a changed object.
+Assumes objects not moving, but would work for arbitrary changes to 
+BC(s). Just operate on the existing dob_sor data.
+
+3. Do 2, but in addition, search nodes in the neighborhood of a moving
+object to determine nodes that become boundary which weren't before
+(and presumably those that stop being boundary but were before). 
+This requires substantially more effort to be sure you don't miss new
+nodes. But is still short of re-searching the entire mesh, which would
+be very costly.
+
+A further possibility would be to limit the intersection investigation to
+only the object(s) that have changed. This might be a significant time
+saving. In other words, ignore the other objects in calculating intersections.
+
+Implemented writing of the object number into iinter_sor. Test is
+that we use cijplot to plot wireframe with color equal to the number.
+Works.

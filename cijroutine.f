@@ -16,29 +16,7 @@ c Shifted to correct for face omission.
       integer iused(ndims)
       real cij(*)
 c--------------------------------------------------
-c Object-data storage. Guess at needed size Lobjmax
-c The object data consists of data enumerated as
-c Inverse pointer.
-c (2=forward/backward)*(ndims)*(ndata=fraction,B/A,C/A)
-c + diagonal + potential contributors + flags.
-c      parameter (ndims_sor=3,ndata_sor=3)
-c The total size of the structure member. Last= count of following
-c      parameter (nobj_sor=2*ndims_sor*ndata_sor+2)
-c Pointer to diagonal contributions
-c      parameter (idgs_sor=2*ndims_sor*ndata_sor+1)
-c Pointer to boundary contributions
-c      parameter (ibdy_sor=2*ndims_sor*ndata_sor+2)
-c Pointer to flags
-c      parameter (iflag_sor=2*ndims_sor*ndata_sor+3)
-c Pointer to region code
-c      parameter (iregion_sor=2*ndims_sor*ndata_sor+4)
-c      parameter (Lobjmax=100000)
-c      real dob_sor(nobj_sor,lobjmax)
-c      integer oi_sor
-c      common /objcom/oi_sor,dob_sor
-c The following makes it possible to refer to dob_sor in integer form.
-c      integer idob_sor(nobj_sor,lobjmax)
-c      equivalence (idob_sor,dob_sor)
+c Object-data storage.
       include 'objcom.f'
 c-----------------------------------------------------
       real dpm(2),fraction(2),dplus(2),deff(2)
@@ -75,9 +53,8 @@ c For each direction in this dimension,
             iobj=ndata_sor*(2*(id-1)+(i-1))+1
             ipm=1-2*(i-1)
 c Determine whether this is a boundary point: adjacent a fraction ne 1.
-c            call potlsect(id,ipm,ndims,indi,fraction(i),potential,dpm(i))
             call potlsect(id,ipm,ndims,indi,
-     $           fraction(i),conditions(1,i),dpm(i))
+     $           fraction(i),conditions(1,i),dpm(i),iobjno)
             if(fraction(i).lt.1. .and. fraction(i).ge.0.)then
                ifound=ifound+1
 c Start object data for this point if not already started.
@@ -115,6 +92,7 @@ c Prevent subsequent divide by zero danger.
                if(a.eq.0.) a=tiny
                dob_sor(iobj+1,oi_sor)=b/a
                dob_sor(iobj+2,oi_sor)=c/a
+               idob_sor(iinter_sor,oi_sor)=iobjno
             else
 c No intersection.
                dplus(i)=dpm(i)
@@ -437,7 +415,8 @@ c Local indices and fractions of this edge start.
             indl(j)=indi(j)+ipm(j)*icp(j)
          enddo
 c Look for intersection along this edge.
-         call potlsect(i,ipm(i),ndims,indl,fraction,conditions,dpm)
+         call potlsect(i,ipm(i),ndims,indl,fraction,conditions,dpm
+     $        ,iobjno)
          if(fraction.ne.1. .and. npoints.lt.mpoints)then
 c            idiag=idiag+1
             npoints=npoints+1

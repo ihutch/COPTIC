@@ -3,18 +3,32 @@ c***********************************************************************
 c multidimensional iteration. For dimensions ndims, iterate over the
 c array whose full dimensions are ifull(ndims) used iused(ndims).
 c At each iteration, 
-c         routine(inc,ipoint,indi,ndims,iused,u) is called
+c         routine(inc,ipoint,indi,ndims,iused,u) is called,
+c
 c which accepts a pointer to the address in the array structure: ipoint
-c and returns the next increment in units of the lowest dimension: inc
-c The index for each dimension is passed in: indi(ndims)
-c And can be adjusted, but ipoint must also be adjusted equivalently.
-c Increments wrap at the used dimension length. Pointer uses ifull.
-c u is the data which is passed to the routine
-c ipoint is the offset of the starting point from the start of u,
-c referenced to u(iused()) as if it were the full array.
-c Iteration does not extend past the used bounds of u.
-c Therefore a shifted subarray should be treated by specifying ipoint=0
-c and giving the address of the subarray as u. 
+c referred to the full dimensions of u, so u(1+ipoint) is processed.  It
+c returns the next increment in units of the lowest dimension: inc. The
+c offsets for each dimension are passed in: indi(ndims) And can (but
+c need not) be adjusted in routine. If they are, ipoint must also be
+c adjusted equivalently in routine. Again: in routine, ipoint addresses
+c u(ifull).  After the return of routine, ipoint and indi(1) are
+c incremented by inc and wrapping is handled. Wrapping occurs at the
+c _iused_ dimension length. In other words, if the incremented indi(id)
+c passes the used length iused(id), then the next higher dimension is
+c incremented by 1, and indi(id) decremented by iused(id). Thus inc is
+c the increment in the lowest dimension index, referenced to the _used_
+c dimensions, but ipoint is wrapped accounting for the knowledge of
+c ifull so it points to the correct next position within the array. u is
+c the data that is passed to the routine. On entry, ipoint is the
+c starting offset storage position from the start of u, but in this case
+c (only), relative to the iused array structure. An error will occur if
+c ipoint.gt.iused(1) on entry.  Iteration does not extend past the used
+c bounds of u.  Therefore a shifted subarray should be treated by
+c specifying ipoint=0 and giving the address of the subarray as u.
+c
+c Normal usage is to pass ipoint=0 to mditerate. Then the routine is called
+c for the whole _used_ array at nodes spaced by inc in the 1st dimension.
+
       integer ndims
       integer ifull(ndims)
       integer iused(ndims)
@@ -36,18 +50,21 @@ c      write(*,*)'ndims',ndims,' ifull',ifull,' iused',iused
          iLs(n+1)=iLs(n)*ifull(n)
       enddo
      
-c Offset. 
+c Offset.
+      if(ipoint.gt.iused(1)) then
+         write(*,*)'mditerate ERROR: ipoint>iused(1)',ipoint,iused(1)
+      endif
       indi(1)=ipoint
 
       inc=1
-      icount=0
+c      icount=0
       n=1
 c Iteration over the multidimensional array
  101  continue
 c      write(*,'(''('',i1,i4,'') '',$)')n,indi(n)
       if(indi(n).gt.iused(n)-1)then
 c     Overflow. Subtract off enough (inm) of next dimension
-c     and move ipoint to appropriate position.
+c     and move ipoint to appropriate position in full array.
          inm=0
  102     inm=inm+1
          ipoint=ipoint+iLs(n+1)-iused(n)*iLs(n)
