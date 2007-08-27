@@ -692,3 +692,68 @@ saving. In other words, ignore the other objects in calculating intersections.
 Implemented writing of the object number into iinter_sor. Test is
 that we use cijplot to plot wireframe with color equal to the number.
 Works.
+
+27 Aug 07
+
+Looking into MPI id's and communication, with a view being able 
+conveniently to call the setup before starting the sormpi solution.
+This enables me to know what my process is etc.
+There are currently two separate initializations. 
+
+1. bbdydefine just sets the iorig vector which tells the block sizes
+for the specified arrays and process arrangement
+
+2. first call to bbdy sets up the communications and initializes MPI.
+
+It hardly seems necessary to have these separate calls.
+There's an issue about how iorig is saved. Currently it is only
+saved during the operation of sormpi (lost on return). 
+Certainly there's no need to do what is currently done which is
+to call bbdydefine anew each time sormpi is called. It really ought
+only to be needed the first time.
+
+There is a general save in bbdy which is where most things are saved
+(although apparently not iorig because it's an argument). I see no
+real reason why iorig should not be saved. Indeed there does not seem
+to be any reason why it normally should be accessed outside of 
+bbdy, so it might simply be defined in a common (in case access is needed)
+within bbdy, and not passed to it. Then bbdydefine would be called by
+bbdy itself, not separately. If we keep the arguments to bbdy the same,
+then iorig has to be saved in sormpi. That's a problem because if we
+call bbdy outside of sormpi, and then think we've done setup, it won't
+then be given to sormpi for subsequent storage, unless we reinitialize,
+which would be a bad thing.
+
+Better to delete iorig from the bbdy arguments. Places:
+mpibbdy.f mpibbdytest.f sormpi.f bbdydecl.f
+However, we also then need to add ifull to the bbdy arguments
+otherwise the initialization doesn't know what they are.
+
+Done all that. mpibbdytest works (2 processes). fieldtest works.
+Fieldtest had no modifications to it to handle this change. 
+The whole interface is unchanged in respect of anything outside sormpi.
+
+Added the code for special case kc=-2 purely (re)initialization.
+A prior call with kc=-2 will set up the communicator but not try
+to actually do any communication.
+
+This all works, but there's still a problem with calling the bbdy
+directly, that is that all its (other) arguments don't end up in the
+sormpi places, which is where they are needed. Probably the best
+thing is to make the bbdy call through sormpi somehow. The integer
+switch ictl is the right place to do this. 
+
+Implemented that using the 3rd bit of ictl.
+
+Found a big problem with the initial call causing sorrelaxgen errors
+and segfaults. Traced one issue to new usage of iLs which is not 
+correct now because in bbdy bbdydecl of integer iLs(ndims+1) has ndims
+as a parameter but iLs not passed. That's ok in bbdytest, but not in
+sormpi. The error is not detected by the compiler and then shows
+up later only when the save is required. In general there's an issue
+with using bbdydecl in sormpi because a number of the bbdydecl parameters
+are not passed in to sormpi. Therefore they are really local definitions
+and can't be sized by anything other than a parameter. 
+
+Fixed that for now with a hack to make it a parameter. Annoying compiler
+bug!

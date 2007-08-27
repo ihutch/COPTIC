@@ -52,8 +52,8 @@ c*************************************************************
 c*************************************************************
 c*************************************************************
       program bbdytest
-      parameter (ndims=3,idim1=1,idim2=1,idim3=2)
-      integer iorig(idim1+1,idim2+1,idim3+1)
+
+      parameter (ndimsdecl=3,idim1=1,idim2=1,idim3=2)
       include 'bbdydecl.f'
 
       parameter (ifd1=40,ifd2=20,ifd12=ifd1*ifd2)
@@ -62,18 +62,24 @@ c*************************************************************
       real u123(ifd123)
       equivalence (u,u123)
 c ifull full dimensions of u
-      integer ifull(ndims)
+      integer ifull(ndimsdecl)
+
+c Access iorig via common block since arguments removed.
+      parameter (norigmax=1000)
+      integer iorig(norigmax)
+      common /iorigcom/iorig
+
       data ifull/ifd1,ifd2,ifd3/
 
 c Set key data in the arrays declared in bbdydecl
-      data lperiod/ndims*.false./
+      data lperiod/ndimsdecl*.false./
       data idims/idim1,idim2,idim3/
 c
 c Setup the used block geometry for nrd dimensions.
       data iuds/10,10,6/
       data nrd/3/
 c Initialize icoords just in case
-      data icoords/ndims*0/
+      data icoords/ndimsdecl*0/
 c  Initialize u [gives a g77 warning if large]
       data u/ifd123*1000./
 c So do it explicitly if it is large.
@@ -86,33 +92,42 @@ c         enddo
 c      enddo
 
       myid=0
-c Define the block arrays origins iorig, and full structure iLs.
-      call bbdydefine(nrd,idims,ifull,iuds,iorig,iLs)
-c Loop over iterations
-      do nk=1,2
-c First time, set up the boundary data, and get my icoords, myside
-c Then do the boundary communication.
-         call bbdy(iLs,iuds,u,nk,iorig,nrd,idims,lperiod,
+c First, set up the boundary data, and get my icoords, myside, etc
+c using the special nk=-2 call.
+      nk=-2
+      call bbdy(iLs,ifull,iuds,u,nk,nrd,idims,lperiod,
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid)
+c Loop over iterations
+      do nk=1,2
+c Then do the boundary communication.
 c Set this block value to id
          call blockadvance3d(u123,nrd,iLs,iuds,
      $           iorig,idims(1)+1,idims(2)+1,idims(3)+1,
      $           icoords,myid)
 c         call blockadvance(u123(iorig(icoords(1)+1,icoords(2)+1,1)),
 c     $        iLs(2),myside(1),myside(2),mycartid)
+c Actually communicate:
+         call bbdy(iLs,ifull,iuds,u,nk,nrd,idims,lperiod,
+     $        icoords,iLcoords,myside,myorig,
+     $        icommcart,mycartid,myid)
          call udisplay(nrd,u,ifull,iuds,1,1.)
       enddo
       write(*,*)'End of iterations'
 
 c Gather back all the data
       nk=-1
-      call bbdy(iLs,iuds,u,nk,iorig,nrd,idims,lperiod,
+      call bbdy(iLs,ifull,iuds,u,nk,nrd,idims,lperiod,
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid)
-      call udisplay(nrd,u,ifull,iuds,2,1.)
-
+      call MPI_BARRIER(icommcart,ierr)
+      if(myid.eq.0)then
+         write(*,*) 'Final gather:'
+         call udisplay(nrd,u,ifull,iuds,2,1.)
+      endif
+      call MPI_BARRIER(icommcart,ierr)
       write(*,*)'DONE mycartid,myid',mycartid,myid
+
  999  call MPI_FINALIZE()
 
       end

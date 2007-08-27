@@ -141,6 +141,15 @@ c fixed boundary, 2-dimensional, when kk=5. 3-d not optimized.
       eps_sor=1.e-5
 c Stop iterating immediately
 c         mi_sor=3
+
+
+c Demonstration of initialization call that returns myid if I need it.
+c Control bit 4 pure initialization, no communication.
+         ictl=4
+c Returns process myid.
+      call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu2,ictl,ierr
+     $     ,myid,idims)
+      write(*,*)'sormpi Initialization returns',myid
          
 c Control. Bit 1, use my sor parameters, Bit 2 use faddu.
       ictl=3

@@ -1,6 +1,6 @@
 c***********************************************************************
 c Block boundary communication.
-      subroutine bbdy(iLs,iuds,u,kc,iorig,
+      subroutine bbdy(iLs,ifull,iuds,u,kc,
      $     ndims,idims,lperiod,icoords,iLcoords,myside,myorig,
      $     icommcart,mycartid,myid)
 c Dimensional structure of u, for 2d should be (1,Li,Lj), 
@@ -10,14 +10,11 @@ c iuds used dimensions of u
       integer iuds(ndims)
 c Inside this routine, u and iorig are referenced linearly.
       real u(*)
-c kc      is iteration count which determines odd or even.
+c kc      is iteration count which determines odd or even, and also 
+c      if kc=-1 this is the final call: gather only.
+c      if kc=-2 only (re)initialize the topology, cartesian communicator
+c
       integer kc
-c iorig(idims(1)+1,idims(2)+1,...) (IN) is a pointer to the
-c origin of block(i,j,..) within u.
-c Blocks must be of equal size except for the uppermost
-c The top of uppermost, with iblock=idims(n)) is indicated
-c by a value pointing to 1 minus the used length of u in that dimension.
-      integer iorig(*)
 c The number of dimensions of the cartesian topology. (2 for 2d) (IN)
       integer ndims
 c The length of each topology dimension (number of blocks) (IN)
@@ -28,6 +25,8 @@ c Cartesian topology coords of this process block (OUT)
       integer icoords(ndims)
 c structure of icoords (1,(idims(1)+1),(idims(1)+1)*(idims(2)+1),...)
       integer iLcoords(ndims+1)
+c The origin of my block (OUT)
+      integer myorig 
 c My side length data, accounting for my position in the topology (OUT).
       integer myside(ndims)
 c icommcart is the id of the cartesian topology communicator (OUT).
@@ -87,7 +86,17 @@ c      parameter (ndebug=1000)
 c      integer iaints(ndebug),iaadds(ndebug),iadats(ndebug)
 c      integer isc(ndebug),isd(ndebug),ist(ndebug)
 c      integer irc(ndebug),ird(ndebug),irt(ndebug)
-
+c
+c The iorig(idims(1)+1,idims(2)+1,...) provides origin of block(i,j,..) 
+c within u. Blocks must be of equal size except for the uppermost
+c The top of uppermost, with iblock=idims(n)) is indicated
+c by a value pointing to 1 minus the length of u in that dimension.
+c We declare it as a 1-d array for generality. This is the first time here:
+c It must be of dimension greater than the number of processes (blocks)
+      parameter (norigmax=1000)
+      integer iorig(norigmax)
+      common /iorigcom/iorig
+      
       include 'mpif.h'
       integer status(MPI_STATUS_SIZE)
       integer iobindex
@@ -98,13 +107,28 @@ c an argument to allow us to reset. Not done yet.
       data lflag/.false./
 c Initialize iobindex to quite initialization warnings.
       data iobindex/1/
-c This general save statement is necessary. But give gfortran warnings.
+c This general save statement is necessary. But gives gfortran warnings.
       save
 
+      if(kc.eq.-1) then 
+c Just do the gather
+         goto 100
+      elseif(kc.eq.-2 .or. kc.eq.-3)then
+c (Re)Initialize but don't communicate (-2) or do communicate (-3).
+         lflag=.false.
+      endif
       if(.not.lflag)then
 c -----------------------------------------------------------------
 c First time. Set up topology and calculate comm-types
 c------------------------------------------------------------------
+c Test if we fit in the number of processors.
+      if((idims(1)+1)*(idims(2)+1).gt.norigmax)then
+         write(*,*)'bbdy: Too many processes',idims(1),'x',idims(2),
+     $        ' for norigmax=',norigmax
+         stop
+      endif
+c Define mpi block structure.
+         call bbdydefine(ndims,idims,ifull,iuds,iorig,iLs)
          mycartid=0
 c Check roughly if the istacksize and imds are enough.
          if(2.*iLs(ndims).ge.istacksize) then
@@ -323,10 +347,11 @@ c         return
       endif
 c If this is an unused process, do nothing.
       if(mycartid.eq.-1) return
+c If this is a pure initialization, return
+      if(kc.eq.-2) return
 c--------------------------------------------------------------------
 c (First and) Subsequent calls. Do the actual communication
 c--------------------------------------------------------------------
-      if(kc.eq.-1)goto 100
 c Even-odd pacing. We use all blocks each step but we transmit either
 c the odd or the even data to the left, even or odd to right.
 
@@ -350,9 +375,9 @@ c iolp is for receiving +1 shift, iorp is for sending +1 shift.
          iorm=iorp+iLs(n)
 c iorm is for receiving -1 shift, iolm is for sending -1 shift.
          if(idebug.ge.2)then
-         if(n.eq.1) write(*,*)' n,ko,ke,iolp,iorp,iolm,iorm,',
+         if(n.eq.1) write(*,*)' n,ko,ke,    iolp,iorp,iolm,iorm,',
      $        'iddr,isdr,iddl(n),isdl(n)'
-         write(*,'(3i3,8i5)') n,ko,ke,iolp,iorp,iolm,iorm,
+         write(*,'(3i3,8i6)') n,ko,ke,iolp,iorp,iolm,iorm,
      $        iddr(n),isdr(n),iddl(n),isdl(n)
          endif
 c Send odd/even data to right, receive odd/even data from left
@@ -521,7 +546,6 @@ c****************************************************************
       integer kk(3)
       character*40 string
 c This diagnostic works only for up to 3-d arrays.
-c Ought to become a subroutine.
          if(ndims.le.3) then
             do j=3,1,-1
                if(ndims.lt.j)then 

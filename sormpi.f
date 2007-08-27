@@ -9,8 +9,11 @@ c
       subroutine sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,mpiid,idims)
 
+c The used number of dimensions. But this must be equal to ndims 
+c parameter used for bbdydecl dimensions.
+      integer ndims
 c     The number of dimensions declared in bbdydecl.f
-c      integer ndims
+      parameter (ndimsdecl=3)
 c     ifull full dimensions, iuds used dimensions
       integer ifull(ndims)
 c     iuds(ndims) declared in bbdydecls
@@ -46,6 +49,7 @@ c               f, and as parameter fprime=f'.
 c     ictl  integer control switches
 c           bit 1: user-defined iteration parameters (default no)
 c           bit 2: use faddu (default no)
+c           bit 3: just initialize bbdy (return mpiid).
 c     ierr  Returns Positive: number of iterations to convergence.
 c           Negative: Not-converged maximum iterations.
 c           Zero: something bad.
@@ -65,54 +69,63 @@ c      logical lmpisplit
 
 c Declarations fo MPI calls
       include 'mpif.h'
-c
 
-c The origin of blocks structure may be considered
-c      integer iorig(idim1+1,idim2+1)
-c we declare it as a 1-d array. This is the first time here:
-c It must be of dimension greater than the number of processes (blocks)
-      parameter (norigmax=1000)
-      integer iorig(norigmax)
-c bbdydecl declares most things for bbdy, using parameter ndims.
+c bbdydecl declares most things for bbdy, using parameter ndimsdecl.
       include 'bbdydecl.f'
-
 
       real delta,umin,umax
 c      data lmpisplit/.false./
-c-------------------------------------------------------------------
-c      write(*,*)'In sormpi',ndims,ifull,iuds,idims
-c      return
+c This saves data between calls so we can use separate initialization
+c But at present that causes seg faults!
+      save
 
+c-------------------------------------------------------------------
+      if(ndims.ne.ndimsdecl)then
+         write(*,*)'Wrong number of dimensions in sormpi call',
+     $        ndims,ndimsdecl
+         stop
+      endif
+c      write(*,*)'In sormpi',ictl,ndims,ifull,iuds,idims,ierr
+c      return
       do nd=1,ndims
          lperiod(nd)=.false.
       enddo
-      if((idims(1)+1)*(idims(2)+1).gt.norigmax)then
-         write(*,*)'Too many processes',idims(1),'x',idims(2),
-     $        ' for norigmax=',norigmax
-         stop
-      endif
-c Define mpi block structure.
-      call bbdydefine(ndims,idims,ifull,iuds,iorig,iLs)
-
-c      write(*,*)'ndims,idims,ifull,iuds,iLs',
-c     $     ndims,idims,ifull,iuds,iLs
+c--------------------------------------------------------------------
 c Control Functions:
-c First bit of ictl indicates if sorctl preset or defaults.
-      if(mod(ictl,2).eq.0)then
+      ictlh=ictl
+c First bit of ictlh indicates if sorctl preset or defaults.
+      if(mod(ictlh,2).eq.0)then
          xyimb=(max(iuds(1),iuds(2))*2.)/float(iuds(1)+iuds(2)) - 1.
          xjac_sor=1.- (4./max(10,(iuds(1)+iuds(2))/2)**2)
      $        *(1.-0.3*xyimb)
          mi_sor=2.*(iuds(1)+iuds(2))+10
          eps_sor=1.e-5
       endif
-c Second bit of ictl indicates if there's additional term.
-      if(mod(ictl/2,2).ne.0)then
+c Second bit of ictlh indicates if there's additional term.
+      ictlh=ictlh/2
+      if(mod(ictlh,2).ne.0)then
          laddu=.true.
       else
          laddu=.false.
       endif
+c Third bit of ictlh indicates we are just initializing.
+      ictlh=ictlh/2
+      if(mod(ictlh,2).ne.0)then
+c (Re)Initialize the block communications:
+c Set boundary conditions (and conceivably update cij).
+         k_sor=-2
+c But when called twice through this call does:
+         call bbdy(iLs,ifull,iuds,u,k_sor,ndims,idims,lperiod,
+     $        icoords,iLcoords,myside,myorig,
+     $        icommcart,mycartid,myid)
+         mpiid=myid
+         if(mpiid.eq.0)write(*,*)'bbdy (re)initialized'
+         return
+      endif
 c End of control functions.
-c-------------------------------------------------------------------
+      write(*,*) 'Entering bbdy second',ndims,lperiod,iLs,
+     $        icoords,iLcoords,myside,myorig,icommcart,mycartid,myid
+c------------------------------------------------------------------
       ierr=0
       omega=1.
       oaddu=0.
@@ -128,7 +141,7 @@ c Main iteration
 c Set boundary conditions (and conceivably update cij).
          call bdyset(ndims,ifull,iuds,cij,u,q)
 c Do block boundary communications, returns block info icoords...myid.
-         call bbdy(iLs,iuds,u,k_sor,iorig,ndims,idims,lperiod,
+         call bbdy(iLs,ifull,iuds,u,k_sor,ndims,idims,lperiod,
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid)
 c If this is found to be an unused node, jump to barrier.
@@ -161,7 +174,7 @@ c-------------------------------------------------------------------
 c Do the final mpi_gather [or allgather if all processes need
 c the result].
       nk=-1
-      call bbdy(iLs,iuds,u,nk,iorig,ndims,idims,lperiod,
+      call bbdy(iLs,ifull,iuds,u,nk,ndims,idims,lperiod,
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid)
 c Boundary conditions need to be reset based on the gathered result.
