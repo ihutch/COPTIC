@@ -176,7 +176,7 @@ c Coordinate-Aligned Cylinder data:  Face center(ndims),
 c Semi-axes(ndims), Axial coordinate, Signed Axial length.
          ic=obj_geom(1+2*ndims+1,i)
          xa=(x(ic)-obj_geom(1+ic,i))
-         if(xa*(obj_geom(1+2*dims+2,i)-xa).lt.0.) return
+         if(xa*(obj_geom(1+2*ndims+2,i)-xa).lt.0.) return
          r2=0.
          do k=1,ndims
             if(k.ne.ic)

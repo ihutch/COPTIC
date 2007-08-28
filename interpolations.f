@@ -148,7 +148,6 @@ c (Which for cij includes the offset to the object pointer).
 c Thus the calls generally pass: cij(nd2+1,ium2(1),ium2(2),ium2(3))
 c ,u(ium2(1),ium2(2),ium2(3)), with ium2(idf)=1. But in fact this
 c routine should work for general number of dimensions.
-
       real cij(*)
       real u(*)
       include 'objcom.f'

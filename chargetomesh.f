@@ -50,3 +50,27 @@ c               write(*,*)'ii,iu,iinc,fac',ii,iu,iinc,fac
       enddo
 
       end
+
+c********************************************************************
+      subroutine psumtoq(inc,ipoint,indi,ndims,iused,u,v,w)
+      integer ipoint,inc
+      integer indi(ndims),iused(ndims)
+      real u(*),v(*),w(*)
+      include 'meshcom.f'
+c This routine for use in mditeratearg.
+c But we iterate only over the inner mesh (not edges).
+c Here, u=psum, v=rho, w=rhoinf. 
+c Calculate volume (might be more efficient to store).
+      vol=1.
+      do id=1,ndims
+c Add one for indi being c-style, and 1 for the offset to u(2,2,2)
+c because of only doing the inner mesh.
+         ix=ixnp(id)+indi(id)+2
+c Regard the cell as going between boundaries at (x(ix)+x(ix+1))/2.
+         vol=vol*(xn(ix+1)-xn(ix-1))/2.
+      enddo
+      vol=abs(vol)
+c Set the density
+      v(1+ipoint)=u(1+ipoint)*w(1)/vol
+      inc=1
+      end

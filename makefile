@@ -7,7 +7,7 @@ HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f
 TARGETS=mpibbdytest mditeratetest sormpitest
 G77=mpif77
 #COMPILE-SWITCHES = -Wall -O2  -I. 
-COMPILE-SWITCHES = -Wall  -I. -g  -ffortran-bounds-check
+COMPILE-SWITCHES = -Wall  -O2 -I. -g  -ffortran-bounds-check
 
 
 

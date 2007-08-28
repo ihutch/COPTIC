@@ -3,8 +3,8 @@ c
       include 'objcom.f'
       integer Li,ni,nj
 c      parameter (Li=100,ni=40,nj=40,nk=16)
-      parameter (Li=100,ni=16,nj=16,nk=20)
-c      parameter (Li=100,ni=32,nj=32,nk=40)
+c      parameter (Li=100,ni=16,nj=16,nk=20)
+      parameter (Li=100,ni=32,nj=32,nk=40)
       integer nblks
       parameter (nblks=1)
       integer nd
@@ -16,7 +16,7 @@ c      real fieldarray(2,Li,Li)
       real zp(Li,Li),cijp(nd2+1,Li,Li)
       include 'meshcom.f'
 c
-      external bdyset,faddu2,cijroutine
+      external bdyset,faddu2,cijroutine,psumtoq
 c      real x(Li),y(Li)
       real z(Li),xp(Li)
       character*100 form1,argument
@@ -25,13 +25,13 @@ c      character*10 cxlab,cylab
       logical lplot,l1plot
 c testing arrays
       parameter (ntests=1)
-      integer iuds(nd),ifull(nd),idims(nd),ium2(nd)
+      integer iuds(nd),ifull(nd),idims(nd),ium2(nd),itemp(nd)
       real uplot(Li,Li),zero(Li),uanal(Li)
       real rfield(Li,ntests),tfield(Li,ntests)
       real rprime(Li),xprime(nd,Li)
       real xfrac(nd),upnd(nd,Li),upsimple(nd,Li)
 c      real xcenter(nd),upregion(Li),uprime(Li),xnd(nd)
-      
+      integer id1,id2,idf
       real rsimple(Li,ntests)
 
       common /myidcom/myid
@@ -51,6 +51,8 @@ c Set by mditerate.
       common /iLscom/iLs
 
       include 'partcom.f'
+c Initialize ids to silence spurious warnings.
+      data id1,id2,idf/0,0,0/
 
 c Geometry information read in.
       call readgeom('geomtest.dat')
@@ -149,7 +151,7 @@ c Control bit 4 pure initialization, no communication.
 c Returns process myid.
       call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu2,ictl,ierr
      $     ,myid,idims)
-      write(*,*)'sormpi Initialization returns',myid
+c      write(*,*)'sormpi Initialization returns',myid
          
 c Control. Bit 1, use my sor parameters, Bit 2 use faddu.
       ictl=3
@@ -234,10 +236,10 @@ c Calculate some stuff for autocolorcontour.
        if(.true.)then
           do i=1,iuds(id1)
              do j=1,iuds(id2)
-                ium2(idf)=ifixed
-                ium2(id1)=i
-                ium2(id2)=j
-                uplot(i,j)=u(ium2(1),ium2(2),ium2(3))
+                itemp(idf)=ifixed
+                itemp(id1)=i
+                itemp(id2)=j
+                uplot(i,j)=u(itemp(1),itemp(2),itemp(3))
              enddo
 c               write(*,'(10f8.4)')(uplot(i,j),j=1,iuds(id2))
           enddo
@@ -266,7 +268,7 @@ c-------------------------------------------------------------------
 c Start of gradient testing. Do a contour plot of u in a fixed plane
 c Then for an array of points finer than the original array, do
 c arrow plot showing gradient in this plane.
-c            write(*,*)idf,id1,id2,ium2(1),ium2(2),ium2(3)
+c            write(*,*)idf,id1,id2,itemp(1),itemp(2),itemp(3)
 c            call autocolcont(uplot,Li,iuds(id1),iuds(id2))
 c            call contourl(uplot,cworka,Li,,iym,zclv,icl,x,y,icsw)
 c            call scalewn(-.5,.5,-.5,.5,.false.,.false.)
@@ -309,7 +311,7 @@ c Find the index of xprime in the array xn:
                   ix=interp(xn(ioff+1),ixnp(id+1)-ioff,xprime(id,i),xm)
 c                  ix=xm
                   xfrac(id)=xm-ix
-                  ium2(id)=ix
+                  itemp(id)=ix
                enddo
 
 c Get the nd field components at this point.
@@ -319,14 +321,14 @@ c     $              ,(xprime(kk,i),kk=1,nd)
                   ioff=ixnp(idf)
                   call getfield(
      $                 ndims
-     $                 ,cij(nd2+1,ium2(1),ium2(2),ium2(3))
-     $                 ,u(ium2(1),ium2(2),ium2(3))
+     $                 ,cij(nd2+1,itemp(1),itemp(2),itemp(3))
+     $                 ,u(itemp(1),itemp(2),itemp(3))
      $                 ,iLs
-     $                 ,xn(ioff+ium2(idf)),idf
+     $                 ,xn(ioff+itemp(idf)),idf
      $                 ,xfrac,iregion,upnd(idf,i))
                   call getsimple3field(
-     $                 ndims,u(ium2(1),ium2(2),ium2(3))
-     $                 ,iLs,xn(ioff+ium2(idf)),idf
+     $                 ndims,u(itemp(1),itemp(2),itemp(3))
+     $                 ,iLs,xn(ioff+itemp(idf)),idf
      $                 ,xfrac,upsimple(idf,i))
                enddo
 
@@ -397,11 +399,30 @@ c Orbit testing:
       x_part(5,1)=1.1
       x_part(6,1)=0.
       if_part(1)=1
+c Already set.
+c      do id=1,ndims
+c         ium2(id)=iuds(id)-2
+c      enddo
+      rhoinf=1.     !for now.
       do j=1,12
          write(*,'(6f10.5)') (x_part(k,1),k=1,6)
          call zero3array(psum,iLs,ni,nj,nk)
          call chargetomesh(psum,iLs,diags)
+c Convert psums to charge, q. Remember external psumtoq!
+         call mditerarg(ndims,ifull,ium2,psumtoq,
+     $        0,psum(2,2,2),q(2,2,2),rhoinf)
+c Some diagnostics.
+c         write(*,*)'Psum:'
 c         call diag3array(psum,iLs,ni,nj,nk)
+c         write(*,*)'q:'
+c         call diag3array(q,iLs,ni,nj,nk)
+c Returns process myid.
+         call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu2,ictl,ierr
+     $     ,myid,idims)
+         write(*,*)'Sormpi iterations:',ierr
+         call slice3web(ifull,iuds,u,cij,Li,zp,cijp,ixnp,xn,ifix,
+     $           'potential:'//'!Ay!@')
+c
          call padvnc(ndims,cij,u,iLs)
       enddo
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
@@ -532,6 +553,7 @@ c*********************************************************************
 c*********************************************************************      
       subroutine diag3array(array,iLs,ni,nj,nk)
       real array(*)
+      character*(*) name
       integer iLs(4)
       do k=1,nk
          do j=1,nj
@@ -539,7 +561,8 @@ c*********************************************************************
                index=(i+iLs(2)*(j-1)+iLs(3)*(k-1))
                x=array(index)
                if(x.ne.0)
-     $              write(*,'(a,4i7,f10.5)') 'psum at  ',index,i,j,k,x
+     $              write(*,'(a,4i7,f14.5)')
+     $              'diag3array at  ',index,i,j,k,x
             enddo
          enddo
       enddo

@@ -114,17 +114,16 @@ c Third bit of ictlh indicates we are just initializing.
 c (Re)Initialize the block communications:
 c Set boundary conditions (and conceivably update cij).
          k_sor=-2
-c But when called twice through this call does:
          call bbdy(iLs,ifull,iuds,u,k_sor,ndims,idims,lperiod,
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid)
          mpiid=myid
-         if(mpiid.eq.0)write(*,*)'bbdy (re)initialized'
+c         if(mpiid.eq.0)write(*,*)'bbdy (re)initialized'
          return
       endif
 c End of control functions.
-      write(*,*) 'Entering bbdy second',ndims,lperiod,iLs,
-     $        icoords,iLcoords,myside,myorig,icommcart,mycartid,myid
+c      write(*,*) 'Entering bbdy second',ndims,lperiod,iLs,
+c     $        icoords,iLcoords,myside,myorig,icommcart,mycartid,myid
 c------------------------------------------------------------------
       ierr=0
       omega=1.
@@ -188,9 +187,9 @@ c seems to cause the return to fail. Probably unnecessary.
       mpiid=myid
 c mpi version needs gracious synchronization when some processes
 c are unused by the iteration.
-      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      call MPI_BARRIER(MPI_COMM_WORLD,ierrmpi)
 c unfortunately this is too early, and causes an exit.
-c      if(lmpisplit)call MPI_FINALIZE(ierr)
+c      if(lmpisplit)call MPI_FINALIZE(ierrmpi)
       end
 c**********************************************************************
 c***********************************************************************

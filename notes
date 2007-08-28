@@ -757,3 +757,56 @@ and can't be sized by anything other than a parameter.
 
 Fixed that for now with a hack to make it a parameter. Annoying compiler
 bug!
+
+28 Aug 07
+
+Initialization of 32x32x40 now takes about 4 seconds.  When thinking
+about the initialization, and possible reinitialization if there are
+boundary changes, it is clear that for a multiprocessing environment,
+we ought to make each processor do its own cij initialization.  This
+potentially makes a big time saving.
+
+However, the way things are currently set up, the cartesian layout
+is hidden from the main routine, but the main routine calls mditerate
+of cijroutine. Thus the information is not available to divide the 
+work between different processors.
+
+There's another issue which is that cijroutine uses an indexed array
+of object data. As it generates the array, the presumption is that
+there is a 1-1 correspondence. If the cijroutine work were divided
+between processors, then the would be a 1-many correspondence. The
+object data corresponding to a particular pointer would refer to
+different mesh- locations in different processors. That would have a
+possible benefit in that the object data storage would be
+distributed. But it would cause a problem in that we could not simply
+gather the data together.  That is a MAJOR problem because the
+interpolation routines currently assume that there's a cij with
+corresponding pointers covering the whole of the volume. It would
+perhaps be possible to segment the object data by offsetting the
+pointer for each processor so as to keep the data separate. Then we
+could gather the cij back to central location.  Unless we did this, I
+shudder to think how we'd proceed. The cost is the segmentation of the 
+object data storage, which might make it less efficient. The benefit
+is presumably speed of recalculating cij.
+
+Basically we need access to the iorig information in order to do much
+with other processors, such as mditerate or iregioninit. Actually that
+can be accessed through iorigcom. We might also need information about
+our place in the cartesian communicator; this would be in the form of
+iobindex or myorig. 
+
+Looking into the partreduce and other mpi code. There's some awkward 
+shuffling in sceptic. This is not necessary because using the argument
+MPI_IN_PLACE instead of the send buffer causes in-place reduction, 
+which avoids all the problems of shuffling. Much more elegant.
+
+Implemented a basic mditerarg of psumtoq to calculate the charge
+density. But we still need a way to calculate rhoinfinity which is passed.
+
+Put a new solve of sormpi in the stepping loop. It shows a blip of
+charge giving rise to a potential peak. (And also causes the particle
+to veer off in a different direction. Probably that is some sort of
+image-charge effect). 
+
+On a single processor, a 32x32x40 solve of about 100 iterations takes ~1sec.
+Not bad, although the resolution is not that great yet.
