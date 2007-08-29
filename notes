@@ -810,3 +810,14 @@ image-charge effect).
 
 On a single processor, a 32x32x40 solve of about 100 iterations takes ~1sec.
 Not bad, although the resolution is not that great yet.
+
+Working on horace. Found several compatibility problems. (gfortran)
+1. Makefile does not use implied patterns correctly. Seems to be something
+   I don't understand about the match-anything rule.
+2. I made incorrect assumption about o implying integer. Gfortran detects
+   that error and one with pwr2nd, because of checking for real arguments.
+   Fixed.
+
+Succeeded in making. Got some complaints about blanket saves. Seems to be
+caused by saves in mpif.h.
+Also got diagnostics about unused argument variables.

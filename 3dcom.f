@@ -5,5 +5,5 @@ c Each object, i < 31 has: type, data(odata).
       real obj_geom(odata,ngeomobjmax)
 c Index Positions of circle data:
       common /objgeomcom/ngeomobj,obj_geom
-
+      integer ocenter,oradius,oabc
       parameter (ocenter=2,oradius=5,oabc=8)

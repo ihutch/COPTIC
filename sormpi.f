@@ -78,7 +78,6 @@ c      data lmpisplit/.false./
 c This saves data between calls so we can use separate initialization
 c But at present that causes seg faults!
       save
-
 c-------------------------------------------------------------------
       if(ndims.ne.ndimsdecl)then
          write(*,*)'Wrong number of dimensions in sormpi call',

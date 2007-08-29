@@ -553,7 +553,6 @@ c*********************************************************************
 c*********************************************************************      
       subroutine diag3array(array,iLs,ni,nj,nk)
       real array(*)
-      character*(*) name
       integer iLs(4)
       do k=1,nk
          do j=1,nj

@@ -220,7 +220,8 @@ c Silence warnings.
             ENDIF
             GO TO 3
           ENDIF
-          IF (ITS.EQ.30) PAUSE 'No convergence in 30 iterations'
+          IF (ITS.EQ.30)
+     $         write(*,*) 'SVDCMP No convergence in 30 iterations'
           X=W(L)
           NM=K-1
           Y=W(NM)

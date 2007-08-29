@@ -66,8 +66,8 @@ c The fixed dimension which is chosen to start, and returned after is:
 c The plotted quantity title is
       character*(*) utitle
 c Needed for perspective plot
-      include '/home/hutch/accis/world3.h'
-c      include world3.h
+c      include '/home/hutch/accis/world3.h'
+      include 'world3.h'
 c Workspace size is problematic.
       character*1 pp(40000)
 c Contour levels
@@ -75,12 +75,17 @@ c Contour levels
 c Local variables:
       character*(10) cxlab,cylab
       character*(30) form1
+      logical lfirst
+      data lfirst/.true./
 
-      write(*,*)' Slice plotting.',
-     $           ' up/down arrows change slice.'
-      write(*,*) ' left/right arrows change dimension.',
-     $           ' s: rescale. p: print. Drag mouse to rotate.'
-      write(*,*) ' c: toggle contour plane. w: toggle web. r: rotate'
+      if(lfirst)then
+         write(*,*)' Slice plotting.',
+     $        ' up/down arrows change slice.'
+         write(*,*) ' l/r arrows change dimension.',
+     $        ' s: rescale. p: print. Drag mouse to rotate.'
+         write(*,*) ' c: toggle contour plane. w: toggle web. r: rotate'
+      lfirst=.false.
+      endif
       iweb=1
       icontour=1
       if(ifix.lt.1 .or. ifix.gt.ndims)ifix=ndims

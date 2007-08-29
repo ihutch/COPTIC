@@ -13,7 +13,7 @@ c iuds used dimensions of u
       integer iuds(ndimsdecl)
 c nk      is iteration count.
 c The number of dimensions of the cartesian topology. (2 for 2d)
-      integer ndimsdecl
+c      integer ndimsdecl
 c The length of each topology dimension
       integer idims(ndimsdecl)
 c For each topology dimension whether it is periodic or not.

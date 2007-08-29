@@ -45,9 +45,9 @@ c Local vector storage
       include 'objcom.f'
 
 c We DONT include sormesh, because xn is passed
-      parameter (pwr2nd=2**(ndims_sor-1))
-      integer iflags(pwr2nd)
-      real f(pwr2nd),d(ndims_sor-1)
+      parameter (ipwr2nd=2**(ndims_sor-1))
+      integer iflags(ipwr2nd)
+      real f(ipwr2nd),d(ndims_sor-1)
 
 c Allow the passing of the real position, not just fraction.
 c This is the case if ix>=1. For fractions, ix=0. 

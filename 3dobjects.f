@@ -17,6 +17,7 @@ c      parameter (ngeomobjmax=31,odata=16)
 c      real obj_geom(odata,ngeomobjmax)
 c      common /objgeomcom/ngeomobj,obj_geom
 
+
 c Zero the obj_geom data.
       do j=1,odata
          do i=1,ngeomobjmax 
