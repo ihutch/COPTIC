@@ -77,6 +77,8 @@ c Local variables:
       character*(30) form1
       logical lfirst
       data lfirst/.true./
+c Tell that we are looking from the top by default.
+      data ze1/1./
 
       if(lfirst)then
          write(*,*)' Slice plotting.',
@@ -172,7 +174,9 @@ c Set contour levels using the scaling of the box.
                cl(ic)=wz3min+(wz3max-wz3min)*(ic-1.)/(icl-1.)
             enddo
          endif
-         if(icontour.eq.1)call hdprset(-3,scbz3)
+c Get back current eye position xe1 etc.
+         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
+         if(icontour.eq.1)call hdprset(-3,sign(scbz3,ze1))
          if(icontour.eq.2)call hdprset(-3,zplane)
          call scalewn(1.,float(nf1),1.,float(nf2),.false.,.false.)
 c Contour without labels, with coloring, direct on mesh.

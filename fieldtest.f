@@ -3,8 +3,8 @@ c
       include 'objcom.f'
       integer Li,ni,nj
 c      parameter (Li=100,ni=40,nj=40,nk=16)
-c      parameter (Li=100,ni=16,nj=16,nk=20)
-      parameter (Li=100,ni=32,nj=32,nk=40)
+      parameter (Li=100,ni=16,nj=16,nk=20)
+c      parameter (Li=100,ni=32,nj=32,nk=40)
       integer nblks
       parameter (nblks=1)
       integer nd
@@ -394,6 +394,8 @@ c Orbit testing:
       dt=.025 
       x_part(1,1)=.3
       x_part(2,1)=0.
+c      x_part(1,1)=0.
+c      x_part(2,1)=-.4
       x_part(3,1)=0.
       x_part(4,1)=2*dt
       x_part(5,1)=1.1
@@ -404,8 +406,8 @@ c      do id=1,ndims
 c         ium2(id)=iuds(id)-2
 c      enddo
       rhoinf=1.     !for now.
-      do j=1,12
-         write(*,'(6f10.5)') (x_part(k,1),k=1,6)
+      do j=1,30
+         write(*,'(i4,i4''  x_p='',6f10.5)')j,ierr, (x_part(k,1),k=1,6)
          call zero3array(psum,iLs,ni,nj,nk)
          call chargetomesh(psum,iLs,diags)
 c Convert psums to charge, q. Remember external psumtoq!
@@ -416,11 +418,11 @@ c         write(*,*)'Psum:'
 c         call diag3array(psum,iLs,ni,nj,nk)
 c         write(*,*)'q:'
 c         call diag3array(q,iLs,ni,nj,nk)
-c Returns process myid.
          call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu2,ictl,ierr
      $     ,myid,idims)
-         write(*,*)'Sormpi iterations:',ierr
-         call slice3web(ifull,iuds,u,cij,Li,zp,cijp,ixnp,xn,ifix,
+c         write(*,*)'Sormpi iterations:',ierr
+         if(lplot)
+     $        call slice3web(ifull,iuds,u,cij,Li,zp,cijp,ixnp,xn,ifix,
      $           'potential:'//'!Ay!@')
 c
          call padvnc(ndims,cij,u,iLs)

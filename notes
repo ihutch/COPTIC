@@ -821,3 +821,23 @@ Working on horace. Found several compatibility problems. (gfortran)
 Succeeded in making. Got some complaints about blanket saves. Seems to be
 caused by saves in mpif.h.
 Also got diagnostics about unused argument variables.
+
+29 Aug 07
+
+Corrected the sign of field to make attraction of the particle to image
+charges correct. Things seem fine with last night's changes.
+Code will compile and run on unity. There it is back to g77 not gfortran,
+I think.
+
+Reinjection. We need to have some sort of approach on this. There needs
+to be some reinjection boundary identified, and some way to determine
+where on that boundary and with what velocity the particles are going
+to be reinjected. 
+A spherical boundary is basically the sceptic situation.
+A rectangular boundary might also be of interest.
+Probably these should simply be provided as subroutines.
+
+Incorporated a somewhat modified version of the old reinject.f routine
+from sceptic. Sphere. Seems to work but not quantitatively
+verified. The advancing by a partial step is to be incorporated into
+the padvnc code. 

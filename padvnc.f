@@ -15,9 +15,9 @@ c sormesh provides ixnp, xn, the mesh spacings. (+ndims_mesh)
       include 'meshcom.f'
 c Alternatively they could be passed, but we'd then need parameter.
 c Local storage
-c      integer ixp(ndims_mesh)
+      integer ixp(ndims_mesh)
       real field(ndims_mesh)
-c      real xfrac(ndims_mesh)
+      real xfrac(ndims_mesh)
 
       common /myidcom/myid
 c Make this always last to use the checks.
@@ -29,60 +29,71 @@ c Make this always last to use the checks.
       ic1=2*ndims+1
 
       ndimsx2=2*ndims
+c We ought not to need to calculate the iregion, since it should be
+c known and if a particle is outside it, it would have been reinjected:
+c But for now:
+      iregion=insideall(ndims,x_part(1,1))
       do i=1,npart
+c If this particle slot is filled.
          if(if_part(i).ne.0)then
-         iregion=insideall(ndims,x_part(1,i))
-c Inline version. See also the subroutine.
+            dtprec=dt
+            dtpos=dt
 c Find out where we are (if we don't already know).
 c Should not be necessary if chargetomesh has been called.
-c         iu=0
-c         do id=1,ndims
-cc Offset to start of dimension-id-position-array.
-c            ioff=ixnp(id)
-c            ix=interp(xn(ioff+1),ixnp(id+1)-ioff,x_part(id,i),xm)
-c            x_part(ndimsx2+id,i)=xm
-cc            xfrac(id)=xm-ix
-cc            iu=iu+(ix-1)*iLs(id)
-c         enddo
-
 c         call partlocate(i,iLs,iu,ixp,xfrac,iregion)
 c         write(*,*)(x_part(ndimsx2+kk,i)-xfrac(kk),kk=1,3)
-         r2=x_part(1,i)**2+x_part(2,i)**2+x_part(3,i)**2
-         r=sqrt(r2)
 
+c Subcycle start.
+ 101        continue
+c Use dtaccel for acceleration. May be different from dt if there was
+c a reinjection (or collision).
+            dtaccel=0.5*(dt+dtprec)
 c Get the ndims field components at this point. 
 c We only use x_part information for location.
-         do idf=1,ndims
-            call getfield(
-     $           ndims,cij(ic1),u,iLs
-c     $           ndims,cij(ic1+ic1*iu),u(1+iu),iLs
-     $           ,xn(ixnp(idf)+int(x_part(ndimsx2+idf,i)))
-     $           ,idf
-     $           ,x_part(ndimsx2+1,i)
-c     $           ,xfrac
-     $           ,iregion,field(idf))
+            do idf=1,ndims
+               call getfield(
+     $              ndims,cij(ic1),u,iLs
+     $              ,xn(ixnp(idf)+int(x_part(ndimsx2+idf,i)))
+     $              ,idf
+     $              ,x_part(ndimsx2+1,i)
+     $              ,iregion,field(idf))
 c analytic hack for testing.
 c            field(idf)=-x_part(idf,i)*2.*.18/r**3
-         enddo
+            enddo
 
 c         write(*,'(''iu='',i6,'' field,anal='',6f9.5)')iu,
 c     $        (field(k),-x_part(k,i)*2.*.18/r**3,k=1,3)
 
 c Accelerate          
-         do j=4,6
-            x_part(j,i)=x_part(j,i)+field(j-3)*dt
-         enddo
+            do j=4,6
+               x_part(j,i)=x_part(j,i)+field(j-3)*dtaccel
+            enddo
 c Move
-         do j=1,3
-            x_part(j,i)=x_part(j,i)+x_part(j+3,i)*dt
-         enddo          
-         
-         if(i.le.norbits)then
-            iorbitlen(i)=iorbitlen(i)+1
-            xorbit(iorbitlen(i),i)=x_part(1,i)
-            yorbit(iorbitlen(i),i)=x_part(2,i)
-            zorbit(iorbitlen(i),i)=x_part(3,i)
-         endif
+            do j=1,3
+               x_part(j,i)=x_part(j,i)+x_part(j+3,i)*dtpos
+            enddo          
+
+            inewregion=insideall(ndims,x_part(1,i))
+
+            if(inewregion.ne.iregion) then
+c We left the region. Reinject.
+               call reinject(i,x_part(1,i))
+c Find where we are, since we don't yet know?
+c Might not be needed if we insert needed information in reinject,
+c which might be less costly.
+               call partlocate(i,iLs,iu,ixp,xfrac,iregion)
+               dtpos=dtpos*ran0(idum)
+               dtprec=0.
+c Complete reinjection by advancing by random remaining.
+               goto 101
+            endif
+
+            if(i.le.norbits)then
+               iorbitlen(i)=iorbitlen(i)+1
+               xorbit(iorbitlen(i),i)=x_part(1,i)
+               yorbit(iorbitlen(i),i)=x_part(2,i)
+               zorbit(iorbitlen(i),i)=x_part(3,i)
+            endif
 
          endif
       enddo

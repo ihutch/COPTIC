@@ -106,9 +106,9 @@ c           write(*,*)'Getfield no-value',icount,ip1,ip2,id1,id2
       enddo
       
       if(igood.gt.0)then
-
 c         if(iflags(1).eq.0)write(*,*)'Zero iflags(1) error'
-         field=boxinterp(ndims-1,f,iflags,d)
+c Field is minus the potential gradient.
+         field=-boxinterp(ndims-1,f,iflags,d)
       else
          write(*,*)'getfield error: No good vertices'
       endif

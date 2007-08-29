@@ -2,9 +2,9 @@ LIBRARIES = -L/usr/X11R6/lib/ -L/home/hutch/accis/ -laccisX -lXt -lX11
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
 # The sormpi system.
-OBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o
+OBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reinject.o
 HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f
-TARGETS=mpibbdytest mditeratetest sormpitest
+TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 G77=mpif77
 COMPILE-SWITCHES = -Wall -O2  -I. 
 #COMPILE-SWITCHES = -Wall  -O2 -I. -g  -ffortran-bounds-check

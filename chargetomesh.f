@@ -71,6 +71,6 @@ c Regard the cell as going between boundaries at (x(ix)+x(ix+1))/2.
       enddo
       vol=abs(vol)
 c Set the density
-      v(1+ipoint)=u(1+ipoint)*w(1)/vol
+      v(1+ipoint)=u(1+ipoint)/(w(1)*vol)
       inc=1
       end

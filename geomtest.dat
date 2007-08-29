@@ -4,5 +4,7 @@
 # on the end. In that case we'd get an error.
 # ; Sphere type: center, constant axes. 3 extra data values A,B,C
 #1 , .5,.5,.5,  .2,.2,.2    , 1.,0.,-2.
-1 , .0,.0,.0,  .18,.18,.18    , 1.,0.,-2.
+# Positive potential sphere:
+#1 , .0,.0,.0,  .18,.18,.18    , 1.,0.,-2.
+1 , .0,.0,.0,  .18,.18,.18    , 1.,0.,2.
 257 ,.0,.0,.0, .48,.48,.48 , 1.,.48,0. 
