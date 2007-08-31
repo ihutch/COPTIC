@@ -171,6 +171,6 @@ c,xf
          enddo
       enddo
 
-      field=box2interp(f,iflags,d)
+      field=-box2interp(f,iflags,d)
 
       end

@@ -27,7 +27,7 @@ c testing arrays
       real upregion(Li),tfield(Li,ntests)
       real xnd(nd),xfrac(nd)
 
-      common /myidcom/myid
+      common /myidcom/myid,nprocs
 
       include '3dcom.f'
 c Common data containing the object geometric information. 
@@ -173,7 +173,7 @@ c The main solver call. Returns process myid.
       enddo
          
       if(myid.eq.0.and.lplot)then
-c         call cijplot(ndims,ifull,iuds,cij)
+c         call cijplot(ndims,ifull,iuds,cij,.5)
       endif
 
       if(myid.eq.0)then

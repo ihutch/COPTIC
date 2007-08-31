@@ -19,7 +19,7 @@ c Local storage
       real field(ndims_mesh)
       real xfrac(ndims_mesh)
 
-      common /myidcom/myid
+      common /myidcom/myid,nprocs
 c Make this always last to use the checks.
       include 'partcom.f'
 
@@ -33,8 +33,8 @@ c We ought not to need to calculate the iregion, since it should be
 c known and if a particle is outside it, it would have been reinjected:
 c But for now:
       iregion=insideall(ndims,x_part(1,1))
-      do i=1,npart
-c If this particle slot is filled.
+      do i=1,n_part
+c If this particle slot is occupied.
          if(if_part(i).ne.0)then
             dtprec=dt
             dtpos=dt

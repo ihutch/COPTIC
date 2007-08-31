@@ -15,7 +15,7 @@ c No diagnostics for now.
       ldiags=.false. 
 
 c For all (active) particles.
-      do i=1,npart
+      do i=1,n_part
          if(if_part(i).ne.0)then
             call partlocate(i,iLs,iu,ixp,xfrac,iregion)
 c         if(iregion.ne.iregion) perhaps some action: reinject?

@@ -1,6 +1,6 @@
 c Mostly for testing.
 c Assumed 3-D routine, plots representation of the cij/obj data.
-      subroutine  cijplot(ndims,ifull,iuds,cij)
+      subroutine  cijplot(ndims,ifull,iuds,cij,rs)
       integer ndims
       parameter (mdims=10)
       integer ifull(mdims),iuds(ndims)
@@ -27,7 +27,7 @@ c     call pfset(3)
       call geteye(x2,y2,z2)
       call pltinit(0.,1.,0.,1.)
 c      call scale3(0.,1.,0.,1.,0.,1.)
-      call scale3(-.5,.5,-.5,.5,-.5,.5)
+      call scale3(-rs,rs,-rs,rs,-rs,rs)
       call trn32(0.,0.,0.,x2,y2,z2,1)
       xb=0
       yb=0

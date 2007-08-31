@@ -5,10 +5,11 @@ c***********************************************************************
       integer i
 c Common data:
       include 'rancom.f'
-      common /myidcom/myid
+      common /myidcom/myid,nprocs
 c Hack of required information probably needs to be passed or common.
-      real Ti,vd,pi,rs
-      parameter (Ti=1.,vd=0.,pi=3.1415927,rs=.45)
+c      real Ti,vd,pi,rs
+c      parameter (Ti=1.,vd=0.,pi=3.1415927,rs=.45)
+      include 'plascom.f'
       logical lfirst
       data lfirst/.true./
 
@@ -92,12 +93,13 @@ c Initialize the distributions describing reinjected particles
       subroutine injinit()
 c Common data:
       include 'rancom.f'
-      common /myidcom/myid
+      common /myidcom/myid,nprocs
       real gam(nQth)
 c      character*1 work(nvel,nth)
 c Hack of required information probably needs to be passed or common.
-      real Ti,vd,pi
-      parameter (Ti=1.,vd=0.,pi=3.1415927)
+c      real Ti,vd,pi
+c      parameter (Ti=1.,vd=0.,pi=3.1415927)
+      include 'plascom.f'
 
 c Range of velocities (times (Ti/m_i)^(1/2)) permitted for injection.
       vspread=5.+abs(vd)/sqrt(Ti)

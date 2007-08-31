@@ -841,3 +841,24 @@ Incorporated a somewhat modified version of the old reinject.f routine
 from sceptic. Sphere. Seems to work but not quantitatively
 verified. The advancing by a partial step is to be incorporated into
 the padvnc code. 
+
+Next thing: Loading particles. I'm not wonderfully happy with sceptic
+on this. But I don't know if there's a better way. 
+
+30 Aug 07
+Implemented pinit. But there's some kind of bug that causes it to hang
+in some situations. That was incorrect iregion_part value.
+
+31 Aug 07
+Idea about different particle species. We could use if_part to identify
+different species 0: no particle 1: species 1, ... They padvnc could be
+adjusted to advance each species differently, and reinjection could likewise
+reinject different species. This would make it essentially trivial to
+generalize the code to make it PIC electrons (for example) or multiple
+ion species.
+
+Branched to ccpic as main. Then began packaging the diagnostics so
+that we can clean up the code, and use consistent mesh sizes etc.
+I realize we need to worry about the wrong field we are getting at the
+edge. This is an error that needs to be understood and fixed.
+
