@@ -45,18 +45,19 @@ c Use only lower byte.
       if(type.eq.1.)then
          read(cline,*,err=901,end=801)
      $        (obj_geom(k,ngeomobj),k=1,1+2*nd+3)
- 801     write(*,*)ngeomobj,' Spheroid'
-         write(*,*)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
+ 801     write(*,*)ngeomobj,' Spheroid',
+     $        (obj_geom(k,ngeomobj),k=1,1+2*nd+3)
+c         write(*,*)
       elseif(type.eq.2.)then
          read(cline,*,err=901,end=802)
      $        (obj_geom(k,ngeomobj),k=1,1+2*nd+3)
- 802     write(*,*)ngeomobj,' Cuboid'
-         write(*,*)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
+ 802     write(*,*)ngeomobj,' Cuboid',
+     $        (obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.3.)then
          read(cline,*,err=901,end=803)
      $        (obj_geom(k,ngeomobj),k=1,1+2*nd+2+3)
- 803     write(*,*)ngeomobj,' Cylinder'
-         write(*,*)(obj_geom(k,ngeomobj),k=1,1+2*nd+2+3)
+ 803     write(*,*)ngeomobj,' Cylinder',
+     $        (obj_geom(k,ngeomobj),k=1,1+2*nd+2+3)
       elseif(type.eq.4.)then
          read(cline,*,err=901,end=804)
      $        (obj_geom(k,ngeomobj),k=1,1+nd*(1+nd)+3)
@@ -338,7 +339,9 @@ c Convert index to multidimensional indices.
 c Recognize that the reverse pointer is relative to (2,2,2) because
 c of the way that cijroutine is called. 
 c So add one to ix(k) for proper registration.
-            x(k)=xn(ixnp(k)+ix(k)+1)
+c            x(k)=xn(ixnp(k)+ix(k)+1)
+c That was for the old scheme. Now we've removed that problem
+            x(k)=xn(ixnp(k)+ix(k))
          enddo
 c Store in object-data.
          idob_sor(iregion_sor,i)=insideall(ndims,x)

@@ -862,3 +862,44 @@ that we can clean up the code, and use consistent mesh sizes etc.
 I realize we need to worry about the wrong field we are getting at the
 edge. This is an error that needs to be understood and fixed.
 
+1 Sep 07
+Trying to fix the edge incorrect field. First, try to set the iregion
+flags in all the edge object data. This sort of works, but I find that
+there's a problem with the fact that the reverse pointer is in various
+places assumed to be addressed relative to (1,2,2,2). This was because
+of the problems with mditerate. 
+
+Therefore change the way that mditerate is called with cijroutine.
+This needs us to fix the passing of the ipin to mditerate to do the 
+right thing, and to calculate the right indi and save the indinp
+in mditerate.
+
+Then there are two places where the 2,2,2 assumption must be removed.
+One is in 3dobjects.f iregioninit, called by objstart.
+The other is in cijroutine itself. Both fixed.
+
+Now the edge iregion is initialized with iregion as well as the
+intersections.  This improves the field diagnostic plot a great deal,
+leaving only a tiny region actually outside the outer object where the
+field is incorrect. I still don't quite understand why that's there.
+I guess there's no reason it shouldn't be, since the presumption is that
+getfield returns only the field corresponding to the iregion specified.
+Actually, no, I understand this, inside solu3plot the iregion is set
+to be the insideall of the actual position being plotted (and without
+that one gets rubbish). So we are telling getfield that we want the 
+value as if one were in the region in question. Improved solu3plot
+to show the region.
+
+Trying out non-uniform mesh. There are big problems. The autocolorcont
+is now incorrect. But more important, the getfield is plainly incorrect
+and it looks as if there might be a bug in getting the spacing. At least
+the solution looks plausible!
+
+3 Sep 07
+
+Fixed the contouring.
+Fixed getfield. It was indexing the position array slightly wrong.
+Now things seem to be correct. However, I think a numerically 
+analytic orbit ought to be examined to prove that we are getting the
+correct orbit.
+

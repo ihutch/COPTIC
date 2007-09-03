@@ -61,11 +61,16 @@ c Calculate offset and remainder the fractions.
 
 c      write(*,*)'iux=',iux
 
+c xn index for passing full position
+      ixn0=xff(idf)
+c but correct it if we are passing just fractions.
+      if(ixn0.lt.1)ixn0=1
 c Leading dimension of cij:
       ic1=2*ndims+1
 c Correct the index in field direction if fraction .gt.0.5:
       if(xf(idf).ge.0.5)then
          iu0=iuinc(idf)+iux
+         ixn0=ixn0+1
          xfidf=xf(idf)-1.
       else
          iu0=0+iux
@@ -73,15 +78,14 @@ c Correct the index in field direction if fraction .gt.0.5:
       endif
 
 c General-Dimensional version without extrapolation.
-      icount=0
       igood=0
       do ii=1,(ndims-1)
          idii=mod(idf+ii-1,ndims)+1
          d(ii)=xf(idii)
          idn(ii)=idii
       enddo
-      do ii=0,2**(ndims-1)-1
-         ii1=ii
+      do ii=1,2**(ndims-1)
+         ii1=ii-1
          iinc=iu0
          do ik=1,ndims-1
             ii2=ii1/2
@@ -89,18 +93,17 @@ c General-Dimensional version without extrapolation.
             ii1=ii2
             iinc=iinc+ip*iuinc(idn(ik))
          enddo
-         icount=icount+1
 c Pass arrays with local origin.
          call gradlocalregion(
      $        cij(1+ic1*iinc),u(1+iinc)
-     $        ,idf,ic1*iuinc(idf),iuinc(idf),xn
-     $        ,xfidf,f(icount),iregion,ix,xm)
+     $        ,idf,ic1*iuinc(idf),iuinc(idf),xn(ixn0)
+     $        ,xfidf,f(ii),iregion,ix,xm)
          
          if(ix.ge.99)then
-c           write(*,*)'Getfield no-value',icount,ip1,ip2,id1,id2
-            iflags(icount)=0
+c           write(*,*)'Getfield no-value',ii,idf,xff
+            iflags(ii)=0
          else
-            iflags(icount)=1
+            iflags(ii)=1
             igood=igood+1
          endif            
       enddo
@@ -110,7 +113,8 @@ c         if(iflags(1).eq.0)write(*,*)'Zero iflags(1) error'
 c Field is minus the potential gradient.
          field=-boxinterp(ndims-1,f,iflags,d)
       else
-         write(*,*)'getfield error: No good vertices'
+         write(*,*)'Getfield No good vertices. Region',iregion
+     $        ,' Direction',idf,' Fractions',xff
       endif
 
       
@@ -134,8 +138,10 @@ c zero circumlocution:
 c Correct the index in field direction if fraction .gt.0.5:
       if(xf(idf).ge.0.5)then
          iu0=1+iuinc(idf)
+         ixn0=1
          xfidf=xf(idf)-1.
       else
+         ixn0=0
          iu0=1
          xfidf=xf(idf)
       endif
@@ -145,9 +151,9 @@ c Values of u at the points to be interpolated.
 c      u0=u(1+(ix-1)*iuinc)
 c      up=u(1+ix    *iuinc)
 c      um=u(1+(ix-2)*iuinc)
-      dxp=xn(2)-xn(1)
+      dxp=xn(2+ixn0)-xn(1+ixn0)
 c Circumlocution to prevent spurious bounds warning 
-      dxm=xn(1)-xn(izer0)
+      dxm=xn(1+ixn0)-xn(izer0+ixn0)
       do id1=1,3
          do id2=id1+1,3
             if(id1.ne.idf .and. id2.ne.idf)then

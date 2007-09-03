@@ -53,7 +53,9 @@ c We only use x_part information for location.
             do idf=1,ndims
                call getfield(
      $              ndims,cij(ic1),u,iLs
-     $              ,xn(ixnp(idf)+int(x_part(ndimsx2+idf,i)))
+c Old approach passed full offset. Now just partial.
+c     $              ,xn(ixnp(idf)+int(x_part(ndimsx2+idf,i)))
+     $              ,xn(ixnp(idf)+1)
      $              ,idf
      $              ,x_part(ndimsx2+1,i)
      $              ,iregion,field(idf))

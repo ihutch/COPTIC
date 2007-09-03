@@ -178,10 +178,11 @@ c Get back current eye position xe1 etc.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
          if(icontour.eq.1)call hdprset(-3,sign(scbz3,ze1))
          if(icontour.eq.2)call hdprset(-3,zplane)
-         call scalewn(1.,float(nf1),1.,float(nf2),.false.,.false.)
-c Contour without labels, with coloring, direct on mesh.
+c Contour without labels, with coloring, using vector axes
          call contourl(zp,pp,nw,nf1,nf2,cl,icl,
-     $        xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),16)
+     $        xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),17)
+         call axis()
+         call axis2()
          call cubed(icorner-8*(icorner/8))
       endif
 

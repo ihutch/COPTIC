@@ -1,7 +1,8 @@
 
 c****************************************************************
 c Routine for setting cij, which is used by the general mditerate.
-      subroutine cijroutine(inc,ipoint,indm1,ndims,iused,cij)
+c      subroutine cijroutine(inc,ipoint,indm1,ndims,iused,cij)
+      subroutine cijroutine(inc,ipoint,indi,ndims,iused,cij)
 c This routine sets the object pointer in cij if there is an object
 c crossing next to the the point at indi(ndims) in the 
 c dimension id (plus or minus), adjusts the cij values,
@@ -9,7 +10,7 @@ c and sets the object data into the place pointed to in obj.
       integer mdims
       parameter (mdims=10)
 c Effective index in dimension, c-style (zero based)
-      integer indm1(mdims)
+c      integer indm1(mdims)
 c Shifted to correct for face omission.
       integer indi(mdims)
       integer ndims
@@ -28,10 +29,10 @@ c-----------------------------------------------------
       integer istart
       data istart/0/
 
-      do id=1,ndims
-c  We are using shifted arrays; indi is here the true index.
-         indi(id)=indm1(id)+1
-      enddo
+c      do id=1,ndims
+c  We were using shifted arrays; indi is here the true index.
+c         indi(id)=indm1(id)+1
+c      enddo
 c ipoint here is the offset (zero-based pointer)
 c The cij address is to data 2*ndims+1 long
       icb=2*ndims+1
@@ -58,6 +59,9 @@ c Determine whether this is a boundary point: adjacent a fraction ne 1.
             if(fraction(i).lt.1. .and. fraction(i).ge.0.)then
                ifound=ifound+1
 c Start object data for this point if not already started.
+c In the reverse pointer we correct for the fact that this routine
+c is called from cij(2,2,2). Thus the reverse pointer points to the 
+c place in the full cij array. Not yet done.
                call objstart(cij(icij),ist,ipoint)
 c Calculate dplus and deff for this direction.
 c dplus becomes dminus for the other direction.
