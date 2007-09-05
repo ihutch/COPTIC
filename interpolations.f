@@ -499,23 +499,26 @@ c
       ix=1
       xm=xf
 c Pointer to object data,
-      icp0=cij(ix)
+c      icp0=cij(ix)
+      icp0=cij(1)
 c If we are in wrong region, try to correct:
-      if(icp0.ne.0 .and. idob_sor(iregion_sor,icp0).ne.iregion)then
+      if(icp0.ne.0)then
+         if(idob_sor(iregion_sor,icp0).ne.iregion)then
 c         write(*,*)'Incorrect region',iregion,idob_sor(iregion_sor,icp0)
 c     $        ,icp0,ix,xm
-         jpm=1
-         if(xm.lt.0.)jpm=-1
-         ix=ix+jpm
-         icp1=cij(1+(ix-1)*icinc)
-         if(icp1.eq.0 .or. idob_sor(iregion_sor,icp1).ne.iregion)then
-            ix=99
-            uprime=0.
-            return
-         endif
-         xm=xm-jpm
-         icp0=icp1
+            jpm=1
+            if(xm.lt.0.)jpm=-1
+            ix=ix+jpm
+            icp1=cij(1+(ix-1)*icinc)
+            if(icp1.eq.0 .or. idob_sor(iregion_sor,icp1).ne.iregion)then
+               ix=99
+               uprime=0.
+               return
+            endif
+            xm=xm-jpm
+            icp0=icp1
 c         write(*,*)'Base Position Adjusted ix',ix,jpm,xm,iregion
+         endif
       endif
 c Distance forward and backward along idf-dimension to adjacent
       dx1=xn(ix+1)-xn(ix)
@@ -525,9 +528,34 @@ c Values of u at the points to be interpolated.
       u0=u(1+(ix-1)*iuinc)
       up=u(1+ix    *iuinc)
       um=u(1+(ix-2)*iuinc)
+c This did not give much speed gain.
+c      ixx=1+(ix-1)*iuinc
+c      u0=u(ixx)
+c      up=u(ixx+iuinc)
+c      um=u(ixx-iuinc)
 c Do interpolation using extrapolation information pointed to by icp0.
-      uprime=gradinterp(um,u0,up,idf,icp0,xm,dx0,dx1)
-
+      if(icp0.eq.0)then
+c Short-cut 1 an ordinary point don't call the full routine
+         if(abs(dx1-dx0).lt.1.e-6*dx0)then
+c         if(.false.)then
+c Short-cut 2 for uniform mesh:
+c (saves ~25% of routine for uniform mesh even including test):
+            uprime= ((2.*xm+1.) * (up-u0)
+     $           +(1.-2.*xm) * (u0-um))/(dx0+dx1)
+         else
+            if(xm.lt.0)then
+               x=xm*dx0
+            else
+               x=xm*dx1
+            endif
+c         uprime= (2.*x+dx0)/(dx0+dx1) * (up-u0)/dx1
+c     $        +(dx1-2.*x)/(dx0+dx1) * (u0-um)/dx0
+            uprime= ((2.*x+dx0) * (up-u0)/dx1
+     $           +(dx1-2.*x) * (u0-um)/dx0)/(dx0+dx1)
+         endif
+      else
+         uprime=gradinterp(um,u0,up,idf,icp0,xm,dx0,dx1)
+      endif
 
       end
 

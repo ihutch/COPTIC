@@ -926,3 +926,54 @@ Using profiling and gprof we get
   6.73      9.72     0.94  6148584     0.00     0.00  interp_
 
 Most of the time is being spent getting the field and in its interpolation.
+If we put a short-cut into gradlocalregion to do the calculation directly
+if the icp0 is zero (not a boundary), then we get:
+ time   seconds   seconds    calls   s/call   s/call  name    
+ 31.21      4.38     4.38 24594336     0.00     0.00  gradlocalregion_
+ 16.33      6.67     2.29  6148584     0.00     0.00  getfield_
+ 12.02      8.35     1.69  6763776     0.00     0.00  circlesect_
+  7.49      9.40     1.05  8993020     0.00     0.00  inside_geom__
+  6.78     10.35     0.95  6148584     0.00     0.00  interp_
+  6.06     11.20     0.85      314     0.00     0.00  sorrelaxgen_
+  4.49     11.83     0.63  3739985     0.00     0.00  gradinterp_
+
+There's not much savings of time. The shortcut has added about 16%
+(2.3s) to gradlocalregion, which came out of gradinterp. There's no
+substantial total savings (<3%). This shows that it is really the
+calculations that are costing us:
+
+         uprime= (2.*x+dx0)/(dx0+dx1) * (up-u0)/dx1
+     $        +(dx1-2.*x)/(dx0+dx1) * (u0-um)/dx0
+
+If we reorganize that expression to
+         uprime= ((2.*x+dx0) * (up-u0)/dx1
+     $        +(dx1-2.*x) * (u0-um)/dx0)/(dx0+dx1)
+We get
+ time   seconds   seconds    calls   s/call   s/call  name    
+ 30.70      3.91     3.91 24594336     0.00     0.00  gradlocalregion_
+ 16.20      5.97     2.06  6148584     0.00     0.00  getfield_
+  9.79      7.21     1.25  6763776     0.00     0.00  circlesect_
+  8.22      8.26     1.05  8993020     0.00     0.00  inside_geom__
+  7.47      9.21     0.95  6148584     0.00     0.00  interp_
+  6.29     10.01     0.80      314     0.00     0.00  sorrelaxgen_
+  3.85     10.50     0.49  3739985     0.00     0.00  gradinterp_
+A small saving.
+Similarly, we get a small saving from using icp0=cij(1) instead of cij(ix).
+Reorganizing test gets time to 3.74s. Another small saving. But we have
+not done much. Probably only a 10% saving.
+
+The profiling conclusion is that the main cost is the parabolic
+interpolation of the field-gradient, which is called four times for
+each dimension for each particle at each step. By fiddling around 
+inside that (gradlocalregion) implementing two conditional short-cuts,
+I shaved about 30% off the routine for uniform scaling. Everything else
+seems pretty marginal, and is not worth effort at this time.
+
+time   seconds   seconds    calls   s/call   s/call  name    
+ 23.07      2.85     2.85 24594336     0.00     0.00  gradlocalregion_
+ 17.28      4.98     2.13  6148584     0.00     0.00  getfield_
+ 10.83      6.31     1.34  6763776     0.00     0.00  circlesect_
+  7.38      7.22     0.91      314     0.00     0.00  sorrelaxgen_
+  7.22      8.11     0.89  6148584     0.00     0.00  interp_
+  7.18      9.00     0.89  8993020     0.00     0.00  inside_geom__
+  6.12      9.75     0.76  3739985     0.00     0.00  gradinterp_

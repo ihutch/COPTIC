@@ -9,7 +9,9 @@ G77=mpif77
 #COMPILE-SWITCHES = -Wall -O2  -I. 
 #COMPILE-SWITCHES = -Wall  -O2 -I. -g -ffortran-bounds-check
 COMPILE-SWITCHES = -Wall  -O2 -I.
+NOBOUNDS= -Wall -O2 -I.
 PROFILING= -pg
+#PROFILING=
 
 # If this rule does not seem to recognize the file you are trying to make,
 # then run 'make' to completion first. It is something to do with the
@@ -35,10 +37,10 @@ smt.out : sormpitest
 # Things to compile without the standard switches
 
 interpolations.o : interpolations.f makefile $(HEADERS)
-	$(G77)  -c -Wall -O2 $(PROFILING) $*.f
+	$(G77)  -c $(NOBOUNDS) $(PROFILING) $*.f
 
 getfield.o : getfield.f makefile $(HEADERS)
-	$(G77)  -c -Wall -O2 $(PROFILING) $*.f
+	$(G77)  -c $(NOBOUNDS) $(PROFILING) $*.f
 
 sormpitest : sormpitest.f makefile $(OBJECTS) $(UTILITIES)
 	$(G77)  -o sormpitest $(COMPILE-SWITCHES) sormpitest.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)

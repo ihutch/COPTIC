@@ -304,7 +304,7 @@ c Contour without labels, with coloring, using vector coordinates.
          call polyline(xorbit(1,kk),yorbit(1,kk),iorbitlen(kk))
          call polymark(xorbit(1,kk),yorbit(1,kk),iorbitlen(kk),3)
       enddo
-      call pltend()
+c      call pltend()
 
 c-------------------------------------------------------------------
       call MPI_FINALIZE(ierr)

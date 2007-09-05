@@ -49,6 +49,8 @@ c We DONT include sormesh, because xn is passed
       integer iflags(ipwr2nd)
       real f(ipwr2nd),d(ndims_sor-1)
 
+c      integer ipa(4,2)
+c      data ipa/0,1,0,1,0,0,1,1/
 c Allow the passing of the real position, not just fraction.
 c This is the case if ix>=1. For fractions, ix=0. 
 c Calculate offset and remainder the fractions.
@@ -79,20 +81,33 @@ c Correct the index in field direction if fraction .gt.0.5:
 
 c General-Dimensional version without extrapolation.
       igood=0
+      iimax=1
       do ii=1,(ndims-1)
          idii=mod(idf+ii-1,ndims)+1
          d(ii)=xf(idii)
          idn(ii)=idii
+c Attempts at speeding up don't do much.
+c         iimax=iimax*2
       enddo
       do ii=1,2**(ndims-1)
+c      do ii=1,iimax
          ii1=ii-1
          iinc=iu0
+c This is likely to be most costly. We are just calculating iinc.
+c Bit functions might be a significant gain.
          do ik=1,ndims-1
             ii2=ii1/2
-            ip=ii1-2*ii2
+            if(ii1-2*ii2.ne.0)iinc=iinc+iuinc(idn(ik))
+c            ip=ii1-2*ii2
+c            if(ip.ne.0)iinc=iinc+iuinc(idn(ik))
             ii1=ii2
-            iinc=iinc+ip*iuinc(idn(ik))
+c This is slightly quicker but less than 25%. And not general-dimensional.
+c            iinc=iinc+ipa(ii,ik)*iuinc(idn(ik))
          enddo
+c Suppose we know there's only 3 dimensions total we could replace with
+c         iinc=iinc+ipa(ii,1)*iuinc(idn(1))+ipa(ii,2)*iuinc(idn(2))
+c Which saves about 25% of the time this routine takes. (But it takes
+c only about 13% of the total).
 c Pass arrays with local origin.
          call gradlocalregion(
      $        cij(1+ic1*iinc),u(1+iinc)
