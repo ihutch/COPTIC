@@ -6,8 +6,10 @@ OBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mdi
 HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 G77=mpif77
-COMPILE-SWITCHES = -Wall -O2  -I. 
-#COMPILE-SWITCHES = -Wall  -O2 -I. -g  -ffortran-bounds-check
+#COMPILE-SWITCHES = -Wall -O2  -I. 
+#COMPILE-SWITCHES = -Wall  -O2 -I. -g -ffortran-bounds-check
+COMPILE-SWITCHES = -Wall  -O2 -I.
+PROFILING= -pg
 
 # If this rule does not seem to recognize the file you are trying to make,
 # then run 'make' to completion first. It is something to do with the
@@ -16,10 +18,10 @@ COMPILE-SWITCHES = -Wall -O2  -I.
 # prerequisites exists. By my interpretation of the info, this ought not
 # to be happening (requires a double colon), but on horace, it is. 
 % : %.f  makefile $(OBJECTS) $(UTILITIES)
-	$(G77)  -o $* $(COMPILE-SWITCHES) $*.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
 %.o : %.f makefile $(HEADERS)
-	$(G77)  -c $(COMPILE-SWITCHES) $*.f
+	$(G77)  -c $(COMPILE-SWITCHES) $(PROFILING) $*.f
 
 #default target
 smt.out : sormpitest
@@ -33,10 +35,10 @@ smt.out : sormpitest
 # Things to compile without the standard switches
 
 interpolations.o : interpolations.f makefile $(HEADERS)
-	$(G77)  -c -Wall $*.f
+	$(G77)  -c -Wall -O2 $(PROFILING) $*.f
 
 getfield.o : getfield.f makefile $(HEADERS)
-	$(G77)  -c -Wall $*.f
+	$(G77)  -c -Wall -O2 $(PROFILING) $*.f
 
 sormpitest : sormpitest.f makefile $(OBJECTS) $(UTILITIES)
 	$(G77)  -o sormpitest $(COMPILE-SWITCHES) sormpitest.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)

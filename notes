@@ -903,3 +903,26 @@ Now things seem to be correct. However, I think a numerically
 analytic orbit ought to be examined to prove that we are getting the
 correct orbit.
 
+4 Sep 07
+
+Did an installation of an exact circular orbit. Seems to give rather
+good accuracy after 100 steps with dt from .1 to 1. (0.7 to 7
+turns). In the vicinity of 1-2 % accuracy in the r over that
+evolution. About 5% deviations with 400 steps (28 revolutions), but
+still only 1-2% for 400 steps 3 revolutions (dt=.1). Thus there's some
+effective collisionality but it is not terribly great. Allows many tens
+of revolutions. This all with 32x32x40 mesh r=1-5.
+
+Tried 100,000 particles with dt=1. Goes at about 2 iterations per second.
+200,000 goes at about 1s per step. No significant difference with dt=.1
+This is without -ffortran-bounds-check.
+
+Using profiling and gprof we get
+
+ 22.81      3.17     3.17 23890368     0.00     0.00  gradinterp_
+ 15.11      5.27     2.10 24594336     0.00     0.00  gradlocalregion_
+ 14.75      7.32     2.05  6148584     0.00     0.00  getfield_
+ 10.54      8.79     1.47  6763776     0.00     0.00  circlesect_
+  6.73      9.72     0.94  6148584     0.00     0.00  interp_
+
+Most of the time is being spent getting the field and in its interpolation.

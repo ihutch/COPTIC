@@ -39,7 +39,8 @@ c Diagnostics
 c      real error(Li,Li,Li)
       real zp(Li,Li),cijp(2*ndims_sor+1,Li,Li)
 c testing arrays
-      real uplot(Li,Li),itemp(ndims)
+      real uplot(Li,Li),xir(ndims)
+      integer itemp(ndims)
       integer id1,id2,idf
 c Initialize ids to silence spurious warnings.
       data id1,id2,idf/0,0,0/
@@ -68,6 +69,9 @@ c Set mesh and mpi parameters.
       iuds(1)=ni
       iuds(2)=nj
       iuds(3)=nk
+      xir(1)=2.
+      xir(2)=2.
+      xir(3)=2.
 
       thetain=.1
       nth=1
@@ -98,6 +102,7 @@ c Pointer to start of vector.
 c Mesh data. Make it extend from -rs to +rs
          do i=1,iuds(id)
             xn(i+iof)=rs*(2*(i-1.)/(iuds(id)-1.) - 1.)
+            if(.false.)then
 c Two region Non-uniform assuming iuds even.
             iu2=iuds(id)/2
 c Uniform -1 to 1:
@@ -112,6 +117,7 @@ c First half of mesh extends to this fraction of the total rs.
                xn(i+iof)=rs*sign(((abs(xi)-xmid)+xs*(1.-abs(xi))),xi)
      $              /(1-xmid)
             endif
+            endif
          enddo
          iof=iof+iuds(id)
 c Mesh size with the faces removed:
@@ -121,6 +127,7 @@ c Mesh size with the faces removed:
 
 c----------------------------------------------------------------
 c INITIALIZATIONS
+      write(*,*)'Initializing the stencil data cij'
 c Initialize cij:
 c Remove edges by starting at (2,2,2,...) and using ium2. Old scheme
 c      ipoint=0
@@ -164,7 +171,7 @@ c fixed boundary, 2-dimensional, when kk=5. 3-d not optimized.
      $     *(1.-0.3*xyimb)
       mi_sor=4*(ni+nj+nk)+20
       eps_sor=1.e-5
-
+c-----------------------------------------------------------------
 c Demonstration of initialization call that returns myid if I need it.
 c Control bit 4 pure initialization, no communication. But don't let
 c it tell us to use internal sor params (1).
@@ -172,14 +179,13 @@ c it tell us to use internal sor params (1).
 c Returns process myid.
       call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
-c      write(*,*)'sormpi Initialization returns',myid
 c End of initializations
 c---------------------------------------------------------------         
 c Control. Bit 1, use my sor parameters, Bit 2 use faddu.
 c      ictl=3
       ictl=1
 c         write(*,*)'Calling sormpi, ni,nj=',ni,nj
-c The main solver call.
+c An initial solver call.
       call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
 
@@ -201,42 +207,47 @@ c-------------------------------------------------------------------
 c Do some analytic checking of the case with a fixed potential sphere
 c inside a logarithmic derivative boundary condition. 1/r solution.
 c Also write out some data for checking.
-         call spherecheck(ifull,iuds,u,phi,rc)
+         if(lplot)then
+            call spherecheck(ifull,iuds,u,phi,rc)
 c Plot some of the initialized data.
-         call solu3plot(ifull,iuds,u,cij,phi,rc,thetain,nth
-     $        ,rs)
+            call solu3plot(ifull,iuds,u,cij,phi,rc,thetain,nth
+     $           ,rs)
+         endif
 c End of plotting.
       endif
 c------------------------------------------------------------------
 c Orbit testing:
-      n_part=1
-      if_part(1)=1
-c We are going to populate this region; so identify it.
-      x_part(1,1)=.9*rs
-      x_part(2,1)=0.
-      x_part(3,1)=0.
-      iregion_part=insideall(ndims,x_part(1,1))
+c We are going to populate the region in which xir lies.
+      iregion_part=insideall(ndims,xir)
+c With a specified number of particles.
+      n_part=200000
       call srand(myid)
-      write(*,*)'Calling pinit'
+      write(*,*)'Initializing',n_part,' particles'
       call pinit()
       write(*,*)'Return from pinit'
-      norbits=1
-      dt=.025 
+c Pinit resets x_part. So set it again for the special first particle.
       x_part(1,1)=2.
       x_part(2,1)=0.
-c      x_part(1,1)=0.
-c      x_part(2,1)=-.4
       x_part(3,1)=0.
-      x_part(4,1)=2*dt
-      x_part(5,1)=1.1
+      dt=.1
+c Prior half-step radial velocity
+      x_part(4,1)=0.5*dt*(abs(phi)/x_part(1,1)**2)
+c Tangential velocity of circular orbit at r=4.
+      x_part(5,1)=sqrt(abs(phi/x_part(1,1))-x_part(4,1)**2)
       x_part(6,1)=0.
-c Already set.
-c      do id=1,ndims
-c         ium2(id)=iuds(id)-2
-c      enddo
-      rhoinf=1.     !for now.
-      do j=1,10
-         write(*,'(i4,i4''  x_p='',6f10.5)')j,ierr, (x_part(k,1),k=1,6)
+      nsteps=10.
+      write(*,*)'dt=',dt,' dtheta=',dt*x_part(5,1)/x_part(1,1),
+     $     ' steps=',nsteps,' total theta/2pi='
+     $     ,nsteps*dt*x_part(5,1)/x_part(1,1)/2./3.1415927
+
+c Follow the first norbits particles.
+      norbits=5
+
+c Turn off self field.
+      rhoinf=1.e20     !for now.
+      do j=1,nsteps
+         write(*,'(i4,i4''  x_p='',7f9.5)')j,ierr, (x_part(k,1),k=1,6)
+     $        ,sqrt(x_part(1,1)**2+x_part(2,1)**2)
          call zero3array(psum,iLs,ni,nj,nk)
          call chargetomesh(psum,iLs,diags)
 c Convert psums to charge, q. Remember external psumtoq!
@@ -288,10 +299,11 @@ c Contour without labels, with coloring, using vector coordinates.
       call color(13)
       call circleplot(0.,0.,rs)
       call circleplot(0.,0.,rc)
-      call color(5)
-      call polyline(xorbit,yorbit,iorbitlen(1))
-c      call autoplot(xorbit,yorbit,iorbitlen(1))
-      call polymark(xorbit,yorbit,iorbitlen(1),1)
+      do kk=1,norbits
+         call color(kk)
+         call polyline(xorbit(1,kk),yorbit(1,kk),iorbitlen(kk))
+         call polymark(xorbit(1,kk),yorbit(1,kk),iorbitlen(kk),3)
+      enddo
       call pltend()
 
 c-------------------------------------------------------------------
@@ -546,7 +558,8 @@ c      real uplot(ifmax,ifmax)
       real rfield(ifmax),tfield(ifmax)
       real rprime(ifmax),xprime(ndims,ifmax)
       real xfrac(ndims),xff(ndims),upnd(ndims,ifmax)
-      real upsimple(ndims,ifmax),itemp(ndims)
+      real upsimple(ndims,ifmax)
+      integer itemp(ndims)
       real rsimple(ifmax),region(ifmax)
       parameter (mdims=10)
       integer iLs(mdims+1)

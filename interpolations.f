@@ -2,6 +2,7 @@ c Interpolations.
       function boxinterp(ndm1,f,flags,d)
       real f(ndm1,ndm1),d(ndm1)
       integer flags(ndm1)
+      boxinterp=0.
       if(ndm1.eq.1)then
          boxinterp=box1interp(f,flags,d)
       elseif(ndm1.eq.2)then

@@ -76,12 +76,13 @@ c from the unit variance random distribution multiplied by sqrt(Ti)=vscale.
       xr(5)=((vr*st+ vt*ct)*sp + vp*cp)*vscale
       xr(4)=((vr*st+ vt*ct)*cp - vp*sp)*vscale
 
-      xr(3)=-rs*ct
-      xr(2)=-(rs*st)*sp
-      xr(1)=-(rs*st)*cp
+      rfrac=0.9999
+      xr(3)=-rfrac*rs*ct
+      xr(2)=-rfrac*rs*st*sp
+      xr(1)=-rfrac*rs*st*cp
 
 c      write(*,'(''Reinject vr,vt,vp='',3f8.3)') vr,vt,vp
-      write(*,'(''Reinject i,xr=''i6,6f8.3)')i,(xr(kk),kk=1,6)
+c      write(*,'(''Reinject i,xr=''i6,6f8.3)')i,(xr(kk),kk=1,6)
 
 c      vv2=vt**2 + vr**2 + vp**2
 c Do the outer flux accumulation.

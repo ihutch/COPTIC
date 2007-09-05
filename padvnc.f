@@ -59,8 +59,6 @@ c     $              ,xn(ixnp(idf)+int(x_part(ndimsx2+idf,i)))
      $              ,idf
      $              ,x_part(ndimsx2+1,i)
      $              ,iregion,field(idf))
-c analytic hack for testing.
-c            field(idf)=-x_part(idf,i)*2.*.18/r**3
             enddo
 
 c         write(*,'(''iu='',i6,'' field,anal='',6f9.5)')iu,
@@ -76,7 +74,6 @@ c Move
             enddo          
 
             inewregion=insideall(ndims,x_part(1,i))
-
             if(inewregion.ne.iregion) then
 c We left the region. Reinject.
                call reinject(i,x_part(1,i))
