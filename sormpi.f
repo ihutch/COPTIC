@@ -94,10 +94,17 @@ c Control Functions:
       ictlh=ictl
 c First bit of ictlh indicates if sorctl preset or defaults.
       if(mod(ictlh,2).eq.0)then
-         xyimb=(max(iuds(1),iuds(2))*2.)/float(iuds(1)+iuds(2)) - 1.
-         xjac_sor=1.- (4./max(10,(iuds(1)+iuds(2))/2)**2)
-     $        *(1.-0.3*xyimb)
-         mi_sor=2.*(iuds(1)+iuds(2))+10
+c This jacobi radius is pretty much optimized for Poisson equation with
+c fixed boundary, 3-D, but is supposed to be general dimensional.
+         maxlen=0
+         sumlen=0
+         do k=1,ndims
+            sumlen=sumlen+iuds(k)
+            if(iuds(k).gt.maxlen)maxlen=iuds(k)
+         enddo
+         xyimb=ndims*maxlen/sumlen - 1.
+         xjac_sor=1.- (5./max(10.,sumlen/ndims)**2)*(1.-0.3*xyimb)
+         mi_sor=2.*sumlen+20
          eps_sor=1.e-5
       endif
 c Second bit of ictlh indicates if there's additional term.

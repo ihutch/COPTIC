@@ -493,3 +493,46 @@ c Finished.
 
       end
 c**********************************************************************
+c************************************************************************
+      subroutine cijedge(inc,ipoint,indi,ndims,iused,cij)
+c Edge routine which sets the iregion for all boundary points.
+      integer ipoint,inc
+      integer indi(ndims),iused(ndims)
+      real cij(*)
+      parameter (mdims=10)
+c Structure vector needed for finding adjacent u values.
+c Can't be passed here because of mditerate argument conventions.
+      integer iLs(mdims+1)
+      common /iLscom/iLs
+
+      icb=2*ndims+1
+      icij=icb*ipoint+icb
+c Algorithm: if on a boundary face of dimension >1, steps of 1 (dim 1).
+c Otherwise steps of iused(1)-1 or 1 on first or last (of dim 1).
+      inc=1
+c Start object data for this point if not already started.
+      call objstart(cij(icij),ist,ipoint)
+c Calculate the increment:
+      do n=ndims,2,-1
+         if(indi(n).eq.0)then
+c On boundary face 0 of dimension n>1. Break.
+            goto 101
+         elseif(indi(n).eq.iused(n)-1)then
+c On boundary face iused(n) of dimension n>1. Break.
+            goto 101
+         endif
+      enddo
+c This is where the boundary setting is done for n=1
+      if(indi(n).eq.0)then
+         inc=(iused(1)-1)
+      elseif(indi(n).eq.iused(n)-1)then
+         inc=1
+      else
+         write(*,*)'CIJEDGE Error. We should not be here',
+     $        n,ipoint,indi,inc
+         stop
+      endif
+ 101  continue
+c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
+      end
+c****************************************************************

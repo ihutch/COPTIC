@@ -4,8 +4,8 @@ c
 c Storage array spatial count size
       integer Li,ni,nj,nk
 c      parameter (Li=100,ni=40,nj=40,nk=16)
-c      parameter (Li=100,ni=16,nj=16,nk=20)
-      parameter (Li=100,ni=32,nj=32,nk=40)
+      parameter (Li=100,ni=16,nj=16,nk=20)
+c      parameter (Li=100,ni=32,nj=32,nk=40)
       real u(Li,Li,Li),q(Li,Li,Li),cij(2*ndims_sor+1,Li,Li,Li)
       real psum(Li,Li,Li)
 c Used dimensions, Full dimensions. Used dims-2
@@ -33,21 +33,27 @@ c Plasma common data
       external bdyset,faddu,cijroutine,cijedge,psumtoq
       character*100 form1,argument
       common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
-      logical lplot,l1plot
+      logical lplot,lcijplot,lsliceplot,lorbitplot
 
 c Diagnostics
 c      real error(Li,Li,Li)
       real zp(Li,Li),cijp(2*ndims_sor+1,Li,Li)
 c testing arrays
-      real uplot(Li,Li),xir(ndims)
-      integer itemp(ndims)
-      integer id1,id2,idf
-c Initialize ids to silence spurious warnings.
-      data id1,id2,idf/0,0,0/
+      real xir(ndims)
 c Set up the structure vector.
       data iLs/1,Li,(Li*Li),(Li*Li*Li)/
-c-------------------------------------------------------------
+c Mesh and mpi parameter defaults:
+      data idims/nblksi,nblksj,nblksk/
+      data ifull/Li,Li,Li/
+      data iuds/ni,nj,nk/
+c Point which lies in the plasma region:
+      data xir/2.,2.,2./
+c Data for plotting etc.
+      data lplot,lcijplot,lsliceplot,lorbitplot/
+     $     .false.,.false.,.false.,.false./
+      data thetain,nth/.1,1/
 
+c-------------------------------------------------------------
 c Geometry information read in.
       call readgeom('ccpicgeom.dat')
 c First object is sphere of radius rc and potential phi.
@@ -58,81 +64,26 @@ c Second object is bounding sphere of radius rs.
 c But use a tad more for the mesh size
       rs=obj_geom(5,2)*1.00001
 
-c Default values, may be overridden by arguments.
-c Set mesh and mpi parameters.
-      idims(1)=nblksi
-      idims(2)=nblksj
-      idims(3)=nblksk
-      ifull(1)=Li
-      ifull(2)=Li
-      ifull(3)=Li
-      iuds(1)=ni
-      iuds(2)=nj
-      iuds(3)=nk
-      xir(1)=2.
-      xir(2)=2.
-      xir(3)=2.
-
-      thetain=.1
-      nth=1
-      lplot=.true.
-      l1plot=.false.
-
-c Places where plotting occurs.
-      n0=nj/2
-      n1=nk/2
-      if(ndims.lt.3)n1=1
 c--------------------------------------------------------------
 c Deal with arguments
 c      if(iargc().eq.0) goto "help"
       do i=1,iargc()
          call getarg(i,argument)
-         if(argument(1:3).eq.'-p ') lplot=.false.
-         if(argument(1:3).eq.'-p1') l1plot=.true.
+         if(argument(1:3).eq.'-p ') lplot=.true.
+         if(argument(1:3).eq.'-pc') lcijplot=.true.
+         if(argument(1:3).eq.'-ps') lsliceplot=.true.
+         if(argument(1:3).eq.'-po') lorbitplot=.true.
          if(argument(1:2).eq.'-t')read(argument(3:),*)thetain
          if(argument(1:2).eq.'-n')read(argument(3:),*)nth
            
       enddo
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
-      iof=0
-      do id=1,ndims
-c Pointer to start of vector.
-         ixnp(id)=iof
-c Mesh data. Make it extend from -rs to +rs
-         do i=1,iuds(id)
-            xn(i+iof)=rs*(2*(i-1.)/(iuds(id)-1.) - 1.)
-            if(.false.)then
-c Two region Non-uniform assuming iuds even.
-            iu2=iuds(id)/2
-c Uniform -1 to 1:
-            xi=(i-iu2-0.5)/(iu2-0.5)
-c Half of mesh at each spacing
-            xmid=0.5
-c First half of mesh extends to this fraction of the total rs.
-            xs=0.25
-            if(abs(xi).lt.xmid)then
-               xn(i+iof)=rs*xs*xi/xmid
-            else
-               xn(i+iof)=rs*sign(((abs(xi)-xmid)+xs*(1.-abs(xi))),xi)
-     $              /(1-xmid)
-            endif
-            endif
-         enddo
-         iof=iof+iuds(id)
-c Mesh size with the faces removed:
-         ium2(id)=iuds(id)-2
-      enddo
-      ixnp(ndims+1)=iof
-
+      call meshconstruct(ndims,iuds,ium2,rs)
 c----------------------------------------------------------------
 c INITIALIZATIONS
       write(*,*)'Initializing the stencil data cij'
 c Initialize cij:
-c Remove edges by starting at (2,2,2,...) and using ium2. Old scheme
-c      ipoint=0
-c      call mditerate(ndims,ifull,ium2,cijroutine,
-c     $     cij(1,2,2,2),ipoint)
 c New scheme. Pass whole cij but give offset of one in each dimension.
       ipoint=iLs(1)+iLs(2)+iLs(3)
 c      write(*,*)ipoint,iLs
@@ -155,53 +106,28 @@ c The following requires include objcom.f
       write(*,*)'Finished mesh setup. Used No of pointers:',oi_sor
 c      write(*,*)'Finished mesh setup.'
 c      write(*,'(a,8f8.1)')'cij(*,3,3,3)=',(cij(i,3,3,3),i=1,nd2+1)
-      if(lplot)call cijplot(ndims,ifull,iuds,cij,rs)
+      if(lcijplot)call cijplot(ndims,ifull,iuds,cij,rs)
 
 c Initialize charge
       call zero3array(q,iLs,ni,nj,nk)
-
-c Set the SOR parameters.
-c For possibly different jacobi convergence radius parameters.
-c 7 is a pretty good value in 3-d.
-      kk=7
-c This jacobi radius is pretty much optimized for Poisson equation with
-c fixed boundary, 2-dimensional, when kk=5. 3-d not optimized.
-      xyimb=(max(ni,nj)*2.)/float(ni+nj) - 1.
-      xjac_sor=1.- ((kk/5.)*4./max(10,(ni+nj)/2)**2)
-     $     *(1.-0.3*xyimb)
-      mi_sor=4*(ni+nj+nk)+20
-      eps_sor=1.e-5
-c-----------------------------------------------------------------
-c Demonstration of initialization call that returns myid if I need it.
-c Control bit 4 pure initialization, no communication. But don't let
-c it tell us to use internal sor params (1).
-         ictl=5
-c Returns process myid.
-      call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
-     $     ,myid,idims)
-c End of initializations
 c---------------------------------------------------------------         
-c Control. Bit 1, use my sor parameters, Bit 2 use faddu.
-c      ictl=3
-      ictl=1
+c Control. Bit 1, use my sor parameters (not here). Bit 2 use faddu.
+c Control bit 4 pure initialization, no communication (to get myid).
+c      ictl=2
+      ictl=0
 c         write(*,*)'Calling sormpi, ni,nj=',ni,nj
 c An initial solver call.
       call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
+      write(*,*)ierr
 
       if(myid.eq.0)then
 c------------------------------------------------------------------
-         if(ierr.lt.0)then
-            write(*,*)'Not converged.'
-     $        ,ierr
-            write(*,*) 'mi_sor,k_sor,xjac_sor,del_sor',
-     $           mi_sor,k_sor,xjac_sor,del_sor,myid
-c         if(ni+nj.lt.40) then
-c            write(form1,'(''('',i4,''f8.5)'')')nj
-c            write(*,*)'u='
-c            write(*,form1)((u(i,j,n1),j=1,nj),i=1,ni)
+c         if(ierr.lt.0)then
+c            write(*,*)'Not converged.',ierr
+c            write(*,*) 'mi_sor,k_sor,xjac_sor,del_sor',
+c     $           mi_sor,k_sor,xjac_sor,del_sor,myid
 c         endif
-         endif
 c-------------------------------------------------------------------
 c-------------------------------------------------------------------
 c Do some analytic checking of the case with a fixed potential sphere
@@ -209,23 +135,23 @@ c inside a logarithmic derivative boundary condition. 1/r solution.
 c Also write out some data for checking.
          if(lplot)then
             call spherecheck(ifull,iuds,u,phi,rc)
-c Plot some of the initialized data.
+c Plot some of the initial-solver data.
             call solu3plot(ifull,iuds,u,cij,phi,rc,thetain,nth
      $           ,rs)
          endif
 c End of plotting.
       endif
 c------------------------------------------------------------------
-c Orbit testing:
 c We are going to populate the region in which xir lies.
       iregion_part=insideall(ndims,xir)
 c With a specified number of particles.
-      n_part=200000
+      n_part=2
       call srand(myid)
       write(*,*)'Initializing',n_part,' particles'
       call pinit()
       write(*,*)'Return from pinit'
-c Pinit resets x_part. So set it again for the special first particle.
+c A special orbit.
+c Pinit resets x_part. So set it for the special first particle.
       x_part(1,1)=2.
       x_part(2,1)=0.
       x_part(3,1)=0.
@@ -261,177 +187,26 @@ c         call diag3array(q,iLs,ni,nj,nk)
          call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
 c         write(*,*)'Sormpi iterations:',ierr
-         if(lplot)
+         if(lsliceplot)
      $        call slice3web(ifull,iuds,u,cij,Li,zp,cijp,ixnp,xn,ifix,
      $           'potential:'//'!Ay!@')
 c
          call padvnc(ndims,cij,u,iLs)
       enddo
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
-
-c Calculate some stuff for contour plot.
-      idf=3
-      id1=mod(idf,3)+1
-      id2=mod(idf+1,3)+1
-      ifixed=nk/2
-      if(.true.)then
-         do i=1,iuds(id1)
-            do j=1,iuds(id2)
-               itemp(idf)=ifixed
-               itemp(id1)=i
-               itemp(id2)=j
-               uplot(i,j)=u(itemp(1),itemp(2),itemp(3))
-            enddo
-c               write(*,'(10f8.4)')(uplot(i,j),j=1,iuds(id2))
-         enddo
-      endif
-      call dashset(0)
-      nf1=iuds(id1)
-      nf2=iuds(id2)
-      call pltinit(-rs,rs,-rs,rs)
-c Contour without labels, with coloring, using vector coordinates.
-      zclv=20.
-      icl=0
-      call contourl(uplot,zp,Li,nf1,nf2,zclv,icl,
-     $        xn(ixnp(id1)+1),xn(ixnp(id2)+1),17)
-      call color(15)
-      call axis()
-      call color(13)
-      call circleplot(0.,0.,rs)
-      call circleplot(0.,0.,rc)
-      do kk=1,norbits
-         call color(kk)
-         call polyline(xorbit(1,kk),yorbit(1,kk),iorbitlen(kk))
-         call polymark(xorbit(1,kk),yorbit(1,kk),iorbitlen(kk),3)
-      enddo
-c      call pltend()
-
+      
+      if(lorbitplot)call orbit3plot(ifull,iuds,u,phi,rc,rs)
 c-------------------------------------------------------------------
       call MPI_FINALIZE(ierr)
       end
 c**********************************************************************
-c**********************************************************************
-c      subroutine bdyset0(ndims,ifull,iuds,cij,u,q)
-c     Null version
-c      end
-c**********************************************************************
-      subroutine bdyset(ndims,ifull,iuds,cij,u,q)
-      integer ndims,ifull(ndims),iuds(ndims)
-      real cij(*),u(*),q(*)
-      external bdy3slope
-c set the derivative to zero on boundaries 3.
-      ipoint=0
-      call mditerate(ndims,ifull,iuds,bdy3slope,u,ipoint)
+c********************************************************************
+c Default plasma data.
+      block data plascomset
+      include 'plascom.f'
+      data debylen,Ti,vd,rs/1.,1.,0.,5./
+c      data debylen,Ti,vd,rs/1.,1.,0.,.45/
 
-c set the second derivative to zero on max j
-c      do i=2,ni-1
-c         u(i,nj)=relax*(2.*u(i,nj-1)-u(i,nj-2)) +(1.-relax)*u(i,nj)
-c      enddo
-      end
-c**********************************************************************
-c     L(u) + f(u) = q(x,y,...), 
-c     where L is a second order elliptical differential operator 
-c     represented by a difference stencil of specified coefficients,
-c     f is some additional function, and q is the "charge density".
-c f is exp(u) here for Boltzmann electrons and densities normalized
-c to unity at infinity.
-      real function faddu(u,fprime)
-      real u,fprime
-      fprime=exp(u)
-      faddu=fprime
-      end
-c************************************************************************
-      subroutine bdy3slope(inc,ipoint,indi,ndims,iused,u)
-c Version of bdyroutine that sets derivative=0 on 3-boundary.
-      integer ipoint,inc
-      integer indi(ndims),iused(ndims)
-      real u(*)
-
-      parameter (mdims=10)
-c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerate argument conventions.
-      integer iLs(mdims+1)
-      common /iLscom/iLs
-
-c Algorithm: if on a boundary face of dimension >1, steps of 1 (dim 1).
-c Otherwise steps of iused(1)-1 or 1 on first or last (of dim 1).
-      inc=1
-      do n=ndims,2,-1
-         if(indi(n).eq.0)then
-c On boundary face 0 of dimension n>1. Break.
-c This is where we put boundary setting for n>1
-            u(ipoint+1)=0.
-            if(n.eq.3)then
-c Second derivative is zero:
-c               u(ipoint+1)=2.*u(ipoint+1+iLs(n))-u(ipoint+1+2*iLs(n)
-c First derivative is zero:
-               u(ipoint+1)=u(ipoint+1+iLs(n))
-            endif
-            goto 101
-         elseif(indi(n).eq.iused(n)-1)then
-c On boundary face iused(n) of dimension n>1. Break.
-            u(ipoint+1)=0.
-            if(n.eq.3) u(ipoint+1)=u(ipoint+1-iLs(n))
-            goto 101
-         endif
-      enddo
-c     We are not on any higher boundary.
-c This is where the boundary setting is done for n=1
-      u(ipoint+1)=0.
-      if(indi(n).eq.0)then
-         inc=iused(1)-1
-      elseif(indi(n).eq.iused(n)-1)then
-         inc=1
-      else
-         write(*,*)'BDY Error. We should not be here',
-     $        n,ipoint,indi
-         stop
-      endif
- 101  continue
-c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
-
-      end
-c************************************************************************
-      subroutine cijedge(inc,ipoint,indi,ndims,iused,cij)
-c Edge routine which sets the iregion for all boundary points.
-      integer ipoint,inc
-      integer indi(ndims),iused(ndims)
-      real cij(*)
-      parameter (mdims=10)
-c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerate argument conventions.
-      integer iLs(mdims+1)
-      common /iLscom/iLs
-
-      icb=2*ndims+1
-      icij=icb*ipoint+icb
-c Algorithm: if on a boundary face of dimension >1, steps of 1 (dim 1).
-c Otherwise steps of iused(1)-1 or 1 on first or last (of dim 1).
-      inc=1
-c Start object data for this point if not already started.
-      call objstart(cij(icij),ist,ipoint)
-c Calculate the increment:
-      do n=ndims,2,-1
-         if(indi(n).eq.0)then
-c On boundary face 0 of dimension n>1. Break.
-            goto 101
-         elseif(indi(n).eq.iused(n)-1)then
-c On boundary face iused(n) of dimension n>1. Break.
-            goto 101
-         endif
-      enddo
-c This is where the boundary setting is done for n=1
-      if(indi(n).eq.0)then
-         inc=(iused(1)-1)
-      elseif(indi(n).eq.iused(n)-1)then
-         inc=1
-      else
-         write(*,*)'CIJEDGE Error. We should not be here',
-     $        n,ipoint,indi,inc
-         stop
-      endif
- 101  continue
-c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
       end
 c*********************************************************************
       subroutine zero3array(array,iLs,ni,nj,nk)
@@ -462,255 +237,39 @@ c*********************************************************************
          enddo
       enddo
       end
-
-c********************************************************************
-c Default plasma data.
-      block data plascomset
-      include 'plascom.f'
-      data debylen,Ti,vd,rs/1.,1.,0.,5./
-c      data debylen,Ti,vd,rs/1.,1.,0.,.45/
-
-      end
-c********************************************************************
-      subroutine circleplot(xc,yc,r)
-      integer nangle
-      parameter (nangle=100,pi=3.1415927)
-
-      ip=0
-      do i=1,nangle
-         t=2.*pi*(i-1)/(nangle-1)
-         xp=xc+r*cos(t)
-         yp=yc+r*sin(t)
-         call vecw(xp,yp,ip)
-         if(i.eq.1)ip=1
-      enddo
-      end
-c********************************************************************
-      subroutine spherecheck(ifull,iuds,u,phi,rc)
-c Do some analytic checking of the case with a fixed potential sphere
-c inside a logarithmic derivative boundary condition. 1/r solution.
+c*******************************************************************
+      subroutine meshconstruct(ndims,iuds,ium2,rs)
+      integer iuds(ndims),ium2(ndims)
       include 'meshcom.f'
-      integer iuds(3),ifull(3)
-      real u(ifull(1),ifull(2),ifull(3))
-      errmax=0.
-      errvar=0.
-      count=0
-      do i=2,iuds(1)-1
-         do j=2,iuds(2)-1
-            do k=2,iuds(3)-1
-               xr=xn(i)
-               yr=xn(iuds(1)+j)
-               zr=xn(iuds(1)+iuds(2)+k)
-               r=sqrt(xr**2+yr**2+zr**2)
-               if(abs(u(i,j,k)).gt.1.e-4 .and.
-     $              r.ge.rc)then
-                  count=count+1.
-                  e=u(i,j,k)-phi*rc/r
-c                     error(i,j,k)=e
-                  errvar=errvar+e**2
-                  if(abs(e).gt.abs(errmax))errmax=e
-c                  else
-c                     error(i,j,k)=0.
-               endif
-            enddo
+
+      iof=0
+      do id=1,ndims
+c Pointer to start of vector.
+         ixnp(id)=iof
+c Mesh data. Make it extend from -rs to +rs
+         do i=1,iuds(id)
+            xn(i+iof)=rs*(2*(i-1.)/(iuds(id)-1.) - 1.)
+            if(.false.)then
+c Two region Non-uniform assuming iuds even.
+            iu2=iuds(id)/2
+c Uniform -1 to 1:
+            xi=(i-iu2-0.5)/(iu2-0.5)
+c Half of mesh at each spacing
+            xmid=0.5
+c First half of mesh extends to this fraction of the total rs.
+            xs=0.25
+            if(abs(xi).lt.xmid)then
+               xn(i+iof)=rs*xs*xi/xmid
+            else
+               xn(i+iof)=rs*sign(((abs(xi)-xmid)+xs*(1.-abs(xi))),xi)
+     $              /(1-xmid)
+            endif
+            endif
          enddo
+         iof=iof+iuds(id)
+c Mesh size with the faces removed:
+         ium2(id)=iuds(id)-2
       enddo
-      errvar=errvar/count
-      write(*,*)'Max phi error=',errmax,
-     $     ' Standard Deviation=',sqrt(errvar)
-c Rarely needed printout of u:
-c      iform=7
-c      uscale=10000000.
-c      call udisplay(ndims,u,ifull,iuds,iform,uscale)
-c Write some data out for cross checking
-c Delete the file first to help with nfs problems.
-         open(21,file='smt.round',status='unknown')
-         close(21,status='delete')
-         open(21,file='smt.round',status='unknown')
-         write(21,*)iuds(1),iuds(2),iuds(3)/2
-         write(21,'(6e12.4)')
-     $        ((u(i,j,iuds(3)/2),i=1,iuds(1)/2),j=1,iuds(2)/2)
-         close(21)
-c This file has full accuracy.
-         open(20,file='smt.out',status='unknown')
-         close(20,status='delete')
-         open(20,file='smt.out',status='unknown')
-         write(20,*)iuds(1),iuds(2),iuds(3)/2
-         write(20,*)
-     $        ((u(i,j,iuds(3)/2),i=1,iuds(1)/2),j=1,iuds(2)/2)
-         close(20)
-      end
-c***************************************************************
-c Packaged version of plotting.
-      subroutine solu3plot(ifull,iuds,u,cij,phi,rc,thetain,nth
-     $     ,rs)
-      parameter (ndims=3,nd2=ndims*2)
-      integer ifull(ndims),iuds(ndims)
-      real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
-      real u(ifull(1),ifull(2),ifull(3))
-      integer ifmax
-      parameter (ifmax=100,Li=ifmax)
-      real cijp(2*ndims+1,ifmax,ifmax)
-      real zp(ifmax,ifmax)
-      real z(ifmax),xp(ifmax)
-c      real uplot(ifmax,ifmax)
-      real zero(ifmax),uanal(ifmax)
-      real rfield(ifmax),tfield(ifmax)
-      real rprime(ifmax),xprime(ndims,ifmax)
-      real xfrac(ndims),xff(ndims),upnd(ndims,ifmax)
-      real upsimple(ndims,ifmax)
-      integer itemp(ndims)
-      real rsimple(ifmax),region(ifmax)
-      parameter (mdims=10)
-      integer iLs(mdims+1)
-      common /iLscom/iLs
+      ixnp(ndims+1)=iof
 
-      character*40 form1
-      include 'meshcom.f'
-      include '3dcom.f'
-
-c Start of plotting section.
-c Places where plotting occurs.
-
-c      write(*,*)'In solu3plot',ifull,iuds,rc,thetain,nth
-      n0=iuds(2)/2
-      n1=iuds(3)/2
-      idf=3
-      id1=mod(idf,3)+1
-      id2=mod(idf+1,3)+1
-      ifixed=iuds(3)/2
-      do i=1,iuds(1)
-         xr=xn(i)
-         yr=xn(iuds(1)+n0)
-         zr=xn(iuds(1)+iuds(2)+n1)
-         r=sqrt((xr-.0)**2+(yr-.0)**2+(zr-.0)**2)
-         z(i)=phi*rc/r
-         xp(i)=xr
-c         write(*,*)i,xr
-      enddo
-      call autoplot(xp,u(1,n0,n1),iuds(1))
-      call color(ibrickred())
-      call polyline(xp,z,iuds(1))
-      call color(15)
-      call pltend()
-c Plotting slices.
-      ifix=3
-      call slice3web(ifull,iuds,u,cij,Li,zp,cijp,ixnp,xn,ifix,
-     $     'potential:'//'!Ay!@')
-c-------------------------------------------------------------------
-c Different lines:
-c Spherical angles in 3-D
-      do iti=1,nth
-         theta=thetain*iti
-         varphi=0.
-         ct=cos(theta)
-         st=sin(theta)
-         cp=cos(varphi)
-         sp=sin(varphi)
-         write(*,*)'Starting uprime calculation'
-         do i=1,Li
-            zero(i)=0.
-            rp=rs*(i)/(Li-1)
-            rprime(i)=rp
-c Coordinates relative to center of first object (sphere).
-            xprime(1,i)=rp*st*cp + obj_geom(ocenter,1)  
-            xprime(2,i)=rp*st*sp + obj_geom(ocenter+1,1)  
-            xprime(3,i)=rp*ct + obj_geom(ocenter+2,1)  
-            
-            iregion=insideall(ndims,xprime(1,i))
-c Calculate fractional mesh positions of this point, always positive.
-c Thus the origin of the box is below point in all dimensions.
-            do id=1,ndims
-c Offset to start of idf position array.
-               ioff=ixnp(id)
-c xn is the position array for each dimension arranged linearly.
-c Find the index of xprime in the array xn:
-               ix=interp(xn(ioff+1),ixnp(id+1)-ioff,xprime(id,i),xm)
-c                  ix=xm
-               xff(id)=xm
-               xfrac(id)=xm-ix
-               itemp(id)=ix
-            enddo
-            
-c Get the ndims field components at this point.
-c               write(*,*)'xfrac',(xfrac(kk),kk=1,ndims)
-c     $              ,(xprime(kk,i),kk=1,ndims)
-            do idf=1,ndims
-               ioff=ixnp(idf)
-               if(.false.)then
-c Old approach
-               call getfield(
-     $              ndims
-     $              ,cij(nd2+1,itemp(1),itemp(2),itemp(3))
-     $              ,u(itemp(1),itemp(2),itemp(3))
-     $              ,iLs
-     $              ,xn(ioff+itemp(idf)),idf
-     $              ,xfrac,iregion,upnd(idf,i))
-               else
-c New approach mirrors padvnc.
-               call getfield(
-     $              ndims
-     $              ,cij(nd2+1,1,1,1)
-     $              ,u,iLs,xn(ixnp(idf)+1),idf
-     $              ,xff,iregion,upnd(idf,i))
-               endif
-               call getsimple3field(
-     $              ndims,u(itemp(1),itemp(2),itemp(3))
-     $              ,iLs,xn(ioff+itemp(idf)),idf
-     $              ,xfrac,upsimple(idf,i))
-            enddo
-
-c Radial component of field
-            rfield(i)=
-     $           upnd(1,i)*st*cp +
-     $           upnd(2,i)*st*sp +
-     $           upnd(3,i)*ct
-            rsimple(i)=
-     $           upsimple(1,i)*st*cp +
-     $           upsimple(2,i)*st*sp +
-     $           upsimple(3,i)*ct
-c Tangential component (magnitude) of field
-            tfield(i)=-sqrt(max(0.,
-     $           upnd(1,i)**2+upnd(2,i)**2+upnd(3,i)**2
-     $           -rfield(i)**2))
-
-c Analytic comparison.
-            uanal(i)=phi*rc/(rprime(i)**2)
-c               write(*,'(''i,rprime,rfield,uanal(i)'',i4,4f10.5)')
-c     $              i,rprime(i),rfield(i),uanal(i)
-c     $              ,rsimple(i)
-c Region of point
-            region(i)=-0.1*insideall(ndims,xprime(1,i))
-         enddo
-         write(*,*)'Ended uprime calculation'
-         call dashset(0)
-         if(iti.eq.1)then
-            call autoplot(rprime,rfield(1),Li)
-            call axis2()
-            call winset(.true.)
-            call dashset(4)
-            call color(ired())
-            call polyline(rprime,uanal,Li)
-            call winset(.false.)
-c            call polyline(xprime,upregion,Li)
-            call color(iblue())
-            call dashset(3)
-            call polyline(rprime,rsimple(1),Li)
-         else
-            call polyline(rprime,rfield(1),Li)
-         endif
-         call dashset(2)
-         call color(idarkgreen())
-         call polyline(rprime,tfield(1),Li)
-         call color(13)
-         call polyline(rprime,region,Li)
-         call color(15)
-         call winset(.false.)
-         form1='!Aq!@='
-         call fwrite(180*theta/3.1415926,iwdth,1,form1(7:))
-         call jdrwstr(.01,.1,form1,1.)
-      enddo
-      call dashset(0)
-      call pltend()
-c-------------------------------------------------------------------
       end
