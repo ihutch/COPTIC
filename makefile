@@ -17,7 +17,7 @@ PROFILING= -pg
 # then run 'make' to completion first. It is something to do with the
 # match-anything rules and prerequisites. I think that the rule is being
 # interpreted as "terminal" which means it does not apply unless its
-# prerequisites exists. By my interpretation of the info, this ought not
+# prerequisites exist. By my interpretation of the info, this ought not
 # to be happening (requires a double colon), but on horace, it is. 
 % : %.f  makefile $(OBJECTS) $(UTILITIES)
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
@@ -26,12 +26,9 @@ PROFILING= -pg
 	$(G77)  -c $(COMPILE-SWITCHES) $(PROFILING) $*.f
 
 #default target
-smt.out : sormpitest
+smt.out : ccpic
 	if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
-#	mpiexec -n 8 ./sormpitest -p
-#	mpiexec -n 1 ./sormpitest -p
-	./sormpitest -p
-#	diff testing/smt.fixed smt.out
+	./ccpic -p
 	diff smt.prev smt.out
 
 # Things to compile without the standard switches
@@ -42,8 +39,9 @@ interpolations.o : interpolations.f makefile $(HEADERS)
 getfield.o : getfield.f makefile $(HEADERS)
 	$(G77)  -c $(NOBOUNDS) $(PROFILING) $*.f
 
-sormpitest : sormpitest.f makefile $(OBJECTS) $(UTILITIES)
-	$(G77)  -o sormpitest $(COMPILE-SWITCHES) sormpitest.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+# Main program explicit to avoid make bugs:
+ccpic : ccpic.f makefile $(OBJECTS) $(UTILITIES)
+	$(G77)  -o ccpic $(COMPILE-SWITCHES) ccpic.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
 clean :
 	rm -f *.o $(TARGETS)

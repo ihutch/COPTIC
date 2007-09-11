@@ -29,10 +29,6 @@ c-----------------------------------------------------
       integer istart
       data istart/0/
 
-c      do id=1,ndims
-c  We were using shifted arrays; indi is here the true index.
-c         indi(id)=indm1(id)+1
-c      enddo
 c ipoint here is the offset (zero-based pointer)
 c The cij address is to data 2*ndims+1 long
       icb=2*ndims+1
@@ -59,9 +55,6 @@ c Determine whether this is a boundary point: adjacent a fraction ne 1.
             if(fraction(i).lt.1. .and. fraction(i).ge.0.)then
                ifound=ifound+1
 c Start object data for this point if not already started.
-c In the reverse pointer we correct for the fact that this routine
-c is called from cij(2,2,2). Thus the reverse pointer points to the 
-c place in the full cij array. Not yet done.
                call objstart(cij(icij),ist,ipoint)
 c Calculate dplus and deff for this direction.
 c dplus becomes dminus for the other direction.
@@ -203,7 +196,7 @@ c This drastically reduces the number of boxes counted.
 c Also in 3-D it limits additions to 6-intersection cases.
             if(ftot.gt.2.)then
                itemp=istart
-c Conditionally start the object: only if it does not alread exist.
+c Conditionally start the object: only if it does not already exist.
                call objstart(cij(icij),istart,ipoint)
 c Set the flag
                ifl=2**(j-1)

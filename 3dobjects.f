@@ -75,7 +75,7 @@ c         write(*,*)
 
       end
 c****************************************************************
-      subroutine circlesect(id,ipm,ndims,indi,rc,xc,fraction,dp)
+      subroutine spheresect(id,ipm,ndims,indi,rc,xc,fraction,dp)
 c For mesh point indi() find the nearest intersection of the leg from
 c this point to the adjacent point in dimension id, direction ipm, with
 c the ndims-dimensional spheroid of semi-radii rc(ndims), center xc.
@@ -91,6 +91,7 @@ c and total mesh spacing in dp, so that bdy distance is fraction*dp.
       B=0.
       C=-1.
       D=-1.
+c x1 and x2 are the coordinates in system in which sphere has radius 1.
       do i=1,ndims
          ix1=indi(i)+ixnp(i)+1
          x1=(xn(ix1)-xc(i))/rc(i)
@@ -106,6 +107,7 @@ c and total mesh spacing in dp, so that bdy distance is fraction*dp.
          D=D+x2**2
       enddo
       fraction=1.
+c This condition tests for a sphere crossing.
       if(D.ne.0. .and. D*C.le.0.)then
          if(B.ge.0. .and. A*C.le.0) then
             fraction=(-B+sqrt(B*B-A*C))/A
@@ -260,7 +262,7 @@ c-------------------------------------------------------------
 c Process data stored in obj_geom.
       do i=1,ngeomobj
 c Currently implemented just for spheres.
-         call circlesect(id,ipm,ndims,indi,
+         call spheresect(id,ipm,ndims,indi,
      $        obj_geom(oradius,i),obj_geom(ocenter,i)
      $        ,fraction,dp)
          if(fraction.ne.1.)then

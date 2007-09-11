@@ -977,3 +977,49 @@ time   seconds   seconds    calls   s/call   s/call  name
   7.22      8.11     0.89  6148584     0.00     0.00  interp_
   7.18      9.00     0.89  8993020     0.00     0.00  inside_geom__
   6.12      9.75     0.76  3739985     0.00     0.00  gradinterp_
+
+5 Sep 07
+
+Reorganized some files to clean up the main program and put plotting
+and some other stuff elsewhere. 
+
+Checked the cvs that you really can build from it. 
+
+Now we need to get the volumes correct for calculating the charge
+density.  This is trivial for the core nodes. Only difficulty is for
+those on object boundaries. In cijroutine and boxedge we do some
+elaborate calculation of fractions, which are supposed to represent
+the points that define a plane approximation to the bounding surface
+cutting a particular box, in the case that the plane actually cuts the
+cell surrounding the box (which it can do even if fractions are >1).
+However for the CIC particle assignment, a particle contributes
+partially to a node if it is in the _box_ (not just in the node-cell,
+which extends to the half-node-spacing position). Therefore, it is not
+clear that I have done the relevant calculation. There will be some
+degree of volume reduction for every node that lies in the center of a
+2x2x2 box which is intersected by the boundary.
+
+Things would be different for NGP assignment. Then particles contribute
+only if they are in the node-cell, in which case the fractions might have
+some value. 
+
+In either case, there is a problem in that currently particles are 
+removed based on the iregion. That is not a planar approximation. 
+If volumes are calculated on a different basis from the particle removal,
+the charge-density calculation will not be done correctly. It would
+therefore be inconsistent to use direct iregion evaluations for particles
+but fraction-approximations for volumes.
+
+One alternative approach would be a Monte-Carlo integration of the
+volume by multiple calls to insideall. If the weighting were uniform
+(which it is not) then this amounts to a random choice of region in or
+out. So n points are distributed according to a binomial. The average
+of a sample therefore has a mean number: np (where p is the
+probability of acceptance) and variance np(1-p), so that S.D./mean =
+sqrt((1-p)/np), and the uncertainty as a fraction of the total box
+volume is sqrt(p(1-p)/n)<=sqrt(1/n)/2.  Consequently, to get 1%
+accuracy requires n=50^2=2500. Rather a lot of random points (3 ran0
+calls per point). If we used a uniform mesh in each direction, with
+this total number of points, we would have 2500^1/3= 14 per direction.
+That would give a worse result in terms of uncertainty (probably). 
+Monte-Carlo is better in dimensions greater than 2.
