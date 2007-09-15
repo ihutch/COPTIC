@@ -1,0 +1,1 @@
+      common /myidcom/myid,nprocs

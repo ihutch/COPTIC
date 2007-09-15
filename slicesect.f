@@ -7,6 +7,7 @@ c -zero, and there is a fraction<1 to the adjoining points.
       real z(Li,nj)
       real cij(7,Li,nj)
       include 'objcom.f'
+      include 'world3.h'
 
       call color(3)
       do i=1,ni
@@ -20,17 +21,23 @@ c -zero, and there is a fraction<1 to the adjoining points.
                      iobj=ndata_sor*(2*(id-1)+(jd-1))+1
                      fraction=dob_sor(iobj,ipoint)
                      if(fraction.lt.1. .and. fraction.gt.0.)then
-c                        write(*,*)i,j,ipoint,id,jd,fraction
-                        ip=i
-                        jp=j
-                        zp=z(i,j)
-                        if(idff.eq.1)ip=ip+(3-2*jd)
-                        if(idff.eq.2)jp=jp+(3-2*jd)
-                        if(idff.eq.3)zp=zp+.05*(3-2*jd)
                         call vec3n(xn,yn,zn,0)
-                        call vec3w(x(i)*(1.-fraction)+x(ip)*fraction,
-     $                       y(j)*(1.-fraction)+y(jp)*fraction,
-     $                       z(i,j)*(1.-fraction)+zp*fraction,1)
+c                        write(*,*)i,j,ipoint,id,jd,fraction
+                        if(idff.eq.1)then
+                           xp=x(i)*(1.-fraction)+x(i+(3-2*jd))*fraction
+                        else
+                           xp=x(i)
+                        endif
+                        if(idff.eq.2)then
+                           yp=y(j)*(1.-fraction)+y(j+(3-2*jd))*fraction
+                        else
+                           yp=y(j)
+                        endif
+                        zp=z(i,j)
+                        if(idff.eq.3)then 
+                           zp=zp+.05*(3-2*jd)*(wz3max-wz3min)
+                        endif
+                        call vec3w(xp,yp,zp,1)
                      endif
                   enddo
                enddo
@@ -41,7 +48,7 @@ c                        write(*,*)i,j,ipoint,id,jd,fraction
       end
 c*******************************************************************
       subroutine slice3web(ifull,iuds,u,cij,nw,zp,cijp,ixnp,xn,ifix,
-     $           utitle)
+     $           utitle,ictl)
       parameter(ndims=3,nd2=2*ndims)
 c Plot web-projected and/or projected contour representations 
 c of potential u on slices with
@@ -138,7 +145,7 @@ c Use this scaling until explicitly reset.
       call ax3labels('axis-'//cxlab,'axis-'//cylab,utitle)
 c Here we want to mark bounding surfaces, which are associated with those
 c cijs that have non-zero pointer.
-      if(iweb.eq.1) call surfmark(nw,nf1,nf2,
+      if(ictl.eq.1 .and. iweb.eq.1) call surfmark(nw,nf1,nf2,
      $     xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
      $     zp,cijp,ifix)
 

@@ -2,7 +2,7 @@
 c****************************************************************
 c Routine for setting cij, which is used by the general mditerate.
 c      subroutine cijroutine(inc,ipoint,indm1,ndims,iused,cij)
-      subroutine cijroutine(inc,ipoint,indi,ndims,iused,cij)
+      subroutine cijroutine(inc,ipoint,indi,ndims,iused,cij,debyelen)
 c This routine sets the object pointer in cij if there is an object
 c crossing next to the the point at indi(ndims) in the 
 c dimension id (plus or minus), adjusts the cij values,
@@ -59,9 +59,9 @@ c Start object data for this point if not already started.
 c Calculate dplus and deff for this direction.
 c dplus becomes dminus for the other direction.
                a=conditions(1,i)
-               b=conditions(2,i)
+               b=conditions(2,i)/debyelen
                c=conditions(3,i)
-               dxp1=fraction(i)*dpm(i)
+               dxp1=fraction(i)*dpm(i)/debyelen
                if(a.eq.0.) a=tiny
                if(b.ge.0.)then
 c Active
@@ -71,7 +71,7 @@ c Active
                else
 c Inactive
                   if(dxp1.eq.0.) dxp1=tiny
-                  dxp2=(1.-fraction(i))*dpm(i)
+                  dxp2=(1.-fraction(i))*dpm(i)/debyelen
                   apb=a*dxp2+b
                   boapb=b/apb
 c  Without \psi'', i.e. setting it to zero and boundary.
@@ -87,13 +87,13 @@ c + diagonal + potential terms.
 c Prevent subsequent divide by zero danger.
                dob_sor(iobj,oi_sor)=max(fraction(i),tiny)
                if(a.eq.0.) a=tiny
-               dob_sor(iobj+1,oi_sor)=b/a
+               dob_sor(iobj+1,oi_sor)=b/a*debyelen
                dob_sor(iobj+2,oi_sor)=c/a
                idob_sor(iinter_sor,oi_sor)=iobjno
             else
 c No intersection.
-               dplus(i)=dpm(i)
-               deff(i)=dpm(i)
+               dplus(i)=dpm(i)/debyelen
+               deff(i)=dpm(i)/debyelen
             endif
          enddo
 c Now the dplus and deff are set correctly for each direction.
@@ -110,7 +110,7 @@ c This is a boundary point.
      $              .and.dob_sor(iobj,oi_sor).ge.0.)then
 c We intersected an object in this direction. Adjust Cij and B_y
                   a=conditions(1,i)
-                  b=conditions(2,i)
+                  b=conditions(2,i)/debyelen
                   c=conditions(3,i)
                   if(a.eq.0.) a=tiny
                   if(b.ge.0.)then
@@ -124,7 +124,7 @@ c Adjust potential sum (B_y)
      $                    - coef*c/a
                   else
 c Inactive side. Continuity.
-                     dxp2=(1.-fraction(i))*dpm(i)
+                     dxp2=(1.-fraction(i))*dpm(i)/debyelen
                      apb=a*dxp2+b
                      boapb=b/apb
                      cij(icb*ipoint+2*(id-1)+i)=coef*boapb

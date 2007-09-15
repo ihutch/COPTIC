@@ -68,10 +68,12 @@ c         write(*,*)
 
  901  write(*,*)'Readgeom error reading line',iline,':'
       write(*,*)cline
+      
  902  continue
       return
 
  101  write(*,*) 'Readgeom File ',filename,' could not be opened.'
+      stop
 
       end
 c****************************************************************

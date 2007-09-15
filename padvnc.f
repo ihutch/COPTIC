@@ -1,6 +1,9 @@
 c Particle advancing routine
       subroutine padvnc(ndims,cij,u,iLs)
-
+c If ninjcomp (in partcom) is non-zero, then we are operating in a mode
+c where the number of reinjections at each timestep is prescribed.
+c Otherwise we are using a fixed number npart of particles.
+c
 c Number of dimensions: ndims
       integer ndims
 c Storage size of the mesh arrays.
@@ -14,30 +17,40 @@ c Array structure vectors: (1,nx,nx*ny,nx*ny*nz)
 c sormesh provides ixnp, xn, the mesh spacings. (+ndims_mesh)
       include 'meshcom.f'
 c Alternatively they could be passed, but we'd then need parameter.
+      include 'myidcom.f'
 c Local storage
       integer ixp(ndims_mesh)
       real field(ndims_mesh)
       real xfrac(ndims_mesh)
+      integer iocprev
+      save iocprev,ic1,ndimsx2
 
-      common /myidcom/myid,nprocs
 c Make this always last to use the checks.
       include 'partcom.f'
 
-      if(ndims.ne.ndims_mesh)
-     $     stop 'Padvnc incorrect ndims number of dimensions'
+      data iocprev/0/
 
-      ic1=2*ndims+1
-
-      ndimsx2=2*ndims
+c If needed, initialize:
+      if(iocprev.eq.0)then
+         if(ndims.ne.ndims_mesh)
+     $        stop 'Padvnc incorrect ndims number of dimensions'
+         iocprev=n_part
+         ic1=2*ndims+1
+         ndimsx2=2*ndims
+      endif
+c
+      nrein=0
+      iocthis=0
 c We ought not to need to calculate the iregion, since it should be
 c known and if a particle is outside it, it would have been reinjected:
 c But for now:
       iregion=insideall(ndims,x_part(1,1))
+
       do i=1,n_part
+         dtprec=dt
+         dtpos=dt
 c If this particle slot is occupied.
          if(if_part(i).ne.0)then
-            dtprec=dt
-            dtpos=dt
 c Find out where we are (if we don't already know).
 c Should not be necessary if chargetomesh has been called.
 c         call partlocate(i,iLs,iu,ixp,xfrac,iregion)
@@ -75,27 +88,54 @@ c Move
 
             inewregion=insideall(ndims,x_part(1,i))
             if(inewregion.ne.iregion) then
-c We left the region. Reinject.
-               call reinject(i,x_part(1,i))
+c We left the region. Reinject if we haven't exhausted complement.
+               if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)then
+                  call reinject(i,x_part(1,i),nrein)
 c Find where we are, since we don't yet know?
 c Might not be needed if we insert needed information in reinject,
-c which might be less costly.
-               call partlocate(i,iLs,iu,ixp,xfrac,iregion)
+c which might be less costly. (Should be something other than iregion?)
+                  call partlocate(i,iLs,iu,ixp,xfrac,irg)
+                  dtpos=dtpos*ran0(idum)
+                  dtprec=0.
+c Complete reinjection by advancing by random remaining.
+                  goto 101
+               else
+                  if_part(i)=0
+               endif
+            else
+c The standard exit point for a particle that is active
+               iocthis=i
+            endif
+         elseif(ninjcomp.ne.0.and.nrein.lt.ninjcomp)then
+c An unfilled slot. Fill it if we need to.
+               call reinject(i,x_part(1,i),nrein)
+c Find where we are, since we don't yet know?
+c Might not be needed if we insert needed information in reinject,
+               call partlocate(i,iLs,iu,ixp,xfrac,irg)
                dtpos=dtpos*ran0(idum)
                dtprec=0.
 c Complete reinjection by advancing by random remaining.
                goto 101
-            endif
-
-            if(i.le.norbits)then
-               iorbitlen(i)=iorbitlen(i)+1
-               xorbit(iorbitlen(i),i)=x_part(1,i)
-               yorbit(iorbitlen(i),i)=x_part(2,i)
-               zorbit(iorbitlen(i),i)=x_part(3,i)
-            endif
-
+         elseif(i.ge.iocprev)then
+c This slot is higher than all previously handled. There are no
+c more active particles above it. So break
+            goto 102
+         endif
+c 
+         if(i.le.norbits.and. if_part(i).ne.0)then
+            iorbitlen(i)=iorbitlen(i)+1
+            xorbit(iorbitlen(i),i)=x_part(1,i)
+            yorbit(iorbitlen(i),i)=x_part(2,i)
+            zorbit(iorbitlen(i),i)=x_part(3,i)
          endif
       enddo
+ 102  continue
+      if(ninjcomp.ne.0 .and. nrein.lt.ninjcomp)then
+         write(*,*)'WARNING: Exhausted n_part=',n_part,
+     $        '  before ninjcomp=',ninjcomp,' . Increase n_part?'
+      endif
+      iocprev=iocthis
+c      write(*,*)'iocthis=',iocthis
 
       end
 c***********************************************************************

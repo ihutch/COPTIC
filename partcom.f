@@ -9,14 +9,20 @@ c Particle flag(s).
       integer if_part(n_partmax)
 c Timestep (unperturbed).
       real dt
-c Rho at infinity
-      real rhoinf
 c Iregion where particles belong.
       integer iregion_part
 c Control of diagnostics
       logical ldiags
+c Rho at infinity
+      real rhoinf
+c Number of reinjections this step
+      integer nrein
+c Average potential of reinjections
+      real phirein
+c Number of reinjections at each step (if non-zero)
+      integer ninjcomp
       common/particles/n_part,x_part,if_part,iregion_part,
-     $     dt,ldiags,rhoinf,numprocs
+     $     dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
 
 c Orbit plotting storage for tracking the first norbits orbits.
       integer nobsmax,norbits

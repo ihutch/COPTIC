@@ -202,7 +202,7 @@ c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
       end
 c************************************************************************
 c***********************************************************************
-      subroutine mditerarg(ndims,ifull,iused,routine,ipin,u,v,w)
+      subroutine mditerarg(routine,ndims,ifull,iused,ipin,u,v,w)
 c multidimensional iteration. For dimensions ndims, iterate over the
 c array whose full dimensions are ifull(ndims) used iused(ndims).
 c This version allows three (array) arguments: u,v,w to be passed.
@@ -296,6 +296,73 @@ c We're at the base level and have succeeded in incrementing.
 c Do whatever we need to and increment indi(1) and ipoint
 c         write(*,'(a,8i8)')'ipoint=',ipoint,(indi(i),i=1,ndims)
          call routine(inc,ipoint,indi,ndims,iused,u,v,w)
+         indi(1)=indi(1)+inc
+         ipoint=ipoint+inc
+         goto 101
+      endif
+
+ 201  continue
+c Reached the end.
+
+      end
+c******************************************************************
+      subroutine mditerset(u,ndims,ifull,iused,ipin,v)
+c Iterate over the array u, setting its value equal to (scalar) v.
+c Uses the mechanisms of mditerate. But inc is always 1.
+      integer ndims
+      integer ifull(ndims)
+      integer iused(ndims)
+      real u(*),v
+
+      integer mdims
+      parameter (mdims=10)
+c Effective index in dimension, c-style (zero based)
+      integer indi(mdims),indinp(mdims)
+c Structure vector
+      integer iLs(mdims+1)
+      common /iLscom/iLs
+      
+c      write(*,*)'ndims',ndims,' ifull',ifull,' iused',iused
+c Offset.
+      call offsetexpand(ndims,ifull,ipin,indi)
+      iLs(1)=1
+      do n=1,ndims
+         indinp(n)=indi(n)
+         iLs(n+1)=iLs(n)*ifull(n)
+         if(indinp(n)+iused(n).gt.ifull(n))then
+            write(*,*) 'MDITERATE Error. Dimension',n,' ioff + iused',
+     $           indinp(n),iused(n),' .gt. ifull',ifull(n)
+         endif
+      enddo
+      ipoint=ipin
+
+      inc=1
+      n=1
+c Iteration over the multidimensional array
+ 101  continue
+c      write(*,'(''('',i1,i4,'') '',$)')n,indi(n)
+      if(indi(n)-indinp(n).gt.iused(n)-1)then
+c     Overflow. Subtract off enough (inm) of next dimension
+c     and move ipoint to appropriate position in full array.
+         inm=0
+ 102     inm=inm+1
+         ipoint=ipoint+iLs(n+1)-iused(n)*iLs(n)
+         indi(n)=indi(n)-iused(n)
+         if(indi(n)-indinp(n).gt.iused(n)-1)goto 102
+c Increment the next level.
+         n=n+1
+         if(n.gt.ndims)goto 201
+         indi(n)=indi(n)+inm
+         goto 101
+      elseif(n.gt.1)then
+c We've carried and cleared an increment.
+c Return stepwise to base level
+         n=n-1
+         goto 101
+      else
+c We're at the base level and have succeeded in incrementing.
+c Do whatever we need to and increment indi(1) and ipoint
+         u(ipoint+1)=v
          indi(1)=indi(1)+inc
          ipoint=ipoint+inc
          goto 101

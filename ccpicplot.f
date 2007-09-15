@@ -123,7 +123,7 @@ c         write(*,*)i,xr
 c Plotting slices.
       ifix=3
       call slice3web(ifull,iuds,u,cij,Li,zp,cijp,ixnp,xn,ifix,
-     $     'potential:'//'!Ay!@')
+     $     'potential:'//'!Ay!@',1)
 c-------------------------------------------------------------------
 c Different lines:
 c Spherical angles in 3-D

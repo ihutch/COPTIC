@@ -2,7 +2,7 @@ LIBRARIES = -L/usr/X11R6/lib/ -L/home/hutch/accis/ -laccisX -lXt -lX11
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
 # The sormpi system.
-OBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reinject.o pinit.o bbdyroutine.o ccpicplot.o
+OBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reinject.o pinit.o bbdyroutine.o ccpicplot.o volint.o 
 HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 G77=mpif77
@@ -25,11 +25,14 @@ PROFILING= -pg
 %.o : %.f makefile $(HEADERS)
 	$(G77)  -c $(COMPILE-SWITCHES) $(PROFILING) $*.f
 
+%.o : %.c makefile
+	cc -c $(PROFILING) $*.c
+
 #default target
 smt.out : ccpic
 	if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
-	./ccpic -p
-	diff smt.prev smt.out
+	./ccpic
+	if [ -f smt.prev ] ; then diff smt.prev smt.out ; fi
 
 # Things to compile without the standard switches
 
@@ -41,7 +44,7 @@ getfield.o : getfield.f makefile $(HEADERS)
 
 # Main program explicit to avoid make bugs:
 ccpic : ccpic.f makefile $(OBJECTS) $(UTILITIES)
-	$(G77)  -o ccpic $(COMPILE-SWITCHES) ccpic.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+	$(G77)  -o ccpic $(COMPILE-SWITCHES) $(PROFILING) ccpic.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
 clean :
 	rm -f *.o $(TARGETS)

@@ -1,16 +1,27 @@
+c This file contains the reinjection code which is specific to a
+c particular (type of) boundary. 
+c It must provide the routines:
+c    reinject(i,xr,nrein) 
+c       which reinijects particle i, at position/velocity xr
+c       and increments nrein.
+c       This routine should initialize itself appropriately.
+c    rhoinfcalc(nrein,dt,phirein,rhoinf)     
+c        which should return the value of rhoinfinity.
+c Any other code needed for these routines ought to be in here too.
+c The majority of the needed data is passed in partcom.f
+c 
+c This case is a spherical boundary.
 c***********************************************************************
-      subroutine reinject(i,xr)
+      subroutine reinject(i,xr,nrein)
       parameter (mdims=3)
       real xr(3*mdims)
       integer i
-c Common data:
+c Common data for these routines:
       include 'rancom.f'
-      common /myidcom/myid,nprocs
-c Hack of required information probably needs to be passed or common.
-c      real Ti,vd,pi,rs
-c      parameter (Ti=1.,vd=0.,pi=3.1415927,rs=.45)
+c Plasma common data
       include 'plascom.f'
       logical lfirst
+      save lfirst
       data lfirst/.true./
 
       if(lfirst) then
@@ -94,13 +105,8 @@ c Initialize the distributions describing reinjected particles
       subroutine injinit()
 c Common data:
       include 'rancom.f'
-      common /myidcom/myid,nprocs
-      real gam(nQth)
-c      character*1 work(nvel,nth)
-c Hack of required information probably needs to be passed or common.
-c      real Ti,vd,pi
-c      parameter (Ti=1.,vd=0.,pi=3.1415927)
       include 'plascom.f'
+      real gam(nQth)
 
 c Range of velocities (times (Ti/m_i)^(1/2)) permitted for injection.
       vspread=5.+abs(vd)/sqrt(Ti)
@@ -139,10 +145,53 @@ c The cumulative distribution is Gcom,
 c Now Gcom(*,i) is the cumulative distribution of radial velocity at cos(Qth)
 c normalized to the ion thermal velocity, not sqrt(T_e/m_i).
 c And Qcom() is the cumulative distribution in cosine angles Qth
-c      work(1,1)=' '
      
  501  format(a,11f8.4)
-c      write(*,*)'Initializing Random Numbers:', myid
-      call srand(myid)
+      end
+c*********************************************************************
+      subroutine rhoinfcalc(dtin)
+c Return the rhoinf to be used in calculating the electron shielding,
+c based upon the number and average potential of the reinjections.
+      include 'plascom.f'
+c No time-averaging for now.
+c Use particle information for initializing.
+      include 'partcom.f'
+
+      if(nrein.ne.0)then
+c Calculate rhoinf from nrein if there are enough.
+         chi=min(-phirein/Ti,0.5)
+         riest=(nrein/dtin) /
+     $        (sqrt(Ti)*
+     $        smaxflux(vd/sqrt(2.*Ti),chi)
+     $        *rs**2 )
+         rhoinf=riest
+      else
+         if(rhoinf.lt.1.e-4)then
+c Approximate initialization
+            rhoinf=numprocs*n_part/(4.*3.1415926*rs**3/3.)
+            write(*,*)'Rhoinf in rhoinfcalc approximated as',rhoinf
+     $           ,numprocs,n_part,rs
+         endif
+c Else just leave it alone.
+      endif
       end
 
+c********************************************************************
+      real function smaxflux(uc,chi)
+c     Return the total flux to a unit radius sphere from a unit density
+c     maxwellian distribution shifted by velocity
+      real uc
+c     normalized to sqrt(2T/m), in a spherically symmetric potential
+c     having a value on the sphere normalized to Ti of minus
+      real chi
+      real eps,pi
+      data eps/1.e-3/pi/3.1415927/
+      erf=1.-erfcc(uc)
+      sqpi=sqrt(pi)
+      if(abs(uc).lt.eps) then
+         erfbyu=(2./sqpi)*(1.-uc**2 /3.)
+      else
+         erfbyu=erf/uc
+      endif
+      smaxflux=pi*sqrt(2.)*(uc*erf +(0.5+chi)*erfbyu + exp(-uc**2)/sqpi)
+      end
