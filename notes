@@ -1131,3 +1131,46 @@ outside the active region, where faddu is being added, though it
 shouldn't be. It might be possible to put the q equal to 1 in the 
 outside region. That would cancel out the electron function.
 But it looks like being a major bother.
+
+18 Sep 07
+Actually it is not a problem because volumes is set to a very large 
+number outside the active region. This is easily used in psumtoq to
+set q=1. Seems to work.
+
+20 Sep 07
+
+Now we'd like to get the code going with constant number of particles being
+injected per unit time. This might be a more satisfactory solution than
+calculating rhoinfinity each step based on the number that happens to be
+reinjected. 
+
+Done that. The total number of particles shows a decay over about 100 steps
+of .1, by about 10%. This is presumably the readjustment of the initially
+uniform density to reflect the proper final spatial distribution. 
+Now we have the choice of specifying -ni the number of ions or specifying
+-ri the rhoinfinity (density of ions at infinity). May not have the 
+multiprocess numbers set correctly yet.
+
+I wonder if there's a way to speed up the convergence to the final density
+other than what we've always used in sceptic, which is large initial steps.
+Once we vary the dt, we will need to vary the ninjcomp accordingly. 
+
+Observed that there's an error in u inside the sphere. This arises because
+the electron density is not being correctly compensated there. Changing
+the setting of rho to be faddu(u) for an external region helps, but does
+not fix this. The error mostly goes away if rho is set to zero. This is
+a serious puzzle. Seems as if the solver is incorrect in the inner
+sphere. It is possible there's an error in the algorithm for the case
+when faddu is present. 
+
+It's really bizarre, but putting the rho equal to minus faddu in the
+inner region gives a perfectly flat profile. But in the outer region
+you need +faddu. Explain that! Actually it seems to be an accident.
+It does not work for other sphere potentials.
+
+Found a bug in the faddu part of sorrelaxgen.f. Fixed it. But it's a
+bit worrying for sceptic. It's ok. Sceptic uses a hard-wired 2-D sor,
+not the sorrelaxgen. I think we now have a correct compensation for
+electron density in the external regions.
+
+Fixed some sliceplot bugs in rotation.

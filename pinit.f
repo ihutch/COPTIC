@@ -7,7 +7,7 @@ c Common data:
 
       ntries=0
 c      ntrapped=0
-      rmax=0.9999*rs
+      rmax=0.99999*rs
       rmax2=rmax*rmax
 c     We initialize the 'true' particles'
       do i=1,n_part
@@ -39,7 +39,7 @@ c Set flag of unused slots to 0
      $     '  n=',n_part,'  ntries=',ntries
 c     $     ,'  ntrapped=',ntrapped
 c Initialize rhoinf:
-      rhoinf=numprocs*n_part/(4.*pi*rmax**3/3.)
+      if(rhoinf.eq.0.)rhoinf=numprocs*n_part/(4.*pi*rmax**3/3.)
 c Initialize orbit tracking
       do ko=1,norbits
          iorbitlen(ko)=0

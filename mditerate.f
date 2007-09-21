@@ -202,16 +202,16 @@ c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
       end
 c************************************************************************
 c***********************************************************************
-      subroutine mditerarg(routine,ndims,ifull,iused,ipin,u,v,w)
+      subroutine mditerarg(routine,ndims,ifull,iused,ipin,t,u,v,w)
 c multidimensional iteration. For dimensions ndims, iterate over the
 c array whose full dimensions are ifull(ndims) used iused(ndims).
-c This version allows three (array) arguments: u,v,w to be passed.
+c This version allows four (array) arguments: t,u,v,w to be passed.
 c At each iteration, the routine (which should be declared external)
-c         routine(inc,ipoint,indi,ndims,iused,u,v,w) is called,
+c         routine(inc,ipoint,indi,ndims,iused,t,u,v,w) is called,
 c whose arguments are
 c      integer ipin,inc
 c      integer indi(ndims),iused(ndims)
-c      real u(*),v(*),w(*)
+c      real t(*),u(*),v(*),w(*)
 c
 c which accepts a pointer to the address in the array structure: ipoint
 c referred to the full dimensions of u, so u(1+ipoint) is processed.  It
@@ -243,7 +243,7 @@ c for the whole _used_ array at nodes spaced by inc in the 1st dimension.
       integer ifull(ndims)
       integer iused(ndims)
       external routine
-      real u(*),v(*),w(*)
+      real t(*),u(*),v(*),w(*)
 
       integer mdims
       parameter (mdims=10)
@@ -295,7 +295,7 @@ c Return stepwise to base level
 c We're at the base level and have succeeded in incrementing.
 c Do whatever we need to and increment indi(1) and ipoint
 c         write(*,'(a,8i8)')'ipoint=',ipoint,(indi(i),i=1,ndims)
-         call routine(inc,ipoint,indi,ndims,iused,u,v,w)
+         call routine(inc,ipoint,indi,ndims,iused,t,u,v,w)
          indi(1)=indi(1)+inc
          ipoint=ipoint+inc
          goto 101

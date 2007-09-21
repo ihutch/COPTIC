@@ -116,38 +116,40 @@ c Start of treatment
 c ipoint here is the offset (zero-based pointer)            
 c         write(*,*)k_sor,ipoint,indi(1),indi(2),u(ipoint+1)
          dnum=q(ipoint+1)
-         dden=0.
+         csum=0.
 c         write(*,*)'cij',(cij((2*ndims+1)*ipoint+ic),ic=1,2*ndims)
 c         write(*,*)'address,u',(ipoint+1+iind(ic),
 c     $        u(ipoint+1+iind(ic)),ic=1,2*ndims)
          icind0=(2*ndims+1)*ipoint
          do ic=1,2*ndims
             icind=icind0+ic
-            dden=dden+cij(icind)
+            csum=csum+cij(icind)
             dnum=dnum+cij(icind)*u(ipoint+1+iind(ic))
          enddo
 c Pointer to object data (converted to integer)
          io=cij(icind0+2*ndims+1)
          if(io.ne.0) then
-c            dden=dden+obj(nobj-1,io)
-c            dnum=dnum+obj(nobj,io)
 c Adjust the denominator and numerator using external call.
-            call ddn_sor(io,dden,dnum)
-         endif
-         if(dden.eq.0)then
-            write(*,*)'sorelax error: i,j,dden,cij',i,j,dden,
-     $           (cij(icind0+ic),ic=1,2*ndims)
-            stop
+            call ddn_sor(io,csum,dnum)
          endif
          if(laddu) then
             addu=faddu(u(ipoint+1),daddu)
 c     relative weight of f term versus L term. Use max for next iteration.
             raddu=abs(daddu/dden)
             if(raddu.gt.oaddu) oaddu=5.*raddu
-            dden=dden+daddu
+            dden=csum+daddu
             dnum=dnum-addu
+         else
+            dden=csum
          endif
-         delta=relax*(dnum/dden-u(ipoint+1))
+         if(dden.eq.0)then
+            write(*,*)'sorelax error: i,j,dden,cij',i,j,dden,
+     $           (cij(icind0+ic),ic=1,2*ndims)
+            stop
+         endif
+c This was an error
+c         delta=relax*(dnum/dden-u(ipoint+1))
+         delta=relax*(dnum-csum*u(ipoint+1))/dden
          if(abs(delta).gt.abs(rdelta))rdelta=delta
          uij=u(ipoint+1)+delta
          u(ipoint+1)=uij

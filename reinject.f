@@ -175,6 +175,25 @@ c Approximate initialization
 c Else just leave it alone.
       endif
       end
+c*********************************************************************
+      subroutine nreincalc(dtin)
+c Given rhoinf, decide the number of reinjections per step ninjcomp
+c for average edge potential.
+      include 'plascom.f'
+c No time-averaging for now.
+c Particle information
+      include 'partcom.f'
+
+c Calculate ninjcomp from rhoinf
+      chi=min(-phirein/Ti,0.5)
+      ninjcomp=nint(rhoinf*dtin* 
+     $        (sqrt(Ti)*
+     $        smaxflux(vd/sqrt(2.*Ti),chi)
+     $        *rs**2 ))
+      nrein=ninjcomp
+      if(ninjcomp.le.0)ninjcomp=1
+      n_part=rhoinf*4.*3.1415926*rs**3/3./numprocs
+      end
 
 c********************************************************************
       real function smaxflux(uc,chi)

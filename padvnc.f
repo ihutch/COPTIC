@@ -45,8 +45,9 @@ c We ought not to need to calculate the iregion, since it should be
 c known and if a particle is outside it, it would have been reinjected:
 c But for now:
       iregion=insideall(ndims,x_part(1,1))
-
-      do i=1,n_part
+      n_part=0
+c At most do over all particle slots. But generally we break earlier.
+      do i=1,n_partmax
          dtprec=dt
          dtpos=dt
 c If this particle slot is occupied.
@@ -105,6 +106,7 @@ c Complete reinjection by advancing by random remaining.
             else
 c The standard exit point for a particle that is active
                iocthis=i
+               n_part=n_part+1
             endif
          elseif(ninjcomp.ne.0.and.nrein.lt.ninjcomp)then
 c An unfilled slot. Fill it if we need to.
@@ -117,7 +119,8 @@ c Might not be needed if we insert needed information in reinject,
 c Complete reinjection by advancing by random remaining.
                goto 101
          elseif(i.ge.iocprev)then
-c This slot is higher than all previously handled. There are no
+c We do not need to reinject new particles, and
+c this slot is higher than all previously handled. There are no
 c more active particles above it. So break
             goto 102
          endif
@@ -131,8 +134,8 @@ c
       enddo
  102  continue
       if(ninjcomp.ne.0 .and. nrein.lt.ninjcomp)then
-         write(*,*)'WARNING: Exhausted n_part=',n_part,
-     $        '  before ninjcomp=',ninjcomp,' . Increase n_part?'
+         write(*,*)'WARNING: Exhausted n_partmax=',n_partmax,
+     $        '  before ninjcomp=',ninjcomp,' . Increase n_partmax?'
       endif
       iocprev=iocthis
 c      write(*,*)'iocthis=',iocthis

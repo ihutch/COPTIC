@@ -59,7 +59,9 @@ c Data for plotting etc.
 c Defaults:
 c Fixed number of particles rather than fixed injections.
       ninjcomp=0
-      n_part=2
+      n_part=0
+c Default to constant rhoinf not n_part.
+      rhoinf=100.
       dt=.1
       objfilename='ccpicgeom.dat'
       nsteps=10.
@@ -68,6 +70,7 @@ c Fixed number of particles rather than fixed injections.
       vd=0.
       rs=5.
       numprocs=1
+      bdt=1.
 
 c--------------------------------------------------------------
 c Deal with arguments
@@ -82,14 +85,19 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-an')read(argument(4:),*)nth
          if(argument(1:7).eq.'--reinj')read(argument(8:),*)ninjcomp
          if(argument(1:3).eq.'-ni')read(argument(4:),*)n_part
+         if(argument(1:3).eq.'-ri')read(argument(4:),*)rhoinf
          if(argument(1:3).eq.'-dt')read(argument(4:),*)dt
+         if(argument(1:3).eq.'-da')read(argument(4:),*)bdt
          if(argument(1:2).eq.'-s')read(argument(3:),*)nsteps
          if(argument(1:2).eq.'-l')read(argument(3:),*)debyelen
-         if(argument(1:9).eq.'--objfilename')
-     $        read(argument(10:),'(a)')objfilename
+         if(argument(1:13).eq.'--objfilename')
+     $        read(argument(14:),'(a)')objfilename
          if(argument(1:2).eq.'-h')goto 201
          if(argument(1:2).eq.'-?')goto 201
       enddo
+      if(n_part.ne.0)rhoinf=0.
+c Set ninjcomp if we are using rhoinf
+      if(rhoinf.ne.0)call nreincalc(dt)
       goto 202
 c------------------------------------------------------------
 c Help text
@@ -100,7 +108,9 @@ c Help text
      $     //' -go   Plot orbits. '
      $     ,' -atf.fff   set test angle. -anf.fff   set No of angles. '
      $     ,' --reinjnnn    set reinjection number at each step.'
-     $     ,' -ni   set No of particles/node.   -dt   set timestep.'
+     $     ,' -ni   set No of particles/node.'
+     $     ,' -ri   set rhoinfinity instead of total particles.'
+     $     ,' -dt   set timestep.    -da   set initial dt accel-factor'
      $     ,' -snnn  set No of steps.'
      $     //'   --objfile<filename>  set name of object data file.'
      $     ,' -h -?   Print usage.'
@@ -129,7 +139,7 @@ c     $     cij(1,1,1,1),ipoint)
 c Call to mditerarg instead: Seems to work even though the cijroutine is
 c not defined with sufficient arguments for all those in this call.
       call mditerarg(cijroutine,ndims,ifull,ium2,ipoint,
-     $     cij(1,1,1,1),debyelen,dum2)
+     $     cij(1,1,1,1),debyelen,dum3,dum4)
 
 c Here we try to read the geometry data.
       istat=1
@@ -143,7 +153,7 @@ c We are going to populate the region in which xir lies.
          write(*,*)
      $        'Starting volume setting. Be patient this first time...'
          call mditerarg(volnode,ndims,ifull,ium2,ipoint,
-     $        volumes,region,cij)
+     $        volumes,region,cij,dum4)
          write(*,*)'Finished volume setting'
 c Here we write the geometry data if we've had to calculate it.
          call stored3geometry(volumes,iuds,ifull,istat)
@@ -152,7 +162,7 @@ c Set an object pointer for all the edges so their regions get
 c set by the iregioninit call
       ipoint=0
 c      call mditerate(ndims,ifull,iuds,cijedge,cij,ipoint)
-      call mditerarg(cijedge,ndims,ifull,iuds,ipoint,cij,dum1,dum2)
+      call mditerarg(cijedge,ndims,ifull,iuds,ipoint,cij,dum2,dum3,dum4)
 c Initialize the region flags in the object data
       call iregioninit(ndims,ifull)
 
@@ -181,8 +191,8 @@ c Initialize charge (set q to zero over entire array).
 c      call zero3array(q,iLs,ni,nj,nk)
       call mditerset(q,ndims,ifull,iuds,0,0.)
 c---------------------------------------------------------------         
-c Control. Bit 1, use my sor parameters (not here). Bit 2 use faddu.
-c      ictl=0
+c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
+      ictl=0
 c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
 c An initial solver call.
       call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
@@ -236,12 +246,17 @@ c Tangential velocity of circular orbit at r=4.
 c Follow the first norbits particles.
       norbits=5
       phirein=0.
+      ninjcomp0=ninjcomp
+      maccel=nsteps/3
+      dtf=dt
 
-c Turn off self field, until there are reinjections:
-c      rhoinf=1.e20
-c Allow rhoinfcalc to initialize the rhoinf.
-      rhoinf=0.
       do j=1,nsteps
+c Acceleration code.
+         bdtnow=max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)
+         dt=bdtnow*dtf
+         ninjcomp=bdtnow*ninjcomp0
+         if(ninjcomp.ne.0)nrein=ninjcomp
+c
          write(*,'(i4,i4''  x_p='',7f9.5)')j,ierr, (x_part(k,1),k=1,6)
      $        ,sqrt(x_part(1,1)**2+x_part(2,1)**2)
 c         call zero3array(psum,iLs,ni,nj,nk)
@@ -249,22 +264,22 @@ c         call zero3array(psum,iLs,ni,nj,nk)
          call chargetomesh(psum,iLs,diags)
 c Calculate rhoinfinity, needed in psumtoq.
          call rhoinfcalc(dt)
-         write(*,*)'nrein,rhoinf,dt=',nrein,rhoinf,dt
+         write(*,*)'nrein,n_part,rhoinf,dt=',nrein,n_part,rhoinf,dt
 c Convert psums to charge, q. Remember external psumtoq!
          call mditerarg(psumtoq,ndims,ifull,ium2,
-     $        0,psum(2,2,2),q(2,2,2),volumes(2,2,2))
+     $        0,psum(2,2,2),q(2,2,2),volumes(2,2,2),u(2,2,2))
 c
          call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
          if(lsliceplot) call slice3web(ifull,iuds,u,cij,Li,zp,cijp,
      $        ixnp,xn,ifix,'potential:'//'!Ay!@',1)
+         if(lsliceplot)call slice3web(ifull,iuds,q,cij,Li,zp,cijp,
+     $        ixnp,xn,ifix,'charge:'//'!Ar!@',0)
 c
          call padvnc(ndims,cij,u,iLs)
 c         call partreduce
       enddo
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
-c      if(lsliceplot)call slice3web(ifull,iuds,q,cij,Li,zp,cijp,
-c     $        ixnp,xn,ifix,'charge:'//'!Ar!@',0)
 c      call slice3web(ifull,iuds,psum,cij,Li,zp,cijp,
 c     $        ixnp,xn,ifix,'psum',0)
       

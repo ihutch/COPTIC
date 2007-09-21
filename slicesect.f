@@ -85,18 +85,19 @@ c Local variables:
       logical lfirst
       data lfirst/.true./
 c Tell that we are looking from the top by default.
-      data ze1/1./
+      data ze1/1./icontour/1/iweb/1/
+      data cs/.707/sn/.707/
 
       if(lfirst)then
          write(*,*)' Slice plotting.',
      $        ' up/down arrows change slice.'
          write(*,*) ' l/r arrows change dimension.',
      $        ' s: rescale. p: print. Drag mouse to rotate.'
-         write(*,*) ' c: toggle contour plane. w: toggle web. r: rotate'
-      lfirst=.false.
+         write(*,*) ' c: contour plane. w: toggle web. r: rotate'
+         iweb=1
+         icontour=1
+         lfirst=.false.
       endif
-      iweb=1
-      icontour=1
       if(ifix.lt.1 .or. ifix.gt.ndims)ifix=ndims
       ips=0
       irotating=0
@@ -135,8 +136,8 @@ c Could be fixed to be general, I suppose.
          enddo
       enddo
 
-c Web drawing
-      if(iweb.eq.1)call hidweb(xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
+c Web drawing. First call is needed to set scaling.
+      if(iweb.eq.1.)call hidweb(xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
      $        zp,nw,nf1,nf2,jsw)
 c Use this scaling until explicitly reset.
       jsw=0 + 256*6 + 256*256*7
@@ -185,13 +186,18 @@ c Get back current eye position xe1 etc.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
          if(icontour.eq.1)call hdprset(-3,sign(scbz3,ze1))
          if(icontour.eq.2)call hdprset(-3,zplane)
+         if(icontour.eq.3)call hdprset(-3,-sign(scbz3,ze1))
 c Contour without labels, with coloring, using vector axes
          call contourl(zp,pp,nw,nf1,nf2,cl,icl,
      $        xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),17)
          call axis()
          call axis2()
-         call cubed(icorner-8*(icorner/8))
+         if(iweb.ne.1)call cubed(icorner-8*(icorner/8))
       endif
+
+      if(iweb.eq.1.and.icontour.eq.3)
+     $     call hidweb(xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
+     $        zp,nw,nf1,nf2,jsw)
 
       if(ips.ne.0)then
 c We called for a local print of plot. Terminate and switch it off.
@@ -204,16 +210,13 @@ c User interface:
       if(irotating.gt.0)then
 c Get back current eye position xe1 etc.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
-         cs=cos(.1)
-         sn=sin(.1)
-         write(*,*)'irotating',irotating,xe1,ye1,ze1,cs,sn
+c         write(*,*)'irotating',irotating,xe1,ye1,ze1,cs,sn
          xex=xe1-xe
          yex=ye1-ye
          xe1=xe+cs*xex-sn*yex
          ye1=ye+sn*xex+cs*yex
-c Rotation has a bug in it here. ze1 somehow gets changed.
-         write(*,*)'setting',xe1,ye1,ze1
-         call trn32(xe,ye,ze,xe1,ye1,ze1,1)
+c Must tell to look at zero.
+         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
          irotating=irotating-1
          goto 21
       endif
@@ -234,7 +237,7 @@ c Rotation has a bug in it here. ze1 somehow gets changed.
          ifix=mod(ifix,3)+1
          n1=iuds(ifix)/2
       endif
-      if(isw.eq.ichar('c'))icontour=mod(icontour+1,3)
+      if(isw.eq.ichar('c'))icontour=mod(icontour+1,4)
       if(isw.eq.ichar('w'))iweb=mod(iweb+1,2)
       if(isw.eq.ichar('i'))then
 c Get back current eye position xe1 etc.
@@ -243,21 +246,28 @@ c Get back current eye position xe1 etc.
          ye1=ye1*.9
          ze1=ze1*.9
 c Move it in.
-         call trn32(xe,ye,ze,xe1,ye1,ze1,1)
-      endif
-      if(isw.eq.ichar('o'))then
+         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
+      elseif(isw.eq.ichar('o'))then
 c Get back current eye position xe1 etc.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
          xe1=xe1*1.1
          ye1=ye1*1.1
          ze1=ze1*1.1
 c Move it out.
-         call trn32(xe,ye,ze,xe1,ye1,ze1,1)
+         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
+      elseif(isw.eq.ichar('r'))then
+         irotating=1
+         cs=cos(.1)
+         sn=sin(.1)
+      elseif(isw.eq.ichar('e'))then
+         irotating=1
+         cs=cos(.1)
+         sn=sin(-.1)
       endif
-      if(isw.eq.ichar('r')) irotating=10
 c End of user interface.
       goto 21
  23   continue
+      call hdprset(0,0.)
       end
 c******************************************************************
 c Testing and examination of the intersection data.

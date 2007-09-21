@@ -53,10 +53,10 @@ c               write(*,*)'ii,iu,iinc,fac',ii,iu,iinc,fac
 
 c********************************************************************
       subroutine psumtoq(inc,ipoint,indi,ndims,iused,
-     $     psum,rho,volumes)
+     $     psum,rho,volumes,u)
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
-      real psum(*),rho(*),volumes(*)
+      real psum(*),rho(*),volumes(*),u(*)
 c Partcom gives us rhoinf:
       include 'partcom.f'
 c This routine for use in mditeratearg.
@@ -64,6 +64,12 @@ c But we iterate only over the inner mesh (not edges).
 c Here, u=psum, v=rho, w=volumes. 
 c Set the density
       ind=1+ipoint
-      rho(ind)=psum(ind)/(rhoinf*volumes(ind))
+      if(volumes(ind).gt.1.e20)then
+c This is outside the region. Compensate the electron density.
+         rho(ind)=faddu(u(ind),fprime)
+c         rho(ind)=0.
+      else
+         rho(ind)=psum(ind)/(rhoinf*volumes(ind))
+      endif
       inc=1
       end
