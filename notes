@@ -1174,3 +1174,84 @@ not the sorrelaxgen. I think we now have a correct compensation for
 electron density in the external regions.
 
 Fixed some sliceplot bugs in rotation.
+
+21 Sep 07
+
+Things to do next maybe.
+
+Reading and Writing the code state, fields and particles. Probably we
+should keep the fields and particles in separate files since the fields
+only need to be written by master, while each node must write its own
+particles. How do we ensure that random numbers are the same thereafter
+for a restart?
+
+Tracking and saving particle exits (and entrances?). This depends to
+some extent on the type of object. So we need a uniform way of
+handling the documentation of flux distributions. This requires an api
+for the object.
+
+MPI communication of particle parameters. 
+
+22 Sep 07
+
+One thing slowing down my decisions is the problem of the overwhelming
+amount of data. Even to save the fluxes at each step is going to take
+a substantial amount if we do it for every object of 32. Of course we
+will rarely or never want to do it for so many objects. Probably we
+should not use a structured obj_flux(n_fluxmax,ngeomobjmax) data store
+for the object storage, because this is going to be very inefficient.
+Instead we should probably use a big storage space accessed by a dynamic
+structure. E.g. only providing for the number of objects that actually
+exists, or even the number for which we care about the flux. If that's
+the case, then the main thing to specify is how that data is structured.
+It could be structured the same in a binary output file.
+
+27 Sep 07
+
+Flux data might be structured as follows:
+
+Level	Description					Name	No of values
+0	Number of objects for which data is stored.	nof		1
+0	Address of object header starts.		iof(nof)	nof
+
+1	Number of quantities stored for this object.	nqf		1
+1	Address of quantity starts.			iqf(nqf)	nqf
+
+2	Number of positions for this quantity.		npf		1
+2	Quantity descriptors/positions			qdf		npf
+
+3	Timesteps							1
+
+----- End of header----
+
+3	Flux Data of quantity (nqf)					npf
+
+When addressing a place to write flux data it is:
+
+buff(time0+(time-1)*sum_{nof}(nqf*npf)+sum_{iof}(nqf*npf)+sum_{iqf}(npf)+ipf)
+
+Thought again about using HDF5. However, this is really a library. There
+does not seem to be any intention for it to be a data structure API for
+simple programming. Therefore the only real reason for using HDF5 is to
+make the data portable to someone else's calling of the HDF5 libraries.
+That's not really what I am looking for. The principles of HDF5 do
+embody some of what I am looking for: self-describing data strutures etc.
+
+Perhaps we could reasonably choose the number of quantities to be fixed
+so that we simply only need to specify the objects for which we are storing.
+Then, the positions could be variable. 
+
+
+29 Sep 07
+
+Implemented structures in 3dcom.f and initializations in fluxdata.f.
+Found that it was block data operating on big common blocks that caused
+the very large executable. So removed that and put explicit initialization.
+
+Implemented tallyexit in padvnc, with rudimentary particle flux counting.
+It seems to work. Can subsequently obtain the fluxes.
+
+Implement outputflux routine and corresponding readfluxfile routine to
+write and read-back the flux data. 
+
+Implement fluxdatatest to see that we really can read it back independently.

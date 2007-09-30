@@ -32,7 +32,7 @@ c Plasma common data
 
       external bdyset,faddu,cijroutine,cijedge,psumtoq
       external volnode
-c      character*100 form1
+      character*100 fluxfilename
       character*100 objfilename
       character*100 argument
       common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
@@ -64,13 +64,14 @@ c Default to constant rhoinf not n_part.
       rhoinf=100.
       dt=.1
       objfilename='ccpicgeom.dat'
-      nsteps=10.
+      nsteps=5.
       debyelen=1.
       Ti=1.
       vd=0.
       rs=5.
       numprocs=1
       bdt=1.
+      norbits=5
 
 c--------------------------------------------------------------
 c Deal with arguments
@@ -120,8 +121,8 @@ c Geometry information read in.
  202  call readgeom(objfilename)
 c First object is sphere of radius rc and potential phi.
       rc=obj_geom(5,1)
-      phi=-obj_geom(10,1)/obj_geom(8,1)
-      write(*,*)'rc=',rc,'  phi=',phi
+      phip=-obj_geom(10,1)/obj_geom(8,1)
+      write(*,*)'rc=',rc,'  phip=',phip
 c Second object is bounding sphere of radius rs. 
 c But use a tad more for the mesh size
       rs=obj_geom(5,2)*1.00001
@@ -141,6 +142,7 @@ c not defined with sufficient arguments for all those in this call.
       call mditerarg(cijroutine,ndims,ifull,ium2,ipoint,
      $     cij(1,1,1,1),debyelen,dum3,dum4)
 
+c---------------------------------------------
 c Here we try to read the geometry data.
       istat=1
       call stored3geometry(volumes,iuds,ifull,istat)
@@ -158,6 +160,7 @@ c We are going to populate the region in which xir lies.
 c Here we write the geometry data if we've had to calculate it.
          call stored3geometry(volumes,iuds,ifull,istat)
       endif
+c---------------------------------------------
 c Set an object pointer for all the edges so their regions get
 c set by the iregioninit call
       ipoint=0
@@ -165,7 +168,7 @@ c      call mditerate(ndims,ifull,iuds,cijedge,cij,ipoint)
       call mditerarg(cijedge,ndims,ifull,iuds,ipoint,cij,dum2,dum3,dum4)
 c Initialize the region flags in the object data
       call iregioninit(ndims,ifull)
-
+c---------------------------------------------
 c Control bit 3 (=4) pure initialization, no communication (to get myid).
       call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,4,ierr
      $     ,myid,idims)
@@ -176,10 +179,10 @@ c Don't do plotting from any node except the master.
          lsliceplot=.false.
          lorbitplot=.false.
       endif
-
+c---------------------------------------------
 c Some simple graphics of cij, and volumes.
       if(ltestplot)call text3graphs(ndims,iuds,ifull,cij,volumes)
-
+c---------------------------------------------
 c The following requires include objcom.f
       write(*,*)'Finished mesh setup:',iuds,
      $     ' Used No of pointers:',oi_sor,' of',iuds(1)*iuds(2)*iuds(3)
@@ -188,7 +191,6 @@ c      write(*,*)'Finished mesh setup.'
       if(lcijplot)call cijplot(ndims,ifull,iuds,cij,rs)
 
 c Initialize charge (set q to zero over entire array).
-c      call zero3array(q,iLs,ni,nj,nk)
       call mditerset(q,ndims,ifull,iuds,0,0.)
 c---------------------------------------------------------------         
 c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
@@ -211,11 +213,11 @@ c-------------------------------------------------------------------
 c Do some analytic checking of the case with a fixed potential sphere
 c inside a logarithmic derivative boundary condition. 1/r solution.
 c Also write out some data for checking.
-         call spherecheck(ifull,iuds,u,phi,rc)
+         call spherecheck(ifull,iuds,u,phip,rc)
       endif
       if(ltestplot)then
 c Plot some of the initial-solver data.
-         call solu3plot(ifull,iuds,u,cij,phi,rc,thetain,nth
+         call solu3plot(ifull,iuds,u,cij,phip,rc,thetain,nth
      $        ,rs)
          write(*,*)'Return from solu3plot.'
       endif
@@ -235,22 +237,25 @@ c Pinit resets x_part. So set it for the special first particle.
       x_part(2,1)=0.
       x_part(3,1)=0.
 c Prior half-step radial velocity
-      x_part(4,1)=0.5*dt*(abs(phi)/x_part(1,1)**2)
+      x_part(4,1)=0.5*dt*(abs(phip)/x_part(1,1)**2)
 c Tangential velocity of circular orbit at r=4.
-      x_part(5,1)=sqrt(abs(phi/x_part(1,1))-x_part(4,1)**2)
+      x_part(5,1)=sqrt(abs(phip/x_part(1,1))-x_part(4,1)**2)
       x_part(6,1)=0.
       write(*,*)'dt=',dt,' dtheta=',dt*x_part(5,1)/x_part(1,1),
      $     ' steps=',nsteps,' total theta/2pi='
      $     ,nsteps*dt*x_part(5,1)/x_part(1,1)/2./3.1415927
+c---------------------------------------------
+c Initialize the fluxdata storage and addressing.
+      call fluxdatainit()
+c---------------------------------------------
 
-c Follow the first norbits particles.
-      norbits=5
       phirein=0.
       ninjcomp0=ninjcomp
       maccel=nsteps/3
       dtf=dt
 
       do j=1,nsteps
+         nf_step=j
 c Acceleration code.
          bdtnow=max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)
          dt=bdtnow*dtf
@@ -259,7 +264,6 @@ c Acceleration code.
 c
          write(*,'(i4,i4''  x_p='',7f9.5)')j,ierr, (x_part(k,1),k=1,6)
      $        ,sqrt(x_part(1,1)**2+x_part(2,1)**2)
-c         call zero3array(psum,iLs,ni,nj,nk)
          call mditerset(psum,ndims,ifull,iuds,0,0.)
          call chargetomesh(psum,iLs,diags)
 c Calculate rhoinfinity, needed in psumtoq.
@@ -274,57 +278,27 @@ c
          if(lsliceplot) call slice3web(ifull,iuds,u,cij,Li,zp,cijp,
      $        ixnp,xn,ifix,'potential:'//'!Ay!@',1)
          if(lsliceplot)call slice3web(ifull,iuds,q,cij,Li,zp,cijp,
-     $        ixnp,xn,ifix,'charge:'//'!Ar!@',0)
+     $        ixnp,xn,ifix,'density: n',0)
 c
          call padvnc(ndims,cij,u,iLs)
+         call fluxdiag()
 c         call partreduce
       enddo
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
 c      call slice3web(ifull,iuds,psum,cij,Li,zp,cijp,
 c     $        ixnp,xn,ifix,'psum',0)
-      
-      if(lorbitplot)call orbit3plot(ifull,iuds,u,phi,rc,rs)
+
+      if(lorbitplot)call orbit3plot(ifull,iuds,u,phip,rc,rs)
 c-------------------------------------------------------------------
       call MPI_FINALIZE(ierr)
+
+c Check some flux diagnostics and writing.
+c      call fluxave()
+      call outputflux(fluxfilename)
+c      call readfluxfile(fluxfilename)
+c      call fluxave()
       end
 c**********************************************************************
-c********************************************************************
-c Default plasma data. There's something wrong with this. So 
-c I set the defaults explicitly.
-c      block data plascomset
-c      include 'plascom.f'
-c      data debylen,Ti,vd,rs/1.,1.,0.,5./
-c      end
-c*********************************************************************
-      subroutine zero3array(array,iLs,ni,nj,nk)
-      real array(*)
-      integer iLs(4)
-      do k=1,nk
-         do j=1,nj
-            do i=1,ni
-               index=(i+iLs(2)*(j-1)+iLs(3)*(k-1))
-               array(index)=0.
-            enddo
-         enddo
-      enddo
-      end
-c*********************************************************************      
-      subroutine diag3array(array,iLs,ni,nj,nk)
-      real array(*)
-      integer iLs(4)
-      do k=1,nk
-         do j=1,nj
-            do i=1,ni
-               index=(i+iLs(2)*(j-1)+iLs(3)*(k-1))
-               x=array(index)
-               if(x.ne.0)
-     $              write(*,'(a,4i7,f14.5)')
-     $              'diag3array at  ',index,i,j,k,x
-            enddo
-         enddo
-      enddo
-      end
-c*******************************************************************
       subroutine meshconstruct(ndims,iuds,ium2,rs)
       integer iuds(ndims),ium2(ndims)
       include 'meshcom.f'

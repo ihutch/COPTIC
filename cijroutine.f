@@ -1,4 +1,10 @@
-
+c********************************************************************
+c This initialization of oi_sor costs a big size hit on object.
+c Now done in objstart.
+c      block data objcomset
+c      include 'objcom.f'
+c      data oi_sor/0/
+c      end
 c****************************************************************
 c Routine for setting cij, which is used by the general mditerate.
 c      subroutine cijroutine(inc,ipoint,indm1,ndims,iused,cij)
@@ -280,11 +286,6 @@ c     Return increment of 1
       end
 c********************************************************************
 c********************************************************************
-      block data objcomset
-      include 'objcom.f'
-      data oi_sor/0/
-      end
-c********************************************************************
       subroutine ddn_sor(ip,dden,dnum)
 c Routine to do the adjustment to dden and dnum for this point (ip)
       include 'objcom.f'
@@ -313,6 +314,14 @@ c******************************************************************
       subroutine objstart(cijp,istart,ipoint)
       real cijp
       include 'objcom.f'
+      logical lfirst/.true./
+      save lfirst
+c Initialization to save block-data cost.
+      if(lfirst)then
+         oi_sor=0
+         lfirst=.false.
+      endif
+
 c Start object data for this point if not already started.
       if(cijp.eq.0)then
          oi_sor=oi_sor+1

@@ -36,3 +36,32 @@ c      write(*,*)'u='
          write(*,sform)1000000,(mod(i,10**iform),i=1,ildim(1))
       enddo
       end
+c*********************************************************************
+      subroutine zero3array(array,iLs,ni,nj,nk)
+      real array(*)
+      integer iLs(4)
+      do k=1,nk
+         do j=1,nj
+            do i=1,ni
+               index=(i+iLs(2)*(j-1)+iLs(3)*(k-1))
+               array(index)=0.
+            enddo
+         enddo
+      enddo
+      end
+c*********************************************************************      
+      subroutine diag3array(array,iLs,ni,nj,nk)
+      real array(*)
+      integer iLs(4)
+      do k=1,nk
+         do j=1,nj
+            do i=1,ni
+               index=(i+iLs(2)*(j-1)+iLs(3)*(k-1))
+               x=array(index)
+               if(x.ne.0)
+     $              write(*,'(a,4i7,f14.5)')
+     $              'diag3array at  ',index,i,j,k,x
+            enddo
+         enddo
+      enddo
+      end

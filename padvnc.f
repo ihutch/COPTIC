@@ -89,7 +89,9 @@ c Move
 
             inewregion=insideall(ndims,x_part(1,i))
             if(inewregion.ne.iregion) then
-c We left the region. Reinject if we haven't exhausted complement.
+c We left the region. 
+               call tallyexit(i,inewregion-iregion)
+c Reinject if we haven't exhausted complement.
                if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)then
                   call reinject(i,x_part(1,i),nrein)
 c Find where we are, since we don't yet know?
