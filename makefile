@@ -8,8 +8,8 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 G77=mpif77
 #COMPILE-SWITCHES = -Wall -O2  -I. 
 #COMPILE-SWITCHES = -Wall  -O2 -I. -g -ffortran-bounds-check
-COMPILE-SWITCHES = -Wall  -O2 -I.
-NOBOUNDS= -Wall -O2 -I.
+COMPILE-SWITCHES = -Wall -Wno-unused -O2 -I.
+NOBOUNDS= -Wall -Wno-unused -O2 -I.
 PROFILING= -pg
 #PROFILING=
 
