@@ -5,6 +5,7 @@ c Storage array spatial count size
       integer Li,ni,nj,nk
 c      parameter (Li=100,ni=40,nj=40,nk=16)
       parameter (Li=100,ni=16,nj=16,nk=20)
+      parameter (Li2=Li*Li,Li3=Li2*Li)
 c      parameter (Li=100,ni=32,nj=32,nk=40)
       real u(Li,Li,Li),q(Li,Li,Li),cij(2*ndims_sor+1,Li,Li,Li)
       real psum(Li,Li,Li),volumes(Li,Li,Li)
@@ -44,7 +45,8 @@ c      real error(Li,Li,Li)
 c Point in the active region
       real xir(ndims)
 c Set up the structure vector.
-      data iLs/1,Li,(Li*Li),(Li*Li*Li)/
+c      data iLs/1,Li,(Li*Li),(Li*Li*Li)/
+      data iLs/1,Li,Li2,Li3/
 c Mesh and mpi parameter defaults:
       data idims/nblksi,nblksj,nblksk/
       data ifull/Li,Li,Li/

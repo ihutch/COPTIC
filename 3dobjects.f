@@ -4,7 +4,7 @@ c Initialize with zero 3d objects.
       include '3dcom.f'
       data ngeomobj/0/
 c Default track no objects.
-      data nf_map/(ngeomobjmax)*0/
+      data nf_map/ngeomobjmax*0/
 c We don't do this initialization in a block data because it makes
 c the executable ridiculously large.
 c      data nf_step/0/
