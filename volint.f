@@ -33,7 +33,6 @@ c See if there is a chance the volume is intersected by a boundary.
          if(cij(icij).ne.0.) goto 1         
       enddo
 c This is an unintersected case. Calculate simply.
- 2    continue
       vol=1.
       do id=1,ndims_mesh
          index=ixnp(id)+indi(id)+1

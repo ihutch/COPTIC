@@ -50,6 +50,7 @@ c At most do over all particle slots. But generally we break earlier.
       do i=1,n_partmax
          dtprec=dt
          dtpos=dt
+ 100     continue
 c If this particle slot is occupied.
          if(if_part(i).ne.0)then
 c Find out where we are (if we don't already know).
@@ -67,17 +68,11 @@ c We only use x_part information for location.
             do idf=1,ndims
                call getfield(
      $              ndims,cij(ic1),u,iLs
-c Old approach passed full offset. Now just partial.
-c     $              ,xn(ixnp(idf)+int(x_part(ndimsx2+idf,i)))
      $              ,xn(ixnp(idf)+1)
      $              ,idf
      $              ,x_part(ndimsx2+1,i)
      $              ,iregion,field(idf))
             enddo
-
-c         write(*,'(''iu='',i6,'' field,anal='',6f9.5)')iu,
-c     $        (field(k),-x_part(k,i)*2.*.18/r**3,k=1,3)
-
 c Accelerate          
             do j=4,6
                x_part(j,i)=x_part(j,i)+field(j-3)*dtaccel
@@ -119,7 +114,10 @@ c Might not be needed if we insert needed information in reinject,
                dtpos=dtpos*ran0(idum)
                dtprec=0.
 c Complete reinjection by advancing by random remaining.
-               goto 101
+c               goto 101
+c Silence warning of jump to different block by jumping outside instead
+c gives the same result as 101.
+               goto 100
          elseif(i.ge.iocprev)then
 c We do not need to reinject new particles, and
 c this slot is higher than all previously handled. There are no

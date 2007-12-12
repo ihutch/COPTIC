@@ -146,7 +146,7 @@ c Now Gcom(*,i) is the cumulative distribution of radial velocity at cos(Qth)
 c normalized to the ion thermal velocity, not sqrt(T_e/m_i).
 c And Qcom() is the cumulative distribution in cosine angles Qth
      
- 501  format(a,11f8.4)
+c 501  format(a,11f8.4)
       end
 c*********************************************************************
       subroutine rhoinfcalc(dtin)

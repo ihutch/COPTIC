@@ -100,6 +100,7 @@ c Trailing blanks are ignored in either string.
 c Here when matched.
          istrstr=i
          goto 102
- 101  enddo
+ 101     continue
+      enddo
  102  return
       end
