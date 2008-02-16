@@ -1255,3 +1255,16 @@ Implement outputflux routine and corresponding readfluxfile routine to
 write and read-back the flux data. 
 
 Implement fluxdatatest to see that we really can read it back independently.
+
+13 Dec 07
+
+Over several days working on fedora8 have got rid of warnings. The
+main actions are to turn off unused argument warnings and to edit
+/usr/local/include/mpif.h to remove the save statements on the common blocks.
+It ought not to be necessary to use save statements on them I think.
+However, that is a peculiar usage that might be really needed, and I'll
+have to watch out for it. In any case, that change did not change the
+answers.
+
+Got extace compiled and working after installing some devel rpms for fftw
+and other. Got rununfullread working.

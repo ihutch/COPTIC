@@ -243,9 +243,18 @@ c Prior half-step radial velocity
 c Tangential velocity of circular orbit at r=4.
       x_part(5,1)=sqrt(abs(phip/x_part(1,1))-x_part(4,1)**2)
       x_part(6,1)=0.
-      write(*,*)'dt=',dt,' dtheta=',dt*x_part(5,1)/x_part(1,1),
-     $     ' steps=',nsteps,' total theta/2pi='
-     $     ,nsteps*dt*x_part(5,1)/x_part(1,1)/2./3.1415927
+
+c
+      if(nsteps.gt.nf_maxsteps)then
+         write(*,*)'Asked for more steps',nsteps,
+     $        ' than allowed. Limit ',nf_maxsteps
+         nsteps=nf_maxsteps
+         stop
+      endif
+
+c      write(*,*)'dt=',dt,' dtheta=',dt*x_part(5,1)/x_part(1,1),
+c     $     ' steps=',nsteps,' total theta/2pi='
+c     $     ,nsteps*dt*x_part(5,1)/x_part(1,1)/2./3.1415927
 c---------------------------------------------
 c Initialize the fluxdata storage and addressing.
       call fluxdatainit()
@@ -300,6 +309,7 @@ c      call fluxave()
 c      call readfluxfile(fluxfilename)
 c      call fluxave()
       end
+c**********************************************************************
 c**********************************************************************
       subroutine meshconstruct(ndims,iuds,ium2,rs)
       integer iuds(ndims),ium2(ndims)

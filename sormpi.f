@@ -67,7 +67,8 @@ c k_sor is the sor iteration index, for diagnostics.
       logical laddu
 c      logical lmpisplit
 
-c Declarations fo MPI calls
+c Declarations for MPI calls. Unfortunately this has SAVE statements in
+c it which cause warnings with the blanket save below. 
       include 'mpif.h'
 
 c bbdydecl declares most things for bbdy, using parameter ndimsdecl.
@@ -76,7 +77,6 @@ c bbdydecl declares most things for bbdy, using parameter ndimsdecl.
       real delta,umin,umax
 c      data lmpisplit/.false./
 c This saves data between calls so we can use separate initialization
-c But at present that causes seg faults!
       save
 c-------------------------------------------------------------------
       if(ndims.ne.ndimsdecl)then

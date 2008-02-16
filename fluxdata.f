@@ -1,7 +1,9 @@
 c Initialize the flux data, determining what we are saving and where.
-c Program depends upon knowledge of what the actual problem is.
+c Routine depends upon knowledge of what the actual problem is.
+c So this is just an example, giving the effective template.
       subroutine fluxdatainit()
       include '3dcom.f'
+c-----------------------------------------------
 c Initialize here to avoid giant block data program.
       nf_step=0
       do i=1,nf_quant
@@ -26,6 +28,7 @@ c Set the correct numbers of quantities and objects and the posnos
 c for all these quantities/objects.
       mf_quant=2
       mf_obj=1
+c There are nfluxes positions for each quantity.
       nf_posno(1,1)=nfluxes
       nf_posno(2,1)=nfluxes
 c-------------------------------------------------
@@ -72,10 +75,10 @@ c Check if we might overrun the datasize.
          write(*,*)'DANGER: data from',mf_quant,mf_obj,nf_maxsteps,
      $        ' would exceed nf_datasize',nf_datasize
       else
-         write(*,*)'Maximum nf_address:',
+         write(*,'(a,i10,a,i1,i2,i5,a,i10)')'Maximum nf_address:',
      $     nf_address(mf_quant,mf_obj,nf_maxsteps)+numobj,
      $        ' (',mf_quant,mf_obj,nf_maxsteps,
-     $        ') is safe below nf_datasize:',nf_datasize
+     $        ') is safely below nf_datasize:',nf_datasize
       endif
       end
 c******************************************************************
@@ -107,7 +110,7 @@ c******************************************************************
 c****************************************************************
       subroutine objsect(j,iobj,ierr)
 c Find the intersection of the last step of particle j with  
-c object iobj, and update obj_flux accordingly.
+c object iobj, and update the positioned-fluxes accordingly.
 c
 c Currently implemented only for object which is
 c ndims-dimensional spheroid of semi-radii rc(ndims), center xc.
@@ -154,7 +157,11 @@ c            elseif(B.lt.0. .and. A*C.ge.0.)then
             endif
 c That should exhaust the possibilities.
 c Get the actual position and bin it.
-c Example: bin by cos(theta)=x12(3) for n_flux(iobj) bins. Flux only.
+c
+c Here we need code that decides which of the nf_posno for this object
+c to update corresponding to this crossing, and then update it. 
+c Example: bin by cos(theta)=x12(3) for nf_posno(nf_flux,iobj) bins. 
+c Flux only.
             infobj=nf_map(iobj)
             z12=(1.-fraction)*x1(3)+fraction*x2(3)
             ibin=nf_posno(nf_flux,infobj)*(0.999999*z12+1.)*0.5
@@ -236,8 +243,11 @@ c***********************************************************************
          enddo
       enddo
 
+      write(*,*) 'Total Flux'
+      write(*,'(10f8.2)')(flux(i),i=1,nf_posno(1,1))
+
       call autoplot(angle,flux,nf_posno(1,1))
-      call axlabels('angle','total counts')
+      call axlabels('angle cosine','total counts')
 c      do i=1,nf_step
 c         call polyline(angle,ff_data(nf_address(1,1,i)),nf_posno(1,1))
 c      enddo
