@@ -93,6 +93,7 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-da')read(argument(4:),*)bdt
          if(argument(1:2).eq.'-s')read(argument(3:),*)nsteps
          if(argument(1:2).eq.'-l')read(argument(3:),*)debyelen
+         if(argument(1:2).eq.'-v')read(argument(3:),*)vd
          if(argument(1:13).eq.'--objfilename')
      $        read(argument(14:),'(a)')objfilename
          if(argument(1:2).eq.'-h')goto 201
@@ -105,18 +106,32 @@ c Set ninjcomp if we are using rhoinf
 c------------------------------------------------------------
 c Help text
  201  continue
-      write(*,'(a)')'Usage: ccpic [switches]'
-     $     ,' -gt   Plot solution tests. -gc   Plot mesh and stencils. '
-     $     ,' -gs   Plot slices of solution potential. '
+ 301  format(a,i5)
+ 302  format(a,f8.3)
+      write(*,301)'Usage: ccpic [switches]'
+      write(*,301)'Particle switches.'
+     $     //' Leave no gap before value. Defaults indicated [ddd'
+      write(*,301)' --reinj    set reinjection number at each step.['
+     $     ,ninjcomp
+      write(*,301)' -ni   set No of particles/node; zero => unset. ['
+     $     ,n_part
+      write(*,302)' -ri   set rhoinfinity instead of total particles. ['
+     $     ,rhoinf
+      write(*,302)' -dt   set Timestep.  [',dt,
+     $     ' -da   set Initial dt accel-factor. [',bdt
+      write(*,301)' -s    set No of steps. [',nsteps
+      write(*,302)' -v    set Drift velocity. [',vd
+      write(*,302)' -l    set Debye Length. [',debyelen
+      write(*,301)' --objfile<filename>  set name of object data file.'
+     $     //' [ccpicgeom.dat'
+      write(*,301)'Debugging switches for testing'
+      write(*,301)' -gt   Plot solution tests.'
+     $     //' -gc   Plot mesh and stencils. '
+      write(*,301)' -gs   Plot slices of solution potential. '
      $     //' -go   Plot orbits. '
-     $     ,' -atf.fff   set test angle. -anf.fff   set No of angles. '
-     $     ,' --reinjnnn    set reinjection number at each step.'
-     $     ,' -ni   set No of particles/node.'
-     $     ,' -ri   set rhoinfinity instead of total particles.'
-     $     ,' -dt   set timestep.    -da   set initial dt accel-factor'
-     $     ,' -snnn  set No of steps.'
-     $     //'   --objfile<filename>  set name of object data file.'
-     $     ,' -h -?   Print usage.'
+      write(*,301)' -at   set test angle.'
+     $     //' -an   set No of angles. '
+      write(*,301)' -h -?   Print usage.'
       call exit(0)
 c-------------------------------------------------------------
 c Geometry information read in.
@@ -252,7 +267,8 @@ c
          stop
       endif
 
-c      write(*,*)'dt=',dt,' dtheta=',dt*x_part(5,1)/x_part(1,1),
+      write(*,*)'dt=',dt,' vd=',vd
+c ' dtheta=',dt*x_part(5,1)/x_part(1,1),
 c     $     ' steps=',nsteps,' total theta/2pi='
 c     $     ,nsteps*dt*x_part(5,1)/x_part(1,1)/2./3.1415927
 c---------------------------------------------

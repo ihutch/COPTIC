@@ -236,18 +236,19 @@ c***********************************************************************
          angle(i)=ff_data(nf_address(1,1,0)+i-1)
       enddo
       sum=0
-      do is=1,nf_step
-         do i=1,nf_posno(1,1)
+      do i=1,nf_posno(1,1)
+         do is=1,nf_step
             flux(i)=flux(i)+ff_data(nf_address(1,1,is)+i-1)
             sum=sum+ff_data(nf_address(1,1,is)+i-1)
          enddo
+         flux(i)=flux(i)/nf_step
       enddo
 
-      write(*,*) 'Total Flux'
-      write(*,'(10f8.2)')(flux(i),i=1,nf_posno(1,1))
+      write(*,*) 'Average Flux'
+      write(*,'(10f8.4)')(flux(i),i=1,nf_posno(1,1))
 
       call autoplot(angle,flux,nf_posno(1,1))
-      call axlabels('angle cosine','total counts')
+      call axlabels('angle cosine','average counts')
 c      do i=1,nf_step
 c         call polyline(angle,ff_data(nf_address(1,1,i)),nf_posno(1,1))
 c      enddo
@@ -284,6 +285,7 @@ c Using the routines in strings_names.f
       close(22,status='delete')
       open(22,file=name,status='new',form='unformatted',err=101)
       write(22)nf_step,mf_quant,mf_obj
+c      write(*,*)nf_step,mf_quant,mf_obj
       write(22)((nf_posno(i,j),i=1,mf_quant),j=1,mf_obj)
       write(22)(((nf_address(i,j,k),i=1,mf_quant),j=1,mf_obj),
      $     k=0,nf_step+1)
