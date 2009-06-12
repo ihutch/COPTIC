@@ -9,7 +9,7 @@ c Initialize here to avoid giant block data program.
       do i=1,nf_quant
          do j=1,nf_obj
             nf_posno(i,j)=0
-            do k=0,nf_maxsteps
+            do k=1-nf_posdim,nf_maxsteps
                nf_address(i,j,k)=0
             enddo
          enddo
@@ -38,9 +38,10 @@ c After which, nf_address(i,j,k) points to the start of data for
 c quantity i, object j, step k. 
 c So we can pass nf_data(nf_address(i,j,k)) as a vector start.
 c-------------------------------------------------
-c The k=0 slot exists for us to put descriptive information, such
+c The k=1-nf_posdim to k=0
+c slots exist for us to put descriptive information, such
 c as the angle-values that provide positions to correspond to the fluxes.
-c For example:
+c For example putting angle data into k=0:
       do ip=1,nf_posno(1,1)
          c=-1.+(ip-0.5)*2./nfluxes
          ff_data(nf_address(nf_flux,1,0)+ip-1)=c
@@ -55,8 +56,9 @@ c Zero nums to silence incorrect warnings.
       numdata=0
       numobj=0
       nf_address(1,1,0)=1
-      do k=0,nf_maxsteps
-         if(k.gt.0)nf_address(1,1,k)=nf_address(1,1,k-1)+numobj
+      do k=1-nf_posdim,nf_maxsteps
+         if(k.gt.1-nf_posdim)
+     $        nf_address(1,1,k)=nf_address(1,1,k-1)+numobj
          numobj=0
          do j=1,mf_obj
             if(j.gt.1)nf_address(1,j,k)=nf_address(1,j-1,k)+numdata
@@ -226,6 +228,9 @@ c***********************************************************************
 
       end
 c***********************************************************************
+c Averaging the flux data over all positions.
+c The positions might be described by more than one dimension, but
+c that is irrelevant to the averaging, though not to plotting.
       subroutine fluxave()
       include '3dcom.f'
       parameter (nfluxmax=200)
@@ -233,7 +238,6 @@ c***********************************************************************
 
       do i=1,nf_posno(1,1)
          flux(i)=0.
-         angle(i)=ff_data(nf_address(1,1,0)+i-1)
       enddo
       sum=0
       do i=1,nf_posno(1,1)
@@ -244,6 +248,13 @@ c***********************************************************************
          flux(i)=flux(i)/nf_step
       enddo
 
+c From here on is non-general and is mostly for testing.
+      do i=1,nf_posno(1,1)
+c Here's the assumption that k=0 is angle information, and all different
+c we could make this more general by binning everything with the same
+c angle together.
+         angle(i)=ff_data(nf_address(1,1,0)+i-1)
+      enddo
       write(*,*) 'Average Flux'
       write(*,'(10f8.4)')(flux(i),i=1,nf_posno(1,1))
 
@@ -288,8 +299,8 @@ c Using the routines in strings_names.f
 c      write(*,*)nf_step,mf_quant,mf_obj
       write(22)((nf_posno(i,j),i=1,mf_quant),j=1,mf_obj)
       write(22)(((nf_address(i,j,k),i=1,mf_quant),j=1,mf_obj),
-     $     k=0,nf_step+1)
-      write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+1))
+     $     k=1-nf_posdim,nf_step+1)
+      write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
 
       close(22)
 
@@ -311,7 +322,7 @@ c*****************************************************************
       read(23)nf_step,mf_quant,mf_obj
       read(23)((nf_posno(i,j),i=1,mf_quant),j=1,mf_obj)
       read(23)(((nf_address(i,j,k),i=1,mf_quant),j=1,mf_obj),
-     $     k=0,nf_step+1)
+     $     k=1-nf_posdim,nf_step+1)
       read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+1))
       close(23)
 

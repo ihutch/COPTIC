@@ -1271,3 +1271,11 @@ and other. Got rununfullread working.]
 
 16 Feb O8
 Fiddled a bit with the flux reading and writing.
+
+12 Jun 09
+Added documentation to 3dcom.f
+Added additional possible dimensions to the position descriptor data,
+because a single number might not describe the position sufficiently.
+More dimensions (nf_posdim>1) does not affect the actual data averaging
+since it is stored as a linear array. But the linear array might really
+refer to two angles (or more parameters). 

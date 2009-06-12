@@ -1,4 +1,4 @@
-LIBRARIES = -L/usr/X11R6/lib/ -L/home/hutch/accis/ -laccisX -lXt -lX11 
+LIBRARIES = -L/usr/X11R6/lib/ -L/home/hutch/accis/ -laccisX -lXt -lX11 -lGL -lGLU
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
 # The sormpi system.
