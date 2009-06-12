@@ -323,7 +323,7 @@ c*****************************************************************
       read(23)((nf_posno(i,j),i=1,mf_quant),j=1,mf_obj)
       read(23)(((nf_address(i,j,k),i=1,mf_quant),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+1)
-      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+1))
+      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
       close(23)
 
       write(*,*)'Read back flux data from ',name(1:lentrim(name))
