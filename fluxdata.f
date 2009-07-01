@@ -276,6 +276,8 @@ c Particle common data
       include 'partcom.f'
 c Plasma common data
       include 'plascom.f'
+c 
+      character*(100) charout
 c Zero the name first. Very Important!
 c Construct a filename that contains many parameters
 c Using the routines in strings_names.f
@@ -291,12 +293,16 @@ c Using the routines in strings_names.f
       call nameappendexp(name,'L',debyelen,1)
       np=nbcat(name,'.dat')
       write(*,*)name
+      write(charout,51)debyelen,Ti,vd,rs,phip
+ 51   format('debyelen,Ti,vd,rs,phip:',5f10.4)
 
       open(22,file=name,status='unknown',err=101)
       close(22,status='delete')
       open(22,file=name,status='new',form='unformatted',err=101)
+c This write sequence must be exactly that read below.
+      write(22)charout
+      write(22)debyelen,Ti,vd,rs,phip
       write(22)nf_step,mf_quant,mf_obj
-c      write(*,*)nf_step,mf_quant,mf_obj
       write(22)((nf_posno(i,j),i=1,mf_quant),j=1,mf_obj)
       write(22)(((nf_address(i,j,k),i=1,mf_quant),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+1)
@@ -317,8 +323,12 @@ c*****************************************************************
       subroutine readfluxfile(name)
       character*(*) name
       include '3dcom.f'
+      include 'plascom.f'
+      character*(100) charout
 
       open(23,file=name,status='old',form='unformatted',err=101)
+      read(23)charout
+      read(23)debyelen,Ti,vd,rs,phip
       read(23)nf_step,mf_quant,mf_obj
       read(23)((nf_posno(i,j),i=1,mf_quant),j=1,mf_obj)
       read(23)(((nf_address(i,j,k),i=1,mf_quant),j=1,mf_obj),
@@ -327,6 +337,7 @@ c*****************************************************************
       close(23)
 
       write(*,*)'Read back flux data from ',name(1:lentrim(name))
+      write(*,*)'Charout=',charout
       return
  101  write(*,*)'Error opening file:',name
       end

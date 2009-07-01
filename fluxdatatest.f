@@ -22,13 +22,13 @@ c**************************************************************
      $     ,j=1,mf_obj),k=0,2),'...'
 
       write(*,'(a,i3,a)') 'Position data for ',nf_posdim,' dimensions.'
-      write(*,'(10f7.4)')((ff_data(nf_address(1,1,1-j)+i-1)
+      write(*,'(10f8.4)')((ff_data(nf_address(1,1,1-j)+i-1)
      $     ,i=1,nf_posno(1,1)),j=1,nf_posdim)
 
       write(*,*)nf_step
       do k=1,nf_step,max(nf_step/5,1)
          write(*,'(a,i3,a)') 'Step(',k,') data'
-         write(*,'(10f7.4)')(ff_data(nf_address(1,1,k)+i-1)
+         write(*,'(10f8.4)')(ff_data(nf_address(1,1,k)+i-1)
      $     ,i=1,nf_posno(1,1))
       enddo
 

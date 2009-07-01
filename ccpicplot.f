@@ -250,6 +250,7 @@ c Packaged version of plotting.
       integer ifmax
       parameter (ifmax=100,Li=ifmax)
       real uplot(ifmax,ifmax)
+      character cwork(ifmax,ifmax)
 
       include 'meshcom.f'
       include 'partcom.f'
@@ -276,7 +277,7 @@ c               write(*,'(10f8.4)')(uplot(i,j),j=1,iuds(id2))
 c Contour without labels, with coloring, using vector coordinates.
       zclv=20.
       icl=0
-      call contourl(uplot,zp,Li,nf1,nf2,zclv,icl,
+      call contourl(uplot,cwork,Li,nf1,nf2,zclv,icl,
      $        xn(ixnp(id1)+1),xn(ixnp(id2)+1),17)
       call color(15)
       call axis()
@@ -289,5 +290,5 @@ c Contour without labels, with coloring, using vector coordinates.
          call polymark(xorbit(1,kk),yorbit(1,kk),iorbitlen(kk),3)
       enddo
       call pltend()
-
+c      write(*,*)'Returning from orbit3plot.'
       end

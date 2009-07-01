@@ -40,6 +40,9 @@ c First line must be the number of dimensions.
       read(1,'(a)',end=902)cline
       read(cline,*,err=901)nd
 
+      write(*,'(a,a50)')'Reading objects from file: ',filename
+      write(*,*)'Object Descr   type',
+     $     '       (center)              (radii)              (BCs)'
 c Loop over lines of the input file.
  1    iline=iline+1
       read(1,'(a)',end=902)cline
@@ -54,25 +57,27 @@ c Use only lower byte.
       if(type.eq.1.)then
          read(cline,*,err=901,end=801)
      $        (obj_geom(k,ngeomobj),k=1,1+2*nd+3)
- 801     write(*,*)ngeomobj,' Spheroid',
-     $        (obj_geom(k,ngeomobj),k=1,1+2*nd+3)
-c         write(*,*)
+ 801     write(*,820)ngeomobj,
+     $        ' Spheroid '
+         write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.2.)then
          read(cline,*,err=901,end=802)
      $        (obj_geom(k,ngeomobj),k=1,1+2*nd+3)
- 802     write(*,*)ngeomobj,' Cuboid',
-     $        (obj_geom(k,ngeomobj),k=1,1+2*nd+3)
+ 802     write(*,820)ngeomobj,' Cuboid '
+         write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.3.)then
          read(cline,*,err=901,end=803)
      $        (obj_geom(k,ngeomobj),k=1,1+2*nd+2+3)
- 803     write(*,*)ngeomobj,' Cylinder',
-     $        (obj_geom(k,ngeomobj),k=1,1+2*nd+2+3)
+ 803     write(*,820)ngeomobj,' Cylinder '
+         write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.4.)then
          read(cline,*,err=901,end=804)
      $        (obj_geom(k,ngeomobj),k=1,1+nd*(1+nd)+3)
- 804     write(*,*)ngeomobj,' General Cuboid/Parallelepiped'
-         write(*,*)(obj_geom(k,ngeomobj),k=1,1+nd*(1+nd)+3)
+ 804     write(*,820)ngeomobj,' General Cuboid/Parallelepiped '
+         write(*,821)(obj_geom(k,ngeomobj),k=1,1+nd*(1+nd)+3)
       endif
+ 820  format(i3,a,$)
+ 821  format(10f7.3)
       goto 1
 
  901  write(*,*)'Readgeom error reading line',iline,':'

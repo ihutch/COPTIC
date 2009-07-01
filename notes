@@ -1029,7 +1029,7 @@ Monte-Carlo is better in dimensions greater than 2.
 
 Started volintegrate and volnode for node volume calculations.
 Transitioned active code to using mditerarg instead of mditerate.
-However, haven't prumed all mditerate because the calls of mditerarg
+However, haven't pruned all mditerate because the calls of mditerarg
 are a bit hokey, since they use inconsistent number of arguments.
 This should not matter, since the arguments are at the end. However
 it probably violates fortran standards. So probably ought to think
@@ -1047,7 +1047,9 @@ which is the routine that is called for each object to determine if
 the point is inside it. 
 
 It might well be worth saving the volume data in a file, to be read
-back in, in most cases. Done, and seems to work.
+back in, in most cases. Done. File storedgeom.dat and seems to work.
+There are numerous cross-checks to try to make sure this is valid
+data for the case being run. 
 
 12 Sep 07
 
@@ -1279,3 +1281,21 @@ because a single number might not describe the position sufficiently.
 More dimensions (nf_posdim>1) does not affect the actual data averaging
 since it is stored as a linear array. But the linear array might really
 refer to two angles (or more parameters). 
+
+Fix segfault bug with undefined cworka in orbit3plot.
+
+13 Jun 09
+
+Fixed some other little bugs.
+Improved some accis routines to make the rotation of the slice plot work
+more smoothly and fixed some bugs in it.
+
+Now want to overplot the 3-D orbit on an existing perspective plot.
+Issue is that a mesh has the third axis scale set to something to do
+with the function amplitude rather than position. Need the ability to
+rescale that axis, plot orbits, then scale back to prior. Also need
+a poly3mark routine.
+
+Instead, first modified the cijplot routine to enable choice of objects
+to plot and overplot the orbits on that. This avoids any need to rescale
+etc. Also made a polymark routine. 

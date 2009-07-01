@@ -2,12 +2,13 @@ LIBRARIES = -L/usr/X11R6/lib/ -L/home/hutch/accis/ -laccisX -lXt -lX11 -lGL -lGL
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
 # The sormpi system.
-OBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reinject.o pinit.o bbdyroutine.o ccpicplot.o volint.o fluxdata.o stringsnames.o
+OBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reinject.o pinit.o bbdyroutine.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o
 HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 G77=mpif77
 #COMPILE-SWITCHES = -Wall -O2  -I. 
-#COMPILE-SWITCHES = -Wall  -O2 -I. -g -ffortran-bounds-check
+#COMPILE-SWITCHES = -Wall  -O2 -I. -g -fbounds-check
+#COMPILE-SWITCHES = -Wall  -O2 -I. -g 
 COMPILE-SWITCHES = -Wall -Wno-unused -O2 -I.
 NOBOUNDS= -Wall -Wno-unused -O2 -I.
 PROFILING= -pg
@@ -19,7 +20,7 @@ PROFILING= -pg
 # interpreted as "terminal" which means it does not apply unless its
 # prerequisites exist. By my interpretation of the info, this ought not
 # to be happening (requires a double colon), but on horace, it is. 
-% : %.f  makefile $(OBJECTS) $(UTILITIES)
+% : %.f  makefile $(OBJECTS) $(UTILITIES) /home/hutch/accis/libaccisX.a
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
 %.o : %.f makefile $(HEADERS)
@@ -43,7 +44,7 @@ getfield.o : getfield.f makefile $(HEADERS)
 	$(G77)  -c $(NOBOUNDS) $(PROFILING) $*.f
 
 # Main program explicit to avoid make bugs:
-ccpic : ccpic.f makefile $(OBJECTS) $(UTILITIES)
+ccpic : ccpic.f makefile $(OBJECTS) $(UTILITIES) /home/hutch/accis/libaccisX.a
 	$(G77)  -o ccpic $(COMPILE-SWITCHES) $(PROFILING) ccpic.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
 clean :

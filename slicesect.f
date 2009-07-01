@@ -51,7 +51,7 @@ c*******************************************************************
      $           utitle,ictl)
       parameter(ndims=3,nd2=2*ndims)
 c Plot web-projected and/or projected contour representations 
-c of potential u on slices with
+c of quantity u on slices with
 c fixed values of dimension ifix. Mark cij boundaries.
 c The full dimensions of arrays u, cij are
       integer ifull(ndims)
@@ -80,20 +80,23 @@ c Workspace size is problematic.
 c Contour levels
       real cl(30)
 c Local variables:
+      integer icontour,iweb,iback
+      integer isw,jsw
       character*(10) cxlab,cylab
       character*(30) form1
       logical lfirst
       data lfirst/.true./
 c Tell that we are looking from the top by default.
-      data ze1/1./icontour/1/iweb/1/
+      data ze1/1./icontour/1/iweb/1/iback/0/
       data cs/.707/sn/.707/
 
       if(lfirst)then
-         write(*,*)' Slice plotting.',
+         write(*,*)' ======== Slice plotting.',
      $        ' up/down arrows change slice.'
          write(*,*) ' l/r arrows change dimension.',
      $        ' s: rescale. p: print. Drag mouse to rotate.'
-         write(*,*) ' c: contour plane. w: toggle web. r: rotate'
+         write(*,*)
+     $        ' c: contour plane position. w: toggle web. r/e: rotate.'
          iweb=1
          icontour=1
          lfirst=.false.
@@ -105,6 +108,7 @@ c Initial slice number
       n1=iuds(ifix)/2
 c     Plot the surface. With scaling 1. Web color 6, axis color 7.
       jsw=1 + 256*6 + 256*256*7
+      call accisgradinit(64000,0,0,-64000,128000,64000)
  21   call pltinit(0.,1.,0.,1.)
 c Set the plotting arrays for fixed dimension ifix.
       idp1=mod(ifix,3)+1
@@ -129,7 +133,7 @@ c Could be fixed to be general, I suppose.
                enddo
             elseif(ifix.eq.3)then
                zp(i,j)=u(i,j,n1)
-               do k=1,nd2+1
+               do k=1,nd2+1 
                   cijp(k,i,j)=cij(k,i,j,n1)
                enddo
             endif
@@ -137,7 +141,9 @@ c Could be fixed to be general, I suppose.
       enddo
 
 c Web drawing. First call is needed to set scaling.
-      if(iweb.eq.1.)call hidweb(xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
+c      write(*,*)'jsw=',jsw
+      if(iweb.eq.1)
+     $     call hidweb(xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
      $        zp,nw,nf1,nf2,jsw)
 c Use this scaling until explicitly reset.
       jsw=0 + 256*6 + 256*256*7
@@ -154,7 +160,6 @@ c Projected contouring.
       if(icontour.ne.0)then
 c       Draw a contour plot in perspective. Need to reset color anyway.
          call color(4)
-         call accisgradinit(64000,0,0,-64000,128000,64000)
          call axregion(-scbx3,scbx3,-scby3,scby3)
          xmin=xn(ixnp(idp1)+1)
          xmax=xn(ixnp(idp1)+iuds(idp1))
@@ -195,9 +200,12 @@ c Contour without labels, with coloring, using vector axes
          if(iweb.ne.1)call cubed(icorner-8*(icorner/8))
       endif
 
-      if(iweb.eq.1.and.icontour.eq.3)
-     $     call hidweb(xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
+      if(iweb.eq.1.and.icontour.eq.3)then
+         call hidweb(xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
      $        zp,nw,nf1,nf2,jsw)
+c This was necessary when hidweb used to change jsw.
+c         jsw=0 + 256*6 + 256*256*7
+      endif
 
       if(ips.ne.0)then
 c We called for a local print of plot. Terminate and switch it off.
@@ -206,20 +214,14 @@ c We called for a local print of plot. Terminate and switch it off.
          ips=0
       endif
 
-c User interface:
-      if(irotating.gt.0)then
-c Get back current eye position xe1 etc.
-         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
-c         write(*,*)'irotating',irotating,xe1,ye1,ze1,cs,sn
-         xex=xe1-xe
-         yex=ye1-ye
-         xe1=xe+cs*xex-sn*yex
-         ye1=ye+sn*xex+cs*yex
-c Must tell to look at zero.
-         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
-         irotating=irotating-1
-         goto 21
+c-----------------------------------
+c Double buffering 
+      if(iback.ne.0)then 
+         call glfront()
       endif
+c Limit framing rate to 30fps.
+      call usleep(30000)
+c User interface interpret key-press.
       call eye3d(isw)
       if(isw.eq.0) goto 23
       if(isw.eq.65364 .and. n1.gt.1) n1=n1-1
@@ -257,14 +259,29 @@ c Move it out.
          call trn32(0.,0.,0.,xe1,ye1,ze1,1)
       elseif(isw.eq.ichar('r'))then
          irotating=1
-         cs=cos(.1)
-         sn=sin(.1)
+         cs=cos(.05)
+         sn=sin(.05)
       elseif(isw.eq.ichar('e'))then
          irotating=1
-         cs=cos(.1)
-         sn=sin(-.1)
+         cs=cos(.05)
+         sn=sin(-.05)
+      endif
+      if(irotating.gt.0)then
+         call glback()
+         iback=1
+c Get back current eye position xe1 etc.
+         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
+c         write(*,*)'irotating',irotating,xe1,ye1,ze1,cs,sn
+         xex=xe1-xe
+         yex=ye1-ye
+         xe1=xe+cs*xex-sn*yex
+         ye1=ye+sn*xex+cs*yex
+c Must tell to look at zero.
+         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
+         irotating=irotating-1
       endif
 c End of user interface.
+c------------------------------------
       goto 21
  23   continue
       call hdprset(0,0.)

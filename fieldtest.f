@@ -247,7 +247,7 @@ c               write(*,'(10f8.4)')(uplot(i,j),j=1,iuds(id2))
        endif
 c         if(lplot .and. abs(errmax).lt..1) then
          if(lplot) then
-            call cijplot(ndims,ifull,iuds,cij,.5)
+            call cijplot(ndims,ifull,iuds,cij,.5,0,0)
             call yautoplot(u(1,n0,n1),ni)
             do i=1,ni
                xr=xn(i)

@@ -1,12 +1,13 @@
 c Mostly for testing.
 c Assumed 3-D routine, plots representation of the cij/obj data.
-      subroutine  cijplot(ndims,ifull,iuds,cij,rs)
-      integer ndims
+      subroutine  cijplot(ndims,ifull,iuds,cij,rs,iosw)
+      integer ndims,iosw
       parameter (mdims=10)
       integer ifull(mdims),iuds(ndims)
       real cij(ndims*2+1,ifull(1),ifull(2),ifull(3))
       include 'objcom.f'
       include 'meshcom.f'
+      include 'partcom.f'
       real xx(3),xt(3)
       integer irx(5),iry(5),ipx(5),ipy(5),ijk(3)
       integer idelta(3,3)
@@ -16,17 +17,32 @@ c Assumed 3-D routine, plots representation of the cij/obj data.
       data ipy/0,0,0,1,0/
       data idelta/1,0,0,0,1,0,0,0,1/
 
-      istick=1
-      iwire=0
+c If iosw > 0, then wireframe the objects corresponding to its bits.
+c If iosw < 0, plot the sticks as well as the wireframes.
+c If iosw = 0, plot only sticks for everything.
+      if(iosw.gt.0)then
+         istick=0
+         iwire=1
+         mysw=iosw
+      elseif(iosw.lt.0)then
+         istick=1
+         iwire=0
+         mysw=-iosw
+      else
+         istick=2
+         iwire=0
+         mysw=65535
+      endif
+
+c      istick=1
+c      iwire=0
       irotating=0
 
- 51   continue
-c     call pfset(3)
-      call setcube(.2,.2,.2,.5,.4)
       call pltinit(0.,1.,0.,1.)
+      call setcube(.2,.2,.2,.5,.4)
+ 51   continue
       call geteye(x2,y2,z2)
       call pltinit(0.,1.,0.,1.)
-c      call scale3(0.,1.,0.,1.,0.,1.)
       call scale3(-rs,rs,-rs,rs,-rs,rs)
       call trn32(0.,0.,0.,x2,y2,z2,1)
       xb=0
@@ -37,7 +53,7 @@ c      call scale3(0.,1.,0.,1.,0.,1.)
       if(z2.ge.0)zb=1
       icorner= (2*zb-1)*( (1 +3*yb) + (1 - 2*yb)*xb )
 
-      call cubed(icorner)
+c      call cubed(icorner)
       call axproj(icorner)
 
       if(istick.eq.0) goto 52
@@ -84,7 +100,7 @@ c                           write(*,*)no,id,frac,ipm,xt
          enddo
       enddo
       if(iwire.eq.0 .and. ieye3d().ne.0)goto 51
-      iwire=1
+      if(istick.eq.1)iwire=1
 c      goto 51
  52   continue
 c     Wireframe drawing.
@@ -92,7 +108,11 @@ c     Wireframe drawing.
          do j=1,iuds(2)
             do k=1,iuds(3)
                iobj=cij(2*ndims+1,i,j,k)
-               if(iobj.ne.0)then
+               iobjcode=idob_sor(iinter_sor,iobj)
+               if(iobj.ne.0.and.iobjcode.ge.0)then
+               isob=mysw/2**iobjcode-(mysw/2**(iobjcode+1))*2
+c               write(*,*)iobj,iobjcode,isob,mysw
+               if(isob.ne.0)then
 c Origin point
                   xx(1)=xn(ixnp(1)+i)
                   xx(2)=xn(ixnp(2)+j)
@@ -110,10 +130,8 @@ c Draw joins between common fractions in plane normal to id.
                         no=ndata_sor*(
      $                      2*( (i1-1)*mod(ipm,2)+(i2-1)*mod(ipm+1,2))
      $                       +ipx(ipm)+ipy(ipm))+1
-c                        call color((no+2)/ndata_sor)
-                        call color(15)
 c                        write(*,*)'iinter',idob_sor(iinter_sor,iobj)
-                        call color(idob_sor(iinter_sor,iobj))
+                        call color(iobjcode)
                         frac=dob_sor(no,iobj)
                         if(frac.lt.1. .and. frac.ge.0.)then
 c This a true intersection. Draw to it.
@@ -144,8 +162,7 @@ c Draw joins between adjacent planes in the positive direction
                         no=ndata_sor*(
      $                      2*( (i1-1)*mod(ipm,2)+(i2-1)*mod(ipm+1,2))
      $                       +ipx(ipm)+ipy(ipm))+1
-c                        call color((no+2)/ndata_sor)
-                        call color(15)
+                        call color(iobjcode)
                         frac=dob_sor(no,iobj)
                         frac2=dob_sor(no,iobj2)
                         if(frac.lt.1. .and. frac.ge.0.
@@ -170,32 +187,44 @@ c                           write(*,*)no,id,i1,i2,frac,ipm,xt
                      endif
                   enddo
                endif
+               endif
             enddo
          enddo
       enddo
+c Plot orbits if there are any.
+c      write(*,*)'norbits,length=',norbits,iorbitlen(1)
+      do kk=1,norbits
+         call color(kk)
+         call poly3line(xorbit(1,kk),yorbit(1,kk),zorbit(1,kk),
+     $        iorbitlen(kk))
+         call poly3mark(xorbit(1,kk),yorbit(1,kk),zorbit(1,kk),
+     $        iorbitlen(kk),1)
+      enddo
 c User interface:
+      call eye3d(isw)
+      if(isw.eq.0)goto 55
+      if(isw.eq.ichar('r').or.isw.eq.ichar('e'))irotating=1
       if(irotating.gt.0)then
 c Get back current eye position xe1 etc.
          call asleep(5000)
-         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
-         cs=cos(.02)
-         sn=sin(.02)
-c         write(*,*)'irotating',irotating,xe1,ye1,ze1,cs,sn
-         xex=xe1-xe
-         yex=ye1-ye
-         xe1=xe+cs*xex-sn*yex
-         ye1=ye+sn*xex+cs*yex
-         call puteye(xe1,ye1,ze1)
-c         call trn32(xe,ye,ze,xe1,ye1,ze1,1)
+         call trn32(xe,ye,ze,x2,y2,z2,-1)
+         dtheta=.02
+         if(isw.eq.ichar('r'))dtheta=-.02
+         cs=cos(dtheta)
+         sn=sin(dtheta)
+c         write(*,*)xe,ye,ze,x2,y2,z2,cs,sn
+         xex=x2-xe
+         yex=y2-ye
+         x2=xe+cs*xex-sn*yex
+         y2=ye+sn*xex+cs*yex
+         call puteye(x2,y2,z2)
+c         call trn32(xe,ye,ze,x2,y2,z2,1)
          irotating=irotating-1
          goto 51
       endif
-      call eye3d(isw)
-      if(isw.eq.0)goto 55
-      if(isw.eq.ichar('r'))irotating=20
       goto 51
  55   continue
-      if(istick.eq.1) then
+      if(istick.gt.0) then
          istick=0
          goto 51
       endif
