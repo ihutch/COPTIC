@@ -2,14 +2,15 @@ LIBRARIES = -L/usr/X11R6/lib/ -L/home/hutch/accis/ -laccisX -lXt -lX11 -lGL -lGL
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
 # The sormpi system.
-OBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reinject.o pinit.o bbdyroutine.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o
-HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f
+OBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reinject.o pinit.o bbdyroutine.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o
+HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 G77=mpif77
 #COMPILE-SWITCHES = -Wall -O2  -I. 
 #COMPILE-SWITCHES = -Wall  -O2 -I. -g -fbounds-check
 #COMPILE-SWITCHES = -Wall  -O2 -I. -g 
 COMPILE-SWITCHES = -Wall -Wno-unused -O2 -I.
+#COMPILE-SWITCHES = -Wall -Wno-unused -I.
 NOBOUNDS= -Wall -Wno-unused -O2 -I.
 PROFILING= -pg
 #PROFILING=

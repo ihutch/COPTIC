@@ -31,7 +31,7 @@ c     so that the pointers can be used for each block.
 c     u  potential to be solved for (initialized on entry).
 c        its boundaries are at 1,ni; 1,nj; 
 c        which are normally set on entry or by bdyset,
-c        but but boundary values are never changed inside sormpi.
+c        but boundary values are never changed inside sormpi.
       real u(*)
 c     q  "charge density" input
       real q(*)
@@ -152,13 +152,16 @@ c Do block boundary communications, returns block info icoords...myid.
 c If this is found to be an unused node, jump to barrier.
          if(mycartid.eq.-1)goto 999
 c Do a relaxation.
-c            write(*,*) 'Calling sorrelaxgen',k_sor,myorig,ndims,myside
+c            if(k_sor.le.2)
+c     $        write(*,*) 'Calling sorrelaxgen',delta,oaddu,relax
             call sorrelaxgen(k_sor,ndims,iLs,myside,
      $           cij(1+(2*ndims+1)*(myorig-1)),
      $           u(myorig),
      $           q(myorig),
      $           laddu,faddu,oaddu,relax,delta,umin,umax)
-c            write(*,*) 'Return from sorrelaxgen0',k_sor,delta,umin,umax
+c          call checkdelta(delta,deltaold)
+c          if(k_sor.le.2)
+c     $     write(*,*) 'Return from sorrelaxgen',k_sor,delta,oaddu,relax
 c Test convergence
          call testifconverged(eps_sor,delta,umin,umax,
      $        lconverged,icommcart)

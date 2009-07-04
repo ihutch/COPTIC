@@ -134,10 +134,13 @@ c Adjust the denominator and numerator using external call.
          endif
          if(laddu) then
             addu=faddu(u(ipoint+1),daddu)
-c     relative weight of f term versus L term. Use max for next iteration.
-            raddu=abs(daddu/dden)
-            if(raddu.gt.oaddu) oaddu=5.*raddu
             dden=csum+daddu
+c     relative weight of f term versus L term. Use max for next iteration.
+c This seemed to be an error 2 July 09. Also dden was being calculated after.
+c            raddu=abs(daddu/dden)
+c            if(raddu.gt.oaddu) oaddu=5.*raddu
+            raddu=5.*abs(daddu/dden)
+            if(raddu.gt.oaddu) oaddu=raddu
             dnum=dnum-addu
          else
             dden=csum
@@ -147,8 +150,6 @@ c     relative weight of f term versus L term. Use max for next iteration.
      $           (cij(icind0+ic),ic=1,2*ndims)
             stop
          endif
-c This was an error
-c         delta=relax*(dnum/dden-u(ipoint+1))
          delta=relax*(dnum-csum*u(ipoint+1))/dden
          if(abs(delta).gt.abs(rdelta))rdelta=delta
          uij=u(ipoint+1)+delta

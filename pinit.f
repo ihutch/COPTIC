@@ -4,19 +4,22 @@ c Initializing particles.
 c Common data:
       include 'partcom.f'
       include 'plascom.f'
+      include 'myidcom.f'
 
       ntries=0
 c      ntrapped=0
       rmax=0.99999*rs
       rmax2=rmax*rmax
+c The maximum used slot is the same as the number of particles initially
+      ioc_part=n_part
 c     We initialize the 'true' particles'
       do i=1,n_part
          if_part(i)=1
  1       continue
          ntries=ntries+1
-         x_part(1,i)=rmax*(2.*ran0(idum)-1.)
-         x_part(2,i)=rmax*(2.*ran0(idum)-1.)
-         x_part(3,i)=rmax*(2.*ran0(idum)-1.)
+         x_part(1,i)=rmax*(2.*ran1(myid)-1.)
+         x_part(2,i)=rmax*(2.*ran1(myid)-1.)
+         x_part(3,i)=rmax*(2.*ran1(myid)-1.)
          inewregion=insideall(npdim,x_part(1,i))
 c     If we are not in the plasma region, try again.
          if(inewregion.ne.iregion_part)then
@@ -27,9 +30,9 @@ c     $           ,(x_part(kk,i),kk=1,3)
          endif
          Ti0=Ti
          tisq=sqrt(Ti0)
-         x_part(4,i)=tisq*gasdev(idum)
-         x_part(5,i)=tisq*gasdev(idum)
-         x_part(6,i)=tisq*gasdev(idum) + vd
+         x_part(4,i)=tisq*gasdev(myid)
+         x_part(5,i)=tisq*gasdev(myid)
+         x_part(6,i)=tisq*gasdev(myid) + vd
       enddo
 c Set flag of unused slots to 0
       do i=n_part+1,n_partmax

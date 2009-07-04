@@ -1299,3 +1299,387 @@ a poly3mark routine.
 Instead, first modified the cijplot routine to enable choice of objects
 to plot and overplot the orbits on that. This avoids any need to rescale
 etc. Also made a polymark routine. 
+
+2 July 09
+
+Replaced the ran() function with a purely fortran one ran1 from NR. 
+The reason is that we can't get at the internal state of any of the
+decent built-in random generators, so we can't do proper restarts.
+The time for ccpic -s20 with the old one is 
+real    0m33.843s
+user    0m16.358s
+sys     0m0.378s
+And with the new one it is
+real    0m33.437s
+user    0m16.306s
+sys     0m0.304s
+There is no detectable time difference for this single-processor case.
+
+In partwriteread we save the random number state ranstate, and read it back
+so that we can restart and get exactly what we would have got if we had
+not saved the state.
+
+At present, we do not have the mpi infrastructure for gathering particle
+data from different processes or broadcasting back the field data. This
+is eventually going to be needed.
+
+Ok. Created writing of potential too. 
+I think that ought to be enough to be able to restart. We have to have
+identical parameters, which is currently assumed rather than written,
+although iuds is stored with potential. 
+
+Trying to get the restart going. I find that there is disagreement.
+To test the rereading, I do an internal restart by jumping back into the
+code after 5 steps. This gives identical results as not restarting.
+This shows that everything (relevant) that is read back is being read
+back correctly. However, the difference with a true restart means
+that there's something in the restart that is not being set correctly 
+by the reading process.
+
+Tests based on ccpic, ccpic --restart, ccpic -s10,
+with a sample psum, q, and random number show:
+
+The psum and q difference does not start till the 8th iteration.
+This is already remarkable, since it means there's no difference
+for the first two iterations after restart. 
+
+The psum/q differences start before there are any differences in the
+random sample. This strongly suggests there's not a problem with the
+random number generator restart.
+
+I find that the u-differences start immediately after the first solve
+of the restart. So that is where things are changing.
+
+Probing inside of sormpi with output from individual iterations. This
+shows that the differences start to show up on the second return from
+sorrelaxgen0 after the restart:
+
+ Restart files read successfully.
+ nrein,n_part,ioc_part,rhoinf,dt=        1253       51915       52359   99.97294      0.1000000    
+ psum sample   5.197589     u    sample -5.5481944E-02  ran1  0.8150202    
+ Return from sorrelaxgen0           1 -2.9151652E-02  -2.000000      5.7159495E-02
+ Return from sorrelaxgen0           2 -6.2908038E-02  -2.000000      7.9460606E-02
+ Return from sorrelaxgen0           3 -3.9616335E-02  -2.000000      6.9320247E-02
+ Return from sorrelaxgen0           4 -3.5938688E-02  -2.000000      6.5017469E-02
+
+
+Return from sorrelaxgen0          56  2.6678543E-05  -2.000000      6.2136307E-02
+ Return from sorrelaxgen0          57 -2.2355829E-05  -2.000000      5.4357897E-02
+ Return from sorrelaxgen0          58 -1.8731193E-05  -2.000000      6.2133629E-02
+ q    sample   1.502413     u    sample -6.0202956E-02
+0006 iterations:  58 Total flux number   147.0000    
+nrein,n_part,ioc_part,rhoinf,dt= 1253  51756  52359  99.973   0.100
+ psum sample   4.499379     u    sample -6.0202956E-02  ran1  0.8549011    
+ Return from sorrelaxgen0           1 -3.3089679E-02  -2.000000      5.8978312E-02
+ Return from sorrelaxgen0           2  7.8395963E-02  -2.000000      6.1556634E-02
+ Return from sorrelaxgen0           3  4.7830440E-02  -2.000000      6.8785459E-02
+
+ q    sample   1.059864     u    sample -5.5481944E-02
+0005 iterations:  58 Total flux number   141.0000    
+nrein,n_part,ioc_part,rhoinf,dt= 1253  51915  52359  99.973   0.100
+ psum sample   5.197589     u    sample -5.5481944E-02  ran1  0.8150202    
+ Return from sorrelaxgen0           1 -2.9151652E-02  -2.000000      5.7159495E-02
+ Return from sorrelaxgen0           2 -6.2949345E-02  -2.000000      7.9473235E-02
+ Return from sorrelaxgen0           3 -3.9642353E-02  -2.000000      6.9339350E-02
+
+Printing out in addition, relax, omega, xjac_sor shows difference in relax
+occuring on the same return that there is a delta difference (but not omega).
+
+ Restart files read successfully.
+ nrein,n_part,ioc_part,rhoinf,dt=        1253       51915       52359   99.97294      0.1000000    
+ psum sample   5.197589     u    sample -5.5481944E-02  ran1  0.8150202    
+ Return from sorrelaxgen0           1 -2.9151652E-02  -2.000000      5.7159495E-02
+   1.000000       1.000000      0.9957700    
+ Return from sorrelaxgen0           2 -6.2908038E-02  -2.000000      7.9460606E-02
+   1.890094       1.983257      0.9957700    
+ Return from sorrelaxgen0           3 -3.9616335E-02  -2.000000      6.9320247E-02
+   1.876438       1.967066      0.9957700    
+
+ q    sample   1.059864     u    sample -5.5481944E-02
+0005 iterations:  58 Total flux number   141.0000    
+nrein,n_part,ioc_part,rhoinf,dt= 1253  51915  52359  99.973   0.100
+ psum sample   5.197589     u    sample -5.5481944E-02  ran1  0.8150202    
+ Return from sorrelaxgen0           1 -2.9151652E-02  -2.000000      5.7159495E-02
+   1.000000       1.000000      0.9957700    
+ Return from sorrelaxgen0           2 -6.2949345E-02  -2.000000      7.9473235E-02
+   1.891335       1.983257      0.9957700    
+ Return from sorrelaxgen0           3 -3.9642353E-02  -2.000000      6.9339350E-02
+   1.876438       1.967066      0.9957700    
+
+Yes, there seems to be a difference in oaddu. Perhaps this is arising from
+the previous solution because there does not seem to be an initialization of
+dden. Consequently the dden is what is left over from before. That will make
+the prior test solution give a difference, since oaddu is 0 for it. This seems
+to be the cause:
+
+ Restart files read successfully.
+ nrein,n_part,ioc_part,rhoinf,dt=        1253       51915       52359   99.97294      0.1000000    
+ psum sample   5.197589     u    sample -5.5481944E-02  ran1  0.8150202    
+ Return from sorrelaxgen0           1 -2.9151652E-02  -2.000000      5.7159495E-02
+  7.3466018E-02   1.000000       1.000000      0.9957700    
+ Return from sorrelaxgen0           2 -6.2908038E-02  -2.000000      7.9460606E-02
+  7.2402194E-02   1.890094       1.983257      0.9957700    
+ Return from sorrelaxgen0           3 -3.9616335E-02  -2.000000      6.9320247E-02
+  7.2402194E-02   1.876438       1.967066      0.9957700    
+
+ psum sample   5.197589     u    sample -5.5481944E-02  ran1  0.8150202    
+ Return from sorrelaxgen0           1 -2.9151652E-02  -2.000000      5.7159495E-02
+  7.2402194E-02   1.000000       1.000000      0.9957700    
+ Return from sorrelaxgen0           2 -6.2949345E-02  -2.000000      7.9473235E-02
+  7.2402194E-02   1.891335       1.983257      0.9957700    
+
+Yes, changing to ensure that it is properly initialized fixes this:
+
+
+ Restart files read successfully.
+ nrein,n_part,ioc_part,rhoinf,dt=        1253       51915       52359   99.97294      0.1000000    
+ psum sample   5.197598     u    sample -5.5441111E-02  ran1  0.8150202    
+ Return from sorrelaxgen0           1 -2.9148662E-02  0.1710546       1.000000    
+ Return from sorrelaxgen0           2 -5.9492927E-02  0.1805826       1.787417    
+ Return from sorrelaxgen0           3 -3.5247445E-02  0.1702435       1.765143    
+
+
+ q    sample   1.059865     u    sample -5.5441111E-02
+0005 iterations:  43 Total flux number   141.0000    
+nrein,n_part,ioc_part,rhoinf,dt= 1253  51915  52359  99.973   0.100
+ psum sample   5.197598     u    sample -5.5441111E-02  ran1  0.8150202    
+ Return from sorrelaxgen0           1 -2.9148662E-02  0.1710546       1.000000    
+ Return from sorrelaxgen0           2 -5.9492927E-02  0.1805826       1.787417    
+ Return from sorrelaxgen0           3 -3.5247445E-02  0.1702435       1.765143    
+
+It also seems to lead to smaller number of iterations. Which is also good.
+
+However, it has not solved the later divergences. They start after the 6th
+iteration, which is completed without divergence. How can that be?
+The difference first observed is in delta.
+
+ Return from sorrelaxgen0          44 -1.9401210E-05  0.1755715       1.662254    
+ q    sample   1.502416     u    sample -6.0158029E-02
+0006 iterations:  44 Total flux number   147.0000    
+nrein,n_part,ioc_part,rhoinf,dt= 1253  51756  52359  99.973   0.100
+ psum sample   4.499377     u    sample -6.0158029E-02  ran1  0.8549011    
+ Return from sorrelaxgen0           1 -3.3093132E-02  0.1704593       1.000000    
+ Return from sorrelaxgen0           2  7.4114323E-02  0.1755701       1.787982    
+
+ Return from sorrelaxgen0          44 -1.9401210E-05  0.1755715       1.662254    
+ q    sample   1.502416     u    sample -6.0158029E-02
+0006 iterations:  44 Total flux number   147.0000    
+nrein,n_part,ioc_part,rhoinf,dt= 1253  51756  52359  99.973   0.100
+ psum sample   4.499377     u    sample -6.0158029E-02  ran1  0.8549011    
+ Return from sorrelaxgen0           1 -3.3690698E-02  0.1704593       1.000000    
+ Return from sorrelaxgen0           2  6.2475450E-02  0.1755701       1.787982    
+ Return from sorrelaxgen0           3  4.0570423E-02  0.1725774       1.769773    
+
+
+ q    sample   1.502416     u    sample -6.0158029E-02
+0006 iterations:  44 Total flux number   147.0000    
+nrein,n_part,ioc_part,rhoinf,dt= 1253  51756  52359  99.973   0.100
+ psum sample   4.499377     u    sample -6.0158029E-02  ran1  0.8549011    
+ Calling sorrelaxgen   0.000000       0.000000       1.000000    
+ Return from sorrelaxgen0           1 -3.3093132E-02  0.1704593       1.000000    
+ Calling sorrelaxgen   0.000000       0.000000       1.787982    
+ Return from sorrelaxgen0           2  7.4114323E-02  0.1755701       1.787982    
+
+ q    sample   1.502416     u    sample -6.0158029E-02
+0006 iterations:  44 Total flux number   147.0000    
+nrein,n_part,ioc_part,rhoinf,dt= 1253  51756  52359  99.973   0.100
+ psum sample   4.499377     u    sample -6.0158029E-02  ran1  0.8549011    
+ Calling sorrelaxgen   0.000000       0.000000       1.000000    
+ Return from sorrelaxgen0           1 -3.3690698E-02  0.1704593       1.000000    
+ Calling sorrelaxgen   0.000000       0.000000       1.787982    
+ Return from sorrelaxgen0           2  6.2475450E-02  0.1755701       1.787982    
+
+
+I think it pretty much has to be an internal state of sorelaxgen. Because
+all the parameters are set to be the same going into it. Unless something
+very bad has happened with u or q.
+
+3 Jul 09
+
+It is the seventh iteration first call to sorrelaxgen that goes awry.
+Perhaps the red-black iteration is the problem? It is controlled by the
+value of k_sor which is the same. Hard to see it. We need a better way
+of detecting the difference.
+
+
+ psum sample   279.4092     u    sample   0.000000      ran1  0.2056652    
+ Calling sorrelaxgen   0.000000       0.000000       1.000000    
+ Return from sorrelaxgen0           1 -7.8246323E-03   2.635117       1.000000    
+ Calling sorrelaxgen   0.000000       0.000000       1.070949    
+ Return from sorrelaxgen0           2 -8.1036519E-03   2.636601       1.070949    
+ q    sample   1.000000     u    sample   0.000000    
+0005 iterations:  14 Total flux number   51.00000    
+nrein,n_part,ioc_part,rhoinf,dt= 1253  51906  52359  99.973   0.100
+
+Created a checkdelta routine inside sorrelaxgen to read an old file of
+deltas and check the current value against it. The files have to be swapped
+after the run: mv checknew checkdelta.
+
+I find that even subsequent identical runs do not agree. There are
+small differences in the low order bits of the delta. This seems to show
+either that there are truly random bit-level errors or that there's
+something wrong with the initialization that prevents exact repetition.
+The differences arise even in the initial test solution before any
+particles have been added. Strangely, there's zero difference in the particle
+solutions etc. So I don't understand how there can be delta differences.
+
+Called ran1(-1) earlier to make sure the volumes are the same on
+different machines. Found it gave a segfault. IDUM was being set
+incorrectly in ran1. Stopped that. Also made the subsequent setting
+call -myid-1 to ensure that it's really negative.
+
+With optimization turned off we are getting bigger differences in the 
+first solve. And subsequently smaller and smaller differences. I'm not
+sure whether that's significant. Still the difference early in the
+first solution are not small, and in general the first iteration is
+showing it. These are not rounding errors. They appear to be random
+initialization differences.
+
+Found that I was not initializing the u to zero (or anything). This
+was apparently the cause of the differences. Fixing it got rid of the 
+delta differences. But that has not fixed the restart. 
+
+Tried checkuqcij on some different step numbers. Found that step 6 is fine
+but that going into the sormpi on step 7 there are q differences (very slight).
+How can that be? 
+
+After long struggles with passing errors and segfaults, got testing of
+uqcijpsumvolumes going. It shows that after a restart the psum is different,
+pretty much everywhere by a moderate amount. The qs are different too, but
+not on the boundary (where presumably they are not set). Again this is the
+_second_ step after the restart. In other words the first step has caused
+the psums to start to differ. They did not differ immediately after
+the restart. This check is going into (right before the sormpi call).
+So we can't tell if this difference is coming from sormpi. So put the call
+right _after_. The answer is that the first uqcij checks fine. Thus the
+first sormpi call is working correctly. Consequently it must be the first
+particle move that is giving errors. However, putting after padvnc does
+not show differences till the second test. Putting after the chargetomesh
+shows differences on the second cycle. This is consistent with the particle
+move giving differences that are transferred to psum at the first subsequent
+chargetomesh. 
+
+We rely on the partlocate in chargetomesh to keep current the mesh position.
+Although we save it and restore it, it is the updated by chargetomesh. 
+
+Printed out a sample of the x_part values immediately after the (first)
+advance. There's no difference. That's a puzzle:
+
+ Calling sorrelaxgen   0.000000       0.000000       1.072827    
+ Return from sorrelaxgen           2 -9.6360259E-03   2.613914       1.072827    
+ q    sample   1.000000     u    sample   0.000000    
+0006  15 iterations. x_part sample   2.396352     -0.6855422      -3.690475      -1.057408      -1.120257     -0.6776624       4.751034       3.213245       1.688664     -0.4781322       2.480651       2.000758     -0.8974879      0.2682267      0.2117976       3.305810       4.726902       4.489779    
+ Total flux number   42.00000    
+nrein,n_part,ioc_part,rhoinf,dt= 1253  51802  52359  99.973   0.100
+ ***** psum difference           2           1           1  7.6883718E-02  7.7840298E-02
+ ***** psum difference           3           1           1   1.262272       1.280330    
+ ***** psum difference           4           1           1   1.013222       1.011209    
+ *
+
+ Calling sorrelaxgen   0.000000       0.000000       1.072827    
+ Return from sorrelaxgen           2 -9.6360259E-03   2.613914       1.072827    
+ q    sample   1.000000     u    sample   0.000000    
+0006  15 iterations. x_part sample   2.396352     -0.6855422      -3.690475      -1.057408      -1.120257     -0.6776624       4.751034       3.213245       1.688664     -0.4781322       2.480651       2.000758     -0.8974879      0.2682267      0.2117976       3.305810       4.726902       4.489779    
+ Total flux number   42.00000    
+nrein,n_part,ioc_part,rhoinf,dt= 1253  51802  52359  99.973   0.100
+ ***** psum difference           2           1           1  7.7840298E-02  7.6883718E-02
+ ***** psum difference           3           1           1   1.280330       1.262272    
+
+They start to deviate very slightly the next step. But in reality if the 
+positions of the particles are the cause of the problem, I don't see how they
+can be exactly correct after the first push. 
+
+Implement xpartcheck. I find that there are differences in x_part during
+the second iteration, before chargetomesh. That is, I confirm differences
+after the first particle push, for particle 29 47 54. The velocity differences
+are large. Order unity. The position differences are small. Seems to imply
+that the acceleration is where there's an error. There's nothing obviously
+systematic about the particles with differences. 
+
+Did check with uqcij right before padvnc and xpart right after. The xpart
+diffs are present, not uqcij. Thus we've proved there are advancing differences
+when there are no uqcij differences. Since no if_part differences appear,
+that's clean. The 6-9 x_part values, which are the mesh fractions, are not
+in error the first time. But by the third time, they are. Thus, we are 
+not calling partlocate. These are not newly injected particles.
+
+This is tough. Construct a diagnostic version of padvnc. It reports the 
+value of i and field for the first 100 particles. I see that the particles
+with differences are reported twice. That is they are going through
+the routine a second time. This is because inewregion is being returned
+as 3.
+
+ccpic -s8
+          28 -1.6265622E-03 -9.0324413E-03 -3.8206729E-03           2           2
+          29 -1.8644669E-03 -6.8034087E-03  2.6758902E-03           2           3
+          29 -1.5171642E-03  4.0289122E-03  2.4152363E-03           2           2
+          30 -8.1677195E-03 -2.4931235E-03 -1.4990305E-04           2           2
+
+ccpic --restart
+          28 -1.6265622E-03 -9.0324413E-03 -3.8206729E-03           2           2
+          29 -1.8644669E-03 -6.8034087E-03  2.6758902E-03           2           3
+          29 -1.5171642E-03  4.0289122E-03  2.4152363E-03           2           2
+          30 -8.1677195E-03 -2.4931235E-03 -1.4990305E-04           2           2
+
+It appears that the field is actually being evaluated the same both times.
+
+-s8
+          29 -1.8644669E-03 -6.8034087E-03  2.6758902E-03           2           3
+ Reinjected          29  0.5868658      -4.671297       1.682282      0.2139225       1.030760      -1.000355       3.793430       1.164375       4.341133      2.3144661E-02   0.000000             110           3           1           4  0.7934299      0.1643748      0.3411326               2
+          29 -1.5171642E-03  4.0289122E-03  2.4152363E-03           2           2
+
+--restart
+          29 -1.8644669E-03 -6.8034087E-03  2.6758902E-03           2           3
+ Reinjected          29  0.5868658      -4.671297       1.682282      -1.054011       1.133722     -0.2721342       3.793430       1.164375       4.341133      2.3144661E-02   0.000000             110           3           1           4  0.7934299      0.1643748      0.3411326               2
+          29 -1.5171642E-03  4.0289122E-03  2.4152363E-03           2           2
+
+The differences are in the 4-6: velocities reinject is giving the particle
+different velocities, although the same positions. The velocities are got 
+from gasdev.
+
+GASDEV in randf.f was calling ran0 not ran1. Thus it was giving different
+velocities. This problem arose because I did a grep on ran0 not on RAN0.
+Argh! So I lower-cased the routine names there to prevent future problems.
+
+Fixing that, I seem to get the right answer. No I am getting x_part 
+differences for particle 2 (only). 
+
+restart:
+0006  15 iterations. ====== Finished uqcijckeck
+           1 -1.2301615E-02 -9.4538052E-03  3.2518448E-03           2           2
+           2  1.0301614E-02 -2.0927475E-03 -2.7766897E-04           2           0
+ Reinjected           2  -1.689946      0.6363239      -4.662046     -0.2221324      -2.588727      0.2661515       2.655035       3.818159       1.169000    
+           2 -2.2906796E-03 -2.6510621E-03  2.6147573E-03           2           2
+
+
+s8
+0006  15 iterations. ====== Finished uqcijckeck
+           1 -1.2301615E-02 -9.4538052E-03  3.2518448E-03           2           2
+           2  1.0301614E-02 -2.0927475E-03 -2.7766897E-04           2           0
+ Reinjected           2  -1.689946      0.6363239      -4.662046      -1.117069      -2.251752      0.6365508       2.655035       3.818159       1.169000    
+           2 -2.2906796E-03 -2.6510621E-03  2.6147573E-03           2           2
+
+There's another problem. gasdev has internal state information so the first
+calls to it are broken. Make the internal state of gasdev available in 
+ran1com and include it in the save and restore. Yes. Now we are getting
+identical results.
+
+Summary of Restart Facility and Experience.  4 Jul 09
+------------------------------------------- 
+
+Code now restarts and gives exact numerical agreement with runs that
+simply had more steps in the first place. The key problems were
+associated with random number generators. 
+
+I found that dden was not being initialized properly in
+sormpi. Correcting that also reduced the number of iterations. [I
+think that Leonardo noticed a problem that might be this.] Another
+problem found was that u was not being initialized to zero.
+
+A day-long search tracked down the fact that (1) gasdev was calling
+the old ran0, not ran1, and also (2) needed its internal state saved.
+With that fixed we have exact agreement.
+
+
+Had a problem with the cvs commit. Wireless broke in the middle. Hope this
+is going to work. But it does not seem to do so. 

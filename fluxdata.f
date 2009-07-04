@@ -223,8 +223,8 @@ c***********************************************************************
          sum=sum+ff_data(nf_address(1,1,nf_step)+i-1)
       enddo
       write(*,*)'Total flux number',sum
-      write(*,'(10f7.1)')(ff_data(nf_address(1,1,nf_step)+i-1),
-     $     i=1,nf_posno(1,1))
+c      write(*,'(10f7.1)')(ff_data(nf_address(1,1,nf_step)+i-1),
+c     $     i=1,nf_posno(1,1))
 
       end
 c***********************************************************************
@@ -281,18 +281,10 @@ c
 c Zero the name first. Very Important!
 c Construct a filename that contains many parameters
 c Using the routines in strings_names.f
-      name='flux_'
-      call nameappendexp(name,'T',Ti,1)
-      call nameappendint(name,'v',nint(100*vd),3)
-      if(rs.ge.100)then
-         call nameappendint(name,'R',ifix(rs/10.),2)
-      else
-         call nameappendint(name,'r',ifix(rs),2)
-      endif
-      call nameappendint(name,'P',ifix(abs(phip)),2)
-      call nameappendexp(name,'L',debyelen,1)
-      np=nbcat(name,'.dat')
-      write(*,*)name
+      name=' '
+      call nameconstruct(name)
+      np=nbcat(name,'.flx')
+c      write(*,*)name
       write(charout,51)debyelen,Ti,vd,rs,phip
  51   format('debyelen,Ti,vd,rs,phip:',5f10.4)
 
@@ -320,7 +312,7 @@ c This write sequence must be exactly that read below.
       end
 
 c*****************************************************************
-      subroutine readfluxfile(name)
+      subroutine readfluxfile(name,ierr)
       character*(*) name
       include '3dcom.f'
       include 'plascom.f'
@@ -338,6 +330,8 @@ c*****************************************************************
 
       write(*,*)'Read back flux data from ',name(1:lentrim(name))
       write(*,*)'Charout=',charout
+      ierr=0
       return
  101  write(*,*)'Error opening file:',name
+      ierr=1
       end

@@ -5,10 +5,21 @@ c Storage array spatial count size
       integer Li,ni,nj,nk
       parameter (Li=100,ni=40,nj=40,nk=20)
 c      parameter (Li=100,ni=16,nj=16,nk=20)
-c      parameter (Li=100,ni=32,nj=32,nk=40)
+c      parameter (Li=6,ni=6,nj=6,nk=6)
 c      parameter (Li=100,ni=25,nj=16,nk=20)
       parameter (Li2=Li*Li,Li3=Li2*Li)
       real u(Li,Li,Li),q(Li,Li,Li),cij(2*ndims_sor+1,Li,Li,Li)
+
+c Additional variables for testing. Eventually should be removed.
+      real u2(Li,Li,Li),q2(Li,Li,Li),cij2(2*ndims_sor+1,Li,Li,Li)
+      real psum2(Li,Li,Li),volumes2(Li,Li,Li)
+      real x_part2(9,1000000)
+      integer n_part2,if_part2(1000000),iregion_part2,ioc_part2
+      integer nrein2,numprocs2,ninjcomp2
+      real dt2,rhoinf2,phirein2
+      logical ldiags2
+c End of extra variables.
+c
       real psum(Li,Li,Li),volumes(Li,Li,Li)
 c Used dimensions, Full dimensions. Used dims-2
       integer iuds(ndims_sor),ifull(ndims_sor),ium2(ndims_sor)
@@ -34,17 +45,21 @@ c Plasma common data
 
       external bdyset,faddu,cijroutine,cijedge,psumtoq
       external volnode
+      character*100 partfilename
+      character*100 phifilename
       character*100 fluxfilename
       character*100 objfilename
       character*100 argument
       common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot
-
+      logical lrestart
+      
 c Diagnostics
-c      real error(Li,Li,Li)
-      real zp(Li,Li),cijp(2*ndims_sor+1,Li,Li)
+c      real usave(Li,Li,Li),error(Li,Li,Li),cijp(2*ndims_sor+1,Li,Li)
+      real zp(Li,Li)
 c Point in the active region
       real xir(ndims)
+
 c Set up the structure vector.
 c      data iLs/1,Li,(Li*Li),(Li*Li*Li)/
       data iLs/1,Li,Li2,Li3/
@@ -59,6 +74,7 @@ c Data for plotting etc.
       data ltestplot,lcijplot,lsliceplot,lorbitplot/
      $     .false.,.false.,.false.,.false./
       data thetain,nth/.1,1/
+      data lrestart/.false./
 
 c-------------------------------------------------------------
 c Defaults:
@@ -77,6 +93,9 @@ c Default to constant rhoinf not n_part.
       numprocs=1
       bdt=1.
       norbits=0
+c Initialize the fortran random number generator with a fixed number
+c for solutions of volumes etc. Each node does the same.
+      blah=ran1(-1)
 
 c--------------------------------------------------------------
 c Deal with arguments
@@ -94,7 +113,15 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-ri')read(argument(4:),*)rhoinf
          if(argument(1:3).eq.'-dt')read(argument(4:),*)dt
          if(argument(1:3).eq.'-da')read(argument(4:),*)bdt
-         if(argument(1:2).eq.'-s')read(argument(3:),*)nsteps
+         if(argument(1:2).eq.'-s')then
+            read(argument(3:),*)nsteps
+            if(nsteps.gt.nf_maxsteps)then
+               write(*,*)'Asked for more steps',nsteps,
+     $              ' than allowed. Limit ',nf_maxsteps
+               nsteps=nf_maxsteps
+            endif
+         endif
+         if(argument(1:9).eq.'--restart')lrestart=.true.
          if(argument(1:2).eq.'-l')read(argument(3:),*)debyelen
          if(argument(1:2).eq.'-v')read(argument(3:),*)vd
          if(argument(1:13).eq.'--objfilename')
@@ -136,6 +163,7 @@ c Help text
      $     //'(to plot on objects set by -gc). [',norbits
       write(*,301)' -at   set test angle.'
      $     //' -an   set No of angles. '
+      write(*,301)' --restart  Attempt to restart from saved state.'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue
@@ -201,6 +229,7 @@ c Don't do plotting from any node except the master.
          lorbitplot=.false.
          norbits=0
          iobpl=0
+      else
 c---------------------------------------------
 c Some simple graphics of cij, and volumes.
          if(ltestplot)call text3graphs(ndims,iuds,ifull,cij,volumes)
@@ -219,10 +248,13 @@ c      iobpl=-7
 
 c Initialize charge (set q to zero over entire array).
       call mditerset(q,ndims,ifull,iuds,0,0.)
+c Initialize potential (set u to zero over entire array).
+      call mditerset(u,ndims,ifull,iuds,0,0.)
 c---------------------------------------------------------------         
 c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
       ictl=0
 c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
+
 c An initial solver call.
       call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
@@ -246,8 +278,9 @@ c------------------------------------------------------------------
 c We are going to populate the region in which xir lies.
       iregion_part=insideall(ndims,xir)
 c With a specified number of particles.
-c      n_part=2
-      call srand(myid)
+c Initialize the fortran random number generator.
+      idum=-myid-1
+      blah=ran1(idum) 
       write(*,*)'Initializing',n_part,' particles'
       call pinit()
 c      write(*,*)'Return from pinit'
@@ -261,16 +294,8 @@ c Prior half-step radial velocity
 c Tangential velocity of circular orbit at r=4.
       x_part(5,1)=sqrt(abs(phip/x_part(1,1))-x_part(4,1)**2)
       x_part(6,1)=0.
-
 c
-      if(nsteps.gt.nf_maxsteps)then
-         write(*,*)'Asked for more steps',nsteps,
-     $        ' than allowed. Limit ',nf_maxsteps
-         nsteps=nf_maxsteps
-         stop
-      endif
-
-      write(*,*)'dt=',dt,' vd=',vd
+c      write(*,*)'dt=',dt,' vd=',vd
 c ' dtheta=',dt*x_part(5,1)/x_part(1,1),
 c     $     ' steps=',nsteps,' total theta/2pi='
 c     $     ,nsteps*dt*x_part(5,1)/x_part(1,1)/2./3.1415927
@@ -278,25 +303,58 @@ c---------------------------------------------
 c Initialize the fluxdata storage and addressing.
       call fluxdatainit()
 c---------------------------------------------
-
       phirein=0.
       ninjcomp0=ninjcomp
       maccel=nsteps/3
       dtf=dt
+c-----------------------------------------------
+c Restart code
+c 400  continue
+      if(lrestart)then
+         partfilename=' '
+         call nameconstruct(partfilename)
+         phifilename=partfilename
+         nb=nbcat(phifilename,'.phi')
+         fluxfilename=partfilename
+         nb=nbcat(fluxfilename,'.flx')
+         nb=nameappendint(partfilename,'.',myid,3)
+         call readfluxfile(fluxfilename,ierr)
+         if(ierr.ne.0)goto 401
+         call partread(partfilename,ierr)
+         if(ierr.ne.0)goto 401
+         call phiread(phifilename,ifull,iuds,u,ierr)
+         if(ierr.ne.0)goto 401
+         write(*,*)'Restart files read successfully.'
+         if(nsteps+nf_step.gt.nf_maxsteps)then
+            write(*,*)'Asked for',nsteps,' in addition to',nf_step,
+     $           ' Total',nsteps+nf_step,
+     $           ' too much; set to',nf_maxsteps
+            nsteps=nf_maxsteps-nsteps
+         endif
+         write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
+     $        nrein,n_part,ioc_part,rhoinf,dt
+         goto 402
+ 401     continue
+         write(*,*)'Failed to read restart files',
+     $        fluxfilename(1:lentrim(fluxfilename)-4)
+         lrestart=.false.
+ 402     continue
+      endif
 
+c-----------------------------------------------
 c Main step iteration:
       do j=1,nsteps
-         nf_step=j
+         nf_step=nf_step+1
 c Acceleration code.
          bdtnow=max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)
          dt=bdtnow*dtf
          ninjcomp=bdtnow*ninjcomp0
          if(ninjcomp.ne.0)nrein=ninjcomp
-c
-c         write(*,'(i4,i4''  x_p='',7f9.5)')j,ierr, (x_part(k,1),k=1,6)
-c     $        ,sqrt(x_part(1,1)**2+x_part(2,1)**2)
+
          call mditerset(psum,ndims,ifull,iuds,0,0.)
+
          call chargetomesh(psum,iLs,diags)
+
 c Calculate rhoinfinity, needed in psumtoq.
          call rhoinfcalc(dt)
 c Convert psums to charge, q. Remember external psumtoq!
@@ -305,7 +363,9 @@ c Convert psums to charge, q. Remember external psumtoq!
 c
          call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
-         write(*,'(i4.4,'' iterations:'',i4,$)')j,ierr
+
+         write(*,'(i4.4,i4,'' iterations.'',$)')nf_step,ierr
+c         write(*,*)dt
          if(lsliceplot)then
 c            call slice3web(ifull,iuds,u,cij,Li,zp,cijp,
 c     $        ixnp,xn,ifix,'potential:'//'!Ay!@',1)
@@ -316,10 +376,26 @@ c     $        ixnp,xn,ifix,'density: n',0)
             call sliceGweb(ifull,iuds,q,Li,zp,
      $        ixnp,xn,ifix,'density: n')
          endif
-         call padvnc(ndims,cij,u,iLs)
+
+         if(nf_step.eq.6) then
+c         if(.false.) then
+c This test routine assumes 3 full dimensions all equal to Li are used.
+            call checkuqcij(Li,u,q,psum,volumes,cij,
+     $           u2,q2,psum2,volumes2,cij2)
+c            call padvncdiag(ndims,cij,u,iLs)
+            call padvnc(ndims,cij,u,iLs)
+            call checkx(n_part2,x_part2,
+     $     if_part2,iregion_part2,ioc_part2,
+     $     dt2,ldiags2,rhoinf2,nrein2,phirein2,numprocs2,ninjcomp2)
+         else
+c The normal call:
+            call padvnc(ndims,cij,u,iLs)
+         endif
+
          call fluxdiag()
 c         call partreduce
-         write(*,*)'nrein,n_part,rhoinf,dt=',nrein,n_part,rhoinf,dt
+        write(*,'(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i7,i7,2f8.3)')
+     $        nrein,n_part,ioc_part,rhoinf,dt
       enddo
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
 c      call slice3web(ifull,iuds,psum,cij,Li,zp,cijp,
@@ -329,6 +405,10 @@ c      if(lorbitplot)call orbit3plot(ifull,iuds,u,phip,rc,rs)
       if(norbits.ne.0)
      $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl,norbits)
 c      write(*,*)'Finished orbitplot.'
+
+      call partwrite(partfilename,myid)
+      call phiwrite(phifilename,ifull,iuds,u)
+
 c-------------------------------------------------------------------
       call MPI_FINALIZE(ierr)
 

@@ -128,8 +128,9 @@ c         if(iflags(1).eq.0)write(*,*)'Zero iflags(1) error'
 c Field is minus the potential gradient.
          field=-boxinterp(ndims-1,f,iflags,d)
       else
-         write(*,*)'Getfield No good vertices. Region',iregion
-     $        ,' Direction',idf,' Fractions',xff
+         write(*,'(''Getfield No good vertices. Region'',i3'//
+     $        ','' Direction'',i2,'' Fractions'',3f8.4)')
+     $        iregion,idf,xff
       endif
 
       

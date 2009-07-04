@@ -18,7 +18,12 @@ c Can't be passed here because of mditerate argument conventions.
       parameter (mdims=10)
       integer iLs(mdims+1)
       common /iLscom/iLs
+      integer icall
+      save icall
+      data icall/0/
 
+      icall=icall+1
+      if(mod(icall,300).eq.0)write(*,'(''.'',$)')
       iregion=region 
 c The cij address is to data 2*ndims+1 long
       icb=2*ndims+1
@@ -91,7 +96,6 @@ c by the total number of points examined.
       do i=1,npoints
          w=1.
          do id=1,ndims
-c            p=ran0(idum)
 c Using the improved random number generator seems a significant hit on
 c time here. So use the direct C rand which is perhaps quicker.
             p=rand()

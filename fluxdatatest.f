@@ -12,7 +12,7 @@ c**************************************************************
          if(argument(1:2).eq.'-?')goto 201
       enddo
 
-      call readfluxfile(filename)
+      call readfluxfile(filename,ierr)
 
       write(*,*) '   No. quantities, ',
      $     'No. objects, No. steps'

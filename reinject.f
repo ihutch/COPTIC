@@ -34,7 +34,7 @@ c Plasma common data
       cerr=0.
       idum=1
  1    continue
-      y=ran0(idum)
+      y=ran1(idum)
 c Pick angle from cumulative Q.
       call invtfunc(Qcom,nQth,y,x)
       ic1=x
@@ -47,7 +47,7 @@ c Pick angle from cumulative Q.
 c      if(ic1.ge.nQth)ic1=ic1-1
       ic2=ic1+1
       dc=x-ic1
-      y=ran0(idum)
+      y=ran1(idum)
 c Pick normal velocity from cumulative G.
       call invtfunc(Gcom(1,ic1),nvel,y,v1)
       call invtfunc(Gcom(1,ic2),nvel,y,v2)
@@ -76,7 +76,7 @@ c in units of vti.
       vt=gasdev(idum)- st*vdi
       vp=gasdev(idum)
 c All velocities now.
-      p=2.*pi*ran0(idum)
+      p=2.*pi*ran1(idum)
       cp=cos(p)
       sp=sin(p)
 c      write(*,*)ct,st,cp,sp
