@@ -14,7 +14,7 @@ c      data nf_address/(nf_quant*nf_obj*(nf_maxsteps+1))*0/
 c      data ff_data/(nf_datasize)*0./
       end
 c**********************************************************************
-      subroutine readgeom(filename)
+      subroutine readgeom(filename,myid)
 c Read the geometric data about objects from the file filename
       character*(*) filename
       character*128 cline
@@ -40,8 +40,9 @@ c First line must be the number of dimensions.
       read(1,'(a)',end=902)cline
       read(cline,*,err=901)nd
 
-      write(*,'(a,a50)')'Reading objects from file: ',filename
-      write(*,*)'Object Descr   type',
+      if(myid.eq.0)write(*,'(a,a50)')'Reading objects from file: '
+     $     ,filename
+      if(myid.eq.0)write(*,*)'Object Descr   type',
      $     '       (center)              (radii)              (BCs)'
 c Loop over lines of the input file.
  1    iline=iline+1
@@ -57,24 +58,26 @@ c Use only lower byte.
       if(type.eq.1.)then
          read(cline,*,err=901,end=801)
      $        (obj_geom(k,ngeomobj),k=1,1+2*nd+3)
- 801     write(*,820)ngeomobj,
+ 801     if(myid.eq.0)write(*,820)ngeomobj,
      $        ' Spheroid '
-         write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
+         if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.2.)then
          read(cline,*,err=901,end=802)
      $        (obj_geom(k,ngeomobj),k=1,1+2*nd+3)
- 802     write(*,820)ngeomobj,' Cuboid '
-         write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
+ 802     if(myid.eq.0)write(*,820)ngeomobj,' Cuboid '
+         if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.3.)then
          read(cline,*,err=901,end=803)
      $        (obj_geom(k,ngeomobj),k=1,1+2*nd+2+3)
- 803     write(*,820)ngeomobj,' Cylinder '
-         write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
+ 803     if(myid.eq.0)write(*,820)ngeomobj,' Cylinder '
+         if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.4.)then
          read(cline,*,err=901,end=804)
      $        (obj_geom(k,ngeomobj),k=1,1+nd*(1+nd)+3)
- 804     write(*,820)ngeomobj,' General Cuboid/Parallelepiped '
-         write(*,821)(obj_geom(k,ngeomobj),k=1,1+nd*(1+nd)+3)
+ 804     if(myid.eq.0)write(*,820)ngeomobj,
+     $        ' General Cuboid/Parallelepiped '
+         if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),
+     $        k=1,1+nd*(1+nd)+3)
       endif
  820  format(i3,a,$)
  821  format(10f7.3)

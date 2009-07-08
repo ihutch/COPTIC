@@ -1,5 +1,8 @@
       program ccpic
 c
+c Only for testing I hope.
+      include 'mpif.h'
+
       include 'objcom.f'
 c Storage array spatial count size
       integer Li,ni,nj,nk
@@ -27,7 +30,7 @@ c Mesh spacing description structure
       include 'meshcom.f'
 c Processor cartesian geometry
       integer nblksi,nblksj,nblksk
-      parameter (nblksi=1,nblksj=1,nblksk=1)
+      parameter (nblksi=2,nblksj=1,nblksk=1)
       integer idims(ndims_sor)
 c MPI information.
       include 'myidcom.f'
@@ -97,7 +100,11 @@ c Default to constant rhoinf not n_part.
 c Initialize the fortran random number generator with a fixed number
 c for solutions of volumes etc. Each node does the same.
       blah=ran1(-1)
-
+c---------------------------------------------------------------------
+c MPI initialization only.
+c Control bit 3 (=4) pure initialization, no communication (to get myid).
+      call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,4,ierr
+     $     ,myid,idims)
 c--------------------------------------------------------------
 c Deal with arguments
 c      if(iargc().eq.0) goto "help"
@@ -110,6 +117,7 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-at')read(argument(4:),*,err=201)thetain
          if(argument(1:3).eq.'-an')read(argument(4:),*,err=201)nth
          if(argument(1:3).eq.'-ni')read(argument(4:),*,err=201)n_part
+         if(argument(1:3).eq.'-pn')read(argument(4:),*,err=201)numprocs
          if(argument(1:3).eq.'-ri')read(argument(4:),*,err=201)rhoinf
          if(argument(1:3).eq.'-ck')read(argument(4:),*,err=201)ickst
          if(argument(1:3).eq.'-dt')read(argument(4:),*,err=201)dt
@@ -119,7 +127,7 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:2).eq.'-s')then
             read(argument(3:),*,err=201)nsteps
             if(nsteps.gt.nf_maxsteps)then
-               write(*,*)'Asked for more steps',nsteps,
+               if(myid.eq.0)write(*,*)'Asked for more steps',nsteps,
      $              ' than allowed. Limit ',nf_maxsteps
                nsteps=nf_maxsteps
             endif
@@ -139,8 +147,9 @@ c Set ninjcomp if we are using rhoinf
 c------------------------------------------------------------
 c Help text
  201  continue
-      write(*,*)'Error reading command line argument'
+      if(myid.ne.0)write(*,*)'Error reading command line argument'
  203  continue
+      if(myid.ne.0)goto 202
  301  format(a,i5)
  302  format(a,f8.3)
       write(*,301)'Usage: ccpic [switches]'
@@ -175,11 +184,11 @@ c Help text
  202  continue
 c-----------------------------------------------------------------
 c Geometry information. Read in:
-      call readgeom(objfilename)
+      call readgeom(objfilename,myid)
 c First object is sphere of radius rc and potential phi.
       rc=obj_geom(5,1)
       phip=-obj_geom(10,1)/obj_geom(8,1)
-      write(*,*)'rc=',rc,'  phip=',phip
+      if(myid.eq.0)write(*,*)'rc=',rc,'  phip=',phip
 c Second object is bounding sphere of radius rs. 
 c But use a tad more for the mesh size
       rs=obj_geom(5,2)*1.00001
@@ -188,7 +197,7 @@ c Construct the mesh vector(s) and ium2
       call meshconstruct(ndims,iuds,ium2,rs)
 c----------------------------------------------------------------
 c Initializations
-      write(*,*)'Initializing the stencil data cij'
+      if(myid.eq.0)write(*,*)'Initializing the stencil data cij'
 c Initialize cij:
       ipoint=iLs(1)+iLs(2)+iLs(3)
 
@@ -198,7 +207,8 @@ c not defined with sufficient arguments for all those in this call.
      $     cij(1,1,1,1),debyelen,dum3,dum4)
 
 c---------------------------------------------
-c Here we try to read the geometry data.
+c Here we try to read the stored geometry volume data.
+c This is probably a bottleneck for multi-process.
       istat=1
       call stored3geometry(volumes,iuds,ifull,istat)
       if(istat.eq.0)then
@@ -207,13 +217,13 @@ c Calculate the nodal volumes for all non-edge points.
 c We are going to populate the region in which xir lies.
          iregion=insideall(ndims,xir)
          region=iregion
-         write(*,*)
+         if(myid.eq.0)write(*,*)
      $        'Starting volume setting. Be patient this first time...'
          call mditerarg(volnode,ndims,ifull,ium2,ipoint,
      $        volumes,region,cij,dum4)
-         write(*,*)'Finished volume setting'
-c Here we write the geometry data if we've had to calculate it.
-         call stored3geometry(volumes,iuds,ifull,istat)
+         if(myid.eq.0)write(*,*)'Finished volume setting'
+c If head, write the geometry data if we've had to calculate it.
+         if(myid.eq.0)call stored3geometry(volumes,iuds,ifull,istat)
       endif
 c---------------------------------------------
 c Set an object pointer for all the edges so their regions get
@@ -224,9 +234,8 @@ c      call mditerate(ndims,ifull,iuds,cijedge,cij,ipoint)
 c Initialize the region flags in the object data
       call iregioninit(ndims,ifull)
 c---------------------------------------------
-c Control bit 3 (=4) pure initialization, no communication (to get myid).
-      call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,4,ierr
-     $     ,myid,idims)
+c Old position of sormpi initialization.
+c---------------------------------------------
       if(myid.ne.0)then
 c Don't do plotting from any node except the master.
          ltestplot=.false.
@@ -241,14 +250,14 @@ c Some simple graphics of cij, and volumes.
          if(ltestplot)call text3graphs(ndims,iuds,ifull,cij,volumes)
 c---------------------------------------------
 c The following requires include objcom.f
-         write(*,*)'Finished mesh setup:',iuds
-         write(*,*)
+         if(myid.eq.0)write(*,*)'Finished mesh setup:',iuds
+         if(myid.eq.0)write(*,*)
      $      'Used No of pointers:',oi_sor,' of',iuds(1)*iuds(2)*iuds(3)
      $        ,' points.'
 c      write(*,*)'Finished mesh setup.'
 c Plot objects 0,1 and 2 (bits)
 c      iobpl=-7
-         if(iobpl.ne.0)
+         if(iobpl.ne.0.and.myid.eq.0)
      $        call cijplot(ndims,ifull,iuds,cij,rs,iobpl,0)
       endif
 
@@ -261,10 +270,14 @@ c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
       ictl=0
 c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
 
+c         call MPI_BARRIER(MPI_COMM_WORLD,ierrmpi)
+c         stop
+
 c An initial solver call.
       call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
       ictl=2
+
 
       if(myid.eq.0)then
 c-------------------------------------------------------------------
@@ -276,7 +289,7 @@ c Also write out some data for checking.
 c Plot some of the initial-solver data.
             call solu3plot(ifull,iuds,u,cij,phip,rc,thetain,nth
      $        ,rs)
-            write(*,*)'Return from solu3plot.'
+            if(myid.eq.0)write(*,*)'Return from solu3plot.'
          endif
       endif
 c End of plotting.
@@ -287,9 +300,9 @@ c With a specified number of particles.
 c Initialize the fortran random number generator.
       idum=-myid-1
       blah=ran1(idum) 
-      write(*,*)'Initializing',n_part,' particles'
+      if(myid.eq.0)write(*,*)'Initializing',n_part,' particles'
       call pinit()
-c      write(*,*)'Return from pinit'
+c      if(myid.eq.0)write(*,*)'Return from pinit'
 c A special orbit.
 c Pinit resets x_part. So set it for the special first particle.
       x_part(1,1)=2.
@@ -301,7 +314,7 @@ c Tangential velocity of circular orbit at r=4.
       x_part(5,1)=sqrt(abs(phip/x_part(1,1))-x_part(4,1)**2)
       x_part(6,1)=0.
 c
-c      write(*,*)'dt=',dt,' vd=',vd
+c      if(myid.eq.0)write(*,*)'dt=',dt,' vd=',vd
 c ' dtheta=',dt*x_part(5,1)/x_part(1,1),
 c     $     ' steps=',nsteps,' total theta/2pi='
 c     $     ,nsteps*dt*x_part(5,1)/x_part(1,1)/2./3.1415927
@@ -332,12 +345,13 @@ c 400  continue
          if(ierr.ne.0)goto 401
          write(*,*)'Restart files read successfully.'
          if(nsteps+nf_step.gt.nf_maxsteps)then
-            write(*,*)'Asked for',nsteps,' in addition to',nf_step,
+            if(myid.eq.0)write(*,*)'Asked for',
+     $           nsteps,' in addition to',nf_step,
      $           ' Total',nsteps+nf_step,
      $           ' too much; set to',nf_maxsteps
             nsteps=nf_maxsteps-nsteps
          endif
-         write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
+         if(myid.eq.0)write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
      $        nrein,n_part,ioc_part,rhoinf,dt
          goto 402
  401     continue
@@ -398,7 +412,7 @@ c The normal call:
             call padvnc(ndims,cij,u,iLs)
          endif
 
-         call fluxdiag()
+         if(myid.eq.0)call fluxdiag()
 c         call partreduce
          if(myid.eq.0)
      $  write(*,'(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i7,i7,2f8.3)')
