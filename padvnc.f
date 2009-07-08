@@ -35,7 +35,9 @@ c
 c We ought not to need to calculate the iregion, since it should be
 c known and if a particle is outside it, it would have been reinjected:
 c But for now:
-      iregion=insideall(ndims,x_part(1,1))
+c      iregion=insideall(ndims,x_part(1,1))
+c which will give an erroneous answer if 1 is an unfilled slot. So
+      iregion=iregion_part
       n_part=0
 c At most do over all particle slots. But generally we break earlier.
       do i=1,n_partmax
@@ -54,6 +56,13 @@ c Subcycle start.
 c Use dtaccel for acceleration. May be different from dt if there was
 c a reinjection (or collision).
             dtaccel=0.5*(dt+dtprec)
+c Check the fraction data is not stupid and complain if it is.
+            if(x_part(ndimsx2+1,i).eq.0. .and.
+     $           x_part(ndimsx2+2,i).eq.0. .and.
+     $           x_part(ndimsx2+3,i).eq.0.) then
+               write(*,*)'Zero fractions',i,ioc_part,if_part(i)
+     $              ,nrein,ninjcomp
+            endif
 c Get the ndims field components at this point. 
 c We only use x_part information for location.
             do idf=1,ndims

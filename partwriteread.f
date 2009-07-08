@@ -26,8 +26,9 @@ c      write(*,*)name
 
       write(22)ranstate
       write(22)ioc_part
-      write(22)((x_part(j,i),j=1,3*npdim),if_part(i),iregion_part,
-     $   n_part,dt,ldiags,rhoinf,nrein,phirein,numprocs,i=1,ioc_part)
+      write(22)iregion_part,n_part,dt,ldiags,rhoinf,nrein,
+     $     phirein,numprocs,
+     $     ((x_part(j,i),j=1,3*npdim),if_part(i),i=1,ioc_part)
 
       close(22)
       write(*,*)'Wrote particle data to ',name(1:lentrim(name))
@@ -51,12 +52,28 @@ c*****************************************************************
       read(23)debyelen,Ti,vd,rs,phip
       read(23)ranstate
       read(23)ioc_part
-      read(23)((x_part(j,i),j=1,3*npdim),if_part(i),iregion_part,
-     $   n_part,dt,ldiags,rhoinf,nrein,phirein,numprocs,i=1,ioc_part)
+      read(23)iregion_part,n_part,dt,ldiags,rhoinf,nrein,
+     $     phirein,numprocs,
+     $     ((x_part(j,i),j=1,3*npdim),if_part(i),i=1,ioc_part)
       close(23)
       write(*,*)'Read back particle data from ',name(1:lentrim(name))
       write(*,*)'Charout=',charout(1:lentrim(charout))
       ierr=0
+c Check that the read back data is sane
+      do i=1,ioc_part
+         if(if_part(i).ne.0)then 
+            if(x_part(7,i).eq.0)then
+               write(*,*)'Bizarre particle data read back',
+     $              i,ioc_part,(x_part(j,i),j=1,9)
+            endif
+         endif
+      enddo
+
+c Zero the flags of higher slots.
+      do i=ioc_part+1,n_partmax
+         if_part(i)=0
+      enddo
+
       return
  101  write(*,*)'Error opening file:',name
       ierr=1

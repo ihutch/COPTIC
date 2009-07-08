@@ -1683,3 +1683,18 @@ With that fixed we have exact agreement.
 
 Had a problem with the cvs commit. Wireless broke in the middle. Hope this
 is going to work. But it does not seem to do so. 
+
+
+7 Jul 09 Restart is still not right. 
+
+We get Getfield no good vertices errors. This is because all fractions
+are zero. We ought not to be using these slots somehow.  I think the
+reason is that pinit initializes all slots up to 52359 but when run
+for long enough, ioc_part drops below this. (That did not happen for
+my short test ./check) Consequently when we read back, we don't write
+over the slots that have been reinitialized, and so the code thinks it
+is ok to use them but it's not.  The fractions are not set in
+pinit. Perhaps they should be. But perhaps this is fortuitous because
+it has shown me an error that might not otherwise have been obvious.
+
+In partread zeroing the flag of slots higher than ioc_part stops errors.
