@@ -364,7 +364,8 @@ c
          call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
 
-         write(*,'(i4.4,i4,'' iterations.'',$)')nf_step,ierr
+         if(myid.eq.0)write(*,'(i4.4,i4,'' iterations.'',$)')
+     $        nf_step,ierr
 c         write(*,*)dt
          if(lsliceplot)then
 c            call slice3web(ifull,iuds,u,cij,Li,zp,cijp,
@@ -394,7 +395,8 @@ c The normal call:
 
          call fluxdiag()
 c         call partreduce
-        write(*,'(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i7,i7,2f8.3)')
+         if(myid.eq.0)
+     $  write(*,'(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i7,i7,2f8.3)')
      $        nrein,n_part,ioc_part,rhoinf,dt
       enddo
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
