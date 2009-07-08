@@ -11,6 +11,7 @@ c Assumed 3-D routine, plots representation of the cij/obj data.
       real xx(3),xt(3)
       integer irx(5),iry(5),ipx(5),ipy(5),ijk(3)
       integer idelta(3,3)
+      character*40 mystring
       data irx/1,0,-1,0,1/
       data iry/0,1,0,-1,0/
       data ipx/0,0,1,0,0/
@@ -23,11 +24,11 @@ c If iosw = 0, plot only sticks for everything.
       if(iosw.gt.0)then
          istick=0
          iwire=1
-         mysw=iosw
+         mysw=iosw*2
       elseif(iosw.lt.0)then
          istick=1
          iwire=0
-         mysw=-iosw
+         mysw=-iosw*2
       else
          istick=2
          iwire=0
@@ -104,13 +105,15 @@ c                           write(*,*)no,id,frac,ipm,xt
 c      goto 51
  52   continue
 c     Wireframe drawing.
+      write(mystring,'(a,i3)')'Object Mask:',mysw/2
+      call jdrwstr(.1,.1,mystring,1.)
       do i=1,iuds(1)
          do j=1,iuds(2)
             do k=1,iuds(3)
                iobj=cij(2*ndims+1,i,j,k)
                iobjcode=idob_sor(iinter_sor,iobj)
                if(iobj.ne.0.and.iobjcode.ge.0)then
-               isob=mysw/2**iobjcode-(mysw/2**(iobjcode+1))*2
+               isob=mysw/2**(iobjcode)-(mysw/2**(iobjcode+1))*2
 c               write(*,*)iobj,iobjcode,isob,mysw
                if(isob.ne.0)then
 c Origin point

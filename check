@@ -1,12 +1,14 @@
 #!/bin/bash
 make ccpic
+rm xpartnew
+rm uqcijnew
+rm xpart
+rm uqcij
 echo RUNNING ccpic
-./ccpic
-mv xpartnew xpart
-mv uqcijnew uqcij
+./ccpic -s5
 echo RUNNING ccpic --restart -s3
-./ccpic --restart -s3
+./ccpic --restart -s3 -ck6
 mv xpartnew xpart
 mv uqcijnew uqcij
-echo RUNNING ccpic -s8
-./ccpic -s8
+echo RUNNING ccpic -s8 -ck6
+./ccpic -s8 -ck6

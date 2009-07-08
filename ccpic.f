@@ -93,6 +93,7 @@ c Default to constant rhoinf not n_part.
       numprocs=1
       bdt=1.
       norbits=0
+      ickst=0
 c Initialize the fortran random number generator with a fixed number
 c for solutions of volumes etc. Each node does the same.
       blah=ran1(-1)
@@ -105,16 +106,18 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-gt')ltestplot=.true.
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
          if(argument(1:3).eq.'-gs')lsliceplot=.true.
-         if(argument(1:3).eq.'-go')read(argument(4:),*)norbits
-         if(argument(1:3).eq.'-at')read(argument(4:),*)thetain
-         if(argument(1:3).eq.'-an')read(argument(4:),*)nth
-         if(argument(1:7).eq.'--reinj')read(argument(8:),*)ninjcomp
-         if(argument(1:3).eq.'-ni')read(argument(4:),*)n_part
-         if(argument(1:3).eq.'-ri')read(argument(4:),*)rhoinf
-         if(argument(1:3).eq.'-dt')read(argument(4:),*)dt
-         if(argument(1:3).eq.'-da')read(argument(4:),*)bdt
+         if(argument(1:3).eq.'-go')read(argument(4:),*,err=201)norbits
+         if(argument(1:3).eq.'-at')read(argument(4:),*,err=201)thetain
+         if(argument(1:3).eq.'-an')read(argument(4:),*,err=201)nth
+         if(argument(1:3).eq.'-ni')read(argument(4:),*,err=201)n_part
+         if(argument(1:3).eq.'-ri')read(argument(4:),*,err=201)rhoinf
+         if(argument(1:3).eq.'-ck')read(argument(4:),*,err=201)ickst
+         if(argument(1:3).eq.'-dt')read(argument(4:),*,err=201)dt
+         if(argument(1:3).eq.'-da')read(argument(4:),*,err=201)bdt
+         if(argument(1:7).eq.'--reinj')
+     $        read(argument(8:),*,err=201)ninjcomp
          if(argument(1:2).eq.'-s')then
-            read(argument(3:),*)nsteps
+            read(argument(3:),*,err=201)nsteps
             if(nsteps.gt.nf_maxsteps)then
                write(*,*)'Asked for more steps',nsteps,
      $              ' than allowed. Limit ',nf_maxsteps
@@ -122,12 +125,12 @@ c      if(iargc().eq.0) goto "help"
             endif
          endif
          if(argument(1:9).eq.'--restart')lrestart=.true.
-         if(argument(1:2).eq.'-l')read(argument(3:),*)debyelen
-         if(argument(1:2).eq.'-v')read(argument(3:),*)vd
+         if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
+         if(argument(1:2).eq.'-v')read(argument(3:),*,err=201)vd
          if(argument(1:13).eq.'--objfilename')
-     $        read(argument(14:),'(a)')objfilename
-         if(argument(1:2).eq.'-h')goto 201
-         if(argument(1:2).eq.'-?')goto 201
+     $        read(argument(14:),'(a)',err=201)objfilename
+         if(argument(1:2).eq.'-h')goto 203
+         if(argument(1:2).eq.'-?')goto 203
       enddo
       if(n_part.ne.0)rhoinf=0.
 c Set ninjcomp if we are using rhoinf
@@ -136,6 +139,8 @@ c Set ninjcomp if we are using rhoinf
 c------------------------------------------------------------
 c Help text
  201  continue
+      write(*,*)'Error reading command line argument'
+ 203  continue
  301  format(a,i5)
  302  format(a,f8.3)
       write(*,301)'Usage: ccpic [switches]'
@@ -147,6 +152,7 @@ c Help text
      $     ,n_part
       write(*,302)' -ri   set rhoinfinity instead of total particles. ['
      $     ,rhoinf
+      write(*,301)' -ck   set checking timestep No. [',ickst
       write(*,302)' -dt   set Timestep.  [',dt,
      $     ' -da   set Initial dt accel-factor. [',bdt
       write(*,301)' -s    set No of steps. [',nsteps
@@ -154,16 +160,16 @@ c Help text
       write(*,302)' -l    set Debye Length. [',debyelen
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [ccpicgeom.dat'
+      write(*,301)' --restart  Attempt to restart from saved state.'
       write(*,301)'Debugging switches for testing'
-      write(*,301)' -gc   set wireframe/stencils(-) objects<->bits. ['
-     $     ,iobpl
+      write(*,301)' -gc   set wireframe/stencils(-) mask.'//
+     $     ' objects<->bits. [',iobpl
       write(*,301)' -gt   Plot solution tests.'
       write(*,301)' -gs   Plot slices of solution potential. '
       write(*,301)' -go   set No of orbits'
      $     //'(to plot on objects set by -gc). [',norbits
       write(*,301)' -at   set test angle.'
      $     //' -an   set No of angles. '
-      write(*,301)' --restart  Attempt to restart from saved state.'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue
@@ -378,8 +384,7 @@ c     $        ixnp,xn,ifix,'density: n',0)
      $        ixnp,xn,ifix,'density: n')
          endif
 
-         if(nf_step.eq.6) then
-c         if(.false.) then
+         if(nf_step.eq.ickst) then
 c This test routine assumes 3 full dimensions all equal to Li are used.
             call checkuqcij(Li,u,q,psum,volumes,cij,
      $           u2,q2,psum2,volumes2,cij2)
