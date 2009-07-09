@@ -80,7 +80,7 @@ c Use only lower byte.
      $        k=1,1+nd*(1+nd)+3)
       endif
  820  format(i3,a,$)
- 821  format(10f7.3)
+ 821  format(f4.0,9f7.3)
       goto 1
 
  901  write(*,*)'Readgeom error reading line',iline,':'

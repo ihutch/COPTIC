@@ -180,7 +180,7 @@ c
      $     (((volumes(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
       close(iunit)
       istat=1
-      write(*,*)'Successful storedgeom read completed.'
+c      write(*,*)'Successful storedgeom read completed.'
 c Successful read.
       return
       

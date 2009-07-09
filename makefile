@@ -48,6 +48,9 @@ getfield.o : getfield.f makefile $(HEADERS)
 ccpic : ccpic.f makefile $(OBJECTS) $(UTILITIES) /home/hutch/accis/libaccisX.a
 	$(G77)  -o ccpic $(COMPILE-SWITCHES) $(PROFILING) ccpic.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
+mpibbdytest : mpibbdytest.o udisplay.o mpibbdy.o
+	$(G77) -o mpibbdytest  mpibbdytest.f mpibbdy.o udisplay.o 
+
 clean :
 	rm -f *.o $(TARGETS)
 

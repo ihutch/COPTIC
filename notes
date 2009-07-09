@@ -1698,3 +1698,41 @@ pinit. Perhaps they should be. But perhaps this is fortuitous because
 it has shown me an error that might not otherwise have been obvious.
 
 In partread zeroing the flag of slots higher than ioc_part stops errors.
+
+8 Jul 09
+
+Multiprocess calls don't work. On TP400.
+There, I've installed the latest MPICH2 from source. Things then compile.
+I've fiddled inside bbdy but that's not the cause (I'm pretty sure).
+Yes verified that by getting back the cvs mpibbdy and doing a 2 process
+run, which crashes.
+
+         call MPI_BARRIER(MPI_COMM_WORLD,ierrmpi)
+         stop
+helps to localize where the crash occurs. If it happens before this,
+then you don't get much output. If not, then you get all output up
+to this. 
+
+The crash appears to occur on the second call to sormpi. This is the first
+time that communication is occuring. I've heard that mpd does not work
+when the hosts resolve to 127.0.0.1, which is the case for me now.
+Tried some other mpd.hosts lists, but they give "failed to handshake".
+Can't even get the tp41 working. 
+
+Turns out the result of $hostname must be the same, on either machine.
+It does not crash on tp41 with -n 2 and blks=2. So we are looking for 
+something tp400 dependent.
+Checked out the cvs to tp41. It runs with two processes. Yep it's tp400.
+
+Got the alltoallw.f test program. Compiled. It seems to work. Does not
+crash. Yes, it makes sense (after some puzzling). Therefore we seem
+not to have an inherent communication problem. It's really a problem
+inside sormpi. And in fact the mpd stuff all works with the hostname
+set to tp400-64.
+
+SCP the new mpibbdy.f to tp41 make. It runs two processes correctly,
+with no relevant code differences to here. It is the tp400. 
+
+The code mpibbdytest.f is also broken. This is probably easier to
+debug. I can see that communications are correct till the gather. 
+Then crash.

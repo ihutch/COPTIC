@@ -118,7 +118,6 @@ c Third bit of ictlh indicates we are just initializing.
       ictlh=ictlh/2
       if(mod(ictlh,2).ne.0)then
 c (Re)Initialize the block communications:
-c Set boundary conditions (and conceivably update cij).
          k_sor=-2
          call bbdy(iLs,ifull,iuds,u,k_sor,ndims,idims,lperiod,
      $        icoords,iLcoords,myside,myorig,
@@ -153,15 +152,16 @@ c If this is found to be an unused node, jump to barrier.
          if(mycartid.eq.-1)goto 999
 c Do a relaxation.
 c            if(k_sor.le.2)
-c     $        write(*,*) 'Calling sorrelaxgen',delta,oaddu,relax
+c         write(*,*) 'Calling sorrelaxgen',delta,oaddu,relax
             call sorrelaxgen(k_sor,ndims,iLs,myside,
      $           cij(1+(2*ndims+1)*(myorig-1)),
      $           u(myorig),
      $           q(myorig),
      $           laddu,faddu,oaddu,relax,delta,umin,umax)
+
 c          call checkdelta(delta,deltaold)
 c          if(k_sor.le.2)
-c     $     write(*,*) 'Return from sorrelaxgen',k_sor,delta,oaddu,relax
+c            write(*,*) 'Return from sorrelaxgen',k_sor,delta,oaddu,relax
 c Test convergence
          call testifconverged(eps_sor,delta,umin,umax,
      $        lconverged,icommcart)
@@ -177,14 +177,18 @@ c Chebychev acceleration:
       enddo
 c We finished the loop, implies we did not converge.
       k_sor=-mi_sor
+c      write(*,*)'Finished sorrelax loop',k_sor
 c-------------------------------------------------------------------
  11   continue
 c Do the final mpi_gather [or allgather if all processes need
 c the result].
       nk=-1
+c Here is where the tp400 crash occurs.
       call bbdy(iLs,ifull,iuds,u,nk,ndims,idims,lperiod,
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid)
+c         call MPI_BARRIER(MPI_COMM_WORLD,ierrmpi)
+c         stop
 c Boundary conditions need to be reset based on the gathered result.
 c But that's not sufficient when there's a relaxation so be careful!
       call bdyset(ndims,ifull,iuds,cij,u,q)

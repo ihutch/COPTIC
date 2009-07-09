@@ -76,11 +76,12 @@ c Check if we might overrun the datasize.
      $     .gt.nf_datasize)then
          write(*,*)'DANGER: data from',mf_quant,mf_obj,nf_maxsteps,
      $        ' would exceed nf_datasize',nf_datasize
+         stop
       else
-         write(*,'(a,i10,a,i1,i2,i5,a,i10)')'Maximum nf_address:',
-     $     nf_address(mf_quant,mf_obj,nf_maxsteps)+numobj,
-     $        ' (',mf_quant,mf_obj,nf_maxsteps,
-     $        ') is safely below nf_datasize:',nf_datasize
+c         write(*,'(a,i10,a,i1,i2,i5,a,i10)')'Maximum nf_address:',
+c     $     nf_address(mf_quant,mf_obj,nf_maxsteps)+numobj,
+c     $        ' (',mf_quant,mf_obj,nf_maxsteps,
+c     $        ') is safely below nf_datasize:',nf_datasize
       endif
       end
 c******************************************************************

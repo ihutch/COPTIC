@@ -115,6 +115,8 @@ c Actually communicate:
       enddo
       write(*,*)'End of iterations'
 
+c      call MPI_BARRIER(icommcart,ierr)
+c      stop
 c Gather back all the data
       nk=-1
       call bbdy(iLs,ifull,iuds,u,nk,nrd,idims,lperiod,

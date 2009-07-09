@@ -147,7 +147,7 @@ c Set ninjcomp if we are using rhoinf
 c------------------------------------------------------------
 c Help text
  201  continue
-      if(myid.ne.0)write(*,*)'Error reading command line argument'
+      if(myid.eq.0)write(*,*)'=====Error reading command line argument'
  203  continue
       if(myid.ne.0)goto 202
  301  format(a,i5)
@@ -428,14 +428,14 @@ c      if(lorbitplot)call orbit3plot(ifull,iuds,u,phip,rc,rs)
 c      write(*,*)'Finished orbitplot.'
 
       call partwrite(partfilename,myid)
-      call phiwrite(phifilename,ifull,iuds,u)
+      if(myid.eq.0)call phiwrite(phifilename,ifull,iuds,u)
 
 c-------------------------------------------------------------------
       call MPI_FINALIZE(ierr)
 
 c Check some flux diagnostics and writing.
 c      call fluxave()
-      call outputflux(fluxfilename)
+      if(myid.eq.0)call outputflux(fluxfilename)
 c      call readfluxfile(fluxfilename)
 c      call fluxave()
       end

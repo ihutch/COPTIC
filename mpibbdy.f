@@ -43,7 +43,8 @@ c Subsequently, do the boundary communication.
 c---------------------------------------------------------------
 c Start of local variables.
       logical lalltoall
-      parameter (idebug=0,lalltoall=.false.)
+c      parameter (idebug=1,lalltoall=.false.)
+      parameter (idebug=0,lalltoall=.true.)
 c Local storage:
       logical lreorder
 c vector type ids for each dimension (maximum 10 dimensions)
@@ -80,7 +81,7 @@ c Arrays for constructing ALLtoALL calls.
       integer istypes(maxprocs),irtypes(maxprocs)
       integer iscounts(maxprocs),ircounts(maxprocs)
       integer iconp(imds)
-c      character*40 string
+c      character*10 string
 c Debugging arrays
 c      parameter (ndebug=1000)
 c      integer iaints(ndebug),iaadds(ndebug),iadats(ndebug)
@@ -121,55 +122,32 @@ c (Re)Initialize but don't communicate (-2) or do communicate (-3).
 c -----------------------------------------------------------------
 c First time. Set up topology and calculate comm-types
 c------------------------------------------------------------------
-c Test if we fit in the number of processors.
-      if((idims(1)+1)*(idims(2)+1).gt.norigmax)then
-         write(*,*)'bbdy: Too many processes',idims(1),'x',idims(2),
-     $        ' for norigmax=',norigmax
-         stop
-      endif
-c Define mpi block structure.
-         call bbdydefine(ndims,idims,ifull,iuds,iorig,iLs)
-         mycartid=0
-c Check roughly if the istacksize and imds are enough.
-         if(2.*iLs(ndims).ge.istacksize) then
-            write(*,*) 'Stack size',istacksize,
-     $           ' possibly too small for arrays',iLs(ndims)
-            write(*,*) 'Danger of overrun.'
-            goto 999
-         endif
+c------
+c         write(*,*)'Setting up topology'
          if(ndims.gt.imds)then
             write(*,*)'MPI too many dimensions error',ndims
             goto 999
          endif
-c End of safety checks
+c Test if we fit in the number of processors.
+         if((idims(1)+1)*(idims(2)+1).gt.norigmax)then
+         write(*,*)'bbdy: Too many processes',idims(1),'x',idims(2),
+     $        ' for norigmax=',norigmax
+            goto 999
+         endif
          nproc=1
-         iLcoords(1)=1
          do n=1,ndims
-c Populate the block structure vector 
-            if(n.gt.1) iLcoords(n)=iLcoords(n-1)*(idims(n-1)+1)
 c Count the processes needed for this topology
             nproc=nproc*idims(n)
          enddo
+c Check the asked-for nproc
          if(nproc.gt.maxprocs) then
             write(*,*)'Too many processes',nproc,' Increase maxprocs.'
             goto 999
          endif
-c         write(*,*)'iLcoords',iLcoords
-c Output some diagnostic data, perhaps.
-         if(idebug.gt.0) call bbdyorigprint(ndims,idims,iorig)
-         
-         do n=1,ndims
-c Calculate the block side lengths from the origins data.
-            iside(n,1)=(iorig(1+iLcoords(n))-iorig(1))/iLs(n)+2
-            kt=(1+(idims(n))*iLcoords(n))
-            kn=(1+(idims(n)-1)*iLcoords(n))
-            iside(n,2)=(iorig(kt)-iorig(kn))/iLs(n)+2
-         enddo
-
-c         write(*,*)'((iside(ii,jj),jj=1,2),ii=1,ndims)='
-c         write(*,'(2i10)')((iside(ii,jj),jj=1,2),ii=1,ndims)
-
-c Initialize
+c End of safety checks
+c------
+c Initialize 
+c         write(*,*)'mpi_initialize'
          call MPI_INITIALIZED(lflag,ierr)
          if(.not.lflag) call MPI_INIT( ierr )
          lflag=.true.
@@ -179,11 +157,57 @@ c This could be relaxed if I check for return of MPI_COMM_NULL
 c after CART_CREATE
          if(nproc.gt.numprocs)then
 c            if(myid.eq.0)
-                write(*,*)'MPI setup error: incorrect process count ',
-     $           numprocs,
-     $           ' for this topology ',(idims(n),n=1,ndims),' =',nproc
+c                write(*,*)'MPI setup error: too few processes ',
+c     $           numprocs,
+c     $           ' for this topology ',(idims(n),n=1,ndims),' =',nproc
+            if(myid.eq.0)write(*,201)numprocs,
+     $           (idims(n),n=1,ndims),nproc
+            call resetidims(ndims,idims,numprocs,nproc)
+            write(*,*)'Reset to',idims,numprocs,nproc
+c            goto 999
+         elseif(nproc.lt.numprocs)then
+            if(myid.eq.0)write(*,201)numprocs,
+     $           (idims(n),n=1,ndims),nproc
+ 201        format('WARNING: MPI processes',i3,
+     $           ' don''t match this topology ',6i3)
+c            call resetidims(ndims,idims,numprocs,nproc)
+c            write(*,*)'Reset to',ndims,idims,numprocs,nproc
+         endif
+c End of possible topology idims resetting.
+c-----
+c Define mpi block structure.
+c         write(*,*)'Calling bbdydefine'
+         call bbdydefine(ndims,idims,ifull,iuds,iorig,iLs)
+c Check roughly if the istacksize and imds are enough.
+c iLs is set in bbdydefine so it can't be earlier.
+         if(2.*iLs(ndims).ge.istacksize) then
+            write(*,*) 'Stack size',istacksize,
+     $           ' possibly too small for arrays',iLs(ndims)
+            write(*,*) 'Danger of overrun.'
             goto 999
          endif
+c----
+         mycartid=0
+         iLcoords(1)=1
+         do n=1,ndims
+c Populate the block structure vector 
+            if(n.gt.1) iLcoords(n)=iLcoords(n-1)*(idims(n-1)+1)
+         enddo
+c         write(*,*)'iLcoords',iLcoords
+
+c Output some diagnostic data, perhaps.
+         if(idebug.gt.0) call bbdyorigprint(ndims,idims,iorig)
+         do n=1,ndims
+c Calculate the block side lengths from the origins data.
+            iside(n,1)=(iorig(1+iLcoords(n))-iorig(1))/iLs(n)+2
+            kt=(1+(idims(n))*iLcoords(n))
+            kn=(1+(idims(n)-1)*iLcoords(n))
+            iside(n,2)=(iorig(kt)-iorig(kn))/iLs(n)+2
+         enddo
+c         write(*,*)'((iside(ii,jj),jj=1,2),ii=1,ndims)='
+c         write(*,'(2i10)')((iside(ii,jj),jj=1,2),ii=1,ndims)
+c-----
+
 c Reverse the order of the dimensions in the calls to MPI_CART
 c to compensate for the C-ordering in those.
          do n=1,ndims
@@ -420,6 +444,10 @@ c      enddo
      $        np=1,nproc)
 
       endif
+c         call MPI_BARRIER(MPI_COMM_WORLD,ierrmpi)
+c         stop
+
+c This is the location of the tp400 crash!
       call MPI_ALLTOALLW(u,iscounts,isdispls,istypes,
      $     u,ircounts,irdispls,irtypes,
      $     icommcart,ierr)
@@ -432,7 +460,8 @@ c Unused process.
      $     (idims(i),i=1,ndims)
       return
 c Exception stop:
- 999  call MPI_FINALIZE()
+ 999  continue
+      call MPI_FINALIZE(ierr)
       stop
 
       end
@@ -619,6 +648,7 @@ c So for the nn-th level the start of the types is at 2**nn.
       include 'mpif.h'
 
       call MPI_TYPE_SIZE(MPI_REAL,iSIZEOFREAL,ierr)
+c      write(*,*)'iSIZEOFREAL=',iSIZEOFREAL
 c zeroth dimension type is MPI_REAL
       ktype(1)=MPI_REAL
       inew=2
@@ -644,18 +674,27 @@ c iside(*,1) is the general value, iside(*,2) the uppermost value.
       integer iLs(ndims+1)
       integer ktype(*)
       include 'mpif.h'
+c This was the cause of a lot of heartache. 
+c Necessary for MPI_TYPE_CREATE_HVECTOR, wrong for TYPE_HVECTOR
+      integer(KIND=MPI_ADDRESS_KIND) istride
+c The alternative for non F90 capable is integer*8 on 64 bit
+c or integer*4 on 32 bit machines.
       ilen=1
       istride=iLs(nn)*iSIZEOFREAL
 c For the bulk and top cases of this dimension
       do ibt=1,2
-c Because we do not count the boundaries, the count is 2 less than iside.
+c Because we do not count the boundaries, 
+c the count is 2 less than iside.
          icount=iside(nn,ibt)-2
 c For all types in prior level, laminate enough together
 c At each level there are 2**(nn-1) types in prior level
          do iold=iprior,iprior+2**(nn-1)-1
 c            write(*,*)'iold,icount,istride,ktype(iold),inew',
 c     $           iold,icount,istride,ktype(iold),inew
+c This call needs istride to be MPI_ADDRESS_KIND
             call MPI_TYPE_CREATE_HVECTOR(icount,ilen,istride,
+c This call assumes istride is integer*4 (I think):
+c            call MPI_TYPE_HVECTOR(icount,ilen,istride,
      $           ktype(iold),ktype(inew),ierr)
 c We only commit the top level that we are going to use.
             if(nn.eq.ndims)call MPI_TYPE_COMMIT(ktype(inew),ierr)
@@ -687,4 +726,32 @@ c Since iorig has dimensions 1+idims this is needed:
          ionp=ionp+icoords(nd)*iLcoords(nd)
       enddo
 c      write(*,*)'nn,ith,ndims,idims',nn,ith,ndims,idims
+      end
+c****************************************************************
+      subroutine resetidims(ndims,idims,numprocs,nproc)
+      integer ndims,numprocs,nproc
+      integer idims(ndims)
+      
+      if(nproc.gt.numprocs)then
+         nproc=1
+         do id=1,ndims
+            idims(id)=1
+         enddo
+      endif
+      if(numprocs.lt.nproc)stop 'Impossible resetidims'
+ 101  continue
+      do id=1,ndims
+         idims(id)=idims(id)+1
+         itot=1
+         do ii=1,ndims
+            itot=itot*idims(ii)
+         enddo
+         if(itot.gt.numprocs)then
+            idims(id)=idims(id)-1
+            return
+         endif
+         nproc=itot
+      enddo
+      goto 101
+
       end
