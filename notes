@@ -1736,3 +1736,43 @@ with no relevant code differences to here. It is the tp400.
 The code mpibbdytest.f is also broken. This is probably easier to
 debug. I can see that communications are correct till the gather. 
 Then crash.
+
+9 Jul 09
+Figured out the problem finally by doing some tests on Loki.
+
+The problem lies in the routine MPI_TYPE_CREATE_HVECTOR or the older version
+MPI_TYPE_HVECTOR. In many man and web pages MPI_TYPE_HVECTOR is said to be
+obsolete and to be replaced with MPI_TYPE_CREATE_HVECTOR. See for example
+http://linux.die.net/man/3/mpi_type_hvector and
+http://linux.die.net/man/3/mpi_type_create_hvector
+
+However, these calls are not identical. In particular the argument STRIDE is
+simply INTEGER in MPI_TYPE_HVECTOR but in MPI_TYPE_CREATE_HVECTOR it is:
+
+INTEGER(KIND=MPI_ADDRESS_KIND) STRIDE
+
+I was not declaring STRIDE explicitly (I called it iSTRIDE). Therefore it was an
+INTEGER. On a 32 bit machine, INTEGER is 4 bytes long, the same as
+MPI_ADDRESS_KIND. On a 64 bit machine (in linux) an INTEGER is still 4 bytes
+long, but MPI_ADDRESS_KIND is 8 bytes, and so CREATE code breaks.
+
+I discovered this by accident because on Loki there is no
+MPI_TYPE_CREATE_HVECTOR, for reasons I still don't understand. So we replaced
+the call with MPI_TYPE_HVECTOR there. When I did the same on my 64 bit laptop,
+my code worked, after which the explanation above became clear. Especially
+helpful was the page
+
+http://publib.boulder.ibm.com/infocenter/clresctr/vxrx/index.jsp?topic=/com.ibm.
+cluster.pe510.mpisub.doc/am107_itchvec.html
+
+It turns out that gfortran recognizes the above KIND construct (not F77). So I
+can obey the advice to use MPI_TYPE_CREATE_HVECTOR. Alternatively I can NOT
+define iSTRIDE and use MPI_TYPE_HVECTOR. Either works with the correct
+declaration.
+
+Tried replacing the sceptic mpibbdy.f with the new fixed one. It gives
+identical results. But perhaps I am not using the right switches to 
+exercise it.
+
+Probable next steps. Communication of the particle data through MPI.
+Most of what else I had previously planned is done.
