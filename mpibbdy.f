@@ -62,15 +62,15 @@ c shift source and destination ids for each dimension left and right
       integer isdl(imds),iddl(imds),isdr(imds),iddr(imds)
 c Right and left u-origins of each dimension for this block.
 c      integer iobr(imds),iobl(imds)
-c iside(imds,2) holds the side length of blocks in u for each dimension.
-c iside(*,1) is the general value, iside(*,2) the uppermost value.
-      integer iside(imds,2)
+c iside(2,imds) holds the side length of blocks in u for each dimension.
+c iside(1,*) is the general value, iside(2,*) the uppermost value.
+      integer iside(2,imds)
 c irdims is the block count per dimension array with the order of the
 c dimensions reversed to maintian fortran compatibility. 
 c Ditto ircoords, lrperiod
       integer irdims(imds),ircoords(imds)
       logical lrperiod(imds)
-c Scratch stack, whose length must be at least Prod_1^nd(iside(i,2)+1)
+c Scratch stack, whose length must be at least Prod_1^nd(iside(2,i)+1)
 c Possibly this should be passed to the routine. 
       parameter (istacksize=100000)
       integer is(istacksize)
@@ -163,22 +163,22 @@ c     $           ' for this topology ',(idims(n),n=1,ndims),' =',nproc
             if(myid.eq.0)write(*,201)numprocs,
      $           (idims(n),n=1,ndims),nproc
             call resetidims(ndims,idims,numprocs,nproc)
-            write(*,*)'Reset to',idims,numprocs,nproc
+            write(*,*)'Reset to',idims,nproc
 c            goto 999
          elseif(nproc.lt.numprocs)then
             if(myid.eq.0)write(*,201)numprocs,
      $           (idims(n),n=1,ndims),nproc
  201        format('WARNING: MPI processes',i3,
      $           ' don''t match this topology ',6i3)
-c            call resetidims(ndims,idims,numprocs,nproc)
-c            write(*,*)'Reset to',ndims,idims,numprocs,nproc
+            call resetidims(ndims,idims,numprocs,nproc)
+            if(myid.eq.0)write(*,*)'Reset to',idims,nproc
          endif
 c End of possible topology idims resetting.
 c-----
 c Define mpi block structure.
 c         write(*,*)'Calling bbdydefine'
          call bbdydefine(ndims,idims,ifull,iuds,iorig,iLs)
-c Check roughly if the istacksize and imds are enough.
+c Check roughly if the istacksize is enough.
 c iLs is set in bbdydefine so it can't be earlier.
          if(2.*iLs(ndims).ge.istacksize) then
             write(*,*) 'Stack size',istacksize,
@@ -199,13 +199,13 @@ c Output some diagnostic data, perhaps.
          if(idebug.gt.0) call bbdyorigprint(ndims,idims,iorig)
          do n=1,ndims
 c Calculate the block side lengths from the origins data.
-            iside(n,1)=(iorig(1+iLcoords(n))-iorig(1))/iLs(n)+2
+            iside(1,n)=(iorig(1+iLcoords(n))-iorig(1))/iLs(n)+2
             kt=(1+(idims(n))*iLcoords(n))
             kn=(1+(idims(n)-1)*iLcoords(n))
-            iside(n,2)=(iorig(kt)-iorig(kn))/iLs(n)+2
+            iside(2,n)=(iorig(kt)-iorig(kn))/iLs(n)+2
          enddo
-c         write(*,*)'((iside(ii,jj),jj=1,2),ii=1,ndims)='
-c         write(*,'(2i10)')((iside(ii,jj),jj=1,2),ii=1,ndims)
+c         write(*,*)'((iside(jj,ii),jj=1,2),ii=1,ndims)='
+c         write(*,'(2i10)')((iside(jj,ii),jj=1,2),ii=1,ndims)
 c-----
 
 c Reverse the order of the dimensions in the calls to MPI_CART
@@ -240,7 +240,7 @@ c            icoords(n)=ircoords(n)
             ibt(n)=1
             if(icoords(n).eq.idims(n)-1) ibt(n)=2
 c Get my block side lengths, now knowing my cluster position.
-            myside(n)=iside(n,ibt(n))
+            myside(n)=iside(ibt(n),n)
          enddo
          if(idebug.gt.0)then
             write(*,*)'u used dimensions',(iuds(k),k=1,ndims)
@@ -290,6 +290,14 @@ c Create the new data types, odd and even.
             call MPI_TYPE_COMMIT(iface(nn,2,ibt(nn)),ierr)
          enddo
 
+         do n=1,ndims
+c Determine Shift ids.
+c Shifts compensating for the dimension order reversal.
+            call MPI_CART_SHIFT(icommcart,ndims-n,1,
+     $           isdr(n),iddr(n),ierr)
+            call MPI_CART_SHIFT(icommcart,ndims-n,-1,
+     $           isdl(n),iddl(n),ierr)
+         enddo
          iobindex=1
          ioffset=0
          do n=1,ndims
@@ -297,74 +305,14 @@ c Calculate my block origin index which is
 c   (1+icoords(1)*iLcoords(1)+icoords(2)*iLcoords(2),...)
             iobindex=iobindex+icoords(n)*iLcoords(n)
             ioffset=ioffset+iLs(n)
-c Determine Shift ids.
-c C-order shifts abandoned.
-c            call MPI_CART_SHIFT(icommcart,n-1,1,isdr(n),iddr(n),ierr)
-c            call MPI_CART_SHIFT(icommcart,n-1,-1,isdl(n),iddl(n),ierr)
-c Shifts compensating for the dimension order reversal.
-            call MPI_CART_SHIFT(icommcart,ndims-n,1,
-     $           isdr(n),iddr(n),ierr)
-            call MPI_CART_SHIFT(icommcart,ndims-n,-1,
-     $           isdl(n),iddl(n),ierr)
          enddo
          myorig=iorig(iobindex)
 c--------------------------------------------------------------------
-c Create the types for block gathering.
+c Create the types, pointers and counts for block gathering.
 c         write(*,*)'calling bbdyblockcreate'
-         call bbdyblockcreate( ndims,ktype,iLs,iside,isizeofreal)
-         ith0=2**ndims
-         if(idebug.ge.1) write(*,*)'Block types:',(ktype(ith),
-     $        ith=ith0,2*ith0-1)
-c Create the required arrays for the ALLTOALL
-         call bbdycoords(mycartid+1,ndims,idims,iconp,ithi,
-     $        iLcoords,ionp)
-         do np=1,nproc
-c Here we need to send only the active length of data, so the origin
-c is offset.
-            isdispls(np)=(iorig(iobindex)-1+ioffset)*isizeofreal
-            istypes(np)=ktype(ith0+ithi)
-            call bbdycoords(np,ndims,idims,iconp,ithj,
-     $           iLcoords,ionp)
-            irdispls(np)=(iorig(ionp)-1+ioffset)*isizeofreal
-            irtypes(np)=ktype(ith0+ithj)
-            if(lalltoall) then
-c All to all
-               if(np.eq.mycartid+1)then
-c Don't send to or receive from myself.
-                  iscounts(np)=0
-                  ircounts(np)=0
-               else
-                  iscounts(np)=1
-                  ircounts(np)=1
-               endif
-            else
-c Gather to process 0 (fortran index 1)
-               if(np.eq.1.and.mycartid+1.ne.np)then
-                  iscounts(np)=1
-               else
-                  iscounts(np)=0
-               endif
-               if(mycartid.eq.0.and.mycartid+1.ne.np)then
-                  ircounts(np)=1
-               else
-                  ircounts(np)=0
-               endif
-            endif
-         enddo
-c Don't send to or receive from anyone test.
-c Process 1 sends to process 0 test
-c         if(mycartid.eq.0) ircounts(2)=1
-c         if(mycartid.eq.1) iscounts(1)=1
-c Process 2 sends to process 0 test
-c         if(mycartid.eq.0) ircounts(3)=1
-c         if(mycartid.eq.2) iscounts(1)=1
-
-
-c         write(*,*)'     np,sendcts,senddp,sendtp,recvcts,recvdp,recvtp'
-c         write(*,'(7i8)')(np,iscounts(np),isdispls(np)/4,
-c     $        mod(istypes(np),10000),
-c     $        ircounts(np),irdispls(np)/4,
-c     $        mod(irtypes(np),10000),np=1,nproc)
+         call bbdygatherparam(ndims,iLs,iside,
+     $     mycartid,nproc,idims,iLcoords,ioffset,idebug,
+     $     isdispls,istypes,iscounts,irdispls,irtypes,ircounts)
 c--------------------------------------------------------------------
          if(idebug.ge.2) write(*,*)'End of initialization'
 c         return
@@ -430,11 +378,6 @@ c------------------------------------------------------------------
 c Special cases determined by the value of kc.
  100  continue
 c kc=-1. Do the block exchanging.
-c Debugging test.
-c      do np=1,nproc
-c         istypes(np)=MPI_REAL
-c         irtypes(np)=MPI_REAL
-c      enddo
       if(idebug.ge.1)then
          write(*,*)'     np,sendcts,senddp,sendtp,recvcts,recvdp,recvtp'
          write(*,'(7i8)')(np,iscounts(np),isdispls(np)/4,
@@ -444,10 +387,7 @@ c      enddo
      $        np=1,nproc)
 
       endif
-c         call MPI_BARRIER(MPI_COMM_WORLD,ierrmpi)
-c         stop
 
-c This is the location of the tp400 crash!
       call MPI_ALLTOALLW(u,iscounts,isdispls,istypes,
      $     u,ircounts,irdispls,irtypes,
      $     icommcart,ierr)
@@ -634,16 +574,21 @@ c      write(*,string)(iorig(jj),jj=1,ibeg-1)
       end
 c********************************************************************
       subroutine bbdyblockcreate(ndims,ktype,iLs,iside,iSIZEOFREAL)
+c For a system of ndims dimensions, (IN)
+c Create MPI type block handles in the array ktype (OUT)
+c when the array structures are iLs (IN)
+c the lengths of the block sides in dimension id are iside(2,id) (IN)
+c with iside(1,id) referring to the bulk and iside(2,id) to the top.
       
-      parameter(imds=10)
+c      parameter(imds=10)
       integer iLs(ndims+1)
-c iside(*,1) is the general value, iside(*,2) the uppermost value.
-      integer iside(imds,2)
+c iside(1,*) is the general value, iside(2,*) the uppermost value.
+      integer iside(2,ndims)
       
 c ktype stores the type handles in the order
 c 0-d; 1d bulk, 1d top; 2d bulk (1b,1t), 2d top (1b,1t), ...
 c So for the nn-th level the start of the types is at 2**nn.
-
+c ktype must have length (at least) 2**(ndims+1)-1
       integer ktype(*)
       include 'mpif.h'
 
@@ -668,15 +613,15 @@ c The types we use now start at ktype(2**ndims), 2**ndims of them.
 c*********************************************************************
       subroutine bbdyblam(ndims,ktype,inew,iprior,nn,iside,
      $     iLs,iSIZEOFREAL)
-      parameter(imds=10)
-c iside(*,1) is the general value, iside(*,2) the uppermost value.
-      integer iside(imds,2)
+c      parameter(imds=10)
+c iside(1,*) is the general value, iside(2,*) the uppermost value.
+      integer iside(2,ndims)
       integer iLs(ndims+1)
       integer ktype(*)
       include 'mpif.h'
 c This was the cause of a lot of heartache. 
 c Necessary for MPI_TYPE_CREATE_HVECTOR, wrong for TYPE_HVECTOR
-      integer(KIND=MPI_ADDRESS_KIND) istride
+c      integer(KIND=MPI_ADDRESS_KIND) istride
 c The alternative for non F90 capable is integer*8 on 64 bit
 c or integer*4 on 32 bit machines.
       ilen=1
@@ -685,16 +630,16 @@ c For the bulk and top cases of this dimension
       do ibt=1,2
 c Because we do not count the boundaries, 
 c the count is 2 less than iside.
-         icount=iside(nn,ibt)-2
+         icount=iside(ibt,nn)-2
 c For all types in prior level, laminate enough together
 c At each level there are 2**(nn-1) types in prior level
          do iold=iprior,iprior+2**(nn-1)-1
 c            write(*,*)'iold,icount,istride,ktype(iold),inew',
 c     $           iold,icount,istride,ktype(iold),inew
 c This call needs istride to be MPI_ADDRESS_KIND
-            call MPI_TYPE_CREATE_HVECTOR(icount,ilen,istride,
+c            call MPI_TYPE_CREATE_HVECTOR(icount,ilen,istride,
 c This call assumes istride is integer*4 (I think):
-c            call MPI_TYPE_HVECTOR(icount,ilen,istride,
+            call MPI_TYPE_HVECTOR(icount,ilen,istride,
      $           ktype(iold),ktype(inew),ierr)
 c We only commit the top level that we are going to use.
             if(nn.eq.ndims)call MPI_TYPE_COMMIT(ktype(inew),ierr)
@@ -705,9 +650,11 @@ c We only commit the top level that we are going to use.
       end
 c*********************************************************************
       subroutine bbdycoords(nn,ndims,idims,icoords,ith,iLcoords,ionp)
-c Obtain the cartesian coordinates of nn, in ndims dimensions, idims
-c Return it in icoords. Return the type index (zero-based), i.e.
-c whether we are in bulk on on boundary in ith.
+c Obtain the cartesian coordinates of block for process nn,
+c in ndims dimensions, whose lengths are idims(ndims).
+c Return it in icoords. 
+c Return the type index (zero-based), i.e.
+c whether we are in bulk or on boundary in ith.
 c Also the iorig index, ionp, for this block.
       integer nn,ndims
       integer icoords(ndims),idims(ndims)
@@ -728,6 +675,85 @@ c Since iorig has dimensions 1+idims this is needed:
 c      write(*,*)'nn,ith,ndims,idims',nn,ith,ndims,idims
       end
 c****************************************************************
+      subroutine bbdygatherparam(ndims,iLs,iside,
+     $     mycartid,nproc,idims,iLcoords,ioffset,idebug,
+     $     isdispls,istypes,iscounts,irdispls,irtypes,ircounts)
+c For ndims dimensions, with array structure iLs, and block lengths
+c given by iside, set the send and receive alltoall(w) parameters:
+c isdispls, istypes,iscounts, irdispls, irtypes, ircounts,
+c for process mycartid, within total of nproc, cartesian communicator
+c dimensions idims, iLcoords, ioffset, idebug.
+
+      integer ndims,mycartid,iobindex,ioffset
+      integer iLs(ndims+1),iLcoords(ndims),idims(ndims)
+      integer iside(2,ndims)
+      integer isdispls(nproc),istypes(nproc),iscounts(nproc)
+      integer irdispls(nproc),irtypes(nproc),ircounts(nproc)
+
+      parameter (norigmax=1000)
+      integer iorig(norigmax)
+      common /iorigcom/iorig
+
+      parameter (imds=10)
+      integer ktype(2**(imds+1)),iconp(imds)
+      logical lalltoall
+      data lalltoall/.true./
+
+c      include 'mpif.h'
+
+      call bbdyblockcreate( ndims,ktype,iLs,iside,isizeofreal)
+      ith0=2**ndims
+      if(idebug.ge.1) write(*,*)'Block types:',(ktype(ith),
+     $     ith=ith0,2*ith0-1)
+
+c Create the required arrays for the ALLTOALL
+c First find out where we are and return the type index in ithi.
+      call bbdycoords(mycartid+1,ndims,idims,iconp,ithi,
+     $     iLcoords,ionpmine)
+      do np=1,nproc
+c Here we need to send only the active length of data, so the origin
+c is offset.
+         isdispls(np)=(iorig(ionpmine)-1+ioffset)*isizeofreal
+         istypes(np)=ktype(ith0+ithi)
+c Get positions and type indexes for other processes
+         call bbdycoords(np,ndims,idims,iconp,ithj,
+     $        iLcoords,ionp)
+         irdispls(np)=(iorig(ionp)-1+ioffset)*isizeofreal
+         irtypes(np)=ktype(ith0+ithj)
+         if(lalltoall) then
+c All to all
+            if(np.eq.mycartid+1)then
+c Don't send to or receive from myself.
+               iscounts(np)=0
+               ircounts(np)=0
+            else
+               iscounts(np)=1
+               ircounts(np)=1
+            endif
+         else
+c Gather to process 0 (fortran index 1)
+            if(np.eq.1.and.mycartid+1.ne.np)then
+               iscounts(np)=1
+            else
+               iscounts(np)=0
+            endif
+            if(mycartid.eq.0.and.mycartid+1.ne.np)then
+               ircounts(np)=1
+            else
+               ircounts(np)=0
+            endif
+         endif
+      enddo
+c Don't send to or receive from anyone test.
+c Process 1 sends to process 0 test
+c         if(mycartid.eq.0) ircounts(2)=1
+c         if(mycartid.eq.1) iscounts(1)=1
+c Process 2 sends to process 0 test
+c         if(mycartid.eq.0) ircounts(3)=1
+c         if(mycartid.eq.2) iscounts(1)=1
+
+      end
+c*******************************************************************
       subroutine resetidims(ndims,idims,numprocs,nproc)
       integer ndims,numprocs,nproc
       integer idims(ndims)
@@ -739,19 +765,107 @@ c****************************************************************
          enddo
       endif
       if(numprocs.lt.nproc)stop 'Impossible resetidims'
+
  101  continue
-      do id=1,ndims
+c Pick the smallest number first.
+      id0=1
+      do i=1,ndims
+         if(idims(i).lt.idims(id0))id0=i
+      enddo
+      imod=0
+      do i=1,ndims
+         id=mod(i+id0-2,3)+1
          idims(id)=idims(id)+1
+c Evaluate new count
          itot=1
          do ii=1,ndims
             itot=itot*idims(ii)
          enddo
          if(itot.gt.numprocs)then
             idims(id)=idims(id)-1
-            return
+         else
+            nproc=itot
+            imod=imod+1
          endif
-         nproc=itot
       enddo
+      if(imod.eq.0)return
       goto 101
 
       end
+
+c**************************************************************
+      subroutine mpisubopcreate(nrd,ifull,iuds,iopfun,itype,iaddop)
+c For an nrd (IN) dimensional structure 
+c described by ifull (IN), iuds (IN)
+      integer nrd
+      integer iuds(nrd),ifull(nrd)
+c Create a datatype itype (OUT) and an operator iaddop (OUT)
+c for doing MPI_REDUCEs on a subarray described by iuds
+c (Its boundaries are omitted in the reduce.)
+c The operation function is iopfun (EXTERNAL).
+c iopfun MUST be declared external in the calling routine.
+c
+c Local storage
+      parameter (ims=10)
+      integer iside(2,ims),ktype(2**(ims+1)),iLs(ims+1)
+      
+c Common for passing the dimensionals structures:
+      include 'mditcom.f'
+      include 'mpif.h'
+      external iopfun
+
+      if(nrd.gt.ims)stop 'mpisubopcreate dimension too large'
+      iLs(1)=1
+      do i=1,nrd
+c These are needed for the blockcreate
+         iside(1,i)=iuds(i)
+         iside(2,i)=iuds(i)
+         iLs(i+1)=iLs(i)*ifull(i)
+c These are needed for the ioperator usage.
+         iasfull(i)=ifull(i)
+         iasum2(i)=iuds(i)-2
+      enddo
+      nasdims=nrd
+c iasfull etc don't need to be set for this call.
+      call MPI_OP_CREATE(iopfun,.false.,iaddop,ierr)
+      call bbdyblockcreate(nrd,ktype,iLs,iside,iSIZEOFREAL)
+      itype=ktype(2**nrd)
+
+c MPI_IN_PLACE is ok for ALLREDUCE. Not for REDUCE.
+c Subsequent calls will be of the form:
+c      call MPI_ALLREDUCE(MPI_IN_PLACE,u(2,2,2),1,itype,
+c     $     iaddop,icommcart,ierr)
+      end
+
+c**************************************************************
+c These two routines provide facility for addition reduce 
+c over subarray.
+      subroutine addsubarray_MPI(invec,inoutvec,ilen,itype)
+c MPI_sum type function over subarray. The input and inout arrays
+c are from MPI's viewpoint single pointers to the start of the 
+c arrays to be added.
+      real invec(*),inoutvec(*)
+      integer ilen,itype
+c Common for passing the dimensional structures. Needs to be
+c set in the calling routine of the REDUCE that references this
+c the operator use:
+      include 'mditcom.f'
+      external iteradd
+      ipoint=0
+      call mditerarg(iteradd,nasdims,iasfull,iasum2,ipoint,
+     $        invec,inoutvec,dum3,dum4)
+      end
+c********************************************************************
+      subroutine iteradd(inc,ipoint,indi,ndims,iused,
+     $     a,b,c,d)
+      integer ipoint,inc
+      integer indi(ndims),iused(ndims)
+      real a(*),b(*),c(*),d(*)
+c This routine for use in mditerarg.
+c Hardly anything is used. Only inc,ipoint,a,b.
+c Add a(*) to b(*) and leave in b(*)
+      ind=1+ipoint
+      b(ind)=b(ind)+a(ind)
+      inc=1
+      end
+c*******************************************************************

@@ -1,7 +1,7 @@
       program ccpic
 c
 c Only for testing I hope.
-      include 'mpif.h'
+c      include 'mpif.h'
 
       include 'objcom.f'
 c Storage array spatial count size
@@ -284,7 +284,7 @@ c-------------------------------------------------------------------
 c Do some analytic checking of the case with a fixed potential sphere
 c inside a logarithmic derivative boundary condition. 1/r solution.
 c Also write out some data for checking.
-            call spherecheck(ifull,iuds,u,phip,rc)
+         call spherecheck(ifull,iuds,u,phip,rc)
          if(ltestplot)then
 c Plot some of the initial-solver data.
             call solu3plot(ifull,iuds,u,cij,phip,rc,thetain,nth

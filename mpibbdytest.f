@@ -53,21 +53,26 @@ c*************************************************************
 c*************************************************************
       program bbdytest
 
-      parameter (ndimsdecl=3,idim1=1,idim2=1,idim3=2)
+      include 'mpif.h'
+      parameter (ndimsdecl=3,idim1=2,idim2=1,idim3=1)
       include 'bbdydecl.f'
 
       parameter (ifd1=40,ifd2=20,ifd12=ifd1*ifd2)
       parameter (ifd3=20,ifd123=ifd12*ifd3)
-      real u(ifd1,ifd2,ifd3)
+      real u(ifd1,ifd2,ifd3),v(ifd1,ifd2,ifd3)
       real u123(ifd123)
       equivalence (u,u123)
 c ifull full dimensions of u
       integer ifull(ndimsdecl)
+      integer ktype(2**(ndimsdecl+1))
+      integer iside(2,ndimsdecl)
 
 c Access iorig via common block since arguments removed.
       parameter (norigmax=1000)
       integer iorig(norigmax)
       common /iorigcom/iorig
+
+      external addsubarray_MPI
 
       data ifull/ifd1,ifd2,ifd3/
 
@@ -111,7 +116,7 @@ c Actually communicate:
          call bbdy(iLs,ifull,iuds,u,nk,nrd,idims,lperiod,
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid)
-         call udisplay(nrd,u,ifull,iuds,1,1.)
+c         call udisplay(nrd,u,ifull,iuds,1,1.)
       enddo
       write(*,*)'End of iterations'
 
@@ -129,8 +134,17 @@ c Gather back all the data
       endif
       call MPI_BARRIER(icommcart,ierr)
       write(*,*)'DONE mycartid,myid',mycartid,myid
+      write(*,*)'======================================================'
 
- 999  call MPI_FINALIZE()
+c-------------------------
+c test an allreduce for the arrays. EXTERNAL addsubarray...
+      call mpisubopcreate(nrd,ifull,iuds,addsubarray_MPI,itype,iaddop)
+
+      call MPI_ALLREDUCE(MPI_IN_PLACE,u(2,2,2),1,itype,
+     $     iaddop,icommcart,ierr)
+
+      if(myid.eq.0)call udisplay(nrd,u,ifull,iuds,2,1.)
+c--------------------------
+ 999  call MPI_FINALIZE(ierr)
 
       end
-c**************************************************************

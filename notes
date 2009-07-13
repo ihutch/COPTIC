@@ -1776,3 +1776,75 @@ exercise it.
 
 Probable next steps. Communication of the particle data through MPI.
 Most of what else I had previously planned is done.
+
+12 July
+
+Starting on particle gathering. We need a block structure for exchanging
+all the data for the whole used array, for example for psum or q.
+
+It makes sense to use the bbdyblockcreate routines to do this. 
+
+First change the iside(imds,2) to iside(2,imds) so that we don't have
+to have imds everywhere, rather we can pass ndims, and use that for the
+second (but not first) dimension. iside occurs only in mpibbdy.f, as
+does bbdyblock. So it appears that's the only file we need to fix.
+Now imds is used only in the top level bbdy routine. Not in the block
+creation routines.
+
+These and other complications arise because the existing code has
+built in two types of block length, bulk and top. Also tuned up the
+resetidim code to choose better match to prescribed nprocesses.
+
+Packaged the construction steps for the alltoallw types into routine:
+bbdygatherparam. This helps to contain the issues. 
+It seems to show that we really only need a call to bbdyblockcreate.
+Then the bulk handle for dimension n is at ktype(2**n).
+If we put iside(2,id)=0, then we will get a negative count, because
+the pass does not include the boundaries, even though the length appears to.
+Thus one should presumably pass q(2,2,2) but with iside equal to iuds.
+This is confirmed in that iside is calculated from the difference
+in origins but with 2 added. 
+
+There's another issue to do with chargetomesh. It puts the charge onto
+adjacent nodes without consideration of boundaries. That's not really right.
+Checking inside volint, I currently set volumes taking account of the 
+mesh boundaries. Vol is set to a large number outside region which will
+divide the density down to zero. Vol is set to a corrected number for
+a node with intersections. Seems as if this ought to work. So perhaps theres
+no problem. If so then we just need the reduce with the correct structure.
+There might be a problem with gradient at the boundary. This would mean
+the BC is effectively not second order accurate. 
+
+13 July 09
+
+I discover that I have misunderstood the REDUCE capabilities. In order
+to operate on a customized MPI datatype, one has to write a customized
+operator. So even though I can create a datatype that refers to the 
+block iuds(ndims). I can't reduce it unless I have the operator. 
+Operator has to be of the form
+	 user_function(invec,inoutvec,len,type)
+
+In my case I'd be passing only one dataobject. So I'd have to know
+internal to the function, the structure of the calculation required,
+e.g. add up the active elements.
+
+Alternatively, if I keep it simple and reduce the whole arrays, regardless
+of how much is active, there are inefficiencies. E.g. if only half is used
+in each dimension, the inefficiency is 2**3 = 8. How does this compare with
+the other communications? Well the boundary exchanges take place more 
+often: iterations x more. But they are smaller, because they are only 
+faces, not volumes. The number of iterations is probably at max a few
+times the linear dimension. So the total communications for a solve
+is a few times a total volume. If that's right, then we are comparing 
+few x volume with (e.g.) 8 x volume. The reduce is going to be more important
+than the total solve communications. It is worth trying to minimize it.
+Or else just never using subarrays would make life WAY easier.
+
+The user_function has to know by common: ndims, iLs and iuds (or ium2)
+It might do an mditerarg, in which case ifull is needed rather than iLs.
+
+Wrote a user_function using mditerarg. It seems to work. There's an 
+error using MPI_IN_PLACE with MPI_REDUCE, but not with MPI_ALLREDUCE.
+I suspect that this can only be used by the root (for some stupid reason).
+It does not do anything for the non-root in a REDUCE call, but IMHO ought,
+nevertheless to work, for consistency. It doesn't.

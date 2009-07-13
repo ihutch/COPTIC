@@ -59,7 +59,7 @@ c********************************************************************
       real psum(*),rho(*),volumes(*),u(*)
 c Partcom gives us rhoinf:
       include 'partcom.f'
-c This routine for use in mditeratearg.
+c This routine for use in mditerarg.
 c But we iterate only over the inner mesh (not edges).
 c Here, u=psum, v=rho, w=volumes. 
 c Set the density
