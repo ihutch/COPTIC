@@ -1,18 +1,18 @@
 c This file contains the reinjection code which is specific to a
 c particular (type of) boundary. 
 c It must provide the routines:
-c    reinject(i,xr,nrein) 
-c       which reinijects particle i, at position/velocity xr
-c       and increments nrein.
+c    reinject(xr,nrein) 
+c       which reinijects a particle in position/velocity slot xr(2*ndims)
+c       and increments nrein. (Pass xp(1,i)).
 c       This routine should initialize itself appropriately.
-c    rhoinfcalc(nrein,dt,phirein,rhoinf)     
-c        which should return the value of rhoinfinity.
+c    rhoinfcalc(dt)     
+c        which should return the value of rhoinfinity through common.
 c Any other code needed for these routines ought to be in here too.
 c The majority of the needed data is passed in partcom.f
 c 
 c This case is a spherical boundary.
 c***********************************************************************
-      subroutine reinject(i,xr,nrein)
+      subroutine reinject(xr,nrein)
       parameter (mdims=3)
       real xr(3*mdims)
       integer i
@@ -65,9 +65,6 @@ c New angle interpolation.
       ic1=x
       ic2=ic1+1
       dc=x-ic1
-c Old version used th() directly.
-c      ct=th(ic1)*(1.-dc)+th(ic2)*dc
-c      write(*,*)'ic1,ic2,dc,ct',ic1,ic2,dc,ct
 c ct is cosine of the angle of the velocity -- opposite to the radius.      
       st=sqrt(1.- ct**2)
 c Now we have cosine theta=c and normal velocity normalized to v_ti.
@@ -157,6 +154,13 @@ c No time-averaging for now.
 c Use particle information for initializing.
       include 'partcom.f'
 
+      include 'mpif.h'
+
+      call MPI_ALLREDUCE(MPI_IN_PLACE,nrein,1,MPI_INTEGER,MPI_SUM,
+     $     MPI_COMM_WORLD,ierr)
+      call MPI_ALLREDUCE(MPI_IN_PLACE,phirein,1,MPI_REAL,MPI_SUM,
+     $     MPI_COMM_WORLD,ierr)
+      phirein=phirein/numprocs
       if(nrein.ne.0)then
 c Calculate rhoinf from nrein if there are enough.
          chi=min(-phirein/Ti,0.5)
@@ -214,3 +218,4 @@ c     having a value on the sphere normalized to Ti of minus
       endif
       smaxflux=pi*sqrt(2.)*(uc*erf +(0.5+chi)*erfbyu + exp(-uc**2)/sqpi)
       end
+c********************************************************************

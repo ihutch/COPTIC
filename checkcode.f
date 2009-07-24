@@ -1,4 +1,7 @@
 c***********************************************************************
+c This contains code that checks on the writing and reading back of
+c code state. It is for debugging restarts.
+c***********************************************************************
       subroutine checkuqcij(Li,u,q,psum,volumes,cij,
      $     u2,q2,psum2,volumes2,cij2)
       implicit none

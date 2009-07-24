@@ -1848,3 +1848,346 @@ error using MPI_IN_PLACE with MPI_REDUCE, but not with MPI_ALLREDUCE.
 I suspect that this can only be used by the root (for some stupid reason).
 It does not do anything for the non-root in a REDUCE call, but IMHO ought,
 nevertheless to work, for consistency. It doesn't.
+
+Packaged the function all up into a decently easy call and moved it
+into mpibbdy.f. mpibbdytest shows it working.  Commit.
+
+Put ALLREDUCE of nrein and phirein into rhoinfcalc. This should be 
+sufficient to satisfy the partcom reduce requirements. We need to
+figure out the normalization and defaults for ninjcomp/nrein etc.
+
+Found that I had to do the allreduce on psum so that psumtoq set
+the external phi correctly to compensate for the electron density
+which it otherwise did not for multiple processes.
+
+Got phiexamine routine going to examine the potential after the run. 
+
+We need a potential interpolation routine that works at the boundary.
+We seem only to have a field interpolation routine at the moment.
+Potential ought to be easier, but I don't know how it should work off hand.
+
+If I did not set there to be a discontuity in phi at the edge, it might be
+easier to do the interpolation sensibly. It is certainly possible to 
+prescribe sphere type 1 instead of 257, which then gives a profile that
+could be more easily extrapolated.
+
+Deep thought. This is not a trivial issue. 
+
+18 Jul 09
+
+Built a getpotential function that does multilinear interpolation if all
+the nodes are present, else falls back to another approach. At present
+just uses the closest valid point. Probably not quite as good as using
+a continuous phi, but should work without. Need a way to test this. 
+Intend to use stencil extrapolation as the better solution, which will
+also need testing.
+
+Had an idea that I could calculate the cut volumes a lot quicker by
+doing a geometric integration from one vertex (or actually anywhere in
+the cell) along lines. Finding the nearest place where these move out
+of the cell would be reasonably easy (bisection). This would work
+correctly for cell shape that was convex. Concavity might mess us
+up. For that the monte-carlo approach might be more convincing. But I
+doubt if concave surfaces are usual. And we probably could avoid the
+issues by specifying a particular direction for lines.
+
+We currently use 10000 MC points which requires ndims*10000 random
+numbers and 10000 isidealls. I could imagine getting decent results
+from a 10x10 grid of lines each of which has to have its ends found to
+(say) 1% accuracy. 1% accuracy by bisection requires about 8
+insidealls (times two ends). But probably one could avoid a lot of
+those calls by starting the end search at the boundary wall, which
+will usually be correct. I'd guess, then that each line integration 
+will cost on average more like 4 isidealls. In which case our costs are
+going to be in the vicinity of n1 x n2 x 4 insidealls. Thus even if the 
+insidealls are the main cost and rand is not (which is optimistic), there's
+the opportunity for perhaps a factor of 10 win by going to n1=n2=15 which
+ought to be fully satisfactory. In the very long run, an improvement of this
+order is required if one is to contemplate a moving boundary that needs
+its volume recalculated at each step. Such a situation might also call
+for parallelization. 
+
+20 Jul 09
+
+Implemented getpotential multilinear interpolation
+with two types of filling in of missing points:
+1. Just set equal to the nearest point value.
+2. Calculate gradients locally from nearby present points. Then fill in
+by extrapolating from the value at the centroid. 
+Added a phi plot to -gt
+
+Type 2 is sometimes a lot better than fill type 1. However, it is basically
+the same when we are on an axis, because then the type of absent points
+is such that one face is absent in total. The gradient in that direction
+can't be calculated and is taken by default to be zero. Thus cases with 
+one whole face missing are almost as bad as the simple nearest point fill.
+In a case like that, we must use more information.
+
+I realize that I could use getfield (or some form of it) to obtain the 
+gradient, rather than using the box vertices. This might be a more reliable
+way to do it. But I'd still need an average or some other value to 
+extrapolate from.
+
+21 Jul 09
+
+Very nearly got something working with a fallback to get the field at
+the point if we fail to find the gradient from the existing box points.
+However, there seems to be a bug. I think it is that it is possible to
+set a box vertex that is actually on the other side of an interface 
+as being present in the region, if it does not have a pointer set 
+(i.e. it is not itself adjacent to the boundary). That gives a big error
+when it happens, at the edge and -at2.1. It is certainly possible for
+opposite vertices, even in 2-D, to suffer this problem. Consequently,
+my implicit assumption that a vertex with pointer not set is in the right
+region, is wrong.
+
+This seems puzzling because cijroutine seems to be written such as to
+fill in all vertex pointers that have crossings within any of their
+boxes. However, the text3 plot shows that that is not happening.
+Actually there's some code in cijroutine that is said to drastically
+reduce the number of boxes counted. Perhaps that's ultimately the
+cause.  For the standard mesh, it reduces the number of pointers from
+14k to 11k. So the storage reduction is definitely not worth it.
+Anyway removing that test and using the increased pointer count
+fixes the bug, making my assumption correct. A 60x60x60 grid with
+about 200k point uses about 50k pointers. Which by the way makes cij
+objects almost as important as cij itself.
+
+As anticipated, fillin gets a field value on average less than once
+per call. So the cost of extra extrapolation is pretty acceptable. 
+There are still some peculiarities at the mesh edge in the outside
+region. We are getting the wrong field value. It ought to be zero
+but it is not. Probably there's an issue with the cij values for
+this type of BC. Actually, I don't see how I can correctly do the
+extrapolation from the mesh edge. Because I think the point beyond
+will be used. That's an issue. Maybe that's ok because of the cij facts.
+
+Print out the maximum phi and grad phi errors for different grids.
+
+grid  	  at?     solution	   phi      gradphi
+16x16x10   .9	  3.62e-2	   -.330    0.376
+16x16x10   --	  ''		   .385e-2  0.724
+16x16x10   .5     ''               .411     0.272
+16x16x16   --	  4.0e-2	   .199	    0.35
+	   .5	  		   .223	    0.156
+	   .9			   .256	    0.100
+32x32x32   --     6.2e-3	   .27e-2   0.163
+           .9	  		   9.7e-2   0.453
+	   .5			   .105	    0.347
+64x64x64   --     2.00e-3	   6.6e-3   1.69e-2
+	   .9	  		   2.2e-2   8.8e-3
+	   .5			   3.1e-2   3.0e-2
+128^3	   --     1.61e-3          4.8e-3   2.68e-2
+	   .5	  		   2.1e-3   3.5e-2
+	   .9			   5.9e-3   4.6e-3
+
+There are sormpi convergence issues with this the 128^3. Fiddled but not
+great. 
+
+It's not terribly obvious from these maximum errors what the convergence
+is. The gradphi seems horrendously noisy. Phi does not seem quite so bad.
+The domain is 10 in diameter, so the ratio of sphere radius to cell size
+is 10/L. To have field errors that are of order a percent when the ratio
+of characteristic size to cell is ~10 is consistent with second order
+convergence, although things don't blow up as badly as you might expect.
+32 is pretty bad. 
+
+23 Jul 09
+
+Convergence is pretty slow for the 128^3 case. Looked into the SOR.
+Remember that the k_sor count is half-steps (red/black). So it is not
+as bad as it looks. The biggest problem is that the omega gets too big
+in the initial Chebychev acceleration calculation. It ought to be a
+bit lower but I have not changed it as of now. The convergence can be
+tweaked a bit but the omega choice is pretty good. I think the only
+realistic way to improve it would be to do dynamic adjustment based on
+actual response.  That would need more programming than I care to
+devote at present.  When lambda is less than about 1, there is a
+dramatic reduction in number of iterations. When lambda is greater
+than about 50, there is also a dramatic reducion after the first solve.
+
+Next we need to get the reinjection to a point where we can really compare
+some cases with sceptic. At present we just have Gaussian reinjection.
+We worked on getpotential in order to be able to calculate the averein
+potential. Checked sceptic2 paper to see how good we need to be. 
+Looks as if there's going to be an issue at intermediate lambda unless
+we adopt the complicated reinjection schemes of sceptic.
+
+The sceptic schemes are contained in
+
+REINJECT=fvinject.o orbitinject.o extint.o maxreinject.o ogeninject.o
+
+Of which the maxreinject has no drift. fvinject is for collisional
+distribution functions, ogeninject is for gyrotropic distributions.
+orbitinject is the standard form. If we hack the orbitinject file
+to remove the fv, max, ogen references, then with
+REINJECT=orbitinject.o extint.o
+it compiles and runs. Therefore, it appears I could use this.
+extint contains the netlib exponential integral function(s).
+oreinject(i,dt) is the call to reinject. The main issue is the use
+of piccom.f which has a load of stuff in it that I don't want.
+I need to cut down those needs and rationalize the parameter passing.
+The only thing that needs the reinject.f code is the test routine
+fvinjecttest, and it does not actually call it, it just needs it for
+advancing.f, I think. 
+
+orbitint program tests the stuff, but it seems also too dependent on
+piccom.f and sceptic calls to be useful. 
+Made a version of orbitinject with implicit none. Seems to work in
+orbitint. This makes clear all the locally defined variables.
+Anything else is a reference to the common variables.
+Then commenting out the include piccom.f should reveal those.
+Ok did that an put in dummy declarations.
+
+oreinject
+c We put here the declarations that are needed to fix excluding piccom.
+      real xp(6,1)
+      real averein,debyelen,fluxrein,pi,spotrein,Ti,vd
+      real Vcom
+      logical lcic,localinj
+      integer nthsize
+      parameter (nthsize=2)
+      integer nr,nrein,nrfull,nrused,nth,nthused
+      integer nrsize
+      parameter (nrsize=2)
+      integer nvel,ntrapre
+      parameter (nvel=2)
+      real r(nrsize),th(nthsize),phi(nrsize,nthsize)
+
+      r( is used only for determining the wall radius.
+      nr is ditto.
+      th( is used only for inverting to find th coord for phihere.
+      phi( is used only for phihere.
+      nrfull ditto. nrused ditto.
+      nrsize is unused.
+      nthsize is used only in the common below.
+
+We also find that the following common is dependent on piccom
+but only occurs in oreinject routine. 
+c Testing
+      real vdist(nvel)
+      real tdist(nthsize)
+      real crdist(nthsize),cidist(nthsize)
+      common/rtest/crdist,cidist,tdist,vdist
+
+oinjinit
+c To fix exclusion we need
+      real Vcom(1),pu1(1),pu2(1)
+      real Ti,vd,pi
+      integer myid,nvel
+
+pu
+c needed from common:
+      real averein,Ti,pu1(1),pu2(1)
+
+alphaint
+c needed from common:
+      real adeficit,averein,debyelen,Ti
+      integer nr,ninner,diagrho(1),r(1),rcc(1),diagphi(1)
+
+  diagrho( is used only in
+           if(diagrho(1).eq.999.)then
+
+  rcc( and diagphi( and ninner are used only in
+            if(ninner.gt.iqsteps)stop 'Alphaint Too many r-cells read.'
+            do i=1,ninner
+               qp(i+1)=1./rcc(ninner+1-i)
+               phibye(i+1)=diagphi(ninner+1-i)
+            enddo
+So none of the above are important if we are not signaling a special
+case using diagrho(1) in a kludgy way. Actually it is a signal that
+we read a file in in orbitint. Completely unneeded for most use. 
+
+  r( is used only in 
+            call initext(iqs,qp,phibye,phiei,r(nr),xlambda)
+
+Now the plan is: construct a different common declaration that together
+with existing ccpic declarations will satisfy the needs and allow
+testoij to run properly. plascom.f has 
+	common/plascom/debyelen,Ti,vd,rs,phip
+
+averein and adeficit don't exist.
+
+Start reincom.f with the random interpolate data from piccom.
+      nvel, nQth
+      common /rancom/Gcom,Vcom,Qcom,pu1,pu2,Pc,infdbl,bcphi,bcr
+
+Add averein, adeficit, fluxrein, spotrein, myid, ntrapre
+
+Comment out the 999 region. Replace r(nr) with rs. That satisfies
+alphaint, pu, oinjinit.
+
+In oreinject
+Comment out rs declaration, and setting of it. It's already set.
+Remove r( using rs. Remove nr.
+
+Convert phihere section to a function. Get rid of th, phi, nrfull, nrused.
+Define nthsize=201 in reincom.f for the commons same as piccom.f. 
+
+We still need nth, nthused which appear in 
+      if(LCIC)then
+         icr=(1.+crt)*0.5*(NTHUSED-1) + 1.5
+      else
+         icr=(1.+crt)*0.5*(nth-1) + 1
+      endif
+In LCIC cases in orbitint, 
+   	      nth=nthsize-1 nthused=nth nthfull=nth+1
+In non.LCIC   nth=nthsize, nthused=nth-1 nthfull=nth
+In sceptic, nth is set by command line. So how do we fix this?
+
+Made two more parameters depended upon nthsize that fix this to the 
+LCIC case.
+
+To get a test going with the testoij code we need to deal with
+averein, adeficit, fluxrein, spotrein ...
+
+fluxrein and spotrein are set by orbitinject, but never used by orbitint.
+So nothing needs doing.
+
+averein is set by orbitint and not by orbitinject, except in the code that
+has been commented out in testoij. So we just need to set it differently.
+
+adeficit is default set to zero by orbitint and only set by commented out
+code in orbitinject. So we need to zero it differently. 
+
+ntrapre is not used.
+
+nrein is used by orbitint after orbitinject is called, for normalization.
+it is incremented by ilaunch each time, which might be bigger than one.
+We need code to get it back.
+
+Summary we need: avereinset(+avdeficit) and nreinget in orbitint.f.
+
+Found rp=rs error in orbitinject.
+
+Got orbitinttest going to the extent of completing although not 
+correctly.
+
+With further corrections, got orbitinttest working the same as orbitint.
+Got rid of lcic, nthused, nth. Retain nthsize=nQth+1 for size of arrays.
+
+Imported a version to ccpic. Got it to link by adding relevant stuff.
+Segfault (as expected). There's a fair amount yet to fix in the initing
+and in xp passing averein calculation, etc.
+
+24 July 09
+
+
+Found some bugs in padvnc.f. Was not correctly handling if_part on
+reinjection, since it was not being set in reinject. This probably
+accounts for prior particle decay. But in any case it changes
+the results.
+Rationalized reinject call not to pass particle number.
+Corrected the rs handling to keep it equal to the sphere radius,
+even though the mesh is a tad larger.
+
+Now seems to run in a similar way with new and old reinject.
+But I need a portable way to diagnose the reinjections. If it is built
+into padvnc, then it will apply to every injection scheme. Probably 
+that's best. 
+
+Implemented some reinjection diagnostics and plot that are independent
+of injection scheme and implemented by a simple call in padvnc. Seems
+to give similar results from my two schemes: shifted maxwellian and
+orbitinject. They ought to be the same here because averein is being
+taken as zero at present.

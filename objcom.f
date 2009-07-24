@@ -1,3 +1,4 @@
+
 c Object-data storage. Guess at needed size Lobjmax
 c The object data consists of data enumerated as
 c (2=forward/backward)*(ndims)*(ndata=fraction,B/A,C/A)
@@ -21,7 +22,7 @@ c Pointer to inverse pointer within u,cij (but relative to 2,2,2...).
       parameter (ipoint_sor=2*ndims_sor*ndata_sor+5)
 c Pointer to intersection code of this node
       parameter (iinter_sor=2*ndims_sor*ndata_sor+6)
-      parameter (Lobjmax=100000)
+      parameter (Lobjmax=1000000)
       real dob_sor(nobj_sor,lobjmax)
       integer oi_sor
       common /objcom/oi_sor,dob_sor

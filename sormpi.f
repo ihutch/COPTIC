@@ -65,7 +65,6 @@ c k_sor is the sor iteration index, for diagnostics.
 
       logical lconverged
       logical laddu
-c      logical lmpisplit
 
 c Declarations for MPI calls. Unfortunately this has SAVE statements in
 c it which cause warnings with the blanket save below. 
@@ -75,7 +74,6 @@ c bbdydecl declares most things for bbdy, using parameter ndimsdecl.
       include 'bbdydecl.f'
 
       real delta,umin,umax
-c      data lmpisplit/.false./
 c This saves data between calls so we can use separate initialization
       save
 c-------------------------------------------------------------------
@@ -136,6 +134,10 @@ c------------------------------------------------------------------
 c This makes cases with strong faddu effects converge better.
       underrelax=1.2
 c Main iteration      
+c Experiments:
+c      xjac_sor=1.-.6*(1.-xjac_sor)
+      write(*,*)'xjac_sor=',xjac_sor
+c      do k_sor=1,mi_sor*2
       do k_sor=1,mi_sor
          delta=0.
          umin=1.e30
@@ -166,29 +168,32 @@ c Test convergence
          call testifconverged(eps_sor,delta,umin,umax,
      $        lconverged,icommcart)
 c         if(myid.eq.0)
-c     $        write(*,*)k_sor,delta,umin,umax,lconverged,relax
+c     $        write(*,*)k_sor,delta,umin,umax,lconverged,relax,omega
          if(lconverged.and.k_sor.ge.2)goto 11
-c Chebychev acceleration:
+
          if(k_sor.eq.1)then
+c Chebychev acceleration doesn't work very well at start.
+c Better not to start with such a big value of omega.
+c It tends to go unstable. But for now, I'm leaving the original
+c for checking purposes.
             omega=1./(1.-0.5*xjac_sor**2)
+c            omega=1./(1.-0.45*xjac_sor**2)
          else
-            omega=1./(1.-0.25*xjac_sor**2*omega)
+            omega2=1./(1.-0.25*xjac_sor**2*omega)
+            omega=omega2
          endif
       enddo
 c We finished the loop, implies we did not converge.
       k_sor=-mi_sor
-c      write(*,*)'Finished sorrelax loop',k_sor
+c      write(*,*)'Finished sorrelax loop unconverged',k_sor,delta
 c-------------------------------------------------------------------
  11   continue
 c Do the final mpi_gather [or allgather if all processes need
 c the result].
       nk=-1
-c Here is where the tp400 crash occurs.
       call bbdy(iLs,ifull,iuds,u,nk,ndims,idims,lperiod,
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid)
-c         call MPI_BARRIER(MPI_COMM_WORLD,ierrmpi)
-c         stop
 c Boundary conditions need to be reset based on the gathered result.
 c But that's not sufficient when there's a relaxation so be careful!
       call bdyset(ndims,ifull,iuds,cij,u,q)
@@ -201,8 +206,6 @@ c seems to cause the return to fail. Probably unnecessary.
 c mpi version needs gracious synchronization when some processes
 c are unused by the iteration.
       call MPI_BARRIER(MPI_COMM_WORLD,ierrmpi)
-c unfortunately this is too early, and causes an exit.
-c      if(lmpisplit)call MPI_FINALIZE(ierrmpi)
       end
 c**********************************************************************
 c***********************************************************************
@@ -229,6 +232,24 @@ c      write(*,*)'convgd,icommcart',convgd,icommcart
          lconverged=.false.
       endif
       delta=sign(convgd(1),delta)
+      end
+c**********************************************************************
+c This is of dubious sense.
+      subroutine avederiv(x,xval,xd,ns)
+c return value and change of x averaged over the last ns (<ntot) steps.
+c If ns=1, return the value of x now, and the change since last call.
+c Be careful with the first call which might have rubbish in it.
+c To initialize to xval and xd, call twice with ns=1.
+      data xave,xdav,xlast/0.,0.,0./
+      save xave,xdav,xlast
+      
+      if(ns.eq.0)stop 'avederiv error ns=0'
+      xave=(xave*(ns-1) + x)/ns
+      xval=xave
+      xdn=x-xlast
+      xdav=(xdav*(ns-1) + xdn)/ns
+      xd=xdav
+      xlast=x
       end
 c***********************************************************************
 c Cut here and throw the rest away for the basic routines

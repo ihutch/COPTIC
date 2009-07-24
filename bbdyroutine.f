@@ -1,9 +1,9 @@
 c**********************************************************************
-c      subroutine bdyset0(ndims,ifull,iuds,cij,u,q)
-c     Null version
-c      end
-c**********************************************************************
       subroutine bdyset(ndims,ifull,iuds,cij,u,q)
+c     Null version
+      end
+c**********************************************************************
+      subroutine bdyset3(ndims,ifull,iuds,cij,u,q)
       integer ndims,ifull(ndims),iuds(ndims)
       real cij(*),u(*),q(*)
       external bdy3slope

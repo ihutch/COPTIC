@@ -200,7 +200,12 @@ c
 c See if this plane actually cuts the cell. If not, don't add it.
 c This drastically reduces the number of boxes counted.
 c Also in 3-D it limits additions to 6-intersection cases.
-            if(ftot.gt.2.)then
+c            if(ftot.gt.2.)then
+c However, then it is impossible to assume, when dealing with a box
+c containing a point in known region, that any box vertex with no pointer
+c is in that region. This breaks getpotential fillinlin, so disable
+c for now.
+            if(.true.)then
                itemp=istart
 c Conditionally start the object: only if it does not already exist.
                call objstart(cij(icij),istart,ipoint)

@@ -163,7 +163,7 @@ c     $           ' for this topology ',(idims(n),n=1,ndims),' =',nproc
             if(myid.eq.0)write(*,201)numprocs,
      $           (idims(n),n=1,ndims),nproc
             call resetidims(ndims,idims,numprocs,nproc)
-            write(*,*)'Reset to',idims,nproc
+            if(myid.eq.0)write(*,*)'Reset to',idims,nproc
 c            goto 999
          elseif(nproc.lt.numprocs)then
             if(myid.eq.0)write(*,201)numprocs,

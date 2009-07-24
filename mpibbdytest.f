@@ -138,9 +138,10 @@ c Gather back all the data
 
 c-------------------------
 c test an allreduce for the arrays. EXTERNAL addsubarray...
-      call mpisubopcreate(nrd,ifull,iuds,addsubarray_MPI,itype,iaddop)
+      call mpisubopcreate(nrd,ifull,iuds,addsubarray_MPI,
+     $     iaddtype,iaddop)
 
-      call MPI_ALLREDUCE(MPI_IN_PLACE,u(2,2,2),1,itype,
+      call MPI_ALLREDUCE(MPI_IN_PLACE,u(2,2,2),1,iaddtype,
      $     iaddop,icommcart,ierr)
 
       if(myid.eq.0)call udisplay(nrd,u,ifull,iuds,2,1.)

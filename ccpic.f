@@ -1,13 +1,17 @@
       program ccpic
 c
 c Only for testing I hope.
-c      include 'mpif.h'
+      include 'mpif.h'
 
       include 'objcom.f'
 c Storage array spatial count size
       integer Li,ni,nj,nk
       parameter (Li=100,ni=40,nj=40,nk=20)
-c      parameter (Li=100,ni=16,nj=16,nk=20)
+c      parameter (Li=100,ni=60,nj=60,nk=60)
+c      parameter (Li=100,ni=16,nj=16,nk=16)
+c      parameter (Li=100,ni=32,nj=32,nk=32)
+c      parameter (Li=100,ni=64,nj=64,nk=64)
+c      parameter (Li=130,ni=128,nj=128,nk=128)
 c      parameter (Li=6,ni=6,nj=6,nk=6)
 c      parameter (Li=100,ni=25,nj=16,nk=20)
       parameter (Li2=Li*Li,Li3=Li2*Li)
@@ -54,7 +58,7 @@ c Plasma common data
       character*100 objfilename
       character*100 argument
       common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
-      logical ltestplot,lcijplot,lsliceplot,lorbitplot
+      logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
       logical lrestart
       
 c Diagnostics
@@ -62,6 +66,9 @@ c      real usave(Li,Li,Li),error(Li,Li,Li),cijp(2*ndims_sor+1,Li,Li)
       real zp(Li,Li)
 c Point in the active region
       real xir(ndims)
+
+c Operator
+      external addsubarray_MPI
 
 c Set up the structure vector.
 c      data iLs/1,Li,(Li*Li),(Li*Li*Li)/
@@ -74,8 +81,8 @@ c Point which lies in the plasma region:
       data xir/2.,2.,2./
 c Data for plotting etc.
       data iobpl/0/
-      data ltestplot,lcijplot,lsliceplot,lorbitplot/
-     $     .false.,.false.,.false.,.false./
+      data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot/
+     $     .false.,.false.,.false.,.false.,.false./
       data thetain,nth/.1,1/
       data lrestart/.false./
 
@@ -113,6 +120,7 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-gt')ltestplot=.true.
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
          if(argument(1:3).eq.'-gs')lsliceplot=.true.
+         if(argument(1:3).eq.'-gi')linjplot=.true.
          if(argument(1:3).eq.'-go')read(argument(4:),*,err=201)norbits
          if(argument(1:3).eq.'-at')read(argument(4:),*,err=201)thetain
          if(argument(1:3).eq.'-an')read(argument(4:),*,err=201)nth
@@ -135,8 +143,9 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:9).eq.'--restart')lrestart=.true.
          if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
          if(argument(1:2).eq.'-v')read(argument(3:),*,err=201)vd
-         if(argument(1:13).eq.'--objfilename')
-     $        read(argument(14:),'(a)',err=201)objfilename
+         if(argument(1:2).eq.'-t')read(argument(3:),*,err=201)Ti
+         if(argument(1:9).eq.'--objfile')
+     $        read(argument(10:),'(a)',err=201)objfilename
          if(argument(1:2).eq.'-h')goto 203
          if(argument(1:2).eq.'-?')goto 203
       enddo
@@ -155,30 +164,32 @@ c Help text
       write(*,301)'Usage: ccpic [switches]'
       write(*,301)'Particle switches.'
      $     //' Leave no gap before value. Defaults indicated [ddd'
-      write(*,301)' --reinj    set reinjection number at each step.['
-     $     ,ninjcomp
       write(*,301)' -ni   set No of particles/node; zero => unset. ['
      $     ,n_part
-      write(*,302)' -ri   set rhoinfinity instead of total particles. ['
+      write(*,301)' --reinj    set reinjection number at each step.['
+     $     ,ninjcomp
+      write(*,302)' -ri   set rhoinfinity/node => reinjection number. ['
      $     ,rhoinf
-      write(*,301)' -ck   set checking timestep No. [',ickst
       write(*,302)' -dt   set Timestep.  [',dt,
      $     ' -da   set Initial dt accel-factor. [',bdt
       write(*,301)' -s    set No of steps. [',nsteps
       write(*,302)' -v    set Drift velocity. [',vd
+      write(*,302)' -t    set Ion Temperature. [',Ti
       write(*,302)' -l    set Debye Length. [',debyelen
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [ccpicgeom.dat'
       write(*,301)' --restart  Attempt to restart from saved state.'
       write(*,301)'Debugging switches for testing'
-      write(*,301)' -gc   set wireframe/stencils(-) mask.'//
-     $     ' objects<->bits. [',iobpl
       write(*,301)' -gt   Plot solution tests.'
+      write(*,301)' -gi   Plot injection accumulated diagnostics.'
       write(*,301)' -gs   Plot slices of solution potential. '
+      write(*,301)' -gc   set wireframe [& stencils(-)] mask.'//
+     $     ' objects<->bits. [',iobpl
       write(*,301)' -go   set No of orbits'
      $     //'(to plot on objects set by -gc). [',norbits
       write(*,301)' -at   set test angle.'
      $     //' -an   set No of angles. '
+      write(*,301)' -ck   set checking timestep No. [',ickst
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue
@@ -191,10 +202,10 @@ c First object is sphere of radius rc and potential phi.
       if(myid.eq.0)write(*,*)'rc=',rc,'  phip=',phip
 c Second object is bounding sphere of radius rs. 
 c But use a tad more for the mesh size
-      rs=obj_geom(5,2)*1.00001
+      rsmesh=obj_geom(5,2)*1.00001
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
-      call meshconstruct(ndims,iuds,ium2,rs)
+      call meshconstruct(ndims,iuds,ium2,rsmesh)
 c----------------------------------------------------------------
 c Initializations
       if(myid.eq.0)write(*,*)'Initializing the stencil data cij'
@@ -211,6 +222,7 @@ c Here we try to read the stored geometry volume data.
 c This is probably a bottleneck for multi-process.
       istat=1
       call stored3geometry(volumes,iuds,ifull,istat)
+c don't calculate volumes testing.      istat=1
       if(istat.eq.0)then
 c Calculate the nodal volumes for all non-edge points.
          ipoint=iLs(1)+iLs(2)+iLs(3)
@@ -290,6 +302,7 @@ c Plot some of the initial-solver data.
             call solu3plot(ifull,iuds,u,cij,phip,rc,thetain,nth
      $        ,rs)
             if(myid.eq.0)write(*,*)'Return from solu3plot.'
+            stop
          endif
       endif
 c End of plotting.
@@ -351,8 +364,8 @@ c 400  continue
      $           ' too much; set to',nf_maxsteps
             nsteps=nf_maxsteps-nsteps
          endif
-         if(myid.eq.0)write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
-     $        nrein,n_part,ioc_part,rhoinf,dt
+c         if(myid.eq.0)write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
+c     $        nrein,n_part,ioc_part,rhoinf,dt
          goto 402
  401     continue
          write(*,*)'Failed to read restart files',
@@ -360,6 +373,10 @@ c 400  continue
          lrestart=.false.
  402     continue
       endif
+c-----------------------------------------------
+c Create addtype and operator for reduce sum.
+      call mpisubopcreate(ndims,ifull,iuds,addsubarray_MPI,
+     $     iaddtype,iaddop)
 
 c-----------------------------------------------
 c Main step iteration:
@@ -372,14 +389,23 @@ c Acceleration code.
          if(ninjcomp.ne.0)nrein=ninjcomp
 
          call mditerset(psum,ndims,ifull,iuds,0,0.)
-
          call chargetomesh(psum,iLs,diags)
-
 c Calculate rhoinfinity, needed in psumtoq.
+c But might need reduce to combine nodes.
          call rhoinfcalc(dt)
+
+c Because psumtoq internally compensates for faddu,
+c we need to reduce here:
+         call MPI_ALLREDUCE(MPI_IN_PLACE,psum(2,2,2),1,iaddtype,
+     $     iaddop,MPI_COMM_WORLD,ierr)
+
 c Convert psums to charge, q. Remember external psumtoq!
          call mditerarg(psumtoq,ndims,ifull,ium2,
      $        0,psum(2,2,2),q(2,2,2),volumes(2,2,2),u(2,2,2))
+c         write(*,*)'q(2,2,2)=',q(2,2,2),volumes(2,2,2),u(2,2,2)
+c Not here:         
+c         call MPI_ALLREDUCE(MPI_IN_PLACE,q(2,2,2),1,iaddtype,
+c     $     iaddop,MPI_COMM_WORLD,ierr)
 c
          call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
@@ -408,14 +434,16 @@ c            call padvncdiag(ndims,cij,u,iLs)
      $     if_part2,iregion_part2,ioc_part2,
      $     dt2,ldiags2,rhoinf2,nrein2,phirein2,numprocs2,ninjcomp2)
          else
+c            call padvncdiag(ndims,cij,u,iLs)
 c The normal call:
             call padvnc(ndims,cij,u,iLs)
          endif
+         call fluxreduce()
 
          if(myid.eq.0)call fluxdiag()
-c         call partreduce
          if(myid.eq.0)
-     $  write(*,'(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i7,i7,2f8.3)')
+     $  write(*,
+     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i7,i7,2f10.3)')
      $        nrein,n_part,ioc_part,rhoinf,dt
       enddo
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
@@ -435,7 +463,10 @@ c-------------------------------------------------------------------
 
 c Check some flux diagnostics and writing.
 c      call fluxave()
-      if(myid.eq.0)call outputflux(fluxfilename)
+      if(myid.eq.0)then 
+         call outputflux(fluxfilename)
+         if(linjplot)call plotinject()
+      endif
 c      call readfluxfile(fluxfilename)
 c      call fluxave()
       end

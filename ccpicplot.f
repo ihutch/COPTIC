@@ -97,7 +97,6 @@ c      real uplot(ifmax,ifmax)
       include '3dcom.f'
 
 c Start of plotting section.
-c Places where plotting occurs.
 
 c      write(*,*)'In solu3plot',ifull,iuds,rc,thetain,nth
       n0=iuds(2)/2
@@ -115,17 +114,22 @@ c      write(*,*)'In solu3plot',ifull,iuds,rc,thetain,nth
          xp(i)=xr
 c         write(*,*)i,xr
       enddo
+      if(.false.)then
       call autoplot(xp,u(1,n0,n1),iuds(1))
+      call polymark(xp,u(1,n0,n1),iuds(1),1)
       call color(ibrickred())
       call polyline(xp,z,iuds(1))
       call color(15)
+      call axlabels('x mesh (at half mesh in y, z)',
+     $     'u(x) and !Af!@(r!dc!d)r!dc!d/r')
       call pltend()
 c Plotting slices.
       ifix=3
       call slice3web(ifull,iuds,u,cij,Li,zp,cijp,ixnp,xn,ifix,
      $     'potential:'//'!Ay!@',1)
+      endif
 c-------------------------------------------------------------------
-c Different lines:
+c Field plotting for various different lines:
 c Spherical angles in 3-D
       do iti=1,nth
          theta=thetain*iti
@@ -134,10 +138,12 @@ c Spherical angles in 3-D
          st=sin(theta)
          cp=cos(varphi)
          sp=sin(varphi)
+         graderr=0
          write(*,*)'Starting uprime calculation'
          do i=1,Li
             zero(i)=0.
-            rp=rs*(i)/(Li-1)
+c            rp=rs*(i)/(Li-1)
+            rp=rs*(i)/Li
             rprime(i)=rp
 c Coordinates relative to center of first object (sphere).
             xprime(1,i)=rp*st*cp + obj_geom(ocenter,1)  
@@ -207,22 +213,36 @@ c               write(*,'(''i,rprime,rfield,uanal(i)'',i4,4f10.5)')
 c     $              i,rprime(i),rfield(i),uanal(i)
 c     $              ,rsimple(i)
 c Region of point
-            region(i)=-0.1*insideall(ndims,xprime(1,i))
+            region(i)=insideall(ndims,xprime(1,i))
+            if(region(i).eq.2)then 
+               gerr=abs(rfield(i)-uanal(i))
+               if(gerr.gt.graderr)graderr=gerr
+            endif
+            region(i)=-0.1*region(i)
          enddo
          write(*,*)'Ended uprime calculation'
          call dashset(0)
          if(iti.eq.1)then
             call autoplot(rprime,rfield(1),Li)
             call axis2()
+            call axlabels('r','E!d(r)!d=-grad!Af!@')
+            call legendline(.5,.1,0,'getfield')
             call winset(.true.)
             call dashset(4)
             call color(ired())
             call polyline(rprime,uanal,Li)
+            call legendline(.5,.05,0,'analytic')
             call winset(.false.)
-c            call polyline(xprime,upregion,Li)
             call color(iblue())
             call dashset(3)
             call polyline(rprime,rsimple(1),Li)
+            call legendline(.5,.15,0,'simplefield')            
+            call color(13)
+            call dashset(0)
+            call legendline(.5,.25,0,'region/10')
+            call color(idarkgreen())
+            call dashset(2)
+            call legendline(.5,.2,0,'tangential')
          else
             call polyline(rprime,rfield(1),Li)
          endif
@@ -230,16 +250,124 @@ c            call polyline(xprime,upregion,Li)
          call color(idarkgreen())
          call polyline(rprime,tfield(1),Li)
          call color(13)
+         call dashset(0)
          call polyline(rprime,region,Li)
          call color(15)
          call winset(.false.)
          form1='!Aq!@='
          call fwrite(180*theta/3.1415926,iwdth,1,form1(7:))
-         call jdrwstr(.01,.1,form1,1.)
+         call jdrwstr(.01,.05+.03*iti,form1,1.)
       enddo
       call dashset(0)
       call pltend()
 c-------------------------------------------------------------------
+c-------------------------------------------------------------------
+c Potential plotting for different lines:
+c Spherical angles in 3-D
+      do iti=1,nth
+         theta=thetain*iti
+         varphi=0.
+         ct=cos(theta)
+         st=sin(theta)
+         cp=cos(varphi)
+         sp=sin(varphi)
+         phierr=0
+         write(*,*)'Starting x calculation'
+         do i=1,Li
+            zero(i)=0.
+c            rp=rs*(i)/(Li-1)
+            rp=rs*(i)/Li
+            rprime(i)=rp
+c Coordinates relative to center of first object (sphere).
+            xprime(1,i)=rp*st*cp + obj_geom(ocenter,1)  
+            xprime(2,i)=rp*st*sp + obj_geom(ocenter+1,1)  
+            xprime(3,i)=rp*ct + obj_geom(ocenter+2,1)  
+            
+            iregion=insideall(ndims,xprime(1,i))
+c Calculate fractional mesh positions of this point, always positive.
+c Thus the origin of the box is below point in all dimensions.
+            do id=1,ndims
+c Offset to start of idf position array.
+               ioff=ixnp(id)
+c xn is the position array for each dimension arranged linearly.
+c Find the index of xprime in the array xn:
+               ix=interp(xn(ioff+1),ixnp(id+1)-ioff,xprime(id,i),xm)
+               if(ix.eq.0)then
+                  write(*,*)'ccpicplot interp outside range'
+     $                 ,xprime(id,i)
+     $                 ,ioff,(xn(ioff+k),k=1,ixnp(id+1)-ioff),' end '
+               endif
+c                  ix=xm
+               xff(id)=xm
+               xfrac(id)=xm-ix
+               itemp(id)=ix
+            enddo
+
+c               write(*,*)'xfrac',(xfrac(kk),kk=1,ndims)
+c     $              ,(xprime(kk,i),kk=1,ndims)            
+
+c Analytic comparison.
+            uanal(i)=phi*rc/(rprime(i))
+            if(uanal(i).lt.phi)uanal(i)=phi
+c               write(*,'(''i,rprime,rfield,uanal(i)'',i4,4f10.5)')
+c     $              i,rprime(i),rfield(i),uanal(i)
+c     $              ,rsimple(i)
+
+            rfield(i)=getpotential(u,cij,iLs,xff,iregion,2)
+            rsimple(i)=getpotential(u,cij,iLs,xff,iregion,1)
+            tfield(i)=getpotential(u,cij,iLs,xff,iregion,3)
+c Region of point
+            region(i)=insideall(ndims,xprime(1,i))
+            if(region(i).eq.2)then 
+               perr=abs(rfield(i)-uanal(i))
+               if(perr.gt.phierr)phierr=perr
+            endif
+            region(i)=-0.1*region(i)
+         enddo
+         call dashset(0)
+         if(iti.eq.1)then
+            call pltinit(0.,rprime(Li),phi*1.02,0.)
+            call axis()
+            call polyline(rprime,rfield(1),Li)
+            call axis2()
+            call axlabels('r','!Af!@')
+            call legendline(.5,.1,0,'getpotential')
+            call winset(.true.)
+            call dashset(4)
+            call color(ired())
+            call polyline(rprime,uanal,Li)
+            call legendline(.5,.05,0,'analytic')
+            call winset(.false.)
+            call color(iblue())
+            call dashset(3)
+            call polyline(rprime,rsimple(1),Li)
+            call legendline(.5,.15,0,'simple')            
+            call color(13)
+            call dashset(0)
+            call legendline(.5,.25,0,'region/10')
+            call color(idarkgreen())
+            call dashset(2)
+            call legendline(.5,.2,0,'nearest')
+         else
+            call polyline(rprime,rfield(1),Li)
+         endif
+         call dashset(2)
+         call color(idarkgreen())
+         call polyline(rprime,tfield(1),Li)
+         call color(13)
+         call dashset(0)
+         call polyline(rprime,region,Li)
+         call color(15)
+         call winset(.false.)
+         form1='!Aq!@='
+         call fwrite(180*theta/3.1415926,iwdth,1,form1(7:))
+         call jdrwstr(.01,.05+.03*iti,form1,1.)
+      enddo
+      call dashset(0)
+      call pltend()
+c-------------------------------------------------------------------
+      write(*,*)'Max potential error=',phierr
+      write(*,*)'Max field error=    ',graderr
       end
 c********************************************************************
 c Packaged version of plotting.

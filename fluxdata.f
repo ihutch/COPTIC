@@ -216,14 +216,29 @@ c Normal call.
 
       end
 c***********************************************************************
+      subroutine fluxreduce()
+      include '3dcom.f'
+      include 'mpif.h'
+      
+      call MPI_ALLREDUCE(MPI_IN_PLACE,ff_data(nf_address(1,1,nf_step))
+     $     ,nf_posno(1,1),MPI_REAL,MPI_SUM,MPI_COMM_WORLD,ierr)
+c      write(*,*)'Total flux number',sum
+c      write(*,'(10f7.1)')(ff_data(nf_address(1,1,nf_step)+i-1),
+c     $     i=1,nf_posno(1,1))
+
+      end
+c***********************************************************************
       subroutine fluxdiag()
       include '3dcom.f'
-      
+c For rhoinf, dt
+      include 'partcom.f'
+
       sum=0
       do i=1,nf_posno(1,1)
          sum=sum+ff_data(nf_address(1,1,nf_step)+i-1)
       enddo
-      write(*,*)'Total flux number',sum
+      write(*,*)'Total flux number, flux',sum,
+     $     sum/(4.*3.14159)/rhoinf/dt
 c      write(*,'(10f7.1)')(ff_data(nf_address(1,1,nf_step)+i-1),
 c     $     i=1,nf_posno(1,1))
 

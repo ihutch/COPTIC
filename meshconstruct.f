@@ -49,7 +49,7 @@ c Standard volume for uniform mesh:
          vs=vs
 c Text graphic of slice through volumes
          write(*,*)'Volumes percentages:'
-         write(form1,'(''('',i2,''i4)'')')iuds(1)
+         write(form1,'(''('',i3,''i4)'')')iuds(1)
          write(*,form1)((nint(100.*
      $        volumes(j-1+(iuds(2)/2-1)*ifull(1)
      $                +(k-1)*ifull(1)*ifull(2)+1)/vs),
@@ -57,7 +57,7 @@ c Text graphic of slice through volumes
 
 c Text graphic of slice through cij
 c      write(*,*)'iregion:'
-         write(form1,'(''('',i2,''i1)'')')iuds(1)
+         write(form1,'(''('',i3,''i1)'')')iuds(1)
          write(*,form1)((ireg3(j,iuds(2)/2,k,ifull,cij),
      $        j=1,iuds(1)),k=1,iuds(3))
       end

@@ -88,7 +88,9 @@ c We left the region.
                call tallyexit(i,inewregion-iregion)
 c Reinject if we haven't exhausted complement.
                if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)then
-                  call reinject(i,x_part(1,i),nrein)
+                  call reinject(x_part(1,i),nrein)
+                  call diaginject(x_part(1,i))
+                  if_part(i)=1
 c Find where we are, since we don't yet know?
 c Might not be needed if we insert needed information in reinject,
 c which might be less costly. (Should be something other than iregion?)
@@ -107,7 +109,9 @@ c The standard exit point for a particle that is active
             endif
          elseif(ninjcomp.ne.0.and.nrein.lt.ninjcomp)then
 c An unfilled slot. Fill it if we need to.
-               call reinject(i,x_part(1,i),nrein)
+               call reinject(x_part(1,i),nrein)
+               call diaginject(x_part(1,i))
+               if_part(i)=1
 c Find where we are, since we don't yet know?
 c Might not be needed if we insert needed information in reinject,
                call partlocate(i,iLs,iu,ixp,xfrac,irg)
@@ -182,9 +186,11 @@ c But for now:
       iregion=insideall(ndims,x_part(1,1))
       n_part=0
 c At most do over all particle slots. But generally we break earlier.
+      write(*,*)'Starting padvnc loop. ninjcomp,nrein=',ninjcomp,nrein
       do i=1,n_partmax
          dtprec=dt
          dtpos=dt
+            iextra=0
  100     continue
 c If this particle slot is occupied.
          if(if_part(i).ne.0)then
@@ -225,10 +231,21 @@ c Move
 
             if(inewregion.ne.iregion) then
 c We left the region. 
+                  if(iextra.gt.0)then
+                     rpos=0
+                     do kk=1,ndims
+                        rpos=rpos+x_part(kk,i)**2
+                     enddo
+                     rpos=sqrt(rpos)
+                     write(*,*)'Lost reinject',iregion,inewregion
+     $                    ,rpos,(x_part(kk,i),kk=1,ndims)
+                  endif
                call tallyexit(i,inewregion-iregion)
 c Reinject if we haven't exhausted complement.
                if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)then
-                  call reinject(i,x_part(1,i),nrein)
+                  call reinject(x_part(1,i),nrein)
+                  call diaginject(x_part(1,i))
+                  if_part(i)=1
 c Find where we are, since we don't yet know?
 c Might not be needed if we insert needed information in reinject,
 c which might be less costly. (Should be something other than iregion?)
@@ -238,9 +255,11 @@ c which might be less costly. (Should be something other than iregion?)
                   if(i.lt.100)then
                      write(*,*)'Reinjected',i,(x_part(kk,i),kk=1,9)
 c     $                    ,dtpos,dtprec,iu,ixp,xfrac,irg
+                  else
+                     write(*,'(i7,$)')i
                   endif
-
 c Complete reinjection by advancing by random remaining.
+                  iextra=iextra+1
                   goto 101
                else
                   if_part(i)=0
@@ -252,12 +271,16 @@ c The standard exit point for a particle that is active
             endif
          elseif(ninjcomp.ne.0.and.nrein.lt.ninjcomp)then
 c An unfilled slot. Fill it if we need to.
-               call reinject(i,x_part(1,i),nrein)
+               call reinject(x_part(1,i),nrein)
+               call diaginject(x_part(1,i))
+               if_part(i)=1
 c Find where we are, since we don't yet know?
 c Might not be needed if we insert needed information in reinject,
                call partlocate(i,iLs,iu,ixp,xfrac,irg)
                dtpos=dtpos*ran1(myid)
                dtprec=0.
+               write(*,'(i7,''new'',$)')i
+               iextra=iextra+1
 c Complete reinjection by advancing by random remaining.
 c               goto 101
 c Silence warning of jump to different block by jumping outside instead

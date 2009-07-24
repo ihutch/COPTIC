@@ -86,6 +86,7 @@ c File name:
       integer ifull(3),iuds(3)
       real u(ifull(1),ifull(2),ifull(3))
       include 'plascom.f'
+      include 'meshcom.f'
       character*(100) charout
 
       name=' '
@@ -98,6 +99,7 @@ c File name:
       open(22,file=name,status='new',form='unformatted',err=101)
       write(22)charout
       write(22)debyelen,Ti,vd,rs,phip
+      write(22)ixnp,xn
       write(22)iuds
       write(22)(((u(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
       close(22)
@@ -116,13 +118,14 @@ c File name:
       character*(*) name
       integer ifull(3),iuds(3)
       real u(ifull(1),ifull(2),ifull(3))
-c Don't update the plasma data based on this routine:
-c      include 'plascom.f'
+      include 'plascom.f'
+      include 'meshcom.f'
       character*(100) charout
 
       open(23,file=name,status='old',form='unformatted',err=101)
       read(23)charout
       read(23)debyelen,Ti,vd,rs,phip
+      read(23)ixnp,xn
       read(23)iuds
       read(23)(((u(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
       close(23)
