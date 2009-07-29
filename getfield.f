@@ -301,7 +301,7 @@ c (So we could simple mindedly use its value).
 c If imin=-1 then there was no valid vertex.
       if(imissing.eq.0)then
 c Multilinear interpolate.
-         getpotential=smultilinearinterp(ndims,uval,xf)
+         getpotential=smultilinearinterp(ndims,uval,xf)      
       elseif(imin.ne.-1)then
 c Fall back.
          if(itype.eq.1)then
@@ -401,9 +401,9 @@ c 2**(mod(id+i,ndims)).
 c Within modulo 2**ndims, an increment by
 c 2**(id+1) accesses the alternate id point with invariant subspace. 
 
-      write(*,'(a,i4,3f9.4)')'Fillinlin',iregion,xff
-      write(*,'(8i9)')ival
-      write(*,'(8f9.4)')uval
+c      write(*,'(a,i4,3f9.4)')'Fillinlin',iregion,xff
+c      write(*,'(8i9)')ival
+c      write(*,'(8f9.4)')uval
       ngoodtot=0
       aveval=0.
       do id=0,ndims-1
@@ -451,8 +451,8 @@ c get field in idp1 direction at the point.
             call getfield(ndims,cij(2*ndims+1),u,iuinc
      $           ,xn(ixnp(idp1)+1),idp1
      $           ,xff,iregion,field)
-            write(*,*)'Fillin field value',field,' direction',idp1
-     $           ,' region',iregion
+c            write(*,*)'Fillin field value',field,' direction',idp1
+c     $           ,' region',iregion
             dx=xn(ixnp(idp1)+2)-xn(ixnp(idp1)+1)
             grad(idp1)=-field*dx
          endif
@@ -462,7 +462,7 @@ c ncgood can be zero only if there are no good points at all.
       enddo
       aveval=aveval/ngoodtot
 c Completed the linearized fit to give centroid, grad, aveval.
-      write(*,'(7f9.4)')centroid,grad,aveval
+c      write(*,'(7f9.4)')centroid,grad,aveval
 c Fill in the values
       do i=1,2**ndims
          if(ival(i).ne.1)then
@@ -482,6 +482,6 @@ c Fill in
          endif
       enddo
 
-      write(*,'(8f9.4)')uval
+c      write(*,'(8f9.4)')uval
 
       end

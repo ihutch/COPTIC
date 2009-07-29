@@ -2190,4 +2190,161 @@ Implemented some reinjection diagnostics and plot that are independent
 of injection scheme and implemented by a simple call in padvnc. Seems
 to give similar results from my two schemes: shifted maxwellian and
 orbitinject. They ought to be the same here because averein is being
-taken as zero at present.
+taken as zero at present. 
+
+Printed out the velocity distributions because a simple gaussian comparison
+is not correct. With counts peaking at 2k per box, the distributions
+are indistinguishable. Conclusion: the orbitinject is working. Commit.
+
+TIME TESTS using sceptic:
+
+Single process 
+time ./sceptic -s200 -ni900000 -nr20 -nt20 -g -f
+tp400:
+real	0m24.868s
+unity:  
+real	1m21.860s
+Thats a pretty big difference. tp400 is only using one core.
+It is dominated by particle pushing. 
+-ni100000: unity gives 0m20.754s. and tp400: 0m6.555s.
+
+Two identical processes doing this on tp400: 0m7.002s. unity: 0m36.481s
+I.e. very little overhead on tp400 maybe more on unity.
+But that's not real multiprocessing we need scepticmpi.
+
+scepticmpi -ni100000
+unity 0m41.520s, tp400 0m7.199s. Not much difference on tp400. 
+
+sceptimpi -ni300000
+unity 1m51.364s  tp400 0m20.609s
+
+four processes -ni300000 tp400 2m10.836s !!! Wow, that's a big hit, nearly
+a factor of 10! Both processors showed 50% utilization for each sceptic.
+There must have been a monstrous hit from swapping. 
+
+Quick summary:
+
+Single processor speed difference is about 3.3 times faster cf unity head node.
+Per cpu speed is about 5.0 times faster on tp400 than unity running mpi.
+It is useless to run more than 2 processes on tp400.
+
+Total cpu capacity on unity = 36x1 on tp400 = 2x5. 36 vs 10.
+tp400 is about 1/4 of the total cpu capacity of unity in multiprocessing.
+
+[But probably there are some big breakpoints.]
+
+The Loki tests of Feb 2008 showed Loki processors to be 3-4 times faster
+than unity head node. It therefore seems that tp400 is getting about the
+same per-cpu speed as the Feb2008 Loki cluster. cmodws45 got about 2x slower
+in 2008. 
+
+25 July 09
+
+Need for averein to be set.
+In sceptic averein is set from diagphi, which is part of the diagnostics
+and is averaged over nstepsave. So averien is time-smoothed. We would have
+to save it for restart purposes. It does not make sense to average every
+injection. We ought to add injection potentials to a counter and then
+divide by the number added together when we complete the advancing step.
+The addition should be done in diagrein. The computation might be done
+at the end of padvnc. Let's use spotrein for the sum of potentials at
+rein and fluxrein as the sum of reinjections. That's what sceptic uses
+them for. They need to be zeroed at the start of each padvnc.
+
+There's currently a conflict between reincom and partcom, both of which
+contain nrein. I'm not sure that nrein is really needed in partcom, although
+it is written and read back, and needs to be MPI reduced. As presumably
+may the other accumulators. There's also a variable phirein, which is not 
+currently used except in rhoinfcalc.
+
+27 July 09
+
+First make reincom just the extra stuff and put explicit inclusions of the
+plascom and rancom headers, where needed.
+
+Now need to rationalize averein, phirein, nrein, ninjcomp. There's no
+phirein in sceptic. 
+
+For restart purposes, anything that influences the orbits or field must
+be saved and restores. nrein is set to zero at the start of padvnc. It
+does not need to be saved and restored, I think. However ave/phi-rein
+if averaged from step to step, will need to be saved/restored. It is more
+of a field quantity than a particle quantity, in a sense.
+
+adeficit is used in orbintinj, and in sceptic set in advancing as part
+of fcalc_lambda:
+c Boundary slope factor calculations:
+      do j=1,NTHUSED
+c Current fractional ion deficit due to collection.
+c Coefficient of 1/r^2 in modified shielding equation is
+c a = deficitj * r_edge^2 / \lambda_De^2
+         deficitj=1-phi(NRUSED,j)/Ti -rho(NRUSED,j)
+c         write(*,*)rho(NRUSED,j),phi(NRUSED,j),deficitj
+         blfac1=(deficitj/debyelen**2) * redge
+         adeficit=adeficit+blfac1
+c BC modification is (a/r_edge)[exp(EL*r) E_1(El*r)] given by approx.
+         blfac=blfac1*expE1
+         blfac=alpha*blfac
+         phislopeconst(j)=blfac*redge*delredge/
+     $        (redge+delredge*rindex*0.5)
+         phislopefac(j)=(redge-delredge*rindex*0.5)/
+     $        (redge+delredge*rindex*0.5)
+      enddo
+c Actual a factor averaged over angles:
+      adeficit=adeficit*redge/NTHUSED
+      if(adeficit.lt.0.)then
+c         write(*,*)'Negative adeficit',adeficit,' set to zero'
+         adeficit=0.
+      endif
+
+This gets used in the boundary condition of the sor solver. I don't think
+it makes sense for CCPIC to think that we are going to be changing the 
+BC every step (maybe not at all). 
+
+29 Jul 09
+
+Implemented OML adeficit setting (only once in the stencils).
+This overrides the boundary condition in the input geometry file,
+but seems to give very sensible results.
+
+Implemented infrastructure for getting averein (in reincom) and
+phirein (in partcom) from spotrein, which uses getphihere. So far
+getphihere gives zero and no changes of result are found. 
+
+There's a problem with the fact that getpotential needs lots of stuff
+like u, cij, etc. So it can't readily be called from reinject.
+It could be called from padvnc, but padvnc does not know the ilaunch
+values etc. If I add ilaunch to the reincom, then its value along with 
+nrein, spotrein and fluxrein are available to reincom. Then if we
+return to padvnc before doing any advancing; getpotential; and pass it
+to a routine to advance; that would work. Clumsy though. 
+We could take the nrein passing out of reinject if we did this, because
+it would be updated at the same time as averein etc.b
+
+This needs rationalization. 
+1. We don't need to update adeficit.
+2. We update the potential used by reinject once per cycle.
+3. We need to average the phihere to supply this value.
+4. nrein and potl needs to be incremented by an amount that depends on the 
+   number of launches.
+
+I get rid of the localinj section. Then I don't need phihere inside the 
+oreinject. Get rid of the accumulation inside of oreinj. 
+Pass ilaunch to reinject. So the accumulation can all be done in padvnc.
+We no longer pass nrein, because we do the accumulation in padvnc.
+
+Pass potential and ilaunch to diaginj, and therein increment spotrein.
+
+Remove nrein and ntrapre from reincom.f. Now not needed.
+Remove fluxrein and spotrein from reincom.f. Now not needed really. 
+The only things that really have to be in reinextra are averein, adefict.
+These are to be set (only) by avereinset and adeficitset.
+
+Revert diaginj to not passing or calculating with phi or ilaunch.
+Update phirein in padvnc. Call avereinset and adeficitset appropriately.
+
+Seems to be working. phirein seems very stable for l>1 and very small 
+for l<1.
+
+At present I am using nrein, phirein in rhoinfcalc for calculating
+rhoinfinity. It seems to be correct, but not thoroughly checked.

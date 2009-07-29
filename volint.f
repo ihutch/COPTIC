@@ -150,7 +150,7 @@ c Write out the current geometric data.
      $     ,form='unformatted',err=101)
       write(iunit)ndims
       write(iunit)ngeomobj
-      write(iunit)((obj_geom(i,j),i=1,odata),j=1,ngeomobj)
+      write(iunit)((obj_geom(i,j),i=1,oabc-1),j=1,ngeomobj)
       write(iunit)(iuds(i),i=1,ndims)
       write(iunit)
      $     (((volumes(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
@@ -166,9 +166,9 @@ c
       if(ndims1.ne.ndims) goto 101
       read(iunit,err=101,end=102)ngeomobj1
       if(ngeomobj1.ne.ngeomobj) goto 101
-      read(iunit,err=101,end=102)((obj1(i,j),i=1,odata),j=1,ngeomobj)
+      read(iunit,err=101,end=102)((obj1(i,j),i=1,oabc-1),j=1,ngeomobj)
       do j=1,ngeomobj
-         do i=1,odata
+         do i=1,oabc-1
             if(obj1(i,j).ne.obj_geom(i,j)) goto 101
          enddo
       enddo

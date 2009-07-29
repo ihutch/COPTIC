@@ -1,6 +1,7 @@
-      subroutine reinject(xr,nrein)
+      subroutine reinject(xr,ilaunch)
       real xr(*)
-      integer nrein
+      integer ilaunch
+      include 'reincom.f'
       logical lfirst
       data lfirst/.true./
 c This call passes address of the particle slot to reiject.      
@@ -12,17 +13,15 @@ c This call passes address of the particle slot to reiject.
          call injinit(icolntype,ibcr)
          lfirst=.false.
       endif
-      call thisreinject(1,dt,icolntype,ibcr,xr)
+      call thisreinject(1,dt,icolntype,ibcr,xr,ilaunch)
 c      write(*,*)'Returning from reinject',(xr(j),j=1,6)
-c We need to advance it, but this might not be right place.      
-      nrein=nrein+1
       end
 c***********************************************************************
 c General version allows choice of reinjection scheme.
 c***********************************************************************
-      subroutine thisreinject(i,dt,icolntype,bcr,xp)
+      subroutine thisreinject(i,dt,icolntype,bcr,xp,ilaunch)
       implicit none
-      integer i,icolntype
+      integer i,icolntype,ilaunch
       real dt
       integer bcr 
       real xp(6,*)
@@ -36,7 +35,7 @@ c Injection from a general gyrotropic distribution at infinity
 c         call ogenreinject(i,dt)
       else
 c Injection from a shifted maxwellian at infinity
-         call oreinject(i,dt,xp)
+         call oreinject(i,dt,xp,ilaunch)
       endif
       end
 c***********************************************************************
@@ -62,17 +61,18 @@ c Injection from a shifted maxwellian at infinity
 c***********************************************************************
 c***********************************************************************
 c Other versions are in other source files.
-      subroutine oreinject(i,dt,xp)
+      subroutine oreinject(i,dt,xp,ilaunch)
       implicit none
-      include 'reincom.f'
-c We put here the declarations that are needed.
+      integer i
+      real dt
       real xp(6,*)
+      integer ilaunch
+      include 'plascom.f'
+      include 'rancom.f'
+      include 'reincom.f'
 c      real averein,debyelen,pi,Ti,vd
-c      real spotrein,fluxrein
 c      real Vcom
-c      logical localinj
 c      integer nr
-c      integer nrein
 c      integer nrfull,nrused
 c      integer nthsize
 c      parameter (nthsize=2)
@@ -82,11 +82,9 @@ c      integer nvel,ntrapre
 c      parameter (nvel=2)
 c      real r(nrsize)
 c      real th(nthsize),phi(1,nthsize)
-      real getphihere
+c      real getphihere
 c End of problematic variables (fix).
 
-      integer i
-      real dt
 c Common data:
       real eup
       parameter (eup=1.e-10)
@@ -100,11 +98,11 @@ c Testing
 
 c Making all variables declared:
       real a1,brc,brcsq,ceta,chium2,cosal,sinal,crt,ct,czt,dc,dv,eta
-      real expuu2,p2,phihere,rcyl,rp,rx,seta,srt,szt,u,ua,ua1,ua3
+      real expuu2,p2,rcyl,rp,rx,seta,srt,szt,u,ua,ua1,ua3
       real Uc,uu2,vscale,y,y1,zt,ran1,x,alcos,alsin,expu0
       real u0
-      integer ic1,ic2,icr,idum,ierr,ilaunch,iv
-c      real rs
+      integer ic1,ic2,icr,idum,ierr,iv
+      real rri
 
 c In this routine we work in velocity units relative to ion thermal till end.
       vscale=sqrt(2.*Ti)
@@ -199,36 +197,11 @@ c         call alcossin(brc,chium2,cosal,sinal)
       endif
 c Install reinjection position
       a1=crt*ceta*sinal+srt*cosal
-      xp(1,i)=rs*(czt*a1+szt*seta*sinal)
-      xp(2,i)=rs*(-szt*a1+czt*seta*sinal)
-      xp(3,i)=rs*(-srt*ceta*sinal + crt*cosal)
-
-c Obtain angle coordinate and map back to th for phihere.
-c      ct=xp(3,i)/rs
-c      call invtfunc(th(1),nth,ct,x)
-c      ic1=x
-c      ic2=ic1+1
-c      dc=x-ic1
-c This expression should work for CIC And NGP.
-c      phihere=(phi(NRUSED,ic1)+phi(NRFULL,ic1))*0.5*(1.-dc)
-c     $        +(phi(NRUSED,ic2)+phi(NRFULL,ic2))*0.5*dc
-      phihere=getphihere(xp(3,i)/rs)
-
-
-c Section to correct the injection velocity and direction (but not the
-c position) to account for local potential. 26 July 2004.
-      if(localinj)then
-         brcsq=(brcsq*(1.-phihere/Ti/(u+eup)**2)/(1.+chium2))
-         if(brcsq.lt. 0.) then
-c     This launch cannot penetrate at this angle. But it would have done
-c     if the potential were equal here to averein. Thus it probably
-c     should not be counted as part of the launch effort. So
-            ilaunch=ilaunch-1
-            goto 1
-         endif
-         chium2=-phihere/Ti/(u+eup)**2
-         brc=sqrt(brcsq)
-      endif
+c Ensure that we are just inside the rs sphere
+      rri=0.99999*rs
+      xp(1,i)=rri*(czt*a1+szt*seta*sinal)
+      xp(2,i)=rri*(-szt*a1+czt*seta*sinal)
+      xp(3,i)=rri*(-srt*ceta*sinal + crt*cosal)
 c Injection velocity components normalized in the rotated frame:
       ua1=-brc*cosal -sqrt(1.+chium2-brcsq)*sinal
       ua3=brc*sinal - sqrt(1.+chium2-brcsq)*cosal
@@ -243,48 +216,24 @@ c If we don't recalculate rp, then we don't trap NANs in the random choices.
       rp=rcyl+xp(3,i)**2
 c      rp=rs
 c      write(*,*)'oreinject',rp
-c Reject particles that are already outside the mesh.
-      if(.not.rp.lt.1.00001*rs*rs)then
+c Reject particles that are already outside. But this is more to do
+c with detecting NANS.
+      if(.not.rp.lt.rs*rs)then
 c      if(.not.rp.le.r(nr)*r(nr))then
          write(*,*)'Relaunch',rp,xp(1,i),xp(2,i),xp(3,i)
          write(*,*)vscale,u,brc,chium2,brcsq,sinal,cosal
          goto 1
-      else
-c Do the outer flux accumulation.
-c In order to accumulate the number of launches at infinity, rather than
-c just the number of reinjections, we weight this by ilaunch
-c         write(*,*)spotrein,phihere,ilaunch,nrein,fluxrein
-         spotrein=spotrein+phihere*ilaunch
-         nrein=nrein+ilaunch
-         fluxrein=fluxrein+1.
-
-c         if(istrapped(i))then
-c            ntrapre=ntrapre+ilaunch
-c            v=sqrt(xp(4,i)**2+xp(5,i)**2+xp(6,i)**2)
-c            write(*,*)'Trapped',vdx/rp,u,v,sqrt(u**2-2.*averein)
-c crt,czt,ceta,cosal
-c         endif
       endif
-c temporary stuff xp parameters in.
-      end
-
-c*******************************************************************
-      real function getphihere(ct)
-c      call invtfunc(th(1),nth,ct,x)
-c      ic1=x
-c      ic2=ic1+1
-c      dc=x-ic1
-c This expression should work for CIC And NGP.
-c      getphihere=(phi(NRUSED,ic1)+phi(NRFULL,ic1))*0.5*(1.-dc)
-c     $        +(phi(NRUSED,ic2)+phi(NRFULL,ic2))*0.5*dc
-      getphihere=0.
       end
 c********************************************************************
 c Initialize the distributions describing reinjected particles
       subroutine oinjinit()
       implicit none
 c Common data:
+      include 'plascom.f'
+      include 'rancom.f'
       include 'reincom.f'
+
 c To fix exclusion we need
 c      real Vcom(1),pu1(1),pu2(1)
 c      real Ti,vd,pi
@@ -336,7 +285,10 @@ c         u= vspread*(iu-1.)/(nvel-1.)   as per injinit
 c     averein is the average potential of reinjected particles, which is
 c     used as an estimate of the potential at the reinjection boundary.
 c     It is expressed in units of Te so needs to be scaled to Ti.
+      include 'plascom.f'
+      include 'rancom.f'
       include 'reincom.f'
+
 c needed from common:
 c      real averein,Ti,pu1(1),pu2(1)
 
@@ -440,9 +392,14 @@ c     The angle values returned.
 c     The error return signal if non-zero.
       integer ierr
 c Common data:
+      include 'plascom.f'
+c Not needed:
+c      include 'rancom.f'
       include 'reincom.f'
-c      real adeficit,averein
-c      integer nr,ninner,diagrho(1),r(1),rcc(1),diagphi(1)
+
+c     Need real adeficit,averein
+c     Need debyelen
+
 
       integer iqsteps
 c This choice ensures iqsteps is large enough to accommodate a profile
@@ -548,6 +505,7 @@ c      write(*,*)'alpha=',alpha
 c Negative sign for definition of alpha relative to the forward direction.
       cosal=-cos(alpha)
       sinal=sin(alpha)
+c      write(*,*)'averein,adeficit',averein,adeficit,alpha
       return
  2    ierr=i
 c      write(*,101)i,b2,p2,averein,adeficit
@@ -555,19 +513,16 @@ c 101  format('Barrier: i=',i3,' b2=',f8.1,
 c     $     ' p2=',f8.4,' averein=',f8.4,' adeficit=',f8.4)
       end
 c********************************************************************
-      subroutine avereinset(aver,adefic,value)
+      subroutine avereinset(aver)
+c Set the averein value
       include 'reincom.f'
-      aver=value
-      averein=value
-      adefic=0.
-      adeficit=0.
+      averein=aver
       end
 c********************************************************************
-      integer function nreinget()
+      subroutine adeficitset(adefic)
       include 'reincom.f'
-      nreinget=nrein
+      adeficit=adefic
       end
-
 c*******************************************************************
       subroutine plascomset(d,T,v,r,p)
       include 'plascom.f'

@@ -136,7 +136,7 @@ c This makes cases with strong faddu effects converge better.
 c Main iteration      
 c Experiments:
 c      xjac_sor=1.-.6*(1.-xjac_sor)
-      write(*,*)'xjac_sor=',xjac_sor
+c      write(*,*)'xjac_sor=',xjac_sor
 c      do k_sor=1,mi_sor*2
       do k_sor=1,mi_sor
          delta=0.

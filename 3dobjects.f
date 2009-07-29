@@ -58,8 +58,7 @@ c Use only lower byte.
       if(type.eq.1.)then
          read(cline,*,err=901,end=801)
      $        (obj_geom(k,ngeomobj),k=1,1+2*nd+3)
- 801     if(myid.eq.0)write(*,820)ngeomobj,
-     $        ' Spheroid '
+ 801     if(myid.eq.0)write(*,820)ngeomobj,' Spheroid '
          if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.2.)then
          read(cline,*,err=901,end=802)
@@ -384,4 +383,24 @@ c*******************************************************************
          ireg3=99
       endif
 
+      end
+c*******************************************************************
+      subroutine objsetabc(iobject,a,b,c)
+c Set/Reset the boundary conditions for an object that has already been
+c read in. 
+      integer iobject
+      real a,b,c
+
+      include '3dcom.f'
+
+      if(iobject.gt.ngeomobj)then
+         write(*,*)'objsetabc error. Attempt to set object',iobject
+     $        ,' greater than exisiting',ngeomobj
+         stop
+      endif
+      obj_geom(oabc,iobject)=a
+      obj_geom(oabc+1,iobject)=b
+      obj_geom(oabc+2,iobject)=c
+c      write(*,'(''Set obj_geom(oabc,'',i2,'')='',3f8.4)')
+c     $     iobject,(obj_geom((oabc+i),iobject),i=0,2)
       end

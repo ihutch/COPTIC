@@ -29,7 +29,9 @@ c Make this always last to use the checks.
      $        stop 'Padvnc incorrect ndims number of dimensions'
       ic1=2*ndims+1
       ndimsx2=2*ndims
-c
+c Initialize. Set reinjection potential. We start with zero reinjections.
+      call avereinset(phirein)
+      phirein=0.
       nrein=0
       iocthis=0
 c We ought not to need to calculate the iregion, since it should be
@@ -88,8 +90,7 @@ c We left the region.
                call tallyexit(i,inewregion-iregion)
 c Reinject if we haven't exhausted complement.
                if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)then
-                  call reinject(x_part(1,i),nrein)
-                  call diaginject(x_part(1,i))
+                  call reinject(x_part(1,i),ilaunch)
                   if_part(i)=1
 c Find where we are, since we don't yet know?
 c Might not be needed if we insert needed information in reinject,
@@ -97,6 +98,10 @@ c which might be less costly. (Should be something other than iregion?)
                   call partlocate(i,iLs,iu,ixp,xfrac,irg)
                   dtpos=dtpos*ran1(myid)
                   dtprec=0.
+                  nrein=nrein+ilaunch
+                  phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i),irg,2)
+                  phirein=phirein+ilaunch*phi
+                  call diaginject(x_part(1,i))
 c Complete reinjection by advancing by random remaining.
                   goto 101
                else
@@ -109,14 +114,17 @@ c The standard exit point for a particle that is active
             endif
          elseif(ninjcomp.ne.0.and.nrein.lt.ninjcomp)then
 c An unfilled slot. Fill it if we need to.
-               call reinject(x_part(1,i),nrein)
-               call diaginject(x_part(1,i))
+               call reinject(x_part(1,i),ilaunch)
                if_part(i)=1
 c Find where we are, since we don't yet know?
 c Might not be needed if we insert needed information in reinject,
                call partlocate(i,iLs,iu,ixp,xfrac,irg)
                dtpos=dtpos*ran1(myid)
                dtprec=0.
+               nrein=nrein+ilaunch
+               phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i),irg,2)
+               phirein=phirein+ilaunch*phi
+               call diaginject(x_part(1,i))
 c Complete reinjection by advancing by random remaining.
 c               goto 101
 c Silence warning of jump to different block by jumping outside instead
@@ -144,6 +152,17 @@ c
       ioc_part=iocthis
 c      write(*,*)'iocthis=',iocthis
 
+c Finished this particle step. Calculate the average reinjection 
+c potential
+      if(nrein.gt.0)then
+         phirein=phirein/nrein
+         write(*,*)'phirein=',phirein
+         if(phirein.gt.0.)then
+            write(*,*)'PROBLEM: phirein>0:',phirein
+         endif
+      else
+         write(*,*)'No reinjections'
+      endif
       end
 c***********************************************************************
 c Diagnostic Particle advancing routine used only for testing.
@@ -178,6 +197,9 @@ c Make this always last to use the checks.
       ic1=2*ndims+1
       ndimsx2=2*ndims
 c
+c Initialize. Set reinjection potential. We start with zero reinjections.
+      call avereinset(phirein)
+      phirein=0.
       nrein=0
       iocthis=0
 c We ought not to need to calculate the iregion, since it should be
@@ -243,8 +265,7 @@ c We left the region.
                call tallyexit(i,inewregion-iregion)
 c Reinject if we haven't exhausted complement.
                if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)then
-                  call reinject(x_part(1,i),nrein)
-                  call diaginject(x_part(1,i))
+                  call reinject(x_part(1,i),ilaunch)
                   if_part(i)=1
 c Find where we are, since we don't yet know?
 c Might not be needed if we insert needed information in reinject,
@@ -252,6 +273,10 @@ c which might be less costly. (Should be something other than iregion?)
                   call partlocate(i,iLs,iu,ixp,xfrac,irg)
                   dtpos=dtpos*ran1(myid)
                   dtprec=0.
+                  nrein=nrein+ilaunch
+                  phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i),irg,2)
+                  phirein=phirein+ilaunch*phi
+                  call diaginject(x_part(1,i))
                   if(i.lt.100)then
                      write(*,*)'Reinjected',i,(x_part(kk,i),kk=1,9)
 c     $                    ,dtpos,dtprec,iu,ixp,xfrac,irg
@@ -271,15 +296,17 @@ c The standard exit point for a particle that is active
             endif
          elseif(ninjcomp.ne.0.and.nrein.lt.ninjcomp)then
 c An unfilled slot. Fill it if we need to.
-               call reinject(x_part(1,i),nrein)
-               call diaginject(x_part(1,i))
+               call reinject(x_part(1,i),ilaunch)
                if_part(i)=1
 c Find where we are, since we don't yet know?
 c Might not be needed if we insert needed information in reinject,
                call partlocate(i,iLs,iu,ixp,xfrac,irg)
                dtpos=dtpos*ran1(myid)
                dtprec=0.
-               write(*,'(i7,''new'',$)')i
+               nrein=nrein+ilaunch
+               phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i),irg,2)
+               phirein=phirein+ilaunch*phi
+               call diaginject(x_part(1,i))
                iextra=iextra+1
 c Complete reinjection by advancing by random remaining.
 c               goto 101
@@ -307,7 +334,13 @@ c
       endif
       ioc_part=iocthis
 c      write(*,*)'iocthis=',iocthis
-
+c Finished this particle step. Calculate the average reinjection 
+c potential
+      if(nrein.gt.0)then
+         phirein=phirein/nrein
+      else
+         write(*,*)'No reinjections'
+      endif
       end
 c***********************************************************************
       subroutine partlocate(i,iLs,iu,ixp,xfrac,iregion)
@@ -344,4 +377,8 @@ c should be ix-1
          iu=iu+(ix-1)*iLs(id)
       enddo
       
+      end
+c***************************************************************
+      real function getnullpot()
+      getnullpot=0.
       end

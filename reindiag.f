@@ -1,25 +1,24 @@
 c**********************************************************************
       subroutine diaginject(x)
-c Accumulate diagnostics of reinjections.
+c Accumulate diagnostics of reinjections, etc.
 c Position and velocity of reinjection.
       real x(*)
+c Potential of reinjection
+      real phi
+c Number of launches needed to get this reinjection
+      integer ilaunch
 c Diagnostic storage etc. Here we are assuming a 3-D problem which is
 c required by this reinjection scheme. 2-D position on reinjection
 c surface.      
       parameter (pi=3.1415927)
       parameter (eps=.0001)
-
-      integer ndth,ndpsi
-      parameter (ndth=100,ndpsi=100)
-      real reinpos(ndth,ndpsi),cthtot(ndth),psitot(ndpsi)
-      real reincth(ndth),reinpsi(ndpsi)
-      real fv(ndth,3),vfv(ndth)
-      common /diagrein/reinpos,cthtot,psitot,reincth,reinpsi,fv,vfv
-
+      include 'reincom.f'
       logical lfirst
       data lfirst/.true./
       save lfirst
-            if(lfirst)then
+c----------------------------
+c Initializations:
+      if(lfirst)then
 c Set up cell arrays (for plotting) and zero counts.
          do i=1,ndth
 c cos(theta) center cells (use nint to choose) (-1 - +1)
@@ -48,8 +47,7 @@ c Velocity
             enddo
          enddo
       endif
-
-c Here for the normal call.
+c------------------------------
 c Particle position
       r=sqrt(x(1)**2+x(2)**2+x(3)**2)
       cth=x(3)/r
@@ -82,15 +80,11 @@ c**********************************************************************
 c Diagnostic storage etc. Here we are assuming a 3-D problem which is
 c required by this reinjection scheme. 2-D position on reinjection
 c surface.      
-      integer ndth,ndpsi
-      parameter (ndth=100,ndpsi=100)
-      real reinpos(ndth,ndpsi),cthtot(ndth),psitot(ndpsi)
-      real reincth(ndth),reinpsi(ndpsi)
-      real fv(ndth,3),vfv(ndth)
-      common /diagrein/reinpos,cthtot,psitot,reincth,reinpsi,fv,vfv
 
-c for Ti to get gaussian width. (And pi)
       include 'plascom.f'
+c for Ti to get gaussian width, and pi.
+      include 'reincom.f'
+
       real gaussian(ndth)
 c Plot some diagnostic information from reinjection.
 

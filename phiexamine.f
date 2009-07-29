@@ -1,6 +1,8 @@
       program phiexamine
 
       include 'examdecl.f'
+
+      real oneoverr(100),ro(100)
 c 
       call examargs
 
@@ -14,6 +16,7 @@ c         call partread(partfilename,ierr)
 c         if(ierr.ne.0)goto 401
 
       call phiread(phifilename,ifull,iuds,u,ierr)
+      if(ierr.eq.1)stop
       call sliceGweb(ifull,iuds,u,Li,zp,
      $        ixnp,xn,ifix,'potential:'//'!Ay!@')
 
@@ -24,6 +27,7 @@ c plot potential versus radius.
       call axis()
       call axlabels('radius','potential')
       call charsize(.001,.001)
+      phimin=0.
       do k=1,iuds(3)
          do j=1,iuds(2)
             do i=1,iuds(1)
@@ -35,10 +39,18 @@ c plot potential versus radius.
                if(r.gt.rs .and. u(i,j,k).ne.0)then
                   write(*,'(4f12.6,3i3)')x,y,z,u(i,j,k),i,j,k
                endif
+               if(u(i,j,k).lt.phimin)phimin=u(i,j,k)
             enddo
          enddo
       enddo
+      do i=1,100
+         ro(i)=1.+(rs-1.)*i/100
+         oneoverr(i)=phimin/ro(i)
+      enddo
       call charsize(0.,0.)
+      call color(2)
+      call polyline(ro,oneoverr,100)
+      call legendline(.5,.1,0,'Coulomb Potential')
       call pltend()
 
       end

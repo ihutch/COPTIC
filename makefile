@@ -1,4 +1,5 @@
-LIBRARIES = -L/usr/X11R6/lib/ -L/home/hutch/accis/ -laccisX -lXt -lX11 -lGL -lGLU
+#GLULIBS= -lGL -lGLU
+LIBRARIES = -L/usr/X11R6/lib/ -L/home/hutch/accis/ -laccisX -lXt -lX11 $(GLULIBS)
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
 # The reinjection choice:
