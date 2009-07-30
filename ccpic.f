@@ -2,8 +2,7 @@
 c
 c Only for testing I hope.
       include 'mpif.h'
-
-      include 'objcom.f'
+      include 'objcom.f' 
 c Storage array spatial count size
       integer Li,ni,nj,nk
       parameter (Li=100,ni=40,nj=40,nk=20)
@@ -406,8 +405,7 @@ c Acceleration code.
 
          call mditerset(psum,ndims,ifull,iuds,0,0.)
          call chargetomesh(psum,iLs,diags)
-c Calculate rhoinfinity, needed in psumtoq.
-c But might need reduce to combine nodes.
+c Calculate rhoinfinity, needed in psumtoq. Does the needed reduce.
          call rhoinfcalc(dt)
 
 c Because psumtoq internally compensates for faddu,
@@ -455,9 +453,11 @@ c The normal call:
             call padvnc(ndims,cij,u,iLs)
          endif
          call fluxreduce()
-
+c Store the step's rhoinf, dt.
+         ff_rho(j)=rhoinf
+         ff_dt(j)=dt
          if(myid.eq.0)call fluxdiag()
-         if(myid.eq.0)
+         if(myid.eq.0.and.mod(j,nsteps/5+1).eq.0)
      $  write(*,
      $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i7,i7,2f10.3)')
      $        nrein,n_part,ioc_part,rhoinf,dt
@@ -478,12 +478,11 @@ c-------------------------------------------------------------------
       call MPI_FINALIZE(ierr)
 
 c Check some flux diagnostics and writing.
-c      call fluxave()
       if(myid.eq.0)then 
          call outputflux(fluxfilename)
          if(linjplot)call plotinject()
+         call fluxave(nsteps/2,nsteps)
       endif
 c      call readfluxfile(fluxfilename)
-c      call fluxave()
       end
 c**********************************************************************

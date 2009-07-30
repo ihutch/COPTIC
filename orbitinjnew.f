@@ -534,7 +534,7 @@ c*******************************************************************
       end
 c*********************************************************************
       subroutine rhoinfcalc(dtin)
-c Return the rhoinf to be used in calculating the electron shielding,
+c Obtain the rhoinf to be used in calculating the electron shielding,
 c based upon the number and average potential of the reinjections.
       include 'plascom.f'
 c No time-averaging for now.

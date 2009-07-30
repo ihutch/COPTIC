@@ -16,8 +16,8 @@ G77=mpif77
 COMPILE-SWITCHES = -Wall -Wno-unused -O2 -I.
 #COMPILE-SWITCHES = -Wall -Wno-unused -I.
 NOBOUNDS= -Wall -Wno-unused -O2 -I.
-PROFILING= -pg
-#PROFILING=
+#PROFILING= -pg
+PROFILING=
 
 # If this rule does not seem to recognize the file you are trying to make,
 # then run 'make' to completion first. It is something to do with the

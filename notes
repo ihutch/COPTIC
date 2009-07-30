@@ -2348,3 +2348,21 @@ for l<1.
 
 At present I am using nrein, phirein in rhoinfcalc for calculating
 rhoinfinity. It seems to be correct, but not thoroughly checked.
+
+30 July 09
+
+Implemented saving of rhoinf and dt per step which then allows one to 
+get the flux density normalized by rhoinf 
+
+We have a result. The OML value flux density is 1/\sqrt{2\pi}
+\sqrt(T_i/T_e) (1+\chi) which for \phi=-2 is 3/\sqrt{2\pi}=1.19. We
+get this value within less than 1% with large debyelength (40x40x20)
+at T_i=T_e.
+
+At lower -l flux drops, which qualitatively it should. There is some
+systematic flux enhancement at the poles. The potential and density
+get very noisy, and without multiple processors, it is tough to do
+much about that. We also need to look at more-negative potentials. But
+first off we have a decent result that verifies the orbit solver,
+though not really the potential solver with finite rho. Also verify
+that acceleration is working.

@@ -237,7 +237,7 @@ c For rhoinf, dt
       do i=1,nf_posno(1,1)
          sum=sum+ff_data(nf_address(1,1,nf_step)+i-1)
       enddo
-      write(*,*)'Total flux number, flux',sum,
+      write(*,*)'Total flux',
      $     sum/(4.*3.14159)/rhoinf/dt
 c      write(*,'(10f7.1)')(ff_data(nf_address(1,1,nf_step)+i-1),
 c     $     i=1,nf_posno(1,1))
@@ -247,22 +247,44 @@ c***********************************************************************
 c Averaging the flux data over all positions.
 c The positions might be described by more than one dimension, but
 c that is irrelevant to the averaging, though not to plotting.
-      subroutine fluxave()
+      subroutine fluxave(n1,n2)
       include '3dcom.f'
       parameter (nfluxmax=200)
       real flux(nfluxmax),angle(nfluxmax)
+      real fluxofstep(nf_maxsteps),step(nf_maxsteps)
+
+      if(n1.lt.1)n1=1
+      if(n2.gt.nf_step)n2=nf_step
+      if(n2-n1.lt.0)then
+         write(*,*)'fluxave incorrect limits:',n1,n2
+         return
+      endif
 
       do i=1,nf_posno(1,1)
          flux(i)=0.
       enddo
-      sum=0
+      tot=0
       do i=1,nf_posno(1,1)
-         do is=1,nf_step
+         do is=n1,n2
             flux(i)=flux(i)+ff_data(nf_address(1,1,is)+i-1)
-            sum=sum+ff_data(nf_address(1,1,is)+i-1)
          enddo
-         flux(i)=flux(i)/nf_step
+         tot=tot+flux(i)
+         flux(i)=flux(i)/(n2-n1+1)
       enddo
+      tdur=0.
+      rinf=0.
+      do is=n1,n2
+         fluxstep=0
+         do i=1,nf_posno(1,1)
+            fluxstep=fluxstep+ff_data(nf_address(1,1,is)+i-1)
+         enddo
+         step(is)=is
+         fluxofstep(is)=fluxstep
+         tdur=tdur+ff_dt(is)
+         rinf=rinf+ff_rho(is)*ff_dt(is)
+      enddo
+      tot=tot/tdur
+      rinf=rinf/tdur
 
 c From here on is non-general and is mostly for testing.
       do i=1,nf_posno(1,1)
@@ -271,9 +293,16 @@ c we could make this more general by binning everything with the same
 c angle together.
          angle(i)=ff_data(nf_address(1,1,0)+i-1)
       enddo
-      write(*,*) 'Average Flux'
+      write(*,*) 'Average flux over steps',n1,n2,' All Positions:',tot
+      write(*,*)'rhoinf',rinf,'  Average particles collected per step:'
       write(*,'(10f8.4)')(flux(i),i=1,nf_posno(1,1))
 
+      write(*,*)'Flux density, normalized to rhoinf'
+     $     ,tot/(4.*3.14159)/rinf
+
+      call autoplot(step(n1),fluxofstep(n1),n2-n1)
+      call axlabels('step','collected number')
+      call pltend()
       call autoplot(angle,flux,nf_posno(1,1))
       call axlabels('angle cosine','average counts')
 c      do i=1,nf_step
@@ -311,6 +340,8 @@ c This write sequence must be exactly that read below.
       write(22)charout
       write(22)debyelen,Ti,vd,rs,phip
       write(22)nf_step,mf_quant,mf_obj
+      write(22)(ff_rho(k),k=1,nf_step)
+      write(22)(ff_dt(k),k=1,nf_step)
       write(22)((nf_posno(i,j),i=1,mf_quant),j=1,mf_obj)
       write(22)(((nf_address(i,j,k),i=1,mf_quant),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+1)
@@ -338,6 +369,8 @@ c*****************************************************************
       read(23)charout
       read(23)debyelen,Ti,vd,rs,phip
       read(23)nf_step,mf_quant,mf_obj
+      read(23)(ff_rho(k),k=1,nf_step)
+      read(23)(ff_dt(k),k=1,nf_step)
       read(23)((nf_posno(i,j),i=1,mf_quant),j=1,mf_obj)
       read(23)(((nf_address(i,j,k),i=1,mf_quant),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+1)
