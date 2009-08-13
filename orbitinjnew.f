@@ -541,21 +541,17 @@ c No time-averaging for now.
 c Use particle information for initializing.
       include 'partcom.f'
 
-      include 'mpif.h'
-
-      call MPI_ALLREDUCE(MPI_IN_PLACE,nrein,1,MPI_INTEGER,MPI_SUM,
-     $     MPI_COMM_WORLD,ierr)
-      call MPI_ALLREDUCE(MPI_IN_PLACE,phirein,1,MPI_REAL,MPI_SUM,
-     $     MPI_COMM_WORLD,ierr)
-      phirein=phirein/numprocs
+c Moved nrein and phirein reductions to psumreduce.
       if(nrein.ne.0)then
 c Calculate rhoinf from nrein if there are enough.
-         chi=min(-phirein/Ti,0.5)
+         chi=max(-phirein/Ti,-0.5)
          riest=(nrein/dtin) /
      $        (sqrt(Ti)*
      $        smaxflux(vd/sqrt(2.*Ti),chi)
      $        *rs**2 )
          rhoinf=riest
+c         write(*,*)'nrein,dtin,Ti,vd,phirein,chi,rs,numprocs=',
+c     $        nrein,dtin,Ti,vd,phirein,chi,rs,numprocs
       else
          if(rhoinf.lt.1.e-4)then
 c Approximate initialization

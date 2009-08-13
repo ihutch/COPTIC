@@ -2,6 +2,9 @@ c**************************************************************
       program fluxdatatest
       include '3dcom.f'
       character*100 filename,argument
+      logical lplot
+
+      data lplot/.true./
       
       fn1=0.5
       fn2=1.
@@ -15,6 +18,7 @@ c**************************************************************
      $        read(argument(4:),'(f10.4)')fn2
          if(argument(1:2).eq.'-f')
      $        read(argument(3:),'(a)')filename
+         if(argument(1:2).eq.'-p')lplot=.false.
          if(argument(1:2).eq.'-h')goto 201
          if(argument(1:2).eq.'-?')goto 201
          if(argument(1:1).ne.'-') read(argument(1:),'(a)')filename
@@ -44,7 +48,7 @@ c**************************************************************
       n1=fn1*nf_step
       n2=fn2*nf_step
       write(*,*)nf_step
-      call fluxave(n1,n2)
+      call fluxave(n1,n2,lplot)
       call exit(1)
  201  write(*,*)'Usage: fluxdatatest [-ffilename,-n1fff,-n2fff]'
 

@@ -14,5 +14,6 @@ c Reindiag parameters.
       parameter (ndth=100,ndpsi=100)
       real reinpos(ndth,ndpsi),cthtot(ndth),psitot(ndpsi)
       real reincth(ndth),reinpsi(ndpsi)
-      real fv(ndth,3),vfv(ndth)
-      common /diagrein/reinpos,cthtot,psitot,reincth,reinpsi,fv,vfv
+      real fv(ndth,3),vfv(ndth),sv(ndth),vs(ndth)
+      common /diagrein/reinpos,cthtot,psitot,reincth,reinpsi,
+     $     fv,vfv,sv,vs

@@ -18,6 +18,8 @@ c sormesh provides ixnp, xn, the mesh spacings. (+ndims_mesh)
       include 'meshcom.f'
 c Alternatively they could be passed, but we'd then need parameter.
       include 'myidcom.f'
+c Include this only for testing with Coulomb field.
+      include 'plascom.f'
 c Local storage
       integer ixp(ndims_mesh)
       real field(ndims_mesh)
@@ -30,9 +32,12 @@ c Make this always last to use the checks.
       ic1=2*ndims+1
       ndimsx2=2*ndims
 c Initialize. Set reinjection potential. We start with zero reinjections.
+c      write(*,*)'Setting averein in padvnc.',phirein
       call avereinset(phirein)
       phirein=0.
       nrein=0
+      nlost=0
+      ninner=0
       iocthis=0
 c We ought not to need to calculate the iregion, since it should be
 c known and if a particle is outside it, it would have been reinjected:
@@ -48,11 +53,6 @@ c At most do over all particle slots. But generally we break earlier.
  100     continue
 c If this particle slot is occupied.
          if(if_part(i).ne.0)then
-c Find out where we are (if we don't already know).
-c Should not be necessary if chargetomesh has been called.
-c         call partlocate(i,iLs,iu,ixp,xfrac,iregion)
-c         write(*,*)(x_part(ndimsx2+kk,i)-xfrac(kk),kk=1,3)
-
 c Subcycle start.
  101        continue
 c Use dtaccel for acceleration. May be different from dt if there was
@@ -65,6 +65,8 @@ c Check the fraction data is not stupid and complain if it is.
                write(*,*)'Zero fractions',i,ioc_part,if_part(i)
      $              ,nrein,ninjcomp
             endif
+c---------------------------------
+            if(.true.)then
 c Get the ndims field components at this point. 
 c We only use x_part information for location.
             do idf=1,ndims
@@ -75,6 +77,19 @@ c We only use x_part information for location.
      $              ,x_part(ndimsx2+1,i)
      $              ,iregion,field(idf))
             enddo
+c--------------------------------
+            else
+c Testing with pure coulomb field from phip potential at r=1.
+               r2=0.
+               do idf=1,ndims
+                  r2=r2+x_part(idf,i)**2
+               enddo
+               r3=sqrt(r2)**3
+               do idf=1,ndims
+                  field(idf)=x_part(idf,i)*phip/r3
+               enddo
+            endif
+c--------------------------------
 c Accelerate          
             do j=4,6
                x_part(j,i)=x_part(j,i)+field(j-3)*dtaccel
@@ -87,6 +102,8 @@ c Move
             inewregion=insideall(ndims,x_part(1,i))
             if(inewregion.ne.iregion) then
 c We left the region. 
+c Testing only:
+               if(inewregion.eq.3)ninner=ninner+1
                call tallyexit(i,inewregion-iregion)
 c Reinject if we haven't exhausted complement.
                if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)then
@@ -98,6 +115,7 @@ c which might be less costly. (Should be something other than iregion?)
                   call partlocate(i,iLs,iu,ixp,xfrac,irg)
                   dtpos=dtpos*ran1(myid)
                   dtprec=0.
+                  nlost=nlost+1
                   nrein=nrein+ilaunch
                   phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i),irg,2)
                   phirein=phirein+ilaunch*phi
@@ -121,6 +139,7 @@ c Might not be needed if we insert needed information in reinject,
                call partlocate(i,iLs,iu,ixp,xfrac,irg)
                dtpos=dtpos*ran1(myid)
                dtprec=0.
+               nlost=nlost+1
                nrein=nrein+ilaunch
                phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i),irg,2)
                phirein=phirein+ilaunch*phi
@@ -156,7 +175,9 @@ c Finished this particle step. Calculate the average reinjection
 c potential
       if(nrein.gt.0)then
          phirein=phirein/nrein
-         if(myid.eq.0)write(*,'(a,f12.6,$)')' Phirein=',phirein
+c         if(myid.eq.0)
+c         write(*,'(a,f12.6,$)')' Phirein=',phirein
+c         write(*,*)' nlost=',nlost,' nrein=',nrein,' ninner=',ninner
          if(phirein.gt.0.)then
 c            if(myid.eq.0)write(*,*)'PROBLEM: phirein>0:',phirein
             phirein=0.

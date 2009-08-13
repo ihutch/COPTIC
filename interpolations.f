@@ -347,7 +347,6 @@ c The value of gradient: OUTPUT
 c ix and xm are returned the index and fraction of interpolation.
 
 c xn is the position array for each dimension arranged linearly.
-c
       ix=1
       xm=xf
 c Pointer to object data,
@@ -355,6 +354,7 @@ c      icp0=cij(ix)
       icp0=cij(1)
 c If we are in wrong region, try to correct:
       if(icp0.ne.0)then
+c This section is only 10% of routine cost.
          if(idob_sor(iregion_sor,icp0).ne.iregion)then
 c         write(*,*)'Incorrect region',iregion,idob_sor(iregion_sor,icp0)
 c     $        ,icp0,ix,xm
@@ -377,15 +377,21 @@ c Distance forward and backward along idf-dimension to adjacent
       dx0=xn(ix)-xn(ix-1)
 
 c Values of u at the points to be interpolated.
-      u0=u(1+(ix-1)*iuinc)
-      up=u(1+ix    *iuinc)
-      um=u(1+(ix-2)*iuinc)
+c      u0=u(1+(ix-1)*iuinc)
+c      up=u(1+ix    *iuinc)
+c      um=u(1+(ix-2)*iuinc)
+      ixiu=1+(ix-1)*iuinc
+      u0=u(ixiu)
+      up=u(ixiu+iuinc)
+      um=u(ixiu-iuinc)
 c Do interpolation using extrapolation information pointed to by icp0.
       if(icp0.eq.0)then
 c Short-cut 1: an ordinary point don't call the full routine
          if(abs(dx1-dx0).lt.1.e-6*dx0)then
 c Short-cut 2: for uniform mesh:
 c (saves ~25% of routine for uniform mesh even including test):
+c A uprime=0. test reduces the time in this routine by about 25%.
+c So this evaluation is about 25%.
             uprime= ((2.*xm+1.) * (up-u0)
      $           +(1.-2.*xm) * (u0-um))/(dx0+dx1)
          else

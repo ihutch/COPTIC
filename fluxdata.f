@@ -216,18 +216,6 @@ c Normal call.
 
       end
 c***********************************************************************
-      subroutine fluxreduce()
-      include '3dcom.f'
-      include 'mpif.h'
-      
-      call MPI_ALLREDUCE(MPI_IN_PLACE,ff_data(nf_address(1,1,nf_step))
-     $     ,nf_posno(1,1),MPI_REAL,MPI_SUM,MPI_COMM_WORLD,ierr)
-c      write(*,*)'Total flux number',sum
-c      write(*,'(10f7.1)')(ff_data(nf_address(1,1,nf_step)+i-1),
-c     $     i=1,nf_posno(1,1))
-
-      end
-c***********************************************************************
       subroutine fluxdiag()
       include '3dcom.f'
 c For rhoinf, dt
@@ -237,7 +225,7 @@ c For rhoinf, dt
       do i=1,nf_posno(1,1)
          sum=sum+ff_data(nf_address(1,1,nf_step)+i-1)
       enddo
-      write(*,*)'Total flux',
+      write(*,*)'Total flux',sum,
      $     sum/(4.*3.14159)/rhoinf/dt
 c      write(*,'(10f7.1)')(ff_data(nf_address(1,1,nf_step)+i-1),
 c     $     i=1,nf_posno(1,1))
@@ -247,7 +235,9 @@ c***********************************************************************
 c Averaging the flux data over all positions.
 c The positions might be described by more than one dimension, but
 c that is irrelevant to the averaging, though not to plotting.
-      subroutine fluxave(n1,n2)
+      subroutine fluxave(n1,n2,lplot)
+      integer n1,n2
+      logical lplot
       include '3dcom.f'
       parameter (nfluxmax=200)
       real flux(nfluxmax),angle(nfluxmax)
@@ -273,15 +263,17 @@ c that is irrelevant to the averaging, though not to plotting.
       enddo
       tdur=0.
       rinf=0.
-      do is=n1,n2
+      do is=1,n2
          fluxstep=0
          do i=1,nf_posno(1,1)
             fluxstep=fluxstep+ff_data(nf_address(1,1,is)+i-1)
          enddo
          step(is)=is
          fluxofstep(is)=fluxstep
-         tdur=tdur+ff_dt(is)
-         rinf=rinf+ff_rho(is)*ff_dt(is)
+         if(is.ge.n1)then
+            tdur=tdur+ff_dt(is)
+            rinf=rinf+ff_rho(is)*ff_dt(is)
+         endif
       enddo
       tot=tot/tdur
       rinf=rinf/tdur
@@ -300,15 +292,17 @@ c angle together.
       write(*,*)'Flux density, normalized to rhoinf'
      $     ,tot/(4.*3.14159)/rinf
 
-      call autoplot(step(n1),fluxofstep(n1),n2-n1)
-      call axlabels('step','collected number')
-      call pltend()
-      call autoplot(angle,flux,nf_posno(1,1))
-      call axlabels('angle cosine','average counts')
+      if(lplot)then
+         call autoplot(step(1),fluxofstep(1),n2)
+         call axlabels('step','collected number')
+         call pltend()
+         call autoplot(angle,flux,nf_posno(1,1))
+         call axlabels('angle cosine','average counts')
 c      do i=1,nf_step
 c         call polyline(angle,ff_data(nf_address(1,1,i)),nf_posno(1,1))
 c      enddo
-      call pltend()
+         call pltend()
+      endif
 
       end
 c*******************************************************************
@@ -351,13 +345,10 @@ c This write sequence must be exactly that read below.
 
       write(*,*)'Wrote flux data to ',name(1:lentrim(name))
       return
-
  101  continue
       write(*,*)'Error opening file:',name
       close(22,status='delete')
-
       end
-
 c*****************************************************************
       subroutine readfluxfile(name,ierr)
       character*(*) name
@@ -378,7 +369,7 @@ c*****************************************************************
       close(23)
 
       write(*,*)'Read back flux data from ',name(1:lentrim(name))
-      write(*,*)'Charout=',charout
+      write(*,*)charout(1:lentrim(charout))
       ierr=0
       return
  101  write(*,*)'Error opening file:',name

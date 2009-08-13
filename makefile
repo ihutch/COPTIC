@@ -6,7 +6,7 @@ UTILITIES=udisplay.o
 #REINJECT=reinject.o
 REINJECT=orbitinjnew.o extint.o
 # The sormpi system.
-OBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o ${REINJECT} reindiag.o pinit.o bbdyroutine.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o
+OBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o ${REINJECT} reindiag.o pinit.o bbdyroutine.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o reduce.o
 HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 G77=mpif77
@@ -40,6 +40,12 @@ smt.out : ccpic
 	./ccpic
 	if [ -f smt.prev ] ; then diff smt.prev smt.out ; fi
 
+#mpi checking target
+mpicheck : ccpic
+	mpiexec -l -n 2 ./ccpic >mpicheck.out
+	if [ -f mpicheck.prev ] ; then diff mpicheck.prev mpicheck.out ; else mv mpicheck.out mpicheck.prev  ; fi
+	mv mpicheck.out mpicheck.prev
+
 # Things to compile without the standard switches
 
 interpolations.o : interpolations.f makefile $(HEADERS)
@@ -52,8 +58,8 @@ getfield.o : getfield.f makefile $(HEADERS)
 ccpic : ccpic.f makefile $(OBJECTS) $(UTILITIES) /home/hutch/accis/libaccisX.a
 	$(G77)  -o ccpic $(COMPILE-SWITCHES) $(PROFILING) ccpic.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
-mpibbdytest : mpibbdytest.o udisplay.o mpibbdy.o mditerate.o
-	$(G77) -o mpibbdytest  mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o
+mpibbdytest : mpibbdytest.o udisplay.o mpibbdy.o mditerate.o reduce.o
+	$(G77) -o mpibbdytest  mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o reduce.o
 
 clean :
 	rm -f *.o $(TARGETS)

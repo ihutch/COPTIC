@@ -154,13 +154,8 @@ c No time-averaging for now.
 c Use particle information for initializing.
       include 'partcom.f'
 
-      include 'mpif.h'
+c Moved nrein and phirein reductions to psumreduce.
 
-      call MPI_ALLREDUCE(MPI_IN_PLACE,nrein,1,MPI_INTEGER,MPI_SUM,
-     $     MPI_COMM_WORLD,ierr)
-      call MPI_ALLREDUCE(MPI_IN_PLACE,phirein,1,MPI_REAL,MPI_SUM,
-     $     MPI_COMM_WORLD,ierr)
-      phirein=phirein/numprocs
       if(nrein.ne.0)then
 c Calculate rhoinf from nrein if there are enough.
          chi=min(-phirein/Ti,0.5)

@@ -4,7 +4,7 @@
 # on the end. In that case we'd get an error.
 # ; Sphere type: center, constant axes. 3 extra data values A,B,C
 # Radius 1 sphere centered on axis with potential -2.
-1 , .0,.0,.0,  1.,1.,1.    , 1.,0.,2.
+1 , .0,.0,.0,  1.,1.,1.    , 1.,0.,10.
 #1 , .0,.0,.0,  1.,1.,1.    , 1.,0.,0.
 # Radius 5 sphere where slope is -1/r
 257 ,.0,.0,.0, 5.,5.,5. , 1.,5.,0. 

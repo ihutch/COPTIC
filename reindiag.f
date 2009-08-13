@@ -4,7 +4,7 @@ c Accumulate diagnostics of reinjections, etc.
 c Position and velocity of reinjection.
       real x(*)
 c Potential of reinjection
-      real phi
+c      real phi
 c Number of launches needed to get this reinjection
       integer ilaunch
 c Diagnostic storage etc. Here we are assuming a 3-D problem which is
@@ -45,6 +45,8 @@ c Velocity
             do j=1,3
                fv(i,j)=0.
             enddo
+            sv(i)=0.
+            vs(i)=vrange*(i-.5)/ndth
          enddo
       endif
 c------------------------------
@@ -68,21 +70,26 @@ c Increment counts.
 c      write(*,*)icth,ipsi,cthtot(icth),psitot(ipsi)
 
 c Particle velocity
+      sp=0.
       do j=1,3
          iv=nint((x(3+j)+vrange)/dvf+.5)
          if(iv.lt.1)iv=1
          if(iv.gt.ndth)iv=ndth
          fv(iv,j)=fv(iv,j)+1
+         sp=sp+x(3+j)**2
       enddo
+      sp=sqrt(sp)
+      iv=nint(ndth*sp/vrange+0.5000001)
+      if(iv.gt.ndth)iv=ndth
+      sv(iv)=sv(iv)+1
       end
 c**********************************************************************
-      subroutine plotinject()
+      subroutine plotinject(Ti)
 c Diagnostic storage etc. Here we are assuming a 3-D problem which is
 c required by this reinjection scheme. 2-D position on reinjection
 c surface.      
 
-      include 'plascom.f'
-c for Ti to get gaussian width, and pi.
+      parameter (pi=3.1415927)
       include 'reincom.f'
 
       real gaussian(ndth)
@@ -109,12 +116,15 @@ c Actually the flux is not a gaussian. So this isn't yet useful
       enddo
       write(*,*)Ti
 
-      call pfset(2)
       call automark(vfv,fv(1,1),ndth,1)
       call axlabels('velocity distributions','count')
       call polymark(vfv,fv(1,2),ndth,2)
       call polymark(vfv,fv(1,3),ndth,3)
 c      call polyline(vfv,gaussian,ndth)
+      call pltend()
+
+           call automark(vs,sv,ndth,1)
+      call axlabels('speed distribution','count')
       call pltend()
 
       end

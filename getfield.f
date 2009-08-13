@@ -1,3 +1,4 @@
+c*******************************************************************
 c Get the field value in the direction idf appropriately interpolated
 c from nearby points, for a specified position.
 c
@@ -48,9 +49,8 @@ c We DONT include sormesh, because xn is passed
       parameter (ipwr2nd=2**(ndims_sor-1))
       integer iflags(ipwr2nd)
       real f(ipwr2nd),d(ndims_sor-1)
+      integer ii1,ii2
 
-c      integer ipa(4,2)
-c      data ipa/0,1,0,1,0,0,1,1/
 c Allow the passing of the real position, not just fraction.
 c This is the case if ix>=1. For fractions, ix=0. 
 c Calculate offset and remainder the fractions.
@@ -93,20 +93,19 @@ c         iimax=iimax*2
          ii1=ii-1
          iinc=iu0
 c This is likely to be most costly. We are just calculating iinc.
-c Bit functions might be a significant gain.
          do ik=1,ndims-1
+c This break saves unnecessary iterations, about 15%.
+            if(ii1.eq.0)goto 41
             ii2=ii1/2
             if(ii1-2*ii2.ne.0)iinc=iinc+iuinc(idn(ik))
-c            ip=ii1-2*ii2
-c            if(ip.ne.0)iinc=iinc+iuinc(idn(ik))
             ii1=ii2
 c This is slightly quicker but less than 25%. And not general-dimensional.
 c            iinc=iinc+ipa(ii,ik)*iuinc(idn(ik))
          enddo
+ 41      continue
 c Suppose we know there's only 3 dimensions total we could replace with
 c         iinc=iinc+ipa(ii,1)*iuinc(idn(1))+ipa(ii,2)*iuinc(idn(2))
-c Which saves about 25% of the time this routine takes. (But it takes
-c only about 13% of the total).
+c Which saves about 25% of the original time this routine. 
 c Pass arrays with local origin.
          call gradlocalregion(
      $        cij(1+ic1*iinc),u(1+iinc)

@@ -23,7 +23,7 @@ c         if(ierr.ne.0)goto 401
 c plot potential versus radius.
 
       write(*,*)rs
-      call pltinit(0.,rs,-2.,0.)
+      call pltinit(0.,rs,u(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
       call axis()
       call axlabels('radius','potential')
       call charsize(.001,.001)

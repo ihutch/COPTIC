@@ -35,7 +35,7 @@ c Processor cartesian geometry
       integer nblksi,nblksj,nblksk
       parameter (nblksi=2,nblksj=1,nblksk=1)
       integer idims(ndims_sor)
-c MPI information.
+c mpi process information.
       include 'myidcom.f'
 c Common data containing the BC-object geometric information
       include '3dcom.f'
@@ -58,16 +58,13 @@ c Plasma common data
       character*100 argument
       common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
-      logical lrestart
+      logical lrestart,lmyidhead,lfplot
       
 c Diagnostics
 c      real usave(Li,Li,Li),error(Li,Li,Li),cijp(2*ndims_sor+1,Li,Li)
       real zp(Li,Li)
 c Point in the active region
       real xir(ndims)
-
-c Operator
-      external addsubarray_MPI
 
 c Set up the structure vector.
 c      data iLs/1,Li,(Li*Li),(Li*Li*Li)/
@@ -80,8 +77,8 @@ c Point which lies in the plasma region:
       data xir/2.,2.,2./
 c Data for plotting etc.
       data iobpl/0/
-      data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot/
-     $     .false.,.false.,.false.,.false.,.false./
+      data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot,lfplot/
+     $     .false.,.false.,.false.,.false.,.false.,.false./
       data thetain,nth/.1,1/
       data lrestart/.false./
 
@@ -106,11 +103,15 @@ c Default to constant rhoinf not n_part.
 c Initialize the fortran random number generator with a fixed number
 c for solutions of volumes etc. Each node does the same.
       blah=ran1(-1)
+      lmyidhead=.true.
 c---------------------------------------------------------------------
-c MPI initialization only.
+c mpi initialization only.
 c Control bit 3 (=4) pure initialization, no communication (to get myid).
       call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,4,ierr
      $     ,myid,idims)
+      if(myid.ne.0) lmyidhead=.false.
+c This necessary or could be hidden in sormpi and pass back numprocs.
+      call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
 c--------------------------------------------------------------
 c Deal with arguments
 c      if(iargc().eq.0) goto "help"
@@ -120,6 +121,7 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
          if(argument(1:3).eq.'-gs')lsliceplot=.true.
          if(argument(1:3).eq.'-gi')linjplot=.true.
+         if(argument(1:3).eq.'-gf')lfplot=.true.
          if(argument(1:3).eq.'-go')read(argument(4:),*,err=201)norbits
          if(argument(1:3).eq.'-at')read(argument(4:),*,err=201)thetain
          if(argument(1:3).eq.'-an')read(argument(4:),*,err=201)nth
@@ -134,7 +136,7 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:2).eq.'-s')then
             read(argument(3:),*,err=201)nsteps
             if(nsteps.gt.nf_maxsteps)then
-               if(myid.eq.0)write(*,*)'Asked for more steps',nsteps,
+               if(lmyidhead)write(*,*)'Asked for more steps',nsteps,
      $              ' than allowed. Limit ',nf_maxsteps
                nsteps=nf_maxsteps
             endif
@@ -155,7 +157,7 @@ c Set ninjcomp if we are using rhoinf
 c------------------------------------------------------------
 c Help text
  201  continue
-      if(myid.eq.0)write(*,*)'=====Error reading command line argument'
+      if(lmyidhead)write(*,*)'=====Error reading command line argument'
  203  continue
       if(myid.ne.0)goto 202
  301  format(a,i5)
@@ -180,6 +182,7 @@ c Help text
       write(*,301)' --restart  Attempt to restart from saved state.'
       write(*,301)'Debugging switches for testing'
       write(*,301)' -gt   Plot solution tests.'
+      write(*,301)' -gf   Plot flux evolution and final distribution.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
       write(*,301)' -gs   Plot slices of solution potential. '
       write(*,301)' -gc   set wireframe [& stencils(-)] mask.'//
@@ -199,7 +202,7 @@ c Inner boundary setting -----------------
 c First object is sphere of radius rc and potential phi.
       rc=obj_geom(5,1)
       phip=-obj_geom(10,1)/obj_geom(8,1)
-      if(myid.eq.0)write(*,*)'rc=',rc,'  phip=',phip
+      if(lmyidhead)write(*,*)'rc=',rc,'  phip=',phip
 c Outer boundary setting -----------------
 c Second object is bounding sphere of radius rs.
       rs=obj_geom(5,2)
@@ -213,7 +216,7 @@ c Override the boundary condition of object 2 with an OML condition.
       adeficit=((1.-2.*phip/Ti)*rc**2/(4.*debyelen**2))
 c IHH approximation to exp(x)E1(x) valid to 0.5% for positive x.
       c= (adeficit/rs)*(alog(1.+1./x)-.56/(1.+4.1*x+0.9*x*x))
-      if(myid.eq.0)write(*,*)'Outer boundary a,b,c'
+      if(lmyidhead)write(*,*)'Outer boundary a,b,c'
      $     ,a,b,c
       call objsetabc(2,a,b,c)
       call adeficitset(adeficit)
@@ -222,7 +225,7 @@ c Construct the mesh vector(s) and ium2
       call meshconstruct(ndims,iuds,ium2,rsmesh)
 c----------------------------------------------------------------
 c Initializations
-      if(myid.eq.0)write(*,*)'Initializing the stencil data cij'
+      if(lmyidhead)write(*,*)'Initializing the stencil data cij'
 c Initialize cij:
       ipoint=iLs(1)+iLs(2)+iLs(3)
 
@@ -243,13 +246,13 @@ c Calculate the nodal volumes for all non-edge points.
 c We are going to populate the region in which xir lies.
          iregion=insideall(ndims,xir)
          region=iregion
-         if(myid.eq.0)write(*,*)
+         if(lmyidhead)write(*,*)
      $        'Starting volume setting. Be patient this first time...'
          call mditerarg(volnode,ndims,ifull,ium2,ipoint,
      $        volumes,region,cij,dum4)
-         if(myid.eq.0)write(*,*)'Finished volume setting'
+         if(lmyidhead)write(*,*)'Finished volume setting'
 c If head, write the geometry data if we've had to calculate it.
-         if(myid.eq.0)call stored3geometry(volumes,iuds,ifull,istat)
+         if(lmyidhead)call stored3geometry(volumes,iuds,ifull,istat)
       endif
 c---------------------------------------------
 c Set an object pointer for all the edges so their regions get
@@ -276,14 +279,13 @@ c Some simple graphics of cij, and volumes.
          if(ltestplot)call text3graphs(ndims,iuds,ifull,cij,volumes)
 c---------------------------------------------
 c The following requires include objcom.f
-         if(myid.eq.0)write(*,*)'Finished mesh setup:',iuds
-         if(myid.eq.0)write(*,*)
+         if(lmyidhead)write(*,*)'Finished mesh setup:',iuds
+         if(lmyidhead)write(*,*)
      $      'Used No of pointers:',oi_sor,' of',iuds(1)*iuds(2)*iuds(3)
      $        ,' points.'
-c      write(*,*)'Finished mesh setup.'
 c Plot objects 0,1 and 2 (bits)
 c      iobpl=-7
-         if(iobpl.ne.0.and.myid.eq.0)
+         if(iobpl.ne.0.and.lmyidhead)
      $        call cijplot(ndims,ifull,iuds,cij,rs,iobpl,0)
       endif
 
@@ -295,17 +297,12 @@ c---------------------------------------------------------------
 c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
       ictl=0
 c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
-
-c         call MPI_BARRIER(MPI_COMM_WORLD,ierrmpi)
-c         stop
-
 c An initial solver call.
       call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
       ictl=2
-
-
-      if(myid.eq.0)then
+c
+      if(lmyidhead)then
 c-------------------------------------------------------------------
 c Do some analytic checking of the case with a fixed potential sphere
 c inside a logarithmic derivative boundary condition. 1/r solution.
@@ -315,7 +312,7 @@ c Also write out some data for checking.
 c Plot some of the initial-solver data.
             call solu3plot(ifull,iuds,u,cij,phip,rc,thetain,nth
      $        ,rs)
-            if(myid.eq.0)write(*,*)'Return from solu3plot.'
+            if(lmyidhead)write(*,*)'Return from solu3plot.'
             stop
          endif
       endif
@@ -327,9 +324,9 @@ c With a specified number of particles.
 c Initialize the fortran random number generator.
       idum=-myid-1
       blah=ran1(idum) 
-      if(myid.eq.0)write(*,*)'Initializing',n_part,' particles'
+      if(lmyidhead)write(*,*)'Initializing',n_part,' particles'
       call pinit()
-c      if(myid.eq.0)write(*,*)'Return from pinit'
+c      if(lmyidhead)write(*,*)'Return from pinit'
 c A special orbit.
 c Pinit resets x_part. So set it for the special first particle.
       x_part(1,1)=2.
@@ -341,7 +338,7 @@ c Tangential velocity of circular orbit at r=4.
       x_part(5,1)=sqrt(abs(phip/x_part(1,1))-x_part(4,1)**2)
       x_part(6,1)=0.
 c
-c      if(myid.eq.0)write(*,*)'dt=',dt,' vd=',vd
+c      if(lmyidhead)write(*,*)'dt=',dt,' vd=',vd
 c ' dtheta=',dt*x_part(5,1)/x_part(1,1),
 c     $     ' steps=',nsteps,' total theta/2pi='
 c     $     ,nsteps*dt*x_part(5,1)/x_part(1,1)/2./3.1415927
@@ -373,13 +370,13 @@ c 400  continue
          if(ierr.ne.0)goto 401
          write(*,*)'Restart files read successfully.'
          if(nsteps+nf_step.gt.nf_maxsteps)then
-            if(myid.eq.0)write(*,*)'Asked for',
+            if(lmyidhead)write(*,*)'Asked for',
      $           nsteps,' in addition to',nf_step,
      $           ' Total',nsteps+nf_step,
      $           ' too much; set to',nf_maxsteps
             nsteps=nf_maxsteps-nsteps
          endif
-c         if(myid.eq.0)write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
+c         if(lmyidhead)write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
 c     $        nrein,n_part,ioc_part,rhoinf,dt
          goto 402
  401     continue
@@ -388,13 +385,13 @@ c     $        nrein,n_part,ioc_part,rhoinf,dt
          lrestart=.false.
  402     continue
       endif
-c-----------------------------------------------
-c Create addtype and operator for reduce sum.
-      call mpisubopcreate(ndims,ifull,iuds,addsubarray_MPI,
-     $     iaddtype,iaddop)
 
 c-----------------------------------------------
-c Main step iteration:
+c Create addtype and operator for reduce sum. Transferred to psumreduce.f
+c      call mpisubopcreate(ndims,ifull,iuds,addsubarray_mpi,
+c     $     iaddtype,iaddop)
+c-----------------------------------------------
+c Main step iteration -------------------------------------
       do j=1,nsteps
          nf_step=nf_step+1
 c Acceleration code.
@@ -405,33 +402,23 @@ c Acceleration code.
 
          call mditerset(psum,ndims,ifull,iuds,0,0.)
          call chargetomesh(psum,iLs,diags)
-c Calculate rhoinfinity, needed in psumtoq. Does the needed reduce.
+c Psumreduce takes care of the reductions that were in rhoinfcalc 
+c and explicit psum. It encapsulates the iaddtype iaddop generation.
+c Because psumtoq internally compensates for faddu, we reduction here
+         call psumreduce(psum,ndims,ifull,iuds,iLs) 
+c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
-
-c Because psumtoq internally compensates for faddu,
-c we need to reduce here:
-         call MPI_ALLREDUCE(MPI_IN_PLACE,psum(2,2,2),1,iaddtype,
-     $     iaddop,MPI_COMM_WORLD,ierr)
-
 c Convert psums to charge, q. Remember external psumtoq!
          call mditerarg(psumtoq,ndims,ifull,ium2,
      $        0,psum(2,2,2),q(2,2,2),volumes(2,2,2),u(2,2,2))
-c         write(*,*)'q(2,2,2)=',q(2,2,2),volumes(2,2,2),u(2,2,2)
-c Not here:         
-c         call MPI_ALLREDUCE(MPI_IN_PLACE,q(2,2,2),1,iaddtype,
-c     $     iaddop,MPI_COMM_WORLD,ierr)
-c
+
          call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
 
-         if(myid.eq.0)write(*,'(i4.4,i4,'' iterations.'',$)')
+         if(lmyidhead)write(*,'(i4.4,i4,'' iterations.'',$)')
      $        nf_step,ierr
 c         write(*,*)dt
          if(lsliceplot)then
-c            call slice3web(ifull,iuds,u,cij,Li,zp,cijp,
-c     $        ixnp,xn,ifix,'potential:'//'!Ay!@',1)
-c            call slice3web(ifull,iuds,q,cij,Li,zp,cijp,
-c     $        ixnp,xn,ifix,'density: n',0)
             call sliceGweb(ifull,iuds,u,Li,zp,
      $        ixnp,xn,ifix,'potential:'//'!Ay!@')
             call sliceGweb(ifull,iuds,q,Li,zp,
@@ -442,13 +429,11 @@ c     $        ixnp,xn,ifix,'density: n',0)
 c This test routine assumes 3 full dimensions all equal to Li are used.
             call checkuqcij(Li,u,q,psum,volumes,cij,
      $           u2,q2,psum2,volumes2,cij2)
-c            call padvncdiag(ndims,cij,u,iLs)
             call padvnc(ndims,cij,u,iLs)
             call checkx(n_part2,x_part2,
-     $     if_part2,iregion_part2,ioc_part2,
-     $     dt2,ldiags2,rhoinf2,nrein2,phirein2,numprocs2,ninjcomp2)
+     $           if_part2,iregion_part2,ioc_part2,dt2,
+     $           ldiags2,rhoinf2,nrein2,phirein2,numprocs2,ninjcomp2)
          else
-c            call padvncdiag(ndims,cij,u,iLs)
 c The normal call:
             call padvnc(ndims,cij,u,iLs)
          endif
@@ -456,32 +441,31 @@ c The normal call:
 c Store the step's rhoinf, dt.
          ff_rho(j)=rhoinf
          ff_dt(j)=dt
-         if(myid.eq.0)call fluxdiag()
-         if(myid.eq.0.and.mod(j,nsteps/5+1).eq.0)
-     $  write(*,
-     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i7,i7,2f10.3)')
-     $        nrein,n_part,ioc_part,rhoinf,dt
+         if(lmyidhead)call fluxdiag()
+c         if(lmyidhead.and.mod(j,nsteps/5+1).eq.0)
+c     $  write(*,
+c       write(*,
+c     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i7,i7,2f10.3)')
+c     $        nrein,n_part,ioc_part,rhoinf,dt
       enddo
+c End of Main Step Iteration -------------------------------
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
-c      call slice3web(ifull,iuds,psum,cij,Li,zp,cijp,
-c     $        ixnp,xn,ifix,'psum',0)
-
 c      if(lorbitplot)call orbit3plot(ifull,iuds,u,phip,rc,rs)
       if(norbits.ne.0)
      $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl,norbits)
 c      write(*,*)'Finished orbitplot.'
 
       call partwrite(partfilename,myid)
-      if(myid.eq.0)call phiwrite(phifilename,ifull,iuds,u)
+      if(lmyidhead)call phiwrite(phifilename,ifull,iuds,u)
 
 c-------------------------------------------------------------------
       call MPI_FINALIZE(ierr)
 
 c Check some flux diagnostics and writing.
-      if(myid.eq.0)then 
+      if(lmyidhead)then 
          call outputflux(fluxfilename)
-         if(linjplot)call plotinject()
-         call fluxave(nsteps/2,nsteps)
+         if(linjplot)call plotinject(Ti)
+         call fluxave(nsteps/2,nsteps,lfplot)
       endif
 c      call readfluxfile(fluxfilename)
       end

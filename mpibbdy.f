@@ -156,10 +156,6 @@ c         write(*,*)'mpi_initialize'
 c This could be relaxed if I check for return of MPI_COMM_NULL
 c after CART_CREATE
          if(nproc.gt.numprocs)then
-c            if(myid.eq.0)
-c                write(*,*)'MPI setup error: too few processes ',
-c     $           numprocs,
-c     $           ' for this topology ',(idims(n),n=1,ndims),' =',nproc
             if(myid.eq.0)write(*,201)numprocs,
      $           (idims(n),n=1,ndims),nproc
             call resetidims(ndims,idims,numprocs,nproc)
@@ -172,6 +168,9 @@ c            goto 999
      $           ' don''t match this topology ',6i3)
             call resetidims(ndims,idims,numprocs,nproc)
             if(myid.eq.0)write(*,*)'Reset to',idims,nproc
+         else
+            if(myid.eq.0)write(*,'(''numprocs,idims()'',i4,10i4)')
+     $           numprocs,(idims(n),n=1,ndims)
          endif
 c End of possible topology idims resetting.
 c-----
@@ -792,80 +791,3 @@ c Evaluate new count
       goto 101
 
       end
-
-c**************************************************************
-      subroutine mpisubopcreate(nrd,ifull,iuds,iopfun,itype,iaddop)
-c For an nrd (IN) dimensional structure 
-c described by ifull (IN), iuds (IN)
-      integer nrd
-      integer iuds(nrd),ifull(nrd)
-c Create a datatype itype (OUT) and an operator iaddop (OUT)
-c for doing MPI_REDUCEs on a subarray described by iuds
-c (Its boundaries are omitted in the reduce.)
-c The operation function is iopfun (EXTERNAL).
-c iopfun MUST be declared external in the calling routine.
-c
-c Local storage
-      parameter (ims=10)
-      integer iside(2,ims),ktype(2**(ims+1)),iLs(ims+1)
-      
-c Common for passing the dimensionals structures:
-      include 'mditcom.f'
-      include 'mpif.h'
-      external iopfun
-
-      if(nrd.gt.ims)stop 'mpisubopcreate dimension too large'
-      iLs(1)=1
-      do i=1,nrd
-c These are needed for the blockcreate
-         iside(1,i)=iuds(i)
-         iside(2,i)=iuds(i)
-         iLs(i+1)=iLs(i)*ifull(i)
-c These are needed for the ioperator usage.
-         iasfull(i)=ifull(i)
-         iasum2(i)=iuds(i)-2
-      enddo
-      nasdims=nrd
-c iasfull etc don't need to be set for this call.
-      call MPI_OP_CREATE(iopfun,.false.,iaddop,ierr)
-      call bbdyblockcreate(nrd,ktype,iLs,iside,iSIZEOFREAL)
-      itype=ktype(2**nrd)
-
-c MPI_IN_PLACE is ok for ALLREDUCE. Not for REDUCE.
-c Subsequent calls will be of the form:
-c      call MPI_ALLREDUCE(MPI_IN_PLACE,u(2,2,2),1,itype,
-c     $     iaddop,icommcart,ierr)
-      end
-
-c**************************************************************
-c These two routines provide facility for addition reduce 
-c over subarray.
-      subroutine addsubarray_MPI(invec,inoutvec,ilen,itype)
-c MPI_sum type function over subarray. The input and inout arrays
-c are from MPI's viewpoint single pointers to the start of the 
-c arrays to be added.
-      real invec(*),inoutvec(*)
-      integer ilen,itype
-c Common for passing the dimensional structures. Needs to be
-c set in the calling routine of the REDUCE that references this
-c the operator use:
-      include 'mditcom.f'
-      external iteradd
-      ipoint=0
-      call mditerarg(iteradd,nasdims,iasfull,iasum2,ipoint,
-     $        invec,inoutvec,dum3,dum4)
-      end
-c********************************************************************
-      subroutine iteradd(inc,ipoint,indi,ndims,iused,
-     $     a,b,c,d)
-      integer ipoint,inc
-      integer indi(ndims),iused(ndims)
-      real a(*),b(*),c(*),d(*)
-c This routine for use in mditerarg.
-c Hardly anything is used. Only inc,ipoint,a,b.
-c Add a(*) to b(*) and leave in b(*)
-      ind=1+ipoint
-      b(ind)=b(ind)+a(ind)
-      inc=1
-      end
-c*******************************************************************
