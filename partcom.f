@@ -13,7 +13,7 @@ c Particle flag(s).
       integer if_part(n_partmax)
 c Timestep (unperturbed).
       real dt
-c Iregion where particles belong.
+c Iregion where particles belong. Obsolete.
       integer iregion_part
 c Control of diagnostics
       logical ldiags
@@ -27,8 +27,8 @@ c Number of independent processors
       integer numprocs
 c Number of reinjections at each step (if non-zero)
       integer ninjcomp
-      common/particles/n_part,x_part,if_part,iregion_part,ioc_part,
-     $     dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
+      common/particles/n_part,x_part,if_part,iregion_part,ioc_part
+     $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
 
 c Orbit plotting storage for tracking the first norbits orbits.
       integer nobsmax,norbits,nstepmax

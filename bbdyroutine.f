@@ -1,21 +1,23 @@
 c**********************************************************************
-      subroutine bdyset(ndims,ifull,iuds,cij,u,q)
+      subroutine bdyset()
+c (ndims,ifull,iuds,cij,u,q)
 c     Null version
+      return
       end
 c**********************************************************************
-      subroutine bdyset3(ndims,ifull,iuds,cij,u,q)
-      integer ndims,ifull(ndims),iuds(ndims)
-      real cij(*),u(*),q(*)
-      external bdy3slope
+c      subroutine bdyset3(ndims,ifull,iuds,cij,u,q)
+c      integer ndims,ifull(ndims),iuds(ndims)
+c      real cij(*),u(*),q(*)
+c      external bdy3slope
 c set the derivative to zero on boundaries 3.
-      ipoint=0
-      call mditerate(ndims,ifull,iuds,bdy3slope,u,ipoint)
-
+c      ipoint=0
+c      call mditerate(ndims,ifull,iuds,bdy3slope,u,ipoint)
+c
 c set the second derivative to zero on max j
 c      do i=2,ni-1
 c         u(i,nj)=relax*(2.*u(i,nj-1)-u(i,nj-2)) +(1.-relax)*u(i,nj)
 c      enddo
-      end
+c      end
 c**********************************************************************
 c     L(u) + f(u) = q(x,y,...), 
 c     where L is a second order elliptical differential operator 

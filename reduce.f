@@ -9,7 +9,7 @@ c***********************************************************************
       subroutine fluxreduce()
       include 'mpif.h'
       include '3dcom.f'
-      
+c ALLREDUCE communicates the result to all processes.      
       call MPI_ALLREDUCE(MPI_IN_PLACE,ff_data(nf_address(1,1,nf_step))
      $     ,nf_posno(1,1),MPI_REAL,MPI_SUM,MPI_COMM_WORLD,ierr)
 c      write(*,*)'Total flux number',sum
@@ -102,12 +102,13 @@ c     $     iaddop,icommcart,ierr)
 c**************************************************************
 c These two routines provide facility for addition reduce 
 c over subarray.
-      subroutine addsubarray_MPI(invec,inoutvec,ilen,itype)
+      subroutine addsubarray_MPI(invec,inoutvec)
+c actually (invec,inoutvec,ilen,itype) but ilen,itype not used.
 c MPI_sum type function over subarray. The input and inout arrays
 c are from MPI's viewpoint single pointers to the start of the 
 c arrays to be added.
       real invec(*),inoutvec(*)
-      integer ilen,itype
+c      integer ilen,itype
 c Common for passing the dimensional structures. Needs to be
 c set in the calling routine of the REDUCE that references this
 c operator use or by using mpisubopcreate:

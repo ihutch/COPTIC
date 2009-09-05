@@ -3,9 +3,24 @@
 # We can short-list the data, but only if we don't put a comment
 # on the end. In that case we'd get an error.
 # ; Sphere type: center, constant axes. 3 extra data values A,B,C
-# Radius 1 sphere centered on axis with potential -2.
+# ccpic has a built in assumption that the first two objects define 
+# the domain. Can't put others there for now.
+# Radius 1 sphere centered on axis with potential set (-10.)
 1 , .0,.0,.0,  1.,1.,1.    , 1.,0.,10.
-#1 , .0,.0,.0,  1.,1.,1.    , 1.,0.,0.
-# Radius 5 sphere where slope is -1/r
+#
+# Radius 5 sphere where slope is -phi/r. A phi + B phi' = 0
 257 ,.0,.0,.0, 5.,5.,5. , 1.,5.,0. 
 #1 ,.0,.0,.0, 5.,5.,5. , 1.,5.,0. 
+#
+# Radius .5 sphere with null BC to ensure this does not mess up.
+1, 0.,0.,0., 2.,2.,2., 0.,0.,0.
+# Radius 2. sphere with null BC to ensure this does not mess up.
+1, 0.,0.,0., .5,.5,.5, 0.,0.,0.
+#
+# Boolean that specifies the particle region 99, n1, n1*values, n2, ... 0:
+# Each nk values are ored together. The groups are anded.
+# value n means inside object n, -n outside, 0 filler (do nothing). 
+# In this case -1: outside object 1, and 2 inside object 2. 
+99, 1, -1, 1, 2, 0
+# Another example: inside 3 or inside 4 and outside 5. Ors cycle faster.
+#99, 2, 3, 4, 1, 5, 0 

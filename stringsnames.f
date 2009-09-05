@@ -19,8 +19,10 @@ c*******************************************************************
       character*12 sval
       sval=' '
       np=nbcat(name,paramname)      
+c      call nbcat(name,paramname)      
       call eformati(param,sval,ip)
       np=nbcat(name,sval)
+c      call nbcat(name,sval)
       end
 c*******************************************************************
       subroutine nameappendint(name,paramname,iparam,ip)
@@ -69,7 +71,7 @@ c Construct an exp-formatted value with ip significant figures.
          iti=0
          it2=0
       elseif(value.gt.0.9e9*10.**ip)then
-         iti=.99999*10.**ip
+         iti=int(.99999*10.**ip)
          it2=9
       else
          iti=nint(alog10(value)-0.49)-(ip-1)

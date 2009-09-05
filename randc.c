@@ -55,3 +55,9 @@ int initrand_(int *seed, char *state, int *statelen)
 int setrand_(char *state){
   setstate(state);
 }
+
+/******************* Calling this from fortran does not work 
+void fflush_(){
+  fflush(stdout);
+}
+********/

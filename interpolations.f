@@ -351,7 +351,7 @@ c xn is the position array for each dimension arranged linearly.
       xm=xf
 c Pointer to object data,
 c      icp0=cij(ix)
-      icp0=cij(1)
+      icp0=int(cij(1))
 c If we are in wrong region, try to correct:
       if(icp0.ne.0)then
 c This section is only 10% of routine cost.
@@ -361,7 +361,7 @@ c     $        ,icp0,ix,xm
             jpm=1
             if(xm.lt.0.)jpm=-1
             ix=ix+jpm
-            icp1=cij(1+(ix-1)*icinc)
+            icp1=int(cij(1+(ix-1)*icinc))
             if(icp1.eq.0 .or. idob_sor(iregion_sor,icp1).ne.iregion)then
                ix=99
                uprime=0.
@@ -456,7 +456,7 @@ c Find the index of xprime in the array xn:
  701  continue
 c Pointer to object data,
 c      icp0=cij(ndims*2+1,ium(1),ium(2),ium(3))
-      icp0=cij(1+(ix-1)*icinc)
+      icp0=int(cij(1+(ix-1)*icinc))
 c               write(*,*)'i,ix,xm,icp0',i,ix,xm,icp0
 c Distance forward and backward along idf-dimension to adjacent
       dx1=xn(ix+ioff+1)-xn(ix+ioff)
@@ -534,7 +534,7 @@ c Find the index of xprime in the array xn:
       ix=nint(xm)
       xm=xm-ix
 c Pointer to object data,
-      icp0=cij(1+(ix-1)*icinc)
+      icp0=int(cij(1+(ix-1)*icinc))
 c               write(*,*)'ix,xm,icp0',ix,xm,icp0
 c If we are in wrong region, try to correct:
       if(icp0.ne.0 .and. idob_sor(iregion_sor,icp0).ne.iregion)then
@@ -543,13 +543,13 @@ c     $        ,icp0,ix,xm
          jpm=1
          if(xm.lt.0.)jpm=-1
          ix=ix+jpm
-         icp1=cij(1+(ix-1)*icinc)
+         icp1=int(cij(1+(ix-1)*icinc))
          if(icp1.eq.0 .or. idob_sor(iregion_sor,icp1).ne.iregion)then
             ix=-ix
             uprime=0.
             return
          endif
-         write(*,*)'Region Adjusted ix',ix,jpm,xm,fraction,iregion
+         write(*,*)'Region Adjusted ix',ix,jpm,xm,iregion
          xm=xm-jpm
          icp0=icp1
       endif

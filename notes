@@ -1892,7 +1892,7 @@ doubt if concave surfaces are usual. And we probably could avoid the
 issues by specifying a particular direction for lines.
 
 We currently use 10000 MC points which requires ndims*10000 random
-numbers and 10000 isidealls. I could imagine getting decent results
+numbers and 10000 insidealls. I could imagine getting decent results
 from a 10x10 grid of lines each of which has to have its ends found to
 (say) 1% accuracy. 1% accuracy by bisection requires about 8
 insidealls (times two ends). But probably one could avoid a lot of
@@ -2660,25 +2660,230 @@ substantial savings in this area.
 12 Aug 09
 
 Systematic comparison of sceptic and CCPIC with:
-  dt    vd     Ti     steps. -c5  -ni200000 -nproc 2 -nr50 -nt10. 
+  dt    vd     Ti     steps. -c5  -ni200000 -nproc 2 -nr50 -nt10. -p-10. 
  0.0250 0.0000  1.000  500 
-
- 		Flux:		-da3		-da5
+								ni700000
+ 		Flux:		-da3		-da5		60x60x60
 debylen		Sceptic:	CCPIC
-.1		1.6146		1.7244405
-.2		2.2890		2.3339274
-.3		2.7719		2.7993238
-.5		3.3643		3.3790596 
-.7		3.7056		3.7201011
-1.		3.9970		4.0019903
-2.		4.3465		4.2363796	4.2306852
-5.		4.3954		4.3413186
-10		4.3775		4.3506932	4.3558187
-
+.1		1.6146		1.7244405			1.6327829
+.2		2.2890		2.3339274			2.2894616
+.3		2.7719		2.7993238			2.7707448
+.5		3.3643		3.3790596 			3.3812742
+.7		3.7056		3.7201011			3.7148750
+1.		3.9970		4.0019903			3.9962780
+2.		4.3465		4.2363796	4.2306852	4.2459707
+5.		4.3954		4.3413186			4.3627992
+10		4.3775		4.3506932	4.3558187	4.3643198
+		
 [Note theoretical OML: 11/sqrt(2\pi)=4.3884]
 
-It appears there might be a slight systematic discrepancies at the OML
+It appears there might be slight systematic discrepancies at the OML
 end and at the small debyelen end. The debyelen is not being properly
 resolved at -l.1 because of -nr50 and 40x40x20 resolutions. Therefore
 discrepancies are to be expected. In the intermediate regime the
 discrepancies are ~1% or less.  This seems very encouraging.
+
+26 Aug 09
+
+Fix the mismatch between numprocs and the cartesian geometry by using
+the MPI_DIMS_CREATE function that fits the cartesian geometry to the 
+exact number of processes available, in an optimal way. It is not called
+if the number of processes is equal to the idims product already. So 
+by setting idims and numprocs right, one can override the function choice.
+
+Known weaknesses/needs
+1. Possibility of undefined potential (/field) when in a concave region with
+no adjacent points in the region.
+
+30 Aug 09
+
+Filled in the 60x60x60 column above. This shows much better agreement
+with sceptic at low debyelen. Better than 0.5% for debyelen<=1.  But
+also seems to indicate there's a problem at large debyelen. It's not
+100% certain that the problem is CCPIC. It might be sceptic (also).
+mpiexec -n 2 ./ccpic -dt.01 -da10 -s500 -ni700000 -l10
+gives 4.3776546, which suggests that shorter timesteps increase the 
+apparent flux. This might suggest a going-through-sphere process. 
+Sceptic avoids that, but CCPIC does not. 
+mpiexec -n 2 ./ccpic -dt.05 -da3 -s500 -ni700000 -l10
+gives 4.3439922, which definitely confirms there's a timestep effect.
+
+mpiexec -n 2 ./ccpic -dt.025 -da5 -s500 -ni700000 -l100
+gives 4.4045405, which is perhaps surprising. 
+
+Using -p-25 we get from
+mpiexec -n 2 ../ccpic -dt.025 -da5 -s500 -ni700000 -l100
+10.382284. Should be compared with 26/sqrt(2pi)=10.3725. Pretty good!
+
+Conclusion
+
+The symmetric results seem to indicate excellent agreement at 60^3 mesh
+size with OML and with SCEPTIC, down to l=.1. 
+
+Things to do next.
+
+1. Add momentum and energy to the flux quantities monitored and displayed
+by fluxdatatest.
+
+2. Add ability to account for flux of momentum across a surface (presumably
+rectangular) including the Maxwell stress.
+
+3. These things might be incorporated into a new way of handling events
+consisting of surface crossings: movement from one region to another. 
+To do this we would have to keep account of what the region is that a
+particle is in. Then we compare new with old before updating it. 
+This seems to be already available since tallyexit will be called crossing
+any boundary. We need to add the ability not to reinject if this is not
+a solid boundary, and the ability to have variable oldregion (if we continue
+to use insideall). 
+
+4. Develop the ability to do more general object construction, e.g. sums
+and differences of regions. This requires a way to mask insideall. Insideall
+returns an integer whose bits are set for all the objects that the particle
+is inside. If the object is the (inclusive) OR of two others, then the test
+we want to apply to it is whether both bits are zero, in which case we are
+outside. This would call for masking the others. Our current test is that
+we want the particle region to be outside sphere 1 but inside 2. This works
+without current problems because it is a single region.
+
+Cases: I1 and I2 = ~(O1 or O2), O1 and O2 = ~(I1 or I2), 
+       I1 and O2 = ~(O1 or I2), O1 and I2 = ~(I1 or O2).
+This shows that every or can be rewritten as the negation of an and.
+
+The values to define a region might be numerically this:
+1: inside region, 0: outside region. [As currently with iregion].
+A mask would say pay attention only to certain bits, not others. 
+But it would have also to accommodate boolean combinations of regions.
+
+Since we have the inside_geom function for individual objects, which is 
+a faster call, probably we ought to rely on that. 
+
+5. We need the ability to ignore the boundary of certain objects when
+setting up cij. Those are objects that don't affect the poisson solution
+but are there for other purposes. One way to do that would be that if
+all of ABC for the object are zero, then no BC is set: so ignore in potlsect.
+Did that. Seems to work correctly. 
+
+6. Then there's an issue of volume setting. This ought to be affected only
+by the particle region. That's actually true except for the tests for the
+region to calculate and the volintegrate routine, which just use insideall
+tests. Thus we basically need a more general insideall test that can handle
+unions etc. Then it should work. 
+
+At present compare the result of insideall with a number to tell the active
+region. This is not general enough. Probably the simplest solution is to
+have a logical function instead, that says: am I in this generalized region?
+Then I just need a way to specify the generalized region. I don't think
+it is worth the effort to devise a way to specify an arbitrary logical
+operation. So instead, code possibly more than one directly and make the call
+logical linregion(irg,ndims,x) where irg specifies the generalized region
+numerically, but it doesn't generally do so just by its bits. For example
+we could make negative irg point to a list of logical combinations, while
+positive irg could be bits. 
+
+A general way would be to have a 2-d array of numbers bool(ni,nj) such 
+that the logical expression is   Prod_1^nj Sigma_1^ni inside(bool(ni,nj))c
+where inside is true if we are inside object bool(ni,nj) (and negative values
+of bool means true if outside). To simplify passing, one can make this
+a self describing array: n1, n1*values, n2, n2*values, ... , 0
+
+Implemented the self-describing boolean array ibool_part and gave it
+a standard default. Eliminated insideall from 
+pinit.f
+volint.f
+test in padvnc
+
+Unfortunately there are rather a lot of places where iregion is used 
+in the code. It's not so obvious how to disentangle the presumption that
+iregion carries the region information. 
+
+
+1 Sep 09
+Installed ftnchek and made make target ftnchek. 
+Started to get rid of warnings. Got most of them gone. 
+
+2 Sep 09
+Realize there are multiple types of generalizations of iregion that we need.
+1. Particle region, which also defines the charge-density volumes.
+2. Potential and field, solution and interpolation.
+3. Additional surfaces for force and other calculations.
+
+The particle region is defined by ibool_part. We have purged the use of 
+insideall from the volume integration and particle initialization.
+
+We need to purge iregion_part, because that usage no longer makes sense.
+At least we need to get it out of being used. Currently it is _set_ in
+ccpic and fieldtest, and _used_ only in padvnc. The checkcode tests its
+saving, but that's not important.
+
+In padvnc it is used to set iregion, which is passed to getfield, and 
+the difference between inewregion and iregion is passed to tallyexit.
+In the long run, I want to (possibly) tally all surface crossings. So
+the tallyexit must be changed to use the difference between the two regions
+of the start and end of step. 
+We need to correct the iregion passed to getfield. It's not clear we should
+pass anything. Probably getfield ought to decide its interpolation 
+separately. 
+
+Ok iregion_part is now unused.
+
+The gradlocalregion code uses
+         if(idob_sor(iregion_sor,icp0).ne.iregion)then
+for testing the possibility of region crossings. Therefore, provided the
+idob_sor region values are correctly adjusted to use the potential region,
+it ought to work. There's no reason why getfield needs to be told the 
+region. It is told the position. It can figure out the region for itself
+from the position. Actually it's not so straightforward, because getfield
+is given the mesh position, not the physical coordinates, and what's more
+it can be given internally-based values. So really, getfield _can't_ 
+currently get the region for itself. However, it could be passed the value
+of insidemask and then compare it with idob_sor, which should have been
+initialized with insidemask as well. Implemented insidemask and made
+the changes in 3dobjects. Seems to work the same. The mask is currently
+all 1s.
+
+padvnc needs insideall for the logging information and insidemask for
+the getfield information. These might be different. It's inefficient
+to call both. Maybe I need a imaskregion function. Yes do it using 
+the F95 intrinsic. Works. Now need to set the masking from the readgeom.
+Implemented mask setting using F95 intrinsic IBCLR.
+
+Found there's an issue with parallelpiped objects. abc are put at
+the end in standard objects, which is at 8=1+1+3*nd. The objects are
+described by 2*nd= center, 3 radii/lengths. But a parallelpiped needs
+more lengths: an origin and 3 vectors= nd*(nd+1). If abc are at the end
+then they would be in a different position. These are 3dobjects of course,
+so the total is 1+12+3=16. One approach would be to require the parallelepiped
+to put its data in a funny order: type origin vector1 abc vector2 vector3.
+That's not totally stupid. Do it for now.
+
+4 Sep 09
+
+Got the code going with masking in input to getfield and getpotential. 
+It works provided first two objects define the probe and the boundary, 
+which is assumed in ccpic. You can then add on other objects as desired.
+
+The sensible thing is for fluxdatainit and tallyexit to be able to cope
+with other types of objects and crossings. They currently do the required
+tests to see if the object is mapped or not. However, the interface left
+open is the grid on the object which we are asking flux etc to be mapped
+into. Currently this is programmed. 
+
+Perhaps what is most needed is to specify what is programming API and what
+is input configurable. And to separate definitively the specific aspects
+from the other code.
+
+Got xoopic (and got it going after fiddling). It is the same code base as
+techx oopic, but uses the xgrafix graphics library, which restricts it to
+unix-like machines. Oopic uses Qt and runs on mac and windows. It implements
+most things in input files, although I think extra diagnostics can be
+added on through code modifications. Its boundaries appear to be made
+of individual line segments, each of which can do accumulation. There's
+a load of code for parsing input and presumably setup. Boundary ends are
+said to be moved to the nearest grid point. I don't know how the interpolation
+is done if the lines are diagonal. 
+
+I think the xoopic approaches are not all applicable to 3D. It's just
+too cumbersome to have generalized facets and use them to construct
+all objects. That was the conclusion I came to early on. I think it was right.
+But I still haven't really defined the API.

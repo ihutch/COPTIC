@@ -97,18 +97,20 @@ c Testing
       common/rtest/crdist,cidist,tdist,vdist
 
 c Making all variables declared:
-      real a1,brc,brcsq,ceta,chium2,cosal,sinal,crt,ct,czt,dc,dv,eta
-      real expuu2,p2,rcyl,rp,rx,seta,srt,szt,u,ua,ua1,ua3
-      real Uc,uu2,vscale,y,y1,zt,ran1,x,alcos,alsin,expu0
-      real u0
-      integer ic1,ic2,icr,idum,ierr,iv
+      real a1,brc,brcsq,ceta,chium2,cosal,sinal,crt,czt,dv,eta
+      real expuu2,p2,rcyl,rp,seta,srt,szt,u,ua,ua1,ua3
+      real Uc,uu2,vscale,y,y1,zt,ran1,alcos,alsin
+      integer icr,idum,ierr,iv
       real rri
 
 c In this routine we work in velocity units relative to ion thermal till end.
       vscale=sqrt(2.*Ti)
       idum=1
       ilaunch=0
-c      write(*,'(a,$)')'enter'
+c Silence warnings.
+      brcsq=0.
+      ierr=0
+      rp=0.
  1    continue
       ilaunch=ilaunch+1
       if(ilaunch.gt.1000)then
@@ -119,7 +121,7 @@ c      write(*,'(a,$)')'enter'
 c Pick normal velocity from cumulative Pu
       y1=ran1(idum)
       call finvtfunc(pu,nvel,y1,u)
-      iv=u
+      iv=int(u)
       dv=u-iv
       u=dv*Vcom(iv+1)+(1.-dv)*Vcom(iv)
       if(.not.dv.le.1)write(*,*)'Error in u calculation',y1,u,iv,dv
@@ -150,7 +152,7 @@ c It seems impossible to avoid occasional strange results when uu2 is small.
          crt=2.*y-1.
       endif
 c Testing angular distribution.
-      icr=(1.+crt)*0.5*((nthsize-1)-1) + 1.5
+      icr=int((1.+crt)*0.5*((nthsize-1)-1) + 1.5)
       crdist(icr)=crdist(icr)+1.
 c End of testing distribution monitor.
       srt=sqrt(1.- crt**2)
@@ -241,8 +243,8 @@ c      integer myid,nvel
 
 
 c Making variables declared
-      integer ic1,ic2,icr,idum,ilaunch,iv,i
-      real expu0,u0,Uc,uminus,uplus,vspread,pudenom,finvtfunc,q,erfcc
+      integer i
+      real expu0,u0,Uc,uminus,uplus,vspread,erfcc
 
 c Here the drift velocity is scaled to the ion temperature.
 c And U's are in units of sqrt(2T/m), unlike vd.
@@ -409,15 +411,15 @@ c      parameter (iqsteps=nrsize+1)
       parameter (iqsteps=100+1)
       real phibye(iqsteps),phiei(iqsteps)
       real qp(iqsteps),pp(iqsteps)
-      real q,alpha,b2i,d1,d2,p2i2,sa,xlambda
-      integer i,j,iqs
+      real alpha,b2i,d1,d2,p2i2,sa,xlambda
+      integer i,iqs
       logical uninitialized
       data uninitialized/.true./
       save
-      real extpot
+c      real extpot
 c Statement function
 c Inverse square law potential.
-      extpot(q)=averein*q
+c      extpot(q)=averein*q
 c Not currently in use.
 
 c First time through, do the initialization.
@@ -579,7 +581,14 @@ c Calculate ninjcomp from rhoinf
      $        *rs**2 ))
       nrein=ninjcomp
       if(ninjcomp.le.0)ninjcomp=1
-      n_part=rhoinf*4.*3.1415926*rs**3/3./numprocs
+      n_part=int(rhoinf*4.*3.1415926*rs**3/3./numprocs)
+      if(n_part.gt.n_partmax)then
+         write(*,*)'ERROR. Too many particles required.'
+         write(*,101)rhoinf,n_part,n_partmax
+ 101     format('rhoinf=',f8.2,'  needs n_part=',i8
+     $        ,'  which exceeds n_partmax=',i8)
+         stop
+      endif
       end
 
 c********************************************************************

@@ -192,6 +192,13 @@ c Calculate ninjcomp from rhoinf
       nrein=ninjcomp
       if(ninjcomp.le.0)ninjcomp=1
       n_part=rhoinf*4.*3.1415926*rs**3/3./numprocs
+      if(n_part.gt.n_partmax)then
+         write(*,*)'ERROR. Too many particles required.'
+         write(*,101)rhoinf,n_part,n_partmax
+ 101     format('rhoinf=',f8.2,'  needs n_part=',i8
+     $        ,'  which exceeds n_partmax=',i8)
+         stop
+      endif
       end
 
 c********************************************************************

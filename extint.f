@@ -166,8 +166,8 @@ C  Latest modification: September 9, 1988
 C
 C----------------------------------------------------------------------
       INTEGER I,INT
-      REAL
 CD    DOUBLE PRECISION 
+      REAL
      1       A,ARG,B,C,D,EXP40,E,EI,F,FOUR,FOURTY,FRAC,HALF,ONE,P,
      2       PLG,PX,P037,P1,P2,Q,QLG,QX,Q1,Q2,R,RESULT,S,SIX,SUMP,
      3       SUMQ,T,THREE,TWELVE,TWO,TWO4,W,X,XBIG,XINF,XMAX,XMX0,

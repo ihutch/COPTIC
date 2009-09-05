@@ -39,7 +39,8 @@ c      FUNCTION RAN1(IDUM)
 c      ran1=ran0(idum)
 c      end
 c**********************************************************************
-      FUNCTION ran0(IDUM)
+c      FUNCTION ran0(IDUM)
+      FUNCTION ran0()
       save
 c Version of July 06 that removes the argument dependence.
       DIMENSION V(97)
@@ -47,7 +48,8 @@ c Version of July 06 that removes the argument dependence.
       IF(IFF.EQ.0)THEN
         IFF=1
         DO 11 J=1,97
-          DUM=RANd()
+c          DUM=RANd()
+          Y=RANd()
 11      CONTINUE
         DO 12 J=1,97
           V(J)=RANd()
@@ -67,7 +69,7 @@ c         PAUSE 'RAN0 problem'
       RETURN
       END
 c**********************************************************************
-      real FUNCTION ran1(IDUM)
+      FUNCTION ran1(IDUM)
 c Returns a uniform random deviate between 0 and 1.
 c Reentrant version of ran1 makes the state visible in common.
 c Get explicit 
@@ -78,7 +80,7 @@ c Common here requires separation of processes for reentrancy.
 c So this is not thread safe.
       include 'ran1com.f'
       real RM1,RM2
-      integer M1,M2,M3,ic1,ic2,ic3,ia1,ia2,ia3
+      integer M1,M2,M3,ic1,ic2,ic3,ia1,ia2,ia3,j
       save
 c      DIMENSION Rrnd(97)
       PARAMETER (M1=259200,IA1=7141,IC1=54773,RM1=3.8580247E-6)
@@ -94,11 +96,11 @@ c        IFF=1
         IrX2=MOD(IrX1,M2)
         IrX1=MOD(IA1*IrX1+IC1,M1)
         IrX3=MOD(IrX1,M3)
-        DO 11 JRC=1,97
-          IrX1=MOD(IA1*IrX1+IC1,M1)
-          IrX2=MOD(IA2*IrX2+IC2,M2)
-          Rrnd(JRC)=(FLOAT(IrX1)+FLOAT(IrX2)*RM2)*RM1
- 11     CONTINUE
+        do J=1,97
+           IrX1=MOD(IA1*IrX1+IC1,M1)
+           IrX2=MOD(IA2*IrX2+IC2,M2)
+           Rrnd(J)=(FLOAT(IrX1)+FLOAT(IrX2)*RM2)*RM1
+        enddo
 c Tell gasdev to reset.
         gd_iset=0
       ENDIF

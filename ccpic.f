@@ -5,14 +5,14 @@ c Only for testing I hope.
       include 'objcom.f' 
 c Storage array spatial count size
       integer Li,ni,nj,nk
-      parameter (Li=100,ni=40,nj=40,nk=20)
+c      parameter (Li=100,ni=40,nj=40,nk=20)
 c      parameter (Li=100,ni=60,nj=60,nk=60)
 c      parameter (Li=100,ni=16,nj=16,nk=16)
 c      parameter (Li=100,ni=32,nj=32,nk=32)
 c      parameter (Li=100,ni=64,nj=64,nk=64)
 c      parameter (Li=130,ni=128,nj=128,nk=128)
 c      parameter (Li=6,ni=6,nj=6,nk=6)
-c      parameter (Li=100,ni=25,nj=16,nk=20)
+      parameter (Li=100,ni=25,nj=16,nk=20)
       parameter (Li2=Li*Li,Li3=Li2*Li)
       real u(Li,Li,Li),q(Li,Li,Li),cij(2*ndims_sor+1,Li,Li,Li)
 
@@ -46,11 +46,11 @@ c Particle common data
       include 'partcom.f'
 c Plasma common data
       include 'plascom.f'
-      integer ndims,nd2
-      parameter (ndims=ndims_sor,nd2=ndims*2)
+      integer ndims
+      parameter (ndims=ndims_sor)
 
       external bdyset,faddu,cijroutine,cijedge,psumtoq
-      external volnode
+      external volnode,linregion
       character*100 partfilename
       character*100 phifilename
       character*100 fluxfilename
@@ -58,7 +58,7 @@ c Plasma common data
       character*100 argument
       common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
-      logical lrestart,lmyidhead,lfplot
+      logical lrestart,lmyidhead,lfplot,lregion
       
 c Diagnostics
 c      real usave(Li,Li,Li),error(Li,Li,Li),cijp(2*ndims_sor+1,Li,Li)
@@ -83,6 +83,9 @@ c Data for plotting etc.
       data lrestart/.false./
 
 c-------------------------------------------------------------
+c Initialize the fortran random number generator with a fixed number
+c for solutions of volumes etc. Each node does the same.
+      rs=ran1(-1)
 c Defaults:
 c Fixed number of particles rather than fixed injections.
       ninjcomp=0
@@ -91,7 +94,7 @@ c Default to constant rhoinf not n_part.
       rhoinf=100.
       dt=.1
       objfilename='ccpicgeom.dat'
-      nsteps=5.
+      nsteps=5
       debyelen=1.
       Ti=1.
       vd=0.
@@ -100,9 +103,6 @@ c Default to constant rhoinf not n_part.
       bdt=1.
       norbits=0
       ickst=0
-c Initialize the fortran random number generator with a fixed number
-c for solutions of volumes etc. Each node does the same.
-      blah=ran1(-1)
       lmyidhead=.true.
 c---------------------------------------------------------------------
 c mpi initialization only.
@@ -147,6 +147,10 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:2).eq.'-t')read(argument(3:),*,err=201)Ti
          if(argument(1:9).eq.'--objfile')
      $        read(argument(10:),'(a)',err=201)objfilename
+         if(argument(1:3).eq.'-ho')then
+            call geomdocument()
+            call exit(0)
+         endif
          if(argument(1:2).eq.'-h')goto 203
          if(argument(1:2).eq.'-?')goto 203
       enddo
@@ -181,10 +185,10 @@ c Help text
      $     //' [ccpicgeom.dat'
       write(*,301)' --restart  Attempt to restart from saved state.'
       write(*,301)'Debugging switches for testing'
-      write(*,301)' -gt   Plot solution tests.'
+      write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gf   Plot flux evolution and final distribution.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
-      write(*,301)' -gs   Plot slices of solution potential. '
+      write(*,301)' -gs   Plot slices of solution potential, density. '
       write(*,301)' -gc   set wireframe [& stencils(-)] mask.'//
      $     ' objects<->bits. [',iobpl
       write(*,301)' -go   set No of orbits'
@@ -193,12 +197,13 @@ c Help text
      $     //' -an   set No of angles. '
       write(*,301)' -ck   set checking timestep No. [',ickst
       write(*,301)' -h -?   Print usage.'
+      write(*,301)' -ho     Print geomobj file format description'
       call exit(0)
  202  continue
 c-----------------------------------------------------------------
 c Geometry and boundary information. Read in:
       call readgeom(objfilename,myid)
-c Inner boundary setting -----------------
+c Inner boundary setting ----------------- Specific to this problem. 
 c First object is sphere of radius rc and potential phi.
       rc=obj_geom(5,1)
       phip=-obj_geom(10,1)/obj_geom(8,1)
@@ -244,7 +249,8 @@ c don't calculate volumes testing.      istat=1
 c Calculate the nodal volumes for all non-edge points.
          ipoint=iLs(1)+iLs(2)+iLs(3)
 c We are going to populate the region in which xir lies.
-         iregion=insideall(ndims,xir)
+c         iregion=insideall(ndims,xir)
+         iregion=insidemask(ndims,xir)
          region=iregion
          if(lmyidhead)write(*,*)
      $        'Starting volume setting. Be patient this first time...'
@@ -319,7 +325,9 @@ c Plot some of the initial-solver data.
 c End of plotting.
 c------------------------------------------------------------------
 c We are going to populate the region in which xir lies.
-      iregion_part=insideall(ndims,xir)
+c This needs a more general definition to accommodate union regions.
+c      iregion_part=insideall(ndims,xir)
+      lregion=linregion(ibool_part,ndims,xir)
 c With a specified number of particles.
 c Initialize the fortran random number generator.
       idum=-myid-1
@@ -397,7 +405,7 @@ c Main step iteration -------------------------------------
 c Acceleration code.
          bdtnow=max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)
          dt=bdtnow*dtf
-         ninjcomp=bdtnow*ninjcomp0
+         ninjcomp=int(bdtnow*ninjcomp0)
          if(ninjcomp.ne.0)nrein=ninjcomp
 
          call mditerset(psum,ndims,ifull,iuds,0,0.)
@@ -414,6 +422,8 @@ c Convert psums to charge, q. Remember external psumtoq!
 
          call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
+c If there are processes in the main communicator that are absent from the
+c cartesian communicator. They have to be sent the new potential here.
 
          if(lmyidhead)write(*,'(i4.4,i4,'' iterations.'',$)')
      $        nf_step,ierr
@@ -447,6 +457,10 @@ c     $  write(*,
 c       write(*,
 c     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i7,i7,2f10.3)')
 c     $        nrein,n_part,ioc_part,rhoinf,dt
+c
+c This non-standard fortran call works with gfortran and g77 to flush stdout.
+         if(lmyidhead)call flush()
+c Comment it out if it causes problems.
       enddo
 c End of Main Step Iteration -------------------------------
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)

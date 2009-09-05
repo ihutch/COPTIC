@@ -5,11 +5,12 @@ c Common data:
       include 'partcom.f'
       include 'plascom.f'
       include 'myidcom.f'
+      include '3dcom.f'
 
       ntries=0
 c      ntrapped=0
       rmax=0.99999*rs
-      rmax2=rmax*rmax
+c      rmax2=rmax*rmax
 c The maximum used slot is the same as the number of particles initially
       ioc_part=n_part
 c     We initialize the 'true' particles'
@@ -20,11 +21,9 @@ c     We initialize the 'true' particles'
          x_part(1,i)=rmax*(2.*ran1(myid)-1.)
          x_part(2,i)=rmax*(2.*ran1(myid)-1.)
          x_part(3,i)=rmax*(2.*ran1(myid)-1.)
-         inewregion=insideall(npdim,x_part(1,i))
 c     If we are not in the plasma region, try again.
-         if(inewregion.ne.iregion_part)then
-c            write(*,*)'Injection of',i,' wrong region',inewregion,
-c     $           ' instead of',iregion_part
+         if(.not.linregion(ibool_part,npdim,x_part(1,i)))then
+c            write(*,*)'Injection of',i,' wrong region',inewregion
 c     $           ,(x_part(kk,i),kk=1,3)
             goto 1
          endif

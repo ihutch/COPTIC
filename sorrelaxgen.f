@@ -18,6 +18,7 @@ c oaddu is maximum relative weight of faddu term
 
       integer indi(imds),ind1(imds),iused(imds)
       logical lfirst
+      data ind1/imds*0/
       data lfirst/.true./
       save
 
@@ -30,7 +31,7 @@ c      write(*,*)'sorrelaxgen',k_sor,iuds,iLs
       if(lfirst)then
          do i=1,ndims
             do j=1,2
-               iind(2*(i-1)+j)=(1.-2.*mod(j+1,2))*iLs(i)
+               iind(2*(i-1)+j)=(1-2*mod(j+1,2))*iLs(i)
             enddo
          enddo
 c         write(*,*)'iind=',iind
@@ -127,23 +128,23 @@ c     $        u(ipoint+1+iind(ic)),ic=1,2*ndims)
             dnum=dnum+cij(icind)*u(ipoint+1+iind(ic))
          enddo
 c Pointer to object data (converted to integer)
-         io=cij(icind0+2*ndims+1)
+         io=int(cij(icind0+2*ndims+1))
          if(io.ne.0) then
 c Adjust the denominator and numerator using external call.
             call ddn_sor(io,csum,dnum)
          endif
          if(laddu) then
             addu=faddu(u(ipoint+1),daddu)
-            dden=csum+daddu
+            dscl=abs(addu)/max(abs(daddu),1.e-6)
 c     relative weight of f term versus L term. Use max for next iteration.
 c This seemed to be an error 2 July 09. Also dden was being calculated after.
-c            raddu=abs(daddu/dden)
-c            if(raddu.gt.oaddu) oaddu=5.*raddu
-            raddu=5.*abs(daddu/dden)
+            raddu=abs(daddu/csum)
             if(raddu.gt.oaddu) oaddu=raddu
             dnum=dnum-addu
+            dden=csum+daddu
          else
             dden=csum
+            dscl=1.
          endif
          if(dden.eq.0)then
             write(*,*)'sorelax error: i,j,dden,cij',i,j,dden,
@@ -151,6 +152,11 @@ c            if(raddu.gt.oaddu) oaddu=5.*raddu
             stop
          endif
          delta=relax*(dnum-csum*u(ipoint+1))/dden
+c Aug 09 This prevents excessive nonlinear steps.
+         if(abs(delta).gt.3.*dscl)then
+            delta=sign(3.*dscl,delta)
+c            write(*,*)addu,daddu,u(ipoint+1),csum,dnum,dden,delta
+         endif
          if(abs(delta).gt.abs(rdelta))rdelta=delta
          uij=u(ipoint+1)+delta
          u(ipoint+1)=uij

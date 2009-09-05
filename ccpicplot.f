@@ -81,7 +81,8 @@ c Packaged version of plotting.
       real zp(ifmax,ifmax)
       real z(ifmax),xp(ifmax)
 c      real uplot(ifmax,ifmax)
-      real zero(ifmax),uanal(ifmax)
+c      real zero(ifmax)
+      real uanal(ifmax)
       real rfield(ifmax),tfield(ifmax)
       real rprime(ifmax),xprime(ndims,ifmax)
       real xfrac(ndims),xff(ndims),upnd(ndims,ifmax)
@@ -102,9 +103,9 @@ c      write(*,*)'In solu3plot',ifull,iuds,rc,thetain,nth
       n0=iuds(2)/2
       n1=iuds(3)/2
       idf=3
-      id1=mod(idf,3)+1
-      id2=mod(idf+1,3)+1
-      ifixed=iuds(3)/2
+c      id1=mod(idf,3)+1
+c      id2=mod(idf+1,3)+1
+c      ifixed=iuds(3)/2
       do i=1,iuds(1)
          xr=xn(i)
          yr=xn(iuds(1)+n0)
@@ -141,16 +142,16 @@ c Spherical angles in 3-D
          graderr=0
          write(*,*)'Starting uprime calculation'
          do i=1,Li
-            zero(i)=0.
-c            rp=rs*(i)/(Li-1)
-            rp=rs*(i)/Li
+c            zero(i)=0.
+c            rp=rs*i/(Li-1)
+            rp=rs*i/Li
             rprime(i)=rp
 c Coordinates relative to center of first object (sphere).
             xprime(1,i)=rp*st*cp + obj_geom(ocenter,1)  
             xprime(2,i)=rp*st*sp + obj_geom(ocenter+1,1)  
             xprime(3,i)=rp*ct + obj_geom(ocenter+2,1)  
             
-            iregion=insideall(ndims,xprime(1,i))
+            iregion=insidemask(ndims,xprime(1,i))
 c Calculate fractional mesh positions of this point, always positive.
 c Thus the origin of the box is below point in all dimensions.
             do id=1,ndims
@@ -274,16 +275,16 @@ c Spherical angles in 3-D
          phierr=0
          write(*,*)'Starting x calculation'
          do i=1,Li
-            zero(i)=0.
-c            rp=rs*(i)/(Li-1)
-            rp=rs*(i)/Li
+c            zero(i)=0.
+c            rp=rs*i/(Li-1)
+            rp=rs*i/Li
             rprime(i)=rp
 c Coordinates relative to center of first object (sphere).
             xprime(1,i)=rp*st*cp + obj_geom(ocenter,1)  
             xprime(2,i)=rp*st*sp + obj_geom(ocenter+1,1)  
             xprime(3,i)=rp*ct + obj_geom(ocenter+2,1)  
             
-            iregion=insideall(ndims,xprime(1,i))
+            iregion=insidemask(ndims,xprime(1,i))
 c Calculate fractional mesh positions of this point, always positive.
 c Thus the origin of the box is below point in all dimensions.
             do id=1,ndims
@@ -307,7 +308,7 @@ c               write(*,*)'xfrac',(xfrac(kk),kk=1,ndims)
 c     $              ,(xprime(kk,i),kk=1,ndims)            
 
 c Analytic comparison.
-            uanal(i)=phi*rc/(rprime(i))
+            uanal(i)=phi*rc/rprime(i)
             if(uanal(i).lt.phi)uanal(i)=phi
 c               write(*,'(''i,rprime,rfield,uanal(i)'',i4,4f10.5)')
 c     $              i,rprime(i),rfield(i),uanal(i)
@@ -372,7 +373,7 @@ c-------------------------------------------------------------------
 c********************************************************************
 c Packaged version of plotting.
       subroutine orbit3plot(ifull,iuds,u,phi,rc,rs)
-      parameter (ndims=3,nd2=ndims*2)
+      parameter (ndims=3)
       integer ifull(ndims),iuds(ndims),itemp(ndims)
       real u(ifull(1),ifull(2),ifull(3))
       integer ifmax
@@ -382,6 +383,8 @@ c Packaged version of plotting.
 
       include 'meshcom.f'
       include 'partcom.f'
+c Silence warnings with spurious assigment.
+      zclv=phi
 c Calculate some stuff for contour plot.
       idf=3
       id1=mod(idf,3)+1

@@ -1,14 +1,33 @@
 #!/bin/bash
+# This checks ccpic restart ability by default by
+#1. Running it for 45 steps. 
+#2. Restarting it for 10 steps with a check at step 50.
+#3. Running again from start for 55 steps with a check at step 50.
+# This compares the final run with the restarted run at step 50. 
+# The base STEPS1 can be set as a single parameter.
+STEPS1=45
+EXTRASTEPS=10
+STEPS2=55
+if [ $# == 1 ] ; then
+    STEPS1=$1
+    EXTRASTEPS=10
+    STEPS2=$(( $STEPS1+$EXTRASTEPS ))
+fi
+CHECKSTEP=$(($STEPS1+ $EXTRASTEPS/2 ))
+echo $STEPS1 $STEPS2 $EXTRASTEPS $CHECKSTEP
 make ccpic
 rm xpartnew
 rm uqcijnew
 rm xpart
 rm uqcij
-echo RUNNING ccpic -s45
-./ccpic -s45
-echo RUNNING ccpic --restart -s10
-./ccpic --restart -s10 -ck50
+echo RUNNING ccpic -s$STEPS1
+./ccpic -s$STEPS1
+echo RUNNING ccpic --restart -s$EXTRASTEPS
+./ccpic --restart -s$EXTRASTEPS -ck$CHECKSTEP
 mv xpartnew xpart
 mv uqcijnew uqcij
-echo RUNNING ccpic -s55 -ck50
-./ccpic -s55 -ck50
+echo RUNNING ccpic -s$STEPS2 -ck$CHECKSTEP
+./ccpic -s$STEPS2 -ck$CHECKSTEP
+echo
+echo If the last ====== Finished uqcijckeck and  ====== Finished xpartcheck
+echo show no warnings or diagnostics. Everything is OK for restarting.

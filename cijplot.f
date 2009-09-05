@@ -52,7 +52,7 @@ c      iwire=0
       if(x2.ge.0)xb=1
       if(y2.ge.0)yb=1
       if(z2.ge.0)zb=1
-      icorner= (2*zb-1)*( (1 +3*yb) + (1 - 2*yb)*xb )
+      icorner= int((2*zb-1)*( (1 +3*yb) + (1 - 2*yb)*xb ))
 
 c      call cubed(icorner)
       call axproj(icorner)
@@ -62,7 +62,7 @@ c Stick drawing.
       do i=1,iuds(1)
          do j=1,iuds(2)
             do k=1,iuds(3)
-               iobj=cij(2*ndims+1,i,j,k)
+               iobj=int(cij(2*ndims+1,i,j,k))
                if(iobj.ne.0)then
 c Draw joins from the point to the fraction distance.
                   xx(1)=xn(ixnp(1)+i)
@@ -105,15 +105,16 @@ c                           write(*,*)no,id,frac,ipm,xt
 c      goto 51
  52   continue
 c     Wireframe drawing.
-      write(mystring,'(a,i3)')'Object Mask:',mysw/2
+      write(mystring,'(a)')'Object Mask:'
+      call iwrite(mysw/2,ilen,mystring(13:))
       call jdrwstr(.1,.1,mystring,1.)
       do i=1,iuds(1)
          do j=1,iuds(2)
             do k=1,iuds(3)
-               iobj=cij(2*ndims+1,i,j,k)
+               iobj=int(cij(2*ndims+1,i,j,k))
                iobjcode=idob_sor(iinter_sor,iobj)
                if(iobj.ne.0.and.iobjcode.ge.0)then
-               isob=mysw/2**(iobjcode)-(mysw/2**(iobjcode+1))*2
+               isob=int(mysw/2**iobjcode-(mysw/2**(iobjcode+1))*2)
 c               write(*,*)iobj,iobjcode,isob,mysw
                if(isob.ne.0)then
 c Origin point
@@ -153,10 +154,10 @@ c                           write(*,*)no,id,i1,i2,frac,ipm,xt
                   enddo
 c Draw joins between adjacent planes in the positive direction
                   do id=1,ndims
-                     iobj2=cij(2*ndims+1,
+                     iobj2=int(cij(2*ndims+1,
      $                    i+idelta(1,id),
      $                    j+idelta(2,id),
-     $                    k+idelta(3,id))
+     $                    k+idelta(3,id)))
                      if(iobj2.ne.0)then
                      i1=mod(id,3)+1
                      i2=mod(id+1,3)+1

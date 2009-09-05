@@ -12,7 +12,7 @@ c -zero, and there is a fraction<1 to the adjoining points.
       call color(3)
       do i=1,ni
          do j=1,nj
-            ipoint=cij(7,i,j)
+            ipoint=int(cij(7,i,j))
             if(ipoint.ne.0)then
                call wxyz2nxyz(x(i),y(j),z(i,j),xn,yn,zn)
                do id=1,3
@@ -321,7 +321,7 @@ c center of sphere
             ijk(2)=j
             do i=1,iuds(1)
                ijk(1)=i
-               iobj=cij(2*ndims+1,ijk(1),ijk(2),ijk(3))
+               iobj=int(cij(2*ndims+1,ijk(1),ijk(2),ijk(3)))
                if(iobj.ne.0)then
 c                  write(*,*)'Found object',ijk,iobj
 c The point:
@@ -346,7 +346,7 @@ c and other quantities
                      iuse=0
                      if(btest(iflags,jj-1))iuse=1
                      sumxx=0.
-                     suma=0
+c                     suma=0
                      suma2=0.
                      sumxc=0.
                      do ii=1,ndims

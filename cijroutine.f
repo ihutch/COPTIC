@@ -20,6 +20,7 @@ c      integer indm1(mdims)
 c Shifted to correct for face omission.
       integer indi(mdims)
       integer ndims
+c Not used in this routine
       integer iused(ndims)
       real cij(*)
 c--------------------------------------------------
@@ -35,6 +36,8 @@ c-----------------------------------------------------
       integer istart
       data istart/0/
 
+c iused is not used here. But silence the warning by spurious use:
+      icb=iused(1)
 c ipoint here is the offset (zero-based pointer)
 c The cij address is to data 2*ndims+1 long
       icb=2*ndims+1
@@ -50,7 +53,7 @@ c the value of a, b, c to be attached to it. Fraction=1. is the
 c default case, where no intersection occurs. However, we need to know
 c the fractions for opposite directions before we can calculate the
 c coefficients; so we have to loop twice over the opposite directions.
-         icb2=2*icb
+c not used         icb2=2*icb
 c For each direction in this dimension,
          do i=1,2
             iobj=ndata_sor*(2*(id-1)+(i-1))+1
@@ -61,7 +64,8 @@ c Determine whether this is a boundary point: adjacent a fraction ne 1.
             if(fraction(i).lt.1. .and. fraction(i).ge.0.)then
                ifound=ifound+1
 c Start object data for this point if not already started.
-               call objstart(cij(icij),ist,ipoint)
+c Here on 1 Sep 09 istart was ist. Which seemed incorrect.
+               call objstart(cij(icij),istart,ipoint)
 c Calculate dplus and deff for this direction.
 c dplus becomes dminus for the other direction.
                a=conditions(1,i)
@@ -206,7 +210,6 @@ c containing a point in known region, that any box vertex with no pointer
 c is in that region. This breaks getpotential fillinlin, so disable
 c for now.
             if(.true.)then
-               itemp=istart
 c Conditionally start the object: only if it does not already exist.
                call objstart(cij(icij),istart,ipoint)
 c Set the flag
@@ -215,6 +218,7 @@ c Set the flag
 c               idob_sor(iflag_sor,oi_sor)=
 c     $              ibset(idob_sor(iflag_sor,oi_sor),j-1)
 c-------- Diagnostics
+c               itemp=istart
 c               if(istart.ne.itemp)then 
 c                  write(*,*)'Added start',istart,npoints
 c     $              ,(indi(iw),iw=1,ndims)
@@ -238,10 +242,11 @@ c or if the fraction is 1, implying not set.
                   iobj=ndata_sor*(2*(i-1)+(1-ipa(i))/2)+1
                   f0=dob_sor(iobj,oi_sor)
 c Only if this is the first entry this direction 
-                  if( f0.eq.1 
+                  if(f0.eq.1)then 
+c                  if( f0.eq.1 
 c     $                 .or. abs(f0*fn(i)-1.).gt.0.1
 c     $                 .or. 1./(f0+sign(tiny,f0)).lt.fn(i)-1.e-3
-     $                 )then
+c     $                 )then
                      f1=1./(sign(max(abs(fn(i)),tiny),fn(i)))
 c Warn if any strange crossings found. Removed not necessary.
 c                     if(f1.lt.1. .and. f1.ge.0)then 
@@ -371,7 +376,7 @@ c Storage/workspace for intersection points
       real xf(mpoints,mdims)
 c      real af(mdims,mdims),
       real afs(mpoints,mdims)
-      real bs(mpoints),V(mdims,mdims),W(mdims),as(mdims)
+      real bs(mpoints),V(mdims,mdims),W(mdims)
 c Number of points found
       integer npoints
 
@@ -471,7 +476,8 @@ c return solution of af.as=bs=1, which is fn=1/fractions.
             if(idiag.gt.0) then
                write(*,'(12f6.3)')((xf(k1,k2),k2=1,ndims),k1=1,npoints)
                write(*,*)
-     $              npoints,' svdsol ', (as(j),j=1,ndims)
+     $              npoints,' svdsol ',
+     $              ((afs(j,k1),j=1,ndims),k1=1,npoints)
             endif
          endif
 c =================================================

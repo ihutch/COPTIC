@@ -102,7 +102,7 @@ c fixed boundary, 3-D, but is supposed to be general dimensional.
          enddo
          xyimb=ndims*maxlen/sumlen - 1.
          xjac_sor=1.- (5./max(10.,sumlen/ndims)**2)*(1.-0.3*xyimb)
-         mi_sor=2.*sumlen+20
+         mi_sor=int(2.*sumlen+20)
          eps_sor=1.e-5
       endif
 c Second bit of ictlh indicates if there's additional term.
@@ -163,7 +163,8 @@ c         write(*,*) 'Calling sorrelaxgen',delta,oaddu,relax
 
 c          call checkdelta(delta,deltaold)
 c          if(k_sor.le.2)
-c            write(*,*) 'Return from sorrelaxgen',k_sor,delta,oaddu,relax
+c            write(*,'(''sorrelaxgen'',i4,4f13.5)')k_sor,delta,oaddu,
+c     $           umin,umax
 c Test convergence
          call testifconverged(eps_sor,delta,umin,umax,
      $        lconverged,icommcart)

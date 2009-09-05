@@ -18,6 +18,7 @@ c sormesh provides ixnp, xn, the mesh spacings. (+ndims_mesh)
       include 'meshcom.f'
 c Alternatively they could be passed, but we'd then need parameter.
       include 'myidcom.f'
+      include '3dcom.f'
 c Include this only for testing with Coulomb field.
       include 'plascom.f'
 c Local storage
@@ -34,17 +35,13 @@ c Make this always last to use the checks.
 c Initialize. Set reinjection potential. We start with zero reinjections.
 c      write(*,*)'Setting averein in padvnc.',phirein
       call avereinset(phirein)
-      phirein=0.
+      phirein=0
       nrein=0
       nlost=0
-      ninner=0
+c      ninner=0
       iocthis=0
-c We ought not to need to calculate the iregion, since it should be
-c known and if a particle is outside it, it would have been reinjected:
-c But for now:
-c      iregion=insideall(ndims,x_part(1,1))
-c which will give an erroneous answer if 1 is an unfilled slot. So
-      iregion=iregion_part
+c Get rid of usage of iregion_part.
+c      iregion=iregion_part
       n_part=0
 c At most do over all particle slots. But generally we break earlier.
       do i=1,n_partmax
@@ -53,6 +50,9 @@ c At most do over all particle slots. But generally we break earlier.
  100     continue
 c If this particle slot is occupied.
          if(if_part(i).ne.0)then
+c Disentangle from old approach (inefficiently).
+            iregion=insideall(ndims,x_part(1,i))
+c            iregion=insidemask(ndims,x_part(1,i))
 c Subcycle start.
  101        continue
 c Use dtaccel for acceleration. May be different from dt if there was
@@ -68,14 +68,15 @@ c Check the fraction data is not stupid and complain if it is.
 c---------------------------------
             if(.true.)then
 c Get the ndims field components at this point. 
-c We only use x_part information for location.
+c We only use x_part information for location. So we need to pass
+c the region information.
             do idf=1,ndims
                call getfield(
      $              ndims,cij(ic1),u,iLs
      $              ,xn(ixnp(idf)+1)
      $              ,idf
      $              ,x_part(ndimsx2+1,i)
-     $              ,iregion,field(idf))
+     $              ,imaskregion(iregion),field(idf))
             enddo
 c--------------------------------
             else
@@ -100,10 +101,11 @@ c Move
             enddo          
 
             inewregion=insideall(ndims,x_part(1,i))
-            if(inewregion.ne.iregion) then
+c            if(inewregion.ne.iregion) then
+            if(.not.linregion(ibool_part,ndims,x_part(1,i)))then
 c We left the region. 
 c Testing only:
-               if(inewregion.eq.3)ninner=ninner+1
+c               if(inewregion.eq.3)ninner=ninner+1
                call tallyexit(i,inewregion-iregion)
 c Reinject if we haven't exhausted complement.
                if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)then
@@ -117,7 +119,8 @@ c which might be less costly. (Should be something other than iregion?)
                   dtprec=0.
                   nlost=nlost+1
                   nrein=nrein+ilaunch
-                  phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i),irg,2)
+                  phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i)
+     $                 ,imaskregion(irg),2)
                   phirein=phirein+ilaunch*phi
                   call diaginject(x_part(1,i))
 c Complete reinjection by advancing by random remaining.
@@ -141,7 +144,8 @@ c Might not be needed if we insert needed information in reinject,
                dtprec=0.
                nlost=nlost+1
                nrein=nrein+ilaunch
-               phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i),irg,2)
+               phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i)
+     $                 ,imaskregion(irg),2)
                phirein=phirein+ilaunch*phi
                call diaginject(x_part(1,i))
 c Complete reinjection by advancing by random remaining.
@@ -188,6 +192,7 @@ c            if(myid.eq.0)write(*,*)'PROBLEM: phirein>0:',phirein
       end
 c***********************************************************************
       subroutine partlocate(i,iLs,iu,ixp,xfrac,iregion)
+
 c Locate the particle numbered i (from common partcom) 
 c in the mesh (from common meshcom).
 c Return the offset of the base of its cell in iu.

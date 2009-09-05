@@ -64,7 +64,7 @@ c Calculate offset and remainder the fractions.
 c      write(*,*)'iux=',iux
 
 c xn index for passing full position
-      ixn0=xff(idf)
+      ixn0=int(xff(idf))
 c but correct it if we are passing just fractions.
       if(ixn0.lt.1)ixn0=1
 c Leading dimension of cij:
@@ -81,7 +81,7 @@ c Correct the index in field direction if fraction .gt.0.5:
 
 c General-Dimensional version without extrapolation.
       igood=0
-      iimax=1
+c      iimax=1
       do ii=1,(ndims-1)
          idii=mod(idf+ii-1,ndims)+1
          d(ii)=xf(idii)
@@ -159,6 +159,8 @@ c but if fraction .ge.0.5 in field direction, this is corrected.
 c zero circumlocution:
       data izer0/0/
 
+c Silence warning about ndims unused
+      ixn0=ndims
 c Correct the index in field direction if fraction .gt.0.5:
       if(xf(idf).ge.0.5)then
          iu0=1+iuinc(idf)
@@ -222,7 +224,7 @@ c objcom, which is needed, contain ndims_... so we don't pass it.
       include 'objcom.f'
       parameter (ndims=ndims_sor)
 c Local vector storage
-      integer idn(ndims)
+c      integer idn(ndims)
       real xf(ndims),uval(2**ndims)
       integer ival(2**ndims)
       
@@ -271,7 +273,7 @@ c Make icp the pointer within cij to the object pointer element.
 c Accidental expression. Think of it as (iup-1)*ic1 + 2*ndims+1.
          icp=iup*ic1
 c Get that object pointer.
-         ico=cij(icp)
+         ico=int(cij(icp))
          if(ico.ne.0)then
 c This is an interface point
             if(idob_sor(iregion_sor,ico).ne.iregion)then
@@ -319,7 +321,7 @@ c Nearest value
       else
 c No information. We ought to look around further perhaps.
          getpotential=9999
-         write(*,*)'getpotential Error. no valid vertex'
+         write(*,*)'getpotential Error. no valid vertex',iregion
       endif
       end
 c*******************************************************************
@@ -355,7 +357,8 @@ c Weight according to whether this bit is one or zero.
 c*******************************************************************
       subroutine fillin(ndims,uval,ival)
 c Fill in values with the average of the others.
-      real uval(2**ndims),ival(2**ndims)
+      real uval(2**ndims)
+      integer ival(2**ndims)
 
       uave=0
       utot=0
@@ -409,7 +412,7 @@ c      write(*,'(8f9.4)')uval
          idp1=id+1
          centroid(idp1)=0
          ncgood=0
-         i2id=2**(id)
+         i2id=2**id
          ngood=0
          difftot=0.
          do i=0,2**(ndims-1)-1

@@ -117,7 +117,9 @@ c Red/black routine, process squares alternately.
       integer ind1(mdims)
       data icount/0/
       data ind1/mdims*1000/
-     
+
+c iused is not used. To silence warnings spuriously use it:
+      ic=iused(1)
 c      write(*,'(a,11i8)')'ipoint,indi',ipoint,(indi(i),i=1,ndims)
 c      write(*,*)'myipoint=',ipoint
 c We build in correction of the increment here for red-black

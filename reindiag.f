@@ -6,7 +6,7 @@ c Position and velocity of reinjection.
 c Potential of reinjection
 c      real phi
 c Number of launches needed to get this reinjection
-      integer ilaunch
+c      integer ilaunch
 c Diagnostic storage etc. Here we are assuming a 3-D problem which is
 c required by this reinjection scheme. 2-D position on reinjection
 c surface.      
@@ -114,7 +114,7 @@ c Actually the flux is not a gaussian. So this isn't yet useful
          gaussian(i)=exp(-vfv(i)**2/(2*Ti))*counts*
      $        (vfv(2)-vfv(1))/sqrt(2.*pi*Ti)
       enddo
-      write(*,*)Ti
+      write(*,*)Ti,gaussian(1)
 
       call automark(vfv,fv(1,1),ndth,1)
       call axlabels('velocity distributions','count')
@@ -123,7 +123,7 @@ c Actually the flux is not a gaussian. So this isn't yet useful
 c      call polyline(vfv,gaussian,ndth)
       call pltend()
 
-           call automark(vs,sv,ndth,1)
+      call automark(vs,sv,ndth,1)
       call axlabels('speed distribution','count')
       call pltend()
 

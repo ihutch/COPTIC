@@ -10,6 +10,7 @@ c Can't be called for edge nodes.
       real volumes(*)
       real region,cij(*)
 
+      include '3dcom.f'
       include 'meshcom.f'
       real xm(ndims_mesh),xi(ndims_mesh),xp(ndims_mesh)
       parameter (npoints=10000)
@@ -22,9 +23,11 @@ c Can't be passed here because of mditerate argument conventions.
       save icall
       data icall/0/
 
+c Silence warnings with spurious iused acces.
+      icb=iused(1)
       icall=icall+1
       if(mod(icall,300).eq.0)write(*,'(''.'',$)')
-      iregion=region 
+      iregion=int(region )
 c The cij address is to data 2*ndims+1 long
       icb=2*ndims+1
 c Object pointer
@@ -44,7 +47,8 @@ c This is an unintersected case. Calculate simply.
          xi(id)=xn(index)
          vol=vol*(xn(index+1)-xn(index-1))*0.5
       enddo
-      if(iregion.ne.insideall(ndims_mesh,xi))goto 3
+c      if(iregion.ne.insideall(ndims_mesh,xi))goto 3
+      if(.not.linregion(ibool_part,ndims_mesh,xi)) goto 3
       volumes(ipoint+1)=vol
       inc=1
       return
@@ -58,8 +62,8 @@ c Intersected case.
          xm(id)=xn(index-1)
       enddo
 c If we are outside the active region use unintersected case
-c      if(insideall(ndims_mesh,xi).ne.iregion)goto 2
-      if(insideall(ndims_mesh,xi).ne.iregion)goto 3
+c      if(insideall(ndims_mesh,xi).ne.iregion)goto 3
+      if(.not.linregion(ibool_part,ndims_mesh,xi)) goto 3
 
 c      write(*,*)'Volintegrate call:',indi,xi,cij(icij)
 c Use volintegrate function.
@@ -91,6 +95,7 @@ c by the total number of points examined.
 
       parameter (mdims=10)
       real x(mdims)
+      include '3dcom.f'
 
       wtot=0.
       do i=1,npoints
@@ -108,8 +113,9 @@ c time here. So use the direct C rand which is perhaps quicker.
             endif
             w=w*(1.-f)*(xp(id)-xm(id))
          enddo
-         irg=insideall(ndims,x)
-         if(irg.eq.iregion) wtot=wtot+w
+c         irg=insideall(ndims,x)
+c         if(irg.eq.iregion) wtot=wtot+w
+         if(linregion(ibool_part,ndims,x))wtot=wtot+w
       enddo
       volintegrate=wtot/npoints
 

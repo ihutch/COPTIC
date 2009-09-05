@@ -5,6 +5,17 @@ c Initialize with zero 3d objects.
       data ngeomobj/0/
 c Default track no objects.
       data nf_map/ngeomobjmax*0/
+c Default particle region: outside object 1, inside 2.
+      integer ibm
+      parameter (ibm=ibtotal_part-4)
+      data ibool_part/1,-1,1,2,ibm*0/
+      integer ifm1
+c Set all the bits of ifield_mask: =2**31-1=2*(2**30-1)+1 avoid overflow.
+      parameter (ifm1=2*(2**30-1)+1)
+c      parameter (ifm1=2**10-1)
+c      parameter (ifm1=31)
+      data ifield_mask/ifm1/
+
 c We don't do this initialization in a block data because it makes
 c the executable ridiculously large.
 c      data nf_step/0/
@@ -14,10 +25,30 @@ c      data nf_address/(nf_quant*nf_obj*(nf_maxsteps+1))*0/
 c      data ff_data/(nf_datasize)*0./
       end
 c**********************************************************************
+      subroutine geomdocument()
+      write(*,*)'Format and meaning of the object geometry file'
+     $     ,' default [ ccpicgeom.dat'
+      write(*,*)'First line number of dimensions: 3'
+      write(*,*)'Thereafter comment lines start with #'
+      write(*,*)'Object lines have the format: type, center(3),'
+     $     ,' radii(3), a,b,c, [extra data]'
+      write(*,*)' if a=b=c=0, no potential BC is applied and object'
+     $     ,' is masked.'
+      write(*,*)'type indicates how to use the line. Each byte of type'
+     $     ,' indicates a factor'
+      write(*,*)'byte-1: 1 Spheroid, 2 Cuboid, 3 Cylinder, 4 Parallel'
+     $     ,'opiped, 99 Boolean'
+      write(*,*)'byte-2: 1(x256) Special boundary phi=0 instead of '
+     $     ,'continuity.'
+      write(*,*)'byte-2: 2(x256) Tally exit?'
+
+      end
+c**********************************************************************
       subroutine readgeom(filename,myid)
 c Read the geometric data about objects from the file filename
       character*(*) filename
       character*128 cline
+c      character*128 fstring
       include '3dcom.f'
 c Common data containing the object geometric information. 
 c Each object, i < 64 has: type, data(odata).
@@ -25,6 +56,7 @@ c      integer ngeomobjmax,odata,ngeomobj
 c      parameter (ngeomobjmax=31,odata=16)
 c      real obj_geom(odata,ngeomobjmax)
 c      common /objgeomcom/ngeomobj,obj_geom
+      intrinsic IBCLR
 
 
 c Zero the obj_geom data.
@@ -52,8 +84,8 @@ c Loop over lines of the input file.
 
       read(cline,*,err=901)type
 c Use only lower byte.
-      itype=type
-      type=itype - 256*(itype/256)
+      itype=int(type)
+      type=int(itype - 256*(itype/256))
       ngeomobj=ngeomobj+1
       if(type.eq.1.)then
          read(cline,*,err=901,end=801)
@@ -77,7 +109,21 @@ c Use only lower byte.
      $        ' General Cuboid/Parallelepiped '
          if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),
      $        k=1,1+nd*(1+nd)+3)
+      elseif(type.eq.99)then
+c Specify the particle region.
+         read(cline,*,err=901,end=899)idumtype,ibool_part
+ 899     if(myid.eq.0)write(*,898)
+     $        ngeomobj,idumtype,(ibool_part(i),i=1,16)
+ 898     format(i3,' Boolean ',17i4)
+c Don't count this as an object.
+         ngeomobj=ngeomobj-1
+         goto 1
       endif
+c If this is a null boundary condition clear the relevant bit.
+      if(obj_geom(oabc,ngeomobj).eq.0.
+     $     .and. obj_geom(oabc+1,ngeomobj).eq.0.
+     $     .and. obj_geom(oabc+2,ngeomobj).eq.0.)
+     $     ifield_mask=IBCLR(ifield_mask,ngeomobj-1)
  820  format(i3,a,$)
  821  format(f4.0,9f7.3)
       goto 1
@@ -138,7 +184,7 @@ c That should exhaust the possibilities.
 c****************************************************************
       function insideall(ndims,x)
 c For an ndims-dimensional point x, return the integer insideall
-c consisting of bits i=1-31 that are zero or one according to whether
+c consisting of bits i=0-30 that are zero or one according to whether
 c the point x is outside or inside object i.
       integer ndims
       real x(ndims)
@@ -146,15 +192,39 @@ c Common object geometric data.
       include '3dcom.f'
 c
       insideall=0
-      do i=1,ngeomobj
-         ii=inside_geom(ndims,x,i)
-         insideall=insideall+ii*2**(i-1)
+      do i=ngeomobj,1,-1
+         insideall=2*insideall+inside_geom(ndims,x,i)
       enddo
 c      if(insideall.ne.0) write(*,*)
 c     $     'ngeomobj=',ngeomobj,' insideall=',insideall,x
-c Hack for testing
-c      insideall=min(insideall,2)
 
+      end
+c****************************************************************
+      function insidemask(ndims,x)
+c For an ndims-dimensional point x, return the integer insidemask
+c consisting of bits i=1-31 that are zero or one according to whether
+c the point x is outside or inside object i. But bits are masked by
+c the regionmask.
+      integer ndims
+      real x(ndims)
+      intrinsic btest
+c Common object geometric data.
+      include '3dcom.f'
+c
+      insidemask=0
+      ibit=ngeomobj
+      do i=ngeomobj,1,-1
+         insidemask=2*insidemask
+         if(btest(ifield_mask,i-1))
+     $        insidemask=insidemask+inside_geom(ndims,x,i)
+      enddo
+
+      end
+c*****************************************************************
+c Return the masked iregion.
+      function imaskregion(iregion)
+      include '3dcom.f'
+      imaskregion=IAND(iregion,ifield_mask)
       end
 c*****************************************************************
       function inside_geom(ndims,x,i)
@@ -169,7 +239,7 @@ c Common object geometric data.
       inside_geom=0
       if(i.gt.ngeomobj) return
 
-      itype=obj_geom(1,i)
+      itype=int(obj_geom(1,i))
 c Use only bottom 8 bits:
       itype=itype-256*(itype/256)
       if(itype.eq.0)then
@@ -196,7 +266,7 @@ c Coordinate-Aligned Cuboid data: low-corner(ndims), high-corner(ndims)
       elseif(itype.eq.3)then
 c Coordinate-Aligned Cylinder data:  Face center(ndims), 
 c Semi-axes(ndims), Axial coordinate, Signed Axial length.
-         ic=obj_geom(1+2*ndims+1,i)
+         ic=int(obj_geom(1+2*ndims+1,i))
          xa=(x(ic)-obj_geom(1+ic,i))
          if(xa*(obj_geom(1+2*ndims+2,i)-xa).lt.0.) return
          r2=0.
@@ -227,9 +297,49 @@ c length equal to the distance to the opposite face.
 
       end
 c************************************************************
+c Return whether position x is inside the region specified by ibool.
+      logical function linregion(ibool,ndims,x)
+c ibool structure: n1, n1*values, n2, n2*values, ... ,0
+      integer ibool(*)
+      integer ndims
+      real x(ndims)
+      logical ltemp,lt1,lt2
+c The following ought to be consistent with 3dcom.f
+c      integer ibmax
+c      parameter (ibmax=100) 
+
+c  linregion = Prod_1^nj Sum_1^ni inside(bool(ni,nj))
+c where inside(n) is true if n is +/-ve and x is inside/outside |n|. 
+c      write(*,'(11i4,3f10.4)')ibool(1:10),ndims,x
+
+      i=1
+      lt2=.true.
+      lt1=.false.
+      n1=ibool(i)+i
+ 1    if(i.lt.n1)then
+        i=i+1
+         ib=ibool(i)
+         if(ib.ne.0)then
+            ltemp=inside_geom(ndims,x,abs(ib)).eq.1
+            if(ib.lt.0)ltemp=.not.ltemp
+            lt1=lt1.or.ltemp
+            goto 1
+         endif
+      else
+         i=i+1
+         lt2=lt1.and.lt2
+         lt1=.false.
+         n1=i+ibool(i)
+         if(i.lt.n1)goto 1
+      endif
+      linregion=lt2
+      end
+
+c************************************************************
 c Specific routine for this problem.
       subroutine potlsect(id,ipm,ndims,indi,fraction,conditions,dp,
      $     iobjno)
+
 c In dimension id, direction ipm, 
 c from mesh point at indi(ndims) (zero-based indices, C-style),
 c find any intersection of the mesh leg from this point to its neighbor
@@ -246,6 +356,7 @@ c Equivalence: c1,c2,c3==a,b,c
 c The boundary conditions are in the form c1\psi + c2\psi^\prime + c3
 c =0.  Where ci=conditions(i).  Thus a fixed potential is (e.g.) c1=1
 c c3=-\psi.  A fixed gradient is (e.g.) c2=1 c3=-\psi^\prime. 
+c If c1=c2=c3=0 then no BC is applied and this object is skipped.
 c
 c In multiple dimensions, if the condition is placed on the gradient
 c normal to the surface, in direction n, then for axis direction i
@@ -279,10 +390,18 @@ c Default no intersection.
 c-------------------------------------------------------------
 c Process data stored in obj_geom.
       do i=1,ngeomobj
+         if(obj_geom(oabc,i).ne.0. .or. obj_geom(oabc+1,i).ne.0. .or.
+     $        obj_geom(oabc+2,i).ne.0.)then
+c Only for non-null BCs
+c Find the fractional intersection point if any.
 c Currently implemented just for spheres.
-         call spheresect(id,ipm,ndims,indi,
+            call spheresect(id,ipm,ndims,indi,
      $        obj_geom(oradius,i),obj_geom(ocenter,i)
      $        ,fraction,dp)
+         else
+c Null BC. Ignore.
+            fraction=1.
+         endif
          if(fraction.ne.1.)then
             if(obj_geom(oabc+1,i).eq.0)then
 c No derivative term. Fixed Potential. No projection needed.
@@ -339,6 +458,7 @@ c object data.
 
       include 'objcom.f'
       include 'meshcom.f'
+      include '3dcom.f'
 
       integer ix(ndims_sor)
       real x(ndims_sor)
@@ -350,23 +470,21 @@ c object data.
          call exit(0)
       endif
 
-c      write(*,*)'Initializing Object Regions: No, index, iregion'
+c      write(*,*)'Initializing Object Regions:No, pointer, region, posn.'
+      write(*,'('' Mask='',i11,'' ='',b32.32)')ifield_mask,ifield_mask
       do i=1,oi_sor
          ipoint=idob_sor(ipoint_sor,i)
 c Convert index to multidimensional indices.
          call indexexpand(ndims,ifull,ipoint,ix)
          do k=1,ndims
-c Recognize that the reverse pointer is relative to (2,2,2) because
-c of the way that cijroutine is called. 
-c So add one to ix(k) for proper registration.
-c            x(k)=xn(ixnp(k)+ix(k)+1)
-c That was for the old scheme. Now we've removed that problem
             x(k)=xn(ixnp(k)+ix(k))
          enddo
 c Store in object-data.
-         idob_sor(iregion_sor,i)=insideall(ndims,x)
+c         idob_sor(iregion_sor,i)=insideall(ndims,x)
+         idob_sor(iregion_sor,i)=insidemask(ndims,x)
 
-c         write(*,*)i,ipoint,ix,x,idob_sor(iregion_sor,i)
+c         write(*,101)i,ipoint,idob_sor(iregion_sor,i),x
+ 101     format(3i8,5f10.4)
       enddo
 
       end
@@ -376,7 +494,7 @@ c*******************************************************************
       integer ifull(3)
       real cij(ndims_sor*2+1,ifull(1),ifull(2),ifull(3))
 
-      ipoint=cij(ndims_sor*2+1,i,j,k)
+      ipoint=int(cij(ndims_sor*2+1,i,j,k))
       if(ipoint.ne.0)then
          ireg3=idob_sor(iregion_sor,ipoint)
       else

@@ -87,7 +87,8 @@ c     $        ') is safely below nf_datasize:',nf_datasize
 c******************************************************************
       subroutine tallyexit(i,idiffreg)
 c Document the exit of this particle just happened. 
-c Assign the exit to a specific object, and bin on object.      
+c Assign the exit to a specific object, and bin on object.
+c (If it is a mapped object, decided by objsect.)      
 c On entry
 c        i is particle number, 
 c        idiffreg is the difference between its region and active.
@@ -95,7 +96,7 @@ c
       include 'partcom.f'
       include '3dcom.f'
 
-      idiff=idiffreg
+      idiff=abs(idiffreg)
 c Determine the object crossed. Maximum obj number if multiple.
       iobj=0
  1    if(idiff.eq.0) goto 2
@@ -114,6 +115,7 @@ c****************************************************************
       subroutine objsect(j,iobj,ierr)
 c Find the intersection of the last step of particle j with  
 c object iobj, and update the positioned-fluxes accordingly.
+c ierr is returned: 0 good. 1 no intersection. 99 unknown object.
 c
 c Currently implemented only for object which is
 c ndims-dimensional spheroid of semi-radii rc(ndims), center xc.
@@ -128,7 +130,7 @@ c
 c Do nothing for untracked object
       if(nf_map(iobj).eq.0)return
 
-      itype=obj_geom(1,iobj)
+      itype=int(obj_geom(otype,iobj))
 c Use only bottom 8 bits:
       itype=itype-256*(itype/256)
 
@@ -164,12 +166,23 @@ c
 c Here we need code that decides which of the nf_posno for this object
 c to update corresponding to this crossing, and then update it. 
 c Example: bin by cos(theta)=x12(3) for nf_posno(nf_flux,iobj) bins. 
-c Flux only.
             infobj=nf_map(iobj)
             z12=(1.-fraction)*x1(3)+fraction*x2(3)
-            ibin=nf_posno(nf_flux,infobj)*(0.999999*z12+1.)*0.5
-     $           + nf_address(nf_flux,infobj,nf_step)
-            ff_data(ibin)=ff_data(ibin)+1
+            ibin=int(nf_posno(nf_flux,infobj)*(0.999999*z12+1.)*0.5)
+            iaddress=ibin+nf_address(nf_flux,infobj,nf_step)
+c Flux only.
+            ff_data(iaddress)=ff_data(iaddress)+1
+c If we are saving other data, e.g. momentum flux and the bins for this
+c quantity are identical to the flux bins then we would do
+c            iaddress=ibin+nf_address(nf_gx,infobj,nf_step)
+c            ff_data(iaddress)=ff_data(iaddress)+ gx
+c            iaddress=ibin+nf_address(nf_gy,infobj,nf_step)
+c            ff_data(iaddress)=ff_data(iaddress)+ gy
+c            iaddress=ibin+nf_address(nf_gz,infobj,nf_step)
+c            ff_data(iaddress)=ff_data(iaddress)+ gz
+c where gx=x_part(4,j), gy, and gz 
+c are the components of the momentum/velocity
+c If the bins were different we would have to recalculate ibin. 
          else
 c Did not intersect!
             ierr=1
@@ -322,7 +335,8 @@ c Construct a filename that contains many parameters
 c Using the routines in strings_names.f
       name=' '
       call nameconstruct(name)
-      np=nbcat(name,'.flx')
+c     np=nbcat(name,'.flx')
+      call nbcat(name,'.flx')
 c      write(*,*)name
       write(charout,51)debyelen,Ti,vd,rs,phip
  51   format('debyelen,Ti,vd,rs,phip:',5f10.4)

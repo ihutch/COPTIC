@@ -35,7 +35,7 @@ PROFILING=
 	cc -c $(PROFILING) $*.c
 
 #default target
-smt.out : ccpic
+smt.out : ccpic ccpicgeom.dat
 	if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
 	./ccpic
 	if [ -f smt.prev ] ; then diff smt.prev smt.out ; fi
@@ -62,5 +62,8 @@ mpibbdytest : mpibbdytest.o udisplay.o mpibbdy.o mditerate.o reduce.o
 	$(G77) -o mpibbdytest  mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o reduce.o
 
 clean :
-	rm -f *.o $(TARGETS)
+	rm -f *.o $(TARGETS) *.html *.flx *.phi T*.0?? *.ps
 
+ftnchek :
+	./ftnchekrun "ccpic.f $(OBJECTS)"
+	konqueror CallTree.html &

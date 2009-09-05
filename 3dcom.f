@@ -7,10 +7,21 @@ c
 c Mapping from obj_geom object number to nf_flux object (many->1)
 c Zero indicates no flux tracking for this object.
       integer nf_map(ngeomobjmax)
+
+c Ibool defining region of particles.
+      integer ibtotal_part
+      parameter (ibtotal_part=100)
+      integer ibool_part(ibtotal_part)
+      logical linregion
+c Mask defining the bits relevant to field regions.
+      integer ifield_mask
+
       common /objgeomcom/ngeomobj,obj_geom,nf_map
+     $     ,ibool_part,ifield_mask
+
 c Reference to the offset of certain object parameters:
-      integer ocenter,oradius,oabc
-      parameter (ocenter=2,oradius=5,oabc=8)
+      integer otype,ocenter,oradius,oabc
+      parameter (otype=1,ocenter=2,oradius=5,oabc=8)
 c
 c Data that describes the flux to positions on the objects:
       integer nf_quant,nf_obj,nf_maxsteps,nf_datasize

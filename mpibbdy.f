@@ -42,9 +42,10 @@ c to calling process.
 c Subsequently, do the boundary communication.
 c---------------------------------------------------------------
 c Start of local variables.
-      logical lalltoall
+c      logical lalltoall
 c      parameter (idebug=1,lalltoall=.false.)
-      parameter (idebug=0,lalltoall=.true.)
+      parameter (idebug=0)
+c      parameter (lalltoall=.true.)
 c Local storage:
       logical lreorder
 c vector type ids for each dimension (maximum 10 dimensions)
@@ -74,13 +75,13 @@ c Scratch stack, whose length must be at least Prod_1^nd(iside(2,i)+1)
 c Possibly this should be passed to the routine. 
       parameter (istacksize=100000)
       integer is(istacksize)
-      integer ktype(2**imds)
+c      integer ktype(2**imds)
 c Arrays for constructing ALLtoALL calls.
       parameter (maxprocs=1000)
       integer isdispls(maxprocs),irdispls(maxprocs)
       integer istypes(maxprocs),irtypes(maxprocs)
       integer iscounts(maxprocs),ircounts(maxprocs)
-      integer iconp(imds)
+c      integer iconp(imds)
 c      character*10 string
 c Debugging arrays
 c      parameter (ndebug=1000)
@@ -128,7 +129,7 @@ c         write(*,*)'Setting up topology'
             write(*,*)'MPI too many dimensions error',ndims
             goto 999
          endif
-c Test if we fit in the number of processors.
+c Test if we fit in the number of processors in block storage.
          if((idims(1)+1)*(idims(2)+1).gt.norigmax)then
          write(*,*)'bbdy: Too many processes',idims(1),'x',idims(2),
      $        ' for norigmax=',norigmax
@@ -147,32 +148,35 @@ c Check the asked-for nproc
 c End of safety checks
 c------
 c Initialize 
-c         write(*,*)'mpi_initialize'
          call MPI_INITIALIZED(lflag,ierr)
          if(.not.lflag) call MPI_INIT( ierr )
          lflag=.true.
          call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
          call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
-c This could be relaxed if I check for return of MPI_COMM_NULL
-c after CART_CREATE
-         if(nproc.gt.numprocs)then
+         if(nproc.ne.numprocs)then
             if(myid.eq.0)write(*,201)numprocs,
-     $           (idims(n),n=1,ndims),nproc
-            call resetidims(ndims,idims,numprocs,nproc)
-            if(myid.eq.0)write(*,*)'Reset to',idims,nproc
-c            goto 999
-         elseif(nproc.lt.numprocs)then
-            if(myid.eq.0)write(*,201)numprocs,
-     $           (idims(n),n=1,ndims),nproc
- 201        format('WARNING: MPI processes',i3,
-     $           ' don''t match this topology ',6i3)
-            call resetidims(ndims,idims,numprocs,nproc)
-            if(myid.eq.0)write(*,*)'Reset to',idims,nproc
+     $           nproc,(idims(n),n=1,ndims)
+ 201        format('WARNING: MPI processes',i4,
+     $           ': don''t match this topology ',i4,':',6i3)
+c Use MPI function to redimension block structure
+            do ii=1,ndims
+               idims(ii)=0
+            enddo
+            call MPI_DIMS_CREATE(numprocs,ndims,idims,ierr)
+            if(ierr.eq.0)then
+               nproc=numprocs
+            else
+               stop 'MPI_DIMS_CREATE error'
+            endif
+c Home-made call does not guarantee nproc=numprocs. Don't use.
+c            call resetidims(ndims,idims,numprocs,nproc)
+            if(myid.eq.0)write(*,'(''Reset to'',i4,'':'',6i3)')
+     $           nproc,idims
          else
             if(myid.eq.0)write(*,'(''numprocs,idims()'',i4,10i4)')
      $           numprocs,(idims(n),n=1,ndims)
          endif
-c End of possible topology idims resetting.
+c End of topology idims resetting.
 c-----
 c Define mpi block structure.
 c         write(*,*)'Calling bbdydefine'
@@ -199,7 +203,7 @@ c Output some diagnostic data, perhaps.
          do n=1,ndims
 c Calculate the block side lengths from the origins data.
             iside(1,n)=(iorig(1+iLcoords(n))-iorig(1))/iLs(n)+2
-            kt=(1+(idims(n))*iLcoords(n))
+            kt=(1+ idims(n)*iLcoords(n))
             kn=(1+(idims(n)-1)*iLcoords(n))
             iside(2,n)=(iorig(kt)-iorig(kn))/iLs(n)+2
          enddo
@@ -683,7 +687,7 @@ c isdispls, istypes,iscounts, irdispls, irtypes, ircounts,
 c for process mycartid, within total of nproc, cartesian communicator
 c dimensions idims, iLcoords, ioffset, idebug.
 
-      integer ndims,mycartid,iobindex,ioffset
+      integer ndims,mycartid,ioffset
       integer iLs(ndims+1),iLcoords(ndims),idims(ndims)
       integer iside(2,ndims)
       integer isdispls(nproc),istypes(nproc),iscounts(nproc)

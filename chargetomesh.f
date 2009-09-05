@@ -43,7 +43,8 @@ c Add to the particle sum the fraction for this vertex.
 c               write(*,*)'ii,iu,iinc,fac',ii,iu,iinc,fac
                psum(1+iinc)=psum(1+iinc)+fac
                if(ldiags)then
-
+c Do something with diagnostics.                  
+                  diags(1)=0.
                endif
             enddo
          endif
@@ -59,6 +60,10 @@ c********************************************************************
       real psum(*),rho(*),volumes(*),u(*)
 c Partcom gives us rhoinf:
       include 'partcom.f'
+
+c Silence warnings with spurious access.
+      ind=iused(1)
+      ind=indi(1)
 c This routine for use in mditerarg.
 c But we iterate only over the inner mesh (not edges).
 c Here, u=psum, v=rho, w=volumes. 
