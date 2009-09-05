@@ -1,0 +1,12 @@
+FFILES=`echo $* | sed -e "s/[.]o/[.]f/g"`
+# Functions are not pure. They can modify arguments
+# Don't complain about overspecified constants
+# Control variable reports.
+# Disable array argument size and dimension checking.
+# Make a call tree with html files
+ftnchek -nopure\
+ -truncation=no-significant-figures\
+ -usage=no-com-block-unused,no-var-set-unused\
+ -noarray\
+ -calltree -mkhtml\
+ -quiet\ $FFILES
