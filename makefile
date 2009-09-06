@@ -66,4 +66,4 @@ clean :
 
 ftnchek :
 	./ftnchekrun "ccpic.f $(OBJECTS)"
-	konqueror CallTree.html &
+	@echo To view do: konqueror CallTree.html &

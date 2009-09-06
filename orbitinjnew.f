@@ -611,3 +611,30 @@ c     having a value on the sphere normalized to Ti of minus
       smaxflux=pi*sqrt(2.)*(uc*erf +(0.5+chi)*erfbyu + exp(-uc**2)/sqpi)
       end
 c**********************************************************************
+c Set Boundaries that need treatment specific to problem.
+      subroutine geominit(myid)
+c Inner boundary setting ----------------- Specific to this problem. 
+c First object is sphere of radius rc and potential phi.
+      include '3dcom.f'
+      include 'plascom.f'
+
+      rc=obj_geom(5,1)
+      phip=-obj_geom(10,1)/obj_geom(8,1)
+c Outer boundary setting -----------------
+c Second object is bounding sphere of radius rs.
+      rs=obj_geom(5,2)
+c But use a tad more for the mesh size
+      rsmesh=obj_geom(5,2)*1.00001
+c Override the boundary condition of object 2 with an OML condition.
+      xlambda=debyelen/sqrt(1.+1./Ti)
+      a=1./xlambda+1./rs
+      b=1.
+      x=rs/xlambda
+      adeficit=((1.-2.*phip/Ti)*rc**2/(4.*debyelen**2))
+c IHH approximation to exp(x)E1(x) valid to 0.5% for positive x.
+      c= (adeficit/rs)*(alog(1.+1./x)-.56/(1.+4.1*x+0.9*x*x))
+      if(myid.eq.0)write(*,*)'Outer boundary a,b,c'
+     $     ,a,b,c
+      call objsetabc(2,a,b,c)
+      call adeficitset(adeficit)
+      end

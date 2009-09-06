@@ -1,18 +1,18 @@
       program ccpic
-c
-c Only for testing I hope.
+c Main program of cartesian coordinate pic code.
+
       include 'mpif.h'
       include 'objcom.f' 
 c Storage array spatial count size
       integer Li,ni,nj,nk
 c      parameter (Li=100,ni=40,nj=40,nk=20)
 c      parameter (Li=100,ni=60,nj=60,nk=60)
-c      parameter (Li=100,ni=16,nj=16,nk=16)
+      parameter (Li=100,ni=16,nj=16,nk=16)
 c      parameter (Li=100,ni=32,nj=32,nk=32)
 c      parameter (Li=100,ni=64,nj=64,nk=64)
 c      parameter (Li=130,ni=128,nj=128,nk=128)
 c      parameter (Li=6,ni=6,nj=6,nk=6)
-      parameter (Li=100,ni=25,nj=16,nk=20)
+c      parameter (Li=100,ni=26,nj=16,nk=20)
       parameter (Li2=Li*Li,Li3=Li2*Li)
       real u(Li,Li,Li),q(Li,Li,Li),cij(2*ndims_sor+1,Li,Li,Li)
 
@@ -29,6 +29,8 @@ c
       real psum(Li,Li,Li),volumes(Li,Li,Li)
 c Used dimensions, Full dimensions. Used dims-2
       integer iuds(ndims_sor),ifull(ndims_sor),ium2(ndims_sor)
+c Arrays defining mesh ends
+      real xmstart(ndims_sor),xmend(ndims_sor)
 c Mesh spacing description structure
       include 'meshcom.f'
 c Processor cartesian geometry
@@ -98,12 +100,17 @@ c Default to constant rhoinf not n_part.
       debyelen=1.
       Ti=1.
       vd=0.
-      rs=5.
+      rs=5.0
+      rsmesh=rs*1.00001
       numprocs=1
       bdt=1.
       norbits=0
       ickst=0
       lmyidhead=.true.
+      do id=1,ndims
+         xmstart(id)=-rsmesh
+         xmend(id)=rsmesh
+      enddo
 c---------------------------------------------------------------------
 c mpi initialization only.
 c Control bit 3 (=4) pure initialization, no communication (to get myid).
@@ -201,33 +208,20 @@ c Help text
       call exit(0)
  202  continue
 c-----------------------------------------------------------------
-c Geometry and boundary information. Read in:
+c Finalize parameters after switch reading.
+      do id=1,ndims
+         ium2(id)=iuds(id)-2
+      enddo         
+c-----------------------------------------------------------------
+c Geometry and boundary information. Read in and initialize:
       call readgeom(objfilename,myid)
-c Inner boundary setting ----------------- Specific to this problem. 
-c First object is sphere of radius rc and potential phi.
+c Used later. Ought to purge.
       rc=obj_geom(5,1)
       phip=-obj_geom(10,1)/obj_geom(8,1)
       if(lmyidhead)write(*,*)'rc=',rc,'  phip=',phip
-c Outer boundary setting -----------------
-c Second object is bounding sphere of radius rs.
-      rs=obj_geom(5,2)
-c But use a tad more for the mesh size
-      rsmesh=obj_geom(5,2)*1.00001
-c Override the boundary condition of object 2 with an OML condition.
-      xlambda=debyelen/sqrt(1.+1./Ti)
-      a=1./xlambda+1./rs
-      b=1.
-      x=rs/xlambda
-      adeficit=((1.-2.*phip/Ti)*rc**2/(4.*debyelen**2))
-c IHH approximation to exp(x)E1(x) valid to 0.5% for positive x.
-      c= (adeficit/rs)*(alog(1.+1./x)-.56/(1.+4.1*x+0.9*x*x))
-      if(lmyidhead)write(*,*)'Outer boundary a,b,c'
-     $     ,a,b,c
-      call objsetabc(2,a,b,c)
-      call adeficitset(adeficit)
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
-      call meshconstruct(ndims,iuds,ium2,rsmesh)
+      call meshconstruct(ndims,iuds,xmstart,xmend)
 c----------------------------------------------------------------
 c Initializations
       if(lmyidhead)write(*,*)'Initializing the stencil data cij'

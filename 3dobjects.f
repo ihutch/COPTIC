@@ -132,6 +132,8 @@ c If this is a null boundary condition clear the relevant bit.
       write(*,*)cline
       
  902  continue
+
+      call geominit(myid)
       return
 
  101  write(*,*) 'Readgeom File ',filename,' could not be opened.'

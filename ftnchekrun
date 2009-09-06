@@ -3,10 +3,13 @@ FFILES=`echo $* | sed -e "s/[.]o/[.]f/g"`
 # Don't complain about overspecified constants
 # Control variable reports.
 # Disable array argument size and dimension checking.
+# Don't report undefined routines.
 # Make a call tree with html files
+echo ftnchek $FFILES
 ftnchek -nopure\
  -truncation=no-significant-figures\
  -usage=no-com-block-unused,no-var-set-unused\
- -noarray\
- -calltree -mkhtml\
- -quiet\ $FFILES
+ -noarray -noextern\
+ -calltree=tree -mkhtml\
+ -quiet\
+ $FFILES
