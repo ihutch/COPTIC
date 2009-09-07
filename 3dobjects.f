@@ -133,7 +133,6 @@ c If this is a null boundary condition clear the relevant bit.
       
  902  continue
 
-      call geominit(myid)
       return
 
  101  write(*,*) 'Readgeom File ',filename,' could not be opened.'
@@ -241,7 +240,7 @@ c Common object geometric data.
       inside_geom=0
       if(i.gt.ngeomobj) return
 
-      itype=int(obj_geom(1,i))
+      itype=int(obj_geom(otype,i))
 c Use only bottom 8 bits:
       itype=itype-256*(itype/256)
       if(itype.eq.0)then
@@ -251,7 +250,8 @@ c Use only bottom 8 bits:
 c Coordinate-Aligned Spheroid data : center(ndims), semi-axes(ndims) 
          r2=0
          do k=1,ndims
-            r2=r2+((x(k)-obj_geom(1+k,i))/obj_geom(1+ndims+k,i))**2
+            r2=r2+((x(k)-obj_geom(ocenter-1+k,i))/
+     $           obj_geom(oradius-1+k,i))**2
          enddo
          if(r2.lt.1.) inside_geom=1
 
@@ -259,8 +259,8 @@ c Coordinate-Aligned Spheroid data : center(ndims), semi-axes(ndims)
 c Coordinate-Aligned Cuboid data: low-corner(ndims), high-corner(ndims)
          do k=1,ndims
             xk=x(k)
-            xl=obj_geom(1+k,i)
-            xh=obj_geom(1+ndims+k,i)
+            xl=obj_geom(ocenter-1+k,i)
+            xh=obj_geom(oradius-1+k,i)
             if((xk-xl)*(xh-xk).lt.0) return
          enddo
          inside_geom=1
@@ -268,13 +268,14 @@ c Coordinate-Aligned Cuboid data: low-corner(ndims), high-corner(ndims)
       elseif(itype.eq.3)then
 c Coordinate-Aligned Cylinder data:  Face center(ndims), 
 c Semi-axes(ndims), Axial coordinate, Signed Axial length.
-         ic=int(obj_geom(1+2*ndims+1,i))
+         ic=int(obj_geom(ocylaxis+1,i))
          xa=(x(ic)-obj_geom(1+ic,i))
-         if(xa*(obj_geom(1+2*ndims+2,i)-xa).lt.0.) return
+         if(xa*(obj_geom(ocylaxis+2,i)-xa).lt.0.) return
          r2=0.
          do k=1,ndims
             if(k.ne.ic)
-     $         r2=r2+((x(k)-obj_geom(1+k,i))/obj_geom(1+ndims+k,i))**2
+     $         r2=r2+((x(k)-obj_geom(ocenter-1+k,i))
+     $           /obj_geom(oradius-1+k,i))**2
          enddo
 c         write(*,*)'Cyl. ic=',ic,' r2=',r2,' x=',x
          if(r2.lt.1.) inside_geom=1
@@ -288,8 +289,9 @@ c length equal to the distance to the opposite face.
             proj=0.
             plen=0
             do j=1,ndims
-               proj=proj+(x(j)-obj_geom(1+j,i))*obj_geom(1+ndims*k+j,i)
-               plen=plen+obj_geom(1+ndims*k+j,i)**2
+               proj=proj+(x(j)-obj_geom(ocenter-1+j,i))
+     $              *obj_geom(oradius-1+ndims*(k-1)+j,i)
+               plen=plen+obj_geom(oradius+ndims*(k-1)+j,i)**2
             enddo
             if(proj.gt.plen)return
             if(proj.lt.0.)return
@@ -432,7 +434,7 @@ c    Continuity works for both directions.
                   conditions(2)=obj_geom(oabc+1,i)/projection
                   conditions(3)=sign(obj_geom(oabc+2,i),projection)
 c Special Zero outside, rather than continuity alternative
-                  if(int(obj_geom(1,i))/256.eq.1
+                  if(int(obj_geom(otype,i))/256.eq.1
      $                 .and. projection.lt.0.)then
                      conditions(1)=1.
                      conditions(2)=0.

@@ -221,3 +221,6 @@ c     having a value on the sphere normalized to Ti of minus
       smaxflux=pi*sqrt(2.)*(uc*erf +(0.5+chi)*erfbyu + exp(-uc**2)/sqpi)
       end
 c********************************************************************
+      subroutine avereinset()
+      return
+      end

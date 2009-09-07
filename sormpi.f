@@ -163,8 +163,8 @@ c         write(*,*) 'Calling sorrelaxgen',delta,oaddu,relax
 
 c          call checkdelta(delta,deltaold)
 c          if(k_sor.le.2)
-c            write(*,'(''sorrelaxgen'',i4,4f13.5)')k_sor,delta,oaddu,
-c     $           umin,umax
+c            write(*,'(''sorrelaxgen'',i4,4f13.5)')k_sor,delta,oaddu
+c     $           ,umin,umax
 c Test convergence
          call testifconverged(eps_sor,delta,umin,umax,
      $        lconverged,icommcart)
@@ -186,6 +186,7 @@ c            omega=1./(1.-0.45*xjac_sor**2)
       enddo
 c We finished the loop, implies we did not converge.
       k_sor=-mi_sor
+      ierr=-1
 c      write(*,*)'Finished sorrelax loop unconverged',k_sor,delta
 c-------------------------------------------------------------------
  11   continue
@@ -205,14 +206,14 @@ c Indirection is needed here because otherwise the finalize call
 c seems to cause the return to fail. Probably unnecessary.
       mpiid=myid
 c mpi version needs gracious synchronization when some processes
-c are unused by the iteration.
-      call MPI_BARRIER(MPI_COMM_WORLD,ierrmpi)
+c are unused by the iteration. Should not now be needed.
+c      call MPI_BARRIER(MPI_COMM_WORLD,ierrmpi)
       end
 c**********************************************************************
 c***********************************************************************
 c The challenge here is to ensure that all processes decide to end
 c at the same time. If not then a process will hang waiting for message.
-c So we have to universalize the convergence test. All block must be
+c So we have to universalize the convergence test. All blocks must be
 c converged, but the total spread depends on multiple blocks.
       subroutine testifconverged(eps,delta,umin,umax,lconverged,
      $     icommcart)
@@ -225,8 +226,8 @@ c converged, but the total spread depends on multiple blocks.
 c Here we need to allreduce the data, selecting the maximum values,
 c doing it in place.
 c      write(*,*)'convgd,icommcart',convgd,icommcart
-      call MPI_ALLREDUCE(MPI_IN_PLACE,convgd,3,MPI_REAL,
-     $     MPI_MAX,icommcart,ierr)
+      call MPI_ALLREDUCE(MPI_IN_PLACE,convgd,3,MPI_REAL,MPI_MAX,
+     $     icommcart,ierr)
       if(convgd(1).lt.eps*(convgd(2)+convgd(3))) then
          lconverged=.true.
       else
@@ -252,6 +253,4 @@ c To initialize to xval and xd, call twice with ns=1.
       xd=xdav
       xlast=x
       end
-c***********************************************************************
-c Cut here and throw the rest away for the basic routines
 c***********************************************************************

@@ -118,7 +118,7 @@ c Control bit 3 (=4) pure initialization, no communication (to get myid).
      $     ,myid,idims)
       if(myid.ne.0) lmyidhead=.false.
 c This necessary or could be hidden in sormpi and pass back numprocs.
-      call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
+      call mpicommsize(numprocs,ierr)
 c--------------------------------------------------------------
 c Deal with arguments
 c      if(iargc().eq.0) goto "help"
@@ -215,10 +215,7 @@ c Finalize parameters after switch reading.
 c-----------------------------------------------------------------
 c Geometry and boundary information. Read in and initialize:
       call readgeom(objfilename,myid)
-c Used later. Ought to purge.
-      rc=obj_geom(5,1)
-      phip=-obj_geom(10,1)/obj_geom(8,1)
-      if(lmyidhead)write(*,*)'rc=',rc,'  phip=',phip
+      call geominit(myid)
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
       call meshconstruct(ndims,iuds,xmstart,xmend)
@@ -227,8 +224,7 @@ c Initializations
       if(lmyidhead)write(*,*)'Initializing the stencil data cij'
 c Initialize cij:
       ipoint=iLs(1)+iLs(2)+iLs(3)
-
-c Call to mditerarg instead: Seems to work even though the cijroutine is
+c Seems to work even though the cijroutine is
 c not defined with sufficient arguments for all those in this call.
       call mditerarg(cijroutine,ndims,ifull,ium2,ipoint,
      $     cij(1,1,1,1),debyelen,dum3,dum4)
@@ -258,12 +254,9 @@ c---------------------------------------------
 c Set an object pointer for all the edges so their regions get
 c set by the iregioninit call
       ipoint=0
-c      call mditerate(ndims,ifull,iuds,cijedge,cij,ipoint)
       call mditerarg(cijedge,ndims,ifull,iuds,ipoint,cij,dum2,dum3,dum4)
 c Initialize the region flags in the object data
       call iregioninit(ndims,ifull)
-c---------------------------------------------
-c Old position of sormpi initialization.
 c---------------------------------------------
       if(myid.ne.0)then
 c Don't do plotting from any node except the master.
@@ -307,6 +300,9 @@ c-------------------------------------------------------------------
 c Do some analytic checking of the case with a fixed potential sphere
 c inside a logarithmic derivative boundary condition. 1/r solution.
 c Also write out some data for checking.
+         rc=obj_geom(oradius,1)
+         phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
+         if(lmyidhead)write(*,*)'rc=',rc,'  phip=',phip
          call spherecheck(ifull,iuds,u,phip,rc)
          if(ltestplot)then
 c Plot some of the initial-solver data.
@@ -318,17 +314,15 @@ c Plot some of the initial-solver data.
       endif
 c End of plotting.
 c------------------------------------------------------------------
-c We are going to populate the region in which xir lies.
-c This needs a more general definition to accommodate union regions.
-c      iregion_part=insideall(ndims,xir)
-      lregion=linregion(ibool_part,ndims,xir)
-c With a specified number of particles.
+c Now using general definition to accommodate union regions.
+c Initialize with a specified number of particles.
 c Initialize the fortran random number generator.
       idum=-myid-1
       blah=ran1(idum) 
       if(lmyidhead)write(*,*)'Initializing',n_part,' particles'
       call pinit()
 c      if(lmyidhead)write(*,*)'Return from pinit'
+c------------------------------------------------------------------
 c A special orbit.
 c Pinit resets x_part. So set it for the special first particle.
       x_part(1,1)=2.
@@ -388,10 +382,6 @@ c     $        nrein,n_part,ioc_part,rhoinf,dt
  402     continue
       endif
 
-c-----------------------------------------------
-c Create addtype and operator for reduce sum. Transferred to psumreduce.f
-c      call mpisubopcreate(ndims,ifull,iuds,addsubarray_mpi,
-c     $     iaddtype,iaddop)
 c-----------------------------------------------
 c Main step iteration -------------------------------------
       do j=1,nsteps
@@ -467,8 +457,7 @@ c      write(*,*)'Finished orbitplot.'
       if(lmyidhead)call phiwrite(phifilename,ifull,iuds,u)
 
 c-------------------------------------------------------------------
-      call MPI_FINALIZE(ierr)
-
+      call mpifinalize(ierr)
 c Check some flux diagnostics and writing.
       if(lmyidhead)then 
          call outputflux(fluxfilename)

@@ -53,13 +53,16 @@ c Set by mditerate.
       include 'partcom.f'
 c Initialize ids to silence spurious warnings.
       data id1,id2,idf/0,0,0/
+c For rs:
+      include 'plascom.f' 
 
 c Geometry information read in.
-      call readgeom('geomtest.dat')
+      call readgeom('geomtest.dat',myid)
 c First object is sphere of radius rc and potential phi.
-      rc=obj_geom(5,1)
-      phi=-obj_geom(10,1)/obj_geom(8,1)
+      rc=obj_geom(oradius,1)
+      phi=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
       write(*,*)'rc=',rc,'  phi=',phi
+      rs=rc
 
       thetain=.1
       nth=1
@@ -157,7 +160,7 @@ c      write(*,*)'sormpi Initialization returns',myid
 c Control. Bit 1, use my sor parameters, Bit 2 use faddu.
 c      ictl=3
       ictl=1
-c         write(*,*)'Calling sormpi, ni,nj=',ni,nj
+         write(*,*)'Calling sormpi, ni,nj=',ni,nj
 c The main solver call.
       call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
@@ -397,7 +400,7 @@ c We are going to populate this region; so identify it.
       x_part(2,1)=0.
       x_part(3,1)=0.
       iregion_part=insideall(ndims,x_part(1,1))
-      call srand(myid)
+c      call srand(myid)
       write(*,*)'Calling pinit'
       call pinit()
       write(*,*)'Return from pinit'
@@ -411,27 +414,27 @@ c      x_part(2,1)=-.4
       x_part(4,1)=2*dt
       x_part(5,1)=1.1
       x_part(6,1)=0.
+      call partlocate(1,iLs,iu,ixp,xfrac,irg)
 c Already set.
 c      do id=1,ndims
 c         ium2(id)=iuds(id)-2
 c      enddo
-      rhoinf=1.     !for now.
-      do j=1,30
+      nsteps=80
+      do j=1,nsteps
          write(*,'(i4,i4''  x_p='',6f10.5)')j,ierr, (x_part(k,1),k=1,6)
          call zero3array(psum,iLs,ni,nj,nk)
+         call zero3array(q,iLs,ni,nj,nk)
          call chargetomesh(psum,iLs,diags)
-c Convert psums to charge, q. Remember external psumtoq!
-         call mditerarg(psumtoq,ndims,ifull,ium2,
-     $        0,psum(2,2,2),q(2,2,2),rhoinf)
 c Some diagnostics.
 c         write(*,*)'Psum:'
 c         call diag3array(psum,iLs,ni,nj,nk)
 c         write(*,*)'q:'
 c         call diag3array(q,iLs,ni,nj,nk)
+         ictl=0
          call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
-c         write(*,*)'Sormpi iterations:',ierr
-         if(lplot)
+
+         if(lplot.and. mod(j,nsteps/2).eq.0)
      $        call slice3web(ifull,iuds,u,cij,Li,zp,cijp,ixnp,xn,ifix,
      $           'potential:'//'!Ay!@',1)
 c
@@ -449,10 +452,12 @@ c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
       call polyline(xorbit,yorbit,iorbitlen(1))
 c      call autoplot(xorbit,yorbit,iorbitlen(1))
       call polymark(xorbit,yorbit,iorbitlen(1),1)
+      call axlabels('x','y')
+      call boxtitle('Orbit in x-y plane, potential contours')
       call pltend()
 
 c-------------------------------------------------------------------
-      call MPI_FINALIZE(ierr)
+      call mpifinalize(ierr)
       end
 c**********************************************************************
 c**********************************************************************

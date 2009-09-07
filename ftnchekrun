@@ -10,6 +10,6 @@ ftnchek -nopure\
  -truncation=no-significant-figures\
  -usage=no-com-block-unused,no-var-set-unused\
  -noarray -noextern\
- -calltree=tree -mkhtml\
+ -calltree=vcg -mkhtml\
  -quiet\
  $FFILES

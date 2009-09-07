@@ -2887,3 +2887,26 @@ I think the xoopic approaches are not all applicable to 3D. It's just
 too cumbersome to have generalized facets and use them to construct
 all objects. That was the conclusion I came to early on. I think it was right.
 But I still haven't really defined the API.
+
+7 Sep 09.
+
+We need a way to specify the flux collection for an object in the input
+file. This specification should be along the lines of the code in fluxdata.
+For a sphere, we might wish to collect in angles cos\theta and \psi, with
+a variable number of angles for each. In general, then we need to specify
+a type of gridding and the number of bins in each of up to ndims-1 dimensions.
+This would still be true if we specified the assignment in some kind of 
+fourier space, such as spherical harmonics. Therefore, we ought to write
+a general flux initialization code and objsect code that can handle this.
+What we currently have is only rudimentary. 
+
+The additional information we therefore need for each object is the 
+flux collection type, and two integers. 
+
+We currenly have a bit of a problem with       real obj_geom(odata,ngeomobjmax)
+because the odata are ordered such that the abc is at 8, which is not enough
+data prior to it for the geometric information. It might be better to 
+reorder it so that this is more flexible. To do that, I need to make sure
+there are no direct references to explicit values of the first index.
+Ok purged all direct references to position in obj_geom. Using only
+relative to the defined parameters such as otype,ocenter,oradius,oabc, ...

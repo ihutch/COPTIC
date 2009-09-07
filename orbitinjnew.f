@@ -618,13 +618,13 @@ c First object is sphere of radius rc and potential phi.
       include '3dcom.f'
       include 'plascom.f'
 
-      rc=obj_geom(5,1)
-      phip=-obj_geom(10,1)/obj_geom(8,1)
+      rc=obj_geom(oradius,1)
+      phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
 c Outer boundary setting -----------------
 c Second object is bounding sphere of radius rs.
-      rs=obj_geom(5,2)
+      rs=obj_geom(oradius,2)
 c But use a tad more for the mesh size
-      rsmesh=obj_geom(5,2)*1.00001
+      rsmesh=obj_geom(oradius,2)*1.00001
 c Override the boundary condition of object 2 with an OML condition.
       xlambda=debyelen/sqrt(1.+1./Ti)
       a=1./xlambda+1./rs

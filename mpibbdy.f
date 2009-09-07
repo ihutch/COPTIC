@@ -168,8 +168,6 @@ c Use MPI function to redimension block structure
             else
                stop 'MPI_DIMS_CREATE error'
             endif
-c Home-made call does not guarantee nproc=numprocs. Don't use.
-c            call resetidims(ndims,idims,numprocs,nproc)
             if(myid.eq.0)write(*,'(''Reset to'',i4,'':'',6i3)')
      $           nproc,idims
          else
@@ -754,44 +752,14 @@ c         if(mycartid.eq.1) iscounts(1)=1
 c Process 2 sends to process 0 test
 c         if(mycartid.eq.0) ircounts(3)=1
 c         if(mycartid.eq.2) iscounts(1)=1
-
+      end
+c********************************************************************
+c Abstraction to isolate mpi calls.
+      subroutine mpifinalize(ierr)
+      call MPI_FINALIZE(ierr)
       end
 c*******************************************************************
-      subroutine resetidims(ndims,idims,numprocs,nproc)
-      integer ndims,numprocs,nproc
-      integer idims(ndims)
-      
-      if(nproc.gt.numprocs)then
-         nproc=1
-         do id=1,ndims
-            idims(id)=1
-         enddo
-      endif
-      if(numprocs.lt.nproc)stop 'Impossible resetidims'
-
- 101  continue
-c Pick the smallest number first.
-      id0=1
-      do i=1,ndims
-         if(idims(i).lt.idims(id0))id0=i
-      enddo
-      imod=0
-      do i=1,ndims
-         id=mod(i+id0-2,3)+1
-         idims(id)=idims(id)+1
-c Evaluate new count
-         itot=1
-         do ii=1,ndims
-            itot=itot*idims(ii)
-         enddo
-         if(itot.gt.numprocs)then
-            idims(id)=idims(id)-1
-         else
-            nproc=itot
-            imod=imod+1
-         endif
-      enddo
-      if(imod.eq.0)return
-      goto 101
-
+      subroutine mpicommsize(numprocs,ierr)
+      include 'mpif.h'
+      call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
       end

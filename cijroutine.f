@@ -549,3 +549,31 @@ c This is where the boundary setting is done for n=1
 c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
       end
 c****************************************************************
+c*********************************************************************
+c Print a text graphic of slices through the regions 
+      subroutine text3graphs(ndims,iuds,ifull,cij,volumes)
+      integer iuds(ndims),ifull(ndims)
+      real cij(*)
+      real volumes(*)
+      include 'meshcom.f'
+      character*40 form1
+c Standard volume for uniform mesh:
+         vs=.99999
+         do id=1,ndims
+            vs=vs*(xn(ixnp(id)+2)-xn(ixnp(id)+1))
+         enddo
+         vs=vs
+c Text graphic of slice through volumes
+         write(*,*)'Volumes percentages:'
+         write(form1,'(''('',i3,''i4)'')')iuds(1)
+         write(*,form1)((nint(100.*
+     $        volumes(j-1+(iuds(2)/2-1)*ifull(1)
+     $                +(k-1)*ifull(1)*ifull(2)+1)/vs),
+     $        j=1,iuds(1)),k=1,iuds(3))
+
+c Text graphic of slice through cij
+c      write(*,*)'iregion:'
+         write(form1,'(''('',i3,''i1)'')')iuds(1)
+         write(*,form1)((ireg3(j,iuds(2)/2,k,ifull,cij),
+     $        j=1,iuds(1)),k=1,iuds(3))
+      end

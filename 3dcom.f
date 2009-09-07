@@ -20,8 +20,8 @@ c Mask defining the bits relevant to field regions.
      $     ,ibool_part,ifield_mask
 
 c Reference to the offset of certain object parameters:
-      integer otype,ocenter,oradius,oabc
-      parameter (otype=1,ocenter=2,oradius=5,oabc=8)
+      integer otype,ocenter,oradius,oabc,ocylaxis
+      parameter (otype=1,ocenter=2,oradius=5,oabc=8,ocylaxis=11)
 c
 c Data that describes the flux to positions on the objects:
       integer nf_quant,nf_obj,nf_maxsteps,nf_datasize

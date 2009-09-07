@@ -6,7 +6,9 @@ UTILITIES=udisplay.o
 #REINJECT=reinject.o
 REINJECT=orbitinjnew.o extint.o
 # The sormpi system.
-OBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o ${REINJECT} reindiag.o pinit.o bbdyroutine.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o reduce.o
+FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reindiag.o pinit.o bbdyroutine.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o reduce.o
+
+OBJECTS=$(FIXEDOBJECTS) ${REINJECT}
 HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 G77=mpif77
@@ -39,6 +41,10 @@ smt.out : ccpic ccpicgeom.dat
 	if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
 	./ccpic
 	if [ -f smt.prev ] ; then diff smt.prev smt.out ; fi
+
+fieldtest : fieldtest.f makefile $(OBJECTS) /home/hutch/accis/libaccisX.a
+	$(G77)  -o fieldtest $(COMPILE-SWITCHES) $(PROFILING) fieldtest.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+#	$(G77)  -o fieldtest $(COMPILE-SWITCHES) $(PROFILING) fieldtest.f $(FIXEDOBJECTS) reinject.o $(UTILITIES) $(LIBRARIES)
 
 #mpi checking target
 mpicheck : ccpic
