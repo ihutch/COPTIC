@@ -2910,3 +2910,51 @@ reorder it so that this is more flexible. To do that, I need to make sure
 there are no direct references to explicit values of the first index.
 Ok purged all direct references to position in obj_geom. Using only
 relative to the defined parameters such as otype,ocenter,oradius,oabc, ...
+
+Permuted the order of oabc and other things. Then found a bug. It is not
+in what I've just done, but it is that when an extra sphere of radius .5
+is added to the objects, a change in one of the flux counts occurs.
+The addition of the sphere causes one less particle count for one step
+and one position. But making the radius 0.8 instead of 0.5 makes the 
+differences much greater. And making it .1 gives no differences. Obviously
+the counting is not working properly. This appears to be because tallyexit
+chooses to count the crossing as being for the last object crossed.
+This is presumably a mistake. One ought to count it for all objects crossed.
+Changed tallyexit accordingly. That fixes the difference.
+
+Implement ofluxtype ofn1 ofn2 as the object flux collection parameters.
+The problem with my input file is that deciding things by ordering is
+very problematic when the number of parameters on a line gets large.
+Especially when one wishes to set values above others and the number
+of initial values is variable. Perhaps therefore we need to rethink
+readgeom routine and input format. This would be a big issue. I don't 
+want to do that now, and if it needs to be done, I might write a
+code to prepare the input file.
+
+Gradually getting this done. Increase nf_posdim to 2 from 1. Fix the order
+as 0 -> 1, -1 -> 1 for the position data. Then fluxdatatest still works.
+(But is not yet general.) Save the dimensional structures of the
+different quantities (two ints each) as well as the totals. Then we can
+in principle use different grids for each quantity although at present
+we can't set them to be different through the input file.
+
+Ok. We now seem to have two dimensional accumulation grid setting through
+the input file for spheres. But not yet the actual accumulation.
+Rewrote the objsect code for spheres to do accumulation. Seems correct.
+
+Try to test with different velocities. Sort of works apparently.
+ time ./ccpic -s100 -v1. -ni100000  real    0m15.954s
+ time ./ccpic -s100 -v1. -ni200000  real    0m30.662s
+ time ./ccpic -s100 -v1. -ni400000  real    0m59.150s
+Time scaling is linear in this number of particle range. (Small grid).
+
+Got accumulation of multiple objects working and corrected the mapping
+back and forth from flux objects to geom objects. Also got fluxdatatest
+to work with multiple object accumulation. 
+
+Conclusion for today
+---------------------
+
+We have 2-D accumulation of flux working. We ought to add momentum and
+energy. We might want to sign the accumulation, that is, subtract or 
+add according to the direction of surface crossing.

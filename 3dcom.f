@@ -1,10 +1,10 @@
 c Common data containing the object geometry information. 
 c Each object, i < 31 has: type, data(odata).
       integer ngeomobjmax,odata,ngeomobj
-      parameter (ngeomobjmax=31,odata=16)
+      parameter (ngeomobjmax=31,odata=24)
       real obj_geom(odata,ngeomobjmax)
 c
-c Mapping from obj_geom object number to nf_flux object (many->1)
+c Mapping from obj_geom object number to nf_flux object (many->fewer)
 c Zero indicates no flux tracking for this object.
       integer nf_map(ngeomobjmax)
 
@@ -21,13 +21,15 @@ c Mask defining the bits relevant to field regions.
 
 c Reference to the offset of certain object parameters:
       integer otype,ocenter,oradius,oabc,ocylaxis
-      parameter (otype=1,ocenter=2,oradius=5,oabc=8,ocylaxis=11)
+      parameter (otype=1,oabc=2,ocenter=5,oradius=8,ocylaxis=14)
+      integer ofluxtype,ofn1,ofn2
+      parameter (ofluxtype=11,ofn1=12,ofn2=13)
 c
 c Data that describes the flux to positions on the objects:
       integer nf_quant,nf_obj,nf_maxsteps,nf_datasize
 c Number of dimensions needed for position descriptors
-      parameter (nf_posdim=1)
-c Maximum (i.e. storage size) of arrays. 
+      parameter (nf_posdim=2)
+c Maximum (i.e. storage size) of array 
       parameter (nf_quant=5,nf_obj=5,nf_maxsteps=1000)
       parameter (nf_datasize=10000000)
 c Mnemonics for quantities:
@@ -36,6 +38,10 @@ c Actual numbers of quantities, objects and steps <= maxes.
       integer nf_step,mf_quant,mf_obj
 c The number of positions at which this quantity is measured:
       integer nf_posno(nf_quant,nf_obj)
+c The dimensional structure of these: nf_posno = prod nf_dimlens
+      integer nf_dimlens(nf_quant,nf_obj,nf_posdim)
+c Reverse mapping to the geomobj number from nf_obj number
+      integer nf_geommap(nf_obj)
 c The address of the data-start for the quantity, obj, step.
       integer nf_address(nf_quant,nf_obj,1-nf_posdim:nf_maxsteps)
 c The heap where the data actually lies.
@@ -46,10 +52,10 @@ c The dt for each step
       real ff_dt(nf_maxsteps)
 
       common /fluxdata/nf_step,ff_rho,ff_dt,mf_quant,mf_obj,nf_posno
-     $     ,nf_address,ff_data
+     $     ,nf_dimlens,nf_geommap,nf_address,ff_data
 
 
-c Flux explanation.
+c Flux explanation:
 c There are 
 c   mf_quant quantities to be recorded for each of
 c   mf_obj objects, for each of

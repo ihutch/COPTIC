@@ -2,20 +2,21 @@
 # After that we can have comment lines with # in column 1.
 # We can short-list the data, but only if we don't put a comment
 # on the end. In that case we'd get an error.
-# ; Sphere type: center, constant axes. 3 extra data values A,B,C
+# ; Sphere type: Data values A,B,C, center, axes. 
 # ccpic has a built in assumption that the first two objects define 
 # the domain. Can't put others there for now.
 # Radius 1 sphere centered on axis with potential set (-10.)
-1 , .0,.0,.0,  1.,1.,1.    , 1.,0.,10.
+# Specify flux accumulation type 1 in 50 bins of cos\theta, 1 of psi.
+1 , 1.,0.,10., .0,.0,.0,  1.,1.,1.,  1, 50, 1  
 #
 # Radius 5 sphere where slope is -phi/r. A phi + B phi' = 0
-257 ,.0,.0,.0, 5.,5.,5. , 1.,5.,0. 
-#1 ,.0,.0,.0, 5.,5.,5. , 1.,5.,0. 
+257 , 1.,5.,0. ,.0,.0,.0, 5.,5.,5. 
 #
-# Radius .5 sphere with null BC to ensure this does not mess up.
-1, 0.,0.,0., 2.,2.,2., 0.,0.,0.
 # Radius 2. sphere with null BC to ensure this does not mess up.
-1, 0.,0.,0., .5,.5,.5, 0.,0.,0.
+1 , 0.,0.,0., 0.,0.,0., 2.,2.,2.
+# Radius .8 with null. Helps to cross-check tallying.
+1 , 0.,0.,0., 0.,0.,0., .8,.8,.8 ,   1,  10, 4
+# 1 , 0.,0.,0., 0.,0.,0., .6,.6,.6 ,   1,  10, 4
 #
 # Boolean that specifies the particle region 99, n1, n1*values, n2, ... 0:
 # Each nk values are ored together. The groups are anded.

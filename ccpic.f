@@ -144,8 +144,8 @@ c      if(iargc().eq.0) goto "help"
             read(argument(3:),*,err=201)nsteps
             if(nsteps.gt.nf_maxsteps)then
                if(lmyidhead)write(*,*)'Asked for more steps',nsteps,
-     $              ' than allowed. Limit ',nf_maxsteps
-               nsteps=nf_maxsteps
+     $              ' than allowed. Limit ',nf_maxsteps-1
+               nsteps=nf_maxsteps-1
             endif
          endif
          if(argument(1:9).eq.'--restart')lrestart=.true.
@@ -369,8 +369,8 @@ c 400  continue
             if(lmyidhead)write(*,*)'Asked for',
      $           nsteps,' in addition to',nf_step,
      $           ' Total',nsteps+nf_step,
-     $           ' too much; set to',nf_maxsteps
-            nsteps=nf_maxsteps-nsteps
+     $           ' too much; set to',nf_maxsteps-1
+            nsteps=nf_maxsteps-nsteps-1
          endif
 c         if(lmyidhead)write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
 c     $        nrein,n_part,ioc_part,rhoinf,dt
@@ -460,9 +460,10 @@ c-------------------------------------------------------------------
       call mpifinalize(ierr)
 c Check some flux diagnostics and writing.
       if(lmyidhead)then 
-         call outputflux(fluxfilename)
+         call writefluxfile(fluxfilename)
          if(linjplot)call plotinject(Ti)
-         call fluxave(nsteps/2,nsteps,lfplot)
+c Just object 1:
+         call fluxave(nsteps/2,nsteps,1,lfplot)
       endif
 c      call readfluxfile(fluxfilename)
       end

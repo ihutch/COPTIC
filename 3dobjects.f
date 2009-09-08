@@ -75,7 +75,7 @@ c First line must be the number of dimensions.
       if(myid.eq.0)write(*,'(a,a50)')'Reading objects from file: '
      $     ,filename
       if(myid.eq.0)write(*,*)'Object Descr   type',
-     $     '       (center)              (radii)              (BCs)'
+     $     '       (BCs)              (center)              (radii)'
 c Loop over lines of the input file.
  1    iline=iline+1
       read(1,'(a)',end=902)cline
@@ -89,22 +89,22 @@ c Use only lower byte.
       ngeomobj=ngeomobj+1
       if(type.eq.1.)then
          read(cline,*,err=901,end=801)
-     $        (obj_geom(k,ngeomobj),k=1,1+2*nd+3)
+     $        (obj_geom(k,ngeomobj),k=1,odata)
  801     if(myid.eq.0)write(*,820)ngeomobj,' Spheroid '
          if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.2.)then
          read(cline,*,err=901,end=802)
-     $        (obj_geom(k,ngeomobj),k=1,1+2*nd+3)
+     $        (obj_geom(k,ngeomobj),k=1,odata)
  802     if(myid.eq.0)write(*,820)ngeomobj,' Cuboid '
          if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.3.)then
          read(cline,*,err=901,end=803)
-     $        (obj_geom(k,ngeomobj),k=1,1+2*nd+2+3)
+     $        (obj_geom(k,ngeomobj),k=1,odata)
  803     if(myid.eq.0)write(*,820)ngeomobj,' Cylinder '
          if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.4.)then
          read(cline,*,err=901,end=804)
-     $        (obj_geom(k,ngeomobj),k=1,1+nd*(1+nd)+3)
+     $        (obj_geom(k,ngeomobj),k=1,odata)
  804     if(myid.eq.0)write(*,820)ngeomobj,
      $        ' General Cuboid/Parallelepiped '
          if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),
@@ -279,7 +279,6 @@ c Semi-axes(ndims), Axial coordinate, Signed Axial length.
          enddo
 c         write(*,*)'Cyl. ic=',ic,' r2=',r2,' x=',x
          if(r2.lt.1.) inside_geom=1
-
       elseif(itype.eq.4)then
 c General Cuboid data: Origin corner(ndims), vectors(ndims,ndims) 
 c to adjacent corners. Is equivalent to 
