@@ -2958,3 +2958,18 @@ Conclusion for today
 We have 2-D accumulation of flux working. We ought to add momentum and
 energy. We might want to sign the accumulation, that is, subtract or 
 add according to the direction of surface crossing.
+
+8 Sep 09
+
+Made mf_quant equal to the fluxtype. Sensible choices might then be
+1 Flux only. 4 Flux plus momentum. 5 Flux, momentum, energy. 
+
+Found a slight problem. mf_quant needs to be set for each object, and
+so needs to be an array. At present it is only a scalar. Looks doable,
+but needs follow through.
+
+10 Sep 09
+
+This done and the flux reduction also extended to cover all quantities.
+At present assuming that the grid is the same for all quantities. 
+MPI seems to be working. 

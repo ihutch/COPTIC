@@ -10,8 +10,24 @@ c***********************************************************************
       include 'mpif.h'
       include '3dcom.f'
 c ALLREDUCE communicates the result to all processes.      
-      call MPI_ALLREDUCE(MPI_IN_PLACE,ff_data(nf_address(1,1,nf_step))
-     $     ,nf_posno(1,1),MPI_REAL,MPI_SUM,MPI_COMM_WORLD,ierr)
+
+c Old call just communicated data for quantity 1, object 1.
+c      call MPI_ALLREDUCE(MPI_IN_PLACE,ff_data(nf_address(1,1,nf_step))
+c     $     ,nf_posno(1,1),MPI_REAL,MPI_SUM,MPI_COMM_WORLD,ierr)
+
+c Have to reduce data for all objects and all quantities.
+c Because of the address definition:
+c               if(i.gt.1)nf_address(i,j,k)=
+c     $              nf_address(i-1,j,k)+nf_posno(i-1,j)
+c The quantities are adjacent to one another in ff_data. Therefore
+c we don't have to iterate over quantities, just pass more data, 
+c encompassing them all at once.
+      do io=1,mf_obj
+         nquant=nf_posno(1,io)*mf_quant(io)
+         call MPI_ALLREDUCE(MPI_IN_PLACE
+     $        ,ff_data(nf_address(1,io,nf_step))
+     $        ,nquant,MPI_REAL,MPI_SUM,MPI_COMM_WORLD,ierr)
+      enddo
 c      write(*,*)'Total flux number',sum
 c      write(*,'(10f7.1)')(ff_data(nf_address(1,1,nf_step)+i-1),
 c     $     i=1,nf_posno(1,1))

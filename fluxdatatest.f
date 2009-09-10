@@ -26,14 +26,14 @@ c**************************************************************
 
       call readfluxfile(filename,ierr)
 
-      write(*,*)'found',ff_data(nf_address(nf_flux,1,-1)+1-1)
-     $     ,nf_address(nf_flux,1,-1)
+c      write(*,*)'found',ff_data(nf_address(nf_flux,1,-1)+1-1)
+c     $     ,nf_address(nf_flux,1,-1)
 
-      write(*,*) '   No. quantities, ',
-     $     'No. objects, No. steps'
-      write(*,*)mf_quant,mf_obj,nf_step
+      write(*,*)'   No. objects,   No. steps,    No. quantities(obj)'
+      write(*,'(i12,i12,i12,20i3)')mf_obj,nf_step,
+     $     (mf_quant(j),j=1,mf_obj)
       write(*,*) 'Posn and first 2 step addresses ',
-     $     (((nf_address(i,j,k),i=1,mf_quant),' ,'
+     $     (((nf_address(i,j,k),i=1,mf_quant(j)),' ,'
      $     ,j=1,mf_obj),k=1-nf_posdim,2),'...'
 
       do k=1,mf_obj
@@ -47,7 +47,22 @@ c**************************************************************
          write(*,'(a,i3,a,f10.4,a)')'Step(',kk,') rho=',ff_rho(kk)
      $        ,'  Flux data'
          write(*,'(10f8.4)')(ff_data(nf_address(nf_flux,1,kk)+i-1)
-     $     ,i=1,nf_posno(1,k))
+     $     ,i=1,nf_posno(nf_flux,k))
+         if(mf_quant(k).ge.2)then
+            write(*,'(''x-momentum'',i4)')nf_posno(nf_gx,k)
+            write(*,'(10f8.3)')(ff_data(nf_address(nf_gx,1,kk)+i-1)
+     $     ,i=1,nf_posno(nf_gx,k))
+         endif
+         if(mf_quant(k).ge.3)then
+            write(*,'(''y-momentum'',i4)')nf_posno(nf_gy,k)
+            write(*,'(10f8.3)')(ff_data(nf_address(nf_gy,1,kk)+i-1)
+     $     ,i=1,nf_posno(nf_gy,k))
+         endif
+         if(mf_quant(k).ge.4)then
+            write(*,'(''z-momentum'',i4)')nf_posno(nf_gz,k)
+            write(*,'(10f8.3)')(ff_data(nf_address(nf_gz,1,kk)+i-1)
+     $     ,i=1,nf_posno(nf_gz,k))
+         endif
       enddo
       
       

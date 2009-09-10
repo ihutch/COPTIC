@@ -6,8 +6,8 @@
 # ccpic has a built in assumption that the first two objects define 
 # the domain. Can't put others there for now.
 # Radius 1 sphere centered on axis with potential set (-10.)
-# Specify flux accumulation type 1 in 50 bins of cos\theta, 1 of psi.
-1 , 1.,0.,10., .0,.0,.0,  1.,1.,1.,  1, 50, 1  
+# Specify flux accumulation type 5 in 50 bins of cos\theta, 1 of psi.
+1 , 1.,0.,10., .0,.0,.0,  1.,1.,1.,  5, 50, 1  
 #
 # Radius 5 sphere where slope is -phi/r. A phi + B phi' = 0
 257 , 1.,5.,0. ,.0,.0,.0, 5.,5.,5. 

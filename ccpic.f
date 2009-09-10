@@ -431,6 +431,7 @@ c This test routine assumes 3 full dimensions all equal to Li are used.
 c The normal call:
             call padvnc(ndims,cij,u,iLs)
          endif
+c         write(*,*)(ff_data(nf_address(1,1,nf_step)+ii),ii=0,2)
          call fluxreduce()
 c Store the step's rhoinf, dt.
          ff_rho(j)=rhoinf

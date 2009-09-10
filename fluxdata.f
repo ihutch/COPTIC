@@ -23,12 +23,14 @@ c Initialize here to avoid giant block data program.
 c-------------------------------------------------
 c Initialize object number
       mf_obj=0
-c Hard wire number of quantities for now.
-      mf_quant=2
       do i=1,ngeomobj
-c I've written this only for type 1, but it seems general.
-         if(obj_geom(ofluxtype,i).eq.1)then
+         if(obj_geom(ofluxtype,i).eq.0)then
+c No flux setting for this object.
+         elseif(obj_geom(ofluxtype,i).ge.1
+     $           .and. obj_geom(ofluxtype,i).le.nf_quant)then
+c Might eventually need more interpretation of fluxtype.
             mf_obj=mf_obj+1
+            mf_quant(mf_obj)= obj_geom(ofluxtype,i)
 c The mapped object number != object number.
             nf_map(i)=mf_obj
             nf_geommap(mf_obj)=i
@@ -37,23 +39,21 @@ c There are nfluxes positions for each quantity.
 c At present there's no way to prescribe different grids for each
 c quantity in the input file. But the data structures could 
 c accommodate such difference if necessary. 
-            do j=1,mf_quant
+            do j=1,mf_quant(mf_obj)
 c       explicit for posdim=2 for now.
                nf_dimlens(j,mf_obj,1)=int(obj_geom(ofn1,i))
                nf_dimlens(j,mf_obj,2)=int(obj_geom(ofn2,i))
                nf_posno(j,mf_obj)=nfluxes
-            if(j.eq.1)write(*,'(a,i3,a,i3,a,i5,a,i3,a,i3,a,2i3)')
+               if(j.eq.1)write(*,'(a,i3,a,i3,a,i5,a,i3,a,i3,a,2i3)')
      $              ' Fluxinit of object',i
      $           ,'  type',int(obj_geom(ofluxtype,i))
      $           ,'. ',nf_posno(j,mf_obj),' flux positions:'
      $           ,nf_dimlens(j,mf_obj,1),'x',nf_dimlens(j,mf_obj,2)
-     $           ,' Quantities',j,mf_quant
-
+     $           ,' Quantities',j,mf_quant(mf_obj)
             enddo
-         elseif(obj_geom(ofluxtype,i).eq.0)then
-c No flux setting for this object.
          else
             write(*,*)'==== Unknown flux type',obj_geom(ofluxtype,i)
+            stop
          endif
       enddo
 
@@ -73,7 +73,7 @@ c as the angle-values that provide positions to correspond to the fluxes.
          if(obj_geom(ofluxtype,i).gt.0)then
             io=io+1
             ioff=0
-            do j=1,mf_quant
+            do j=1,mf_quant(io)
                do i2=1,nf_dimlens(j,io,2)
                   p=3.1415926*(-1.+2.*(i2-0.5)/nf_dimlens(j,io,2))
                   do i1=1,nf_dimlens(j,io,1)
@@ -106,7 +106,7 @@ c Zero nums to silence incorrect warnings.
          do j=1,mf_obj
             if(j.gt.1)nf_address(1,j,k)=nf_address(1,j-1,k)+numdata
             numdata=0
-            do i=1,mf_quant
+            do i=1,mf_quant(j)
                if(i.gt.1)nf_address(i,j,k)=
      $              nf_address(i-1,j,k)+nf_posno(i-1,j)
                numdata=numdata+nf_posno(i,j)
@@ -116,16 +116,12 @@ c               write(*,*)i,j,k,nf_posno(i,j),nf_address(i,j,k),numdata
          enddo
       enddo
 c Check if we might overrun the datasize.
-      if(nf_address(mf_quant,mf_obj,nf_maxsteps)+numobj
+      if(nf_address(nf_quant,mf_obj,nf_maxsteps)+numobj
      $     .gt.nf_datasize)then
-         write(*,*)'DANGER: data from',mf_quant,mf_obj,nf_maxsteps,
+         write(*,*)'DANGER: data from',nf_quant,mf_obj,nf_maxsteps,
      $        ' would exceed nf_datasize',nf_datasize
          stop
       else
-c         write(*,'(a,i10,a,i1,i2,i5,a,i10)')'Maximum nf_address:',
-c     $     nf_address(mf_quant,mf_obj,nf_maxsteps)+numobj,
-c     $        ' (',mf_quant,mf_obj,nf_maxsteps,
-c     $        ') is safely below nf_datasize:',nf_datasize
       endif
       end
 c******************************************************************
@@ -203,17 +199,14 @@ c This condition tests for a sphere crossing.
          if(D.ne.0. .and. D*C.le.0.)then
             if(B.ge.0. .and. A*C.le.0.) then
                fraction=(-B+sqrt(B*B-A*C))/A
-c            elseif(B.lt.0. .and. A*C.ge.0.)then
             else
                fraction=(-B-sqrt(B*B-A*C))/A
             endif
 c That should exhaust the possibilities.
-c Get the actual position and bin it.
 c
-c Here we need code that decides which of the nf_posno for this object
+c This code decides which of the nf_posno for this object
 c to update corresponding to this crossing, and then update it. 
             infobj=nf_map(iobj)
-c            infobj=iobj
             z12=(1.-fraction)*x1(3)+fraction*x2(3)
 c Example: bin by cos(theta)=x12(3) uniform grid in first nf_dimension. 
             ibin=int(nf_dimlens(nf_flux,infobj,1)*(0.999999*z12+1.)*0.5)
@@ -222,20 +215,37 @@ c Example: bin by cos(theta)=x12(3) uniform grid in first nf_dimension.
             psi=atan2(y12,x12)
             jbin=int(nf_dimlens(nf_flux,infobj,2)
      $           *(0.999999*psi/3.1415926+1.)*0.5)
-            iaddress=ibin+nf_address(nf_flux,infobj,nf_step)
-     $           +jbin*nf_dimlens(nf_flux,infobj,1)
-c Flux only.
-            ff_data(iaddress)=ff_data(iaddress)+1
-c If we are saving other data, e.g. momentum flux and the bins for this
-c quantity are identical to the flux bins then we would do
-c            iaddress=ibin+nf_address(nf_gx,infobj,nf_step)
-c            ff_data(iaddress)=ff_data(iaddress)+ gx
-c            iaddress=ibin+nf_address(nf_gy,infobj,nf_step)
-c            ff_data(iaddress)=ff_data(iaddress)+ gy
-c            iaddress=ibin+nf_address(nf_gz,infobj,nf_step)
-c            ff_data(iaddress)=ff_data(iaddress)+ gz
-c where gx=x_part(4,j), gy, and gz 
-c are the components of the momentum/velocity
+            ijbin=ibin+jbin*nf_dimlens(nf_flux,infobj,1)
+            iaddress=ijbin+nf_address(nf_flux,infobj,nf_step)
+c D is the final radius -1 [!=0]. So its sign determines where we end.
+c Minus means we are accumulating the inward flux for all quantities.
+            sd=-sign(1.,D)
+c Particle Flux.
+            ff_data(iaddress)=ff_data(iaddress)+sd
+c Perhaps ought to consider velocity interpolation.
+            if(mf_quant(infobj).ge.2)then
+c Momentum               
+               iaddress=ijbin+nf_address(nf_gx,infobj,nf_step)
+               ff_data(iaddress)=ff_data(iaddress)+ sd*x_part(4,j)
+            endif
+            if(mf_quant(infobj).ge.3)then
+               iaddress=ijbin+nf_address(nf_gy,infobj,nf_step)
+               ff_data(iaddress)=ff_data(iaddress)+ sd*x_part(5,j)
+            endif
+            if(mf_quant(infobj).ge.4)then
+               iaddress=ijbin+nf_address(nf_gz,infobj,nf_step)
+               ff_data(iaddress)=ff_data(iaddress)+ sd*x_part(6,j)
+            endif
+            if(mf_quant(infobj).ge.5)then
+c Energy
+               iaddress=ijbin+nf_address(nf_heat,infobj,nf_step)
+               xx=0.
+               do k=1,npdim
+                  xx=xx+x_part(3+k,j)**2
+               enddo
+               ff_data(iaddress)=ff_data(iaddress)+ sd*xx
+            endif
+            
 c If the bins were different we would have to recalculate ibin. 
          else
 c Did not intersect!
@@ -410,8 +420,8 @@ c This write sequence must be exactly that read below.
       write(22)(ff_rho(k),k=1,nf_step)
       write(22)(ff_dt(k),k=1,nf_step)
       write(22)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_posdim)
-     $     ,i=1,mf_quant),j=1,mf_obj)
-      write(22)(((nf_address(i,j,k),i=1,mf_quant),j=1,mf_obj),
+     $     ,i=1,mf_quant(j)),j=1,mf_obj)
+      write(22)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+1)
       write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
 
@@ -439,8 +449,8 @@ c*****************************************************************
       read(23)(ff_dt(k),k=1,nf_step)
 c      read(23)((nf_posno(i,j),i=1,mf_quant),j=1,mf_obj)
       read(23)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_posdim)
-     $     ,i=1,mf_quant),j=1,mf_obj)
-      read(23)(((nf_address(i,j,k),i=1,mf_quant),j=1,mf_obj),
+     $     ,i=1,mf_quant(j)),j=1,mf_obj)
+      read(23)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+1)
       read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
       close(23)
