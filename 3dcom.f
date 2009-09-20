@@ -69,3 +69,16 @@ c ff_data is the heap of data.
 c
 c Steps 1-nf_posdim:0 stores the quantitative position information. 
 c where nf_posdim is the number of dimensions in position info.
+
+
+c Data for storing integrated field quantities such as forces.
+      integer ns_ndims
+      parameter (ns_ndims=3)
+      integer ns_nt,ns_np
+      parameter (ns_nt=6,ns_np=6)
+      integer ns_flags(ns_ndims)
+      real fieldforce(ns_ndims,nf_obj,nf_maxsteps)
+      real pressforce(ns_ndims,nf_obj,nf_maxsteps)
+      real charge_ns(nf_obj,nf_maxsteps)
+      real surfobj(2*ns_ndims,ns_nt,ns_np,nf_obj)
+      common /stress/ns_flags,surfobj,fieldforce,pressforce,charge_ns

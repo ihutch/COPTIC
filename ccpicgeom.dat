@@ -2,19 +2,18 @@
 # After that we can have comment lines with # in column 1.
 # We can short-list the data, but only if we don't put a comment
 # on the end. In that case we'd get an error.
-# ; Sphere type: Data values A,B,C, center, axes. 
-# ccpic has a built in assumption that the first two objects define 
-# the domain. Can't put others there for now.
+# ; Sphere type: Data values A,B,C, center, axes, flux accumulation. 
+#
 # Radius 1 sphere centered on axis with potential set (-10.)
-# Specify flux accumulation type 5 in 50 bins of cos\theta, 1 of psi.
+# Specify flux accumulation for 5 quantities in 50 bins of cos\theta, 1 of psi.
 1 , 1.,0.,10., .0,.0,.0,  1.,1.,1.,  5, 50, 1  
 #
-# Radius 5 sphere where slope is -phi/r. A phi + B phi' = 0
+# Special Sphere where slope is -phi/r. A phi + B phi' = 0, center 0., radius 5.
 257 , 1.,5.,0. ,.0,.0,.0, 5.,5.,5. 
 #
 # Radius 2. sphere with null BC to ensure this does not mess up.
 1 , 0.,0.,0., 0.,0.,0., 2.,2.,2.
-# Radius .8 with null. Helps to cross-check tallying.
+# Sphere, with null BC, radius .8, tally quantities 1, 10x4 bins.
 1 , 0.,0.,0., 0.,0.,0., .8,.8,.8 ,   1,  10, 4
 # 1 , 0.,0.,0., 0.,0.,0., .6,.6,.6 ,   1,  10, 4
 #

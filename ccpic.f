@@ -35,7 +35,7 @@ c Mesh spacing description structure
       include 'meshcom.f'
 c Processor cartesian geometry
       integer nblksi,nblksj,nblksk
-      parameter (nblksi=2,nblksj=1,nblksk=1)
+      parameter (nblksi=1,nblksj=1,nblksk=1)
       integer idims(ndims_sor)
 c mpi process information.
       include 'myidcom.f'
@@ -60,7 +60,7 @@ c Plasma common data
       character*100 argument
       common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
-      logical lrestart,lmyidhead,lfplot,lregion
+      logical lrestart,lmyidhead,lregion
       
 c Diagnostics
 c      real usave(Li,Li,Li),error(Li,Li,Li),cijp(2*ndims_sor+1,Li,Li)
@@ -79,8 +79,8 @@ c Point which lies in the plasma region:
       data xir/2.,2.,2./
 c Data for plotting etc.
       data iobpl/0/
-      data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot,lfplot/
-     $     .false.,.false.,.false.,.false.,.false.,.false./
+      data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot/
+     $     .false.,.false.,.false.,.false.,.false./
       data thetain,nth/.1,1/
       data lrestart/.false./
 
@@ -107,6 +107,7 @@ c Default to constant rhoinf not n_part.
       norbits=0
       ickst=0
       lmyidhead=.true.
+      ifplot=0
       do id=1,ndims
          xmstart(id)=-rsmesh
          xmend(id)=rsmesh
@@ -128,7 +129,7 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
          if(argument(1:3).eq.'-gs')lsliceplot=.true.
          if(argument(1:3).eq.'-gi')linjplot=.true.
-         if(argument(1:3).eq.'-gf')lfplot=.true.
+         if(argument(1:3).eq.'-gf')read(argument(4:),*,err=201)ifplot
          if(argument(1:3).eq.'-go')read(argument(4:),*,err=201)norbits
          if(argument(1:3).eq.'-at')read(argument(4:),*,err=201)thetain
          if(argument(1:3).eq.'-an')read(argument(4:),*,err=201)nth
@@ -193,9 +194,10 @@ c Help text
       write(*,301)' --restart  Attempt to restart from saved state.'
       write(*,301)'Debugging switches for testing'
       write(*,301)' -gt   Plot regions and solution tests.'
-      write(*,301)' -gf   Plot flux evolution and final distribution.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
       write(*,301)' -gs   Plot slices of solution potential, density. '
+      write(*,301)' -gf   set quantity plotted for flux evolution and'//
+     $     ' final distribution. [',ifplot
       write(*,301)' -gc   set wireframe [& stencils(-)] mask.'//
      $     ' objects<->bits. [',iobpl
       write(*,301)' -go   set No of orbits'
@@ -286,7 +288,8 @@ c Initialize charge (set q to zero over entire array).
       call mditerset(q,ndims,ifull,iuds,0,0.)
 c Initialize potential (set u to zero over entire array).
       call mditerset(u,ndims,ifull,iuds,0,0.)
-c---------------------------------------------------------------         
+c---------------------------------------------------------------     
+c An inital vacuum solution with zero density. 
 c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
       ictl=0
 c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
@@ -295,22 +298,10 @@ c An initial solver call.
      $     ,myid,idims)
       ictl=2
 c
-      if(lmyidhead)then
+
 c-------------------------------------------------------------------
-c Do some analytic checking of the case with a fixed potential sphere
-c inside a logarithmic derivative boundary condition. 1/r solution.
-c Also write out some data for checking.
-         rc=obj_geom(oradius,1)
-         phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
-         if(lmyidhead)write(*,*)'rc=',rc,'  phip=',phip
-         call spherecheck(ifull,iuds,u,phip,rc)
-         if(ltestplot)then
-c Plot some of the initial-solver data.
-            call solu3plot(ifull,iuds,u,cij,phip,rc,thetain,nth
-     $        ,rs)
-            if(lmyidhead)write(*,*)'Return from solu3plot.'
-            stop
-         endif
+      if(lmyidhead)then
+         call vaccheck(ifull,iuds,u,cij,thetain,nth,rs,ltestplot)
       endif
 c End of plotting.
 c------------------------------------------------------------------
@@ -324,6 +315,7 @@ c Initialize the fortran random number generator.
 c      if(lmyidhead)write(*,*)'Return from pinit'
 c------------------------------------------------------------------
 c A special orbit.
+      phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
 c Pinit resets x_part. So set it for the special first particle.
       x_part(1,1)=2.
       x_part(2,1)=0.
@@ -341,6 +333,8 @@ c     $     ,nsteps*dt*x_part(5,1)/x_part(1,1)/2./3.1415927
 c---------------------------------------------
 c Initialize the fluxdata storage and addressing.
       call fluxdatainit()
+c Initialze the force tracking.
+      call forcetrackinit()
 c---------------------------------------------
       phirein=0.
       ninjcomp0=ninjcomp
@@ -406,8 +400,8 @@ c Convert psums to charge, q. Remember external psumtoq!
 
          call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
-c If there are processes in the main communicator that are absent from the
-c cartesian communicator. They have to be sent the new potential here.
+
+         call calculateforces(ndims,u,cij,iLs)
 
          if(lmyidhead)write(*,'(i4.4,i4,'' iterations.'',$)')
      $        nf_step,ierr
@@ -463,8 +457,9 @@ c Check some flux diagnostics and writing.
       if(lmyidhead)then 
          call writefluxfile(fluxfilename)
          if(linjplot)call plotinject(Ti)
-c Just object 1:
-         call fluxave(nsteps/2,nsteps,1,lfplot)
+         do ifobj=1,mf_obj
+            call fluxave(nsteps/2,nsteps,ifobj,ifplot)
+         enddo
       endif
 c      call readfluxfile(fluxfilename)
       end

@@ -1,3 +1,32 @@
+      subroutine vaccheck(ifull,iuds,u,cij,thetain,nth,rs,ltestplot)
+      logical ltestplot
+      include '3dcom.f'
+c Do some analytic checking of the case with a fixed potential sphere
+c inside an object 2 sphere with its radius and BC.
+c Also write out some data for checking.
+      rc=obj_geom(oradius,1)
+      phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
+c Calculate the object-2 outer boundary correction to phiinf
+      a=obj_geom(oabc,2)
+      b=obj_geom(oabc+1,2)
+      c=obj_geom(oabc+2,2)
+      r=obj_geom(oradius,2)
+      phiinf=-(a*phip*rc/r -b*phip*rc/r**2+c)
+     $     /(-a*rc/r + a + b*rc/r**2)
+c         write(*,*)'Vacuum phiinfty=',phiinf,'  rabc=',r,a,b,c
+      write(*,'(a,f7.4,a,f8.4,a,f7.4,a,f8.4)')
+     $     ' Vacuum solution: rc=',rc,' phip=',phip,
+     $     ' inside r=',r,' phi_infty=',phiinf
+      call spherecheck(ifull,iuds,u,phip,rc,phiinf)
+      if(ltestplot)then
+c Plot some of the initial-solver data.
+         call solu3plot(ifull,iuds,u,cij,
+     $        phip,phiinf,rc,thetain,nth,rs)
+         write(*,*)'Return from solu3plot.'
+         stop
+      endif
+      end
+
 c********************************************************************
       subroutine circleplot(xc,yc,r)
       integer nangle
@@ -13,7 +42,7 @@ c********************************************************************
       enddo
       end
 c********************************************************************
-      subroutine spherecheck(ifull,iuds,u,phi,rc)
+      subroutine spherecheck(ifull,iuds,u,phi,rc,phiinf)
 c Do some analytic checking of the case with a fixed potential sphere
 c inside a logarithmic derivative boundary condition. 1/r solution.
       include 'meshcom.f'
@@ -32,7 +61,7 @@ c inside a logarithmic derivative boundary condition. 1/r solution.
                if(abs(u(i,j,k)).gt.1.e-4 .and.
      $              r.ge.rc)then
                   count=count+1.
-                  e=u(i,j,k)-phi*rc/r
+                  e=u(i,j,k)-(phiinf+(phi-phiinf)*rc/r)
 c                     error(i,j,k)=e
                   errvar=errvar+e**2
                   if(abs(e).gt.abs(errmax))errmax=e
@@ -43,8 +72,10 @@ c                     error(i,j,k)=0.
          enddo
       enddo
       errvar=errvar/count
-      write(*,*)'Max phi error=',errmax,
-     $     ' Standard Deviation=',sqrt(errvar)
+      write(*,'(a,f8.5,a,f10.6)')' Maximum vacuum phi error=',errmax,
+     $     '   Standard Deviation=',sqrt(errvar)
+      if(sqrt(errvar).gt.0.1)write(*,*)
+     $     '********** Standard Deviation too large *************'
 c Rarely needed printout of u:
 c      iform=7
 c      uscale=10000000.
@@ -69,14 +100,14 @@ c This file has full accuracy.
       end
 c***************************************************************
 c Packaged version of plotting.
-      subroutine solu3plot(ifull,iuds,u,cij,phi,rc,thetain,nth
-     $     ,rs)
+      subroutine solu3plot(ifull,iuds,u,cij,
+     $     phi,phiinf,rc,thetain,nth,rs)
       parameter (ndims=3,nd2=ndims*2)
       integer ifull(ndims),iuds(ndims)
       real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
       real u(ifull(1),ifull(2),ifull(3))
       integer ifmax
-      parameter (ifmax=100,Li=ifmax)
+      parameter (ifmax=1000,Li=ifmax)
       real cijp(2*ndims+1,ifmax,ifmax)
       real zp(ifmax,ifmax)
       real z(ifmax),xp(ifmax)
@@ -111,7 +142,7 @@ c      ifixed=iuds(3)/2
          yr=xn(iuds(1)+n0)
          zr=xn(iuds(1)+iuds(2)+n1)
          r=sqrt((xr-.0)**2+(yr-.0)**2+(zr-.0)**2)
-         z(i)=phi*rc/r
+         z(i)=phiinf+(phi-phiinf)*rc/r
          xp(i)=xr
 c         write(*,*)i,xr
       enddo
@@ -209,7 +240,7 @@ c Tangential component (magnitude) of field
      $           -rfield(i)**2))
 
 c Analytic comparison.
-            uanal(i)=phi*rc/(rprime(i)**2)
+            uanal(i)=(phi-phiinf)*rc/(rprime(i)**2)
 c               write(*,'(''i,rprime,rfield,uanal(i)'',i4,4f10.5)')
 c     $              i,rprime(i),rfield(i),uanal(i)
 c     $              ,rsimple(i)
@@ -308,13 +339,18 @@ c               write(*,*)'xfrac',(xfrac(kk),kk=1,ndims)
 c     $              ,(xprime(kk,i),kk=1,ndims)            
 
 c Analytic comparison.
-            uanal(i)=phi*rc/rprime(i)
+            uanal(i)=phiinf+(phi-phiinf)*rc/rprime(i)
             if(uanal(i).lt.phi)uanal(i)=phi
 c               write(*,'(''i,rprime,rfield,uanal(i)'',i4,4f10.5)')
 c     $              i,rprime(i),rfield(i),uanal(i)
 c     $              ,rsimple(i)
 
             rfield(i)=getpotential(u,cij,iLs,xff,iregion,2)
+c Confusing tests.
+c            rfcomp=potentialatpoint(x,u,cij,iLs)
+c            if(rfcomp.ne.rfield(i))write(*,*)
+c     $           'getpotential vs potential at point difference:'
+c     $           ,rfield(i),rfcomp
             rsimple(i)=getpotential(u,cij,iLs,xff,iregion,1)
             tfield(i)=getpotential(u,cij,iLs,xff,iregion,3)
 c Region of point

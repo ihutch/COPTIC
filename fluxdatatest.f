@@ -2,9 +2,8 @@ c**************************************************************
       program fluxdatatest
       include '3dcom.f'
       character*100 filename,argument
-      logical lplot
-
-      data lplot/.true./
+      integer iplot
+      data iplot/1/
       
       fn1=0.5
       fn2=1.
@@ -18,7 +17,8 @@ c**************************************************************
      $        read(argument(4:),'(f10.4)')fn2
          if(argument(1:2).eq.'-f')
      $        read(argument(3:),'(a)')filename
-         if(argument(1:2).eq.'-p')lplot=.false.
+         if(argument(1:2).eq.'-p')
+     $        read(argument(3:),'(i5)')iplot
          if(argument(1:2).eq.'-h')goto 201
          if(argument(1:2).eq.'-?')goto 201
          if(argument(1:1).ne.'-') read(argument(1:),'(a)')filename
@@ -37,43 +37,43 @@ c     $     ,nf_address(nf_flux,1,-1)
      $     ,j=1,mf_obj),k=1-nf_posdim,2),'...'
 
       do k=1,mf_obj
-      write(*,'(a,i3,a,2i4,a,i3)') 'Position data for ',nf_posdim
-     $     ,' dimensions. nf_dimlens='
-     $     ,nf_dimlens(1,k,1),nf_dimlens(1,k,2),' Object',k
-      write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i-1)
-     $     ,i=1,nf_posno(1,k)),j=1,nf_posdim)
-
-      do kk=1,nf_step,max(nf_step/5,1)
-         write(*,'(a,i3,a,f10.4,a)')'Step(',kk,') rho=',ff_rho(kk)
-     $        ,'  Flux data'
-         write(*,'(10f8.4)')(ff_data(nf_address(nf_flux,1,kk)+i-1)
-     $     ,i=1,nf_posno(nf_flux,k))
-         if(mf_quant(k).ge.2)then
-            write(*,'(''x-momentum'',i4)')nf_posno(nf_gx,k)
-            write(*,'(10f8.3)')(ff_data(nf_address(nf_gx,1,kk)+i-1)
-     $     ,i=1,nf_posno(nf_gx,k))
-         endif
-         if(mf_quant(k).ge.3)then
-            write(*,'(''y-momentum'',i4)')nf_posno(nf_gy,k)
-            write(*,'(10f8.3)')(ff_data(nf_address(nf_gy,1,kk)+i-1)
-     $     ,i=1,nf_posno(nf_gy,k))
-         endif
-         if(mf_quant(k).ge.4)then
-            write(*,'(''z-momentum'',i4)')nf_posno(nf_gz,k)
-            write(*,'(10f8.3)')(ff_data(nf_address(nf_gz,1,kk)+i-1)
-     $     ,i=1,nf_posno(nf_gz,k))
-         endif
-      enddo
+         write(*,'(a,i3,a,2i4,a,i3)') 'Position data for ',nf_posdim
+     $        ,' dimensions. nf_dimlens='
+     $        ,nf_dimlens(1,k,1),nf_dimlens(1,k,2),' Object',k
+         write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i-1)
+     $        ,i=1,nf_posno(1,k)),j=1,nf_posdim)
+         
+         do kk=1,nf_step,max(nf_step/5,1)
+            write(*,'(a,i3,a,f10.4,a)')'Step(',kk,') rho=',ff_rho(kk)
+     $           ,'  Flux data'
+            write(*,'(10f8.4)')(ff_data(nf_address(nf_flux,1,kk)+i-1)
+     $           ,i=1,nf_posno(nf_flux,k))
+            if(mf_quant(k).ge.2)then
+               write(*,'(''x-momentum'',i4)')nf_posno(nf_gx,k)
+               write(*,'(10f8.3)')(ff_data(nf_address(nf_gx,1,kk)+i-1)
+     $              ,i=1,nf_posno(nf_gx,k))
+            endif
+            if(mf_quant(k).ge.3)then
+               write(*,'(''y-momentum'',i4)')nf_posno(nf_gy,k)
+               write(*,'(10f8.3)')(ff_data(nf_address(nf_gy,1,kk)+i-1)
+     $              ,i=1,nf_posno(nf_gy,k))
+            endif
+            if(mf_quant(k).ge.4)then
+               write(*,'(''z-momentum'',i4)')nf_posno(nf_gz,k)
+               write(*,'(10f8.3)')(ff_data(nf_address(nf_gz,1,kk)+i-1)
+     $              ,i=1,nf_posno(nf_gz,k))
+            endif
+         enddo
       
       
       n1=fn1*nf_step
       n2=fn2*nf_step
-      call fluxave(n1,n2,k,lplot)
+      call fluxave(n1,n2,k,iplot)
       write(*,'(''==================== End of Object'',i2,'' ->'',i3)')
      $     k,nf_geommap(k)
       enddo
       call exit(1)
- 201  write(*,*)'Usage: fluxdatatest [-ffilename,-n1fff,-n2fff]'
+ 201  write(*,*)'Usage: fluxdatatest [-ffilename,-n1fff,-n2fff,-piii]'
 
       write(*,*)'Read back data from file written unformatted as:'
       write(*,*)'nf_step,mf_quant,mf_obj'

@@ -471,17 +471,19 @@ C$$$         endif
 c Diagnostics
 c         write(*,'(3f8.4)')(qp(j),phibye(j),phiei(j),j=1,iqs)
 c         write(*,*)'averein,adeficit',averein,adeficit
-         if(averein.ne.0)then
+
+c         if(averein.ne.0)then
 c     When used by SCEPTIC averein is zero the first time, so this will
 c     not be called.
-            do i=1,iqs
-               pp(i)=averein*phibye(i)-adeficit*phiei(i)
-            enddo
+c No longer true when restarting code is used.
+c            do i=1,iqs
+c               pp(i)=averein*phibye(i)-adeficit*phiei(i)
+c            enddo
 c            write(*,*)'adeficit=',adeficit
-            call autoplot(qp,pp,iqs)
-            call axlabels('q','potential')
-            call pltend()
-         endif
+c            call autoplot(qp,pp,iqs)
+c            call axlabels('q','potential')
+c            call pltend()
+c         endif
       endif
 c End of initialization section.
 c Do the integration for the orbit.

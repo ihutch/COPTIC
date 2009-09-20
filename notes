@@ -2972,4 +2972,184 @@ but needs follow through.
 
 This done and the flux reduction also extended to cover all quantities.
 At present assuming that the grid is the same for all quantities. 
-MPI seems to be working. 
+MPI seems to be working. Commit.
+
+Edit fluxave so that it can be told a particular quantity to average
+and plot. Include reporting of average flux in ccpic for objects that
+accumulate it.
+
+14 Sep 09
+
+Implementation of maxwell stress calculations.
+
+Having thought about the best way to implement, my idea is that calculation
+is best described for a general object by a set of surface elements. 
+We regard the object's surface as being approximated as a set of facets.
+Each 3-D facet has
+     A center position (3 reals) P.
+     A normal direction and area (3 reals). A vector in the normal direction 
+       with magnitude equal to the surface area: A. 
+
+For general number of dimensions, these just become ndims+ndims.
+
+Then the total force on the body due to Maxwell stress M is 
+     Sum_{surfaces i} M_i.S_i,
+where M_i is the stress at position P_i.
+
+The nature of the approximation is left open by this datastructure, and
+can be chosen appropriately. Obviously, though, the approach will work
+best if the areas are approximately equal. 
+
+For a sphere the division into cos\theta and \psi equal spacing will 
+give equal areas, but it costs no extra to use the general representation.
+
+If there are n_c cos\theta elements, the end positions are
+   c_i=1-(2/N)i, (i=0,N) and the areas to be applied to element d\psi are
+
+A_zi/d\psi = -[c_i^2-c_{i-1}^2]/2
+A_yi/d\psi = (1/2)[arccos(c_i)-arccos(c_{i-1})
+		-c_i\sqrt{1-c_i^2}+c_{i-1}\sqrt{1-c_{i-1}^2}]
+and the optimal position to evaluate the stress for linear dependence on theta
+is
+	\theta = (1/2)[arccos(c_i)+arccos(c_{i+1})]
+	x=r cos\theta, y=r sin\theta
+[See notes]
+
+These are referred to a plane of constant \psi, in which lie both A and x.
+If there are M psi-positions, then \psi_j= \pi*(-M-1+2j)/M  , j=1,M. 
+However, the area to be attributed to large \psi-angles is not given
+correctly by r d\psi, because of curvature. Using a grid with cell ends at
+	  \psi_j=\pi*(-M+2j)/M
+we find that for A_xij and A_yij, the axes perpendicular to the polar axis,
+and with \psi measured from the x-axis, the values to be used for d\psi are
+cos\psi_j-cos\psi_{j-1} and sin\psi_j-sin\psi_{j-1} respectively. So
+
+A_xij = (cos\psi_j-cos\psi_{j-1})(1/2)[arccos(c_i)-arccos(c_{i-1})
+		-c_i\sqrt{1-c_i^2}+c_{i-1}\sqrt{1-c_{i-1}^2}]
+
+A_yij = (sin\psi_j-sin\psi_{j-1})(1/2)[arccos(c_i)-arccos(c_{i-1})
+		-c_i\sqrt{1-c_i^2}+c_{i-1}\sqrt{1-c_{i-1}^2}]
+
+A_zij = -(1/2)[c_i^2-c_{i-1}^2] .d\psi
+
+Also, the psi_cj value at which to evaluate the stress is \pi(-M-1+2j)/M.
+
+15 Sep 09
+
+In testing the simple field evaluator needed for the maxwell stress 
+calculation, I find that there's an error in padvnc, in that the fractional
+position was not always being advanced, which meant that the getfield
+call did not always give the correct answer for the current position. 
+Put an explicit evaluation of the fractional position into the move loop.
+I don't really understand what was happening with the field evaluation
+and why the errors seemed only to be in the high positions.
+
+I think this is because partlocate is called in chargetomesh. But I see
+now why there's a problem. The iteration of chargetomesh it carried out
+only up to n_part. That's an error if there are empty slots. One needs
+to go to higher slot numbers. That definitely needs to be fixed.
+Change the iteration to up to ioc_part. That fixes it; and the update
+to fraction is not needed in padvnc.
+
+This has changed the flux. Therefore this error is significant in prior
+code tests. They'll have to be redone. But anyway we now have the 
+fieldatpoint code working and checked. Actually this error is not significant
+in the scans I did because I used fixed particle number which does not
+call this bug up.
+
+17 Sep 09
+
+Created stress.f that includes routines to handle the surface facet 
+arrays. Code to create the arrays for a sphere has been implemented and
+debugged. Tests include integrating the arrays over the surfaces to obtain
+the surface area, and calculating the force on a charge/dipole configuration
+in an external field. The convergence appears to be quadratic, as it should
+be. However, moving the charge close to, and then outside of the sphere
+leads to significant errors in the total force when the charge is close to
+(within .1 of) the sphere. I guess that it is becoming the resolution issue.
+
+18 Sept 09
+
+Implement potentialatpoint. Tested in padvnc section. Tests in ccpicplot
+are confusing because there the potential is measured outside the region.
+
+Now we need a data structure for storing for each time step:
+    maxwellforce(3)
+    pressureforce(3)
+and maybe other field combinations such as
+    charge (integral of normal field over surface).
+For each object that we are tracking.
+
+This bears some similarities to the ff_data structure (e.g. maxsteps, obj). 
+However, that data structure is rather opaque. It does not seem very 
+helpful to load it up even more. Rather, it would seem sensible to 
+define some linear arrays of length maxsteps (or small e.g. ndims transverse
+dimension arrays).
+
+Currently we write the whole potential phi out at the end of run. To
+write it out every step would be rather crazy in terms of size. I can
+imagine that we might write out some sample of phi. The maxwellforce and
+pressure are more manageable. 
+
+It seems reasonable to assume that we are going to want the field quantities
+only for objects for which we are doing flux tracking. That would argue
+for putting the field quantities into the ff_data or at least use the
+nf_map information. Perhaps that's the compromise: use the nf_map info,
+but create different data structure. This might then be
+    stressdata(nsdatas,nf_obj,nf_maxsteps)
+since nf_obj=5, and ndatas is in the ball park of 10, this is
+an array of size 50,000 for maxsteps=1000. This is negligible. 
+In the end probably easier to have separate names fieldforce, pressforce
+etc in 3dcom.f.
+
+Having made that decision it is natural to put the output into the flux
+file. At present, we are just writing the whole fielforce, pressforce,
+and charge traces, regardless of used length. 
+
+In addition we need the surfobj structure for each object being tracked.
+
+Implemented and got to run sphere treatment only. Not yet debugged to
+my satisfaction. We need some tests. 
+
+I'm a bit confused about the flux tally type/number. Check reading codes.
+
+19 Sep 09
+
+The first byte of the 3dobject input (otype) is the object type 1: sphere.
+Second byte is currently being used for special boundary conditions.
+1:256 is used for setting phi to zero outside instead of continuity. 
+
+The input ofluxtype is used to indicate the number of flux quantities
+to be tracked, currently <=5. I don't know if this is the best use of it.
+
+Although it is a bit inconsistent to track stresses if we aren't tracking
+momentum fluxes (tally 2-4) probably it is reasonable to say that we 
+track stresses if obj_geom(ofluxdata,i).ne.0. 
+
+Got worried about the analytic testing on the 0th step. This gives
+a big error unless lambda debye is very large. Yet it is a call with laddu
+equal to zero. So the solution ought really to be a good vacuum solution,
+since charge is zero. Checked out with older version of sorrelaxgen.f.
+Same result.
+
+I figured out that the change is in the boundary condition at the
+outer sphere. Orbitinjnew.f sets it different from the natural vacuum
+condition in geominit(myid). So this is actually a vacuum solution,
+but with effectively a potential offset that allows the outer BC to be
+satisfied.  The analytic comparison does not account for this
+potential offset at infinity. To make a proper analytic comparison, I
+would have to pass also the value of phi_infinity. The boundary
+condition is a phi + b phi' + c =0. The values of abc are available in
+obj_geom(oabc,2). A vacuum solution phi= p0/r + pi satisfies this BC if
+a (p0/r+pi) + b (-p0/r^2) + c =0. Which means that the solution for pi 
+must be 
+     pi = -p0/r - (c-b.p0/r^2)/a 
+but then p0=(phip-pi)*rc. So really
+    a ((phip-pi)*rc/r +pi) - b(phip-pi)*rc/r^2 + c =0.
+So 
+   pi( -a rc/r + a + b rc/r^2) = -(a phi*rc/r - b phip*rc/r^2 +c)
+It works.
+
+Found that fillinlin works slightly better if we always use the field
+at point to determine the gradient of the fit, rather than doing a
+full gradient fit to adjacent points. Sort of makes sense.

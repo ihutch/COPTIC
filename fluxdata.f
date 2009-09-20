@@ -49,7 +49,7 @@ c       explicit for posdim=2 for now.
      $           ,'  type',int(obj_geom(ofluxtype,i))
      $           ,'. ',nf_posno(j,mf_obj),' flux positions:'
      $           ,nf_dimlens(j,mf_obj,1),'x',nf_dimlens(j,mf_obj,2)
-     $           ,' Quantities',j,mf_quant(mf_obj)
+     $           ,' Quantities',mf_quant(mf_obj)
             enddo
          else
             write(*,*)'==== Unknown flux type',obj_geom(ofluxtype,i)
@@ -309,18 +309,30 @@ c     $     i=1,nf_posno(1,1))
 
       end
 c***********************************************************************
-c Averaging the flux data over all positions for object ifobj.
+c Averaging the flux data for quantity abs(iquant)
+c over all positions for object ifobj,
+c for the steps n1 to n2.
 c The positions might be described by more than one dimension, but
 c that is irrelevant to the averaging.
+c Plot the quantity iquant if positive (not if negative).
 c Plotting does not attempt to account for the multidimensionality.
-      subroutine fluxave(n1,n2,ifobj,lplot)
+      subroutine fluxave(n1,n2,ifobj,iquant)
       integer n1,n2
-      logical lplot
+c      logical lplot
+      integer iquant
       include '3dcom.f'
       parameter (nfluxmax=200)
       real flux(nfluxmax),angle(nfluxmax)
       real fluxofstep(nf_maxsteps),step(nf_maxsteps)
       character*30 string
+
+      if(iquant.le.0)then
+         iq=1
+      else
+         iq=abs(iquant)
+      endif
+c If quantity asked for is not available, do nothing.
+      if(iq.gt.mf_quant(ifobj))return
 
       if(n1.lt.1)n1=1
       if(n2.gt.nf_step)n2=nf_step
@@ -329,13 +341,13 @@ c Plotting does not attempt to account for the multidimensionality.
          return
       endif
 
-      do i=1,nf_posno(1,ifobj)
+      do i=1,nf_posno(iq,ifobj)
          flux(i)=0.
       enddo
       tot=0
-      do i=1,nf_posno(1,ifobj)
+      do i=1,nf_posno(iq,ifobj)
          do is=n1,n2
-            flux(i)=flux(i)+ff_data(nf_address(1,ifobj,is)+i-1)
+            flux(i)=flux(i)+ff_data(nf_address(iq,ifobj,is)+i-1)
          enddo
          tot=tot+flux(i)
          flux(i)=flux(i)/(n2-n1+1)
@@ -344,8 +356,8 @@ c Plotting does not attempt to account for the multidimensionality.
       rinf=0.
       do is=1,n2
          fluxstep=0
-         do i=1,nf_posno(1,1)
-            fluxstep=fluxstep+ff_data(nf_address(1,ifobj,is)+i-1)
+         do i=1,nf_posno(iq,ifobj)
+            fluxstep=fluxstep+ff_data(nf_address(iq,ifobj,is)+i-1)
          enddo
          step(is)=is
          fluxofstep(is)=fluxstep
@@ -358,31 +370,31 @@ c Plotting does not attempt to account for the multidimensionality.
       rinf=rinf/tdur
 
 c From here on is non-general and is mostly for testing.
-      do i=1,nf_posno(1,1)
-c Here's the assumption that k=0 is angle information, and all different
-c we could make this more general by binning everything with the same
-c angle together.
-         angle(i)=ff_data(nf_address(1,ifobj,0)+i-1)
+      do i=1,nf_posno(iq,ifobj)
+c Here's the assumption that k=0 is angle information.
+c We could make this more general by binning everything with the same
+c angle together. But instead we plot multiple points.
+         angle(i)=ff_data(nf_address(iq,ifobj,0)+i-1)
       enddo
-      write(*,*) 'Average flux over steps',n1,n2,' All Positions:',tot
-      write(*,*)'rhoinf',rinf,'  Average particles collected per step:'
+      write(*,'(a,i3,a,i3,a,i4,i4,a,f10.4)')' Average flux quant',
+     $     iq,' object',ifobj,' over steps',n1,n2,' All Positions:',tot
+      write(*,*)'rhoinf',rinf,'  Average collected per step by posn:'
       write(*,'(10f8.3)')(flux(i),i=1,nf_posno(1,ifobj))
 
       write(*,*)'Flux density, normalized to rhoinf'
      $     ,tot/(4.*3.14159)/rinf
 
-      if(lplot)then
-         write(string,'(''Object '',i3)')nf_geommap(ifobj)
-         call autoplot(step(1),fluxofstep(1),n2)
+      if(iquant.gt.0)then
+         write(string,'(''Object '',i3,'' Quantity'',i3)')
+     $        nf_geommap(ifobj),iquant
+         call autoplot(step,fluxofstep,n2)
          call boxtitle(string)
-         call axlabels('step','collected number')
+         call axlabels('step','Spatially-summed flux number')
          call pltend()
-         call automark(angle,flux,nf_posno(1,ifobj),1)
+         call automark(angle,flux,nf_posno(iq,ifobj),1)
          call boxtitle(string)
-         call axlabels('First angle variable','average counts')
-c      do i=1,nf_step
-c         call polyline(angle,ff_data(nf_address(1,1,i)),nf_posno(1,1))
-c      enddo
+         call axlabels('First angle variable',
+     $        'Time-averaged flux number')
          call pltend()
       endif
 
@@ -425,6 +437,7 @@ c This write sequence must be exactly that read below.
      $     k=1-nf_posdim,nf_step+1)
       write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
 
+      write(22) fieldforce,pressforce,charge
       close(22)
 
       write(*,*)'Wrote flux data to ',name(1:lentrim(name))
@@ -453,6 +466,8 @@ c      read(23)((nf_posno(i,j),i=1,mf_quant),j=1,mf_obj)
       read(23)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+1)
       read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
+
+      read(23) fieldforce,pressforce,charge
       close(23)
 
       write(*,*)'Read back flux data from ',name(1:lentrim(name))

@@ -112,6 +112,7 @@ c Second bit of ictlh indicates if there's additional term.
       else
          laddu=.false.
       endif
+c      write(*,*)'laddu=',laddu
 c Third bit of ictlh indicates we are just initializing.
       ictlh=ictlh/2
       if(mod(ictlh,2).ne.0)then
@@ -155,7 +156,7 @@ c If this is found to be an unused node, jump to barrier.
 c Do a relaxation.
 c            if(k_sor.le.2)
 c         write(*,*) 'Calling sorrelaxgen',delta,oaddu,relax
-            call sorrelaxgen(k_sor,ndims,iLs,myside,
+         call sorrelaxgen(k_sor,ndims,iLs,myside,
      $           cij(1+(2*ndims+1)*(myorig-1)),
      $           u(myorig),
      $           q(myorig),
@@ -169,7 +170,8 @@ c Test convergence
          call testifconverged(eps_sor,delta,umin,umax,
      $        lconverged,icommcart)
 c         if(myid.eq.0)
-c     $        write(*,*)k_sor,delta,umin,umax,lconverged,relax,omega
+c     $        write(*,*)k_sor,delta,umin,umax,lconverged
+c     $        ,relax,omega
          if(lconverged.and.k_sor.ge.2)goto 11
 
          if(k_sor.eq.1)then

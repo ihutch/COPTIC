@@ -1,5 +1,7 @@
 
-c Object-data storage. Guess at needed size Lobjmax
+c Object-data storage, for keeping track of boundary conditions 
+c at object surfaces for the potential sor solution. 
+c Guess at needed total data size Lobjmax for each object.
 c The object data consists of data enumerated as
 c (2=forward/backward)*(ndims)*(ndata=fraction,B/A,C/A)
 c + diagonal + potential contributors + region-code + inverse pointer

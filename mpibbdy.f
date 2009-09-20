@@ -171,7 +171,8 @@ c Use MPI function to redimension block structure
             if(myid.eq.0)write(*,'(''Reset to'',i4,'':'',6i3)')
      $           nproc,idims
          else
-            if(myid.eq.0)write(*,'(''numprocs,idims()'',i4,10i4)')
+            if(myid.eq.0 .and. numprocs.gt.1)
+     $           write(*,'(''numprocs,idims()'',i4,10i4)')
      $           numprocs,(idims(n),n=1,ndims)
          endif
 c End of topology idims resetting.

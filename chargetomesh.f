@@ -14,8 +14,9 @@ c On entry, psum ought to have been initialized to zero.
 c No diagnostics for now.
       ldiags=.false. 
 
-c For all (active) particles.
-      do i=1,n_part
+c For all (possibly-active) particles.
+c      do i=1,n_part
+      do i=1,ioc_part
          if(if_part(i).ne.0)then
             call partlocate(i,iLs,iu,ixp,xfrac,iregion)
 c         if(iregion.ne.iregion) perhaps some action: reinject?

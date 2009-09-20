@@ -215,7 +215,7 @@ c Increments (i.e. structure vector) of u, in each dimension.
 c Fractional mesh position to interpolate to for each dimension 
 c accounting for offset origin.
       real xff(*)
-c Region code of particle
+c Region code of point
       integer iregion
 c Type of interpolation
       integer itype
@@ -241,7 +241,7 @@ c Calculate offset and remainder the fractions.
             iux=iux+iuinc(ii)*(ix-1)
          endif
       enddo
-c xff must be the absolute mesh position, xf is just the fraction.
+c xff must be the total mesh position, xf is just the fraction.
 c Base pointer within u.
       icb=iux+1
 c Leading dimension of cij
@@ -278,6 +278,7 @@ c Get that object pointer.
 c This is an interface point
             if(idob_sor(iregion_sor,ico).ne.iregion)then
 c This vertex is outside the region. Flag it missing
+c               write(*,'(i4,$)')idob_sor(iregion_sor,ico)
                imissing=imissing+1
                ival(i)=0
 c But store the value anyway
@@ -321,7 +322,7 @@ c Nearest value
       else
 c No information. We ought to look around further perhaps.
          getpotential=9999
-         write(*,*)'getpotential Error. no valid vertex',iregion
+         write(*,*)'getpotential Error. no valid vertex',iregion,imin
       endif
       end
 c*******************************************************************
@@ -444,11 +445,13 @@ c zero contribution to centroid because zero position.
                endif
             endif
          enddo
-         if(ngood.ne.0.)then
+         if(.false.)then
+c         if(ngood.ne.0.)then
+c Actually using the field at point for gradient seems better in most
+c situations where a point is missing. In which case never use this:
             grad(idp1)=difftot/ngood
          else
 c Null direction. We need a better calculation.
-c            grad(idp1)=0.
 c get field in idp1 direction at the point. 
             call getfield(ndims,cij(2*ndims+1),u,iuinc
      $           ,xn(ixnp(idp1)+1),idp1
@@ -485,5 +488,70 @@ c Fill in
       enddo
 
 c      write(*,'(8f9.4)')uval
+
+      end
+c*****************************************************************
+c Get the field at a specified position x, without having to pass lots
+c of arguments. Return it as a vector in field.
+      subroutine fieldatpoint(x,u,cij,iLs,field)
+c u is potential, cij is stencil array, iLs is the structure of u,cij.
+c All the other parameters must be obtained from commons. 
+c Include the mesh xn, and ndims_mesh. 
+      include 'meshcom.f'
+      real x(ndims_mesh),u(*),cij(*),field(ndims_mesh)
+      integer iLs(ndims_mesh+1)
+
+      real xff(ndims_mesh)
+
+c Determine the region
+c      iregion=insideall(ndims_mesh,x)
+      iregion=insidemask(ndims_mesh,x)
+c Locate the mesh full fractional postion of x.
+      do id=1,ndims_mesh
+c Offset to start of dimension-id-position array.
+         ioff=ixnp(id)
+c xn is the position array for each dimension arranged linearly.
+c Find the index of xprime in the array xn:
+         ix=interp(xn(ioff+1),ixnp(id+1)-ioff,x(id),xm)
+         xff(id)=xm
+      enddo
+
+c Get each component of the field.
+      do id=1,ndims_mesh
+         call getfield(ndims_mesh,cij(2*ndims_mesh+1),u,iLs
+     $        ,xn(ixnp(id)+1)
+     $        ,id,xff,imaskregion(iregion),field(id))
+      enddo
+
+      end
+c******************************************************************
+c Get the potential at a specified postion x.
+      real function potentialatpoint(x,u,cij,iLs)
+c u is potential, cij is stencil array, iLs is the structure of u,cij.
+c All the other parameters must be obtained from commons. 
+c Include the mesh xn, and ndims_mesh. 
+      include 'meshcom.f'
+      real x(ndims_mesh),u(*),cij(*)
+      integer iLs(ndims_mesh+1)
+
+      real xff(ndims_mesh)
+
+c Determine the region
+c      iregion=insideall(ndims_mesh,x)
+      iregion=insidemask(ndims_mesh,x)
+c Locate the mesh full fractional postion of x.
+      do id=1,ndims_mesh
+c Offset to start of dimension-id-position array.
+         ioff=ixnp(id)
+c xn is the position array for each dimension arranged linearly.
+c Find the index of xprime in the array xn:
+         ix=interp(xn(ioff+1),ixnp(id+1)-ioff,x(id),xm)
+         xff(id)=xm
+      enddo
+      potentialatpoint=getpotential(u,cij,iLs,xff,iregion,2)
+c      if(potentialatpoint.eq.999)then
+c         xs=sqrt(x(1)**2+x(2)**2+x(3)**2)
+c         write(*,'(7f10.5)')x,xs,xff
+c      endif
 
       end

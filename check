@@ -12,3 +12,5 @@ mv xpartnew xpart
 mv uqcijnew uqcij
 echo RUNNING ccpic -s8 -ck6
 ./ccpic -s8 -ck6
+echo If the last ====== Finished uqcijckeck and ====== Finished xpartcheck
+echo show no warnings or diagnostics. Everything is OK for restarting.

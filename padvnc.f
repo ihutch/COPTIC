@@ -25,6 +25,8 @@ c Local storage
       integer ixp(ndims_mesh)
       real field(ndims_mesh)
       real xfrac(ndims_mesh)
+c Testing storage
+      real fieldp(ndims_mesh)
 c Make this always last to use the checks.
       include 'partcom.f'
 
@@ -78,6 +80,15 @@ c the region information.
      $              ,x_part(ndimsx2+1,i)
      $              ,imaskregion(iregion),field(idf))
             enddo
+            if(.false.)then
+c Testing only, of the few-argument field evaluator.
+               call fieldatpoint(x_part(1,i),u,cij,iLs,fieldp)
+               if(fieldp(2).ne.field(2))then
+               write(*,'(i5,a,6f10.6)')i,' Point-field:',
+     $              fieldp,((fieldp(j)-field(j)),j=1,ndims)
+               endif
+
+            endif
 c--------------------------------
             else
 c Testing with pure coulomb field from phip potential at r=1.
@@ -92,12 +103,18 @@ c Testing with pure coulomb field from phip potential at r=1.
             endif
 c--------------------------------
 c Accelerate          
-            do j=4,6
+            do j=ndims+1,2*ndims
                x_part(j,i)=x_part(j,i)+field(j-3)*dtaccel
             enddo
 c Move
-            do j=1,3
+            do j=1,ndims
                x_part(j,i)=x_part(j,i)+x_part(j+3,i)*dtpos
+c This ought not to be necessary since the mesh position is updated
+c in chargetomesh. Now ioc_part bug fixed it is not needed:
+c Update mesh position:
+c               ioff=ixnp(j)
+c               ix=interp(xn(ioff+1),ixnp(j+1)-ioff,
+c     $                 x_part(j,i),x_part(j+2*ndims_mesh,i))
             enddo          
 
             inewregion=insideall(ndims,x_part(1,i))
@@ -121,6 +138,13 @@ c which might be less costly. (Should be something other than iregion?)
                   nrein=nrein+ilaunch
                   phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i)
      $                 ,imaskregion(irg),2)
+                  if(.false.)then
+c Testing of potential at point. 
+                     phicomp=potentialatpoint(x_part(1,i),u,cij,iLs)
+                     if(phicomp.ne.phi)write(*,*)
+     $                'getpotential vs potential at point difference:'
+     $                    ,phi,phicomp
+                  endif
                   phirein=phirein+ilaunch*phi
                   call diaginject(x_part(1,i))
 c Complete reinjection by advancing by random remaining.

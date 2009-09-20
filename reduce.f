@@ -7,6 +7,7 @@ c returning. Thus the particle code can be immediately un-MPIed.
 c
 c***********************************************************************
       subroutine fluxreduce()
+
       include 'mpif.h'
       include '3dcom.f'
 c ALLREDUCE communicates the result to all processes.      

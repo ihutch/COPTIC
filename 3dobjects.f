@@ -5,6 +5,8 @@ c Initialize with zero 3d objects.
       data ngeomobj/0/
 c Default track no objects.
       data nf_map/ngeomobjmax*0/
+c And no reverse-map pointers.
+      data nf_geommap/nf_obj*0/
 c Default particle region: outside object 1, inside 2.
       integer ibm
       parameter (ibm=ibtotal_part-4)
