@@ -473,7 +473,9 @@ c This write sequence must be exactly that read below.
      $     ,i=1,mf_quant(j)),j=1,mf_obj)
       write(22)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+1)
-      write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
+c This and three other places.
+c      write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
+      write(22)(ff_data(i),i=1,nf_address(1,1,nf_step)-1)
 
       write(22) fieldforce,pressforce,partforce,charge_ns
       close(22)
@@ -502,8 +504,8 @@ c      read(23)((nf_posno(i,j),i=1,mf_quant),j=1,mf_obj)
       read(23)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_posdim)
      $     ,i=1,mf_quant(j)),j=1,mf_obj)
       read(23)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
-     $     k=1-nf_posdim,nf_step+1)
-      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
+     $     k=1-nf_posdim,nf_step)
+      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step)-1)
 
       read(23) fieldforce,pressforce,partforce,charge_ns
       close(23)

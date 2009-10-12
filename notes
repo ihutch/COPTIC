@@ -3266,3 +3266,4 @@ I'm not sure there's really anything one can do about it.
 
 Fiddling with fluxdata to see what I should do about tallyexit errors.
 They seem to be rounding. The tests I have don't make much sense.
+Changed to a more sensible test and crossing direction calculation.
