@@ -395,8 +395,8 @@ c contains ndims_sor
       real uval(2**ndims)
       integer ival(2**ndims)
 c Passed derivatives for extrapolation.
-      real u(*),cij(*),iuinc(ndims+1),xff(ndims)
-      integer iregion
+      real u(*),cij(*),xff(ndims)
+      integer iregion,iuinc(ndims+1)
 
       real grad(ndims),centroid(ndims)
 c The order of the values is a binary bit representation:
