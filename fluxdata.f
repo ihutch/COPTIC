@@ -472,8 +472,8 @@ c This write sequence must be exactly that read below.
       write(22)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_posdim)
      $     ,i=1,mf_quant(j)),j=1,mf_obj)
       write(22)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
-     $     k=1-nf_posdim,nf_step+1)
-c This and three other places.
+     $     k=1-nf_posdim,nf_step)
+c This and three other places:
 c      write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
       write(22)(ff_data(i),i=1,nf_address(1,1,nf_step)-1)
 
