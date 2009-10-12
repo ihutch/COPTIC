@@ -343,7 +343,8 @@ c Initialze the force tracking.
 c---------------------------------------------
       phirein=0.
       ninjcomp0=ninjcomp
-      if(ninjcomp.ne.0)write(*,*)'Fixed injection count:',ninjcomp
+      if(ninjcomp.ne.0.and.lmyidhead)
+     $     write(*,*)'Fixed injection count:',ninjcomp
       maccel=nsteps/3
       dtf=dt
 c-----------------------------------------------
@@ -381,7 +382,7 @@ c     $        nrein,n_part,ioc_part,rhoinf,dt
  402     continue
       endif
 
-      write(*,*)'Step Iterations Flux:'
+      if(lmyidhead)write(*,*)'Step Iterations Flux:'
 c-----------------------------------------------
 c Main step iteration -------------------------------------
       do j=1,nsteps
