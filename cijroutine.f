@@ -352,6 +352,9 @@ c*******************************************************************
 c Spagetti code for general number of dimensions.
       subroutine boxedge(ndims,ipm,indi,fn,npoints,idin)
 c Iterate over the edges of a box-cell in ndims dimensions.
+c For the box with corners at indices indi(ndims) and indi+ipm(ndims),
+c return the fractional intersections fn(ndims), and number of points.
+c Diagnostics are controlled by idin. 
 c The number of dimensions
       integer ndims
 c The coordinates of this point

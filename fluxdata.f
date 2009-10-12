@@ -21,6 +21,18 @@ c Initialize here to avoid giant block data program.
          ff_data(i)=0.
       enddo
 c-------------------------------------------------
+c This initialization ought not to be necessary except for partforce.
+      do k=1,nf_maxsteps
+         do j=1,nf_obj
+            do i=1,ns_ndims
+               fieldforce(i,j,k)=0.
+               pressforce(i,j,k)=0.
+               partforce(i,j,k)=0.
+            enddo
+            charge_ns(j,k)=0.
+         enddo
+      enddo
+c-------------------------------------------------
 c Initialize object number
       mf_obj=0
       do i=1,ngeomobj
@@ -146,7 +158,18 @@ c Determine (all) the objects crossed and call objsect for each.
       if(idp.ne.idiff*2)then
          call objsect(i,iobj,ierr)
          if(ierr.ne.0)then
-            write(*,*)'Tallyexit error',ierr,i,iobj
+            ireg=insideall(ndims,x_part(1,i))
+            r=0.
+            r1=0.
+            do id=1,3
+               r=r+x_part(id,i)**2
+               r1=r1+(x_part(id,i)-dt*x_part(id+3,i))**2
+            enddo
+            r=sqrt(r)
+            r1=sqrt(r1)
+            write(*,*)'Tallyexit error',ierr,i,iobj,idiffreg
+            write(*,*)(x_part(k,i),k=1,3),r,ireg
+            write(*,*)(x_part(k,i)-dt*x_part(k+3,i),k=1,3),r1
          endif
       endif
       idp=idp/2
@@ -161,7 +184,7 @@ c object iobj, and update the positioned-fluxes accordingly.
 c ierr is returned: 0 good. 1 no intersection. 99 unknown object.
 c
 c Currently implemented only for object which is
-c ndims-dimensional spheroid of semi-radii rc(ndims), center xc.
+c ndims-dimensional spheroid of radii rc(ndims), center xc.
 c With a equally spaced grid in cos\theta and psi.
       include '3dcom.f'
       include 'partcom.f'
@@ -195,8 +218,9 @@ c has center 0 and radius 1.
             C=C+x1(i)**2
             D=D+x2(i)**2
          enddo
-c This condition tests for a sphere crossing.
-         if(D.ne.0. .and. D*C.le.0.)then
+c If we can decide direction of sphere crossing
+         dir=D-C
+         if(dir.ne.0.)then
             if(B.ge.0. .and. A*C.le.0.) then
                fraction=(-B+sqrt(B*B-A*C))/A
             else
@@ -218,8 +242,9 @@ c Example: bin by cos(theta)=x12(3) uniform grid in first nf_dimension.
             ijbin=ibin+jbin*nf_dimlens(nf_flux,infobj,1)
             iaddress=ijbin+nf_address(nf_flux,infobj,nf_step)
 c D is the final radius -1 [!=0]. So its sign determines where we end.
-c Minus means we are accumulating the inward flux for all quantities.
-            sd=-sign(1.,D)
+c            sd=-sign(1.,D)
+c Better to use the direction D-C, inwards counts positive:
+            sd=-sign(1.,dir)
 c Particle Flux.
             ff_data(iaddress)=ff_data(iaddress)+sd
 c Perhaps ought to consider velocity interpolation.
@@ -245,10 +270,19 @@ c Energy
                enddo
                ff_data(iaddress)=ff_data(iaddress)+ sd*xx
             endif
-            
+c Accumulate the particle force= momentum/time over whole object.
+c Normalized to rhoinf
+            do id=1,ns_ndims
+               partforce(id,infobj,nf_step)=partforce(id,infobj,nf_step)
+     $              +sd*x_part(ns_ndims+id,j)/dt/rhoinf
+            enddo
+c            write(*,'(a,3f10.4,i4,i4)')'Partforce='
+c     $           ,(partforce(kk,infobj,nf_step),kk=1,3)
+c     $           ,infobj,nf_step
 c If the bins were different we would have to recalculate ibin. 
          else
 c Did not intersect!
+            write(*,*)'C=',C,' D=',D
             ierr=1
          endif
       else
@@ -302,8 +336,10 @@ c For rhoinf, dt
       do i=1,nf_posno(1,1)
          sum=sum+ff_data(nf_address(1,1,nf_step)+i-1)
       enddo
-      write(*,*)'Total flux',sum,
-     $     sum/(4.*3.14159)/rhoinf/dt
+      flux=sum/(4.*3.14159)/rhoinf/dt
+      write(*,'(f7.3,''| '',$)')flux
+c      write(*,'(a,f7.0,f8.3)')'Total flux',sum,
+c     $     sum/(4.*3.14159)/rhoinf/dt
 c      write(*,'(10f7.1)')(ff_data(nf_address(1,1,nf_step)+i-1),
 c     $     i=1,nf_posno(1,1))
 
@@ -316,7 +352,8 @@ c The positions might be described by more than one dimension, but
 c that is irrelevant to the averaging.
 c Plot the quantity iquant if positive (not if negative).
 c Plotting does not attempt to account for the multidimensionality.
-      subroutine fluxave(n1,n2,ifobj,iquant)
+c Rhoinf is returned in rinf.
+      subroutine fluxave(n1,n2,ifobj,iquant,rinf)
       integer n1,n2
 c      logical lplot
       integer iquant
@@ -326,11 +363,11 @@ c      logical lplot
       real fluxofstep(nf_maxsteps),step(nf_maxsteps)
       character*30 string
 
-      if(iquant.le.0)then
-         iq=1
-      else
+c      if(iquant.le.0)then
+c         iq=1
+c      else
          iq=abs(iquant)
-      endif
+c      endif
 c If quantity asked for is not available, do nothing.
       if(iq.gt.mf_quant(ifobj))return
 
@@ -376,10 +413,10 @@ c We could make this more general by binning everything with the same
 c angle together. But instead we plot multiple points.
          angle(i)=ff_data(nf_address(iq,ifobj,0)+i-1)
       enddo
-      write(*,'(a,i3,a,i3,a,i4,i4,a,f10.4)')' Average flux quant',
+      write(*,'(a,i3,a,i3,a,i4,i4,a,f10.3)')' Average flux quant',
      $     iq,' object',ifobj,' over steps',n1,n2,' All Positions:',tot
       write(*,*)'rhoinf',rinf,'  Average collected per step by posn:'
-      write(*,'(10f8.3)')(flux(i),i=1,nf_posno(1,ifobj))
+      write(*,'(10f8.2)')(flux(i),i=1,nf_posno(1,ifobj))
 
       write(*,*)'Flux density, normalized to rhoinf'
      $     ,tot/(4.*3.14159)/rinf
@@ -437,7 +474,7 @@ c This write sequence must be exactly that read below.
      $     k=1-nf_posdim,nf_step+1)
       write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
 
-      write(22) fieldforce,pressforce,charge
+      write(22) fieldforce,pressforce,partforce,charge_ns
       close(22)
 
       write(*,*)'Wrote flux data to ',name(1:lentrim(name))
@@ -467,7 +504,7 @@ c      read(23)((nf_posno(i,j),i=1,mf_quant),j=1,mf_obj)
      $     k=1-nf_posdim,nf_step+1)
       read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
 
-      read(23) fieldforce,pressforce,charge
+      read(23) fieldforce,pressforce,partforce,charge_ns
       close(23)
 
       write(*,*)'Read back flux data from ',name(1:lentrim(name))

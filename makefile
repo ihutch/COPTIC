@@ -67,6 +67,9 @@ ccpic : ccpic.f makefile $(OBJECTS) $(UTILITIES) /home/hutch/accis/libaccisX.a
 mpibbdytest : mpibbdytest.o udisplay.o mpibbdy.o mditerate.o reduce.o
 	$(G77) -o mpibbdytest  mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o reduce.o
 
+stresstest : stresstest.f stress.o /home/hutch/accis/libaccisX.a
+	$(G77) -o stresstest stresstest.f stress.o $(LIBRARIES)
+
 clean :
 	rm -f *.o $(TARGETS) *.html *.flx *.phi T*.0?? *.ps
 

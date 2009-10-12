@@ -1,4 +1,4 @@
-      subroutine vaccheck(ifull,iuds,u,cij,thetain,nth,rs,ltestplot)
+      subroutine vaccheck(ifull,iuds,cij,u,thetain,nth,rs,ltestplot)
       logical ltestplot
       include '3dcom.f'
 c Do some analytic checking of the case with a fixed potential sphere

@@ -18,6 +18,9 @@ c      parameter (ifm1=2**10-1)
 c      parameter (ifm1=31)
       data ifield_mask/ifm1/
 
+c Normally there's no external field.
+      data lextfield/.false./extfield/ns_ndims*0./
+
 c We don't do this initialization in a block data because it makes
 c the executable ridiculously large.
 c      data nf_step/0/
@@ -32,8 +35,8 @@ c**********************************************************************
      $     ,' default [ ccpicgeom.dat'
       write(*,*)'First line number of dimensions: 3'
       write(*,*)'Thereafter comment lines start with #'
-      write(*,*)'Object lines have the format: type, center(3),'
-     $     ,' radii(3), a,b,c, [extra data]'
+      write(*,*)'Object lines have the format: type, a,b,c, center(3),'
+     $     ,' radii(3), [extra data]'
       write(*,*)' if a=b=c=0, no potential BC is applied and object'
      $     ,' is masked.'
       write(*,*)'type indicates how to use the line. Each byte of type'

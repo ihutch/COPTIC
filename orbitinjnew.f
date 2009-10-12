@@ -9,7 +9,7 @@ c This call passes address of the particle slot to reiject.
       ibcr=0
       icolntype=0
       if(lfirst)then
-         write(*,*)'Initializing reinjection'
+c         write(*,*)'Initializing reinjection'
          call injinit(icolntype,ibcr)
          lfirst=.false.
       endif
@@ -615,11 +615,11 @@ c     having a value on the sphere normalized to Ti of minus
 c**********************************************************************
 c Set Boundaries that need treatment specific to problem.
       subroutine geominit(myid)
-c Inner boundary setting ----------------- Specific to this problem. 
-c First object is sphere of radius rc and potential phi.
       include '3dcom.f'
       include 'plascom.f'
 
+c Inner boundary setting ----------------- Specific to this problem. 
+c First object is sphere of radius rc and potential phi.
       rc=obj_geom(oradius,1)
       phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
 c Outer boundary setting -----------------

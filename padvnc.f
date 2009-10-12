@@ -1,5 +1,5 @@
 c Particle advancing routine
-      subroutine padvnc(ndims,cij,u,iLs)
+      subroutine padvnc(ndims,iLs,cij,u)
 c If ninjcomp (in partcom) is non-zero, then we are operating in a mode
 c where the number of reinjections at each timestep is prescribed.
 c Otherwise we are using a fixed number npart of particles.
@@ -42,8 +42,6 @@ c      write(*,*)'Setting averein in padvnc.',phirein
       nlost=0
 c      ninner=0
       iocthis=0
-c Get rid of usage of iregion_part.
-c      iregion=iregion_part
       n_part=0
 c At most do over all particle slots. But generally we break earlier.
       do i=1,n_partmax
@@ -118,26 +116,22 @@ c     $                 x_part(j,i),x_part(j+2*ndims_mesh,i))
             enddo          
 
             inewregion=insideall(ndims,x_part(1,i))
-c            if(inewregion.ne.iregion) then
+c If we crossed a boundary, do tallying.
+          if(inewregion.ne.iregion)call tallyexit(i,inewregion-iregion)
             if(.not.linregion(ibool_part,ndims,x_part(1,i)))then
 c We left the region. 
-c Testing only:
-c               if(inewregion.eq.3)ninner=ninner+1
-               call tallyexit(i,inewregion-iregion)
 c Reinject if we haven't exhausted complement.
                if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)then
                   call reinject(x_part(1,i),ilaunch)
                   if_part(i)=1
-c Find where we are, since we don't yet know?
-c Might not be needed if we insert needed information in reinject,
-c which might be less costly. (Should be something other than iregion?)
-                  call partlocate(i,iLs,iu,ixp,xfrac,irg)
+c Find where we are, since we don't yet know.
+                  call partlocate(i,iLs,iu,ixp,xfrac,iregion)
                   dtpos=dtpos*ran1(myid)
                   dtprec=0.
                   nlost=nlost+1
                   nrein=nrein+ilaunch
                   phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i)
-     $                 ,imaskregion(irg),2)
+     $                 ,imaskregion(iregion),2)
                   if(.false.)then
 c Testing of potential at point. 
                      phicomp=potentialatpoint(x_part(1,i),u,cij,iLs)
@@ -161,15 +155,15 @@ c The standard exit point for a particle that is active
 c An unfilled slot. Fill it if we need to.
                call reinject(x_part(1,i),ilaunch)
                if_part(i)=1
-c Find where we are, since we don't yet know?
+c Find where we are, since we don't yet know.
 c Might not be needed if we insert needed information in reinject,
-               call partlocate(i,iLs,iu,ixp,xfrac,irg)
+               call partlocate(i,iLs,iu,ixp,xfrac,iregion)
                dtpos=dtpos*ran1(myid)
                dtprec=0.
                nlost=nlost+1
                nrein=nrein+ilaunch
                phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i)
-     $                 ,imaskregion(irg),2)
+     $                 ,imaskregion(iregion),2)
                phirein=phirein+ilaunch*phi
                call diaginject(x_part(1,i))
 c Complete reinjection by advancing by random remaining.

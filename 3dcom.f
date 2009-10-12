@@ -75,10 +75,18 @@ c Data for storing integrated field quantities such as forces.
       integer ns_ndims
       parameter (ns_ndims=3)
       integer ns_nt,ns_np
+c the size of the stress-calculating mesh in theta and psi directions
       parameter (ns_nt=6,ns_np=6)
-      integer ns_flags(ns_ndims)
+      integer ns_flags(nf_obj)
       real fieldforce(ns_ndims,nf_obj,nf_maxsteps)
       real pressforce(ns_ndims,nf_obj,nf_maxsteps)
+      real partforce(ns_ndims,nf_obj,nf_maxsteps)
       real charge_ns(nf_obj,nf_maxsteps)
       real surfobj(2*ns_ndims,ns_nt,ns_np,nf_obj)
-      common /stress/ns_flags,surfobj,fieldforce,pressforce,charge_ns
+      common /stress/ns_flags,surfobj,fieldforce,pressforce
+     $     ,partforce,charge_ns
+
+c External field data (when used)
+      logical lextfield
+      real extfield(ns_ndims)
+      common /extfieldcom/lextfield,extfield

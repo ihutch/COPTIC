@@ -438,7 +438,7 @@ c         call diag3array(q,iLs,ni,nj,nk)
      $        call slice3web(ifull,iuds,u,cij,Li,zp,cijp,ixnp,xn,ifix,
      $           'potential:'//'!Ay!@',1)
 c
-         call padvnc(ndims,cij,u,iLs)
+         call padvnc(ndims,iLs,cij,u)
       enddo
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
 

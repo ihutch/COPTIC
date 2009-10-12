@@ -3103,7 +3103,7 @@ In the end probably easier to have separate names fieldforce, pressforce
 etc in 3dcom.f.
 
 Having made that decision it is natural to put the output into the flux
-file. At present, we are just writing the whole fielforce, pressforce,
+file. At present, we are just writing the whole fieldforce, pressforce,
 and charge traces, regardless of used length. 
 
 In addition we need the surfobj structure for each object being tracked.
@@ -3153,3 +3153,116 @@ It works.
 Found that fillinlin works slightly better if we always use the field
 at point to determine the gradient of the fit, rather than doing a
 full gradient fit to adjacent points. Sort of makes sense.
+
+
+25 Sep 09
+
+Implemented calling of tallyexit for all boundary crossings. Only those
+that are being tracked actually do anything. But now we can put a surface
+in the particle region and track the momentum flux across it. Therefore
+we ought to be able to compare the force components for different objects.
+
+7 Oct 09
+
+Getting back to this. I had updated fluxdatatest to examine the force 
+integrals. It shows that for l=1, the total force is very similar at 
+r=2, 4, but not the same at r=1. So there's a discrepancy not yet sorted
+out. 
+
+Run case with -l10. in which the dominant force is particles. We do
+not appear to have momentum conservation. The different radii give
+very different force totals. Hmm. Also, there are some Tallyexit no
+intersection errors. The force at r=4 is almost twice that at r=1.  We
+ought to have a delicate balancing problem with field force and
+particle force. This is not working properly.
+
+Case with (nearly) zero potential on sphere and -l200. Gives a small force
+that is equal for all radii, as expected. About 3.68 for partforce. So 
+momentum accounting is working when there are zero fields. 
+
+At present, partforce is in units that are normalized momentum per sec
+per rhoinf. Fieldforce is in units that are grad(\phi)^2 times
+area. pressforce is in units of nT times area (I think).
+
+Multiplying fieldforce by debyelen**2 there is a balance. But it seems
+to be closer to 0.5 times the fieldforce. I need to check the coefficients. 
+There is also some 9% discrepancy at the inner boundary, which needs to be
+investigated. It sure looks as if 0.5 is required.
+
+8 Oct 09
+
+Partforce was not being reduced. Therefore for two processes, the partforce
+was half of what it should have been. I think this probably explains this
+factor of two discrepancy. But we still need to sort out the comparison
+with sceptic.
+
+The particle force for ccpic is  90.14934, 119.96814, 175.66409, 195.43149
+for radii, 1., 2, 4, 4.9.
+The particle force for sceptic is 87.89902, 196.57240 for radii, 1., 5. 
+Thus, we basically have agreement in the particle forces.
+
+The field forces are quite different for the two codes. However, this is
+probably because of the different phi boundary conditions at the outer
+boundary. For large debyelength like this the cutoff is outside the boundary
+so the code is not really determining the force, it is being imposed by 
+the BC. The fact that the totals for ccpic 224.91051, 208.83559, 206.43303
+197.83185, more or less agree shows that we are pretty much conserving
+momentum in the code region. But these are very different values from the
+ones being given by sceptic: 540.51074, 545.98761. 
+
+It hardly seems worth the effort of trying to sort out what the
+differences are. More useful might be to impose an outer boundary
+condition that corresponds to a known field (e.g. uniform) for which
+the EM force is therefore known. And verify that we get the right 
+field force.
+
+To do this through the BC would require conditions whose normal component
+varies over the surface. Might be tricky. Perhaps we could simply add
+a uniform electric field to the field calculation. It will still satisfy
+the same poisson equation. It won't then have the total potential constant
+on any surface (including the inner). Probably does not matter. 
+
+Implemented this external field. The inner surface error remains. 
+The error on the inner surface with our current mesh (32^3) is about
+halved at a position r=1.05, and does seem to make a finite transition
+to the conserved region.
+
+Probe potential 10. extfield.01
+Field,part,press forces: -2937.02954     4.97746     0.00000 -2932.05200
+================== End of Object 2 ->  3
+Field,part,press forces: -2996.83130     3.71953     0.00000 -2993.11182
+================== End of Object 3 ->  4
+Field,part,press forces: -3087.99609     1.97120     0.00001 -3086.02490
+================== End of Object 4 ->  5
+Field,part,press forces: -3081.75708    -3.63166    -0.01428 -3085.40283
+
+Probe potential 1. 
+================== End of Object 1 ->  1
+Field,part,press forces:  -294.28650     0.67058     0.00337  -293.61252
+================== End of Object 2 ->  3
+Field,part,press forces:  -300.21112     0.44164     0.00290  -299.76657
+================== End of Object 3 ->  4
+Field,part,press forces:  -308.82449     0.03669     0.00001  -308.78781
+================== End of Object 4 ->  5
+Field,part,press forces:  -307.54568     0.12403    -0.07416  -307.49582
+
+I find that the charge is unequal in exact proportion to the fieldforce.
+In other words, the main force error is arising from the integral of the
+normal field over the surface, which is not giving exactly the right answer.
+This is understandable, given the approximations that are made close to 
+the sphere.
+
+Thus I think we have the force calculations working, but they are showing
+that positions very close to the sphere suffer from the approximations that
+are involved in the field extrapolation. The charge on the inner sphere
+is systematically underestimated by the extrapolation. 
+
+Since field is accurate only to a linear approximation, and we are
+using a mesh that has 16 across a radius of 5, we have a mesh spacing
+of about 0.31.  The inner sphere has radius 1, so the spacing is about
+1/3 of the sphere radius. It is perhaps not surprising that there are
+substantial symmetric errors in the field that affect the force.
+I'm not sure there's really anything one can do about it.
+
+Fiddling with fluxdata to see what I should do about tallyexit errors.
+They seem to be rounding. The tests I have don't make much sense.

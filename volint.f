@@ -177,7 +177,10 @@ c      read(iunit,err=101,end=102)((obj1(i,j),i=1,oabc-1),j=1,ngeomobj)
       read(iunit,err=101,end=102)((obj1(i,j),i=1,odata),j=1,ngeomobj)
       do j=1,ngeomobj
          do i=1,odata
-            if(obj1(i,j).ne.obj_geom(i,j)) goto 101
+            if(
+     $           (i.le.otype .or. i.ge.ocenter) .and.
+     $           (obj1(i,j).ne.obj_geom(i,j))
+     $        ) goto 101
          enddo
       enddo
       read(iunit,err=101,end=102)(iuds1(i),i=1,ndims)

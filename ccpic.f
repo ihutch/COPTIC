@@ -7,8 +7,8 @@ c Storage array spatial count size
       integer Li,ni,nj,nk
 c      parameter (Li=100,ni=40,nj=40,nk=20)
 c      parameter (Li=100,ni=60,nj=60,nk=60)
-      parameter (Li=100,ni=16,nj=16,nk=16)
-c      parameter (Li=100,ni=32,nj=32,nk=32)
+c      parameter (Li=100,ni=16,nj=16,nk=16)
+      parameter (Li=100,ni=32,nj=32,nk=32)
 c      parameter (Li=100,ni=64,nj=64,nk=64)
 c      parameter (Li=130,ni=128,nj=128,nk=128)
 c      parameter (Li=6,ni=6,nj=6,nk=6)
@@ -33,7 +33,7 @@ c Arrays defining mesh ends
       real xmstart(ndims_sor),xmend(ndims_sor)
 c Mesh spacing description structure
       include 'meshcom.f'
-c Processor cartesian geometry
+c Processor cartesian geometry can be set by default.
       integer nblksi,nblksj,nblksk
       parameter (nblksi=1,nblksj=1,nblksk=1)
       integer idims(ndims_sor)
@@ -107,7 +107,7 @@ c Default to constant rhoinf not n_part.
       norbits=0
       ickst=0
       lmyidhead=.true.
-      ifplot=0
+      ifplot=-1
       do id=1,ndims
          xmstart(id)=-rsmesh
          xmend(id)=rsmesh
@@ -153,6 +153,11 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
          if(argument(1:2).eq.'-v')read(argument(3:),*,err=201)vd
          if(argument(1:2).eq.'-t')read(argument(3:),*,err=201)Ti
+         if(argument(1:10).eq.'--extfield')then
+            read(argument(11:),*,err=201)extfield
+c            write(*,*)'||||||||||||||extfield',extfield
+            lextfield=.true.
+         endif
          if(argument(1:9).eq.'--objfile')
      $        read(argument(10:),'(a)',err=201)objfilename
          if(argument(1:3).eq.'-ho')then
@@ -301,7 +306,7 @@ c
 
 c-------------------------------------------------------------------
       if(lmyidhead)then
-         call vaccheck(ifull,iuds,u,cij,thetain,nth,rs,ltestplot)
+         call vaccheck(ifull,iuds,cij,u,thetain,nth,rs,ltestplot)
       endif
 c End of plotting.
 c------------------------------------------------------------------
@@ -376,6 +381,7 @@ c     $        nrein,n_part,ioc_part,rhoinf,dt
  402     continue
       endif
 
+      write(*,*)'Step Iterations Flux:'
 c-----------------------------------------------
 c Main step iteration -------------------------------------
       do j=1,nsteps
@@ -401,11 +407,9 @@ c Convert psums to charge, q. Remember external psumtoq!
          call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
 
-         call calculateforces(ndims,u,cij,iLs)
+         call calculateforces(ndims,iLs,cij,u)
 
-         if(lmyidhead)write(*,'(i4.4,i4,'' iterations.'',$)')
-     $        nf_step,ierr
-c         write(*,*)dt
+         if(lmyidhead)write(*,'(i4.4,i3,$)')nf_step,ierr
          if(lsliceplot)then
             call sliceGweb(ifull,iuds,u,Li,zp,
      $        ixnp,xn,ifix,'potential:'//'!Ay!@')
@@ -417,20 +421,23 @@ c         write(*,*)dt
 c This test routine assumes 3 full dimensions all equal to Li are used.
             call checkuqcij(Li,u,q,psum,volumes,cij,
      $           u2,q2,psum2,volumes2,cij2)
-            call padvnc(ndims,cij,u,iLs)
+            call padvnc(ndims,iLs,cij,u)
             call checkx(n_part2,x_part2,
      $           if_part2,iregion_part2,ioc_part2,dt2,
      $           ldiags2,rhoinf2,nrein2,phirein2,numprocs2,ninjcomp2)
          else
 c The normal call:
-            call padvnc(ndims,cij,u,iLs)
+            call padvnc(ndims,iLs,cij,u)
          endif
 c         write(*,*)(ff_data(nf_address(1,1,nf_step)+ii),ii=0,2)
          call fluxreduce()
 c Store the step's rhoinf, dt.
          ff_rho(j)=rhoinf
          ff_dt(j)=dt
-         if(lmyidhead)call fluxdiag()
+         if(lmyidhead)then
+            call fluxdiag()
+            if(mod(nf_step,5).eq.0)write(*,*)
+         endif
 c         if(lmyidhead.and.mod(j,nsteps/5+1).eq.0)
 c     $  write(*,
 c       write(*,
@@ -448,6 +455,7 @@ c      if(lorbitplot)call orbit3plot(ifull,iuds,u,phip,rc,rs)
      $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl,norbits)
 c      write(*,*)'Finished orbitplot.'
 
+      if(lmyidhead)write(*,*)
       call partwrite(partfilename,myid)
       if(lmyidhead)call phiwrite(phifilename,ifull,iuds,u)
 
@@ -458,7 +466,7 @@ c Check some flux diagnostics and writing.
          call writefluxfile(fluxfilename)
          if(linjplot)call plotinject(Ti)
          do ifobj=1,mf_obj
-            call fluxave(nsteps/2,nsteps,ifobj,ifplot)
+            call fluxave(nsteps/2,nsteps,ifobj,ifplot,rinf)
          enddo
       endif
 c      call readfluxfile(fluxfilename)

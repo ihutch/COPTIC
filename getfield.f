@@ -44,6 +44,8 @@ c Local vector storage
       real xf(mdims)
 
       include 'objcom.f'
+c for external field need 3dcom.f
+      include '3dcom.f'
 
 c We DONT include sormesh, because xn is passed
       parameter (ipwr2nd=2**(ndims_sor-1))
@@ -141,6 +143,8 @@ c I can really develop this code.
 
       endif
 
+c External field
+      if(lextfield)field=field+extfield(idf)
       
       end
 

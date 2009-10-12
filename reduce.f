@@ -28,6 +28,9 @@ c encompassing them all at once.
          call MPI_ALLREDUCE(MPI_IN_PLACE
      $        ,ff_data(nf_address(1,io,nf_step))
      $        ,nquant,MPI_REAL,MPI_SUM,MPI_COMM_WORLD,ierr)
+         call MPI_ALLREDUCE(MPI_IN_PLACE
+     $        ,partforce(1,io,nf_step)
+     $        ,3,MPI_REAL,MPI_SUM,MPI_COMM_WORLD,ierr)
       enddo
 c      write(*,*)'Total flux number',sum
 c      write(*,'(10f7.1)')(ff_data(nf_address(1,1,nf_step)+i-1),
