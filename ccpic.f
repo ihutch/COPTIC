@@ -337,7 +337,7 @@ c     $     ' steps=',nsteps,' total theta/2pi='
 c     $     ,nsteps*dt*x_part(5,1)/x_part(1,1)/2./3.1415927
 c---------------------------------------------
 c Initialize the fluxdata storage and addressing.
-      call fluxdatainit()
+      call fluxdatainit(myid)
 c Initialze the force tracking.
       call forcetrackinit()
 c---------------------------------------------

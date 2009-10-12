@@ -4,7 +4,7 @@ c obj_geom(ofluxtype,i). If this is zero, it is not tracked.
 c The number of ibins in each (2) of the surface dimensions is indicated
 c by obj_geom(ofn1[/2],i), and data space and addresses allocated.
 c The uniform-spacing bin-positions are calculated and set.
-      subroutine fluxdatainit()
+      subroutine fluxdatainit(myid)
       include '3dcom.f'
 c-----------------------------------------------
 c Initialize here to avoid giant block data program.
@@ -56,7 +56,8 @@ c       explicit for posdim=2 for now.
                nf_dimlens(j,mf_obj,1)=int(obj_geom(ofn1,i))
                nf_dimlens(j,mf_obj,2)=int(obj_geom(ofn2,i))
                nf_posno(j,mf_obj)=nfluxes
-               if(j.eq.1)write(*,'(a,i3,a,i3,a,i5,a,i3,a,i3,a,2i3)')
+               if(j.eq.1 .and. myid.eq.0)
+     $              write(*,'(a,i3,a,i3,a,i5,a,i3,a,i3,a,2i3)')
      $              ' Fluxinit of object',i
      $           ,'  type',int(obj_geom(ofluxtype,i))
      $           ,'. ',nf_posno(j,mf_obj),' flux positions:'
