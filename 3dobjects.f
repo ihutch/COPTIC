@@ -470,7 +470,7 @@ c object data.
 
       integer ix(ndims_sor)
       real x(ndims_sor)
-
+      integer ip(32)
 
       if(ndims.ne.ndims_sor)then 
          write(*,*)'iregioninit error; incorrect dimensions:',
@@ -478,8 +478,17 @@ c object data.
          call exit(0)
       endif
 
+c Calculate the bits of the field mask.
+      ifd=ifield_mask
+      do i=1,32
+         ip(32-i+1)=ifd - 2*(ifd/2)
+         ifd=ifd/2
+      enddo
+
 c      write(*,*)'Initializing Object Regions:No, pointer, region, posn.'
-      write(*,'('' Mask='',i11,'' ='',b32.32)')ifield_mask,ifield_mask
+c This is an unportable extension. Hence the calculation above.
+c      write(*,'('' Mask='',i11,'' ='',b32.32)')ifield_mask,ifield_mask
+      write(*,'('' Mask='',i11,'' ='',32i1)')ifield_mask,ip
       do i=1,oi_sor
          ipoint=idob_sor(ipoint_sor,i)
 c Convert index to multidimensional indices.

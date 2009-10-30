@@ -6,6 +6,8 @@ c Common data:
       include 'plascom.f'
       include 'myidcom.f'
       include '3dcom.f'
+      external linregion
+      logical linregion
 
       ntries=0
 c      ntrapped=0

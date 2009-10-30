@@ -19,6 +19,8 @@ c sormesh provides ixnp, xn, the mesh spacings. (+ndims_mesh)
 c Alternatively they could be passed, but we'd then need parameter.
       include 'myidcom.f'
       include '3dcom.f'
+      external linregion
+      logical linregion
 c Include this only for testing with Coulomb field.
       include 'plascom.f'
 c Local storage

@@ -11,6 +11,8 @@ c Can't be called for edge nodes.
       real region,cij(*)
 
       include '3dcom.f'
+      external linregion
+      logical linregion
       include 'meshcom.f'
       real xm(ndims_mesh),xi(ndims_mesh),xp(ndims_mesh)
       parameter (npoints=10000)
@@ -96,6 +98,8 @@ c by the total number of points examined.
       parameter (mdims=10)
       real x(mdims)
       include '3dcom.f'
+      external linregion
+      logical linregion
 
       wtot=0.
       do i=1,npoints
