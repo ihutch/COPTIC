@@ -42,10 +42,6 @@ smt.out : ccpic ccpicgeom.dat
 	./ccpic
 	if [ -f smt.prev ] ; then diff smt.prev smt.out ; fi
 
-fieldtest : fieldtest.f makefile $(OBJECTS) /home/hutch/accis/libaccisX.a
-	$(G77)  -o fieldtest $(COMPILE-SWITCHES) $(PROFILING) fieldtest.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
-#	$(G77)  -o fieldtest $(COMPILE-SWITCHES) $(PROFILING) fieldtest.f $(FIXEDOBJECTS) reinject.o $(UTILITIES) $(LIBRARIES)
-
 #mpi checking target
 mpicheck : ccpic
 	mpiexec -l -n 2 ./ccpic >mpicheck.out
@@ -64,11 +60,26 @@ getfield.o : getfield.f makefile $(HEADERS)
 ccpic : ccpic.f makefile $(OBJECTS) $(UTILITIES) /home/hutch/accis/libaccisX.a
 	$(G77)  -o ccpic $(COMPILE-SWITCHES) $(PROFILING) ccpic.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
-mpibbdytest : mpibbdytest.o udisplay.o mpibbdy.o mditerate.o reduce.o
-	$(G77) -o mpibbdytest  mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o reduce.o
+testing : testing/mpibbdytest testing/fieldtest testing/stresstest
+	@echo Made tests in directory testing. Run them to test.
 
-stresstest : stresstest.f stress.o /home/hutch/accis/libaccisX.a
-	$(G77) -o stresstest stresstest.f stress.o $(LIBRARIES)
+#mpibbdytest : mpibbdytest.o udisplay.o mpibbdy.o mditerate.o reduce.o
+#	$(G77) -o mpibbdytest  mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o reduce.o
+
+testing/mpibbdytest : mpibbdytest.o udisplay.o mpibbdy.o mditerate.o reduce.o makefile
+	$(G77) -o testing/mpibbdytest  testing/mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o reduce.o
+
+#fieldtest : fieldtest.f makefile $(OBJECTS) /home/hutch/accis/libaccisX.a
+#	$(G77)  -o fieldtest $(COMPILE-SWITCHES) $(PROFILING) fieldtest.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+
+testing/fieldtest : testing/fieldtest.f makefile $(OBJECTS) /home/hutch/accis/libaccisX.a
+	$(G77)  -o testing/fieldtest $(COMPILE-SWITCHES) $(PROFILING) testing/fieldtest.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+
+#stresstest : stresstest.f stress.o /home/hutch/accis/libaccisX.a
+#	$(G77) -o stresstest stresstest.f stress.o $(LIBRARIES)
+
+testing/stresstest : testing/stresstest.f stress.o /home/hutch/accis/libaccisX.a
+	$(G77) -o testing/stresstest testing/stresstest.f stress.o $(LIBRARIES)
 
 clean :
 	rm -f *.o $(TARGETS) *.html *.flx *.phi T*.0?? *.ps

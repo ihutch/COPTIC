@@ -3326,3 +3326,11 @@ small in ccpic and the density is rapidly trending up towards 1. It
 looks as if there's a problem in the boundary condition. However, it
 is hard to be sure because the discrepancies in average values are
 several times smaller than the instantaneous fluctuation levels.
+
+
+Next Steps
+----------
+
+I think we need to move away from the spherical region and use cartesian
+region out to the boundary. We need to work on such facilities as periodic
+boundary conditions, or at any rate rectangular BCs at the computational edge.
