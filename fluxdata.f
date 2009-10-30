@@ -338,7 +338,7 @@ c For rhoinf, dt
          sum=sum+ff_data(nf_address(1,1,nf_step)+i-1)
       enddo
       flux=sum/(4.*3.14159)/rhoinf/dt
-      write(*,'(f7.3,''| '',$)')flux
+      write(*,'(f6.3,''| '',$)')flux
 c      write(*,'(a,f7.0,f8.3)')'Total flux',sum,
 c     $     sum/(4.*3.14159)/rhoinf/dt
 c      write(*,'(10f7.1)')(ff_data(nf_address(1,1,nf_step)+i-1),
@@ -419,7 +419,7 @@ c angle together. But instead we plot multiple points.
       write(*,*)'rhoinf',rinf,'  Average collected per step by posn:'
       write(*,'(10f8.2)')(flux(i),i=1,nf_posno(1,ifobj))
 
-      write(*,*)'Flux density, normalized to rhoinf'
+      write(*,*)'Flux density*r^2, normalized to rhoinf'
      $     ,tot/(4.*3.14159)/rinf
 
       if(iquant.gt.0)then

@@ -3267,3 +3267,62 @@ I'm not sure there's really anything one can do about it.
 Fiddling with fluxdata to see what I should do about tallyexit errors.
 They seem to be rounding. The tests I have don't make much sense.
 Changed to a more sensible test and crossing direction calculation.
+
+
+15 Oct 09
+
+Playing with comparing ccpic with sceptic, I realize that I still
+haven't really got good solutions for storing and analysing the ccpic results.
+Sceptic postproc has contour plots of n, \phi. Line-outs, flux density plots
+etc. ccpic has phiexamine which can do plots of \phi, but n is not well served.
+Also, fluxdatatest has some plots but as yet no output useful for comparing
+with other data. 
+
+Do we need density to be output separately from the particle data? We can
+certainly calculate density (instantaneously) by reading in all the particle
+files. But it might be pretty cumbersome doing the accumulation. Actually
+chargetomesh seems just to accumulate, not to initialize. Therefore we
+just need to call it for as many particle files as exist. However, the particle
+data files do not contain the mesh structure.
+
+Easier route just reproduce the phiexamine structure as
+denexamine. Including writing out the density. This works. But there's
+a serious problem in that the noise level of the density is very high,
+at least on 32x32x32 with default particles. The noise level is of
+order 1. This is, of course, no different from what one might observe
+with graphics during the run.  The files for density (and phi) are
+about 15 times smaller than one file of particle data (for 52k
+initialized particles). So it might be worth considering outputing multiple
+steps. One might also do time averaging. Implemented averaging and output
+the decaying average with 100steps default. Even so with the standard 
+settings the density plot is pretty noisy, and with 2 processors, added
+steps and 200k particles there's still a considerable noise level.
+
+16 Oct 09
+
+I've plotted the density as a function of r for individual mesh
+points. It would reduce the scatter if the 2-D case were gathered together
+into bins that correspond to theta angles.
+
+
+20 Oct 09
+Completed additions to phiexamine, denexamine, which bin things together
+and then print them out. 
+
+Created a general purpose plotting routine that can read the print out from
+ccpic tools and from the sceptic tools. Compared the -p-10, -l1. cases.
+Excellent agreement with potential and density right out to the edge.
+See in src/plotting/.
+
+Conclusion.
+__________
+
+I declare success with the comparisons between ccpic and sceptic in
+moderate debyelength cases. They have excellent agreement on flux,
+potential, and density for v=0 cases. Forces for flowing cases need
+more study because of the finite-domain effects. Also for -l.1 there
+is a significant discrepancy at the boundary. The potential is too
+small in ccpic and the density is rapidly trending up towards 1. It
+looks as if there's a problem in the boundary condition. However, it
+is hard to be sure because the discrepancies in average values are
+several times smaller than the instantaneous fluctuation levels.

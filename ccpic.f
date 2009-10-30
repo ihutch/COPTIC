@@ -15,7 +15,8 @@ c      parameter (Li=6,ni=6,nj=6,nk=6)
 c      parameter (Li=100,ni=26,nj=16,nk=20)
       parameter (Li2=Li*Li,Li3=Li2*Li)
       real u(Li,Li,Li),q(Li,Li,Li),cij(2*ndims_sor+1,Li,Li,Li)
-
+c Running averages.
+      real qave(Li,Li,Li)
 c Additional variables for testing. Eventually should be removed.
       real u2(Li,Li,Li),q2(Li,Li,Li),cij2(2*ndims_sor+1,Li,Li,Li)
       real psum2(Li,Li,Li),volumes2(Li,Li,Li)
@@ -106,6 +107,7 @@ c Default to constant rhoinf not n_part.
       bdt=1.
       norbits=0
       ickst=0
+      iavesteps=100
       lmyidhead=.true.
       ifplot=-1
       do id=1,ndims
@@ -153,6 +155,7 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
          if(argument(1:2).eq.'-v')read(argument(3:),*,err=201)vd
          if(argument(1:2).eq.'-t')read(argument(3:),*,err=201)Ti
+         if(argument(1:2).eq.'-a')read(argument(3:),*,err=201)iavesteps
          if(argument(1:10).eq.'--extfield')then
             read(argument(11:),*,err=201)extfield
 c            write(*,*)'||||||||||||||extfield',extfield
@@ -194,6 +197,7 @@ c Help text
       write(*,302)' -v    set Drift velocity. [',vd
       write(*,302)' -t    set Ion Temperature. [',Ti
       write(*,302)' -l    set Debye Length. [',debyelen
+      write(*,301)' -a    set averaging steps. [',iavesteps
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [ccpicgeom.dat'
       write(*,301)' --restart  Attempt to restart from saved state.'
@@ -410,7 +414,7 @@ c Convert psums to charge, q. Remember external psumtoq!
 
          call calculateforces(ndims,iLs,cij,u)
 
-         if(lmyidhead)write(*,'(i4.4,i3,$)')nf_step,ierr
+         if(lmyidhead)write(*,'(i4.4,i4,$)')nf_step,ierr
          if(lsliceplot)then
             call sliceGweb(ifull,iuds,u,Li,zp,
      $        ixnp,xn,ifix,'potential:'//'!Ay!@')
@@ -445,6 +449,9 @@ c       write(*,
 c     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i7,i7,2f10.3)')
 c     $        nrein,n_part,ioc_part,rhoinf,dt
 c
+         istepave=min(nf_step,iavesteps)
+         call average3d(q,qave,ifull,iuds,istepave)
+
 c This non-standard fortran call works with gfortran and g77 to flush stdout.
          if(lmyidhead)call flush()
 c Comment it out if it causes problems.
@@ -459,6 +466,7 @@ c      write(*,*)'Finished orbitplot.'
       if(lmyidhead)write(*,*)
       call partwrite(partfilename,myid)
       if(lmyidhead)call phiwrite(phifilename,ifull,iuds,u)
+      if(lmyidhead)call denwrite(phifilename,ifull,iuds,qave)
 
 c-------------------------------------------------------------------
       call mpifinalize(ierr)

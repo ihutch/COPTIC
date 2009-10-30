@@ -1,20 +1,18 @@
-      program phiexamine
+      program denexamine
 
       include 'examdecl.f'
 
       parameter (ntheta=4,nr=30)
       real thetadist(nr,ntheta),thetaval(ntheta),rval(nr)
       integer ithetacount(nr,ntheta)
+      
 
       real oneoverr(100),ro(100)
 c 
-c silence warnings:
-      fluxfilename=' '
-
-      call examargs
-
-      call phiread(phifilename,ifull,iuds,u,ierr)
+      call denexamargs
+      call denread(denfilename,ifull,iuds,q,ierr)
       if(ierr.eq.1)stop
+
 
       do j=1,nr
          do i=1,ntheta
@@ -26,39 +24,18 @@ c silence warnings:
 c         write(*,*)j,rval(j)
       enddo
 
-      write(*,'(a,3i4)')'On grid',iuds
-
-      call sliceGweb(ifull,iuds,u,Li,zp,
-     $        ixnp,xn,ifix,'potential:'//'!Ay!@')
+      call sliceGweb(ifull,iuds,q,Li,zp,
+     $        ixnp,xn,ifix,'Density:'//'n')
 
 c plot potential versus radius.
 
-      write(*,*)rs
-      call pltinit(0.,rs,u(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
+      write(*,*)rs,debyelen,vd,Ti
+c      write(*,*)rs
+c      call pltinit(0.,rs,q(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
+      call pltinit(0.,rs,0.,2.)
       call axis()
-      call axlabels('radius','potential')
+      call axlabels('radius','density')
       call charsize(.001,.001)
-      phimin=0.
-      do k=1,iuds(3)
-         do j=1,iuds(2)
-            do i=1,iuds(1)
-               x=xn(ixnp(1)+i)
-               y=xn(ixnp(2)+j)
-               z=xn(ixnp(3)+k)
-               r=sqrt(x**2+y**2+z**2)
-               call polymark(r,u(i,j,k),1,10)
-               if(r.gt.rs .and. u(i,j,k).ne.0)then
-                  write(*,'(4f12.6,3i3)')x,y,z,u(i,j,k),i,j,k
-               endif
-               if(u(i,j,k).lt.phimin)phimin=u(i,j,k)
-            enddo
-         enddo
-      enddo
-      do i=1,100
-         ro(i)=1.+(rs-1.)*i/100
-         oneoverr(i)=phimin/ro(i)
-      enddo
-c Average together.
       denmin=0.
       do k=1,iuds(3)
          do j=1,iuds(2)
@@ -72,9 +49,14 @@ c Average together.
                ir=nint(0.5+nr*(r-.999999)/(rs-1.00001))
                if(ir.le.nr .and. ir.ge.1)then
                   ithetacount(ir,itheta)=ithetacount(ir,itheta)+1
-                  thetadist(ir,itheta)=thetadist(ir,itheta)+u(i,j,k)
+                  thetadist(ir,itheta)=thetadist(ir,itheta)+q(i,j,k)
                endif
-               if(u(i,j,k).lt.denmin)denmin=u(i,j,k)
+               call polymark(r,q(i,j,k),1,10)
+               if(r.gt.rs .and.
+     $              .not.(q(i,j,k).eq.0. .or. q(i,j,k).eq.1.))then
+                  write(*,'(4f12.6,3i3)')x,y,z,q(i,j,k),i,j,k
+               endif
+               if(q(i,j,k).lt.denmin)denmin=q(i,j,k)
             enddo
          enddo
       enddo
@@ -102,39 +84,31 @@ c Average together.
          enddo
       enddo
 
-c Plot binned data:
       do i=1,ntheta
          call color(mod(i,16))
          call polyline(rval,thetadist(1,i),nr)
       enddo
+      call pltend()
 
-      write(*,*)'r, phi distribution (ir,itheta)'
+      write(*,*)'r, density distribution (ir,itheta)'
       write(*,*)nr, ntheta
       do j=1,nr
          write(*,'(10f8.4)')rval(j),(thetadist(j,i),i=1,ntheta)
       enddo
 
-      call charsize(0.,0.)
-      call color(2)
-      call polyline(ro,oneoverr,100)
-      call legendline(.5,.1,0,'Coulomb Potential')
-      call pltend()
-
       end
 
 
 c*************************************************************
-      subroutine examargs()
+      subroutine denexamargs()
       include 'examdecl.f'
 
       do i=1,ndims
          ifull(i)=Li
       enddo
 
-c Defaults and silence warnings.
-      phifilename=' '
-      fluxfilename=' '
-      zp(1,1,1)=0.
+c Defaults
+      denfilename=' '
 
 c Deal with arguments
       if(iargc().eq.0) goto 201
@@ -144,11 +118,11 @@ c Deal with arguments
          if(argument(1:13).eq.'--objfilename')
      $        read(argument(14:),'(a)',err=201)objfilename
          if(argument(1:2).eq.'-f')
-     $        read(argument(3:),'(a)',err=201)phifilename
+     $        read(argument(3:),'(a)',err=201)denfilename
          if(argument(1:2).eq.'-h')goto 203
          if(argument(1:2).eq.'-?')goto 203
          else
-            read(argument(1:),'(a)',err=201)phifilename
+            read(argument(1:),'(a)',err=201)denfilename
          endif
          
       enddo
@@ -159,19 +133,11 @@ c Help text
       write(*,*)'=====Error reading command line argument'
  203  continue
  301  format(a,i5)
-      write(*,301)'Usage: phiexamine [switches] <phifile>'
+ 302  format(a,f8.3)
+      write(*,301)'Usage: denexamine [switches] <denfile>'
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [ccpicgeom.dat'
-c      write(*,301)' -f   set name of phifile.'
-c      write(*,301)'Debugging switches for testing'
-c      write(*,301)' -gc   set wireframe/stencils(-) mask.'//
-c     $     ' objects<->bits. [',iobpl
-c      write(*,301)' -gt   Plot solution tests.'
-c      write(*,301)' -gs   Plot slices of solution potential. '
-c      write(*,301)' -go   set No of orbits'
-c     $     //'(to plot on objects set by -gc). [',norbits
-c      write(*,301)' -at   set test angle.'
-c     $     //' -an   set No of angles. '
+      write(*,301)' -f   set name of denfile.'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue
