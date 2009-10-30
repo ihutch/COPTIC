@@ -82,7 +82,7 @@ testing/stresstest : testing/stresstest.f stress.o /home/hutch/accis/libaccisX.a
 	$(G77) -o testing/stresstest testing/stresstest.f stress.o $(LIBRARIES)
 
 clean :
-	rm -f *.o $(TARGETS) *.html *.flx *.phi T*.0?? *.ps
+	rm -f *.o $(TARGETS) *.html *.flx *.phi *.den T*.0?? *.ps
 
 ftnchek :
 	./ftnchekrun "ccpic.f $(OBJECTS)"
