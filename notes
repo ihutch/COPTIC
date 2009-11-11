@@ -3304,7 +3304,6 @@ I've plotted the density as a function of r for individual mesh
 points. It would reduce the scatter if the 2-D case were gathered together
 into bins that correspond to theta angles.
 
-
 20 Oct 09
 Completed additions to phiexamine, denexamine, which bin things together
 and then print them out. 
@@ -3328,9 +3327,14 @@ is hard to be sure because the discrepancies in average values are
 several times smaller than the instantaneous fluctuation levels.
 
 
-Next Steps
-----------
+Next Steps   30 Oct 09
+---------- 
 
 I think we need to move away from the spherical region and use cartesian
 region out to the boundary. We need to work on such facilities as periodic
 boundary conditions, or at any rate rectangular BCs at the computational edge.
+
+
+-----
+Did some housekeeping to clean some testing code out to the subdirectory.
+Also rename fluxdatatest to fluxexamine. 
