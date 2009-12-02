@@ -12,7 +12,6 @@ c Ibool defining region of particles.
       integer ibtotal_part
       parameter (ibtotal_part=100)
       integer ibool_part(ibtotal_part)
-c      logical linregion
 c Mask defining the bits relevant to field regions.
       integer ifield_mask
 

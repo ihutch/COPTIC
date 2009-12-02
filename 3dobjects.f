@@ -2,15 +2,19 @@ c*****************************************************************
 c Initialize with zero 3d objects.
       block data com3dset
       include '3dcom.f'
+      include 'meshcom.f'
       data ngeomobj/0/
 c Default track no objects.
       data nf_map/ngeomobjmax*0/
 c And no reverse-map pointers.
       data nf_geommap/nf_obj*0/
-c Default particle region: outside object 1, inside 2.
       integer ibm
-      parameter (ibm=ibtotal_part-4)
-      data ibool_part/1,-1,1,2,ibm*0/
+c Default particle region: outside object 1, inside 2.
+c      parameter (ibm=ibtotal_part-4)
+c      data ibool_part/1,-1,1,2,ibm*0/
+c Default particle region: zero boolean. Particles everywhere.
+      parameter (ibm=ibtotal_part)
+      data ibool_part/ibm*0/
       integer ifm1
 c Set all the bits of ifield_mask: =2**31-1=2*(2**30-1)+1 avoid overflow.
       parameter (ifm1=2*(2**30-1)+1)
@@ -21,33 +25,53 @@ c      parameter (ifm1=31)
 c Normally there's no external field.
       data lextfield/.false./extfield/ns_ndims*0./
 
-c We don't do this initialization in a block data because it makes
-c the executable ridiculously large.
-c      data nf_step/0/
-c Position numbers must be set in initialization.
-c      data nf_posno/(nf_quant*nf_obj)*0/
-c      data nf_address/(nf_quant*nf_obj*(nf_maxsteps+1))*0/
-c      data ff_data/(nf_datasize)*0./
+c Mesh default initialization (meshcom.f)
+      parameter (imsr=ndims_mesh*(nspec_mesh-2))
+      data imeshstep/ndims_mesh*1,ndims_mesh*32,imsr*0/
+      data xmeshpos/ndims_mesh*-5.,ndims_mesh*5.,imsr*0./
+
+c We don't do flux initialization in a block data. Too big.
       end
 c**********************************************************************
       subroutine geomdocument()
       write(*,*)'Format and meaning of the object geometry file'
      $     ,' default [ ccpicgeom.dat'
       write(*,*)'First line number of dimensions: 3'
-      write(*,*)'Thereafter comment lines start with #'
+      write(*,*)'Thereafter ignored comment lines start with #'
       write(*,*)'Object lines have the format: type, a,b,c, center(3),'
      $     ,' radii(3), [extra data]'
       write(*,*)' if a=b=c=0, no potential BC is applied and object'
      $     ,' is masked.'
-      write(*,*)'type indicates how to use the line. Each byte of type'
-     $     ,' indicates a factor'
+      write(*,*)'type indicates how to use the line. Higher bytes'
+     $     ,' of type indicate specials.'
       write(*,*)'byte-1: 1 Spheroid, 2 Cuboid, 3 Cylinder, 4 Parallel'
-     $     ,'opiped, 99 Boolean'
+     $     ,'opiped,'
+      write(*,*)' 99 Boolean region,  91-3 Set mesh in dimension 1-3. '
       write(*,*)'byte-2: 1(x256) Special boundary phi=0 instead of '
      $     ,'continuity.'
       write(*,*)'byte-2: 2(x256) Tally exit?'
+      write(*,'(a)')
+     $     'Boolean particle region 99, n1, n1*values, n2, values,.. 0:'
+     $     ,'The nk values are ored together. The groups are anded.'
+     $     ,'value n means inside object n, -n outside, 0 do nothing.'
+      write(*,'(2a)')
+     $     ' E.g. -1: outside object 1, and 2 inside object 2:'
+     $     ,' 99, 1, -1, 1, 2, 0'
+     $     ,' or: (inside 3 OR inside 4) AND outside 5 [ors first]:'
+     $     ,' 99, 2, 3, 4, 1, -5, 0'
+      write(*,'(a)')'Mesh setting: 9d,is1,is2,...,isN,0,xm1,xm2...xmN'
+      write(*,'(2a)')'Set structure for dimension d. N-1 blocks.'
+     $     ,' Steps between is1,is2 '
+      write(*,'(2a)')'equally spaced between xm1,xm2: x(is1)=xm1;'
+     $     ,'x(is2-1)=xm2, etc.'
+      write(*,*)'E.g. 92,1,12,20,32,0;-5.,-1.,1.,5. y has 3 domains: '
+     $     ,'1-12 covers -5. to -1.;',' 12-20 covers -1. to 1.;'
+     $     ,'20-32 covers 1. to 5.'
+      write(*,*)'Default equivalent to 9d,1,32,0,-5.,5.'
+
 
       end
+
 c**********************************************************************
       subroutine readgeom(filename,myid)
 c Read the geometric data about objects from the file filename
@@ -55,6 +79,7 @@ c Read the geometric data about objects from the file filename
       character*128 cline
 c      character*128 fstring
       include '3dcom.f'
+      include 'meshcom.f'
 c Common data containing the object geometric information. 
 c Each object, i < 64 has: type, data(odata).
 c      integer ngeomobjmax,odata,ngeomobj
@@ -62,7 +87,7 @@ c      parameter (ngeomobjmax=31,odata=16)
 c      real obj_geom(odata,ngeomobjmax)
 c      common /objgeomcom/ngeomobj,obj_geom
       intrinsic IBCLR
-
+      real valread(2*nspec_mesh)
 
 c Zero the obj_geom data.
       do j=1,odata
@@ -120,6 +145,29 @@ c Specify the particle region.
  899     if(myid.eq.0)write(*,898)
      $        ngeomobj,idumtype,(ibool_part(i),i=1,16)
  898     format(i3,' Boolean ',17i4)
+c Don't count this as an object.
+         ngeomobj=ngeomobj-1
+         goto 1
+      elseif(type.gt.90.and.type.le.90+ndims_mesh)then
+c Mesh specification for a particular dimension. 
+         id=int(type-90)
+         ist=0
+         read(cline,*,err=901,end=880)idumtype,valread
+ 880     do i=1,nspec_mesh
+            ist=i
+            imeshstep(id,i)=int(valread(i))
+            if(valread(i).eq.0.)goto 881
+         enddo
+ 881     do j=1,ist-1
+            xmeshpos(id,j)=valread(ist+j)
+            if(j.gt.1)then
+               if(xmeshpos(id,j).le.xmeshpos(id,j-1))then
+                  write(*,*)'Readgeom: Meshpos not monotonic'
+     $                 ,j,xmeshpos
+                  stop
+               endif
+            endif
+         enddo
 c Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1
@@ -319,10 +367,11 @@ c      parameter (ibmax=100)
 c  linregion = Prod_1^nj Sum_1^ni inside(bool(ni,nj))
 c where inside(n) is true if n is +/-ve and x is inside/outside |n|. 
 c      write(*,'(11i4,3f10.4)')ibool(1:10),ndims,x
-
-      i=1
       lt2=.true.
+c Special case for zero particle boolean.
+      if(ibool(1).eq.0)goto 10
       lt1=.false.
+      i=1
       n1=ibool(i)+i
  1    if(i.lt.n1)then
         i=i+1
@@ -340,7 +389,7 @@ c      write(*,'(11i4,3f10.4)')ibool(1:10),ndims,x
          n1=i+ibool(i)
          if(i.lt.n1)goto 1
       endif
-      linregion=lt2
+ 10   linregion=lt2
       end
 
 c************************************************************
@@ -488,7 +537,7 @@ c Calculate the bits of the field mask.
 c      write(*,*)'Initializing Object Regions:No, pointer, region, posn.'
 c This is an unportable extension. Hence the calculation above.
 c      write(*,'('' Mask='',i11,'' ='',b32.32)')ifield_mask,ifield_mask
-      write(*,'('' Mask='',i11,'' ='',32i1)')ifield_mask,ip
+      write(*,'('' Field Mask='',i11,'' ='',32i1)')ifield_mask,ip
       do i=1,oi_sor
          ipoint=idob_sor(ipoint_sor,i)
 c Convert index to multidimensional indices.
@@ -529,9 +578,10 @@ c read in.
       include '3dcom.f'
 
       if(iobject.gt.ngeomobj)then
-         write(*,*)'objsetabc error. Attempt to set object',iobject
-     $        ,' greater than exisiting',ngeomobj
-         stop
+         write(*,'(a,i4,a,i4)')
+     $        '**** objsetabc error. Attempt to set object',iobject
+     $        ,' greater than existing',ngeomobj
+         return
       endif
       obj_geom(oabc,iobject)=a
       obj_geom(oabc+1,iobject)=b

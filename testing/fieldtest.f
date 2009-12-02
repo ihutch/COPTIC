@@ -3,8 +3,9 @@ c
       include 'objcom.f'
       integer Li,ni,nj
 c      parameter (Li=100,ni=40,nj=40,nk=16)
-      parameter (Li=100,ni=16,nj=16,nk=20)
-c      parameter (Li=100,ni=32,nj=32,nk=40)
+c      parameter (Li=100,ni=16,nj=16,nk=20)
+c      parameter (Li=100,ni=64,nj=64,nk=64)
+      parameter (Li=100,ni=32,nj=32,nk=40)
       integer nblks
       parameter (nblks=1)
       integer nd
@@ -17,6 +18,7 @@ c      real fieldarray(2,Li,Li)
       include 'meshcom.f'
 c
       external bdyset,faddu,cijroutine,psumtoq
+      external bdysetfree
 c      real x(Li),y(Li)
       real z(Li),xp(Li)
       character*100 form1,argument
@@ -33,6 +35,7 @@ c testing arrays
 c      real xcenter(nd),upregion(Li),uprime(Li),xnd(nd)
       integer id1,id2,idf
       real rsimple(Li,ntests)
+      character*100 filename
 
       common /myidcom/myid,nprocs
 
@@ -56,14 +59,8 @@ c Initialize ids to silence spurious warnings.
 c For rs:
       include 'plascom.f' 
 
-c Geometry information read in.
-      call readgeom('geomtest.dat',myid)
-c First object is sphere of radius rc and potential phi.
-      rc=obj_geom(oradius,1)
-      phi=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
-      write(*,*)'rc=',rc,'  phi=',phi
-      rs=rc
 
+      filename='geomtest.dat'
       thetain=.1
       nth=1
       lplot=.true.
@@ -72,12 +69,24 @@ c Deal with arguments
 c      if(iargc().eq.0) goto "help"
       do i=1,iargc()
          call getarg(i,argument)
-         if(argument(1:3).eq.'-p ') lplot=.false.
-         if(argument(1:3).eq.'-p1') l1plot=.true.
+         if(argument(1:3).eq.'-p') lplot=.false.
+         if(argument(1:3).eq.'-q') l1plot=.true.
          if(argument(1:2).eq.'-t')read(argument(3:),*)thetain
          if(argument(1:2).eq.'-n')read(argument(3:),*)nth
-           
+         if(argument(1:2).eq.'-f')read(argument(3:),'(a)')filename
+         if(argument(1:3).eq.'-h')goto 400
+         if(argument(1:3).eq.'-?')goto 400
       enddo
+
+c      write(*,*)filename
+c Geometry information read in.
+      call readgeom(filename,myid)
+c First object is sphere of radius rc and potential phi.
+      rc=obj_geom(oradius,1)
+      phi=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
+      write(*,*)'rc=',rc,'  phi=',phi
+      rs=rc
+
 c Set mesh and mpi parameters.
       ndims=nd
       idims(1)=nblks
@@ -127,7 +136,7 @@ c Text graphic of slice through cij
 cc      write(*,form1)((ireg3(iuds(1)/2,j,k,ifull,cij),j=1,iuds(2)),
 c     $           k=1,iuds(3))
       write(*,form1)((ireg3(j,iuds(2)/2,k,ifull,cij),j=1,iuds(1)),
-     $           k=1,iuds(3))
+     $     k=1,iuds(3))
 
 
 c The following requires include objcom.f
@@ -136,39 +145,42 @@ c      write(*,*)'Finished mesh setup.'
 c      write(*,'(a,8f8.1)')'cij(*,3,3,3)=',(cij(i,3,3,3),i=1,nd2+1)
 
 c For possibly different jacobi convergence radius parameters.
-c 7 is a pretty good value in 3-d.
-      kk=7
+c 7 is a pretty good value in 3-d for fixed boundary.
+c 3 is a good value in 3-d with free boundary.
+      kk=3
 c This jacobi radius is pretty much optimized for Poisson equation with
 c fixed boundary, 2-dimensional, when kk=5. 3-d not optimized.
       xyimb=(max(ni,nj)*2.)/float(ni+nj) - 1.
       xjac_sor=1.- ((kk/5.)*4./max(10,(ni+nj)/2)**2)
      $     *(1.-0.3*xyimb)
       mi_sor=4*(ni+nj+nk)+10
-      eps_sor=1.e-5
+      eps_sor=.2e-5
 c Stop iterating immediately
 c         mi_sor=3
 
 
 c Demonstration of initialization call that returns myid if I need it.
-c Control bit 4 pure initialization, no communication.
-         ictl=4
+c Control bit 4 pure initialization, no communication. Also don't
+c change my sor parameters.
+      ictl=4+1
 c Returns process myid.
-      call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
+      call sormpi(ndims,ifull,iuds,cij,u,q,bdysetfree,faddu,ictl,ierr
      $     ,myid,idims)
 c      write(*,*)'sormpi Initialization returns',myid
-         
+      
 c Control. Bit 1, use my sor parameters, Bit 2 use faddu.
 c      ictl=3
       ictl=1
-         write(*,*)'Calling sormpi, ni,nj=',ni,nj
+      write(*,*)'Calling sormpi, ni,nj=',ni,nj
 c The main solver call.
-      call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
+      call sormpi(ndims,ifull,iuds,cij,u,q,bdysetfree,faddu,ictl,ierr
      $     ,myid,idims)
 
       if(myid.eq.0)then
          if(ierr.lt.0) write(*,*)'Not converged',ierr
-         write(*,*) 'mi_sor,k_sor,xjac_sor,del_sor',
-     $        mi_sor,k_sor,xjac_sor,del_sor,myid
+         write(*,'(a,i4,i5,f10.6,e12.4,i2,i3)')
+     $'mi_sor,k_sor,xjac_sor,del_sor,myid,ictl',
+     $        mi_sor,k_sor,xjac_sor,del_sor,myid,ictl
          if(ni+nj.lt.40) then
             write(form1,'(''('',i4,''f8.5)'')')nj
             write(*,*)'u='
@@ -202,18 +214,18 @@ c inside a logarithmic derivative boundary condition. 1/r solution.
          do i=2,ni-1
             do j=2,nj-1
                do k=2,nk-1
-                  count=count+1.
                   r=0.
                   xr=xn(i)
                   yr=xn(iuds(1)+j)
                   zr=xn(iuds(1)+iuds(2)+k)
                   r=sqrt((xr-.0)**2+(yr-.0)**2+(zr-.0)**2)
-                  if(u(i,j,k).gt.1.e-4 .and.
+                  if(abs(u(i,j,k)).gt.1.e-4 .and.
      $                 r.ge.rc)then
                      e=u(i,j,k)-phi*rc/r
                      error(i,j,k)=e
                      errvar=errvar+e**2
                      if(abs(e).gt.abs(errmax))errmax=e
+                     count=count+1.
 c                     if(abs(e).gt.1.e-3)
 c     $                   write(*,'(3i3,10f8.4)')i,j,k,
 c     $                 xr,yr,zr,r,u(i,j,k),2.*rc/r,e
@@ -224,7 +236,8 @@ c     $                 xr,yr,zr,r,u(i,j,k),2.*rc/r,e
             enddo
          enddo
          errvar=errvar/count
-       write(*,*)'Max error=',errmax,' Standard Deviation=',sqrt(errvar)
+         write(*,'(a,g10.3,a,g10.3)')'Max error=',errmax,
+     $        '  Standard Deviation=',sqrt(errvar)
 c Rarely needed printout of u:
 c      iform=7
 c      uscale=10000000.
@@ -233,21 +246,21 @@ c      call udisplay(ndims,u,ifull,iuds,iform,uscale)
 c-------------------------------------------------------------------
 c Start of plotting section.
 c Calculate some stuff for autocolorcontour.
-       idf=3
-       id1=mod(idf,3)+1
-       id2=mod(idf+1,3)+1
-       ifixed=nk/2
-       if(.true.)then
-          do i=1,iuds(id1)
-             do j=1,iuds(id2)
-                itemp(idf)=ifixed
-                itemp(id1)=i
-                itemp(id2)=j
-                uplot(i,j)=u(itemp(1),itemp(2),itemp(3))
-             enddo
+         idf=3
+         id1=mod(idf,3)+1
+         id2=mod(idf+1,3)+1
+         ifixed=nk/2
+         if(.true.)then
+            do i=1,iuds(id1)
+               do j=1,iuds(id2)
+                  itemp(idf)=ifixed
+                  itemp(id1)=i
+                  itemp(id2)=j
+                  uplot(i,j)=u(itemp(1),itemp(2),itemp(3))
+               enddo
 c               write(*,'(10f8.4)')(uplot(i,j),j=1,iuds(id2))
-          enddo
-       endif
+            enddo
+         endif
 c         if(lplot .and. abs(errmax).lt..1) then
          if(lplot) then
             call cijplot(ndims,ifull,iuds,cij,.5,0,0)
@@ -287,104 +300,105 @@ c
 c Different lines:
 c Spherical angles in 3-D
             do iti=1,nth
-            itest=1
-            theta=thetain*iti
-            varphi=0.
-            ct=cos(theta)
-            st=sin(theta)
-            cp=cos(varphi)
-            sp=sin(varphi)
-            write(*,*)'Starting uprime calculation'
-            do i=1,Li
-               zero(i)=0.
-               rp=0.48*(i)/(Li-1)
-               rprime(i)=rp
+               itest=1
+               theta=thetain*iti
+               varphi=0.
+               ct=cos(theta)
+               st=sin(theta)
+               cp=cos(varphi)
+               sp=sin(varphi)
+               write(*,*)'Starting uprime calculation'
+               do i=1,Li
+                  zero(i)=0.
+                  rp=0.48*(i)/(Li-1)
+                  rprime(i)=rp
 c Coordinates relative to center of first object (sphere).
-               xprime(1,i)=rp*st*cp + obj_geom(ocenter,1)  
-               xprime(2,i)=rp*st*sp + obj_geom(ocenter+1,1)  
-               xprime(3,i)=rp*ct + obj_geom(ocenter+2,1)  
-               
-               iregion=insideall(ndims,xprime(1,i))
+                  xprime(1,i)=rp*st*cp + obj_geom(ocenter,1)  
+                  xprime(2,i)=rp*st*sp + obj_geom(ocenter+1,1)  
+                  xprime(3,i)=rp*ct + obj_geom(ocenter+2,1)  
+                  
+                  iregion=insideall(ndims,xprime(1,i))
 c Calculate fractional mesh positions of this point, always positive.
 c Thus the origin of the box is below point in all dimensions.
-               do id=1,nd
+                  do id=1,nd
 c Offset to start of idf position array.
-                  ioff=ixnp(id)
+                     ioff=ixnp(id)
 c xn is the position array for each dimension arranged linearly.
 c Find the index of xprime in the array xn:
-                  ix=interp(xn(ioff+1),ixnp(id+1)-ioff,xprime(id,i),xm)
+                     ix=interp(xn(ioff+1),ixnp(id+1)-ioff,
+     $                    xprime(id,i),xm)
 c                  ix=xm
-                  xfrac(id)=xm-ix
-                  itemp(id)=ix
-               enddo
+                     xfrac(id)=xm-ix
+                     itemp(id)=ix
+                  enddo
 
 c Get the nd field components at this point.
 c               write(*,*)'xfrac',(xfrac(kk),kk=1,nd)
 c     $              ,(xprime(kk,i),kk=1,nd)
-               do idf=1,nd
-                  ioff=ixnp(idf)
-                  call getfield(
-     $                 ndims
-     $                 ,cij(nd2+1,itemp(1),itemp(2),itemp(3))
-     $                 ,u(itemp(1),itemp(2),itemp(3))
-     $                 ,iLs
-     $                 ,xn(ioff+itemp(idf)),idf
-     $                 ,xfrac,iregion,upnd(idf,i))
-                  call getsimple3field(
-     $                 ndims,u(itemp(1),itemp(2),itemp(3))
-     $                 ,iLs,xn(ioff+itemp(idf)),idf
-     $                 ,xfrac,upsimple(idf,i))
-               enddo
+                  do idf=1,nd
+                     ioff=ixnp(idf)
+                     call getfield(
+     $                    ndims
+     $                    ,cij(nd2+1,itemp(1),itemp(2),itemp(3))
+     $                    ,u(itemp(1),itemp(2),itemp(3))
+     $                    ,iLs
+     $                    ,xn(ioff+itemp(idf)),idf
+     $                    ,xfrac,iregion,upnd(idf,i))
+                     call getsimple3field(
+     $                    ndims,u(itemp(1),itemp(2),itemp(3))
+     $                    ,iLs,xn(ioff+itemp(idf)),idf
+     $                    ,xfrac,upsimple(idf,i))
+                  enddo
 
 c Radial component of field
-               rfield(i,itest)=
-     $              upnd(1,i)*st*cp +
-     $              upnd(2,i)*st*sp +
-     $              upnd(3,i)*ct
-               rsimple(i,itest)=
-     $              upsimple(1,i)*st*cp +
-     $              upsimple(2,i)*st*sp +
-     $              upsimple(3,i)*ct
+                  rfield(i,itest)=
+     $                 upnd(1,i)*st*cp +
+     $                 upnd(2,i)*st*sp +
+     $                 upnd(3,i)*ct
+                  rsimple(i,itest)=
+     $                 upsimple(1,i)*st*cp +
+     $                 upsimple(2,i)*st*sp +
+     $                 upsimple(3,i)*ct
 c Tangential component (magnitude) of field
-               tfield(i,itest)=-sqrt(max(0.,
-     $              upnd(1,i)**2+upnd(2,i)**2+upnd(3,i)**2
-     $              -rfield(i,itest)**2))
+                  tfield(i,itest)=-sqrt(max(0.,
+     $                 upnd(1,i)**2+upnd(2,i)**2+upnd(3,i)**2
+     $                 -rfield(i,itest)**2))
 
 c Analytic comparison.
-               uanal(i)=-phi*rc/(rprime(i)**2)
+                  uanal(i)=-phi*rc/(rprime(i)**2)
 c               write(*,'(''i,rprime,rfield,uanal(i)'',i4,4f10.5)')
 c     $              i,rprime(i),rfield(i,itest),uanal(i)
 c     $              ,rsimple(i,itest)
 
-            enddo
-            write(*,*)'Ended uprime calculation'
-            call dashset(0)
-            if(iti.eq.1)then
-               call autoplot(rprime,rfield(1,itest),Li)
-               call winset(.true.)
-               call dashset(1)
-               call color(ired())
-               call polyline(rprime,uanal,Li)
-               call winset(.false.)
+               enddo
+               write(*,*)'Ended uprime calculation'
+               call dashset(0)
+               if(iti.eq.1)then
+                  call autoplot(rprime,rfield(1,itest),Li)
+                  call winset(.true.)
+                  call dashset(1)
+                  call color(ired())
+                  call polyline(rprime,uanal,Li)
+                  call winset(.false.)
 c            call polyline(xprime,upregion,Li)
-               call color(iblue())
-               call dashset(3)
-               call polyline(rprime,rsimple(1,itest),Li)
-            else
-               call polyline(rprime,rfield(1,itest),Li)
-            endif
-            call dashset(2)
-            call color(idarkgreen())
-            call polyline(rprime,tfield(1,itest),Li)
+                  call color(iblue())
+                  call dashset(3)
+                  call polyline(rprime,rsimple(1,itest),Li)
+               else
+                  call polyline(rprime,rfield(1,itest),Li)
+               endif
+               call dashset(2)
+               call color(idarkgreen())
+               call polyline(rprime,tfield(1,itest),Li)
 c            do itest=2,ntests
 c               call polyline(rprime,rfield(1,itest),Li)
 c               call dashset(2)
 c            enddo
-            call color(15)
-            call winset(.false.)
-            form1='!Aq!@='
-            call fwrite(180*theta/3.1415926,iwdth,1,form1(7:))
-            call jdrwstr(.01,.1,form1,1.)
+               call color(15)
+               call winset(.false.)
+               form1='!Aq!@='
+               call fwrite(180*theta/3.1415926,iwdth,1,form1(7:))
+               call jdrwstr(.01,.1,form1,1.)
             enddo
             call pltend()
 c-------------------------------------------------------------------
@@ -400,64 +414,76 @@ c We are going to populate this region; so identify it.
       x_part(2,1)=0.
       x_part(3,1)=0.
       iregion_part=insideall(ndims,x_part(1,1))
-c      call srand(myid)
-      write(*,*)'Calling pinit'
-      call pinit()
-      write(*,*)'Return from pinit'
-      norbits=1
-      dt=.025 
-      x_part(1,1)=.3
-      x_part(2,1)=0.
+c If this is actually inside anything. We can try particles.
+      write(*,*)'iregion_part=',iregion_part
+      if(iregion_part.ne.0)then
+         write(*,*)'Calling pinit'
+         call pinit()
+         write(*,*)'Return from pinit'
+         norbits=1
+         dt=.025 
+         x_part(1,1)=.3
+         x_part(2,1)=0.
 c      x_part(1,1)=0.
 c      x_part(2,1)=-.4
-      x_part(3,1)=0.
-      x_part(4,1)=2*dt
-      x_part(5,1)=1.1
-      x_part(6,1)=0.
-      call partlocate(1,iLs,iu,ixp,xfrac,irg)
+         x_part(3,1)=0.
+         x_part(4,1)=2*dt
+         x_part(5,1)=1.1
+         x_part(6,1)=0.
+         call partlocate(1,iLs,iu,ixp,xfrac,irg)
 c Already set.
 c      do id=1,ndims
 c         ium2(id)=iuds(id)-2
 c      enddo
-      nsteps=80
-      do j=1,nsteps
-         write(*,'(i4,i4''  x_p='',6f10.5)')j,ierr, (x_part(k,1),k=1,6)
-         call zero3array(psum,iLs,ni,nj,nk)
-         call zero3array(q,iLs,ni,nj,nk)
-         call chargetomesh(psum,iLs,diags)
+         nsteps=80
+         do j=1,nsteps
+            write(*,'(i4,i4''  x_p='',6f10.5)')
+     $           j,ierr, (x_part(k,1),k=1,6)
+            call zero3array(psum,iLs,ni,nj,nk)
+            call zero3array(q,iLs,ni,nj,nk)
+            call chargetomesh(psum,iLs,diags)
 c Some diagnostics.
 c         write(*,*)'Psum:'
 c         call diag3array(psum,iLs,ni,nj,nk)
 c         write(*,*)'q:'
 c         call diag3array(q,iLs,ni,nj,nk)
-         ictl=0
-         call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
-     $     ,myid,idims)
+            ictl=0
+            call sormpi(ndims,ifull,iuds,cij,u,q,bdysetfree
+     $           ,faddu,ictl,ierr,myid,idims)
 
-         if(lplot.and. mod(j,nsteps/2).eq.0)
-     $        call slice3web(ifull,iuds,u,cij,Li,zp,cijp,ixnp,xn,ifix,
-     $           'potential:'//'!Ay!@',1)
+            if(lplot.and. mod(j,nsteps/2).eq.0)
+     $           call slice3web(ifull,iuds,u,cij,Li,zp,cijp,ixnp,xn,
+     $           ifix,'potential:'//'!Ay!@',1)
 c
-         call padvnc(ndims,iLs,cij,u)
-      enddo
+            call padvnc(ndims,iLs,cij,u)
+         enddo
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
 
-      call dashset(0)
-      call autocolcont(uplot,Li,iuds(id1),iuds(id2))
-      call scalewn(-.5,.5,-.5,.5,.false.,.false.)
-      call ticset(-.01,-.01,-.03,-.02,0,0,0,0)
-      call color(15)
-      call axis()
-      call ticset(.0 ,.0 ,.0,.0,0,0,0,0)
-      call polyline(xorbit,yorbit,iorbitlen(1))
+         call dashset(0)
+         call autocolcont(uplot,Li,iuds(id1),iuds(id2))
+         call scalewn(-.5,.5,-.5,.5,.false.,.false.)
+         call ticset(-.01,-.01,-.03,-.02,0,0,0,0)
+         call color(15)
+         call axis()
+         call ticset(.0 ,.0 ,.0,.0,0,0,0,0)
+         call polyline(xorbit,yorbit,iorbitlen(1))
 c      call autoplot(xorbit,yorbit,iorbitlen(1))
-      call polymark(xorbit,yorbit,iorbitlen(1),1)
-      call axlabels('x','y')
-      call boxtitle('Orbit in x-y plane, potential contours')
-      call pltend()
+         call polymark(xorbit,yorbit,iorbitlen(1),1)
+         call axlabels('x','y')
+         call boxtitle('Orbit in x-y plane, potential contours')
+         call pltend()
 
+      endif
 c-------------------------------------------------------------------
       call mpifinalize(ierr)
+      call exit(0)
+
+ 400  continue
+c Help text
+      write(*,*)'Usage fieldtest [switches]'
+      write(*,*)' -p no plots   -q plot radial lineout'
+      write(*,*)' -trrr set angle of linout. -niii set No of lineouts'
+      write(*,*)' -faaaaaaa geometry filename. -h -? give help.'
       end
 c**********************************************************************
 c**********************************************************************

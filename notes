@@ -3338,3 +3338,237 @@ boundary conditions, or at any rate rectangular BCs at the computational edge.
 -----
 Did some housekeeping to clean some testing code out to the subdirectory.
 Also rename fluxdatatest to fluxexamine. 
+
+
+11 Nov 09
+
+Renamed bbdyroutine.f to bdyroutine.f. Cleaned it up so that it is easier
+to understand the boundary setting routine. 
+
+'Free' rectangular boundary conditions. Might consist of putting the
+logarithmic derivative equal to 1 or 2 or something. But on a
+rectangle the logarithmic derivative is not so obvious. If r.grad(u)/u
+is the radial logarithmic derivative D, then the component in a
+particular cartesian direction x is grad(u).x = D (r.x) u/r^2, so
+presumably we should set grad(u).x accordingly. Notice the 1/r^2
+dependence involves the orthogonal coordinate values. Consequently, one
+needs ways within the bdy routine of knowing what the mesh positions are,
+or else some other more direct way of passing the setting information. 
+
+Implemented that in fieldtest and bdyroutine bdysetfree. But needs a
+different geomtest file: geomtest2.
+
+Also geomtest3 has two separate spheres.
+
+24 Nov
+
+We need now to deal with the outer boundary for particles, when there
+is no explicit bounding object. Particles contribute their weight to
+the second row/column until they reach the exact edge node
+position. Consequently, we ought to consider the particle region to
+extend all the way to the edge nodes, if we wish to get the second row
+density correct. The contributions to the edge nodes is half what it
+ought to be because there are no particles outside. However, the edge
+node density is never used, and indeed the volumes of the edge nodes
+are not currently set. There will never be an overflow of index for
+charge assignment beyond the edge, provided that we never go past the
+edge nodes.
+
+In summary: the default particle boundary is the edge nodes. 
+
+The routine insideall is used by padvnc. This approach needs to be 
+extended to include the default outer boundary. Currently the mesh is
+set using xmstart/end, but there are no switches to change those. They are
++-5. Also rs is in the common, and used for a few things. We need to change
+to using the real mesh size, which is set by meshconstruct. 
+
+Relevant routines.  
+
+	 readgeom reads in objects
+
+	 geominit sets rc from first, rs and rsmesh from the second object
+	 assumed to be a sphere, and overrides some BC, from orbitinjnew.f.
+	 This will be changed when we are doing away with outer sphere. 
+
+	 meshconstruct accepts xmstart(3) xmend(3). 
+
+Implemented command line switches to change xmstart/end. A problem emerges
+that stored3geom is not changed, even though the mesh has changed. Because
+of that ccpic thinks the volumes are what they used to be, and does not
+recalculate. I think we need to store the mesh data in the stored file. 
+Implemented storing and checking of ixnp. Fixed.
+
+Crunch of geominit prevented by softening the oabcset error. 
+Then pinit hangs. So we can fix this. We need to fix linregion and
+then fill up between mesh limits. Actually I don't think there's any
+need to edit linregion. I find that the issue is that rs is apparently 
+zero. Anyway, dispense with using it by making pinit fill the whole mesh
+region with particles in so far as linregion is true.
+
+Now we get as far as stepping and find Relaunch NaNs. 
+Found that problem due to rs being reset to zero, and fixed.
+
+It seems as if the best approach to keeping particles within the mesh is to
+use the partlocate call. This is tricky because at present partlocate
+is called by chargetomesh. But this separation just makes the code harder
+to understand. The best thing is to get all the partlocates into padvnc
+and ensure after every move, we do the partlocate so the position is in
+fact known. To remove partlocate from chargetomesh, we perhaps need
+to call it for all the particles when they are initialized. We do, but
+somehow this is still not working.
+
+30 Nov 09
+Was not setting the pointer iinc properly. Fixed, but now the calculation
+of the pointer to position (iu) in partlocate appears to be redundant.
+It is not used in padvnc, only in chargetomesh, where it had to be 
+done separately. So purge out of partlocate the calculation of the 
+pointer. Simplifies and reduces argument count.
+
+Now we need to implement some convenient way to detect when partlocate
+overflows the interp. Perhaps a specific large iregion. No. Add a logical
+argument. Then test this. Implemented.
+
+1 Dec 09
+
+Putting Mesh information into the geometry file.
+
+It becomes clear that we ought to put the mesh information together with
+the object geometry information. Presumably in the same input file.
+A general way to specify the mesh information would be to provide for 
+each dimension two flexible length arrays:
+imeshstep: 1, ms2, ms3, ..., msN
+xmeshpos:  xm1,xm2,xm3, ..., xmN
+which determine the mesh number corresponding to mesh position.
+Thus imeshstep=1,32; xmeshpos=-5.,5. corresponds to a uniform 31-step 
+mesh 1-32 over domain -5. to 5.
+imeshstep=1,12,20,32; xmeshpos=-5.,-1.,1.,5. is mesh with 3 domains 
+1-12 covers -5. to -1.; 12-20 covers -1. to 1.; 20-32 covers 1. to 5.
+An imeshstep value of 0 indicates no more array. 
+
+To convert this to the meshcom ixnp and xn values requires that the 
+dimensions be known in the correct order (x,y,z,...) so one has to set 
+them all (perhaps to defaults) and then do the conversion. 
+
+Implemented structure and default initialization for imeshstep and xmeshpos.
+Implemented new meshcontruct to use that default. Gives same answer.
+
+Format in the geometry file will be for dimensions 1,2,3:
+
+91/2/3, ms1,ms2,...,msN,0,xm1,...,xmN,0
+
+Seems to work.
+
+Now trying to rationalize things, we find a logical problem. 
+iuds is now set by meshconstruct. That has to be done after we 
+have determined myid. But the initialization of sormpi discovers myid,
+and it needs to be passed the value of iuds. 
+
+I think this requires me to get rid of the early initialization, which 
+was anyway very artificial. Instead I can use a routine getmyid to
+get it. This does not seem to need any changes to sormpi. Yes it works
+nicely and easily. This is a much better approach. Also got rid of
+xir the point assumed to be in the region. Now just use linregion.
+
+Don't seem to have gotten to the bottom of the difference with or
+without stored geom. There is a call to ran1 that ought to reset it.
+Thus it's not clear that the difference arises from the random
+numbers.  However there did seem to be a difference in pinit: 100776
+when set, vs ntries= 100414 when read back. So if the random number
+generator is not this issue what is? 
+
+Ahh! It WAS the random number generator, because pinit was erroneously
+using the old rand instead of ran1. I use rand() _only_ in volintegrate
+because of the big cost there of number generation. So now fixed. 
+We get the same answer whether or not the stored3 read is successful.
+
+Today
+_____
+We implemented mesh specification in the geometry file.
+Rationalized some of ccpic, notably the mpi initialization. 
+Fixed a bug in the pinit call and stored geometry differences. 
+
+Discovered a bug in slicegweb to do with non-equal side domains. Actually
+it's a feature. Hidweb is set not to rescale until done explicitly.
+
+2 Dec 09
+
+Now we need sensible reinjection for the whole rectangular domain.
+Issues include
+1. How to account for any non-zero potential at the domain edge?
+2. Are there many interesting situations where periodic reinjection
+   would be useful?
+3. How to deal with situations where some part of the boundary is outside
+   the particle region. 
+
+One thought about 1. is that one might use reinjection at infinity followed
+by integration in an approximated spherically symmetric potential. The same
+approach as in orbitinject. One would have to use an impact parameter range
+that extends to the boundary of the cuboid region. This is substantially 
+larger than the largest sphere that fits within the region. Radius is larger
+by sqrt(3), so impact parameter area is larger by 3. Consequently there
+would be substantial (factor 3) inefficiency in the process. It might also
+be tricky to determine whether the orbit intersects the sphere. 
+
+Probably the use of the Green's function solution for this purpose is
+overkill. Certainly it will not arise naturally for the actual boundary
+conditions of a cube. Other issues arise if the domain is a very elongated
+cuboid. Then the spherical symmetry is a bad approximation (perhaps). But 
+in any case the injection inefficiency will rapidly increase. 
+
+Overall, it seems unlikely that an orbitinjection approximation will have
+sufficient accuracy to warrant the trouble. A straight approximation of
+cartesian reinjection of the infinite-distance distribution function ought
+to be pretty easy, but will not account for external acceleration. 
+
+Options for ad hoc adjustment of the injection to correct for external
+acceleration include 
+1. Adding normal energy. (Enhanced normal inward velocity).
+2. Adding total energy. (Keeping the velocity direction fixed.) 
+3. Some other directional assumption.
+
+Should one change the distribution across the boundary? If one were
+in a quasineutral regime, then perhaps the density ought to be weighted
+by the Boltzmann factor. One way to do that would be to roll the dice
+and reject the particle if above exp(\phi), where phi is the local
+reinjection potential. This would appropriately contour the weight. 
+However, it would not be correct for a long-Debye-length situation. 
+
+ Periodic Reinjection. Even if periodic reinjection were used for
+particles escaping the domain, one would still have to deal with particles
+lost to the objects, and their reinjection. Therefore periodic reinjection
+does not actually solve the problems of reinjection. It could be an
+option for some (or all) of the external boundary surfaces. It could be used
+whether or not the potential boundary conditions were periodic. 
+
+The first thing to do is to implement a shifted maxwellian calculation.
+If 
+   f(v) = C exp[-m( v - v_d)^2/2T]
+then the total number with positive v-direction is
+   N_+ = C \int_0^\infty exp[-m( v - v_d)^2/2T] dv
+       = C \int_{-v_d/\sqrt{2T/m}}^\infty exp[-t^2] dt \sqrt{2T/m} 
+       = C \sqrt{\pi}/2 \sqrt{2T/m} erfc(-v_d/\sqrt{2T/m})
+
+Since erfc(0)=1, erfc(-\in+fty)=2, the normalization is such that \int f dv
+= 1 if C \sqrt(\pi}/2 \sqrt{2T/m} = 1/2.
+
+The flux density above velocity v_0 is 
+    F(v_0)  =  C \int_v_0^\infty exp[-m( v - v_d)^2/2T] v dv
+       =  C \int_{t_0-t_d}^\infty exp[-t^2] (t+t_d) dt {2T/m} 
+(putting\ t=(v-v_d)/sqrt{2T/m})
+       =  C2T/m [-exp(-t^2)/2 - t_d \sqrt{\pi}/2 erfc(-t) ]_{t_0-t_d}^\infty
+       =  C T/m [exp(-(t_0-t_d)^2) + t_d \sqrt{\pi} erfc(t_0-t_d)]
+       = \sqrt{T/2m} [exp(-(t_0-t_d^2))/\sqrt{\pi}  +  t_d erfc(t_0-t_d)] 
+
+Approach: 
+
+Decide the face to be injected at, by random choice weighted by F x Area. 
+Decide the position on face by random 2D rectangular.
+Decide the tangential velocities using gasdev (drawing from maxwellian).
+Decide the normal velocity by drawing from the above distribution:
+       how do we do that distribution draw?
+
+We need to be able to invert F(t_0). 
+That's not obviously feasible analytically.
+Seems as if we need to form a numerical table of F(t_0) and interpolate
+the inverse lookups. This would require six tables: one for each surface.
+But at least they only have to be one-dimensional. 

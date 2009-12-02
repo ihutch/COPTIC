@@ -11,6 +11,11 @@ c statement function:
 
 c precalculate values for an integration over qp range.
 
+      if(rb.le.0.)then 
+         write(*,*)'Error in external integration initialization.'
+     $        ,' rb=',rb
+         stop
+      endif
       rbol=rb/xlambda
 c Values multiplied by exp functions.
       if(rbol.lt.50.)then

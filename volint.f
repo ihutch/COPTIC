@@ -4,11 +4,11 @@ c Routine to be passed to mditerarg, to store the volumes calculated
 c from meshcom for unintersected points or by volintegrate.
 c Can't be called for edge nodes.
       subroutine volnode(inc,ipoint,indi,ndims,iused,
-     $     volumes,region,cij)
+     $     volumes,cij)
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
       real volumes(*)
-      real region,cij(*)
+      real cij(*)
 
       include '3dcom.f'
       external linregion
@@ -29,7 +29,6 @@ c Silence warnings with spurious iused acces.
       icb=iused(1)
       icall=icall+1
       if(mod(icall,300).eq.0)write(*,'(''.'',$)')
-      iregion=int(region )
 c The cij address is to data 2*ndims+1 long
       icb=2*ndims+1
 c Object pointer
@@ -49,7 +48,6 @@ c This is an unintersected case. Calculate simply.
          xi(id)=xn(index)
          vol=vol*(xn(index+1)-xn(index-1))*0.5
       enddo
-c      if(iregion.ne.insideall(ndims_mesh,xi))goto 3
       if(.not.linregion(ibool_part,ndims_mesh,xi)) goto 3
       volumes(ipoint+1)=vol
       inc=1
@@ -64,12 +62,11 @@ c Intersected case.
          xm(id)=xn(index-1)
       enddo
 c If we are outside the active region use unintersected case
-c      if(insideall(ndims_mesh,xi).ne.iregion)goto 3
       if(.not.linregion(ibool_part,ndims_mesh,xi)) goto 3
 
 c      write(*,*)'Volintegrate call:',indi,xi,cij(icij)
 c Use volintegrate function.
-      volumes(ipoint+1)=volintegrate(ndims,xm,xi,xp,iregion,npoints)
+      volumes(ipoint+1)=volintegrate(ndims,xm,xi,xp,npoints)
       inc=1
       return
 
@@ -86,14 +83,15 @@ c techniques, for each direction, we choose a random position uniformly
 c between x_{i-1} and x_{i+1}; (not uniform in mesh-fraction, although a
 c scheme could be constructed uniform in mesh-fraction, which would
 c probably be slightly less efficient); we weight by
-c (1-|f|)(x_{i+1}-x_{i-1}). Then we get its iregion code, and if it is
-c in the region we add it on. If not we throw away. Eventually we divide
-c by the total number of points examined.
+c (1-|f|)(x_{i+1}-x_{i-1}). Then if it is in the region we add it on. If
+c not we throw away. Eventually we divide by the total number of points
+c examined.
 
-      real function volintegrate(ndims,xm,xi,xp,iregion,npoints)
+c      real function volintegrate(ndims,xm,xi,xp,iregion,npoints)
+      real function volintegrate(ndims,xm,xi,xp,npoints)
 
       real xm(ndims),xi(ndims),xp(ndims)
-      integer iregion,npoints
+      integer npoints
 
       parameter (mdims=10)
       real x(mdims)
@@ -118,7 +116,6 @@ c time here. So use the direct C rand which is perhaps quicker.
             w=w*(1.-f)*(xp(id)-xm(id))
          enddo
 c         irg=insideall(ndims,x)
-c         if(irg.eq.iregion) wtot=wtot+w
          if(linregion(ibool_part,ndims,x))wtot=wtot+w
       enddo
       volintegrate=wtot/npoints
@@ -144,7 +141,9 @@ c read.
       real volumes(ifull(1),ifull(2),ifull(3))
       integer iuds1(ndims)
       include '3dcom.f'
+      include 'meshcom.f'
       real obj1(odata,ngeomobjmax)
+      real xn1(1000)
       parameter (iunit=14)
 
 c Use istat to decide action.
@@ -163,6 +162,7 @@ c Write out the current geometric data.
 c      write(iunit)((obj_geom(i,j),i=1,oabc-1),j=1,ngeomobj)
       write(iunit)((obj_geom(i,j),i=1,odata),j=1,ngeomobj)
       write(iunit)(iuds(i),i=1,ndims)
+      write(iunit)(xn(i),i=1,ixnp(ndims_mesh+1))
       write(iunit)
      $     (((volumes(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
       close(iunit)
@@ -191,6 +191,10 @@ c      read(iunit,err=101,end=102)((obj1(i,j),i=1,oabc-1),j=1,ngeomobj)
       if(iuds1(1).ne.iuds(1)) goto 101
       if(iuds1(2).ne.iuds(2)) goto 101
       if(iuds1(3).ne.iuds(3)) goto 101
+      read(iunit)(xn1(i),i=1,ixnp(ndims_mesh+1))
+      do i=1,ixnp(ndims_mesh+1)
+         if(xn(i).ne.xn1(i))goto 101
+      enddo
       read(iunit,err=101,end=102)
      $     (((volumes(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
       close(iunit)

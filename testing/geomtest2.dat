@@ -1,0 +1,12 @@
+3  ; Number of dimensions must be the first line.
+# After that we can have comment lines with # in column 1.
+# We can short-list the data, but only if we don't put a comment
+# on the end. In that case we'd get an error.
+# ; Sphere type: A,B,C, center, constant axes.
+#1    , 1.,0.,-2. , .5,.5,.5,  .2,.2,.2
+# Positive potential sphere:
+#1    , 1.,0.,-2. , .0,.0,.0,  .18,.18,.18
+#1    , 1.,0.,2. , .0,.0,.0,  .07,.07,.07
+#1    , 1.,0.,2. , .0,.3,.0,  .07,.07,.07
+1    , 1.,0.,2. , .0,.0,.0,  .2,.2,.2
+#257 , 1.,.48,0.  ,.0,.0,.0, .48,.48,.48

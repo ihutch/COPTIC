@@ -113,7 +113,7 @@ c Silence warnings.
       rp=0.
  1    continue
       ilaunch=ilaunch+1
-      if(ilaunch.gt.1000)then
+      if(ilaunch.gt.100)then
          write(*,*)'ilaunch excessive. averein=',averein,' brcsq=',
      $        brcsq,' ierr=',ierr,' rp=',rp
          stop
@@ -219,11 +219,13 @@ c If we don't recalculate rp, then we don't trap NANs in the random choices.
 c      rp=rs
 c      write(*,*)'oreinject',rp
 c Reject particles that are already outside. But this is more to do
-c with detecting NANS.
+c with detecting NaNs.
       if(.not.rp.lt.rs*rs)then
 c      if(.not.rp.le.r(nr)*r(nr))then
-         write(*,*)'Relaunch',rp,xp(1,i),xp(2,i),xp(3,i)
-         write(*,*)vscale,u,brc,chium2,brcsq,sinal,cosal
+         write(*,'(a,4f8.4)')'Relaunch rp,xp(1,i),xp(2,i),xp(3,i)',
+     $        rp,xp(1,i),xp(2,i),xp(3,i)
+         write(*,'(a,7f8.4)')'vscale,u,brc,chium2,brcsq,sinal,cosal',
+     $        vscale,u,brc,chium2,brcsq,sinal,cosal
          goto 1
       endif
       end
@@ -462,10 +464,6 @@ c Specify the q-array. It goes from 0 to 1.
             do i=1,iqs
                qp(i)=((i-1.)/(iqs-1.))
             enddo
-c            write(*,*)iqs,r(nr),xlambda,averein,adeficit
-c     Since phi is specified in real space units, we tell the initialization
-c     function what the rmax really is, and it does the transformation.
-c            call initext(iqs,qp,phibye,phiei,r(nr),xlambda)
             call initext(iqs,qp,phibye,phiei,rs,xlambda)
 C$$$         endif
 c Diagnostics
@@ -492,6 +490,7 @@ c Do the integration for the orbit.
       p2i2=2./p2
       sa=b2i - qp(1)**2 - p2i2*(averein*phibye(1)-adeficit*phiei(1))
       d1=(1./sqrt(sa))
+c         write(*,*)d1,d2,b2i,p2i2,qp(1),phibye(1),phiei(1)
 c Inverse square case.
 c      d1=1./sqrt(b2i)
       alpha=0.
@@ -509,7 +508,9 @@ c      write(*,*)'alpha=',alpha
 c Negative sign for definition of alpha relative to the forward direction.
       cosal=-cos(alpha)
       sinal=sin(alpha)
-c      write(*,*)'averein,adeficit',averein,adeficit,alpha
+      if(.not.sinal.lt.1.)then
+         write(*,*)'averein,adeficit,alpha',averein,adeficit,alpha
+      endif
       return
  2    ierr=i
 c      write(*,101)i,b2,p2,averein,adeficit
@@ -623,10 +624,11 @@ c First object is sphere of radius rc and potential phi.
       rc=obj_geom(oradius,1)
       phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
 c Outer boundary setting -----------------
+c Don't do this if there's no second object because things then break.
 c Second object is bounding sphere of radius rs.
-      rs=obj_geom(oradius,2)
+c      rs=obj_geom(oradius,2)
 c But use a tad more for the mesh size
-      rsmesh=obj_geom(oradius,2)*1.00001
+c      rsmesh=obj_geom(oradius,2)*1.00001
 c Override the boundary condition of object 2 with an OML condition.
       xlambda=debyelen/sqrt(1.+1./Ti)
       a=1./xlambda+1./rs

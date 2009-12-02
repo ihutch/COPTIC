@@ -30,8 +30,6 @@ c
       real psum(Li,Li,Li),volumes(Li,Li,Li)
 c Used dimensions, Full dimensions. Used dims-2
       integer iuds(ndims_sor),ifull(ndims_sor),ium2(ndims_sor)
-c Arrays defining mesh ends
-      real xmstart(ndims_sor),xmend(ndims_sor)
 c Mesh spacing description structure
       include 'meshcom.f'
 c Processor cartesian geometry can be set by default.
@@ -62,22 +60,19 @@ c Plasma common data
       common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
       logical lrestart,lmyidhead,lregion
+      integer ixp(ndims),xfrac(ndims)
       
 c Diagnostics
 c      real usave(Li,Li,Li),error(Li,Li,Li),cijp(2*ndims_sor+1,Li,Li)
       real zp(Li,Li)
-c Point in the active region
-      real xir(ndims)
-
 c Set up the structure vector.
 c      data iLs/1,Li,(Li*Li),(Li*Li*Li)/
       data iLs/1,Li,Li2,Li3/
 c Mesh and mpi parameter defaults:
       data idims/nblksi,nblksj,nblksk/
       data ifull/Li,Li,Li/
-      data iuds/ni,nj,nk/
-c Point which lies in the plasma region:
-      data xir/2.,2.,2./
+c No longer set here. Done by meshconstruct. 
+c      data iuds/ni,nj,nk/
 c Data for plotting etc.
       data iobpl/0/
       data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot/
@@ -102,7 +97,7 @@ c Default to constant rhoinf not n_part.
       Ti=1.
       vd=0.
       rs=5.0
-      rsmesh=rs*1.00001
+      rsmesh=rs
       numprocs=1
       bdt=1.
       norbits=0
@@ -110,18 +105,17 @@ c Default to constant rhoinf not n_part.
       iavesteps=100
       lmyidhead=.true.
       ifplot=-1
-      do id=1,ndims
-         xmstart(id)=-rsmesh
-         xmend(id)=rsmesh
-      enddo
 c---------------------------------------------------------------------
 c mpi initialization only.
+c Obsolete approach no longer used.
 c Control bit 3 (=4) pure initialization, no communication (to get myid).
-      call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,4,ierr
-     $     ,myid,idims)
-      if(myid.ne.0) lmyidhead=.false.
+c      call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,4,ierr
+c     $     ,myid,idims)
 c This necessary or could be hidden in sormpi and pass back numprocs.
-      call mpicommsize(numprocs,ierr)
+c      call mpicommsize(numprocs,ierr)
+      call mpigetmyid(myid,nprocs,ierr)
+      if(myid.ne.0) lmyidhead=.false.
+      numprocs=nprocs
 c--------------------------------------------------------------
 c Deal with arguments
 c      if(iargc().eq.0) goto "help"
@@ -198,6 +192,7 @@ c Help text
       write(*,302)' -t    set Ion Temperature. [',Ti
       write(*,302)' -l    set Debye Length. [',debyelen
       write(*,301)' -a    set averaging steps. [',iavesteps
+c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [ccpicgeom.dat'
       write(*,301)' --restart  Attempt to restart from saved state.'
@@ -220,16 +215,18 @@ c Help text
  202  continue
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
-      do id=1,ndims
-         ium2(id)=iuds(id)-2
-      enddo         
-c-----------------------------------------------------------------
 c Geometry and boundary information. Read in and initialize:
       call readgeom(objfilename,myid)
       call geominit(myid)
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
-      call meshconstruct(ndims,iuds,xmstart,xmend)
+      call meshconstruct(ndims,iuds)
+      if(lmyidhead)write(*,'(a,3i4,6f8.3)')
+     $     ' Constructed mesh',iuds,xmeshstart,xmeshend
+c-----------------------------------------------------------------
+      do id=1,ndims
+         ium2(id)=iuds(id)-2
+      enddo         
 c----------------------------------------------------------------
 c Initializations
       if(lmyidhead)write(*,*)'Initializing the stencil data cij'
@@ -249,14 +246,10 @@ c don't calculate volumes testing.      istat=1
       if(istat.eq.0)then
 c Calculate the nodal volumes for all non-edge points.
          ipoint=iLs(1)+iLs(2)+iLs(3)
-c We are going to populate the region in which xir lies.
-c         iregion=insideall(ndims,xir)
-         iregion=insidemask(ndims,xir)
-         region=iregion
          if(lmyidhead)write(*,*)
      $        'Starting volume setting. Be patient this first time...'
          call mditerarg(volnode,ndims,ifull,ium2,ipoint,
-     $        volumes,region,cij,dum4)
+     $        volumes,cij,dum3,dum4)
          if(lmyidhead)write(*,*)'Finished volume setting'
 c If head, write the geometry data if we've had to calculate it.
          if(lmyidhead)call stored3geometry(volumes,iuds,ifull,istat)
@@ -283,7 +276,7 @@ c Some simple graphics of cij, and volumes.
          if(ltestplot)call text3graphs(ndims,iuds,ifull,cij,volumes)
 c---------------------------------------------
 c The following requires include objcom.f
-         if(lmyidhead)write(*,*)'Finished mesh setup:',iuds
+c         if(lmyidhead)write(*,*)'Finished mesh/stencil setup:',iuds
          if(lmyidhead)write(*,*)
      $      'Used No of pointers:',oi_sor,' of',iuds(1)*iuds(2)*iuds(3)
      $        ,' points.'
@@ -307,7 +300,6 @@ c An initial solver call.
      $     ,myid,idims)
       ictl=2
 c
-
 c-------------------------------------------------------------------
       if(lmyidhead)then
          call vaccheck(ifull,iuds,cij,u,thetain,nth,rs,ltestplot)
@@ -316,9 +308,8 @@ c End of plotting.
 c------------------------------------------------------------------
 c Now using general definition to accommodate union regions.
 c Initialize with a specified number of particles.
-c Initialize the fortran random number generator.
+c (Re)Initialize the fortran random number generator.
       idum=-myid-1
-      blah=ran1(idum) 
       if(lmyidhead)write(*,*)'Initializing',n_part,' particles'
       call pinit()
 c      if(lmyidhead)write(*,*)'Return from pinit'
@@ -334,7 +325,6 @@ c Prior half-step radial velocity
 c Tangential velocity of circular orbit at r=4.
       x_part(5,1)=sqrt(abs(phip/x_part(1,1))-x_part(4,1)**2)
       x_part(6,1)=0.
-c
 c      if(lmyidhead)write(*,*)'dt=',dt,' vd=',vd
 c ' dtheta=',dt*x_part(5,1)/x_part(1,1),
 c     $     ' steps=',nsteps,' total theta/2pi='

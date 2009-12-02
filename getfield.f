@@ -162,6 +162,8 @@ c but if fraction .ge.0.5 in field direction, this is corrected.
       real d(2)
 c zero circumlocution:
       data izer0/0/
+c silence warnings
+      data d/0.,0./
 
 c Silence warning about ndims unused
       ixn0=ndims

@@ -4,7 +4,6 @@ c particle weight sum, having structure iLs, and (possible) diagnostics.
 c mesh data, notably ndims_mesh, since we don't pass it:
       include 'meshcom.f'
       integer iLs(ndims_mesh+1)
-
       real xfrac(ndims_mesh)
       integer ixp(ndims_mesh)
 
@@ -18,9 +17,16 @@ c For all (possibly-active) particles.
 c      do i=1,n_part
       do i=1,ioc_part
          if(if_part(i).ne.0)then
-            call partlocate(i,iLs,iu,ixp,xfrac,iregion)
-c         if(iregion.ne.iregion) perhaps some action: reinject?
-
+            inewregion=insideall(ndims_mesh,x_part(1,i))
+            x1=x_part(ndims_mesh*2+1,i)
+c Alternative to partlocate:
+            iu=0
+            do id=1,ndims_mesh
+               ix=int(x_part(ndims_mesh*2+id,i))
+               iu=iu+(ix-1)*iLs(id)
+            enddo
+            x2=x_part(ndims_mesh*2+1,i)
+            if(x1.ne.x2)write(*,*)'Mesh pos change',i,x1,x2
 c Cycle through the vertices of the box we are in.
             do ii=0,2**ndims_mesh-1
                ii1=ii
@@ -34,10 +40,15 @@ c But likely not by very much since the main cost is divide+mult by 2
                   ip=ii1-2*ii2
                   ii1=ii2
                   iinc=iinc+ip*iLs(ik)
+                  xm=x_part(ndims_mesh*2+ik,i)
+                  ix=int(xm)
+                  xf=xm-ix
                   if(ip.eq.1)then
-                     fac=fac*xfrac(ik)
+c                     fac=fac*xfrac(ik)
+                     fac=fac*xf
                   else
-                     fac=fac*(1.-xfrac(ik))
+c                     fac=fac*(1.-xfrac(ik))
+                     fac=fac*(1.-xf)
                   endif
                enddo 
 c Add to the particle sum the fraction for this vertex.

@@ -764,3 +764,14 @@ c*******************************************************************
       include 'mpif.h'
       call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
       end
+c********************************************************************
+      subroutine mpigetmyid(myid,numprocs,ierr)
+c If necessary initialize the MPI system.
+c Get my MPI id, and the number of processors.
+      include 'mpif.h'
+      logical lflag
+      call MPI_INITIALIZED(lflag,ierr)
+      if(.not.lflag) call MPI_INIT(ierr)
+      call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
+      call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
+      end

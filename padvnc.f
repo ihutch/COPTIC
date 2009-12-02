@@ -27,6 +27,7 @@ c Local storage
       integer ixp(ndims_mesh)
       real field(ndims_mesh)
       real xfrac(ndims_mesh)
+      logical linmesh
 c Testing storage
       real fieldp(ndims_mesh)
 c Make this always last to use the checks.
@@ -52,9 +53,8 @@ c At most do over all particle slots. But generally we break earlier.
  100     continue
 c If this particle slot is occupied.
          if(if_part(i).ne.0)then
-c Disentangle from old approach (inefficiently).
+c Get its region
             iregion=insideall(ndims,x_part(1,i))
-c            iregion=insidemask(ndims,x_part(1,i))
 c Subcycle start.
  101        continue
 c Use dtaccel for acceleration. May be different from dt if there was
@@ -72,34 +72,33 @@ c---------------------------------
 c Get the ndims field components at this point. 
 c We only use x_part information for location. So we need to pass
 c the region information.
-            do idf=1,ndims
-               call getfield(
-     $              ndims,cij(ic1),u,iLs
-     $              ,xn(ixnp(idf)+1)
-     $              ,idf
-     $              ,x_part(ndimsx2+1,i)
-     $              ,imaskregion(iregion),field(idf))
-            enddo
-            if(.false.)then
+               do idf=1,ndims
+                  call getfield(
+     $                 ndims,cij(ic1),u,iLs
+     $                 ,xn(ixnp(idf)+1)
+     $                 ,idf
+     $                 ,x_part(ndimsx2+1,i)
+     $                 ,imaskregion(iregion),field(idf))
+               enddo
+c               if(.false.)then
 c Testing only, of the few-argument field evaluator.
-               call fieldatpoint(x_part(1,i),u,cij,iLs,fieldp)
-               if(fieldp(2).ne.field(2))then
-               write(*,'(i5,a,6f10.6)')i,' Point-field:',
-     $              fieldp,((fieldp(j)-field(j)),j=1,ndims)
-               endif
-
-            endif
+c                  call fieldatpoint(x_part(1,i),u,cij,iLs,fieldp)
+c                  if(fieldp(2).ne.field(2))then
+c                     write(*,'(i5,a,6f10.6)')i,' Point-field:',
+c     $                    fieldp,((fieldp(j)-field(j)),j=1,ndims)
+c                  endif
+c               endif
 c--------------------------------
-            else
+c            else
 c Testing with pure coulomb field from phip potential at r=1.
-               r2=0.
-               do idf=1,ndims
-                  r2=r2+x_part(idf,i)**2
-               enddo
-               r3=sqrt(r2)**3
-               do idf=1,ndims
-                  field(idf)=x_part(idf,i)*phip/r3
-               enddo
+c               r2=0.
+c               do idf=1,ndims
+c                  r2=r2+x_part(idf,i)**2
+c               enddo
+c               r3=sqrt(r2)**3
+c               do idf=1,ndims
+c                  field(idf)=x_part(idf,i)*phip/r3
+c               enddo
             endif
 c--------------------------------
 c Accelerate          
@@ -109,25 +108,24 @@ c Accelerate
 c Move
             do j=1,ndims
                x_part(j,i)=x_part(j,i)+x_part(j+3,i)*dtpos
-c This ought not to be necessary since the mesh position is updated
-c in chargetomesh. Now ioc_part bug fixed it is not needed:
-c Update mesh position:
-c               ioff=ixnp(j)
-c               ix=interp(xn(ioff+1),ixnp(j+1)-ioff,
-c     $                 x_part(j,i),x_part(j+2*ndims_mesh,i))
             enddo          
 
-            inewregion=insideall(ndims,x_part(1,i))
+            call partlocate(i,ixp,xfrac,inewregion,linmesh)
+c Old approach 
+c            inewregion=insideall(ndims,x_part(1,i))
 c If we crossed a boundary, do tallying.
-          if(inewregion.ne.iregion)call tallyexit(i,inewregion-iregion)
-            if(.not.linregion(ibool_part,ndims,x_part(1,i)))then
-c We left the region. 
+            if(inewregion.ne.iregion)
+     $           call tallyexit(i,inewregion-iregion)
+            if(.not.linmesh .or.
+     $         .not.linregion(ibool_part,ndims,x_part(1,i)))then
+c We left the mesh or region. 
 c Reinject if we haven't exhausted complement.
                if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)then
-                  call reinject(x_part(1,i),ilaunch)
                   if_part(i)=1
+                  call reinject(x_part(1,i),ilaunch)
 c Find where we are, since we don't yet know.
-                  call partlocate(i,iLs,iu,ixp,xfrac,iregion)
+                  call partlocate(i,ixp,xfrac,iregion,linmesh)
+                  if(.not.linmesh)stop 'Reinject out of region'
                   dtpos=dtpos*ran1(myid)
                   dtprec=0.
                   nlost=nlost+1
@@ -155,11 +153,11 @@ c The standard exit point for a particle that is active
             endif
          elseif(ninjcomp.ne.0.and.nrein.lt.ninjcomp)then
 c An unfilled slot. Fill it if we need to.
-               call reinject(x_part(1,i),ilaunch)
                if_part(i)=1
+               call reinject(x_part(1,i),ilaunch)
 c Find where we are, since we don't yet know.
-c Might not be needed if we insert needed information in reinject,
-               call partlocate(i,iLs,iu,ixp,xfrac,iregion)
+               call partlocate(i,ixp,xfrac,iregion,linmesh)
+               if(.not.linmesh)stop 'Reinject out of region'
                dtpos=dtpos*ran1(myid)
                dtprec=0.
                nlost=nlost+1
@@ -168,10 +166,7 @@ c Might not be needed if we insert needed information in reinject,
      $                 ,imaskregion(iregion),2)
                phirein=phirein+ilaunch*phi
                call diaginject(x_part(1,i))
-c Complete reinjection by advancing by random remaining.
-c               goto 101
-c Silence warning of jump to different block by jumping outside instead
-c gives the same result as 101.
+c Silence warning of block jump by jumping outside instead of 101.
                goto 100
          elseif(i.ge.ioc_part)then
 c We do not need to reinject new particles, and
@@ -179,7 +174,7 @@ c this slot is higher than all previously handled. There are no
 c more active particles above it. So break
             goto 102
          endif
-c 
+c Special diagnostic orbit tracking:
          if(i.le.norbits.and. if_part(i).ne.0)then
             iorbitlen(i)=iorbitlen(i)+1
             xorbit(iorbitlen(i),i)=x_part(1,i)
@@ -207,32 +202,32 @@ c            if(myid.eq.0)write(*,*)'PROBLEM: phirein>0:',phirein
             phirein=0.
          endif
       else
-         write(*,*)'No reinjections'
+         if(ninjcomp.gt.100)write(*,*)'No reinjections'
       endif
       end
 c***********************************************************************
-      subroutine partlocate(i,iLs,iu,ixp,xfrac,iregion)
+      subroutine partlocate(i,ixp,xfrac,iregion,linmesh)
 
 c Locate the particle numbered i (from common partcom) 
 c in the mesh (from common meshcom).
-c Return the offset of the base of its cell in iu.
 c Return the integer cell-base coordinates in ixp(ndims)
 c Return the fractions of cell width at which located in xfrac(ndims)
 c Return the region identifier in iregion.
+c Return whether the particle is in the mesh in linmesh.
 c Store the mesh position into common partcom (x_part).
 
 c meshcom provides ixnp, xn, the mesh spacings. (+ndims_mesh)
       include 'meshcom.f'
       parameter (ndimsx2=ndims_mesh*2)
-      integer i,iu,iregion
-      integer iLs(ndims_mesh+1)
+      integer i,iregion
       integer ixp(ndims_mesh)
       real xfrac(ndims_mesh)
+      logical linmesh
 
       include 'partcom.f'
 
+      linmesh=.true.
       iregion=insideall(ndims_mesh,x_part(1,i))
-      iu=0
       do id=1,ndims_mesh
 c Offset to start of dimension-id-position array.
          ioff=ixnp(id)
@@ -242,8 +237,11 @@ c Find the index of xprime in the array xn:
          xfrac(id)=xm-ix
          x_part(ndimsx2+id,i)=xm
          ixp(id)=ix
-c should be ix-1
-         iu=iu+(ix-1)*iLs(id)
+         if(ix.eq.0)then
+            linmesh=.false.
+c            write(*,'(a,i7,i3,f10.4)')
+c     $        ' Outside domain',i,id,x_part(id,i)
+         endif
       enddo
       
       end
