@@ -18,13 +18,13 @@ FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.
 UTILITIES=udisplay.o
 
 OBJECTS=$(FIXEDOBJECTS) ${REINJECT}
-HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f
+HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 G77=mpif77
 #COMPILE-SWITCHES = -Wall -O2  -I. 
-COMPILE-SWITCHES = -Wall  -O2 -I. -g -fbounds-check
+#COMPILE-SWITCHES = -Wall  -O2 -I. -g -fbounds-check
 #COMPILE-SWITCHES = -Wall  -O2 -I. -g 
-#COMPILE-SWITCHES = -Wall -Wno-unused -O2 -I.
+COMPILE-SWITCHES = -Wall -Wno-unused -O2 -I.
 #COMPILE-SWITCHES = -Wall -Wno-unused -I.
 NOBOUNDS= -Wall -Wno-unused -O2 -I.
 #PROFILING= -pg
