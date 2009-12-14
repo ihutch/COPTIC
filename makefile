@@ -1,21 +1,30 @@
 GLULIBS= -lGL -lGLU
 LIBRARIES = -L/usr/X11R6/lib/ -L/home/hutch/accis/ -laccisX -lXt -lX11 $(GLULIBS)
-# Things just needed for the test routine:
-UTILITIES=udisplay.o
+########################
 # The reinjection choice:
-#REINJECT=reinject.o
+#######################
 REINJECT=orbitinjnew.o extint.o
+GEOMFILE=geomsphere.dat
+##################
+#REINJECT=reinject.o
+#GEOMFILE=geomsphere.dat
+###################
+REINJECT=cartreinject.o
+GEOMFILE=geomcubic.dat
+##################
 # The sormpi system.
 FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reindiag.o pinit.o bdyroutine.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o reduce.o stress.o average.o
+# Things just needed for the test routine:
+UTILITIES=udisplay.o
 
 OBJECTS=$(FIXEDOBJECTS) ${REINJECT}
 HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 G77=mpif77
 #COMPILE-SWITCHES = -Wall -O2  -I. 
-#COMPILE-SWITCHES = -Wall  -O2 -I. -g -fbounds-check
+COMPILE-SWITCHES = -Wall  -O2 -I. -g -fbounds-check
 #COMPILE-SWITCHES = -Wall  -O2 -I. -g 
-COMPILE-SWITCHES = -Wall -Wno-unused -O2 -I.
+#COMPILE-SWITCHES = -Wall -Wno-unused -O2 -I.
 #COMPILE-SWITCHES = -Wall -Wno-unused -I.
 NOBOUNDS= -Wall -Wno-unused -O2 -I.
 #PROFILING= -pg
@@ -58,6 +67,7 @@ getfield.o : getfield.f makefile $(HEADERS)
 
 # Main program explicit to avoid make bugs:
 ccpic : ccpic.f makefile $(OBJECTS) $(UTILITIES) /home/hutch/accis/libaccisX.a
+	if [ $(GEOMFILE). != . ] ; then rm -f ccpicgeom.dat; ln -s $(GEOMFILE) ccpicgeom.dat; fi
 	$(G77)  -o ccpic $(COMPILE-SWITCHES) $(PROFILING) ccpic.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
 testing : testing/mpibbdytest testing/fieldtest testing/stresstest

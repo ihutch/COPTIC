@@ -12,9 +12,12 @@ c silence warnings:
       fluxfilename=' '
 
       call examargs
-
+      
       call phiread(phifilename,ifull,iuds,u,ierr)
       if(ierr.eq.1)stop
+
+c For boxes
+      rs=sqrt(3.)*rs
 
       do j=1,nr
          do i=1,ntheta
@@ -48,7 +51,7 @@ c plot potential versus radius.
                r=sqrt(x**2+y**2+z**2)
                call polymark(r,u(i,j,k),1,10)
                if(r.gt.rs .and. u(i,j,k).ne.0)then
-                  write(*,'(4f12.6,3i3)')x,y,z,u(i,j,k),i,j,k
+c                  write(*,'(4f12.6,3i3)')x,y,z,u(i,j,k),i,j,k
                endif
                if(u(i,j,k).lt.phimin)phimin=u(i,j,k)
             enddo

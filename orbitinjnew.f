@@ -566,6 +566,7 @@ c Approximate initialization
          endif
 c Else just leave it alone.
       endif
+      write(*,*)'Ending rhoinfcalc',rhoinf,nrein,n_part
       end
 c*********************************************************************
       subroutine nreincalc(dtin)

@@ -30,6 +30,8 @@ c Local storage
       logical linmesh
 c Testing storage
       real fieldp(ndims_mesh)
+c Needed only to print out averein:
+c      common /reinextra/averein,adeficit
 c Make this always last to use the checks.
       include 'partcom.f'
 
@@ -40,6 +42,7 @@ c Make this always last to use the checks.
 c Initialize. Set reinjection potential. We start with zero reinjections.
 c      write(*,*)'Setting averein in padvnc.',phirein
       call avereinset(phirein)
+c      write(*,*)'averein',averein
       phirein=0
       nrein=0
       nlost=0
@@ -172,6 +175,7 @@ c Silence warning of block jump by jumping outside instead of 101.
 c We do not need to reinject new particles, and
 c this slot is higher than all previously handled. There are no
 c more active particles above it. So break
+c            write(*,*)'break',i,ioc_part
             goto 102
          endif
 c Special diagnostic orbit tracking:
@@ -188,7 +192,7 @@ c Special diagnostic orbit tracking:
      $        '  before ninjcomp=',ninjcomp,' . Increase n_partmax?'
       endif
       ioc_part=iocthis
-c      write(*,*)'iocthis=',iocthis
+c      write(*,*)'iocthis=',iocthis,i
 
 c Finished this particle step. Calculate the average reinjection 
 c potential
@@ -204,6 +208,8 @@ c            if(myid.eq.0)write(*,*)'PROBLEM: phirein>0:',phirein
       else
          if(ninjcomp.gt.100)write(*,*)'No reinjections'
       endif
+
+c      write(*,*)'Padvnc',n_part,nrein,ilaunch,ninjcomp,n_partmax
       end
 c***********************************************************************
       subroutine partlocate(i,ixp,xfrac,iregion,linmesh)

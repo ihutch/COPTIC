@@ -31,8 +31,8 @@ c Mesh data.
          xmeshend(id)=xmeshpos(id,iblk)
 c Set iuds according to specified mesh
          iuds(id)=imeshstep(id,iblk)
-         write(*,'(a,i3,10f8.3)')
-     $        ' Meshspec',id,(xmeshpos(id,kk),kk=1,iblk)
+c         write(*,'(a,i3,10f8.3)')
+c     $        ' Meshspec',id,(xmeshpos(id,kk),kk=1,iblk)
       enddo
 c      write(*,*)xmeshstart,xmeshend
       ixnp(ndims+1)=iof

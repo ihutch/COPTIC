@@ -480,7 +480,7 @@ c      write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
       write(22) fieldforce,pressforce,partforce,charge_ns
       close(22)
 
-      write(*,*)'Wrote flux data to ',name(1:lentrim(name))
+c      write(*,*)'Wrote flux data to ',name(1:lentrim(name))
 
       return
  101  continue

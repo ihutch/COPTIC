@@ -3572,3 +3572,151 @@ That's not obviously feasible analytically.
 Seems as if we need to form a numerical table of F(t_0) and interpolate
 the inverse lookups. This would require six tables: one for each surface.
 But at least they only have to be one-dimensional. 
+
+7 Dec 09
+
+Created integrator code. Programmed a fairly smart integrator
+subroutine cumprob. 
+
+8 Dec 09
+
+Programmed reinjection code.
+Programmed testing/creintest testing code.
+I find that the histogram reinjection distribution shows up on the 
+testing distributions. Thoughts about fixing that include the idea
+of some higher-order interpolation. However that is not straightforward
+at the edges, where it most matters, because the inverse cummulative
+probability curve has infinite slope there, so how does one fit that? 
+It's not clear that a parabolic interpolation will work. If I add a 
+further node outside the real range, which has a value much (by some
+chosen factor) beyond the bottom. This might work. On the other hand it
+probably won't be faster than simply using a finer mesh for the inverse
+cumulative curve. Using 1000 arrays seems to give a pretty good result.
+
+9 Dec 09
+
+Constructed (finally) a four point cubic interpolation routine. Checked
+numerically. However, when used in creinject, it makes things worse. There
+are spikes near the last but one point. Don't know why. Perhaps it means
+that the interpolation is non-monotonic (or nearly so). This is not 
+completely crazy, since a parabolic interpolation of a sharp corner from
+nearly flat to nearly vertical will produce overshoot. This may be
+the reason. At any rate it appears to confirm that it is very tricky to
+improve the inverse-cumulative approach by higher order interpolation. 
+I think it comes down to needing either to use a decently high number
+of nodes, or not using the inverse cumulative approach. The old finvtfunc
+approach was not bad. Settled for 1000 array for now. Linear interpolation.
+
+10 Dec 09
+
+Finished creintest.f to include testing of position. Seems correct.
+Now we need the cartesian versions/equivalent of nreincalc, geominit,
+rhoinfcalc.
+
+Implemented nreincalc and rhoinfcalc using 
+flux = ninfty sqrt(2Ti/pi)[A_1+A_2
+       	      +A_3{exp(-td**2)+sqrt(pi)/2 t_d[erfc(-t_d)-erfc(t_d)]}]
+and including a phirein correction factor of
+         cfactor=smaxflux(vd/sqrt(2.*Ti),chi)/smaxflux(vd/sqrt(2.*Ti),0.)
+
+(Not yet particle energy correction.)
+
+geominit is specific boundary setting for this geometry. Null for now.
+It compiles.
+
+It would be nice to have geometry files ccpicgeom.dat that were automatically
+invoked for the different geometry assumptions. Might be possible to 
+replace ccpicgeom within ccpic with a value that depends on the REINJECT
+case under consideration. Better to build a link into the make structure
+and change it according to whatever reinject we are using. Did that and
+cvs added geomsphere.dat and geomcubic.dat. Cartesian reinjection is
+actually not yet working. We aren't reinjecting anything. 
+
+Made some progress on getting things to run. But not to the bottom of it
+yet. denexamine and phiexamine don't run quite right.
+
+11 Dec 09
+
+Ok the main problem seems to be that the sign of the normal velocity
+is wrong and so particles leave immediately. Fixing this, there is still
+a small problem with sign of particles because the inverse cumulative
+probability extends slightly across zero, presumably because of the
+integration and interpolation. Consequently there are a few wrong signs
+still. I suppose we could fix this artificially. Did that.
+
+Now things run with sensible particle numbers but there are some very 
+strange peaks in the density that make no sense. And seem to be in straight
+diagonal lines for some number of cells. This was because I used idum as
+the argument for ran1. It needs to be >=0 for standard call. And idum
+was uninitialized.
+
+Finally got some runs that look plausible, although currently with
+potential set to zero at the boundary (the current default). Actually
+no. The potential is set to zero on two dimensions and something else
+in the third.
+
+Cartesian boundary flux tests. 
+
+32^2 grid ./ccpic -ni200000 -dt.025 -da5. -s500 we get rhoinf 212.67125
+Flux density*r^2, normalized to rhoinf   3.9655340. This is to be compared
+with 3.997 with sceptic or with 60^2 grid. Broadly we are getting the 
+right answer. Close to OML (4.388 for -p-10).
+
+With -l.3 we get: 2.8120570 c.f. 2.77 with sceptic etc. All pretty promising.
+I see that the printout from the run is different from what fluxexamine
+prints out 2.8006816, but close. Not quite sure why. 
+
+With -l5. I don't expect a good result, because of the BCs. Get 4.795. 4.777.
+C.f. 4.395 sceptic. This is 10% in error. Not a great result. 
+
+
+Summary
+-------
+Code seems to be working with outer injection boundary at the mesh edge.
+Gives promising agreement with prior runs at -p-10, even with relatively
+small (32^2) mesh (and inappropriate boundary conditions). 
+
+
+
+14 Dec 09
+
+Implement boundary setting of slope to -(1.+r/\lambda_s) with lambda_s
+currently set as the linearized value. This works reasonably well to
+maintain the phi contours circular at intermediate values of debyelen,
+and presumably is close to the right answer for large debyelen, although
+arguably it ought to be closer to -2, not -1 in the far distance. 
+At small debyelen, the value of the slope doesn't much matter.
+
+Then ./ccpic -ni200000 -dt.025 -da5. -s500 gives
+3.9668663. Essentially no change. -l5: 5.2031398 yikes! Too large by
+big factor (rhoinf=135.45, 8818). Try logarithmic slope of -1.: 5.3926058
+(rhoinf=122.93, 8330) . Also very large. Repeat old bdy run: 4.7955675 (this
+forces phi to nearly zero at the boundary rhoinf=161.79, 9714).
+
+This is rather worrying. It looks as if one gets a very bad result if
+the boundary potential is non-zero. I think this is because I don't
+yet correct the energy of the reinjected particle by phirein (or some
+other local potential correction). Scale velocity by
+(v^2-2.averein)/v^2. Initially I used phirein and got problems with
+overrunning the diagv. This is because phirein is not equal to the
+averein of the prior step in the middle of the particle advance.
+
+Now with -l5 get 3.6797631, rhoinf 149, 6897. Too small by a comparable
+amount. -l1 3.8620880 214.66699 10418.302
+-l.3 2.8107293 219.31303 7746.276
+
+What I think this experience shows is that the cartesian geometry is
+not very good for treating an isolated spherical object. Not because
+of the cell shape but because there are no convenient approximations
+for the boundary condition that allow one to take credit for the 
+isolation of the object, and not have to go as far out with the domain. 
+
+If the domain were part of an array, so that periodic boundary conditions
+apply, then this weakness is turned into a strength. Probably periodic
+conditions ought to be investigated. 
+
+To get into a physics problem soon, we could address the wake issue. This
+would also lead to exercising different meshes and perhaps even differently
+spaced meshes.
+
+For now, commit.

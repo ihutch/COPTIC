@@ -38,7 +38,7 @@ c fix any rounding errors at top and bottom of range:
          dpsi=2.*(1.+eps)*pi/ndpsi
          lfirst=.false.
 c Velocity
-         vrange=5.
+         vrange=6.
          dvf=2.*vrange/ndth
          do i=1,ndth
             vfv(i)=(-vrange+((i-1)+.5)*dvf)
@@ -80,7 +80,13 @@ c Particle velocity
       enddo
       sp=sqrt(sp)
       iv=nint(ndth*sp/vrange+0.5000001)
-      if(iv.gt.ndth)iv=ndth
+      if(iv.gt.ndth)then 
+c         write(*,*)'Reindiag Velocity range exceeded.',sp,iv
+         iv=ndth
+      elseif(iv.lt.0)then
+c         write(*,*)'Reindiag Velocity range exceeded.',sp,iv
+         iv=0
+      endif
       sv(iv)=sv(iv)+1
       end
 c**********************************************************************

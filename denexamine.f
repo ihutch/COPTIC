@@ -13,6 +13,7 @@ c
       call denread(denfilename,ifull,iuds,q,ierr)
       if(ierr.eq.1)stop
 
+      rs=sqrt(3.)*rs
 
       do j=1,nr
          do i=1,ntheta
@@ -27,13 +28,14 @@ c         write(*,*)j,rval(j)
       call sliceGweb(ifull,iuds,q,Li,zp,
      $        ixnp,xn,ifix,'Density:'//'n')
 
-c plot potential versus radius.
+c plot density versus radius.
 
       write(*,*)rs,debyelen,vd,Ti
 c      write(*,*)rs
 c      call pltinit(0.,rs,q(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
       call pltinit(0.,rs,0.,2.)
       call axis()
+      call axis2()
       call axlabels('radius','density')
       call charsize(.001,.001)
       denmin=0.
@@ -47,14 +49,14 @@ c      call pltinit(0.,rs,q(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
                c=z/r
                itheta=nint(0.5+ntheta*(c+1.000001)/2.00001)
                ir=nint(0.5+nr*(r-.999999)/(rs-1.00001))
-               if(ir.le.nr .and. ir.ge.1)then
+               if(ir.le.nr .and. ir.ge.1 .and. q(i,j,k).ne.0.)then
                   ithetacount(ir,itheta)=ithetacount(ir,itheta)+1
                   thetadist(ir,itheta)=thetadist(ir,itheta)+q(i,j,k)
                endif
                call polymark(r,q(i,j,k),1,10)
                if(r.gt.rs .and.
      $              .not.(q(i,j,k).eq.0. .or. q(i,j,k).eq.1.))then
-                  write(*,'(4f12.6,3i3)')x,y,z,q(i,j,k),i,j,k
+c                  write(*,'(4f12.6,3i3)')x,y,z,q(i,j,k),i,j,k
                endif
                if(q(i,j,k).lt.denmin)denmin=q(i,j,k)
             enddo
@@ -67,7 +69,8 @@ c      call pltinit(0.,rs,q(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
             endif
          enddo
       enddo
-      do j=1,nr
+      nmax=nr
+      do j=nr,1,-1
          do i=1,ntheta
             if(ithetacount(j,i).eq.0)then
                ip=mod(i,ntheta)+1
@@ -77,6 +80,7 @@ c      call pltinit(0.,rs,q(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
                elseif(ithetacount(j,im).ne.0)then
                   thetadist(j,i)=thetadist(j,im)
                else
+                  nmax=j-1
                   write(*,*)'Failed setting',j,i,im,ip
                   write(*,'(20i4)')(ithetacount(j,ii),ii=1,ntheta)
                endif
@@ -86,13 +90,13 @@ c      call pltinit(0.,rs,q(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
 
       do i=1,ntheta
          call color(mod(i,16))
-         call polyline(rval,thetadist(1,i),nr)
+         call polyline(rval,thetadist(1,i),nmax)
       enddo
       call pltend()
 
       write(*,*)'r, density distribution (ir,itheta)'
-      write(*,*)nr, ntheta
-      do j=1,nr
+      write(*,*)nmax, ntheta
+      do j=1,nmax
          write(*,'(10f8.4)')rval(j),(thetadist(j,i),i=1,ntheta)
       enddo
 

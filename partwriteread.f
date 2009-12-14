@@ -31,7 +31,7 @@ c      write(*,*)name
      $     ((x_part(j,i),j=1,3*npdim),if_part(i),i=1,ioc_part)
 
       close(22)
-      write(*,*)'Wrote particle data to ',name(1:lentrim(name))
+c      write(*,*)'Wrote particle data to ',name(1:lentrim(name))
       return
 
  101  continue
@@ -103,7 +103,7 @@ c File name:
       write(22)iuds
       write(22)(((u(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
       close(22)
-      write(*,*)'Wrote potential data to ',name(1:lentrim(name))
+c      write(*,*)'Wrote potential data to ',name(1:lentrim(name))
       return
 
  101  continue
@@ -162,7 +162,7 @@ c File name:
       write(22)iuds
       write(22)(((q(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
       close(22)
-      write(*,*)'Wrote density data to ',name(1:lentrim(name))
+c      write(*,*)'Wrote density data to ',name(1:lentrim(name))
       return
 
  101  continue

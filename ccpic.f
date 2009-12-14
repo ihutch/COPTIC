@@ -59,8 +59,8 @@ c Plasma common data
       character*100 argument
       common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
-      logical lrestart,lmyidhead,lregion
-      integer ixp(ndims),xfrac(ndims)
+      logical lrestart,lmyidhead
+c      integer ixp(ndims), xfrac(ndims)
       
 c Diagnostics
 c      real usave(Li,Li,Li),error(Li,Li,Li),cijp(2*ndims_sor+1,Li,Li)
@@ -164,9 +164,6 @@ c            write(*,*)'||||||||||||||extfield',extfield
          if(argument(1:2).eq.'-h')goto 203
          if(argument(1:2).eq.'-?')goto 203
       enddo
-      if(n_part.ne.0)rhoinf=0.
-c Set ninjcomp if we are using rhoinf
-      if(rhoinf.ne.0)call nreincalc(dt)
       goto 202
 c------------------------------------------------------------
 c Help text
@@ -227,6 +224,12 @@ c-----------------------------------------------------------------
       do id=1,ndims
          ium2(id)=iuds(id)-2
       enddo         
+c---------------------------------------------------------------
+c      write(*,*)'Doing nreincalc',n_part,rhoinf,dt
+      if(n_part.ne.0)rhoinf=0.
+c Set ninjcomp if we are using rhoinf
+c This does not work until after we've set mesh in cartesian.
+      if(rhoinf.ne.0)call nreincalc(dt)
 c----------------------------------------------------------------
 c Initializations
       if(lmyidhead)write(*,*)'Initializing the stencil data cij'
@@ -299,6 +302,7 @@ c An initial solver call.
       call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
       ictl=2
+c      write(*,*)'Return from initial sormpi call.'
 c
 c-------------------------------------------------------------------
       if(lmyidhead)then

@@ -3,7 +3,7 @@ c particular (type of) boundary.
 c It must provide the routines:
 c    reinject(xr,nrein) 
 c       which reinijects a particle in position/velocity slot xr(2*ndims)
-c       and increments nrein. (Pass xp(1,i)).
+c       and returns the number of launches. (Pass xp(1,i)).
 c       This routine should initialize itself appropriately.
 c    rhoinfcalc(dt)     
 c        which should return the value of rhoinfinity through common.
@@ -12,7 +12,7 @@ c The majority of the needed data is passed in partcom.f
 c 
 c This case is a spherical boundary.
 c***********************************************************************
-      subroutine reinject(xr,nrein)
+      subroutine reinject(xr,ilaunch)
       parameter (mdims=3)
       real xr(3*mdims)
       integer i
@@ -93,8 +93,8 @@ c      write(*,'(''Reinject vr,vt,vp='',3f8.3)') vr,vt,vp
 c      write(*,'(''Reinject i,xr=''i6,6f8.3)')i,(xr(kk),kk=1,6)
 
 c      vv2=vt**2 + vr**2 + vp**2
-c Do the outer flux accumulation.
-      nrein=nrein+1
+c Only one launch attempt here.
+      ilaunch=1
 c Direct ic1 usage
       end
 c********************************************************************
