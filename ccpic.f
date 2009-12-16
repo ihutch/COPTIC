@@ -77,7 +77,7 @@ c Data for plotting etc.
       data iobpl/0/
       data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot/
      $     .false.,.false.,.false.,.false.,.false./
-      data thetain,nth/.1,1/
+c      data thetain,nth/.1,1/
       data lrestart/.false./
 
 c-------------------------------------------------------------
@@ -100,6 +100,8 @@ c Default to constant rhoinf not n_part.
       rsmesh=rs
       numprocs=1
       bdt=1.
+      thetain=.1
+      nth=1
       norbits=0
       ickst=0
       iavesteps=100
@@ -127,8 +129,13 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-gi')linjplot=.true.
          if(argument(1:3).eq.'-gf')read(argument(4:),*,err=201)ifplot
          if(argument(1:3).eq.'-go')read(argument(4:),*,err=201)norbits
-         if(argument(1:3).eq.'-at')read(argument(4:),*,err=201)thetain
-         if(argument(1:3).eq.'-an')read(argument(4:),*,err=201)nth
+         if(argument(1:3).eq.'-at')then
+            read(argument(4:),*,err=201)thetain
+         elseif(argument(1:3).eq.'-an')then
+            read(argument(4:),*,err=201)nth
+         elseif(argument(1:2).eq.'-a')then 
+            read(argument(3:),*,err=201)iavesteps
+         endif
          if(argument(1:3).eq.'-ni')read(argument(4:),*,err=201)n_part
          if(argument(1:3).eq.'-pn')read(argument(4:),*,err=201)numprocs
          if(argument(1:3).eq.'-ri')read(argument(4:),*,err=201)rhoinf
@@ -149,7 +156,6 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
          if(argument(1:2).eq.'-v')read(argument(3:),*,err=201)vd
          if(argument(1:2).eq.'-t')read(argument(3:),*,err=201)Ti
-         if(argument(1:2).eq.'-a')read(argument(3:),*,err=201)iavesteps
          if(argument(1:10).eq.'--extfield')then
             read(argument(11:),*,err=201)extfield
 c            write(*,*)'||||||||||||||extfield',extfield
@@ -168,7 +174,8 @@ c            write(*,*)'||||||||||||||extfield',extfield
 c------------------------------------------------------------
 c Help text
  201  continue
-      if(lmyidhead)write(*,*)'=====Error reading command line argument'
+      if(lmyidhead)write(*,*)'=====Error reading command line argument '
+     $     ,argument(:20)
  203  continue
       if(myid.ne.0)goto 202
  301  format(a,i5)
@@ -260,10 +267,12 @@ c If head, write the geometry data if we've had to calculate it.
 c---------------------------------------------
 c Set an object pointer for all the edges so their regions get
 c set by the iregioninit call
+      call iregioninit(ndims,ifull)
       ipoint=0
       call mditerarg(cijedge,ndims,ifull,iuds,ipoint,cij,dum2,dum3,dum4)
 c Initialize the region flags in the object data
-      call iregioninit(ndims,ifull)
+c This old position overruled the new edge setting.
+c      call iregioninit(ndims,ifull)
 c---------------------------------------------
       if(myid.ne.0)then
 c Don't do plotting from any node except the master.
@@ -437,12 +446,11 @@ c Store the step's rhoinf, dt.
             call fluxdiag()
             if(mod(nf_step,5).eq.0)write(*,*)
          endif
-c         if(lmyidhead.and.mod(j,nsteps/5+1).eq.0)
-c     $  write(*,
-c       write(*,
-c     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i7,i7,2f10.3)')
-c     $        nrein,n_part,ioc_part,rhoinf,dt
-c
+         if(lmyidhead.and.mod(nf_step,(nsteps/25+1)*5).eq.0)
+     $  write(*,
+     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i7,i7,2f10.3)')
+     $        nrein,n_part,ioc_part,rhoinf,dt
+
          istepave=min(nf_step,iavesteps)
          call average3d(q,qave,ifull,iuds,istepave)
 

@@ -171,11 +171,11 @@ c Spherical angles in 3-D
          cp=cos(varphi)
          sp=sin(varphi)
          graderr=0
-         write(*,*)'Starting uprime calculation'
+c         write(*,*)'Starting uprime calculation'
          do i=1,Li
 c            zero(i)=0.
 c            rp=rs*i/(Li-1)
-            rp=rs*i/Li
+            rp=.99999*rs*i/Li
             rprime(i)=rp
 c Coordinates relative to center of first object (sphere).
             xprime(1,i)=rp*st*cp + obj_geom(ocenter,1)  
@@ -192,9 +192,21 @@ c xn is the position array for each dimension arranged linearly.
 c Find the index of xprime in the array xn:
                ix=interp(xn(ioff+1),ixnp(id+1)-ioff,xprime(id,i),xm)
 c                  ix=xm
+               if(xm.ge.(ixnp(id+1)-ixnp(id)))then
+                  write(*,*)'****** ccpicplot xm too big',id,xm
+                  xm=ixnp(id+1)-ixnp(id)-1.e-3
+               endif
                xff(id)=xm
                xfrac(id)=xm-ix
                itemp(id)=ix
+c attempt to fix getsimple.
+               if(itemp(id).le.1)then
+                  itemp(id)=itemp(id)+1
+                  xfrac(id)=xfrac(id)-1.
+               elseif(itemp(id).ge.ixnp(id+1)-ixnp(id)-1)then
+                  itemp(id)=itemp(id)-1
+                  xfrac(id)=xfrac(id)+1.
+               endif
             enddo
             
 c Get the ndims field components at this point.
@@ -202,28 +214,24 @@ c               write(*,*)'xfrac',(xfrac(kk),kk=1,ndims)
 c     $              ,(xprime(kk,i),kk=1,ndims)
             do idf=1,ndims
                ioff=ixnp(idf)
-               if(.false.)then
-c Old approach
-               call getfield(
-     $              ndims
-     $              ,cij(nd2+1,itemp(1),itemp(2),itemp(3))
-     $              ,u(itemp(1),itemp(2),itemp(3))
-     $              ,iLs
-     $              ,xn(ioff+itemp(idf)),idf
-     $              ,xfrac,iregion,upnd(idf,i))
-               else
 c New approach mirrors padvnc.
                call getfield(
      $              ndims
      $              ,cij(nd2+1,1,1,1)
      $              ,u,iLs,xn(ixnp(idf)+1),idf
      $              ,xff,iregion,upnd(idf,i))
-               endif
+
                call getsimple3field(
      $              ndims,u(itemp(1),itemp(2),itemp(3))
      $              ,iLs,xn(ioff+itemp(idf)),idf
      $              ,xfrac,upsimple(idf,i))
+
+               if(.not.abs(upnd(idf,i)).lt.1.e6)then
+                  write(*,*)'Field weird!',upnd(idf,i),i,idf,xff
+               endif
+
             enddo
+
 
 c Radial component of field
             rfield(i)=
@@ -252,7 +260,8 @@ c Region of point
             endif
             region(i)=-0.1*region(i)
          enddo
-         write(*,*)'Ended uprime calculation'
+c         write(*,*)'Ended uprime calculation'
+c         write(*,'(10f8.4)')rfield
          call dashset(0)
          if(iti.eq.1)then
             call autoplot(rprime,rfield(1),Li)
@@ -304,11 +313,11 @@ c Spherical angles in 3-D
          cp=cos(varphi)
          sp=sin(varphi)
          phierr=0
-         write(*,*)'Starting x calculation'
+c         write(*,*)'Starting x calculation'
          do i=1,Li
 c            zero(i)=0.
 c            rp=rs*i/(Li-1)
-            rp=rs*i/Li
+            rp=0.99999*rs*i/Li
             rprime(i)=rp
 c Coordinates relative to center of first object (sphere).
             xprime(1,i)=rp*st*cp + obj_geom(ocenter,1)  
@@ -324,7 +333,7 @@ c Offset to start of idf position array.
 c xn is the position array for each dimension arranged linearly.
 c Find the index of xprime in the array xn:
                ix=interp(xn(ioff+1),ixnp(id+1)-ioff,xprime(id,i),xm)
-               if(ix.eq.0)then
+               if(ix.eq.0.or.ix.ge.ixnp(id+1)-ioff)then
                   write(*,*)'ccpicplot interp outside range'
      $                 ,xprime(id,i)
      $                 ,ioff,(xn(ioff+k),k=1,ixnp(id+1)-ioff),' end '
@@ -365,11 +374,11 @@ c Region of point
          if(iti.eq.1)then
             call pltinit(0.,rprime(Li),phi*1.02,0.)
             call axis()
-            call polyline(rprime,rfield(1),Li)
             call axis2()
             call axlabels('r','!Af!@')
             call legendline(.5,.1,0,'getpotential')
             call winset(.true.)
+            call polyline(rprime,rfield(1),Li)
             call dashset(4)
             call color(ired())
             call polyline(rprime,uanal,Li)

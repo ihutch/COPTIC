@@ -3719,4 +3719,95 @@ To get into a physics problem soon, we could address the wake issue. This
 would also lead to exercising different meshes and perhaps even differently
 spaced meshes.
 
-For now, commit.
+For now, commit. Getting back to sceptic machine we don't get the correct
+answer. This proves not to be a function of the cvs version because getting
+it to ihhutch gives ok result. I notice that although there's a gfortran
+on sceptic.psfc mpif77 appears to be using g77 instead. This might
+conceivably be the cause of the major problem. It is that face of the
+grid is being significantly depleted of density. Perhaps there's a problem
+with reinjection, e.g. that no reinjection is occurring there. In any
+case it is probably worth pursuing the problem on sceptic.psfc to figure
+out the portability of the program. 
+
+Prove that it really is the mpif77 version by using the -f77=gfortran 
+switch. That gives correct answers on sceptic.psfc, although not _exactly_
+the same as on ihhutch. At least the major error has gone away. The version
+of gfortran is not the same. It seems there are very small differences. 
+
+It is by the way noticeable that the g77 version runs very substantially
+faster on sceptic.psfc. Maybe as much as a factor of 2! That's pretty 
+significant. 
+
+The depletion of the g77 version is at the -5 end of dimension 3. It appears
+gradually with steps, which suggests that perhaps it is associated with 
+reinjection; but it could be other things. Since we don't have obvious 
+code errors, it is not completely obvious how to proceed. There is no
+evidence that creintest gives any difference. 
+
+A force shows up in the faulty version. And eventually a significant
+flux asymmetry. There's definitely a particle flux towards negative z,
+which is consistent with a reinjection deficit there.
+
+The faulty version shows substantial n_part degradation after 100 steps:
+0096  53 3.758| 0097  54 3.228| 0098  53 3.565| 0099  53 3.767| 0100  54 4.023| 
+nrein,n_part,ioc_part,rhoinf,dt= 2394  76849  99993    94.749     0.100
+compared with
+0096  53 3.882| 0097  53 4.035| 0098  53 3.875| 0099  53 4.144| 0100  53 3.888| 
+nrein,n_part,ioc_part,rhoinf,dt= 2394  91379  99984    97.415     0.100
+
+Thus there really does seem to be a loss of particles. Got g77 installed
+on tp400 and then I can reproduce the g77 problems there (and its speed!)
+
+16 Dec 09
+
+The reinjection diagnostics do not show any asymmetry problem in cos\theta.
+Nor are any warnings given about reinjections outside of region. Therefore
+there's a bit of a puzzle as to where to look for the error. 
+
+Perhaps we need a way to examine the particle data and plot
+distribution functions etc. This would involve reading back the
+partdata and then binning it by velocity, for some selection of
+cells. One ought to allow the possibility of reading more than one
+file worth of data. But it is not straightforward to provide
+sufficient storage for the actual data of many particle files. Each is
+potentially quite a lot of megabytes. Also the file reading apparatus
+might break unless we shuffle stuff. It might be better to reread the
+files if a new selection were required. That would be reasonably quick
+if the files were in disk cache memory. So the process would be
+1. Read a file .00N 2. Bin its particle data. 3. Repeat till all done.
+This could be done on a selective basis (perhaps). 
+
+Created partexamine code to do this. It shows that in the depleted region
+at the bottom z end, the distribution function is (approximately) 
+one-sided. Also, density goes to zero at the edge, not half, because
+the particle bins can be chosen finer than the charge mesh. And starts to
+drop at about -4 (which is about 3 cells from boundary) after 5 steps.
+This effect can be seen propagating inward as one increases the number of steps.
+If we set the number of steps to zero, there is no depletion. 
+Setting dt to a small number we can see more clearly the depletion region.
+It is the bottom _half_ of the bottom cell. 
+
+Putting a test hack padvnc call outside the main loop and using -s0,
+I find that it is definitely padvnc that is causing the depletion.
+It seems that x_part(3) is corrupted on entry to partlocate.
+Also xpart(6) is corrupted and seems to be the source of the corruption.
+Yes this is coming from the getfield, and is corruption of the value.
+
+I think the problem is in field interpolation at the boundary. We are
+not (it seems) setting the boundary pointers in such a way as to
+prevent trying to get potential from past the end of the mesh for
+interpolation.  Actually I can now see the problem from within -gt
+tests.  I think this problem would be fixed if the boundary points
+(which all have pointers to data) all returned a region that was
+unique. getfield would then never allow itself to use those boundary
+points as the centers of extrapolation. As a result, it won't grab
+data beyond the boundary.
+
+Implemented this different boundary value as -1. Also fixed the
+text3graphs to cope. Then found a logic bug in the getfield code that
+did not treat the whole thing appropriately. Found a bug in the
+solu3plot routine that overran the mesh domain at certain angles and
+hence gave nans returned for the field. Have not made getfield
+completely bullet proof against incorrect fractions in call, because I
+was nervous about slowing it down. But now things ought to work.
+Ok. No obvious evidence now that we are broken.

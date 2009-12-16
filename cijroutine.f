@@ -521,6 +521,8 @@ c Can't be passed here because of mditerate argument conventions.
       integer iLs(mdims+1)
       common /iLscom/iLs
 
+      include 'objcom.f'
+
       icb=2*ndims+1
       icij=icb*ipoint+icb
 c Algorithm: if on a boundary face of dimension >1, steps of 1 (dim 1).
@@ -528,6 +530,7 @@ c Otherwise steps of iused(1)-1 or 1 on first or last (of dim 1).
       inc=1
 c Start object data for this point if not already started.
       call objstart(cij(icij),ist,ipoint)
+      idob_sor(iregion_sor,int(cij(icij)))=-1
 c Calculate the increment:
       do n=ndims,2,-1
          if(indi(n).eq.0)then
@@ -576,7 +579,12 @@ c Text graphic of slice through volumes
 
 c Text graphic of slice through cij
 c      write(*,*)'iregion:'
-         write(form1,'(''('',i3,''i1)'')')iuds(1)
-         write(*,form1)((ireg3(j,iuds(2)/2,k,ifull,cij),
+c         write(form1,'(''('',i3,''i1)'')')iuds(1)
+c         write(*,form1)((ireg3(j,iuds(2)/2,k,ifull,cij),
+c     $        j=1,iuds(1)),k=1,iuds(3))
+c Slightly more flexible ascii form:
+         write(form1,'(''('',i3,''a1)'')')iuds(1)
+         write(*,form1)
+     $        ((char(min(126,48+ireg3(j,iuds(2)/2,k,ifull,cij))),
      $        j=1,iuds(1)),k=1,iuds(3))
       end

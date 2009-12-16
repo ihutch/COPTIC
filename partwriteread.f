@@ -56,8 +56,9 @@ c*****************************************************************
      $     phirein,numprocs,
      $     ((x_part(j,i),j=1,3*npdim),if_part(i),i=1,ioc_part)
       close(23)
-      write(*,*)'Read back particle data from ',name(1:lentrim(name))
-      write(*,*)'Charout=',charout(1:lentrim(charout))
+c      write(*,*)'Finished reading back particle data from '
+c     $     ,name(1:lentrim(name))
+c      write(*,*)'Charout=',charout(1:lentrim(charout))
       ierr=0
 c Check that the read back data is sane
       do i=1,ioc_part
@@ -75,7 +76,8 @@ c Zero the flags of higher slots.
       enddo
 
       return
- 101  write(*,*)'Error opening file:',name
+ 101  continue
+      write(*,*)'No file: ',name(1:lentrim(name))
       ierr=1
       end
 c******************************************************************

@@ -362,7 +362,9 @@ c     $        ,icp0,ix,xm
             if(xm.lt.0.)jpm=-1
             ix=ix+jpm
             icp1=int(cij(1+(ix-1)*icinc))
-            if(icp1.eq.0 .or. idob_sor(iregion_sor,icp1).ne.iregion)then
+c Old and seemingly incorrect version:
+c            if(icp1.eq.0 .or. idob_sor(iregion_sor,icp1).ne.iregion)then
+            if(icp1.ne.0.and.idob_sor(iregion_sor,icp1).ne.iregion)then
                ix=99
                uprime=0.
                return

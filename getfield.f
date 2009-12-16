@@ -19,7 +19,9 @@ c neighbor and do interpolations from that, but the routine called knows
 c how to correct for possible region crossing. In the orthogonal
 c directions, we use the two nearest, i.e. the box.
 c
-c The field region of the point is known and passed.
+c The field region of the point is known and passed. 
+c Value will be rubbish if xff<1. or xff>nmesh because arrays will be
+c overrun.
 
       subroutine getfield(ndims,cij,u,iuinc,xn,idf
      $     ,xff,iregion,field)

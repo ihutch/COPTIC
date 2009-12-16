@@ -82,6 +82,9 @@ c the region information.
      $                 ,idf
      $                 ,x_part(ndimsx2+1,i)
      $                 ,imaskregion(iregion),field(idf))
+                  if(abs(field(idf)).gt.1.e12)then
+                     write(*,*)'Field corruption(?)',idf,field
+                  endif
                enddo
 c               if(.false.)then
 c Testing only, of the few-argument field evaluator.
@@ -245,8 +248,8 @@ c Find the index of xprime in the array xn:
          ixp(id)=ix
          if(ix.eq.0)then
             linmesh=.false.
-c            write(*,'(a,i7,i3,f10.4)')
-c     $        ' Outside domain',i,id,x_part(id,i)
+c            write(*,'(a,i7,i3,'' '',6g12.4)')
+c     $        ' Outside domain',i,id,(x_part(ii,i),ii=1,6)
          endif
       enddo
       
