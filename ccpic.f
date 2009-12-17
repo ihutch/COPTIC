@@ -324,6 +324,7 @@ c Now using general definition to accommodate union regions.
 c Initialize with a specified number of particles.
 c (Re)Initialize the fortran random number generator.
       idum=-myid-1
+      rdum=ran1(idum)
       if(lmyidhead)write(*,*)'Initializing',n_part,' particles'
       call pinit()
 c      if(lmyidhead)write(*,*)'Return from pinit'
