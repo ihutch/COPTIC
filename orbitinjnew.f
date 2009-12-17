@@ -566,7 +566,7 @@ c Approximate initialization
          endif
 c Else just leave it alone.
       endif
-      write(*,*)'Ending rhoinfcalc',rhoinf,nrein,n_part
+c      write(*,*)'Ending rhoinfcalc',rhoinf,nrein,n_part
       end
 c*********************************************************************
       subroutine nreincalc(dtin)
@@ -583,9 +583,10 @@ c Calculate ninjcomp from rhoinf
      $        (sqrt(Ti)*
      $        smaxflux(vd/sqrt(2.*Ti),chi)
      $        *rs**2 ))
-      nrein=ninjcomp
+      nrein=ninjcomp*numprocs
       if(ninjcomp.le.0)ninjcomp=1
-      n_part=int(rhoinf*4.*3.1415926*rs**3/3./numprocs)
+      n_part=int(rhoinf*4.*3.1415926*rs**3/3.)
+      rhoinf=rhoinf*numprocs
       if(n_part.gt.n_partmax)then
          write(*,*)'ERROR. Too many particles required.'
          write(*,101)rhoinf,n_part,n_partmax

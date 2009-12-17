@@ -417,9 +417,10 @@ c Correct approximately for edge potential depression (OML).
       cfactor=smaxflux(vd/sqrt(2.*Ti),chi)/smaxflux(vd/sqrt(2.*Ti),0.)
       ninjcomp=nint(rhoinf*dtin*cfactor*flux)
 
-      nrein=ninjcomp
+      nrein=ninjcomp*numprocs
       if(ninjcomp.le.0)ninjcomp=1
-      n_part=rhoinf*volume/numprocs
+      n_part=rhoinf*volume
+      rhoinf=rhoinf*numprocs
       if(n_part.gt.n_partmax)then
          write(*,*)'ERROR. Too many particles required.'
          write(*,101)rhoinf,n_part,n_partmax

@@ -268,6 +268,7 @@ c---------------------------------------------
 c Set an object pointer for all the edges so their regions get
 c set by the iregioninit call
       call iregioninit(ndims,ifull)
+      if(lmyidhead)call reportfieldmask()
       ipoint=0
       call mditerarg(cijedge,ndims,ifull,iuds,ipoint,cij,dum2,dum3,dum4)
 c Initialize the region flags in the object data

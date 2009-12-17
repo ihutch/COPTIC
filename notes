@@ -3811,3 +3811,76 @@ hence gave nans returned for the field. Have not made getfield
 completely bullet proof against incorrect fractions in call, because I
 was nervous about slowing it down. But now things ought to work.
 Ok. No obvious evidence now that we are broken.
+
+There's an inconsistency in rhoinf, n_part, and nrein. With multiple
+processors, we initialize 100000/numprocs particles by default. Which
+is probably a bad choice, but then also we seem to be injecting more
+particles. The defaults are as follows:
+
+17 Dec 09
+
+c Fixed number of particles rather than fixed injections.
+      ninjcomp=0
+      n_part=0
+c Default to constant rhoinf not n_part.
+      rhoinf=100.
+Then in initialization we do
+c      write(*,*)'Doing nreincalc',n_part,rhoinf,dt
+      if(n_part.ne.0)rhoinf=0.
+c Set ninjcomp if we are using rhoinf
+c This does not work until after we've set mesh in cartesian.
+      if(rhoinf.ne.0)call nreincalc(dt)
+Nreincalc does:
+c Correct approximately for edge potential depression (OML).
+      chi=min(-phirein/Ti,0.5)
+      cfactor=smaxflux(vd/sqrt(2.*Ti),chi)/smaxflux(vd/sqrt(2.*Ti),0.)
+      ninjcomp=nint(rhoinf*dtin*cfactor*flux)
+      nrein=ninjcomp
+      if(ninjcomp.le.0)ninjcomp=1
+      n_part=rhoinf*volume/numprocs
+where flux is normalized flux-density times area. 
+Then we call pinit which does:
+      n_part initializations (per proc) and then
+c Initialize rhoinf:
+      if(rhoinf.eq.0.)rhoinf=numprocs*n_part/(4.*pi*rs**3/3.)
+which should be changed, for cartesian volume, incidentally. 
+When nrein is reduced, it is **summed**. 
+rhoinfcalc is called each particle advance cycle. nreincalc is not.
+rhoinfcalc does:
+      if(nrein.ne.0)then
+c Calculate rhoinf from nrein if there are enough.
+c Correct approximately for edge potential depression (OML).
+         chi=min(-phirein/Ti,0.5)
+         cfactor=smaxflux(vd/sqrt(2.*Ti),chi)
+     $        /smaxflux(vd/sqrt(2.*Ti),0.)
+         rhoinf=(nrein/(dtin*cfactor*flux))
+      else
+         if(rhoinf.lt.1.e-4)then
+c Approximate initialization
+            rhoinf=numprocs*n_part/(volume)
+            write(*,*)'Rhoinf in rhoinfcalc approximated as',rhoinf
+     $           ,numprocs,n_part
+         endif
+
+Thus nrein during iteration refers to the total reinjections, and
+rhoinf to the total density including all processors, but ninjcomp
+refers to one processor's injections, as (of course) does n_part.
+I want the default injections to be rhoinf=100*numprocs really. 
+But in any case, the initializations should be such that things are
+consistent. ninjcomp is only ever set in nreincalc, i.e. only ever
+during initialization. 
+
+Need to make a decision about how defaults are command lines work with
+different processor numbers. I want adding processors to add particles,
+which means that rhoinf goes up. Thus if I specify rhoinf on command line
+or default the actual rhoinf is not this value it is this value times
+numprocs. This is correctly handled within rhoinf at present if we 
+change the meaning of rhoinf from being per processor to total when
+we call nreincalc. Hence we change it to 
+      ninjcomp=nint(rhoinf*dtin*cfactor*flux)  ; per processor
+      nrein=ninjcomp*numprocs		       ; total
+      if(ninjcomp.le.0)ninjcomp=1
+      n_part=rhoinf*volume		       ; per processor
+      rhoinf=rhoinf*numprocs		       ; total
+This appears to work consistently. But ought also to be changed
+in orbitinject. Did that.
