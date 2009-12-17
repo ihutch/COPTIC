@@ -24,6 +24,7 @@ c Alternatively they could be passed, but we'd then need parameter.
 c Include this only for testing with Coulomb field.
       include 'plascom.f'
 c Local storage
+      parameter (fieldtoolarge=1.e12)
       integer ixp(ndims_mesh)
       real field(ndims_mesh)
       real xfrac(ndims_mesh)
@@ -82,8 +83,9 @@ c the region information.
      $                 ,idf
      $                 ,x_part(ndimsx2+1,i)
      $                 ,imaskregion(iregion),field(idf))
-                  if(abs(field(idf)).gt.1.e12)then
-                     write(*,*)'Field corruption(?)',idf,field
+                  if(.not.abs(field(idf)).lt.fieldtoolarge)then
+                     write(*,*)'Field corruption(?)',id,idf,field
+     $                    ,(x_part(kk,i),kk=1,3*ndims)
                   endif
                enddo
 c               if(.false.)then
@@ -242,14 +244,16 @@ c Offset to start of dimension-id-position array.
          ioff=ixnp(id)
 c xn is the position array for each dimension arranged linearly.
 c Find the index of xprime in the array xn:
-         ix=interp(xn(ioff+1),ixnp(id+1)-ioff,x_part(id,i),xm)
+         isz=ixnp(id+1)-ioff
+         ix=interp(xn(ioff+1),isz,x_part(id,i),xm)
          xfrac(id)=xm-ix
          x_part(ndimsx2+id,i)=xm
          ixp(id)=ix
-         if(ix.eq.0)then
+c         if(ix.eq.0)then
+c This more complete test is necessary and costs perhaps 3% extra time.
+c I would be cheaper to change interp to be exclusive of limits.
+         if(ix.eq.0.or.xm.le.1..or.xm.ge.float(isz))then
             linmesh=.false.
-c            write(*,'(a,i7,i3,'' '',6g12.4)')
-c     $        ' Outside domain',i,id,(x_part(ii,i),ii=1,6)
          endif
       enddo
       
