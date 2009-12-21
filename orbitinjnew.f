@@ -508,7 +508,7 @@ c      write(*,*)'alpha=',alpha
 c Negative sign for definition of alpha relative to the forward direction.
       cosal=-cos(alpha)
       sinal=sin(alpha)
-      if(.not.sinal.lt.1.)then
+      if(.not.sinal.le.1.)then
          write(*,*)'averein,adeficit,alpha',averein,adeficit,alpha
       endif
       return

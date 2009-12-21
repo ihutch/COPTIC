@@ -3868,7 +3868,7 @@ refers to one processor's injections, as (of course) does n_part.
 I want the default injections to be rhoinf=100*numprocs really. 
 But in any case, the initializations should be such that things are
 consistent. ninjcomp is only ever set in nreincalc, i.e. only ever
-during initialization. 
+during initialization. testi
 
 Need to make a decision about how defaults are command lines work with
 different processor numbers. I want adding processors to add particles,
@@ -3884,3 +3884,83 @@ we call nreincalc. Hence we change it to
       rhoinf=rhoinf*numprocs		       ; total
 This appears to work consistently. But ought also to be changed
 in orbitinject. Did that.
+
+
+Discovered a problem with testing/fieldtest. Points on mesh edge are
+having their phi values changed, apparently to match the derivative
+across the object mesh boundary. This presumably is not really needed.
+Actually this happens also in the orbitinj version of ccpic. Although
+you need to look harder to see it. Basically this is a problem with 
+the bdyset routine, which ought not to do gradient setting in these
+situations. 
+
+Timing. 
+
+G77       ./ccpic -s200 real    0m31.220s
+Gfortran  ./ccpic -s200 real    1m10.779s
+
+This is a really quite amazing discrepancy. Compare with 
+
+./ccpic.gfortran -s50 -ni500 (negligible number of particles) 0m16.886s
+ time ./ccpic.g77 -s50 -ni500  0m5.003s
+
+ time ./ccpic.gfortran -s50 -ni500000 0m50.750s
+ time ./ccpic.g77 -s50 -ni500000  0m45.196s
+Hardly any discrepancy here.
+
+Conclusion: Gfortran is taking 3x longer for the poisson solve, whereas
+the particle mover is pretty similar for both compilers. (These are all
+on concentric spheres.) The number of iterations is pretty similar.
+
+Profiling gfortran shows time is dominantly in sorelaxgen mditerate,
+bdyslopescreen, r2indi. There are 20 Million calls to bdyslopescreen.
+Seems probably too much. For g77 bdyslopescreen and r2indi are also
+the major players (though not quite so dominant. 19M calls. 
+
+Is this reasonable? bdyset is called for each sor iteration (I think),
+average 60. For each step 50. For all boundary points 32x32x6faces.
+Total roughly: 18M. Yes this is a reasonable number. Seems as if this
+boundary setting is not negligible, as I thought it would be. 
+For 32^3 mesh the number of boundary points is only roughly 1/5th of total
+number of points.
+
+First thing. I don't think we should be calling the bdyset routine 
+every step, only every _other_ step for the red-black routine. 
+Second, one might argue that for the PIC the boundary routine ought
+to be called only each particle step. 
+Third, this is really scary because bdyset does not get shared out
+between all the processes. So parallelism won't help. Scaling will
+be terrible. 
+
+
+I notice that the total number of seconds isn't adding to the elapsed
+time. And actually the amount of time (about 2 seconds) isn't much
+different. Maybe I'm not really profiling where the real time is being
+spent. If that's so, then I'm probably not really getting to the bottom
+of what is taking the time. I think I ought to be getting library routines
+that allow profiling but perhaps I'm not.
+
+On sceptic results are similar except the seconds count is 7 not 2.
+Still the calls are more or less in the same place. Same with g77 and
+with gfortran. It might be nice if one could compile without MPI, 
+which might be some of the problem. 
+
+Installed valgrind. The picture it draws is rather similar, but it detects
+that there's a significant amount of time spent in the exp function.
+
+There's no question that g77 is way faster -- up to a factor of 3 --
+than gfortran, no matter what optimizations I use. Both are 64
+bit. They use the same libraries except for libgfortran vs libg2c.
+A real puzzle.
+
+Profiling does not track libc libm without the profiling libs.
+Installed them libc_p etc. But then can't get a program that does
+not crash. This is a known bug:
+https://bugs.launchpad.net/ubuntu/+source/glibc/+bug/193487
+
+In general the flags required are  (-g) -pg -static-libgcc -lc_p
+Installed gcc-4.1 which is said to work with these. But that does
+not seem to propagate to gfortran. So I haven't really made progress.
+
+Found a small time saving in sorrelaxgen where the parity change is done.
+Saves about 10% of time in this routine, but not much overall. 

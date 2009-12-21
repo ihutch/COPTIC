@@ -1,14 +1,18 @@
 c**********************************************************************
 c This file gives examples of boundary and faddu setting for sormpi.
 c The bdyset routine can be called anything, and name passed.
+c      subroutine bdyset(ndims,ifull,iuds,cij,u,q)
+c      call bdysetnull(ndims,ifull,iuds,cij,u,q)
+      subroutine bdyset(ndims,ifull,iuds,cij,u,q)
+      call bdysetfree
+c      call bdysetnull
+      end
 c**********************************************************************
-c      subroutine bdysetnull()
+      subroutine bdysetnull()
 c (ndims,ifull,iuds,cij,u,q)
 c     Null version
-c      return
-c      end
+      end
 c**********************************************************************
-c      subroutine bdyset(ndims,ifull,iuds,cij,u,q)
       subroutine bdyset3sl(ndims,ifull,iuds,cij,u,q)
       integer ndims,ifull(ndims),iuds(ndims)
       real cij(*),u(*),q(*)
@@ -20,8 +24,8 @@ c sets the derivative to zero on boundaries 3.
 
       end
 c**********************************************************************
-c      subroutine bdysetfree(ndims,ifull,iuds,cij,u,q)
-      subroutine bdyset(ndims,ifull,iuds,cij,u,q)
+      subroutine bdysetfree(ndims,ifull,iuds,cij,u,q)
+
       integer ndims,ifull(ndims),iuds(ndims)
       real cij(*),u(*),q(*)
 c Specify external the boundary setting routine.

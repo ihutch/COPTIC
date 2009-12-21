@@ -24,11 +24,11 @@ c oaddu is maximum relative weight of faddu term
 
 c      write(*,*)'sorrelaxgen',k_sor,iuds,iLs
 
-      if(ndims.gt.imds)then
-         write(*,*)'sorrelax error: too many dimensions',ndims
-         return
-      endif
       if(lfirst)then
+         if(ndims.gt.imds)then
+            write(*,*)'sorrelax error: too many dimensions',ndims
+            return
+         endif
          do i=1,ndims
             do j=1,2
                iind(2*(i-1)+j)=(1-2*mod(j+1,2))*iLs(i)
@@ -67,13 +67,17 @@ c Even start
       endif
 c      write(*,*)'starting',ipoint,(indi(j),iused(j),j=1,ndims)
 
+ 103  continue
+c Attempt to calculate determine if adjustment is needed in 
+c the first iteration loop so we don't need the second.
+      ica=0
 c Starting dimension
       n=1
 c Iteration over the multidimensional array. 
  101  continue
 c      write(*,'(''('',i1,i4,'') '',$)')n,indi(n)
       if(indi(n).gt.iused(n)-1)then
-c     Overflow. Subtract off enough (inm) of next dimension.
+c     Overflow. Subtract off enough (inm normally 1) of next dimension.
          inm=0
  102     inm=inm+1
          ipoint=ipoint+iLs(n+1)-iused(n)*iLs(n)
@@ -83,6 +87,8 @@ c Increment the next level.
          n=n+1
          if(n.gt.ndims)goto 201
          indi(n)=indi(n)+inm
+c Remember the highest level incremented-1
+         ica=n-1
          goto 101
       elseif(n.gt.1)then
 c We've carried and cleared an increment.
@@ -94,18 +100,8 @@ c We're at the base level and have succeeded in incrementing.
 c Do whatever we need to and increment indi(1) and ipoint
 
 c We build in correction of the increment here for red-black
-c to change the parity. We have to remember the previous indis.
-         ic=0
-         do i=ndims,2,-1
-            if(indi(i).gt.ind1(i))then
-c     we've carried
-               ic=ic+(i-1)
-c               write(*,*)'increment',ic
-            endif
-c     Remember prior.
-            ind1(i)=indi(i)
-         enddo
-         if(mod(ic,2).ne.0) then
+c to change the parity if highest level increment is odd.
+         if(mod(ica,2).ne.0) then
             iaj=(1-2*mod(indi(1),2))
             indi(1)=indi(1)+iaj
             ipoint=ipoint+iaj
@@ -163,6 +159,7 @@ c            write(*,*)addu,daddu,u(ipoint+1),csum,dnum,dden,delta
          if(uij.lt.umin)umin=uij
          if(uij.gt.umax)umax=uij
 c         write(*,*)ipoint,q(ipoint+1),dnum,dden,uij
+c Corresponds to iftrue
          else
 c test 
             write(*,*)'ipoint,k_sor',ipoint,k_sor
@@ -172,7 +169,7 @@ c End of treatment.
 
          indi(1)=indi(1)+inc
          ipoint=ipoint+inc
-         goto 101
+         goto 103
       endif
 
  201  continue

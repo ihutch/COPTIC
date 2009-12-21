@@ -17,8 +17,8 @@ c      real fieldarray(2,Li,Li)
       real zp(Li,Li),cijp(nd2+1,Li,Li)
       include 'meshcom.f'
 c
-      external bdyset,faddu,cijroutine,psumtoq
-      external bdysetfree
+      external bdysetnull,faddu,cijroutine,psumtoq,bdyset
+c      external bdysetfree
 c      real x(Li),y(Li)
       real z(Li),xp(Li)
       character*100 form1,argument
@@ -164,7 +164,7 @@ c Control bit 4 pure initialization, no communication. Also don't
 c change my sor parameters.
       ictl=4+1
 c Returns process myid.
-      call sormpi(ndims,ifull,iuds,cij,u,q,bdysetfree,faddu,ictl,ierr
+      call sormpi(ndims,ifull,iuds,cij,u,q,bdysetnull,faddu,ictl,ierr
      $     ,myid,idims)
 c      write(*,*)'sormpi Initialization returns',myid
       
@@ -173,7 +173,7 @@ c      ictl=3
       ictl=1
       write(*,*)'Calling sormpi, ni,nj=',ni,nj
 c The main solver call.
-      call sormpi(ndims,ifull,iuds,cij,u,q,bdysetfree,faddu,ictl,ierr
+      call sormpi(ndims,ifull,iuds,cij,u,q,bdysetnull,faddu,ictl,ierr
      $     ,myid,idims)
 
       if(myid.eq.0)then
@@ -448,7 +448,7 @@ c         call diag3array(psum,iLs,ni,nj,nk)
 c         write(*,*)'q:'
 c         call diag3array(q,iLs,ni,nj,nk)
             ictl=0
-            call sormpi(ndims,ifull,iuds,cij,u,q,bdysetfree
+            call sormpi(ndims,ifull,iuds,cij,u,q,bdyset
      $           ,faddu,ictl,ierr,myid,idims)
 
             if(lplot.and. mod(j,nsteps/2).eq.0)

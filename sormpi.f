@@ -146,7 +146,8 @@ c      do k_sor=1,mi_sor*2
          relax=(omega+oaddu)/(1.+underrelax*oaddu) 
          oaddu=0.
 c Set boundary conditions (and conceivably update cij).
-         call bdyset(ndims,ifull,iuds,cij,u,q)
+c Only needed every other step, and gives identical results.
+         if(mod(k_sor,2).eq.1)call bdyset(ndims,ifull,iuds,cij,u,q)
 c Do block boundary communications, returns block info icoords...myid.
          call bbdy(iLs,ifull,iuds,u,k_sor,ndims,idims,lperiod,
      $        icoords,iLcoords,myside,myorig,

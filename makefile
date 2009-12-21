@@ -1,5 +1,6 @@
 GLULIBS= -lGL -lGLU
-LIBRARIES = -L/usr/X11R6/lib/ -L/home/hutch/accis/ -laccisX -lXt -lX11 $(GLULIBS)
+ACCISLIB=./accis/libaccisX.a
+LIBRARIES = -L/usr/X11R6/lib/ -L./accis/ -laccisX -lXt -lX11 $(GLULIBS)
 ########################
 # The reinjection choice:
 #######################
@@ -9,8 +10,8 @@ GEOMFILE=geomsphere.dat
 #REINJECT=reinject.o
 #GEOMFILE=geomsphere.dat
 ###################
-REINJECT=cartreinject.o
-GEOMFILE=geomcubic.dat
+#REINJECT=cartreinject.o
+#GEOMFILE=geomcubic.dat
 ##################
 # The sormpi system.
 FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reindiag.o pinit.o bdyroutine.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o reduce.o stress.o average.o
@@ -20,15 +21,18 @@ UTILITIES=udisplay.o
 OBJECTS=$(FIXEDOBJECTS) ${REINJECT}
 HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
-G77=mpif77 -f77=g77
-#COMPILE-SWITCHES = -Wall -O2  -I. 
-#COMPILE-SWITCHES = -Wall  -O2 -I. -g -fbounds-check
-#COMPILE-SWITCHES = -Wall  -O2 -I. -g 
-COMPILE-SWITCHES = -Wall -Wno-unused -O2 -I.
-#COMPILE-SWITCHES = -Wall -Wno-unused -I.
-NOBOUNDS= -Wall -Wno-unused -O2 -I.
-#PROFILING= -pg
-PROFILING=
+G77=mpif77 -f77=g77 
+GFINAL=gcc-4.1 -v -pg -o ccpic.prof ccpic.o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
+#G77=mpif77
+#OPTIMIZE=-O3 -funroll-loops -finline-functions
+OPTIMIZE=-O3
+#COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I. 
+#COMPILE-SWITCHES = -Wall   $(OPTIMIZE) -I. -g -fbounds-check
+#COMPILE-SWITCHES = -Wall   $(OPTIMIZE) -I. -g 
+COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -I.
+NOBOUNDS= -Wall -Wno-unused  $(OPTIMIZE) -I.
+#PROFILING=-pg
+#PROFILING= -pg -static-libgcc -lpthread_p -lm_p
 
 # If this rule does not seem to recognize the file you are trying to make,
 # then run 'make' to completion first. It is something to do with the
@@ -36,7 +40,7 @@ PROFILING=
 # interpreted as "terminal" which means it does not apply unless its
 # prerequisites exist. By my interpretation of the info, this ought not
 # to be happening (requires a double colon), but on horace, it is. 
-% : %.f  makefile $(OBJECTS) $(UTILITIES) /home/hutch/accis/libaccisX.a
+% : %.f  makefile $(OBJECTS) $(UTILITIES) $(ACCISLIB)
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
 %.o : %.f makefile $(HEADERS)
@@ -66,9 +70,12 @@ getfield.o : getfield.f makefile $(HEADERS)
 	$(G77)  -c $(NOBOUNDS) $(PROFILING) $*.f
 
 # Main program explicit to avoid make bugs:
-ccpic : ccpic.f makefile $(OBJECTS) $(UTILITIES) /home/hutch/accis/libaccisX.a
+ccpic : ccpic.f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES)
 	if [ $(GEOMFILE). != . ] ; then rm -f ccpicgeom.dat; ln -s $(GEOMFILE) ccpicgeom.dat; fi
 	$(G77)  -o ccpic $(COMPILE-SWITCHES) $(PROFILING) ccpic.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+
+$(ACCISLIB) : ./accis/*.f
+	make -C accis
 
 testing : testing/mpibbdytest testing/fieldtest testing/stresstest
 	@echo Made tests in directory testing. Run them to test.
@@ -79,21 +86,19 @@ testing : testing/mpibbdytest testing/fieldtest testing/stresstest
 testing/mpibbdytest : mpibbdytest.o udisplay.o mpibbdy.o mditerate.o reduce.o makefile
 	$(G77) -o testing/mpibbdytest  testing/mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o reduce.o
 
-#fieldtest : fieldtest.f makefile $(OBJECTS) /home/hutch/accis/libaccisX.a
-#	$(G77)  -o fieldtest $(COMPILE-SWITCHES) $(PROFILING) fieldtest.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
-
-testing/fieldtest : testing/fieldtest.f makefile $(OBJECTS) /home/hutch/accis/libaccisX.a
+testing/fieldtest : testing/fieldtest.f makefile $(OBJECTS) $(ACCISLIB)
 	$(G77)  -o testing/fieldtest $(COMPILE-SWITCHES) $(PROFILING) testing/fieldtest.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
-#stresstest : stresstest.f stress.o /home/hutch/accis/libaccisX.a
-#	$(G77) -o stresstest stresstest.f stress.o $(LIBRARIES)
-
-testing/stresstest : testing/stresstest.f stress.o /home/hutch/accis/libaccisX.a
+testing/stresstest : testing/stresstest.f stress.o $(ACCISLIB)
 	$(G77) -o testing/stresstest testing/stresstest.f stress.o $(LIBRARIES)
 
 clean :
 	rm -f *.o $(TARGETS) *.html *.flx *.phi *.den T*.0?? *.ps
+	make -C accis mproper
 
 ftnchek :
 	./ftnchekrun "ccpic.f $(OBJECTS)"
 	@echo To view do: konqueror CallTree.html &
+
+final : 
+	$(GFINAL)
