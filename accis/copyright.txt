@@ -1,0 +1,7 @@
+c___________________________________________________________________________
+c
+c This code is copyright (c) Ian H Hutchinson (2003) hutch@psfc.mit.edu.
+c
+c No waranty, explicit or implied, is given. If you choose to build or run
+c the code, you do so at your own risk.
+c___________________________________________________________________________

@@ -1,0 +1,10 @@
+      integer Li,Lj
+      integer maxi,maxj
+      parameter (Li=100,Lj=100)
+      real psi(Li,Lj)
+      real r(Li),z(Lj)
+      common /fluxmesh/psi,maxi,maxj,r,z
+      real charge
+      common /particle/charge
+      logical lfline
+      common /logicals/lfline
