@@ -11,7 +11,8 @@ ifeq ("$(VECX)","")
 endif
 
 F77=$(G77)
-NOBACKSLASH=-fno-backslash
+# Use correct interpretation and suppress g77 warnings for font etc.
+NOBACKSLASH=-fno-backslash -w
 
 standard_object_files= \
 autopl.o \

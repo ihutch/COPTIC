@@ -4,8 +4,8 @@ c particle weight sum, having structure iLs, and (possible) diagnostics.
 c mesh data, notably ndims_mesh, since we don't pass it:
       include 'meshcom.f'
       integer iLs(ndims_mesh+1)
-      real xfrac(ndims_mesh)
-      integer ixp(ndims_mesh)
+c      real xfrac(ndims_mesh)
+c      integer ixp(ndims_mesh)
 
       include 'partcom.f'
 c On entry, psum ought to have been initialized to zero.

@@ -16,9 +16,8 @@ c laddu true if there's additional function faddu
 c oaddu is maximum relative weight of faddu term
       real oaddu
 
-      integer indi(imds),ind1(imds),iused(imds)
+      integer indi(imds),iused(imds)
       logical lfirst
-      data ind1/imds*0/
       data lfirst/.true./
       save
 

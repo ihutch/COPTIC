@@ -3964,3 +3964,28 @@ not seem to propagate to gfortran. So I haven't really made progress.
 
 Found a small time saving in sorrelaxgen where the parity change is done.
 Saves about 10% of time in this routine, but not much overall. 
+
+21 Dec 09
+
+Made a unique version of accis and added to the repository as a subdirectory.
+
+Found that even g77 version runs slower on cmodws48 etc. 
+These machines have 
+cache size      : 2048 KB
+whereas both sceptic and ihhutch have
+cache size      : 6144 KB
+This is probably the reason. Cache misses may be the secret to understanding
+the performance.
+
+Tried reducing Li in ccpic. No significant difference. Reduce partcom
+n_partmax to 100000: no significant difference. Well I haven't proved
+that it is cache misses.
+
+Ran some cases to see if I can get wake structures similar to those
+in sceptic. With +-10 mesh extent, and -l3, -t.1, -v1., p-2, a trailing peak
+can be clearly seen (but trough seems past the end. 
+Generally the results seem qualitatively consistent with what I saw
+with sceptic. 
+Ran some rectangle cases. Also don't show negative dip in wake.
+Ran an asymmetric case -5,+15. It shows a tiny dip in the wake. 
+All this is consistent with sceptic. Now in 3-d.

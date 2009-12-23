@@ -1,6 +1,8 @@
 GLULIBS= -lGL -lGLU
 ACCISLIB=./accis/libaccisX.a
 LIBRARIES = -L/usr/X11R6/lib/ -L./accis/ -laccisX -lXt -lX11 $(GLULIBS)
+##########################################################################
+# The sormpi system.
 ########################
 # The reinjection choice:
 #######################
@@ -13,27 +15,29 @@ GEOMFILE=geomsphere.dat
 #REINJECT=cartreinject.o
 #GEOMFILE=geomcubic.dat
 ##################
-# The sormpi system.
-FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o interpolations.o svdsol.o getfield.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reindiag.o pinit.o bdyroutine.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o reduce.o stress.o average.o
+FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o svdsol.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reindiag.o pinit.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o stress.o average.o bdyroutine.o reduce.o getfield.o interpolations.o
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
-
 OBJECTS=$(FIXEDOBJECTS) ${REINJECT}
 HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
+##########################################################################
 G77=mpif77 -f77=g77 
-GFINAL=gcc-4.1 -v -pg -o ccpic.prof ccpic.o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
 #G77=mpif77
+# export this so it is inherited by sub-makes.
+export G77
+GFINAL=gcc-4.1 -v -pg -o ccpic.prof ccpic.o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
 #OPTIMIZE=-O3 -funroll-loops -finline-functions
 OPTIMIZE=-O3
-#COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I. 
+COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I. 
 #COMPILE-SWITCHES = -Wall   $(OPTIMIZE) -I. -g -fbounds-check
 #COMPILE-SWITCHES = -Wall   $(OPTIMIZE) -I. -g 
-COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -I.
-NOBOUNDS= -Wall -Wno-unused  $(OPTIMIZE) -I.
+##COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -g -I.
+NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
+NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 #PROFILING=-pg
 #PROFILING= -pg -static-libgcc -lpthread_p -lm_p
-
+##########################################################################
 # If this rule does not seem to recognize the file you are trying to make,
 # then run 'make' to completion first. It is something to do with the
 # match-anything rules and prerequisites. I think that the rule is being
@@ -61,14 +65,21 @@ mpicheck : ccpic
 	if [ -f mpicheck.prev ] ; then diff mpicheck.prev mpicheck.out ; else mv mpicheck.out mpicheck.prev  ; fi
 	mv mpicheck.out mpicheck.prev
 
-# Things to compile without the standard switches
-
+#####################################################
+# Things to compile with non-standard switches
 interpolations.o : interpolations.f makefile $(HEADERS)
 	$(G77)  -c $(NOBOUNDS) $(PROFILING) $*.f
 
 getfield.o : getfield.f makefile $(HEADERS)
 	$(G77)  -c $(NOBOUNDS) $(PROFILING) $*.f
 
+reduce.o : reduce.f makefile $(HEADERS)
+	$(G77) -c $(NOGLOBALS) $(PROFILING) $*.f
+
+bdyroutine.o : bdyroutine.f makefile $(HEADERS)
+	$(G77) -c $(NOGLOBALS) $(PROFILING) $*.f
+
+#####################################################
 # Main program explicit to avoid make bugs:
 ccpic : ccpic.f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES)
 	if [ $(GEOMFILE). != . ] ; then rm -f ccpicgeom.dat; ln -s $(GEOMFILE) ccpicgeom.dat; fi
@@ -77,13 +88,14 @@ ccpic : ccpic.f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES)
 $(ACCISLIB) : ./accis/*.f
 	make -C accis
 
+######################################################
 testing : testing/mpibbdytest testing/fieldtest testing/stresstest
 	@echo Made tests in directory testing. Run them to test.
 
 #mpibbdytest : mpibbdytest.o udisplay.o mpibbdy.o mditerate.o reduce.o
 #	$(G77) -o mpibbdytest  mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o reduce.o
 
-testing/mpibbdytest : mpibbdytest.o udisplay.o mpibbdy.o mditerate.o reduce.o makefile
+testing/mpibbdytest : testing/mpibbdytest.o udisplay.o mpibbdy.o mditerate.o reduce.o makefile
 	$(G77) -o testing/mpibbdytest  testing/mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o reduce.o
 
 testing/fieldtest : testing/fieldtest.f makefile $(OBJECTS) $(ACCISLIB)
@@ -92,6 +104,7 @@ testing/fieldtest : testing/fieldtest.f makefile $(OBJECTS) $(ACCISLIB)
 testing/stresstest : testing/stresstest.f stress.o $(ACCISLIB)
 	$(G77) -o testing/stresstest testing/stresstest.f stress.o $(LIBRARIES)
 
+#####################################################
 clean :
 	rm -f *.o $(TARGETS) *.html *.flx *.phi *.den T*.0?? *.ps
 	make -C accis mproper

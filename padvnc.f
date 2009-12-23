@@ -30,7 +30,7 @@ c Local storage
       real xfrac(ndims_mesh)
       logical linmesh
 c Testing storage
-      real fieldp(ndims_mesh)
+c      real fieldp(ndims_mesh)
 c Needed only to print out averein:
 c      common /reinextra/averein,adeficit
 c Make this always last to use the checks.

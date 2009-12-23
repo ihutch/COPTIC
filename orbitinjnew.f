@@ -412,7 +412,8 @@ c regular use.
 c      parameter (iqsteps=nrsize+1)
       parameter (iqsteps=100+1)
       real phibye(iqsteps),phiei(iqsteps)
-      real qp(iqsteps),pp(iqsteps)
+      real qp(iqsteps)
+c      real pp(iqsteps)
       real alpha,b2i,d1,d2,p2i2,sa,xlambda
       integer i,iqs
       logical uninitialized
@@ -628,9 +629,7 @@ c First object is sphere of radius rc and potential phi.
 c Outer boundary setting -----------------
 c Don't do this if there's no second object because things then break.
 c Second object is bounding sphere of radius rs.
-c      rs=obj_geom(oradius,2)
-c But use a tad more for the mesh size
-c      rsmesh=obj_geom(oradius,2)*1.00001
+      rs=obj_geom(oradius,2)
 c Override the boundary condition of object 2 with an OML condition.
       xlambda=debyelen/sqrt(1.+1./Ti)
       a=1./xlambda+1./rs

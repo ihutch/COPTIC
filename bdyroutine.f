@@ -36,7 +36,7 @@ c Specify external the boundary setting routine.
       ipoint=0
 c      slpD=-1.
 c      call mditerate(ndims,ifull,iuds,bdyslopeDh,u,ipoint)
-      slpD=debyelen/(1.+1./sqrt(Ti))
+      slpD=debyelen/sqrt(1.+1./(Ti+vd*vd))
       call mditerate(ndims,ifull,iuds,bdyslopescreen,u,ipoint)
 
       end
