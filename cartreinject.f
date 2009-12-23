@@ -98,20 +98,30 @@ c The range is adjusted automatically to give a decently accurate integral.
 c It is possible for the adjustment process to fail if xc is in error by, 
 c or xw is, a large factor times the actual width.
 c The most efficient usage is for xw to be slightly larger than the 
-c points at which f is 10^2 times its peak.
+c points at which f is 10^-2 times its peak.
 c f must be declared external in the calling routine.
+c If ginfty is returned as zero, then the routine failed with cummulative
+c probability too small to be significant.
       subroutine cumprob(f,xw,xc,K,h,ginfty)
       external f
       real xw,xc
       integer K
       real h(0:K)
 
+      parameter (tiny=1.e-25)
 c internal storage
       integer m
       parameter (m=2000)
       real fv(m),g(m),x(m)
 
       if(K.gt.m)write(*,*)'cumprob warning: too fine a grid ',K
+
+c      write(*,*)'cumprob entry',xw,xc,K
+
+c If we return prematurely, it is with h's=0.
+      do i=0,K
+         h(i)=0.
+      enddo
 
       xr=abs(xw)
       if(xr.eq.0)xr=1.
@@ -132,6 +142,7 @@ c Form \int_x0^{x0+m*xd}
          fv(i)=f(x(i))
          g(i)=g(i-1)+xd*(fv(i)+fv(i-1))*.5
       enddo
+c      write(*,*)'Integration limits',x0,x1,' Value=',g(m)
 
 c Decide whether we have covered enough range.
 c Criteria are: dg0/gm < 1/(10.K.m) ; dg(m/4)/gm > 1/(10.K.m)
@@ -193,8 +204,10 @@ c Double or triple the range.
             if(icount.gt.20)then
                write(*,'(a,/,a,g12.4,a,g12.4,a)')
      $              'Integrate too high icount.',' Starting range'
-     $              ,xc,'+-',xw,' probably too wide.'
-               stop
+     $              ,xc,'+-',xw,' may be too wide.'
+               ginfty=0.
+               return
+c               stop
             endif
             goto 1
          endif
@@ -203,22 +216,34 @@ c Double or triple the range.
 c Range is too big.
             x1=x0+(ii+2)*xd
             x0=x0+(ii-2)*xd
-            if(icount.gt.20)stop "Integrate count too high."
+            if(icount.gt.20)then
+               write(*,*)'Integrate count too high.'
+               ginfty=0.
+               return
+            endif
             goto 1
          endif
       enddo
-      stop "Integrate exhausted end adjustment steps"
+      write(*,*) "Cumprob exhausted end adjustment steps"
+      ginfty=0.
+      return
  2    continue
 
       if(ii.eq.1 .and. ia.eq.m)then
 c We have the right range. Finish.
+         if(.not.g(m).gt.tiny)then
+            write(*,*)'Cumprob total too small',g(m),' set to zero'
+            ginfty=0.
+            return
+         endif
          do i=0,K
 c solve g(h_i)=gm*i/K with linear interpolation.
             gt=(.999998*(i/float(K))+.000001)*g(m)
             ihi=interp(g,m,gt,hi)
             if(ihi.eq.0)then
-               write(*,*) 'Integrate interp error',i,K,gt,g(m)
-
+               write(*,*)'Cumprob interp error',i,K,m,gt,g(m)
+               write(*,*)'Integration range used:',x0,x1
+               write(*,*)(g(kk),kk=1,5),(g(kk),kk=m-4,m)
                stop
             endif
             hf=hi-ihi
@@ -277,11 +302,6 @@ c     $           ,(hrein(kk,index),kk=ncrein-4,ncrein)
          idrein=id
          call cumprob(fvcrein,0.,0.,
      $           ncrein,prein(0,id),gdummy)
-c         prein(-1,id)=bdys*prein(0,id)-(bdys-1.)*prein(1,id)
-c         prein(ncrein+1,id)=bdys*prein(ncrein,id)
-c     $        -(bdys-1.)*prein(ncrein-1,id)
-c         call yautoplot(prein(-1,id),ncrein+3)
-c         call pltend()
       enddo
 c      write(*,*)'grein',grein
       gtot=0.
@@ -293,6 +313,7 @@ c      write(*,*)'grein',grein
          gintrein(id)=gintrein(id-1) + 1.000001*grein(id)/gtot
       enddo
       if(gintrein(6).le.1.)write(*,*)'gintrein problem!'
+      write(*,*)'gintrein',gintrein
 
       end
 c**********************************************************************
