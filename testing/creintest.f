@@ -14,8 +14,8 @@ c Test the reinjection scheme by forming cartesian distributions.
       logical normal,lwork
 
 c defaults
-      vd=.0
-      Ti=1.
+      vd=1.2
+      Ti=.1
       vrange=5.
       nin=1000000
 c      normal=.false.

@@ -3986,6 +3986,13 @@ in sceptic. With +-10 mesh extent, and -l3, -t.1, -v1., p-2, a trailing peak
 can be clearly seen (but trough seems past the end. 
 Generally the results seem qualitatively consistent with what I saw
 with sceptic. 
+
 Ran some rectangle cases. Also don't show negative dip in wake.
 Ran an asymmetric case -5,+15. It shows a tiny dip in the wake. 
 All this is consistent with sceptic. Now in 3-d.
+
+23 Dec 09
+
+Found problem with cumprob. There are cases when the integral is zero.
+We need ways to cope with those, and also with cases where the integral
+is too small to be significant, but still appears non-zero. 

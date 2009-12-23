@@ -108,7 +108,7 @@ c probability too small to be significant.
       integer K
       real h(0:K)
 
-      parameter (tiny=1.e-25)
+      parameter (tiny=1.e-15)
 c internal storage
       integer m
       parameter (m=2000)
@@ -202,9 +202,9 @@ c Double or triple the range.
             if(ii.lt.1) x0=x0-dx
             if(ia.gt.m) x1=x1+dx
             if(icount.gt.20)then
-               write(*,'(a,/,a,g12.4,a,g12.4,a)')
-     $              'Integrate too high icount.',' Starting range'
-     $              ,xc,'+-',xw,' may be too wide.'
+c               write(*,'(a,/,a,g12.4,a,g12.4,a)')
+c     $              'Integrate too high icount.',' Starting range'
+c     $              ,xc,'+-',xw,' may be too wide.'
                ginfty=0.
                return
 c               stop
@@ -217,7 +217,7 @@ c Range is too big.
             x1=x0+(ii+2)*xd
             x0=x0+(ii-2)*xd
             if(icount.gt.20)then
-               write(*,*)'Integrate count too high.'
+c               write(*,*)'Integrate count too high.'
                ginfty=0.
                return
             endif
@@ -267,14 +267,16 @@ c drift velocity, vd, in the z-direction
 c maxwellians of width given by Ti
 
       include 'plascom.f'
+      include 'meshcom.f'
       include 'creincom.f'
       external ffcrein
       external fvcrein
       parameter (bdys=6.)
+      real area(3)
 
 c testing only
-      parameter (nt=1000)
-      real yt(nt)
+c      parameter (nt=1000)
+c      real yt(nt)
 
       do id=1,3
          do i2=1,2
@@ -283,13 +285,6 @@ c idrein determines the sign of velocity. id odd => idrein negative.
             index=2*(id-1)+i2
             call cumprob(ffcrein,0.,0.,
      $           ncrein,hrein(0,index),grein(index))
-c            write(*,*)index,idrein,grein(index)
-c            call yautoplot(hrein(0,index),ncrein+1)
-c            call pltend()
-c Removed these settings because parabolic interpolation is bad.
-c            hrein(-1,index)=bdys*hrein(0,index)-(bdys-1.)*hrein(1,index)
-c            hrein(ncrein+1,index)=bdys*hrein(ncrein,index)
-c     $           -(bdys-1.)*hrein(ncrein-1,index)
 c Kludge fix of ends to avoid negative velocity injections.
             if(idrein.gt.0)then
                if(hrein(0,index).lt.0.)hrein(0,index)=0.
@@ -305,15 +300,22 @@ c     $           ,(hrein(kk,index),kk=ncrein-4,ncrein)
       enddo
 c      write(*,*)'grein',grein
       gtot=0.
+      do id=1,3
+         i2=mod(id,3)+1
+         i3=mod(id+1,3)+1
+         area(id)=abs((xmeshend(i2)-xmeshstart(i2))
+     $        *(xmeshend(i3)-xmeshstart(i3)))
+      enddo
       do id=1,6
-         gtot=gtot+grein(id)
+         gtot=gtot+grein(id)*area((id+1)/2)
       enddo
       gintrein(0)=-0.0000005
       do id=1,6
-         gintrein(id)=gintrein(id-1) + 1.000001*grein(id)/gtot
+         gintrein(id)=gintrein(id-1) +
+     $        1.000001*grein(id)*area((id+1)/2)/gtot
       enddo
       if(gintrein(6).le.1.)write(*,*)'gintrein problem!'
-      write(*,*)'gintrein',gintrein
+c      write(*,*)'gintrein',gintrein
 
       end
 c**********************************************************************
