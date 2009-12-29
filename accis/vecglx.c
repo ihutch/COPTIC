@@ -131,14 +131,30 @@ void getcmdargs_()
 
 /* Cope gracefully with bad match errors occasionally thrown by XSetInputFocus
    Install our own non-fatal handler during the call, only once.*/
+static int accis_errorcount = 0;
 static XErrorHandler accis_old_handler = (XErrorHandler) 0 ;
 int accis_errorhandler(Display *display, XErrorEvent *theEvent) {
-   fprintf(stderr, "Intercepted Xlib error: error code %d request code %d",
-		theEvent->error_code, theEvent->request_code) ;
    if(theEvent->error_code == BadMatch){
-     fprintf(stderr,"  BadMatch. Doing nothing.\n");
+     if(++accis_errorcount>2){
+       fprintf(stderr,"Too many badmatch errors, %d\n",accis_errorcount);
+       accis_errorcount=0;
+       return 2;
+     }
+     if(theEvent->request_code == 42){
+       /* Fix focus errors quietly. Wait and try to set again.
+	  This reentrant call could easily give an infinite loop. 
+	  Hence the above errorcount trap. */
+       usleep(10000);
+       XSetInputFocus(accis_display, accis_window, RevertToParent,CurrentTime);
+     }else{
+       fprintf(stderr, "Intercepted Xlib error: error code %d request code %d",
+		theEvent->error_code, theEvent->request_code) ;
+       fprintf(stderr,"  BadMatch. Doing nothing.\n");
+     }
      return 0;
    }else{
+     fprintf(stderr, "Intercepted Xlib error: error code %d request code %d",
+		theEvent->error_code, theEvent->request_code) ;
      fprintf(stderr,"  Unfiltered error passed to Xlib.\n");
      accis_old_handler(display,theEvent);
      return 1;
@@ -242,6 +258,7 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
+  /*  printf("scrxpix=%d,scrypix=%d\n",*scrxpix,*scrypix);*/
   glOrtho(0.,(float)(*scrxpix-1),(float)(*scrypix-1),0.,1.,20.);
 
   glMatrixMode(GL_MODELVIEW);
@@ -257,13 +274,13 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   }
-  /*Irrelevant test for nothing.*/
-/*  glBegin(GL_TRIANGLE_FAN); */
-/*   glColor3f(1., 0., 0.); glVertex3f(-47.5, -47.5, 0.); */
-/*   glColor3f(0., 1., 0.); glVertex3f( 47.5, -47.5, 0.); */
-/*   glColor3f(0., 0., 1.); glVertex3f( 47.5,  47.5, 0.); */
-/*   glColor3f(1., 1., 0.); glVertex3f(-47.5,  47.5, 0.); */
-/*  glEnd(); */
+  /*Irrelevant test for nothing.
+  glBegin(GL_TRIANGLE_FAN);
+   glColor3f(1., 0., 0.); glVertex3f(-47.5, -47.5, 0.);
+   glColor3f(0., 1., 0.); glVertex3f( 47.5, -47.5, 0.);
+   glColor3f(0., 0., 1.); glVertex3f( 47.5,  47.5, 0.);
+   glColor3f(1., 1., 0.); glVertex3f(-47.5,  47.5, 0.);
+  glEnd();*/
 
 
  glColor3f(0.,0.,0.);
@@ -645,6 +662,7 @@ GLushort ared,agreen,ablue;
   ared=a_gradred[ii];
   agreen=a_gradgreen[ii];
   ablue=a_gradblue[ii];
+  /*  printf("ared=%d,agreen=%d,ablue=%d\n",ared,agreen,ablue);*/
   glColor3us(ared,agreen,ablue);
   return 1; 
 }
@@ -735,7 +753,7 @@ FORT_INT *i3d;
   float zs, zero=0.;
   /* Fortran functions called: */
   float extern wx2nx_(),wy2ny_();
-  void extern tn2s_(),wxyz2nxyz();
+  void extern tn2s_(),wxyz2nxyz_();
 
 /*   if(h[1]>=a_gradPixno || h[3]>=a_gradPixno || h[3]>=a_gradPixno){ */
 /*     return 1; */
@@ -745,13 +763,43 @@ FORT_INT *i3d;
     glBegin(GL_TRIANGLES);
     for (i=0;i<3;i++){
       xw=x[i]; yw=y[i];
-      xn=wx2nx_(&xw);
-      yn=wy2ny_(&yw);
+      /* Real fortran function calls don't work with g77 unless one
+      uses the extra flag -fno-f2c . Apparently this is a problem only
+      on AMD64 systems and is to do with the assumed length of returned
+      floating points: double vs float.  From gfortran info: 
+      "The calling conventions used by `g77' (originally implemented in
+      `f2c') require functions that return type default `REAL' to
+      actually return the C type `double'."
+       -fno-f2c defeats this expectation. gfortran uses no-f2c as default.
+       g77 says:
+           However, because the "libg2c" library uses f2c calling conventions,
+           g77 rejects attempts to pass intrinsics implemented by routines in
+           this library as actual arguments when -fno-f2c is used, to avoid
+           bugs when they are actually called by code expecting the GNU call‐
+           ing conventions to work.
+
+           For example, INTRINSIC ABS;CALL FOO(ABS) is rejected when -fno-f2c
+           is in force.  (Future versions of the g77 run-time library might
+           offer routines that provide GNU-callable versions of the routines
+           that implement the f2c intrinsics that may be passed as actual
+           arguments, so that valid programs need not be rejected when
+           -fno-f2c is used.)
+
+           Caution: If -fno-f2c is used when compiling any source file used in
+           a program, it must be used when compiling all Fortran source files
+           used in that program. 
+      Obviously that's potentially a serious danger. Probably better just
+      to circumvent the whole thing by using fortran subroutines only. 
+      */
+      /*      xn=wx2nx_(&xw);
+	      yn=wy2ny_(&yw); */ /*The following subroutines replace and work.*/
+      getwx2nx_(&xw,&xn);
+      getwy2ny_(&yw,&yn);
       tn2s_(&xn,&yn,&ixs,&iys);
       xs=ixs; ys=iys;
       li=(int) h[i];
-/*       printf("xw %f, yw %f, xn %f, yn %f, xs %.0f, ys %.0f, li %d\n", */
-/* 	     xw,yw,xn,yn,xs,ys,li); */
+      /* printf("xw %f, yw %f, xn %f, yn %f, xs %.0f, ys %.0f, li %d\n", 
+	 xw,yw,xn,yn,xs,ys,li); */
       acgradcolor_(&li);
       glVertex2f(xs,ys);
     }

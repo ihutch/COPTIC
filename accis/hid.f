@@ -211,17 +211,19 @@ c      common/hideln/ytop,ybot,...
 	 yo=y1
 c Grid points just inside the x1 - x2 range, not outside frame.
 	 if(x2.ge.x1)then
-	    ix1=max(int(x1*(ngrid-1)),1) +1
+	    ix1=max(int(x1*(ngrid-1)),0) +1
 	    ix2=min(int(x2*(ngrid-1)),ngrid)
 	    signd=1
 	 else
 	    signd=-1
 	    ix1=min(int(x1*(ngrid-1)),ngrid)
-	    ix2=max(int(x2*(ngrid-1)),1)+1
+	    ix2=max(int(x2*(ngrid-1)),0)+1
 	 endif
 	 dx=1./(ngrid-1)
 	 dydx=(y2-y1)/(x2-x1)
+         icount=0
 	 do 10 ix=ix1,ix2,signd
+            icount=icount+1
 c  Do over Grid-position:
 	    x=dx*ix
 	    y=y1+(x-x1)*dydx
@@ -234,36 +236,63 @@ c  Do over Grid-position:
 	       nstate=2
 	       ybot(ix)=y
 	    endif
-c If previous call was not a moveto.
-	    if(lmidl)then
-	       if(nstate.eq.0)then
+c If previous call was not a moveto if(lmidl)then
+c Finishing and starting segments.
+            if(nstate.eq.0.and.lmidl)then
 c Not drawing. If previously was, then finish segment.
-		  if(istate.ne.0) call vecn(xo,yo,1)
-	       elseif(nstate.eq.1)then
+               if(istate.ne.0)then
+                  call vecn(xo,yo,1)
+                  if(yo.gt.ytop(ix))then
+                     call vecn(x,ytop(ix),1)
+c                        call trihere(xo,yo,.005)
+                  endif
+                  if(yo.lt.ybot(ix))then
+                     call vecn(x,ybot(ix),1)
+c                        call trihere(xo,yo,-.005)
+                  endif
+c                     write(*,*)'Finish seg',ix,ix1,signd,x,y
+c     $                    ,dx,dydx,xo,yo
+               endif
+            elseif(nstate.eq.1.and.lmidl)then
 c Drawing above. If previously was not, draw start.
-		  if(istate.eq.0) then
-		     call vecn(dx*(ix-signd),ytop(ix-signd),0)
-		     call vecn(x,y,1)
-		  endif
-	       elseif(nstate.eq.2)then
+               if(istate.eq.0) then
+                  xp=dx*(ix-signd)
+                  yp=ytop(ix-signd)
+                  call vecn(xp,yp,0)
+                  call vecn(x,y,1)
+               endif
+            elseif(nstate.eq.2.and.lmidl)then
 c Drawing below. If previously was not, draw start.
-		  if(istate.eq.0) then
-		     call vecn(dx*(ix-signd),ybot(ix-signd),0)
-		     call vecn(x,y,1)
-		  endif
-	       endif
-	    else
-	       lmidl=.true.
-	    endif
+               if(istate.eq.0) then
+                  xp=dx*(ix-signd)
+                  yp=ybot(ix-signd)
+                  call vecn(xp,yp,0)
+                  call vecn(x,y,1)
+               endif
+            endif
 	    istate=nstate
 	    xo=x
 	    yo=y
-   10	 continue
-      endif
+ 10      continue
 c End of vector. Finish it.
+         xp=x2
+         yp=y2
+         call vecn(xp,yp,istate)
+c         if(icount.eq.0)call trihere(xp,yp,.005)
+      else
+c         write(*,*)'hid xpoints coincide'
+      endif
       x1=x2
       y1=y2
-      call vecn(x1,y1,istate)
+c Maybe this?
+c      if(istate.ne.0)            
+      lmidl=.true.
+      end
+c***************************************************************************
+      subroutine trihere(xp,yp,d)
+      call vecn(xp+d,yp,1)
+      call vecn(xp+d,yp+d,1)
+      call vecn(xp,yp,1)
       end
 c***************************************************************************
       subroutine hidinit(top,bot)
@@ -333,7 +362,7 @@ c     Set the scaling.
          call scale3(xmin,xmax,ymin,ymax,zmin,zmax)
       endif
 c Draw the surface.
-      call surfdr3(x,y,z,iLx,nx,ny,work,isw,dummy)
+      call surfdr3(x,y,z,iLx,nx,ny,work,isw)
       if(cola.ne.0) call color(cola)
       if(isw.ge.0)then
 c Draw cube.

@@ -26,6 +26,14 @@ c Optionally draw hiding, normalized.
          call vecn(nx,ny,ud)
       endif
       end
+c*******************************************************************
+c Versions for c calls
+      subroutine getwx2nx(wx,xn)
+      xn=wx2nx(wx)
+      end
+      subroutine getwy2ny(wy,yn)
+      yn=wy2ny(wy)
+      end
 C********************************************************************
       function wx2nx(wx)
       real wx2nx,wx

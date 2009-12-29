@@ -18,10 +18,11 @@ c The node positions are given by vectors laminated into xn, whose
 c starts for dimensions id are at ixnp(id)+1. 
 c So the vector of positions for dimension id is 
 c   ixnp(id)+1 to ixnp(id)+iuds(id) [and ixnp(id+1)-ixnp(id)>=iuds(id)]
-      integer ixnp(ndims)
+      integer ixnp(ndims+1)
       real xn(*)
 c The fixed dimension which is chosen to start, and returned after, is:
       integer ifix
+c If ifix<0, then don't maintain aspect ratio.
 c The plotted quantity title is
       character*(*) utitle
 c Needed for perspective plot
@@ -36,12 +37,16 @@ c Local variables:
       integer isw,jsw
       character*(10) cxlab,cylab
       character*(30) form1
-      logical lfirst
-      data lfirst/.true./
+      logical lfirst,laspect
+      data lfirst/.true./laspect/.true./
 c Tell that we are looking from the top by default.
       data ze1/1./icontour/1/iweb/1/iback/0/
       data cs/.707/sn/.707/
 
+      if(ifix.lt.0)then
+         laspect=.false.
+         ifix=abs(ifix)
+      endif
       if(ifix.lt.1 .or. ifix.gt.ndims)ifix=ndims
       ips=0
       irotating=0
@@ -60,6 +65,7 @@ c     Plot the surface. With scaling 1. Web color 6, axis color 7.
      $        ' s: rescale. p: print. Drag mouse to rotate.'
          write(*,*)
      $        ' c: contour plane position. w: toggle web. r/e: rotate.'
+     $        ,' a: toggle aspect'
  19   continue
  21   call pltinit(0.,1.,0.,1.)
 c Set the plotting arrays for fixed dimension ifix.
@@ -74,6 +80,10 @@ c Set the plotting arrays for fixed dimension ifix.
      $        ' smaller than',i4,' x',i4)
          return
       endif
+c      xdp1=10.
+c      xdp2=20.
+      xdp1=xn(ixnp(idp1)+nf1)-xn(ixnp(idp1)+1)
+      xdp2=xn(ixnp(idp2)+nf2)-xn(ixnp(idp2)+1)
       call iwrite(idp2,iwidth,cylab)
 c Only works for 3-D in present implementation.
 c Could be fixed to be general, I suppose.
@@ -91,9 +101,24 @@ c Could be fixed to be general, I suppose.
 
 c Web drawing. First call is needed to set scaling.
 c      write(*,*)'jsw=',jsw
-      if(iweb.ne.0)
-     $     call hidweb(xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
+      if(iweb.ne.0)then
+         if(laspect)then
+            if(xdp2.gt.xdp1)then
+               yc=.3
+               xc=xdp1*yc/xdp2
+            elseif(xdp2.lt.xdp1)then
+               xc=.3
+               yc=xdp2*xc/xdp1
+            else
+               xc=.25
+               yc=.25
+            endif
+            zc=.2
+            call setcube(xc,yc,zc,.5,.4)
+         endif
+         call hidweb(xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
      $        zp,nw,nf1,nf2,jsw)
+      endif
 c Use this scaling until explicitly reset.
       jsw=0 + 256*6 + 256*256*7
       write(form1,'(''Dimension '',i1,'' Plane'',i4)')ifix,n1
@@ -173,6 +198,7 @@ c User interface interpret key-press.
       if(isw.eq.65364 .and. n1.gt.1) n1=n1-1
       if(isw.eq.65362 .and. n1.lt.iuds(ifix)) n1=n1+1
       if(isw.eq.ichar('q')) goto 23
+      if(isw.eq.ichar('a')) laspect=.not.laspect
       if(isw.eq.ichar('s')) jsw=1 + 256*6 + 256*256*7
       if(isw.eq.ichar('p'))then
          call pfset(3)
@@ -181,9 +207,11 @@ c User interface interpret key-press.
       if(isw.eq.65361)then
          ifix=mod(ifix+1,3)+1
          n1=iuds(ifix)/2
+         jsw=1 + 256*6 + 256*256*7
       elseif(isw.eq.65363)then
          ifix=mod(ifix,3)+1
          n1=iuds(ifix)/2
+         jsw=1 + 256*6 + 256*256*7
       endif
       if(isw.eq.ichar('h'))goto 20
       if(isw.eq.ichar('c'))icontour=mod(icontour+1,4)

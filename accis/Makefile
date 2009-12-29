@@ -68,7 +68,7 @@ accissum.html : accissum.tex
 	purge.tex
 
 #update the libraries.
-libaccis.a : $(object_files)
+libaccis.a : $(object_files) $(headers)
 	echo "Updating libaccis."
 	ar -rs libaccis.a $(object_files)
 
