@@ -8,19 +8,20 @@ c
 c which accepts a pointer to the address in the array structure: ipoint
 c referred to the full dimensions of u, so u(1+ipoint) is processed.  It
 c returns the next increment in units of the lowest dimension: inc. The
-c offsets for each dimension are passed in: indi(ndims) And can (but
-c need not) be adjusted in routine. If they are, ipoint must also be
-c adjusted equivalently in routine. Again: in routine, ipoint addresses
-c u(ifull).  After the return of routine, ipoint and indi(1) are
-c incremented by inc and wrapping is handled. Wrapping occurs at the
-c _iused_ dimension length relative to the starting indices.
-c In other words, if the incremented indi(id)-indinp(id)+1
-c exceeds the used length iused(id), then the next higher dimension is
-c incremented by 1, and indi(id) decremented by iused(id). Thus inc is
-c the increment in the lowest dimension index, referenced to the _used_
-c dimensions, but ipoint is wrapped accounting for the knowledge of
-c ifull so it points to the correct next position within the array. u is
-c the data that is passed to the routine. 
+c offsets for each dimension are passed in: indi(ndims), which have
+c values in the range (0,iused(ndims)-1). They can (but need not) be
+c adjusted in routine. If they are, ipoint must also be adjusted
+c equivalently in routine. Again: in routine, ipoint addresses u(ifull).
+c After the return of routine, ipoint and indi(1) are incremented by inc
+c and wrapping is handled. Wrapping occurs at the _iused_ dimension
+c length relative to the starting indices.  In other words, if the
+c incremented indi(id)-indinp(id)+1 exceeds the used length iused(id),
+c then the next higher dimension is incremented by 1, and indi(id)
+c decremented by iused(id). Thus inc is the increment in the lowest
+c dimension index, referenced to the _used_ dimensions, but ipoint is
+c wrapped accounting for the knowledge of ifull so it points to the
+c correct next position within the array. u is the data that is passed
+c to the routine.
 c
 c On entry, ipin is the starting offset storage position from the start
 c of u relative ifull array structure. The indinp(id) are the

@@ -164,7 +164,9 @@ c Get back current eye position xe1 etc.
 c Contour without labels, with coloring, using vector axes
          call contourl(zp,pp,nw,nf1,nf2,cl,icl,
      $        xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),17)
+         call ticlabtog()
          call axis()
+         call ticlabtog()
          call axis2()
          if(iweb.ne.1)call cubed(icorner-8*(icorner/8))
       endif
@@ -336,7 +338,6 @@ c     Plot the surface. With scaling 1. Web color 6, axis color 7.
  19   continue
 
  21   call pltinit(0.,1.,0.,1.)
-c Can't figure out what to do if cube is not equisided.
       call setcube(.2,.2,.2,.5,.4)
       do id=1,3
          cmin(id)=xn(ixnp(id)+1)

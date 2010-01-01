@@ -3995,4 +3995,54 @@ All this is consistent with sceptic. Now in 3-d.
 
 Found problem with cumprob. There are cases when the integral is zero.
 We need ways to cope with those, and also with cases where the integral
-is too small to be significant, but still appears non-zero. 
+is too small to be significant, but still appears non-zero. Implemented.
+
+30 Dec 09
+
+Ran a number of cases designed for wake studies on sceptic.psfc.
+These show quite oscillatory wakes (unlike the sceptic case). Using 
+-l10 and -l20 one gets quite similar scaling with domain size up to 
+400 long (50 wide). However, it is very clear that the size of the first
+potential peak never gets much larger than .15, no matter how strong the
+perturbation (charge \propto \phi x r scaled to lamda_debye). It seems 
+as if I can actually reproduce the oscillatory wakes of the linearized
+cases, but only with correct amplitude if that amplitude is less than
+0.1(Te). It would be nice to do some really quantitative comparisons. 
+
+1 Jan 2010
+
+Investigating partial edge error with zero-derivative boundary condition.
+I find this emerges only with multiple processes, but then with standard
+cubic boundary conditions. Must be a bug in the communications logic. 
+I believe that the edges are not communicated on principle. Why is that
+a problem? 
+
+The error seems to be arising in the final boundary setting after the
+allgather. It appears to go away if the final boundary setting is
+done twice. I think the logic of this is that, after the allgather,
+boundary conditions are not set, so boundaries don't satisfy the condition.
+Then calling bdyset implements the setting. However, at edges/corners, the
+setting might be from an incorrect boundary value along a face to the edge.
+In that case the edge value is incorrect after one setting. If a second
+setting is done, then the extrapolation is from a value that is correct.
+So the whole is then done properly. In general, I think this shows that
+when a corner is set prior to the face value that it is extrapolated from,
+it is incorrect. I believe this incorrect setting probably does not affect
+things in normal operation, because the edge values ought not to be used.
+But I'm not sure about that. In any case, we ought to fix the error. 
+I've assumed that we can set an edge value from either of its faces.
+That's not so. In fact sometimes we can't correctly set it from either,
+because they have not themselves yet been set. This problem would not
+exist if we could start from the middle of faces instead of the edges.
+Maybe, but maybe not, I think we'd need to start at position 2s. 
+Do the non-edge faces first, then do the edge faces. It doesn't look 
+easy. 
+
+Actually it is not very difficult to implement a more correct
+algorithm, based on extrapolating from the nearest body (not face)
+point. (Still iterating in the natural order).  It appears to be just
+as fast and direct although recoding was necessary.
+
+The run of the v10 cases was done with -t.01. This is too small. 1500
+such steps moves the particles 15 units. Less than a 10th of the size
+of the domain. Redo with -t.1 but with old ccpic version.

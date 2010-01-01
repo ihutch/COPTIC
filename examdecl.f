@@ -18,6 +18,8 @@ c Filenames
       character*100 fluxfilename
       character*100 objfilename
       character*100 argument
+c Logicals for control?
+
       
       common/examcom/ifull,iuds,u,q
      $     ,partfilename,phifilename,denfilename,objfilename,argument

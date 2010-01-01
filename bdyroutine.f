@@ -36,8 +36,10 @@ c Specify external the boundary setting routine.
       ipoint=0
 c      slpD=-1.
 c      call mditerate(ndims,ifull,iuds,bdyslopeDh,u,ipoint)
-      slpD=debyelen/sqrt(1.+1./(Ti+vd*vd))
-      call mditerate(ndims,ifull,iuds,bdyslopescreen,u,ipoint)
+c      slpD=debyelen/sqrt(1.+1./(Ti+vd*vd))
+c      call mditerate(ndims,ifull,iuds,bdyslopescreen,u,ipoint)
+      slpD=1.e-6
+      call mditerate(ndims,ifull,iuds,bdyslopeDh,u,ipoint)
 
       end
 c**********************************************************************
@@ -111,6 +113,69 @@ c Can't be passed here because of mditerate argument conventions.
       integer iLs(mdims+1)
       common /iLscom/iLs
 
+      include 'meshcom.f'
+      common /slpcom/slpD
+      D=slpD
+c Algorithm: take steps of 1 in all cases except when on a lower
+c boundary face of dimension 1 (and not other faces).  There the step is
+c iused(1)-1.
+c------------------------------------------------------------------
+c Between here and ^^^ is boundary setting. Adjust upper and lower.
+      r2=0.
+      fac=0.
+      ipd=ipoint
+      do n=1,ndims
+c BC is du/dr=D u/r     in the form   (ub-u0)=  D*(ub+u0)*f/(1-f)
+c where f = Sum_j[(xb_j+x0_j)dx_j]/(2*rm^2), dx=xb-x0
+c Thus ub=u0(1-f-D.f)/(1-f+D.f)
+c Here we are using radii from position (0,0,..)
+         x=xn(ixnp(n)+1+indi(n))
+         r2=r2+x*x
+         if(indi(n).eq.0)then
+c On lower boundary face
+            dx=xn(ixnp(n)+1)-xn(ixnp(n)+2)
+            ipd=ipd+iLs(n)
+            fac=fac+x*dx
+            if(n.eq.1)then
+c The exception in step. Do not change!
+               inc=iused(1)-1
+            else
+               inc=1
+            endif
+         elseif(indi(n).eq.iused(n)-1)then
+c On upper boundary face
+            dx=xn(ixnp(n)+1+indi(n))-xn(ixnp(n)+indi(n))
+            ipd=ipd-iLs(n)
+            fac=fac+x*dx
+            inc=1
+         endif
+      enddo
+      if(ipd.eq.ipoint)then
+         write(*,*)'BDY function error; we should not be here'
+         stop
+      else
+         fac=fac/(2.*r2)
+         u(ipoint+1)=u(ipd+1) *(1.-fac+D*fac)/(1.-fac-D*fac)
+      endif
+c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
+      end
+c**********************************************************************
+c The following is obsolete and (somewhat) incorrect.
+c************************************************************************
+      subroutine bdyslopeDhold(inc,ipoint,indi,ndims,iused,u)
+c Version of bdyroutine that sets logarithmic 'radial' gradient
+c equal to D
+      integer ipoint,inc
+      integer indi(ndims),iused(ndims)
+      real u(*)
+
+c Structure vector needed for finding adjacent u values.
+c Can't be passed here because of mditerate argument conventions.
+      parameter (mdims=10)
+      integer iLs(mdims+1)
+      common /iLscom/iLs
+
       real x(mdims)
       include 'meshcom.f'
       common /slpcom/slpD
@@ -119,7 +184,7 @@ c Can't be passed here because of mditerate argument conventions.
       D=slpD
 
 c Algorithm: take steps of 1 in all cases except
-c when on a lower boundary face of dimension 1. 
+c when on a lower boundary face of dimension 1 (and not other faces). 
 c There the step is iused(1)-1.
       inc=1
       do n=ndims,1,-1

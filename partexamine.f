@@ -45,7 +45,7 @@ c Only for filled slots
                   x=x_part(id,j)
                   if(x.lt.xlimit(1,id).or.x.gt.xlimit(2,id))goto 2
                enddo
-               call partaccum(x_part(1,j))
+               call partaccum(x_part(1,j),xlimit)
             endif
  2          continue
          enddo
@@ -124,11 +124,12 @@ c Help text
       if(lentrim(partfilename).lt.5)goto 203
       end
 c*****************************************************************
-      subroutine partaccum(xr)
-c Test the reinjection scheme by forming cartesian distributions.
+      subroutine partaccum(xr,xlimit)
+c Accumulate the particles into bins.
       include 'ptaccom.f'
       include 'plascom.f'
       include 'meshcom.f'
+      real xlimit(2,mdims)
 c      include 'creincom.f'
       character*100 string
       logical lfirst
@@ -141,8 +142,8 @@ c Initialization
       if(lfirst)then
 c Default mesh data.
          do id=1,mdims
-            xmeshstart(id)=-5.
-            xmeshend(id)=5.
+            xmeshstart(id)=min(-5.,xlimit(1,id))
+            xmeshend(id)=max(5.,xlimit(2,id))
          enddo
          
          do i=1,ndiag
@@ -157,8 +158,8 @@ c Default mesh data.
          lfirst=.false.
       endif
 
-c Assign velocities to bins.
       do id=1,mdims
+c Assign velocities to bins.
          v=xr(mdims+id)
          v=sign(min(vrange,abs(v)),v)
          ibin=nint(0.5*(ndiag)*(1.+0.99999*v/vrange)+0.5)

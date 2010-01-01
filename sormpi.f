@@ -202,6 +202,7 @@ c the result].
 c Boundary conditions need to be reset based on the gathered result.
 c But that's not sufficient when there's a relaxation so be careful!
       call bdyset(ndims,ifull,iuds,cij,u,q)
+      call bdyset(ndims,ifull,iuds,cij,u,q)
       del_sor=delta
       ierr=k_sor
  999  continue

@@ -101,21 +101,39 @@ c Long/Short.
 	 dashlen(4)=.01
       elseif(i.eq.4)then
 c 'Dots'.
-	 dashlen(1)=.001
+	 dashlen(1)=.002
 	 dashlen(2)=.01
-	 dashlen(3)=.001
+	 dashlen(3)=.002
 	 dashlen(4)=.01
       elseif(i.eq.5)then
 c 'Medium/dot'.
 	 dashlen(1)=.02
 	 dashlen(2)=.01
-	 dashlen(3)=.001
+	 dashlen(3)=.002
 	 dashlen(4)=.01
       elseif(i.eq.6)then
 c 'Long Dashes short breaks'.
 	 dashlen(1)=.03
 	 dashlen(2)=.01
 	 dashlen(3)=.03
+	 dashlen(4)=.01
+      elseif(i.eq.7)then
+c 'Medium Dashes short breaks'.
+	 dashlen(1)=.02
+	 dashlen(2)=.005
+	 dashlen(3)=.02
+	 dashlen(4)=.005
+      elseif(i.eq.8)then
+c 'Short Dashes shorter breaks'.
+	 dashlen(1)=.01
+	 dashlen(2)=.005
+	 dashlen(3)=.01
+	 dashlen(4)=.005
+      elseif(i.eq.9)then
+c 'Dot short'.
+	 dashlen(1)=.002
+	 dashlen(2)=.005
+	 dashlen(3)=.01
 	 dashlen(4)=.01
       endif
       dashdist=1.e-6

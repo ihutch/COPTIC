@@ -85,7 +85,7 @@ ccpic : ccpic.f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES)
 	if [ $(GEOMFILE). != . ] ; then rm -f ccpicgeom.dat; ln -s $(GEOMFILE) ccpicgeom.dat; fi
 	$(G77)  -o ccpic $(COMPILE-SWITCHES) $(PROFILING) ccpic.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
-$(ACCISLIB) : ./accis/*.f
+$(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h
 	make -C accis
 
 ######################################################

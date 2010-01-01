@@ -16,112 +16,122 @@ c silence warnings:
       call phiread(phifilename,ifull,iuds,u,ierr)
       if(ierr.eq.1)stop
 
-c For boxes
-      rs=sqrt(3.)*rs
+      write(*,'(a,3i4,$)')'On grid',iuds
+      write(*,*)(',',xn(ixnp(kk)+1),xn(ixnp(kk+1)),kk=1,3)
 
-      do j=1,nr
-         do i=1,ntheta
-            thetadist(j,i)=0.
-            ithetacount(j,i)=0
-            if(i.eq.1)thetaval(i)=-1.+ (i-0.5)/float(ntheta)
-         enddo
-         rval(j)=1.+(rs-1.)*(j-0.5)/float(nr)
-c         write(*,*)j,rval(j)
-      enddo
-
-      write(*,'(a,3i4)')'On grid',iuds
-
+      ifix=1
       call sliceGweb(ifull,iuds,u,Li,zp,
-     $        ixnp,xn,ifix,'potential:'//'!Ay!@')
+     $     ixnp,xn,ifix,'potential:'//'!Ay!@')
+
+      iplot=1
+      do k=1,ndims_mesh-1
+         if(xn(ixnp(k+1)).ne.xn(ixnp(k+2)))then 
+            iplot=0
+            write(*,*)'Unequal mesh dimensions. No radial plot.'
+         endif
+      enddo
+      
+      if(iplot.eq.1)then
+c For boxes
+         rs=sqrt(3.)*rs
+         do j=1,nr
+            do i=1,ntheta
+               thetadist(j,i)=0.
+               ithetacount(j,i)=0
+               if(i.eq.1)thetaval(i)=-1.+ (i-0.5)/float(ntheta)
+            enddo
+            rval(j)=1.+(rs-1.)*(j-0.5)/float(nr)
+c         write(*,*)j,rval(j)
+         enddo
 
 c plot potential versus radius.
-
-      write(*,*)rs
-      call pltinit(0.,rs,u(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
-      call axis()
-      call axlabels('radius','potential')
-      call charsize(.001,.001)
-      phimin=0.
-      do k=1,iuds(3)
-         do j=1,iuds(2)
-            do i=1,iuds(1)
-               x=xn(ixnp(1)+i)
-               y=xn(ixnp(2)+j)
-               z=xn(ixnp(3)+k)
-               r=sqrt(x**2+y**2+z**2)
-               call polymark(r,u(i,j,k),1,10)
-               if(r.gt.rs .and. u(i,j,k).ne.0)then
+         write(*,*)rs
+         call pltinit(0.,rs,u(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
+         call axis()
+         call axlabels('radius','potential')
+         call charsize(.001,.001)
+         phimin=0.
+         do k=1,iuds(3)
+            do j=1,iuds(2)
+               do i=1,iuds(1)
+                  x=xn(ixnp(1)+i)
+                  y=xn(ixnp(2)+j)
+                  z=xn(ixnp(3)+k)
+                  r=sqrt(x**2+y**2+z**2)
+                  call polymark(r,u(i,j,k),1,10)
+                  if(r.gt.rs .and. u(i,j,k).ne.0)then
 c                  write(*,'(4f12.6,3i3)')x,y,z,u(i,j,k),i,j,k
-               endif
-               if(u(i,j,k).lt.phimin)phimin=u(i,j,k)
+                  endif
+                  if(u(i,j,k).lt.phimin)phimin=u(i,j,k)
+               enddo
             enddo
          enddo
-      enddo
-      do i=1,100
-         ro(i)=1.+(rs-1.)*i/100
-         oneoverr(i)=phimin/ro(i)
-      enddo
+         do i=1,100
+            ro(i)=1.+(rs-1.)*i/100
+            oneoverr(i)=phimin/ro(i)
+         enddo
 c Average together.
-      denmin=0.
-      do k=1,iuds(3)
-         do j=1,iuds(2)
-            do i=1,iuds(1)
-               x=xn(ixnp(1)+i)
-               y=xn(ixnp(2)+j)
-               z=xn(ixnp(3)+k)
-               r=sqrt(x**2+y**2+z**2)
-               c=z/r
-               itheta=nint(0.5+ntheta*(c+1.000001)/2.00001)
-               ir=nint(0.5+nr*(r-.999999)/(rs-1.00001))
-               if(ir.le.nr .and. ir.ge.1)then
-                  ithetacount(ir,itheta)=ithetacount(ir,itheta)+1
-                  thetadist(ir,itheta)=thetadist(ir,itheta)+u(i,j,k)
-               endif
-               if(u(i,j,k).lt.denmin)denmin=u(i,j,k)
+         denmin=0.
+         do k=1,iuds(3)
+            do j=1,iuds(2)
+               do i=1,iuds(1)
+                  x=xn(ixnp(1)+i)
+                  y=xn(ixnp(2)+j)
+                  z=xn(ixnp(3)+k)
+                  r=sqrt(x**2+y**2+z**2)
+                  c=z/r
+                  itheta=nint(0.5+ntheta*(c+1.000001)/2.00001)
+                  ir=nint(0.5+nr*(r-.999999)/(rs-1.00001))
+                  if(ir.le.nr .and. ir.ge.1)then
+                     ithetacount(ir,itheta)=ithetacount(ir,itheta)+1
+                     thetadist(ir,itheta)=thetadist(ir,itheta)+u(i,j,k)
+                  endif
+                  if(u(i,j,k).lt.denmin)denmin=u(i,j,k)
+               enddo
             enddo
          enddo
-      enddo
-      do j=1,nr
-         do i=1,ntheta
-            if(ithetacount(j,i).ne.0)then
-               thetadist(j,i)=thetadist(j,i)/ithetacount(j,i)
-            endif
-         enddo
-      enddo
-      do j=1,nr
-         do i=1,ntheta
-            if(ithetacount(j,i).eq.0)then
-               ip=mod(i,ntheta)+1
-               im=mod(i-2,ntheta)+1
-               if(ithetacount(j,ip).ne.0)then
-                  thetadist(j,i)=thetadist(j,ip)
-               elseif(ithetacount(j,im).ne.0)then
-                  thetadist(j,i)=thetadist(j,im)
-               else
-                  write(*,*)'Failed setting',j,i,im,ip
-                  write(*,'(20i4)')(ithetacount(j,ii),ii=1,ntheta)
+         do j=1,nr
+            do i=1,ntheta
+               if(ithetacount(j,i).ne.0)then
+                  thetadist(j,i)=thetadist(j,i)/ithetacount(j,i)
                endif
-            endif
+            enddo
          enddo
-      enddo
+         do j=1,nr
+            do i=1,ntheta
+               if(ithetacount(j,i).eq.0)then
+                  ip=mod(i,ntheta)+1
+                  im=mod(i-2,ntheta)+1
+                  if(ithetacount(j,ip).ne.0)then
+                     thetadist(j,i)=thetadist(j,ip)
+                  elseif(ithetacount(j,im).ne.0)then
+                     thetadist(j,i)=thetadist(j,im)
+                  else
+                     write(*,*)'Failed setting',j,i,im,ip
+                     write(*,'(20i4)')(ithetacount(j,ii),ii=1,ntheta)
+                  endif
+               endif
+            enddo
+         enddo
 
 c Plot binned data:
-      do i=1,ntheta
-         call color(mod(i,16))
-         call polyline(rval,thetadist(1,i),nr)
-      enddo
+         do i=1,ntheta
+            call color(mod(i,16))
+            call polyline(rval,thetadist(1,i),nr)
+         enddo
 
-      write(*,*)'r, phi distribution (ir,itheta)'
-      write(*,*)nr, ntheta
-      do j=1,nr
-         write(*,'(10f8.4)')rval(j),(thetadist(j,i),i=1,ntheta)
-      enddo
+         write(*,*)'r, phi distribution (ir,itheta)'
+         write(*,*)nr, ntheta
+         do j=1,nr
+            write(*,'(10f8.4)')rval(j),(thetadist(j,i),i=1,ntheta)
+         enddo
 
-      call charsize(0.,0.)
-      call color(2)
-      call polyline(ro,oneoverr,100)
-      call legendline(.5,.1,0,'Coulomb Potential')
-      call pltend()
+         call charsize(0.,0.)
+         call color(2)
+         call polyline(ro,oneoverr,100)
+         call legendline(.5,.1,0,'Coulomb Potential')
+         call pltend()
+      endif
 
       end
 
@@ -165,16 +175,6 @@ c Help text
       write(*,301)'Usage: phiexamine [switches] <phifile>'
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [ccpicgeom.dat'
-c      write(*,301)' -f   set name of phifile.'
-c      write(*,301)'Debugging switches for testing'
-c      write(*,301)' -gc   set wireframe/stencils(-) mask.'//
-c     $     ' objects<->bits. [',iobpl
-c      write(*,301)' -gt   Plot solution tests.'
-c      write(*,301)' -gs   Plot slices of solution potential. '
-c      write(*,301)' -go   set No of orbits'
-c     $     //'(to plot on objects set by -gc). [',norbits
-c      write(*,301)' -at   set test angle.'
-c     $     //' -an   set No of angles. '
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue
