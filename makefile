@@ -35,7 +35,7 @@ COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I.
 ##COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -g -I.
 NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
-PROFILING=-pg
+#PROFILING=-pg
 #PROFILING= -pg -static-libgcc -lpthread_p -lm_p
 ##########################################################################
 # If this rule does not seem to recognize the file you are trying to make,
