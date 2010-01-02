@@ -350,11 +350,46 @@ c xn is the position array for each dimension arranged linearly.
       ix=1
       xm=xf
 c Pointer to object data,
-c      icp0=cij(ix)
       icp0=int(cij(1))
-c If we are in wrong region, try to correct:
-      if(icp0.ne.0)then
+      if(icp0.eq.0)then
+c Short-cut 1: an ordinary point don't call the full routine
+c Distance forward and backward along idf-dimension to adjacent
+c         dx1=xn(ix+1)-xn(ix)
+c         dx0=xn(ix)-xn(ix-1)
+c Values of u at the points to be interpolated.
+c         ixiu=1+(ix-1)*iuinc
+c         u0=u(ixiu)
+c         up=u(ixiu+iuinc)
+c         um=u(ixiu-iuinc)
+c Distance forward and backward along idf-dimension to adjacent
+         dx1=xn(2)-xn(1)
+c Avoid warnings about argument ranges.
+         dx0=xn(1)-xn(ix-1)
+c Values of u at the points to be interpolated.
+c These array accesses seem about 30% of the costs of this routine.
+         u0=u(1)
+         up=u(1+iuinc)
+         um=u(1-iuinc)
+         if(abs(dx1-dx0).lt.1.e-6*dx0)then
+c Short-cut 2: for uniform mesh:
+c (saves ~25% of routine for uniform mesh even including test):
+c A uprime=0. test reduces the time in this routine by about 25%.
+c So this evaluation is about 25%.
+            uprime= ((2.*xm+1.) * (up-u0)
+     $           +(1.-2.*xm) * (u0-um))/(dx0+dx1)
+         else
+            if(xm.lt.0)then
+               x=xm*dx0
+            else
+               x=xm*dx1
+            endif
+            uprime= ((2.*x+dx0) * (up-u0)/dx1
+     $           +(dx1-2.*x) * (u0-um)/dx0)/(dx0+dx1)
+         endif
+      else
+c Do interpolation using extrapolation information pointed to by icp0.
 c This section is only 10% of routine cost.
+c If we are in wrong region, try to correct:
          if(idob_sor(iregion_sor,icp0).ne.iregion)then
 c         write(*,*)'Incorrect region',iregion,idob_sor(iregion_sor,icp0)
 c     $        ,icp0,ix,xm
@@ -373,41 +408,14 @@ c            if(icp1.eq.0 .or. idob_sor(iregion_sor,icp1).ne.iregion)then
             icp0=icp1
 c         write(*,*)'Base Position Adjusted ix',ix,jpm,xm,iregion
          endif
-      endif
 c Distance forward and backward along idf-dimension to adjacent
-      dx1=xn(ix+1)-xn(ix)
-      dx0=xn(ix)-xn(ix-1)
-
+         dx1=xn(ix+1)-xn(ix)
+         dx0=xn(ix)-xn(ix-1)
 c Values of u at the points to be interpolated.
-c      u0=u(1+(ix-1)*iuinc)
-c      up=u(1+ix    *iuinc)
-c      um=u(1+(ix-2)*iuinc)
-      ixiu=1+(ix-1)*iuinc
-      u0=u(ixiu)
-      up=u(ixiu+iuinc)
-      um=u(ixiu-iuinc)
-c Do interpolation using extrapolation information pointed to by icp0.
-      if(icp0.eq.0)then
-c Short-cut 1: an ordinary point don't call the full routine
-         if(abs(dx1-dx0).lt.1.e-6*dx0)then
-c Short-cut 2: for uniform mesh:
-c (saves ~25% of routine for uniform mesh even including test):
-c A uprime=0. test reduces the time in this routine by about 25%.
-c So this evaluation is about 25%.
-            uprime= ((2.*xm+1.) * (up-u0)
-     $           +(1.-2.*xm) * (u0-um))/(dx0+dx1)
-         else
-            if(xm.lt.0)then
-               x=xm*dx0
-            else
-               x=xm*dx1
-            endif
-c         uprime= (2.*x+dx0)/(dx0+dx1) * (up-u0)/dx1
-c     $        +(dx1-2.*x)/(dx0+dx1) * (u0-um)/dx0
-            uprime= ((2.*x+dx0) * (up-u0)/dx1
-     $           +(dx1-2.*x) * (u0-um)/dx0)/(dx0+dx1)
-         endif
-      else
+         ixiu=1+(ix-1)*iuinc
+         u0=u(ixiu)
+         up=u(ixiu+iuinc)
+         um=u(ixiu-iuinc)
          uprime=gradinterp(um,u0,up,idf,icp0,xm,dx0,dx1)
       endif
 

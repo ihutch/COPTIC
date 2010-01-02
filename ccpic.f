@@ -47,6 +47,8 @@ c Particle common data
       include 'partcom.f'
 c Plasma common data
       include 'plascom.f'
+c Collision common data
+      include 'colncom.f'
       integer ndims
       parameter (ndims=ndims_sor)
 
@@ -96,6 +98,9 @@ c Default to constant rhoinf not n_part.
       debyelen=1.
       Ti=1.
       vd=0.
+      subcycle=0.
+      colntime=0.
+      vneutral=0.
       rs=5.0
       rsmesh=rs
       numprocs=1
@@ -140,11 +145,15 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-pn')read(argument(4:),*,err=201)numprocs
          if(argument(1:3).eq.'-ri')read(argument(4:),*,err=201)rhoinf
          if(argument(1:3).eq.'-ck')read(argument(4:),*,err=201)ickst
+         if(argument(1:3).eq.'-ct')read(argument(4:),*,err=201)colntime
+
          if(argument(1:3).eq.'-dt')read(argument(4:),*,err=201)dt
          if(argument(1:3).eq.'-da')read(argument(4:),*,err=201)bdt
          if(argument(1:7).eq.'--reinj')
      $        read(argument(8:),*,err=201)ninjcomp
-         if(argument(1:2).eq.'-s')then
+         if(argument(1:3).eq.'-sc')then
+            read(argument(4:),*,err=201)subcycle
+         elseif(argument(1:2).eq.'-s')then
             read(argument(3:),*,err=201)nsteps
             if(nsteps.gt.nf_maxsteps)then
                if(lmyidhead)write(*,*)'Asked for more steps',nsteps,
@@ -152,10 +161,14 @@ c      if(iargc().eq.0) goto "help"
                nsteps=nf_maxsteps-1
             endif
          endif
-         if(argument(1:9).eq.'--restart')lrestart=.true.
+         if(argument(1:3).eq.'-vn')then
+            read(argument(4:),*,err=201)vneutral
+         elseif(argument(1:2).eq.'-v')then
+            read(argument(3:),*,err=201)vd
+         endif
          if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
-         if(argument(1:2).eq.'-v')read(argument(3:),*,err=201)vd
          if(argument(1:2).eq.'-t')read(argument(3:),*,err=201)Ti
+         if(argument(1:9).eq.'--restart')lrestart=.true.
          if(argument(1:10).eq.'--extfield')then
             read(argument(11:),*,err=201)extfield
 c            write(*,*)'||||||||||||||extfield',extfield
@@ -181,21 +194,24 @@ c Help text
  301  format(a,i5)
  302  format(a,f8.3)
       write(*,301)'Usage: ccpic [switches]'
-      write(*,301)'Particle switches.'
+      write(*,301)'Parameter switches.'
      $     //' Leave no gap before value. Defaults indicated [ddd'
-      write(*,301)' -ni   set No of particles/node; zero => unset. ['
+      write(*,301)' -ni   set No of particles/node; zero => unset.    ['
      $     ,n_part
-      write(*,301)' --reinj    set reinjection number at each step.['
+      write(*,301)' --reinj    set reinjection number at each step.   ['
      $     ,ninjcomp
       write(*,302)' -ri   set rhoinfinity/node => reinjection number. ['
      $     ,rhoinf
-      write(*,302)' -dt   set Timestep.  [',dt,
-     $     ' -da   set Initial dt accel-factor. [',bdt
-      write(*,301)' -s    set No of steps. [',nsteps
-      write(*,302)' -v    set Drift velocity. [',vd
-      write(*,302)' -t    set Ion Temperature. [',Ti
-      write(*,302)' -l    set Debye Length. [',debyelen
-      write(*,301)' -a    set averaging steps. [',iavesteps
+      write(*,302)' -dt   set Timestep.              [',dt,
+     $     ' -da   set Initial dt accel-factor[',bdt
+      write(*,301)' -s    set No of steps.           [',nsteps
+      write(*,302)' -v    set Drift velocity.        [',vd
+      write(*,302)' -t    set Ion Temperature.       [',Ti
+      write(*,302)' -l    set Debye Length.          [',debyelen
+      write(*,301)' -a    set averaging steps.       [',iavesteps
+      write(*,301)' -ct   set collision time.        [',colntime
+      write(*,301)' -vn   set neutral drift velocity [',vneutral
+      write(*,301)' -sc   set subcycle fraction.     [',subcycle
 c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [ccpicgeom.dat'

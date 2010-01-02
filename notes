@@ -4043,6 +4043,28 @@ algorithm, based on extrapolating from the nearest body (not face)
 point. (Still iterating in the natural order).  It appears to be just
 as fast and direct although recoding was necessary.
 
-The run of the v10 cases was done with -t.01. This is too small. 1500
-such steps moves the particles 15 units. Less than a 10th of the size
-of the domain. Redo with -t.1 but with old ccpic version.
+The run of the v10 cases was done with -t.01. I confused this with timestep
+and did comparable runs with -t.1. These are much higher temperatures.
+They'll be interesting. The old runs with -dt.1 are fine as far as
+timestep is concerned. We've now got two temperatures.
+
+2 Jan 2010
+
+Working on padvnc to incorporate collisions in a compact way.
+First clean out the testing code. 
+Now reorganize the logic to make it more readable and comprehensible.
+Localize the reinjection in one place (which requires logic adjustment).
+This is all working. 
+
+Now there appears to be a bug in that dtaccel=0.5(dt+dtprec). This is not
+correct. It ought to be dtaccel=0.5(dtpos+dtprec). On reinjection, dtpos
+is put to a random fraction of dtpos; and dtprec is put to zero. This means
+that we are treating the prior step as of zero length, so that the position
+and velocity are simultaneous. For the next step, we therefore want to
+advance the velocity by half of the timestep (with nothing for the prior
+timestep). But dtpos is the timestep, not dt. Correct this small error.
+
+Then we can use dtpos as the remaining timestep in a subcycling associated
+with collisions. 
+
+Implemented both collisions and subcycling.
