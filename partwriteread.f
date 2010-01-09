@@ -202,16 +202,13 @@ c******************************************************************
       subroutine nameconstruct(name)
       character*(*) name
       include 'plascom.f'
+      include 'meshcom.f'
 c Construct a filename that contains many parameters
 c Using the routines in strings_names.f
       call nameappendexp(name,'T',Ti,1)
       call nameappendint(name,'v',nint(100*vd),3)
-      if(rs.ge.100)then
-         call nameappendint(name,'R',ifix(rs/10.),2)
-      else
-         call nameappendint(name,'r',ifix(rs),2)
-      endif
       call nameappendint(name,'P',ifix(abs(phip)),2)
       call nameappendexp(name,'L',debyelen,1)
+      call nameappendint(name,'z',nint(xmeshend(3)),3)
 
       end
