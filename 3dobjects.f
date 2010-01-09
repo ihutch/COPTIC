@@ -63,7 +63,7 @@ c**********************************************************************
       write(*,'(2a)')'Set structure for dimension d. N-1 blocks.'
      $     ,' Steps between is1,is2 '
       write(*,'(2a)')'equally spaced between xm1,xm2: x(is1)=xm1;'
-     $     ,'x(is2-1)=xm2, etc.'
+     $     ,'x(is2)=xm2, etc.'
       write(*,*)'E.g. 92,1,12,20,32,0;-5.,-1.,1.,5. y has 3 domains: '
      $     ,'1-12 covers -5. to -1.;',' 12-20 covers -1. to 1.;'
      $     ,'20-32 covers 1. to 5.'

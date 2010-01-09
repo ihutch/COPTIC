@@ -52,8 +52,11 @@ c      iwire=0
       if(x2.ge.0)xb=1
       if(y2.ge.0)yb=1
       if(z2.ge.0)zb=1
-      icorner= int((2*zb-1)*( (1 +3*yb) + (1 - 2*yb)*xb ))
-
+      if(irotating.eq.0)then
+         icorner= int((2*zb-1)*( (1 +3*yb) + (1 - 2*yb)*xb ))
+      else
+         irotating=irotating-1
+      endif
 c      call cubed(icorner)
       call axproj(icorner)
 
@@ -102,7 +105,6 @@ c                           write(*,*)no,id,frac,ipm,xt
       enddo
       if(iwire.eq.0 .and. ieye3d().ne.0)goto 51
       if(istick.eq.1)iwire=1
-c      goto 51
  52   continue
 c     Wireframe drawing.
       write(mystring,'(a)')'Object Mask:'
@@ -223,7 +225,7 @@ c         write(*,*)xe,ye,ze,x2,y2,z2,cs,sn
          y2=ye+sn*xex+cs*yex
          call puteye(x2,y2,z2)
 c         call trn32(xe,ye,ze,x2,y2,z2,1)
-         irotating=irotating-1
+c         irotating=irotating-1
          goto 51
       endif
       goto 51

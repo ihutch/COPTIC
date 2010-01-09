@@ -242,7 +242,8 @@ c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
       call meshconstruct(ndims,iuds)
       if(lmyidhead)write(*,'(a,3i4,6f8.3)')
-     $     ' Constructed mesh',iuds,xmeshstart,xmeshend
+     $     ' Constructed mesh',iuds
+     $     ,(xmeshstart(k),xmeshend(k),k=1,ndims)
 c-----------------------------------------------------------------
       do id=1,ndims
          ium2(id)=iuds(id)-2
@@ -341,7 +342,7 @@ c Initialize with a specified number of particles.
 c (Re)Initialize the fortran random number generator.
       idum=-myid-1
       rdum=ran1(idum)
-      if(lmyidhead)write(*,*)'Initializing',n_part,' particles'
+c      if(lmyidhead)write(*,*)'Initializing',n_part,' particles'
       call pinit()
 c      if(lmyidhead)write(*,*)'Return from pinit'
 c------------------------------------------------------------------
@@ -422,7 +423,7 @@ c Acceleration code.
          call chargetomesh(psum,iLs,diags)
 c Psumreduce takes care of the reductions that were in rhoinfcalc 
 c and explicit psum. It encapsulates the iaddtype iaddop generation.
-c Because psumtoq internally compensates for faddu, we reduction here
+c Because psumtoq internally compensates for faddu, we reduce here
          call psumreduce(psum,ndims,ifull,iuds,iLs) 
 c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
