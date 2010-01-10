@@ -81,7 +81,89 @@ c Zero the flags of higher slots.
       ierr=1
       end
 c******************************************************************
-      subroutine phiwrite(name,ifull,iuds,u)
+      subroutine array3write(name,ifull,iuds,u)
+c 3-Dimensions assumed.
+c File name:
+      character*(*) name
+      integer ifull(3),iuds(3)
+      real u(ifull(1),ifull(2),ifull(3))
+      include 'plascom.f'
+      include 'meshcom.f'
+      character*(100) charout
+
+      write(charout,51)debyelen,Ti,vd,rs,phip
+ 51   format('debyelen,Ti,vd,rs,phip:',5f10.4)
+      open(22,file=name,status='unknown',err=101)
+      close(22,status='delete')
+      open(22,file=name,status='new',form='unformatted',err=101)
+      write(22)charout
+      write(22)debyelen,Ti,vd,rs,phip
+      write(22)ixnp,xn
+      write(22)iuds
+      write(22)(((u(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
+      close(22)
+c      write(*,*)'Wrote array data to ',name(1:lentrim(name))
+      return
+
+ 101  continue
+      write(*,*)'Error opening file:',name
+      close(22,status='delete')
+
+      end
+c******************************************************************
+      subroutine array3read(name,ifull,iuds,u,ierr)
+c 3-Dimensions assumed.
+c File name:
+      character*(*) name
+      integer ifull(3),iuds(3)
+      real u(ifull(1),ifull(2),ifull(3))
+      include 'plascom.f'
+      include 'meshcom.f'
+      character*(100) charout
+
+      open(23,file=name,status='old',form='unformatted',err=101)
+      read(23)charout
+      read(23)debyelen,Ti,vd,rs,phip
+      read(23)ixnp,xn
+      read(23)iuds
+      read(23)(((u(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
+      close(23)
+      write(*,*)'Read back array data from ',name(1:lentrim(name))
+      ierr=0
+      return
+
+ 101  continue
+      write(*,*)'Error opening file:',name
+      ierr=1
+      end
+c******************************************************************
+      subroutine namewrite(name,ifull,iuds,u,extension)
+      character*(*) name,extension
+      integer ifull(3),iuds(3)
+      real u(ifull(1),ifull(2),ifull(3))
+      name=' '
+      call nameconstruct(name)
+      i=nbcat(name,extension)
+      call array3write(name,ifull,iuds,u)
+      end
+c******************************************************************
+      subroutine nameconstruct(name)
+      character*(*) name
+      include 'plascom.f'
+      include 'meshcom.f'
+c Construct a filename that contains many parameters
+c Using the routines in strings_names.f
+      call nameappendexp(name,'T',Ti,1)
+      call nameappendint(name,'v',nint(100*vd),3)
+      call nameappendint(name,'P',ifix(abs(phip)),2)
+      call nameappendexp(name,'L',debyelen,1)
+      call nameappendint(name,'z',nint(xmeshend(3)),3)
+      end
+c Below here are the obsolete versions which can be deleted once
+c we are convinced there are no bugs or needs.
+c******************************************************************
+c******************************************************************
+      subroutine phiwrite_obs(name,ifull,iuds,u)
 c 3-Dimensions assumed.
 c File name:
       character*(*) name
@@ -114,7 +196,7 @@ c      write(*,*)'Wrote potential data to ',name(1:lentrim(name))
 
       end
 c******************************************************************
-      subroutine phiread(name,ifull,iuds,u,ierr)
+      subroutine phiread_obs(name,ifull,iuds,u,ierr)
 c 3-Dimensions assumed.
 c File name:
       character*(*) name
@@ -140,7 +222,7 @@ c File name:
       ierr=1
       end
 c******************************************************************
-      subroutine denwrite(name,ifull,iuds,q)
+      subroutine denwrite_obs(name,ifull,iuds,q)
 c 3-Dimensions assumed.
 c File name:
       character*(*) name
@@ -173,7 +255,7 @@ c      write(*,*)'Wrote density data to ',name(1:lentrim(name))
 
       end
 c******************************************************************
-      subroutine denread(name,ifull,iuds,q,ierr)
+      subroutine denread_obs(name,ifull,iuds,q,ierr)
 c 3-Dimensions assumed.
 c File name:
       character*(*) name
@@ -197,18 +279,4 @@ c File name:
  101  continue
       write(*,*)'Error opening file:',name
       ierr=1
-      end
-c******************************************************************
-      subroutine nameconstruct(name)
-      character*(*) name
-      include 'plascom.f'
-      include 'meshcom.f'
-c Construct a filename that contains many parameters
-c Using the routines in strings_names.f
-      call nameappendexp(name,'T',Ti,1)
-      call nameappendint(name,'v',nint(100*vd),3)
-      call nameappendint(name,'P',ifix(abs(phip)),2)
-      call nameappendexp(name,'L',debyelen,1)
-      call nameappendint(name,'z',nint(xmeshend(3)),3)
-
       end

@@ -10,7 +10,8 @@
       real oneoverr(100),ro(100)
 c 
       call denexamargs
-      call denread(denfilename,ifull,iuds,q,ierr)
+c      call denread(denfilename,ifull,iuds,q,ierr)
+      call array3read(denfilename,ifull,iuds,q,ierr)
       if(ierr.eq.1)stop
 
       rs=sqrt(3.)*rs

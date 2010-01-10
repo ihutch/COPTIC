@@ -13,7 +13,7 @@ c silence warnings:
 
       call examargs
       
-      call phiread(phifilename,ifull,iuds,u,ierr)
+      call array3read(phifilename,ifull,iuds,u,ierr)
       if(ierr.eq.1)stop
 
       write(*,'(a,3i4,$)')'On grid',iuds

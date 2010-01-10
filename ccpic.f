@@ -16,7 +16,7 @@ c      parameter (Li=100,ni=26,nj=16,nk=20)
       parameter (Li2=Li*Li,Li3=Li2*Li)
       real u(Li,Li,Li),q(Li,Li,Li),cij(2*ndims_sor+1,Li,Li,Li)
 c Running averages.
-      real qave(Li,Li,Li)
+      real qave(Li,Li,Li),uave(Li,Li,Li)
 c Additional variables for testing. Eventually should be removed.
       real u2(Li,Li,Li),q2(Li,Li,Li),cij2(2*ndims_sor+1,Li,Li,Li)
       real psum2(Li,Li,Li),volumes2(Li,Li,Li)
@@ -388,7 +388,8 @@ c 400  continue
          if(ierr.ne.0)goto 401
          call partread(partfilename,ierr)
          if(ierr.ne.0)goto 401
-         call phiread(phifilename,ifull,iuds,u,ierr)
+c         call phiread(phifilename,ifull,iuds,u,ierr)
+         call array3read(phifilename,ifull,iuds,u,ierr)
          if(ierr.ne.0)goto 401
          write(*,*)'Restart files read successfully.'
          if(nsteps+nf_step.gt.nf_maxsteps)then
@@ -472,6 +473,7 @@ c Store the step's rhoinf, dt.
 
          istepave=min(nf_step,iavesteps)
          call average3d(q,qave,ifull,iuds,istepave)
+         call average3d(u,uave,ifull,iuds,istepave)
 
 c This non-standard fortran call works with gfortran and g77 to flush stdout.
          if(lmyidhead)call flush()
@@ -486,8 +488,11 @@ c      write(*,*)'Finished orbitplot.'
 
       if(lmyidhead)write(*,*)
       call partwrite(partfilename,myid)
-      if(lmyidhead)call phiwrite(phifilename,ifull,iuds,u)
-      if(lmyidhead)call denwrite(phifilename,ifull,iuds,qave)
+c      if(lmyidhead)call phiwrite(phifilename,ifull,iuds,u)
+c      if(lmyidhead)call denwrite(phifilename,ifull,iuds,qave)
+      if(lmyidhead)call namewrite(phifilename,ifull,iuds,u,'.phi')
+      if(lmyidhead)call namewrite(phifilename,ifull,iuds,uave,'.phiave')
+      if(lmyidhead)call namewrite(phifilename,ifull,iuds,qave,'.den')
 
 c-------------------------------------------------------------------
       call mpifinalize(ierr)
