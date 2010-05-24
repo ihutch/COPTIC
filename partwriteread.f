@@ -155,9 +155,11 @@ c Construct a filename that contains many parameters
 c Using the routines in strings_names.f
       call nameappendexp(name,'T',Ti,1)
       call nameappendint(name,'v',nint(100*vd),3)
-      call nameappendint(name,'P',ifix(abs(phip)),2)
+c      call nameappendint(name,'P',ifix(abs(phip)),2)
+      call nameappendint(name,'P',ifix(abs(phip*10)),3)
       call nameappendexp(name,'L',debyelen,1)
       call nameappendint(name,'z',nint(xmeshend(3)),3)
+      call nameappendint(name,'x',nint(xmeshend(1)),2)
       end
 c Below here are the obsolete versions which can be deleted once
 c we are convinced there are no bugs or needs.
