@@ -4068,3 +4068,12 @@ Then we can use dtpos as the remaining timestep in a subcycling associated
 with collisions. 
 
 Implemented both collisions and subcycling.
+
+24 May 10
+Got a problem with NANs in case with very large number of particles.
+The Field corruption test was triggered. 
+This turned out to be caused by a initialization to a position exactly
+on the mesh boundary, where the field was obtained incorrectly. 
+Fixed partlocate to declare NAN position to be out of mesh.
+Fixed pinit to ensure exactly on boundary is rejected.
+Also fixed interp to reject NANs. 

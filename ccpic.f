@@ -468,7 +468,7 @@ c Store the step's rhoinf, dt.
          endif
          if(lmyidhead.and.mod(nf_step,(nsteps/25+1)*5).eq.0)
      $  write(*,
-     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i7,i7,2f10.3)')
+     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i8,i8,2f10.3)')
      $        nrein,n_part,ioc_part,rhoinf,dt
 
          istepave=min(nf_step,iavesteps)

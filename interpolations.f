@@ -155,7 +155,8 @@ c      write(*,*)'nq=',nq
       Qr=Q(nq)
       iql=1
       iqr=nq
-      if((y-Ql)*(y-Qr).gt.0.) then
+c Circumlocution to catch y=NAN
+      if(.not.((y-Ql)*(y-Qr).le.0.)) then
 c Value is outside the range.
          x=0
          return

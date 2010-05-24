@@ -1,6 +1,6 @@
 c Particle data common.
       integer n_partmax,npdim
-      parameter (n_partmax=1000000,npdim=3)
+      parameter (n_partmax=10000000,npdim=3)
 
 c Number of actual active particles < n_partmax
       integer n_part

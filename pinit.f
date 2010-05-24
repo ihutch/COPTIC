@@ -45,6 +45,8 @@ c     $           ,(x_part(kk,i),kk=1,3)
          x_part(6,i)=tisq*gasdev(myid) + vd
 c Initialize the mesh fraction data in x_part.
          call partlocate(i,ixp,xfrac,iregion,linmesh)
+c This test rejects particles exactly on mesh boundary:
+         if(.not.linmesh)goto 1
       enddo
 c Set flag of unused slots to 0
       do i=n_part+1,n_partmax

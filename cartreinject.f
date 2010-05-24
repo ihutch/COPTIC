@@ -447,8 +447,8 @@ c Correct approximately for edge potential depression (OML).
       if(n_part.gt.n_partmax)then
          write(*,*)'ERROR. Too many particles required.'
          write(*,101)rhoinf,n_part,n_partmax
- 101     format('rhoinf=',f8.2,'  needs n_part=',i8
-     $        ,'  which exceeds n_partmax=',i8)
+ 101     format('rhoinf=',f8.2,'  needs n_part=',i9
+     $        ,'  which exceeds n_partmax=',i9)
          stop
       endif
 c      write(*,*)'Ending nreincalc',rhoinf,nrein,n_part

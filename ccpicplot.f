@@ -11,6 +11,7 @@ c Calculate the object-2 outer boundary correction to phiinf
       b=obj_geom(oabc+1,2)
       c=obj_geom(oabc+2,2)
       r=obj_geom(oradius,2)
+      if(r.eq.0)return
       phiinf=-(a*phip*rc/r -b*phip*rc/r**2+c)
      $     /(-a*rc/r + a + b*rc/r**2)
 c         write(*,*)'Vacuum phiinfty=',phiinf,'  rabc=',r,a,b,c

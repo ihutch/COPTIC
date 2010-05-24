@@ -54,10 +54,11 @@ NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 	cc -c $(PROFILING) $*.c
 
 #default target
+# Problem when using geometry that can't do smt check. 
 smt.out : ccpic ccpicgeom.dat
-	if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
+	@if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
 	./ccpic
-	if [ -f smt.prev ] ; then diff smt.prev smt.out ; fi
+	@if [ -f smt.prev ] ;then if [ -f smt.out ] ;then diff smt.prev smt.out ;else touch smt.out ;fi ;fi
 
 #mpi checking target
 mpicheck : ccpic

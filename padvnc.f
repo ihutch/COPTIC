@@ -122,7 +122,7 @@ c the region information.
      $           ,xn(ixnp(idf)+1),idf,x_part(ndimsx2+1,i)
      $           ,imaskregion(iregion),field(idf))
             if(.not.abs(field(idf)).lt.fieldtoolarge)then
-               write(*,*)'Field corruption(?)',id,idf,field
+               write(*,*)'Field corruption(?)',i,idf,field
      $              ,(x_part(kk,i),kk=1,3*ndims)
             endif
          enddo
@@ -184,7 +184,10 @@ c Reinjection:
          if_part(i)=1
          call reinject(x_part(1,i),ilaunch)
          call partlocate(i,ixp,xfrac,iregion,linmesh)
-         if(.not.linmesh)stop 'Reinject out of region'
+         if(.not.linmesh)then
+            write(*,*)'Reinject out of region',i,xfrac
+            stop
+         endif
 c         dtpos=dt*ran1(myid)
 c         dtpos=dtpos*ran1(myid)
          dtpos=(dtpos+dtremain)*ran1(myid)
@@ -273,10 +276,15 @@ c Find the index of xprime in the array xn:
          ixp(id)=ix
 c         if(ix.eq.0)then
 c This more complete test is necessary and costs perhaps 3% extra time.
-c I would be cheaper to change interp to be exclusive of limits.
-         if(ix.eq.0.or.xm.le.1..or.xm.ge.float(isz))then
+c It would be cheaper to change interp to be exclusive of limits.
+c         if(ix.eq.0.or.xm.le.1..or.xm.ge.float(isz))then
+c Invert the test so that any NAN also rejects particle, recovering
+c from problems, one might hope.
+         if(.not.(ix.ne.0.and.xm.gt.1..and.xm.lt.float(isz)))then
             linmesh=.false.
          endif
+c specific particle test
+c         if(i.eq.2298489) write(*,*)i,isz,ix,xm,linmesh
       enddo
       
       end
