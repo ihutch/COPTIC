@@ -1,8 +1,6 @@
 c**********************************************************************
 c This file gives examples of boundary and faddu setting for sormpi.
 c The bdyset routine can be called anything, and name passed.
-c      subroutine bdyset(ndims,ifull,iuds,cij,u,q)
-c      call bdysetnull(ndims,ifull,iuds,cij,u,q)
       subroutine bdyset(ndims,ifull,iuds,cij,u,q)
       call bdysetfree
 c      call bdysetnull

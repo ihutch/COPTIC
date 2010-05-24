@@ -222,7 +222,7 @@ c Grid points just inside the x1 - x2 range, not outside frame.
 	 dx=1./(ngrid-1)
 	 dydx=(y2-y1)/(x2-x1)
          icount=0
-	 do 10 ix=ix1,ix2,signd
+	 do ix=ix1,ix2,signd
             icount=icount+1
 c  Do over Grid-position:
 	    x=dx*ix
@@ -258,6 +258,8 @@ c Drawing above. If previously was not, draw start.
                if(istate.eq.0) then
                   xp=dx*(ix-signd)
                   yp=ytop(ix-signd)
+                  if(ytop(ix-signd).eq.0.)
+     $                 write(*,*)ix1,ix2,ix,signd,x1,x2,x,xp
                   call vecn(xp,yp,0)
                   call vecn(x,y,1)
                endif
@@ -273,7 +275,11 @@ c Drawing below. If previously was not, draw start.
 	    istate=nstate
 	    xo=x
 	    yo=y
- 10      continue
+c Set lmidl true only if we have been through this loop at least once. 
+c Otherwise, starting beyond already draw xtop/bot can give spurious 
+c start lines after the first vector. 
+            lmidl=.true.
+         enddo
 c End of vector. Finish it.
          xp=x2
          yp=y2
@@ -284,9 +290,6 @@ c         write(*,*)'hid xpoints coincide'
       endif
       x1=x2
       y1=y2
-c Maybe this?
-c      if(istate.ne.0)            
-      lmidl=.true.
       end
 c***************************************************************************
       subroutine trihere(xp,yp,d)
