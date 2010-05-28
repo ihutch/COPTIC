@@ -1,20 +1,20 @@
 GLULIBS= -lGL -lGLU
 ACCISLIB=./accis/libaccisX.a
 LIBRARIES = -L/usr/X11R6/lib/ -L./accis/ -laccisX -lXt -lX11 $(GLULIBS)
+COPTIC=coptic
 ##########################################################################
-# The sormpi system.
-########################
 # The reinjection choice:
 #######################
-REINJECT=orbitinjnew.o extint.o
-GEOMFILE=geomsphere.dat
+#REINJECT=orbitinjnew.o extint.o
+#GEOMFILE=geomsphere.dat
 ##################
 #REINJECT=reinject.o
 #GEOMFILE=geomsphere.dat
 ###################
 REINJECT=cartreinject.o
 GEOMFILE=geomcubic.dat
-##################
+#GEOMFILE=geomz200x50.dat
+##########################################################################
 FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o svdsol.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reindiag.o pinit.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o stress.o average.o bdyroutine.o reduce.o getfield.o interpolations.o
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
@@ -26,7 +26,7 @@ G77=mpif77 -f77=g77
 #G77=mpif77
 # export this so it is inherited by sub-makes.
 export G77
-GFINAL=gcc-4.1 -v -pg -o ccpic.prof ccpic.o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
+GFINAL=gcc-4.1 -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
 #OPTIMIZE=-O3 -funroll-loops -finline-functions
 OPTIMIZE=-O3
 COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I. 
@@ -55,14 +55,14 @@ NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 
 #default target
 # Problem when using geometry that can't do smt check. 
-smt.out : ccpic ccpicgeom.dat
+smt.out : $(COPTIC) ccpicgeom.dat
 	@if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
-	./ccpic
+	./$(COPTIC)
 	@if [ -f smt.prev ] ;then if [ -f smt.out ] ;then diff smt.prev smt.out ;else touch smt.out ;fi ;fi
 
 #mpi checking target
-mpicheck : ccpic
-	mpiexec -l -n 2 ./ccpic >mpicheck.out
+mpicheck : $(COPTIC)
+	mpiexec -l -n 2 ./$(COPTIC) >mpicheck.out
 	if [ -f mpicheck.prev ] ; then diff mpicheck.prev mpicheck.out ; else mv mpicheck.out mpicheck.prev  ; fi
 	mv mpicheck.out mpicheck.prev
 
@@ -82,9 +82,9 @@ bdyroutine.o : bdyroutine.f makefile $(HEADERS)
 
 #####################################################
 # Main program explicit to avoid make bugs:
-ccpic : ccpic.f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES)
-	if [ $(GEOMFILE). != . ] ; then rm -f ccpicgeom.dat; ln -s $(GEOMFILE) ccpicgeom.dat; fi
-	$(G77)  -o ccpic $(COMPILE-SWITCHES) $(PROFILING) ccpic.f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+$(COPTIC) : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES)
+	if [ -f "$(GEOMFILE)" ] ; then rm -f ccpicgeom.dat ; ln -s $(GEOMFILE) ccpicgeom.dat ; fi
+	$(G77)  -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
 $(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h
 	make -C accis
@@ -111,7 +111,7 @@ clean :
 	make -C accis mproper
 
 ftnchek :
-	./ftnchekrun "ccpic.f $(OBJECTS)"
+	./ftnchekrun "$(COPTIC).f $(OBJECTS)"
 	@echo To view do: konqueror CallTree.html &
 
 final : 

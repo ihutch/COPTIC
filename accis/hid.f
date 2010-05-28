@@ -365,7 +365,7 @@ c     Set the scaling.
          call scale3(xmin,xmax,ymin,ymax,zmin,zmax)
       endif
 c Draw the surface.
-      call surfdr3(x,y,z,iLx,nx,ny,work,isw)
+      call surfdr3(x,y,z,iLx,nx,ny,work,isw,dummy)
       if(cola.ne.0) call color(cola)
       if(isw.ge.0)then
 c Draw cube.
