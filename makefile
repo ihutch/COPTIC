@@ -12,8 +12,8 @@ COPTIC=coptic
 #GEOMFILE=geomsphere.dat
 ###################
 REINJECT=cartreinject.o
-GEOMFILE=geomcubic.dat
-#GEOMFILE=geomz200x50.dat
+#GEOMFILE=geomcubic.dat
+GEOMFILE=geomz200x50.dat
 ##########################################################################
 FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o svdsol.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reindiag.o pinit.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o stress.o average.o bdyroutine.o reduce.o getfield.o interpolations.o
 # Things just needed for the test routine:
@@ -46,6 +46,10 @@ NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 # to be happening (requires a double colon), but on horace, it is. 
 % : %.f  makefile $(OBJECTS) $(UTILITIES) $(ACCISLIB)
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+
+# Don't recompile accis every time the makefile is changed.
+./accis/%.o : ./accis/%.f $(HEADERS)
+	$(G77)  -c $(COMPILE-SWITCHES) $(PROFILING) $*.f
 
 %.o : %.f makefile $(HEADERS)
 	$(G77)  -c $(COMPILE-SWITCHES) $(PROFILING) $*.f
@@ -107,7 +111,7 @@ testing/stresstest : testing/stresstest.f stress.o $(ACCISLIB)
 
 #####################################################
 clean :
-	rm -f *.o $(TARGETS) *.html *.flx *.phi *.den T*.0?? *.ps
+	rm -f *.o $(TARGETS) *.html *.flx *.phi *.phiave *.den T*.0?? *.ps
 	make -C accis mproper
 
 ftnchek :

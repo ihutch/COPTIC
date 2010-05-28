@@ -4086,3 +4086,10 @@ coordinates.) Ideas: Oblique (referring to the boundary). I can't
 think of anything better
 
 Cartesian[-cell] Oblique[-boundary] Particles and Thermals In Cell: COPTIC 
+
+Changed the makefile and the main filename.
+Added to the CVS modules file the alias coptic CCPIC.
+Committed. Now one does a cvs checkout coptic and gets the file with
+the program name changed to coptic. There are some residual files with
+ccpic as part of their name. Don't change them because it is too much
+trouble.
