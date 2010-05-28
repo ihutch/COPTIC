@@ -3,7 +3,6 @@ c This file gives examples of boundary and faddu setting for sormpi.
 c The bdyset routine can be called anything, and name passed.
       subroutine bdyset(ndims,ifull,iuds,cij,u,q)
       call bdysetfree
-c      call bdysetnull
       end
 c**********************************************************************
       subroutine bdysetnull()
@@ -19,11 +18,9 @@ c Specify external the boundary setting routine.
 c sets the derivative to zero on boundaries 3.
       ipoint=0
       call mditerate(ndims,ifull,iuds,bdy3slope,u,ipoint)
-
       end
 c**********************************************************************
       subroutine bdysetfree(ndims,ifull,iuds,cij,u,q)
-
       integer ndims,ifull(ndims),iuds(ndims)
       real cij(*),u(*),q(*)
 c Specify external the boundary setting routine.
@@ -33,12 +30,10 @@ c Specify external the boundary setting routine.
       common /slpcom/slpD
       ipoint=0
 c      slpD=-1.
-c      call mditerate(ndims,ifull,iuds,bdyslopeDh,u,ipoint)
 c      slpD=debyelen/sqrt(1.+1./(Ti+vd*vd))
 c      call mditerate(ndims,ifull,iuds,bdyslopescreen,u,ipoint)
       slpD=1.e-6
       call mditerate(ndims,ifull,iuds,bdyslopeDh,u,ipoint)
-
       end
 c**********************************************************************
 c     L(u) + f(u) = q(x,y,...), 
@@ -159,68 +154,8 @@ c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
       end
 c**********************************************************************
-c The following is obsolete and (somewhat) incorrect.
-c************************************************************************
-      subroutine bdyslopeDhold(inc,ipoint,indi,ndims,iused,u)
-c Version of bdyroutine that sets logarithmic 'radial' gradient
-c equal to D
-      integer ipoint,inc
-      integer indi(ndims),iused(ndims)
-      real u(*)
-
-c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerate argument conventions.
-      parameter (mdims=10)
-      integer iLs(mdims+1)
-      common /iLscom/iLs
-
-      real x(mdims)
-      include 'meshcom.f'
-      common /slpcom/slpD
-
-      r2=r2indi(ndims,indi,x)
-      D=slpD
-
-c Algorithm: take steps of 1 in all cases except
-c when on a lower boundary face of dimension 1 (and not other faces). 
-c There the step is iused(1)-1.
-      inc=1
-      do n=ndims,1,-1
-c------------------------------------------------------------------
-c Between here and ^^^ is boundary setting. Adjust upper and lower.
-         if(indi(n).eq.0)then
-c The exception in step. Do not change!:
-            if(n.eq.1)inc=iused(1)-1
-c On lower boundary face
-c du/dn=u:
-c            u(ipoint+1)=.8*u(ipoint+1+iLs(n))
-c du/dn=D r.n u/ r^2
-            dx=xn(ixnp(n)+2)-xn(ixnp(n)+1)
-            fac=(1.+0.5*dx/x(n))*r2*2./(D*x(n)*dx)
-c            write(*,*)n,dx,xn(ixnp(n)+1),fac,r2
-c Centered BC:
-c (u2-u1)/dx=(u2+u1)/2 *D*(x1+x2)/2 /rm^2  put fac=2*rm^2/D xm dx
-c  u2(fac-1.)=u1(fac+1)
-            u(ipoint+1)=u(ipoint+1+iLs(n))*(fac-1.)/(1.+fac)
-            goto 101
-         elseif(indi(n).eq.iused(n)-1)then
-c On upper boundary face
-c du/dn=u:
-c            u(ipoint+1)=.8*u(ipoint+1-iLs(n))
-c du/dn=D r.n u/ r^2
-            dx=-(xn(ixnp(n)+1+indi(n))-xn(ixnp(n)+indi(n)))
-            fac=(1.+0.5*dx/x(n))*r2*2./(D*x(n)*dx)
-            u(ipoint+1)=u(ipoint+1-iLs(n))*(fac-1.)/(1.+fac)
-            goto 101
-         endif
-c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-      enddo
-      write(*,*)'BDY Error. We should not be here',n,ipoint,indi
-      stop
- 101  continue
-c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
-      end
 c**********************************************************************
+c The logic of the following might miss some corners.
 c************************************************************************
       subroutine bdyslopescreen(inc,ipoint,indi,ndims,iused,u)
 c Version of bdyroutine that sets logarithmic 'radial' gradient

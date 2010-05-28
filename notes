@@ -4072,8 +4072,17 @@ Implemented both collisions and subcycling.
 24 May 10
 Got a problem with NANs in case with very large number of particles.
 The Field corruption test was triggered. 
-This turned out to be caused by a initialization to a position exactly
+This turned out to be caused by initialization to a position exactly
 on the mesh boundary, where the field was obtained incorrectly. 
 Fixed partlocate to declare NAN position to be out of mesh.
 Fixed pinit to ensure exactly on boundary is rejected.
 Also fixed interp to reject NANs. 
+
+28 May 10
+Thinking about names. One idea was Cartesian Orthogonal Particles and
+Thermals in Cell: COPTIC. It would be better if the O could refer to
+the object boundary representation. (Since sceptic has orthogonal
+coordinates.) Ideas: Oblique (referring to the boundary). I can't
+think of anything better
+
+Cartesian[-cell] Oblique[-boundary] Particles and Thermals In Cell: COPTIC 
