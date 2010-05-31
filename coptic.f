@@ -87,6 +87,8 @@ c Initialize the fortran random number generator with a fixed number
 c for solutions of volumes etc. Each node does the same.
       rs=ran1(-1)
 c Defaults:
+c Determine what reinjection scheme we used.
+      include 'REINJECT.f'
 c Fixed number of particles rather than fixed injections.
       ninjcomp=0
       n_part=0
@@ -468,7 +470,7 @@ c Store the step's rhoinf, dt.
          endif
          if(lmyidhead.and.mod(nf_step,(nsteps/25+1)*5).eq.0)
      $  write(*,
-     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i8,i8,2f10.3)')
+     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i9,i9,2f10.3)')
      $        nrein,n_part,ioc_part,rhoinf,dt
 
          istepave=min(nf_step,iavesteps)
@@ -491,7 +493,7 @@ c      write(*,*)'Finished orbitplot.'
 c      if(lmyidhead)call phiwrite(phifilename,ifull,iuds,u)
 c      if(lmyidhead)call denwrite(phifilename,ifull,iuds,qave)
       if(lmyidhead)call namewrite(phifilename,ifull,iuds,u,'.phi')
-      if(lmyidhead)call namewrite(phifilename,ifull,iuds,uave,'.phiave')
+      if(lmyidhead)call namewrite(phifilename,ifull,iuds,uave,'.pha')
       if(lmyidhead)call namewrite(phifilename,ifull,iuds,qave,'.den')
 
 c-------------------------------------------------------------------

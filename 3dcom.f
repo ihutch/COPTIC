@@ -14,9 +14,13 @@ c Ibool defining region of particles.
       integer ibool_part(ibtotal_part)
 c Mask defining the bits relevant to field regions.
       integer ifield_mask
+c Has the particle region got an enclosed region
+      logical lboundp
+c What is the reinjection scheme?
+      character*50 rjscheme
 
       common /objgeomcom/ngeomobj,obj_geom,nf_map
-     $     ,ibool_part,ifield_mask
+     $     ,ibool_part,ifield_mask,lboundp,rjscheme
 
 c Reference to the offset of certain object parameters:
       integer otype,ocenter,oradius,oabc,ocylaxis

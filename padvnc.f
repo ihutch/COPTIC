@@ -229,9 +229,10 @@ c potential
 c         if(myid.eq.0)
 c         write(*,'(a,f12.6,$)')' Phirein=',phirein
 c         write(*,*)' nlost=',nlost,' nrein=',nrein,' ninner=',ninner
-         if(phirein.gt.0.)then
+         cap=2.*Ti
+         if(phirein.gt.cap)then
 c            if(myid.eq.0)write(*,*)'PROBLEM: phirein>0:',phirein
-            phirein=0.
+            phirein=cap
          endif
       else
          if(ninjcomp.gt.100)write(*,*)'No reinjections'

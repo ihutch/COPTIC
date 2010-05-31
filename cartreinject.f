@@ -366,7 +366,12 @@ c Use particle information for initializing.
       include 'meshcom.f'
       real area(ndims_mesh),volume,flux
       real a,td,cfactor
+      real chi
+      save chi
+      data chi/0./
 
+c The relaxation parameter on the rhoinfinity cfactor.
+      crelax=1.*Ti/(1.+Ti)
       volume=1.
       flux=0.
       do i=1,ndims_mesh
@@ -388,7 +393,8 @@ c Assume vd is in the last dimension
       if(nrein.ne.0)then
 c Calculate rhoinf from nrein if there are enough.
 c Correct approximately for edge potential depression (OML).
-         chi=min(-phirein/Ti,0.5)
+c         chi=min(-phirein/Ti,0.5)
+         chi=crelax*(-phirein/Ti)+(1.-crelax)*chi
          cfactor=smaxflux(vd/sqrt(2.*Ti),chi)
      $        /smaxflux(vd/sqrt(2.*Ti),0.)
          rhoinf=(nrein/(dtin*cfactor*flux))
@@ -401,8 +407,11 @@ c Approximate initialization
          endif
 c Else just leave it alone.
       endif
-c      write(*,*)'Ending rhoinfcalc',rhoinf,nrein,n_part
-c     $     ,phirein,chi,dtin,cfactor,flux
+      write(*,*)
+      write(*,'(a,2i8,10f9.4)')
+     $ 'Ending rhoinfcalc',nrein,n_part,rhoinf
+     $     ,phirein,chi,cfactor,dtin
+c,flux
       end
 c*********************************************************************
       subroutine nreincalc(dtin)

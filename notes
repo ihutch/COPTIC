@@ -4079,6 +4079,7 @@ Fixed pinit to ensure exactly on boundary is rejected.
 Also fixed interp to reject NANs. 
 
 28 May 10
+
 Thinking about names. One idea was Cartesian Orthogonal Particles and
 Thermals in Cell: COPTIC. It would be better if the O could refer to
 the object boundary representation. (Since sceptic has orthogonal
@@ -4093,3 +4094,205 @@ Committed. Now one does a cvs checkout coptic and gets the file with
 the program name changed to coptic. There are some residual files with
 ccpic as part of their name. Don't change them because it is too much
 trouble.
+
+Implemented a make feature that saves in REINJECT.f a single fortran
+line that sets a character variable equal to the REINJECT configuration.
+Then added a feature into coptic that checks if the particle region 
+boolean has any objects that it is _inside_. If so, this is a 'bounded'
+region. (Even if there is an unbounded region outside as well as the
+bounded region inside.) If the particle region is 'bounded' and the 
+injection scheme starts 'cart' (cartreinject.o), then this is an incompatible
+scheme, and the code stops with an error message on initialization. 
+This will probably be tripped only if the objectfile is explicitly 
+specified and incompatible.
+
+30 May 2010
+Implementing more satisfactory potential BC. We want the potential to
+be constant along a direction d which is a vector radial in x,y and
+has a z-length v_d times the radial length. Implement this as a
+boundary condition that set the boundary value to satisfy this
+condition. One is probably safest deriving the tangential derivatives
+from the values on the active mesh, one in from the boundary. The
+normal derivative from the boundary point and its neighbor in the
+active mesh. Should the tangential derivatives be centered? If so one
+requires to go forward and backward from the point in the tangential
+direction. This will work ok except for the edges. (Faces are ok.) At
+the edges, one could just use an uncentered difference, but it might
+be better to extrapolate from the 1,1 point diagonally in from the
+edge point. If one does that, then an uncentered difference might not
+be required.
+
+We first analyse the current slopeD routine:
+ccSet the cumulative registers
+      r2=0.
+      fac=0.
+      ipd=ipoint
+      do n=1,ndims
+c BC is du/dr=D u/r     in the form   (ub-u0)=  D*(ub+u0)*f/(1-f)
+c where f = Sum_j[(xb_j+x0_j)dx_j]/(2*rm^2), dx=xb-x0
+c Thus ub=u0(1-f-D.f)/(1-f+D.f)
+c Here we are using radii from position (0,0,..)
+         x=xn(ixnp(n)+1+indi(n))
+         r2=r2+x*x
+         if(indi(n).eq.0)then
+c On lower boundary face
+            dx=xn(ixnp(n)+1)-xn(ixnp(n)+2)
+cc ixnp(n)+1 and ixnp(n)+2 are the point and its adjacent.
+            ipd=ipd+iLs(n)
+cc ipd is the index of the point adjacent in the n direction.
+            fac=fac+x*dx
+cc accumulate dx*x, the projection of the step along the r-direction.
+            if(n.eq.1)then
+c The exception in step. Do not change!
+               inc=iused(1)-1
+cc This will remain the inc only if we are not on a 2, or 3 boundary.
+            else
+               inc=1
+            endif
+         elseif(indi(n).eq.iused(n)-1)then
+c On upper boundary face
+            dx=xn(ixnp(n)+1+indi(n))-xn(ixnp(n)+indi(n))
+            ipd=ipd-iLs(n)
+cc On upper ipd is the point adjacent in the -(n) direction.
+            fac=fac+x*dx
+            inc=1
+         endif
+      enddo
+cc When we reach here, we have ipd equal to an index to the point
+cc adjacent in each of the dimensions, positive or negative according
+cc as that direction was lower or upper face, zero if neither.
+cc This is the point from which we are going to extrapolate. 
+cc We have fac equal to x.dx where dx is the delta-x to position ipd.
+cc And r2 is r^2. fac is r.dr 
+      if(ipd.eq.ipoint)then
+         write(*,*)'BDY function error; we should not be here'
+         stop
+      else
+         fac=fac/(2.*r2)
+cc scale fac by r^2
+         u(ipoint+1)=u(ipd+1) *(1.-fac+D*fac)/(1.-fac-D*fac)
+cc The boundary point is equal to the adjacent times 
+cc (1-f+D*f)/(1-f-D*f). Multiplying this out gives:
+cc U_p(1-f-Df) = U_d(1-f+Df). I.e. (U_p-U_d)(1-f)=(U_p+U_d)Df
+cc The radius to the half-way point is rh2=(x-dx)^2 = r^2-2x.dx=r2(1-f)
+cc So rh2*(U_p-U_d)/rh2.dr = D(U_p+U_d)/2 
+      endif
+c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+So that more or less makes sense. I want to use the same sort of
+algorithm if possible. I can use exactly this algorithm to determine
+the point from which we extrapolate. Then when we find a non-zero dx
+for a particular direction, if it is in the z-direction we need to 
+use the M scaling. The criterion we need to satisfy is: 
+  du/dr + M du/dz =0
+So we can use the x,y difference to estimate the extrapolated value
+as: u_p = u_d + (dx.r + dy.r)/r (du/dr) + dz (du/dz) 
+with du/dr = -M du/dz. 
+So u_p=u_d + (-M*(dx.x + dy.y)/r + dz).(du/dz)
+If the du/dz is measured at u_d we can do it centered.
+On the z-ends, dx=dy=0. This is then an identity and we can't do it
+centered, but if we do it uncentered, it puts d^2u/dz^2 = 0. 
+Why can't we do that for everything? Might be better. Sounds
+unstable. 
+
+We must do the substitution for du/dz at the z-ends instead.
+   u_p=u_d + (-1/M)(du/dr)dz and du/dr estimated from mesh.
+This looks as if it might get problematic at low M. 
+
+Things don't look very implicit and I am not convinced that I've got
+the right sort of approach. To do it right we need at least one
+tangential and one normal step at each point. And the tangential step
+must be in the z-direction unless we are on the z-face. If we are on
+the z-face, we could use two tangential steps. A simpler fall-back
+would be to make du/dz=0 on the z-faces.
+
+Implemented that: mach on x,y-faces, zero-slope on z-faces.
+
+It's pretty hard to test on the big domains.  Perhaps I ought to do
+something on a smaller domain.  It is not obviously broken, but small
+numbers of steps give a potential that is rather offset.
+Anyway it is now easy to swap between the old and the new boundary 
+conditions. 
+
+Removed randc.o from the objects.
+
+Ran for 650 steps after a restart. Still seemed to have a rather
+negative average potential. 
+
+Doing tests on a small 5x5 domain. The direction of contours is about
+right. So it seems the boundary condition is doing its job. However,
+there are cases where the potential is very depressed, so it seems 
+as if that's an issue that needs to be resolved. Actually this effect
+exists even with the old BCs. It gets really bad at 500 steps for
+-v.5 and the small domain. This is not unique to the new version. The
+problem's been there for a long time. Probably I need to fix it. 
+I see that there's a big particle pump-out from a starting number of
+90k down to about 30k. That's a symptom. How is rhoinfinity being
+calculated? is the question. This is badly broken. Setting constant
+number of particles does not fix it.
+
+First it seems the sign of slpD was incorrect. But still that's not
+the main problem. Seems to be worst at low temperature. Bad also with
+zero velocity. Problem seems absent at -t1. This must be a bug with 
+rhoinfinity calculation associated with temperature. At -t.1 -l1. it
+asymptotes to -.13Te. At -t.01 to -1.75Te.
+
+Seems as if the problem arises from phirein, which is exceeding its
+capped value because of the low temperature. This corresponds to a 
+value of chi equal to 0.5. But no, just setting chi to zero does not
+fix it. 
+
+I think there's a major problem with the way that rhoinf is being 
+calculated from flux. If phirein is substantially bigger than Ti, 
+which it is for pretty much all small domains when Ti is small, then
+we are going to get very big swings in cfactor. This is going to be
+unstable, probably. But the whole approach is highly dubious, for
+a rectangular domain anyway. If the presheath drop to the edge of 
+the boundary is significant, then we don't really have a decent
+way of determining the rhoinf from the flux, because we don't have
+a decent way (for a rectangular domain) of calculating how much flux
+is going to enter. The cfactor is mostly just a kludge. If I turn off 
+the chi/cfactor, then we just get the maxwellian flux calculated
+across the boundary. But in reality there is a faster flux to the 
+object than that. This means that at constant density there are many
+more injections, which the rhoinf calculation takes as a sign that the
+rhoinf is actually much higher than reality. But the electron density 
+can't really be that high, because if it were, the whole box would be 
+very negatively charged. So the potential everywhere in the box has 
+a tendency to drop so as to reduce the electron density.
+
+The flux at zero drift velocity is area x sqrt(2T_i/\pi). This seems
+like a factor of 2 too much because it is for both faces.
+
+The low potentials are mostly a sign that the rhoinf is being taken
+too large. 
+
+31 May 2010
+
+Fundamentally, there has to be a way to allow the phirein to adjust
+the rhoinf. The instability I have been observing is a problem but
+just putting it against a rail is not the solution. 
+
+Tried putting a relaxation parameter. It needs to be very small
+to bring any degree of stability. Also, It seems that phirein
+is quite often exactly zero. This is because phirein is capped in
+padvnc never to be above 0. Also the energy of the injection is 
+adjusted using averein, which is set to the prior value of phirein at
+the start of a step. However, energy is never reduced, only enhanced.
+
+Set the phirein cap to 2.Ti instead of zero. This works ok. It lowers
+the edge potential a little, but it still tends on average to be
+slightly above zero. It bounces around somewhat, which seems to be 
+mostly statistics.
+
+So what we have implemented is that the correction factor for edge
+potential is relaxed by only by Ti/(1.+Ti). This is small at small
+edge temperature and never goes above 1/2. These values appear to be
+stable (experimentally). Also we have raised the phirein cap to 2Ti,
+which helps prevent excessively positive edge potentials by allowing
+the positive excursions to push down the chi value somewhat. 
+
+We still find that the corners often rise above zero potential, but
+this is probably caused by the incorrect boundary
+conditions. Generally seems to work for a range of temperatures and
+drift velocities.

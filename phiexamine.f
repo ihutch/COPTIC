@@ -10,6 +10,7 @@
       parameter (nzmax=500)
       real rzdist(0:nr,nzmax),irzcount(nr,nzmax)
       character*1 ppath(0:nr,nzmax)
+      character*20 string
 
       real oneoverr(100),ro(100),cl(100)
 c 
@@ -132,7 +133,7 @@ c Average together.
 c Plot binned data:
          do i=1,ntheta
             call color(mod(i,16))
-            call polyline(rval,thetadist(1,i),nr)
+            call polyline(rval(1),thetadist(1,i),nr)
          enddo
 
          write(*,*)'r, phi distribution (ir,itheta)'
@@ -164,7 +165,7 @@ c Set up r-mesh.
             enddo
             rval(j)=(rs)*(j-0.5)/float(nr)
             rvalneg(j)=-rval(j)
-            write(*,*)j,rval(j)
+c            write(*,*)j,rval(j)
          enddo
 
 c Bin values
@@ -185,7 +186,7 @@ c Bin values
                enddo
             enddo
          enddo
-         write(*,*)((j,rval(j),irzcount(j,k),j=1,nr),k=1,1)
+c         write(*,*)((j,rval(j),irzcount(j,k),j=1,nr),k=1,1)
          do j=1,nr
             do i=1,iuds(3)
                if(irzcount(j,i).ne.0)then
@@ -221,10 +222,15 @@ c Fill in along the axis.
 
 c Now rzdist(nr,nz) is the rz-distribution of the (average) potential.
 c Contour it.
-         nc=20
+         nc=30
+         call fitrange(-phimax,phimax,nc,ipow,fac10,delta,first,xlast)
+         write(*,*)ipow,fac10,delta,first,xlast
          do k=1,nc
-            cl(k)=phimax*(-1.+2.*(k-1.)/(nc-1.))
+            cl(k)=(first+k*delta)
          enddo
+         nc=abs(2.*phimax)/abs(delta)
+         write(*,*)' Phimax', phimax,' fac10',fac10
+         write(*,*)' Contours',nc,(cl(k),k=1,nc)
          iconsw=1+64
          call pltinaspect(-rval(nr),rval(nr),
      $        xn(ixnp(3)+1),xn(ixnp(3)+iuds(3)))
@@ -232,10 +238,13 @@ c Contour it.
      $        cl,nc,rval,xn(ixnp(3)+1),iconsw)
          call contourl(rzdist,ppath,nr+1,nr+1,iuds(3),
      $        cl,nc,rvalneg,xn(ixnp(3)+1),iconsw)
+         call color(15)
          call axis()
          call axlabels('r','z')
-
-
+         call fwrite(delta,iwd,2,string)
+         call boxtitle('!Af!@-contours ('//string(1:iwd)
+     $        //'T!de!d spaced)')
+         call gradlegend(-phimax,phimax,-.6,0.,-.6,1.,-.04,.false.) 
          call pltend()
 
       endif

@@ -12,10 +12,10 @@ COPTIC=coptic
 #GEOMFILE=geomsphere.dat
 ###################
 REINJECT=cartreinject.o
-#GEOMFILE=geomcubic.dat
-GEOMFILE=geomz200x50.dat
+GEOMFILE=geomcubic.dat
+#GEOMFILE=geomz200x25.dat
 ##########################################################################
-FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o svdsol.o padvnc.o chargetomesh.o slicesect.o randf.o randc.o reindiag.o pinit.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o stress.o average.o bdyroutine.o reduce.o getfield.o interpolations.o
+FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o svdsol.o padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o stress.o average.o bdyroutine.o reduce.o getfield.o interpolations.o
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
 OBJECTS=$(FIXEDOBJECTS) ${REINJECT}
@@ -88,6 +88,7 @@ bdyroutine.o : bdyroutine.f makefile $(HEADERS)
 # Main program explicit to avoid make bugs:
 $(COPTIC) : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES)
 	if [ -f "$(GEOMFILE)" ] ; then rm -f ccpicgeom.dat ; ln -s $(GEOMFILE) ccpicgeom.dat ; fi
+	echo "      rjscheme="\'$(REINJECT)\'" " > REINJECT.f
 	$(G77)  -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
 $(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h

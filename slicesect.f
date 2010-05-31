@@ -7,7 +7,7 @@ c -zero, and there is a fraction<1 to the adjoining points.
       real z(Li,nj)
       real cij(7,Li,nj)
       include 'objcom.f'
-      include 'world3.h'
+      include 'accis/world3.h'
 
       call color(3)
       do i=1,ni
@@ -73,8 +73,7 @@ c The fixed dimension which is chosen to start, and returned after is:
 c The plotted quantity title is
       character*(*) utitle
 c Needed for perspective plot
-c      include '/home/hutch/accis/world3.h'
-      include 'world3.h'
+      include 'accis/world3.h'
 c Workspace size is problematic.
       character*1 pp(40000)
 c Contour levels

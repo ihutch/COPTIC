@@ -6,7 +6,7 @@
 #
 # Radius 1 sphere centered on axis with potential set (-10.)
 # Specify flux accumulation for 5 quantities in 50 bins of cos\theta, 1 of psi.
-1 , 1.,0.,.2, .0,.0,.0,  1.,1.,1.,  5, 50, 1  
+1 , 1.,0.,2., .0,.0,.0,  1.,1.,1.,  5, 50, 1  
 #
 # Boolean that specifies the particle region 99, n1, n1*values, n2, ... 0:
 # Each nk values are ored together. The groups are anded.
@@ -17,11 +17,5 @@
 # 9d,1,32,0,-5.,5.
 #91,1,32,0,-10.,10.
 #92,1,32,0,-10.,10.
-#93,1,96,0,-10.,51.29
-#91,1,32,0,-15.,15.
-91,1,12,17,28,33,44,0,-50.,-10.,-3.,3.,10.,50.
-92,1,12,17,28,33,44,0,-50.,-10.,-3.,3.,10.,50.
-#92,1,12,21,32,0,-50.,-3.,3.,50.
-93,1,12,17,28,33,96,0,-50.,-10.,-3.,3.,10.,200.
-#93,1,12,25,84,0,-50.,-3.,4.,400.
+#93,1,96,0,-10.,10.
 # It's important to end the last line.

@@ -88,6 +88,8 @@ c      real obj_geom(odata,ngeomobjmax)
 c      common /objgeomcom/ngeomobj,obj_geom
       intrinsic IBCLR
       real valread(2*nspec_mesh)
+      logical lbounded
+      external lbounded
 
 c Zero the obj_geom data.
       do j=1,odata
@@ -185,7 +187,16 @@ c If this is a null boundary condition clear the relevant bit.
       write(*,*)cline
       
  902  continue
-
+c This had to be associated with coptic because of makefile logic.
+c      include 'REINJECT.f'
+      write(*,'(2a,$)')'Reinjection scheme: ',rjscheme(:40)
+c Set whether particle region has a part inside an object.
+      lboundp=lbounded(ibool_part,ndims_mesh)
+      if(lboundp.and.rjscheme(1:4).eq.'cart')then
+         write(*,'(3a)')'ERROR: using cartesian injection'
+     $        ,' with bounded region.'
+         stop
+      endif
       return
 
  101  write(*,*) 'Readgeom File ',filename,' could not be opened.'
@@ -390,6 +401,42 @@ c Special case for zero particle boolean.
          if(i.lt.n1)goto 1
       endif
  10   linregion=lt2
+      end
+c************************************************************
+c Return whether the particle region specified by ibool has any
+c enclosed regions (regions inside an object. If it does, then
+c cartesian reinjection is not correct. 
+      logical function lbounded(ibool,ndims)
+c ibool structure: n1, n1*values, n2, n2*values, ... ,0
+      integer ibool(*)
+      integer ndims
+      logical ltemp
+c  linregion = Prod_1^nj Sum_1^ni inside(bool(ni,nj))
+c where inside(n) is true if n is +/-ve and x is inside/outside |n|. 
+c      write(*,'(11i4,3f10.4)')ibool(1:10),ndims,x
+      ltemp=.false.
+c Special case for zero particle boolean.
+      if(ibool(1).eq.0)goto 10
+      i=1
+      n1=ibool(i)+i
+ 1    if(i.lt.n1)then
+c Reading objects for group ending at n1-1
+        i=i+1
+         ib=ibool(i)
+c         write(*,*)i,ib
+         if(ib.gt.0)then
+c A positive ib value defines inside object.
+            ltemp=.true.
+         endif
+         goto 1
+      else
+         i=i+1
+         n1=i+ibool(i)
+         if(i.lt.n1)goto 1
+      endif
+ 10   lbounded=ltemp
+c(ibool(k),k=1,16),
+      write(*,*)' lbounded=',lbounded
       end
 
 c************************************************************
