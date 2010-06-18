@@ -38,7 +38,7 @@ c Default spherical r plot.
                iplot=0
                goto 1
             else
-               write(*,*)'Unequal y-z mesh dimensions. r-z plot.'
+c               write(*,*)'Unequal y-z mesh dimensions. r-z plot.'
                iplot=1
             endif
          endif
@@ -156,7 +156,7 @@ c r-z binning and plotting
          ry=max(abs(xn(ixnp(2)+1)-x0),abs(xn(ixnp(3))-y0))
          rs=sqrt(rx**2+ry**2)
          nz= ixnp(3+1)-ixnp(3)
-         write(*,*)x0,rx,y0,ry,rs,nz
+c         write(*,*)x0,rx,y0,ry,rs,nz
 c Set up r-mesh.
          do j=1,nr
             do i=1,nz
@@ -224,13 +224,13 @@ c Now rzdist(nr,nz) is the rz-distribution of the (average) potential.
 c Contour it.
          nc=30
          call fitrange(-phimax,phimax,nc,ipow,fac10,delta,first,xlast)
-         write(*,*)ipow,fac10,delta,first,xlast
+c         write(*,*)ipow,fac10,delta,first,xlast
          do k=1,nc
             cl(k)=(first+k*delta)
          enddo
          nc=abs(2.*phimax)/abs(delta)
-         write(*,*)' Phimax', phimax,' fac10',fac10
-         write(*,*)' Contours',nc,(cl(k),k=1,nc)
+c         write(*,*)' Phimax', phimax,' fac10',fac10
+c         write(*,*)' Contours',nc,(cl(k),k=1,nc)
          iconsw=1+64
          call pltinaspect(-rval(nr),rval(nr),
      $        xn(ixnp(3)+1),xn(ixnp(3)+iuds(3)))
@@ -241,7 +241,8 @@ c Contour it.
          call color(15)
          call axis()
          call axlabels('r','z')
-         call fwrite(delta,iwd,2,string)
+c         write(*,*)'ipow',ipow
+         call fwrite(delta,iwd,max(-ipow,0)+1,string)
          call boxtitle('!Af!@-contours ('//string(1:iwd)
      $        //'T!de!d spaced)')
          call gradlegend(-phimax,phimax,-.6,0.,-.6,1.,-.04,.false.) 

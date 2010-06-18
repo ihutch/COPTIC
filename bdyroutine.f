@@ -28,8 +28,9 @@ c Specify external the boundary setting routine.
       external bdyslopeDh,bdyslopescreen,bdymach
       include 'plascom.f'
 
-      common /slpcom/slpD
+      common /slpcom/slpD,islp
       ipoint=0
+      islp=0
 c      slpD=-1.
 c      slpD=debyelen/sqrt(1.+1./(Ti+vd*vd))
 c      call mditerate(ndims,ifull,iuds,bdyslopescreen,u,ipoint)
@@ -38,6 +39,8 @@ c      slpD=-1.e-5
 c      call mditerate(ndims,ifull,iuds,bdyslopeDh,u,ipoint)
 c Mach boundary condition for drift vd.
       slpD=vd
+c Face 3 has phi=0.
+      islp=8
       call mditerate(ndims,ifull,iuds,bdymach,u,ipoint)
       end
 c**********************************************************************
@@ -112,7 +115,7 @@ c Can't be passed here because of mditerate argument conventions.
       common /iLscom/iLs
 
       include 'meshcom.f'
-      common /slpcom/slpD
+      common /slpcom/slpD,islp
       D=slpD
 c Algorithm: take steps of 1 in all cases except when on a lower
 c boundary face of dimension 1 (and not other faces).  There the step is
@@ -171,7 +174,7 @@ c Can't be passed here because of mditerate argument conventions.
       common /iLscom/iLs
 c Value of mach number passed in common.
       include 'meshcom.f'
-      common /slpcom/slpD
+      common /slpcom/slpD,islp
       DM=slpD
 c Algorithm: take steps of 1 in all cases except when on a lower
 c boundary face of dimension 1 (and not other faces).  There the step is
@@ -220,7 +223,7 @@ c Fall back to du/dz=0.
 c fac contains r.dr, r2 contains r^2
 c u_p=u_d + (-M*(dx.x + dy.y)/r + dz).(du/dz)
          if(indi(n).eq.0)then
-c On lower z-boundary face 
+c On lower z-boundary face (as well as x or y)
             dz=xn(ixnp(n)+1)-xn(ixnp(n)+2)
             ipd=ipd+iLs(n)            
             inc=1
@@ -228,7 +231,7 @@ c z-derivative calculated from value 3
             dubydz=(u(ipd+1)-u(ipd+iLs(n)+1))
      $           /(xn(ixnp(n)+2)-xn(ixnp(n)+3))
          elseif(indi(n).eq.iused(n)-1)then
-c On upper z-boundary face
+c On upper z-boundary face (as well as x or y)
             dz=xn(ixnp(n)+1+indi(n))-xn(ixnp(n)+indi(n))
             ipd=ipd-iLs(n)
             inc=1
@@ -246,6 +249,11 @@ c Since the radial(xy) derivative is equal to -M*du/dz,
 c -M*(fac/r)*dubydz is the radial difference, and add z-difference.
          u(ipoint+1)=u(ipd+1)+
      $        (-DM*fac/sqrt(r2) + dz)*dubydz
+      endif
+c Special cases:
+      if(ibits(islp,3,1).ne.0)then
+c Bit 3+1 set, put lower z-face to zero.
+         if(indi(n).eq.0)u(ipoint+1)=0.
       endif
 c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
@@ -269,7 +277,7 @@ c Can't be passed here because of mditerate argument conventions.
 
       real x(mdims)
       include 'meshcom.f'
-      common /slpcom/slpD
+      common /slpcom/slpD,islp
 
       r2=r2indi(ndims,indi,x)
       r1=sqrt(r2)

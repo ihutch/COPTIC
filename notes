@@ -4296,3 +4296,57 @@ We still find that the corners often rise above zero potential, but
 this is probably caused by the incorrect boundary
 conditions. Generally seems to work for a range of temperatures and
 drift velocities.
+
+Commit.
+
+2 June
+
+Had discovered that the wake has a problem in this new configuration.
+There appear to be long wavelength waves along the box. This seems likely
+to be caused by the release of the BC constraint. Since this case is 
+poorly represented by the OML enhancement factor, one really ought not
+to rely on that with such a big and asymmetric box. So make the 
+leading face have zero potential. This ought to stabilize things.
+This was a small modification to the bdymach routine. 
+
+There's an issue about self force. I probably ought to make sure that
+I avoid it. This is so only if the electric field interpolation and the 
+charge assignment are done "consistently". It is not clear that I am
+doing this. In principle either the charge or the field interpolation could
+be adjusted to make things consistent. 
+
+4 June Self Force.
+Adjusting the charge assignment to zero the self force. 
+This can be done. It is probably best done by assigning some of the charge
+in a cell that is narrower than its neighbor to the adjacent cell further
+away from the wider neighbour. (But not subtracting charge on the wide 
+side). This can be considered to minimize the size of the charge. 
+
+When the charge is at the half-step position, which is where the field
+is defined, and can be considered the cell-boundary, the charge is
+always shared equally between the two adjacent cells. When the charge
+is exactly at the node position x_0, between nodes x_m and x_p, which
+are distant from it by m, p, with m < p, the fractional charges are
+q_p=0, q_0=0.5(1+m/p), q_m=0.5(1-m/p). Charge assignment varies
+linearly between these values in the intermediate positions.
+
+For uniform spacing this is exactly CIC. For non-uniform, it can be
+considered to be an assignment by volume, of a rectangular charge
+shape whose width changes in an area-conserving manner. When it is in
+cell 0, its width is equal to the larger of m or p. And the area which
+extends beyond the distances x_m/2 and x_p/2 (i.e. past this cell
+boundary) are allocated to the adjacent nodes (not to non-adjacent nodes
+even if the width extends far enough). 
+
+Another way to think of it is that the particle weight at the nodes,
+considered on a uniform mesh-fraction grid, when at a node that has
+different step sizes on either side, takes an extended form. The
+form morphs linearly in step-fraction from that form to the form of the
+adjacent node, when the particle is at an intermediate point. The form
+is S(x) m: 0.5(1-m/p), 0: 0.5(1+m/p), p: 0 (and linearly in between those). 
+The linear interpolation distance is half a cell step (I think). 
+Haven't got a good handle on this description. 
+
+17 June 10
+Found that the oscillations that I got stuck with were caused by using
+fixed particle number -ni, instead of fixed injection rate -ri. 

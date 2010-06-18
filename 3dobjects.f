@@ -189,7 +189,7 @@ c If this is a null boundary condition clear the relevant bit.
  902  continue
 c This had to be associated with coptic because of makefile logic.
 c      include 'REINJECT.f'
-      write(*,'(2a,$)')'Reinjection scheme: ',rjscheme(:40)
+c      write(*,'(2a,$)')'Reinjection scheme: ',rjscheme(:40)
 c Set whether particle region has a part inside an object.
       lboundp=lbounded(ibool_part,ndims_mesh)
       if(lboundp.and.rjscheme(1:4).eq.'cart')then
@@ -436,7 +436,7 @@ c A positive ib value defines inside object.
       endif
  10   lbounded=ltemp
 c(ibool(k),k=1,16),
-      write(*,*)' lbounded=',lbounded
+c      write(*,*)' lbounded=',lbounded
       end
 
 c************************************************************

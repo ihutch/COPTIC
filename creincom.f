@@ -10,7 +10,7 @@ c The total flux for each direction unnormalized:
       real grein(6)
 c The inverse cumulative velocity probability distribution
 c (not weighted by velocity) for the three (not 6) dimensions,
-c used for orthogonal velocity choices. vchoice(id)=grein(random,id).
+c used for orthogonal velocity choices. vchoice(id)=prein(random,id).
       real prein(0:ncrein,3)
 c The cumulative distribution of flux. 
       real gintrein(0:6)

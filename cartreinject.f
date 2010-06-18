@@ -233,6 +233,7 @@ c               write(*,*)'Integrate count too high.'
 c We have the right range. Finish.
          if(.not.g(m).gt.tiny)then
             write(*,*)'Cumprob total too small',g(m),' set to zero'
+     $           ,' xw=',xw,' xc=',xc
             ginfty=0.
             return
          endif
@@ -314,7 +315,7 @@ c      write(*,*)'grein',grein
          gintrein(id)=gintrein(id-1) +
      $        1.000001*grein(id)*area((id+1)/2)/gtot
       enddo
-      if(gintrein(6).le.1.)write(*,*)'gintrein problem!'
+      if(.not.gintrein(6).gt.1.)write(*,*)'gintrein problem!'
 c      write(*,*)'gintrein',gintrein
 
       end
