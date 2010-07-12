@@ -92,8 +92,12 @@ c Determine what reinjection scheme we used.
 c Fixed number of particles rather than fixed injections.
       ninjcomp=0
       n_part=0
-c Default to constant rhoinf not n_part.
-      rhoinf=100.
+c Default to constant ripernode not n_part.
+      ripernode=100.
+c Default edge-potential (chi) relaxation rate.     
+c      crelax=1.*Ti/(1.+Ti)
+      crelax=1.
+      averein=0.
       dt=.1
       objfilename='ccpicgeom.dat'
       nsteps=5
@@ -145,17 +149,17 @@ c      if(iargc().eq.0) goto "help"
          endif
          if(argument(1:3).eq.'-ni')read(argument(4:),*,err=201)n_part
          if(argument(1:3).eq.'-pn')read(argument(4:),*,err=201)numprocs
-         if(argument(1:3).eq.'-ri')read(argument(4:),*,err=201)rhoinf
+         if(argument(1:3).eq.'-ri')read(argument(4:),*,err=201)ripernode
+         if(argument(1:3).eq.'-rx')read(argument(4:),*,err=201)crelax
          if(argument(1:3).eq.'-ck')read(argument(4:),*,err=201)ickst
          if(argument(1:3).eq.'-ct')read(argument(4:),*,err=201)colntime
 
          if(argument(1:3).eq.'-dt')read(argument(4:),*,err=201)dt
          if(argument(1:3).eq.'-da')read(argument(4:),*,err=201)bdt
+         if(argument(1:3).eq.'-ds')read(argument(4:),*,err=201)subcycle
          if(argument(1:7).eq.'--reinj')
      $        read(argument(8:),*,err=201)ninjcomp
-         if(argument(1:3).eq.'-sc')then
-            read(argument(4:),*,err=201)subcycle
-         elseif(argument(1:2).eq.'-s')then
+         if(argument(1:2).eq.'-s')then
             read(argument(3:),*,err=201)nsteps
             if(nsteps.gt.nf_maxsteps)then
                if(lmyidhead)write(*,*)'Asked for more steps',nsteps,
@@ -203,9 +207,12 @@ c Help text
       write(*,301)' --reinj    set reinjection number at each step.   ['
      $     ,ninjcomp
       write(*,302)' -ri   set rhoinfinity/node => reinjection number. ['
-     $     ,rhoinf
+     $     ,ripernode
+      write(*,302)' -rx   set Edge-potl relax rate: 0=>off, 1=>immed. ['
+     $     ,crelax
       write(*,302)' -dt   set Timestep.              [',dt,
      $     ' -da   set Initial dt accel-factor[',bdt
+      write(*,302)' -ds   set subcycle fraction.     [',subcycle
       write(*,301)' -s    set No of steps.           [',nsteps
       write(*,302)' -v    set Drift velocity.        [',vd
       write(*,302)' -t    set Ion Temperature.       [',Ti
@@ -213,7 +220,6 @@ c Help text
       write(*,301)' -a    set averaging steps.       [',iavesteps
       write(*,301)' -ct   set collision time.        [',colntime
       write(*,301)' -vn   set neutral drift velocity [',vneutral
-      write(*,301)' -sc   set subcycle fraction.     [',subcycle
 c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [ccpicgeom.dat'
@@ -251,11 +257,11 @@ c-----------------------------------------------------------------
          ium2(id)=iuds(id)-2
       enddo         
 c---------------------------------------------------------------
-c      write(*,*)'Doing nreincalc',n_part,rhoinf,dt
-      if(n_part.ne.0)rhoinf=0.
-c Set ninjcomp if we are using rhoinf
+c      write(*,*)'Doing ninjcalc',n_part,ripernode,dt
+      if(n_part.ne.0)ripernode=0.
+c Set ninjcomp if we are using ripernode
 c This does not work until after we've set mesh in cartesian.
-      if(rhoinf.ne.0)call nreincalc(dt)
+      if(ripernode.ne.0)call ninjcalc(dt)
 c----------------------------------------------------------------
 c Initializations
       if(lmyidhead)write(*,*)'Initializing the stencil data cij'
@@ -468,11 +474,12 @@ c Store the step's rhoinf, dt.
             call fluxdiag()
             if(mod(nf_step,5).eq.0)write(*,*)
          endif
-         if(lmyidhead.and.mod(nf_step,(nsteps/25+1)*5).eq.0)
-     $  write(*,
+         if(lmyidhead.and.mod(nf_step,(nsteps/25+1)*5).eq.0)then
+            write(*,
      $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i9,i9,2f10.3)')
      $        nrein,n_part,ioc_part,rhoinf,dt
-
+            if(nsubc.ne.0)write(*,'(''Subcycled:'',i6)')nsubc
+         endif
          istepave=min(nf_step,iavesteps)
          call average3d(q,qave,ifull,iuds,istepave)
          call average3d(u,uave,ifull,iuds,istepave)

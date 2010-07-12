@@ -19,7 +19,7 @@ FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
 OBJECTS=$(FIXEDOBJECTS) ${REINJECT}
-HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f
+HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 ##########################################################################
 G77=mpif77 -f77=g77 

@@ -43,6 +43,7 @@ c     $           ,(x_part(kk,i),kk=1,3)
          x_part(4,i)=tisq*gasdev(myid)
          x_part(5,i)=tisq*gasdev(myid)
          x_part(6,i)=tisq*gasdev(myid) + vd
+         dtprec(i)=0.
 c Initialize the mesh fraction data in x_part.
          call partlocate(i,ixp,xfrac,iregion,linmesh)
 c This test rejects particles exactly on mesh boundary:

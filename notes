@@ -3868,7 +3868,7 @@ refers to one processor's injections, as (of course) does n_part.
 I want the default injections to be rhoinf=100*numprocs really. 
 But in any case, the initializations should be such that things are
 consistent. ninjcomp is only ever set in nreincalc, i.e. only ever
-during initialization. testi
+during initialization.
 
 Need to make a decision about how defaults are command lines work with
 different processor numbers. I want adding processors to add particles,
@@ -3931,7 +3931,6 @@ to be called only each particle step.
 Third, this is really scary because bdyset does not get shared out
 between all the processes. So parallelism won't help. Scaling will
 be terrible. 
-
 
 I notice that the total number of seconds isn't adding to the elapsed
 time. And actually the amount of time (about 2 seconds) isn't much
@@ -4350,3 +4349,68 @@ Haven't got a good handle on this description.
 17 June 10
 Found that the oscillations that I got stuck with were caused by using
 fixed particle number -ni, instead of fixed injection rate -ri. 
+
+30 June 10
+
+Also found that even using fixed injection rate at lower M=0.5 there
+are oscillations. The plan is therefore to implement a switch that
+totally simplifies the BCs so that reinjection is at a specified rate
+calculated as the rate corresponding to distant fluxes regardless of
+potential, and the potential boundary condition is simply on the
+gradients, possibly using the diagonal expression. This ought to be
+sufficient to give a stable scheme. It might lead to some slight edge
+screening effects, but that ought not to be a problem. 
+
+Try to sort out the reinjection number logic and the way they are
+controlled for the following parameters:
+
+rhoinf the density at infinity summed over processors.
+calculated in rhoinfcalc each iteration
+if nrein!=0, rhoinf=nrein/(dtin*cfactor*flux), else guess from n_part.
+cfactor is the adjustment for non-zero edge potential. 
+
+nrein
+the actual number of reinjections in the step summed over all processors.
+
+ninjcomp refers during iterations to one processor's complement.
+At initialization, if rhoinf !=0, set in nreincalc.
+
+n_part one processor's number of particles. Set by -ninnn switch. 
+If n_part!=0 during initialization, then set rhoinf=0, so nreincalc is not 
+called. 
+
+-ri sets value of rhoinf __per node__, which then is converted into ninjcomp
+by nreincalc, at which time, rhoinf is multiplied by nproc to make it total.
+
+-ni sets n_part.
+
+To reduce confusion, rename nreincalc to ninjcalc. ninjcomp is the most 
+important thing set by ninjcalc. Also introduce new initial variable
+ripernode which is what rhoinf was prior to being multiplied by 
+numprocs. In other words we no longer overload rhoinf during the initalization.
+
+Introduce new switch -rx determining the relaxation rate of chi, the
+edge potential correction (and of averein). Default 1 immediate.
+Set to zero there is no edge potential correction of the flux or of the
+injection energy.
+
+Corrected dtprec to store for each particle, as per sceptic. This is
+the only way to get subcycling etc to work properly. Also set it to
+zero in the pinit, do not set it to dt at the start of padvnc. This
+latter change makes a big difference to the value after 5 steps. Amounts
+to supposing that the particle load occurs with perfect reinjection 
+form of distribution function. 
+Need then to set dtprec(i)=dtpos at the standard end of each cycle.
+That restores much of the difference in flux. 
+
+Working on subcycling. If we calculate the square of the field, f2. 
+then perhaps we can determine automatically whether the step is 
+small enough. A criterion might be field*dt (= delta v) > some typical
+velocity. The parameter subcycle could perhaps be used to set the
+criterion, e.g. sqrt(f2)*dt > subcycle (normalized). Another way to
+say the same thing is that dt should be shortened until f.dt < subcycle.
+An integer subcycle criterion would then be
+   dtc = dt/max(1, int(f*dt/subcycle))
+
+This seems to work. Arrange to print out the number of particles subcycled,
+if non-zero.    

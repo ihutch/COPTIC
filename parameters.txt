@@ -1,0 +1,72 @@
+Explanation of COPTIC command line parameters.
+++++++++++++++++++++++++++++++++++++++++++++++
+
+-ni.... Set number of particles per node. Zero implies unset. Default 0.
+If set non-zero, specifies the exact number of particles per processor
+(node) n_part. So that the total number of particles is nproc x
+n_part. Every time a particle leaves the domain, a new one is
+injected.
+
+--reinj.... Set the reinjection number for each step, per node, ninjcomp.
+A complement of exactly ninjcomp particles per processor is injected
+at each step.
+
+-ri.... Set the rhoinfinity per node, and hence ninjcomp. Default 100.
+The value of -ri is converted into ninjcomp by ninjcalc during
+initialization. The total rhoinfinity is nproc times the value
+specified. This is the equivalent of --reinj but more convenient.
+
+-rx.... Set the potential relaxation rate per step, crelax. Default 1.
+The edge potential phirein is used to set the factor chi, which
+adjusts the reinjection rate by the OML factor, and averein which
+increments the injection energy. However, the update of phirein is
+multiplied at each step by crelax. So if crelax=1, the update is
+immediate, while if crelax=0. the update is zero, and chi and averein
+remain zero throughout.
+
+-dt.... Set the timestep during the main part of the iteration. Default .1
+
+-da.... Set the timestep acceleration factor during the first part of
+ the time duration, bdt. Default 1. The timestep dt is multiplied by a
+ factor max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.), where
+ maccel=nsteps/3.  So the timestep ramps down linearly from bdt*dt to
+ dt in the first 1/3 of the timesteps.
+
+-ds.... Set the timestep subcycle-fraction, subcycle. Default 0.  
+If non-zero, sets the maximum permissible momentum increment per step
+arising from electric field. Divide the timestep by an integer, to
+give a shorter step: dtc = dt/max(1, int(f*dt/subcycle)), where f is
+the local acceleration of this particle.
+
+-s....  Set the total number of steps to take. Default 5. 
+If restarting, this is the number of _additional_ steps. 
+
+-v....  Set the drift velocity, vd . Default 0.
+
+-t....  Set the ion temperature, Ti (/T_e). Default 1.
+
+-l....  Set the electron Debye length, debyelen. Default 1.
+
+-a....  Set the averaging time, istepave. Default 100.
+This controls the number of steps over which diagnostic and other
+quantities are averaged.
+
+-ct.... Set the collision time, colntime. Default 0 [off].
+
+-vn.... Set the neutral drift velocity, vn. Default 0.
+
+--objfile<filename> Set the name of the object file. Default ccpicgeom.dat
+
+--restart Attempt to restart the code from a saved state.
+
+Debugging switches for testing
+ -gt   Plot regions and solution tests.
+ -gi   Plot injection accumulated diagnostics.
+ -gs   Plot slices of solution potential, density. 
+ -gf   set quantity plotted for flux evolution and final distribution. [   -1
+ -gc   set wireframe [& stencils(-)] mask. objects<->bits. [    0
+ -go   set No of orbits(to plot on objects set by -gc). [    0
+ -at   set test angle. -an   set No of angles. 
+ -ck   set checking timestep No. [    0
+ -h -?   Print usage.
+ -ho     Print geomobj file format description

@@ -11,13 +11,15 @@ c (x,y,z) (vx,vy,vz) (xm,ym,zm) where xm... is the mesh position.
       real x_part(3*npdim,n_partmax)
 c Particle flag(s).
       integer if_part(n_partmax)
+c Particle previous cycle time step
+      real dtprec(n_partmax)
 c Timestep (unperturbed).
       real dt
 c Iregion where particles belong. Obsolete.
       integer iregion_part
 c Control of diagnostics
       logical ldiags
-c Rho at infinity
+c Rho at infinity totalled over processes
       real rhoinf
 c Number of reinjections this step
       integer nrein
@@ -27,8 +29,13 @@ c Number of independent processors
       integer numprocs
 c Number of reinjections at each step (if non-zero)
       integer ninjcomp
+c Rho at infinity per processor, relevant only in setup.
+      real ripernode
+c Factor by which we relax the rhoinf calculation. 1 immediate, 0 never.
+      real crelax
       common/particles/n_part,x_part,if_part,iregion_part,ioc_part
-     $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
+     $     ,dtprec,dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
+     $     ,ripernode,crelax
 
 c Orbit plotting storage for tracking the first norbits orbits.
       integer nobsmax,norbits,nstepmax

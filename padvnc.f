@@ -54,11 +54,13 @@ c      write(*,*)'Setting averein in padvnc.',phirein
       nlost=0
       iocthis=0
       n_part=0
+      nsubc=0
+      nwmax=20
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 c At most do over all particle slots. But generally we break earlier.
       do i=1,n_partmax
          dtremain=0.
-         dtprec=dt
+c         dtprec(i)=dt
          dtpos=dt
 c=================================
 c Decide nature of this slot
@@ -80,13 +82,50 @@ c================ Occupied Slot Treatment =================
 c Occupied slot. Get its region
          iregion=insideall(ndims,x_part(1,i))
  100     continue
+c--------------------------------------
+c Check the fraction data is not stupid and complain if it is.
+c Ought not to be necessary, but this is a safety check. 
+         if(x_part(ndimsx2+1,i).eq.0. .and.
+     $        x_part(ndimsx2+2,i).eq.0. .and.
+     $        x_part(ndimsx2+3,i).eq.0.) then
+            write(*,*)'Zero fractions',i,ioc_part,if_part(i)
+     $           ,nrein,ninjcomp
+         endif
+c---------------------------------
+c Get the ndims field components at this point. 
+c We only use x_part information for location. So we need to pass
+c the region information.
+         f2=0
+         do idf=1,ndims
+            call getfield(ndims,cij(ic1),u,iLs
+     $           ,xn(ixnp(idf)+1),idf,x_part(ndimsx2+1,i)
+     $           ,imaskregion(iregion),field(idf))
+            if(.not.abs(field(idf)).lt.fieldtoolarge)then
+               write(*,*)'Field corruption(?)',i,idf,field
+     $              ,(x_part(kk,i),kk=1,3*ndims)
+            endif
+            f2=f2+field(idf)**2
+         enddo
+         f1=sqrt(f2)
+c Example of testing code: the few-argument field evaluator.
+c                  call fieldatpoint(x_part(1,i),u,cij,iLs,fieldp)
+c                  if(fieldp(2).ne.field(2))then
+c                     write(*,'(i5,a,6f10.6)')i,' Point-field:',
+c     $                    fieldp,((fieldp(j)-field(j)),j=1,ndims)
+c--------------------------------------
 c Subcycle restart.
 c---------- Subcycling ----------------
-c One might have a conditional test to set subcycling for this particle.
-         if(subcycle.ne.0)then
-            dtc=subcycle*dt
+         if(subcycle.ne.0)then            
+c One might have a conditional test to set subcycling for this particle
+c such as this automatic one based on avoiding excessive acceleration.
+            dtc=dt/max(1,anint(f1*dt/subcycle))
             if(dtc.lt.dtpos)then
 c Take sub-step.
+               nsubc=nsubc+1
+c               if(mod(nsubc,nwmax).eq.0)then
+c                  write(*,'(''Subcycle'',i7,6f8.4)')i,f1,dtc
+c     $                 ,x_part(1,i),x_part(2,i),x_part(3,i)
+c               endif
                dtremain=dtpos+dtremain-dtc
                dtpos=dtc
             endif
@@ -104,45 +143,18 @@ c We collided during this step. Do the partial step.
                dtpos=dtc
             endif
          endif
-c--------------------------------------
-c Check the fraction data is not stupid and complain if it is.
-c Ought not to be necessary, but this is a safety check. 
-         if(x_part(ndimsx2+1,i).eq.0. .and.
-     $        x_part(ndimsx2+2,i).eq.0. .and.
-     $        x_part(ndimsx2+3,i).eq.0.) then
-            write(*,*)'Zero fractions',i,ioc_part,if_part(i)
-     $           ,nrein,ninjcomp
-         endif
-c---------------------------------
-c Get the ndims field components at this point. 
-c We only use x_part information for location. So we need to pass
-c the region information.
-         do idf=1,ndims
-            call getfield(ndims,cij(ic1),u,iLs
-     $           ,xn(ixnp(idf)+1),idf,x_part(ndimsx2+1,i)
-     $           ,imaskregion(iregion),field(idf))
-            if(.not.abs(field(idf)).lt.fieldtoolarge)then
-               write(*,*)'Field corruption(?)',i,idf,field
-     $              ,(x_part(kk,i),kk=1,3*ndims)
-            endif
-         enddo
-c Example of testing code: the few-argument field evaluator.
-c                  call fieldatpoint(x_part(1,i),u,cij,iLs,fieldp)
-c                  if(fieldp(2).ne.field(2))then
-c                     write(*,'(i5,a,6f10.6)')i,' Point-field:',
-c     $                    fieldp,((fieldp(j)-field(j)),j=1,ndims)
 
 c---------------- Particle Moving ----------------
 c Use dtaccel for acceleration. May be different from dtpos if there was
-c a reinjection or collision.
-         dtaccel=0.5*(dtpos+dtprec)
+c a subcycle, reinjection or collision last step.
+         dtaccel=0.5*(dtpos+dtprec(i))
 c Accelerate          
          do j=ndims+1,2*ndims
-            x_part(j,i)=x_part(j,i)+field(j-3)*dtaccel
+            x_part(j,i)=x_part(j,i)+field(j-ndims)*dtaccel
          enddo
 c Move
          do j=1,ndims
-            x_part(j,i)=x_part(j,i)+x_part(j+3,i)*dtpos
+            x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos
          enddo          
 
          if(lcollided)then
@@ -169,9 +181,9 @@ c The standard exit point for a particle that is active
             n_part=n_part+1
          endif
 c--------------------------------------------
-c If we haven't completed this full step, subcycle to do so.
+         dtprec(i)=dtpos
+c If we haven't completed this full step, do so.
          if(dtremain.gt.0.)then
-            dtprec=dtpos
             dtpos=dtremain
             dtremain=0.
             iregion=inewregion
@@ -191,7 +203,7 @@ c Reinjection:
 c         dtpos=dt*ran1(myid)
 c         dtpos=dtpos*ran1(myid)
          dtpos=(dtpos+dtremain)*ran1(myid)
-         dtprec=0.
+         dtprec(i)=0.
          dtremain=0.
          nlost=nlost+1
          nrein=nrein+ilaunch
@@ -238,6 +250,7 @@ c            if(myid.eq.0)write(*,*)'PROBLEM: phirein>0:',phirein
          if(ninjcomp.gt.100)write(*,*)'No reinjections'
       endif
 
+c      if(nsubc.ne.0) write(*,*)'Subcycled:',nsubc
 c      write(*,*)'Padvnc',n_part,nrein,ilaunch,ninjcomp,n_partmax
       end
 

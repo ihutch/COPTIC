@@ -570,24 +570,24 @@ c Else just leave it alone.
 c      write(*,*)'Ending rhoinfcalc',rhoinf,nrein,n_part
       end
 c*********************************************************************
-      subroutine nreincalc(dtin)
-c Given rhoinf, decide the number of reinjections per step ninjcomp
+      subroutine ninjcalc(dtin)
+c Given ripernode, decide the number of reinjections per step ninjcomp
 c for average edge potential.
       include 'plascom.f'
 c No time-averaging for now.
 c Particle information
       include 'partcom.f'
 
-c Calculate ninjcomp from rhoinf
+c Calculate ninjcomp from ripernode
       chi=min(-phirein/Ti,0.5)
-      ninjcomp=nint(rhoinf*dtin* 
+      ninjcomp=nint(ripernode*dtin* 
      $        (sqrt(Ti)*
      $        smaxflux(vd/sqrt(2.*Ti),chi)
      $        *rs**2 ))
       nrein=ninjcomp*numprocs
       if(ninjcomp.le.0)ninjcomp=1
-      n_part=int(rhoinf*4.*3.1415926*rs**3/3.)
-      rhoinf=rhoinf*numprocs
+      n_part=int(ripernode*4.*3.1415926*rs**3/3.)
+      rhoinf=ripernode*numprocs
       if(n_part.gt.n_partmax)then
          write(*,*)'ERROR. Too many particles required.'
          write(*,101)rhoinf,n_part,n_partmax

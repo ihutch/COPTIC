@@ -371,8 +371,6 @@ c Use particle information for initializing.
       save chi
       data chi/0./
 
-c The relaxation parameter on the rhoinfinity cfactor.
-      crelax=1.*Ti/(1.+Ti)
       volume=1.
       flux=0.
       do i=1,ndims_mesh
@@ -408,16 +406,16 @@ c Approximate initialization
          endif
 c Else just leave it alone.
       endif
-      write(*,*)
-      write(*,'(a,2i8,10f9.4)')
-     $ 'Ending rhoinfcalc',nrein,n_part,rhoinf
-     $     ,phirein,chi,cfactor,dtin
+c      write(*,*)
+c      write(*,'(a,2i8,10f9.4)')
+c     $ 'Ending rhoinfcalc',nrein,n_part,rhoinf
+c     $     ,phirein,chi,cfactor,dtin
 c,flux
       end
 c*********************************************************************
-      subroutine nreincalc(dtin)
-c Given rhoinf, decide the number of reinjections per step ninjcomp
-c for average edge potential.
+      subroutine ninjcalc(dtin)
+c Given ripernode, decide the number of reinjections per step ninjcomp
+c for average edge potential. This is only called at initialization.
       include 'plascom.f'
 c No time-averaging for now.
 c Particle information
@@ -426,7 +424,7 @@ c Particle information
       real area(ndims_mesh),volume,flux
       real a,td,cfactor
 c 
-c Calculate ninjcomp from rhoinf
+c Calculate ninjcomp from ripernode
       volume=1.
       flux=0.
       do i=1,ndims_mesh
@@ -446,14 +444,13 @@ c Assume vd is in the last dimension
          volume=volume*(xmeshend(i)-xmeshstart(i))
       enddo
 c Correct approximately for edge potential depression (OML).
-      chi=min(-phirein/Ti,0.5)
+      chi=crelax*min(-phirein/Ti,0.5)
       cfactor=smaxflux(vd/sqrt(2.*Ti),chi)/smaxflux(vd/sqrt(2.*Ti),0.)
-      ninjcomp=nint(rhoinf*dtin*cfactor*flux)
-
+      ninjcomp=nint(ripernode*dtin*cfactor*flux)
       nrein=ninjcomp*numprocs
       if(ninjcomp.le.0)ninjcomp=1
-      n_part=rhoinf*volume
-      rhoinf=rhoinf*numprocs
+      n_part=ripernode*volume
+      rhoinf=ripernode*numprocs
       if(n_part.gt.n_partmax)then
          write(*,*)'ERROR. Too many particles required.'
          write(*,101)rhoinf,n_part,n_partmax
@@ -461,7 +458,7 @@ c Correct approximately for edge potential depression (OML).
      $        ,'  which exceeds n_partmax=',i9)
          stop
       endif
-c      write(*,*)'Ending nreincalc',rhoinf,nrein,n_part
+c      write(*,*)'Ending ninjcalc',rhoinf,nrein,n_part
 
       end
 c********************************************************************
@@ -491,7 +488,9 @@ c********************************************************************
       subroutine avereinset(phi)
 c Null
       include 'reincom.f'
-      averein=phi
+      include 'partcom.f'
+c      averein=phi
+      averein=crelax*phi+(1.-crelax)*averein
       end
 c********************************************************************
 c Cubic interpolation. Not used.
