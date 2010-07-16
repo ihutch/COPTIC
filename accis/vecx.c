@@ -39,6 +39,7 @@ XPoint accis_path[accis_path_max];
 int accis_pathlen=0;
 /* Until svga is called, the default is that there is no display */
 int accis_nodisplay=1;
+static int accis_eye3d=9999;
 
 /* 256 color gradient globals */
 /* Use only 240 colors so that 16 are left for the 16 colors and you can
@@ -496,6 +497,16 @@ XEvent *event;
 }
 
 /* ******************************************************************** */
+/* Externally callable routine to set noeye3d return value.
+   Set to 9999 for normal eye3d behavior. */ 
+int noeye3d_(value)
+     int *value;
+{
+  if(*value>1000)accis_eye3d=9999;
+  accis_eye3d=*value;
+}
+
+/* ******************************************************************** */
 int eye3d_(value)
      int *value;
 {
@@ -505,7 +516,20 @@ int eye3d_(value)
   XEvent event; 
 
   if(accis_nodisplay){ *value=0; return 0; }
+  if(accis_eye3d == 1){ *value=0; return 0; }
   accisrefresh_();
+  /* Disabled waiting code: */
+  if(accis_eye3d != 9999){
+    if(XPending(accis_display)){
+      XPeekEvent(accis_display,&event);
+      accis_eye3d=9999;
+      if(event.type==KeyPress){
+	*value=(int)XLookupKeysym(&(event.xkey),0);
+      }
+    }else{
+      *value=accis_eye3d; return 0; 
+    }
+  }
   /*Without this, the keyboard does not focus to this window.*/
   ACCIS_SET_FOCUS;
   XtAddEventHandler(accis_drawing,ButtonPressMask,FALSE,

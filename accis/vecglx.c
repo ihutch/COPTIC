@@ -36,6 +36,7 @@ static XEvent                  accis_xev;
 static Colormap accis_colormap;
 static int accis_depth;
 static int accis_listing=0;
+static int accis_eye3d=9999;
 
 /* Static maximum number of points in path */
 #define accis_path_max 4000
@@ -537,6 +538,15 @@ XEvent *event;
 }
 
 /* ******************************************************************** */
+/* Externally callable routine to set noeye3d return value.
+   Set to 9999 to disable. */ 
+int noeye3d_(value)
+     int *value;
+{
+  if(*value>1000)accis_eye3d=9999;
+  accis_eye3d=*value;
+}
+/* ******************************************************************** */
 int eye3d_(value)
      int *value;
 {
@@ -548,10 +558,23 @@ int eye3d_(value)
   if(accis_nodisplay){ *value=0; return 0; }
   glEndList(); /* Close the drawing list started in svga.*/
   accis_listing=0;
+  if(accis_eye3d == 1){ *value=0; return 0; }
 
   XFlush(accis_display);
-  ACCIS_SET_FOCUS;
   glXSwapBuffers(accis_display, accis_window);
+  /* Disabled waiting code: */
+  if(accis_eye3d != 9999){
+    if(XPending(accis_display)){
+      XPeekEvent(accis_display,&event);
+      if(event.type==KeyPress){
+	*value=(int)XLookupKeysym(&(event.xkey),0);
+	accis_eye3d=9999;
+      }
+    }else{
+      *value=accis_eye3d; return 0; 
+    }
+  }
+  ACCIS_SET_FOCUS;
   /* Wait for a button press */
   do{
     XNextEvent(accis_display,&event);
@@ -567,6 +590,7 @@ int eye3d_(value)
   }while(event.type != ButtonPress && event.type != KeyPress);
   /* Recognize KeyPress as sign to exit.*/
   if(event.type == KeyPress) {
+    if(XPending(accis_display)) XPeekEvent(accis_display,&event);
     *value=(int)XLookupKeysym(&(event.xkey),0);
   /* Get all the queued contiguous KeyPress events so we don't over
      run the rotation when the key is lifted. */

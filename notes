@@ -4413,4 +4413,27 @@ An integer subcycle criterion would then be
    dtc = dt/max(1, int(f*dt/subcycle))
 
 This seems to work. Arrange to print out the number of particles subcycled,
-if non-zero.    
+if non-zero. 
+
+13 July 2010
+
+Tried out v.5 -rx0. case on 8-processor machine. Its oscillations are
+substantially reduced c.f. the previous problems, but not gone away.
+
+Found a bug in fluxdata reading and writing. This is because we need
+the address of the next (unused) ff_data slot, to determine how much
+ff_data to read/write. I had hacked it to omit the last. Now I need to
+make it right. Trouble is with old data flux data files. Do I want to
+be able to read them? I think it's not worth it. Assume for now that I don't. 
+But put comments in about how to recover the old data files.
+
+15 July 2010
+
+The -rx0 without holding the leading edge potential fixed has rather low
+edge oscillation problems and seems to run reasonably convincingly. 
+
+However even at -p0.2 we have not apparently reached a linear regime.
+
+Set going the -v0.8 cases.
+
+Some code clean-up, especially of the main program. 

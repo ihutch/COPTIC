@@ -72,6 +72,11 @@ c For all the objects being flux tracked.
      $              ,i=1,nf_posno(nf_gz,k))
             endif
          enddo
+         kk=nf_step
+            write(*,'(a,i3,a,f10.4,a)')'Step(',kk,') rho=',ff_rho(kk)
+     $           ,'  Flux data'
+            write(*,'(10f8.2)')(ff_data(nf_address(nf_flux,k,kk)+i-1)
+     $           ,i=1,nf_posno(nf_flux,k))
          endif
          plotdata(i,j)=pressforce(j,k,i)
       

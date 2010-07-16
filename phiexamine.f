@@ -26,6 +26,7 @@ c silence warnings:
       write(*,*)(',',xn(ixnp(kk)+1),xn(ixnp(kk+1)),kk=1,3)
 
       ifix=1
+c      call noeye3d(0)
       call sliceGweb(ifull,iuds,u,Li,zp,
      $     ixnp,xn,ifix,'potential:'//'!Ay!@')
 

@@ -66,6 +66,9 @@ c     Plot the surface. With scaling 1. Web color 6, axis color 7.
          write(*,*)
      $        ' c: contour plane position. w: toggle web. r/e: rotate.'
      $        ,' a: toggle aspect'
+         write(*,*)
+     $        ' d: disable interface; run continuously.',
+     $        ' depress f: to interrupt running.'
  19   continue
  21   call pltinit(0.,1.,0.,1.)
 c Set the plotting arrays for fixed dimension ifix.
@@ -201,6 +204,7 @@ c User interface interpret key-press.
       if(isw.eq.65362 .and. n1.lt.iuds(ifix)) n1=n1+1
       if(isw.eq.ichar('q')) goto 23
       if(isw.eq.ichar('a')) laspect=.not.laspect
+      if(isw.eq.ichar('d')) call noeye3d(0)
       if(isw.eq.ichar('s')) jsw=1 + 256*6 + 256*256*7
       if(isw.eq.ichar('p'))then
          call pfset(3)

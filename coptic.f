@@ -1,18 +1,12 @@
-      program ccpic
-c Main program of cartesian coordinate pic code.
+      program coptic
+c Main program of cartesian coordinate, oblique boundary, pic code.
 
       include 'mpif.h'
       include 'objcom.f' 
 c Storage array spatial count size
-      integer Li,ni,nj,nk
-c      parameter (Li=100,ni=40,nj=40,nk=20)
-c      parameter (Li=100,ni=60,nj=60,nk=60)
-c      parameter (Li=100,ni=16,nj=16,nk=16)
-      parameter (Li=100,ni=32,nj=32,nk=32)
-c      parameter (Li=100,ni=64,nj=64,nk=64)
-c      parameter (Li=130,ni=128,nj=128,nk=128)
-c      parameter (Li=6,ni=6,nj=6,nk=6)
-c      parameter (Li=100,ni=26,nj=16,nk=20)
+      integer Li
+c      parameter (Li=100,ni=32,nj=32,nk=32)
+      parameter (Li=100)
       parameter (Li2=Li*Li,Li3=Li2*Li)
       real u(Li,Li,Li),q(Li,Li,Li),cij(2*ndims_sor+1,Li,Li,Li)
 c Running averages.
@@ -59,16 +53,15 @@ c Collision common data
       character*100 fluxfilename
       character*100 objfilename
       character*100 argument
-      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
+c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
-      logical lrestart,lmyidhead
+      logical lrestart,lmyidhead,lphiplot,ldenplot
 c      integer ixp(ndims), xfrac(ndims)
       
 c Diagnostics
 c      real usave(Li,Li,Li),error(Li,Li,Li),cijp(2*ndims_sor+1,Li,Li)
       real zp(Li,Li)
 c Set up the structure vector.
-c      data iLs/1,Li,(Li*Li),(Li*Li*Li)/
       data iLs/1,Li,Li2,Li3/
 c Mesh and mpi parameter defaults:
       data idims/nblksi,nblksj,nblksk/
@@ -79,6 +72,7 @@ c Data for plotting etc.
       data iobpl/0/
       data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot/
      $     .false.,.false.,.false.,.false.,.false./
+      data lphiplot,ldenplot/.true.,.true./
 c      data thetain,nth/.1,1/
       data lrestart/.false./
 
@@ -87,7 +81,7 @@ c Initialize the fortran random number generator with a fixed number
 c for solutions of volumes etc. Each node does the same.
       rs=ran1(-1)
 c Defaults:
-c Determine what reinjection scheme we used.
+c Determine what reinjection scheme we use. Sets rjscheme.
       include 'REINJECT.f'
 c Fixed number of particles rather than fixed injections.
       ninjcomp=0
@@ -137,6 +131,8 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-gt')ltestplot=.true.
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
          if(argument(1:3).eq.'-gs')lsliceplot=.true.
+         if(argument(1:3).eq.'-gd')ldenplot=.false.
+         if(argument(1:3).eq.'-gp')lphiplot=.false.
          if(argument(1:3).eq.'-gi')linjplot=.true.
          if(argument(1:3).eq.'-gf')read(argument(4:),*,err=201)ifplot
          if(argument(1:3).eq.'-go')read(argument(4:),*,err=201)norbits
@@ -228,6 +224,7 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
       write(*,301)' -gs   Plot slices of solution potential, density. '
+      write(*,301)' -gd -gp Turn off slicing of density, potential. '
       write(*,301)' -gf   set quantity plotted for flux evolution and'//
      $     ' final distribution. [',ifplot
       write(*,301)' -gc   set wireframe [& stencils(-)] mask.'//
@@ -447,10 +444,10 @@ c Convert psums to charge, q. Remember external psumtoq!
 
          if(lmyidhead)write(*,'(i4.4,i4,$)')nf_step,ierr
          if(lsliceplot)then
-            call sliceGweb(ifull,iuds,u,Li,zp,
-     $        ixnp,xn,ifix,'potential:'//'!Ay!@')
-            call sliceGweb(ifull,iuds,q,Li,zp,
+            if(ldenplot)call sliceGweb(ifull,iuds,q,Li,zp,
      $        ixnp,xn,ifix,'density: n')
+            if(lphiplot)call sliceGweb(ifull,iuds,u,Li,zp,
+     $        ixnp,xn,ifix,'potential:'//'!Ay!@')
          endif
 
          if(nf_step.eq.ickst) then

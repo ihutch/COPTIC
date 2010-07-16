@@ -403,6 +403,7 @@ c If quantity asked for is not available, do nothing.
             tdur=tdur+ff_dt(is)
             rinf=rinf+ff_rho(is)*ff_dt(is)
          endif
+c         write(*,*)'step',is,' fluxofstep',fluxofstep(is)
       enddo
       tot=tot/tdur
       rinf=rinf/tdur
@@ -472,10 +473,10 @@ c This write sequence must be exactly that read below.
       write(22)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_posdim)
      $     ,i=1,mf_quant(j)),j=1,mf_obj)
       write(22)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
-     $     k=1-nf_posdim,nf_step)
+     $     k=1-nf_posdim,nf_step+1)
 c This and three other places:
-c      write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
-      write(22)(ff_data(i),i=1,nf_address(1,1,nf_step)-1)
+c      write(*,*)nf_step,'nf_address',(nf_address(1,1,i),i=1,nf_step+1)
+      write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
 
       write(22) fieldforce,pressforce,partforce,charge_ns
       close(22)
@@ -500,13 +501,16 @@ c*****************************************************************
       read(23)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
       read(23)(ff_rho(k),k=1,nf_step)
       read(23)(ff_dt(k),k=1,nf_step)
-c      read(23)((nf_posno(i,j),i=1,mf_quant),j=1,mf_obj)
       read(23)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_posdim)
      $     ,i=1,mf_quant(j)),j=1,mf_obj)
       read(23)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
-     $     k=1-nf_posdim,nf_step)
-      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step)-1)
-
+     $     k=1-nf_posdim,nf_step+1)
+      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
+c If compatibility with flux files earlier than July 10 is required
+c use the following version and ignore the last step.
+c      read(23)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
+c     $     k=1-nf_posdim,nf_step)
+c      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step)-1)
       read(23) fieldforce,pressforce,partforce,charge_ns
       close(23)
 
