@@ -39,8 +39,8 @@ c      slpD=-1.e-5
 c      call mditerate(ndims,ifull,iuds,bdyslopeDh,u,ipoint)
 c Mach boundary condition for drift vd.
       slpD=vd
-c Face 3 has phi=0.
-      islp=8
+c Make Face 3 phi=0.
+c      islp=8
       call mditerate(ndims,ifull,iuds,bdymach,u,ipoint)
       end
 c**********************************************************************
