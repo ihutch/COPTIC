@@ -1,9 +1,9 @@
 c*******************************************************************
 c General slicing routine with web projection.
-      subroutine sliceGweb(ifull,iuds,u,nw,zp,ixnp,xn,ifix,utitle)
+      subroutine sliceGweb(ifull,iuds,u,nw,zp,ixnp,xn,idfix,utitle)
 c Plot web-projected and/or projected contour representations 
 c of quantity u on slices with
-c fixed values of dimension ifix.
+c fixed values of dimension idfix.
 c The full dimensions of arrays u are
       parameter(ndims=3,nd2=2*ndims)
       integer ifull(ndims)
@@ -21,8 +21,8 @@ c   ixnp(id)+1 to ixnp(id)+iuds(id) [and ixnp(id+1)-ixnp(id)>=iuds(id)]
       integer ixnp(ndims+1)
       real xn(*)
 c The fixed dimension which is chosen to start, and returned after, is:
-      integer ifix
-c If ifix<0, then don't maintain aspect ratio.
+      integer idfix
+c If idfix<0, then don't maintain aspect ratio.
 c The plotted quantity title is
       character*(*) utitle
 c Needed for perspective plot
@@ -43,15 +43,16 @@ c Tell that we are looking from the top by default.
       data ze1/1./icontour/1/iweb/1/iback/0/
       data cs/.707/sn/.707/
 
-      if(ifix.lt.0)then
+      if(idfix.lt.0)then
          laspect=.false.
-         ifix=abs(ifix)
+         idfix=abs(idfix)
       endif
-      if(ifix.lt.1 .or. ifix.gt.ndims)ifix=ndims
+      if(idfix.lt.1 .or. idfix.gt.ndims)idfix=ndims
       ips=0
       irotating=0
+      iclipping=0
 c Initial slice number
-      n1=iuds(ifix)/2
+      n1=iuds(idfix)/2
 c     Plot the surface. With scaling 1. Web color 6, axis color 7.
       jsw=1 + 256*6 + 256*256*7
       call accisgradinit(64000,0,0,-64000,128000,64000)
@@ -60,9 +61,12 @@ c     Plot the surface. With scaling 1. Web color 6, axis color 7.
          icontour=1
          lfirst=.false.
  20      write(*,*)' ======== Slice plotting interface:',
-     $        ' up/down arrows change slice.'
-         write(*,*) ' l/r arrows change dimension.',
+     $        '  arrows up/down: change slice.'
+         write(*,*)
+     $        ' arrows l/r: change dimension.',
      $        ' s: rescale. p: print. Drag mouse to rotate.'
+         write(*,*)' i/o: move eye in/out.'
+     $        ,' (jkl;) (m,./): control plotting extent in 2 axes.'
          write(*,*)
      $        ' c: contour plane position. w: toggle web. r/e: rotate.'
      $        ,' a: toggle aspect'
@@ -70,41 +74,54 @@ c     Plot the surface. With scaling 1. Web color 6, axis color 7.
      $        ' d: disable interface; run continuously.',
      $        ' depress f: to interrupt running.'
  19   continue
+c Start of controlled plotting loop.
  21   call pltinit(0.,1.,0.,1.)
-c Set the plotting arrays for fixed dimension ifix.
-      idp1=mod(ifix,3)+1
-      idp2=mod(ifix+1,3)+1
-      nf1=iuds(idp1)
-      call iwrite(idp1,iwidth,cxlab)
-      nf2=iuds(idp2)
-      if(nf2*nf1.gt.nwksp)then
-         write(*,101)nwksp,nf1,nf2
- 101     format('sliceGweb error: need bigger nwksp',i6,
-     $        ' smaller than',i4,' x',i4)
-         return
+c Set the plotting arrays for fixed dimension idfix.
+      idp1=mod(idfix,3)+1
+      idp2=mod(idfix+1,3)+1
+      if(iclipping.eq.0)then
+c Plot the full used array.
+         nf1=iuds(idp1)
+         nf2=iuds(idp2)
+         nff=iuds(idfix)
+         if1=1
+         if2=1
+         iff=1
+         if(nf2*nf1.gt.nwksp)then
+            write(*,101)nwksp,nf1,nf2
+ 101        format('sliceGweb error: need bigger nwksp',i6,
+     $           ' smaller than',i4,' x',i4)
+            return
+         endif
       endif
-c      xdp1=10.
-c      xdp2=20.
-      xdp1=xn(ixnp(idp1)+nf1)-xn(ixnp(idp1)+1)
-      xdp2=xn(ixnp(idp2)+nf2)-xn(ixnp(idp2)+1)
-      call iwrite(idp2,iwidth,cylab)
+      xdp1=xn(ixnp(idp1)+nf1)-xn(ixnp(idp1)+if1)
+      xdp2=xn(ixnp(idp2)+nf2)-xn(ixnp(idp2)+if2)
+c      write(*,*)'nf2,if2,xdp2',nf2,if2,xdp2
 c Only works for 3-D in present implementation.
 c Could be fixed to be general, I suppose.
-      do i=1,nf1
-         do j=1,nf2
-            if(ifix.eq.1)then
+      do i=if1,nf1
+         do j=if2,nf2
+            if(idfix.eq.1)then
                zp(i,j)=u(n1,i,j)
-            elseif(ifix.eq.2)then
+            elseif(idfix.eq.2)then
                zp(i,j)=u(j,n1,i)
-            elseif(ifix.eq.3)then
+            elseif(idfix.eq.3)then
                zp(i,j)=u(i,j,n1)
             endif
          enddo
       enddo
 
+c 3D plot ranges.
+      xmin=xn(ixnp(idp1)+if1)
+      xmax=xn(ixnp(idp1)+nf1)
+      ymin=xn(ixnp(idp2)+if2)
+      ymax=xn(ixnp(idp2)+nf2)
+      zmin=xn(ixnp(idfix)+iff)
+      zmax=xn(ixnp(idfix)+nff)
 c Web drawing. First call is needed to set scaling.
 c      write(*,*)'jsw=',jsw
       if(iweb.ne.0)then
+c Old buggy setting, only works for centered cube.
          if(laspect)then
             if(xdp2.gt.xdp1)then
                yc=.3
@@ -119,13 +136,18 @@ c      write(*,*)'jsw=',jsw
             zc=.2
             call setcube(xc,yc,zc,.5,.4)
          endif
-         call hidweb(xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
-     $        zp,nw,nf1,nf2,jsw)
+c Rescale x and y (if necessary), but not z.
+c         if(iclipping.ne.0)
+         call scale3(xmin,xmax,ymin,ymax,wz3min,wz3max)
+         call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
+     $        zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
       endif
 c Use this scaling until explicitly reset.
       jsw=0 + 256*6 + 256*256*7
-      write(form1,'(''Dimension '',i1,'' Plane'',i4)')ifix,n1
+      write(form1,'(''Dimension '',i1,'' Plane'',i4)')idfix,n1
       call drwstr(.1,.02,form1)
+      call iwrite(idp1,iwidth,cxlab)
+      call iwrite(idp2,iwidth,cylab)
       call ax3labels('axis-'//cxlab,'axis-'//cylab,utitle)
 
 c Projected contouring.
@@ -133,15 +155,9 @@ c Projected contouring.
 c       Draw a contour plot in perspective. Need to reset color anyway.
          call color(4)
          call axregion(-scbx3,scbx3,-scby3,scby3)
-         xmin=xn(ixnp(idp1)+1)
-         xmax=xn(ixnp(idp1)+iuds(idp1))
-         ymin=xn(ixnp(idp2)+1)
-         ymax=xn(ixnp(idp2)+iuds(idp2))
-         zmin=xn(ixnp(ifix)+1)
-         zmax=xn(ixnp(ifix)+iuds(ifix))
          call scalewn(xmin,xmax,ymin,ymax,.false.,.false.)
 c Calculate place of plane. 
-         zplane=scbz3*(-1+(xn(ixnp(ifix)+n1)-zmin)*2./(zmax-zmin))
+         zplane=scbz3*(-1+(xn(ixnp(idfix)+n1)-zmin)*2./(zmax-zmin))
 c accis perspective corner for axes and cube.
          icorner=igetcorner()
          if(iweb.eq.0)then
@@ -165,8 +181,9 @@ c Get back current eye position xe1 etc.
          if(icontour.eq.2)call hdprset(-3,zplane)
          if(icontour.eq.3)call hdprset(-3,-sign(scbz3,ze1))
 c Contour without labels, with coloring, using vector axes
-         call contourl(zp,pp,nw,nf1,nf2,cl,icl,
-     $        xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),17)
+         call contourl(zp(if1,if2),pp,nw,
+     $        nf1+1-if1,nf2+1-if2,cl,icl,
+     $        xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),17)
          call ticlabtog()
          call axis()
          call ticlabtog()
@@ -175,8 +192,8 @@ c Contour without labels, with coloring, using vector axes
       endif
 
       if(iweb.eq.1.and.icontour.eq.3)then
-         call hidweb(xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
-     $        zp,nw,nf1,nf2,jsw)
+         call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
+     $        zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
 c This was necessary when hidweb used to change jsw.
 c         jsw=0 + 256*6 + 256*256*7
       endif
@@ -198,10 +215,12 @@ c         call glfront()
 c Limit framing rate to 30fps.
       call usleep(15000)
 c User interface interpret key-press.
-      call eye3d(isw)
+ 24   call eye3d(isw)
+c      write(*,*)'isw',isw
+      if(isw.eq.ichar('f')) goto 24
       if(isw.eq.0) goto 23
       if(isw.eq.65364 .and. n1.gt.1) n1=n1-1
-      if(isw.eq.65362 .and. n1.lt.iuds(ifix)) n1=n1+1
+      if(isw.eq.65362 .and. n1.lt.iuds(idfix)) n1=n1+1
       if(isw.eq.ichar('q')) goto 23
       if(isw.eq.ichar('a')) laspect=.not.laspect
       if(isw.eq.ichar('d')) call noeye3d(0)
@@ -210,14 +229,49 @@ c User interface interpret key-press.
          call pfset(3)
          ips=3
       endif
+c Change fixed dimension, remove clipping.
       if(isw.eq.65361)then
-         ifix=mod(ifix+1,3)+1
-         n1=iuds(ifix)/2
+         idfix=mod(idfix+1,3)+1
+         iclipping=0
+         n1=iuds(idfix)/2
          jsw=1 + 256*6 + 256*256*7
       elseif(isw.eq.65363)then
-         ifix=mod(ifix,3)+1
-         n1=iuds(ifix)/2
+         idfix=mod(idfix,3)+1
+         iclipping=0
+         n1=iuds(idfix)/2
          jsw=1 + 256*6 + 256*256*7
+      endif
+c Adjust clipping
+      if(isw.eq.47)then
+c /
+         iclipping=1
+         nf2=min(nf2+1,iuds(idp2))
+      elseif(isw.eq.46)then
+c .
+         iclipping=1
+         nf2=max(nf2-1,if2+1)
+      elseif(isw.eq.44)then
+c ,
+         iclipping=1
+         if2=min(if2+1,nf2-1)
+      elseif(isw.eq.ichar('m'))then
+c m
+         iclipping=1
+         if2=max(if2-1,1)
+      elseif(isw.eq.ichar('l'))then
+c l
+         iclipping=1
+         nf1=max(nf1-1,if1+1)
+      elseif(isw.eq.59)then
+c ;
+         iclipping=1
+         nf1=min(nf1+1,iuds(idp1))
+      elseif(isw.eq.ichar('j'))then
+         iclipping=1
+         if1=max(if1-1,1)
+      elseif(isw.eq.ichar('k'))then
+         iclipping=1
+         if1=min(if1+1,nf1-1)
       endif
       if(isw.eq.ichar('h'))goto 20
       if(isw.eq.ichar('c'))icontour=mod(icontour+1,4)
@@ -260,6 +314,7 @@ c         write(*,*)'irotating',irotating,xe1,ye1,ze1,cs,sn
 c Must tell to look at zero.
          call trn32(0.,0.,0.,xe1,ye1,ze1,1)
          irotating=irotating-1
+         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
       endif
 c End of user interface.
 c------------------------------------

@@ -13,11 +13,12 @@
       character*20 string
 
       real oneoverr(100),ro(100),cl(100)
+      real xl(2),yl(2)
 c 
 c silence warnings:
       fluxfilename=' '
 
-      call examargs
+      call examargs(rp)
       
       call array3read(phifilename,ifull,iuds,u,ierr)
       if(ierr.eq.1)stop
@@ -235,6 +236,7 @@ c         write(*,*)' Contours',nc,(cl(k),k=1,nc)
          iconsw=1+64
          call pltinaspect(-rval(nr),rval(nr),
      $        xn(ixnp(3)+1),xn(ixnp(3)+iuds(3)))
+         call color(15)
          call contourl(rzdist,ppath,nr+1,nr+1,iuds(3),
      $        cl,nc,rval,xn(ixnp(3)+1),iconsw)
          call contourl(rzdist,ppath,nr+1,nr+1,iuds(3),
@@ -247,6 +249,34 @@ c         write(*,*)'ipow',ipow
          call boxtitle('!Af!@-contours ('//string(1:iwd)
      $        //'T!de!d spaced)')
          call gradlegend(-phimax,phimax,-.6,0.,-.6,1.,-.04,.false.) 
+c Indicate rectangle limits.
+         yl(1)=xn(ixnp(3)+1)
+         yl(2)=xn(ixnp(3)+iuds(3))
+         call dashset(2)
+         xl(1)=rx
+         xl(2)=rx
+         call polyline(xl,yl,2)
+         xl(1)=-rx
+         xl(2)=-rx
+         call polyline(xl,yl,2)
+         if(ry.ne.rx)then
+            xl(1)=ry
+            xl(2)=ry
+            call polyline(xl,yl,2)
+            xl(1)=-ry
+            xl(2)=-ry
+            call polyline(xl,yl,2)
+         endif
+         call dashset(0)
+         xl(1)=0.
+         xl(2)=0.
+         call polyline(xl,yl,2)
+         call fwrite(vd,iwd,2,string)
+         call jdrwstr(.02,.31,'v!dd!d='//string(1:iwd),1.)
+         call fwrite(debyelen,iwd,1,string)
+         call jdrwstr(.02,.25,'!Al!@!dDe!d='//string(1:iwd),1.)
+         call fwrite(phip,iwd,2,string)
+         call jdrwstr(.02,.28,'!Af!@!dp!d='//string(1:iwd),1.)
          call pltend()
 
       endif
@@ -256,7 +286,7 @@ c         write(*,*)'ipow',ipow
 
 
 c*************************************************************
-      subroutine examargs()
+      subroutine examargs(rp)
       include 'examdecl.f'
 
       do i=1,ndims
@@ -277,6 +307,8 @@ c Deal with arguments
      $        read(argument(14:),'(a)',err=201)objfilename
          if(argument(1:2).eq.'-f')
      $        read(argument(3:),'(a)',err=201)phifilename
+         if(argument(1:2).eq.'-r')
+     $        read(argument(3:),'(f8.4)',err=201)rp
          if(argument(1:2).eq.'-h')goto 203
          if(argument(1:2).eq.'-?')goto 203
          else

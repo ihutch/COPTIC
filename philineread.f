@@ -6,12 +6,13 @@
       character*50 string
       integer ild,ilinechoice(ndims_mesh),ip(ndims_mesh)
       real philine(Li),xline(Li)
-      real darray(20),pmax(20),punscale(20)
+      real darray(20),pmax(20),punscale(20),rp(20)
 
       logical lrange,lwrite
       common /linecom/xmin,xmax,ymin,ymax,lrange,lwrite
 c 
 c silence warnings:
+      zp(1,1,1)=0.
       fluxfilename=' '
       xmin=0.
       ymin=0.
@@ -19,7 +20,7 @@ c silence warnings:
       ymax=0.
       lwrite=.false.
 
-      call lineargs(filenames,nf,ild,ilinechoice)
+      call lineargs(filenames,nf,ild,ilinechoice,rp)
       write(*,*)'Filenames',nf
 
       nplot=0
@@ -46,15 +47,15 @@ c            write(*,*)iuds(ild)
                xline(i)=xn(ixnp(ild)+i)/debyelen
 c               philine(i)=u(ip(1),ip(2),ip(3))
 c Assuming the probe to be of radius 1 unit, normalized phi:
-               philine(i)=u(ip(1),ip(2),ip(3))/abs(phip/debyelen)
-c     $              -phip/min(1.,abs(xn(ixnp(ild)+i)))
-c     $              *exp(-abs(xline(i)))
+c               philine(i)=u(ip(1),ip(2),ip(3))/abs(phip/debyelen)
+               philine(i)=u(ip(1),ip(2),ip(3))
+     $              /abs(rp(inm)*phip/debyelen)
                if(lwrite)write(*,'(2f10.5)')xline(i),philine(i)
             enddo
             call minmax(philine,iuds(ild),pmin,pa)
             pmax(inm)=pa
-            punscale(inm)=pmax(inm)*abs(phip/debyelen)
-            darray(inm)=abs(phip/debyelen)
+            punscale(inm)=pmax(inm)*abs(rp(inm)*phip/debyelen)
+            darray(inm)=abs(rp(inm)*phip/debyelen)
 
             call winset(.true.)
             call pfset(3)
@@ -86,7 +87,8 @@ c               call labeline(xline,philine,iuds(ild),string,iwd)
             string=' !Af!@!dp!d='
             call fwrite(phip,iwd,2,string(lentrim(string)+1:))
             string(lentrim(string):)='@'
-            call fwrite(1./debyelen,iwd,2,string(lentrim(string)+1:))
+            call fwrite(rp(inm)/debyelen,iwd,2,
+     $           string(lentrim(string)+1:))
             call legendline(.5,(.01+inm*.05),0,
      $           string(1:lentrim(string)))
             nplot=nplot+1
@@ -120,9 +122,10 @@ c         write(*,*)ild,ilinechoice
       end
 
 c*************************************************************
-      subroutine lineargs(filenames,nf,ild,ilinechoice)
+      subroutine lineargs(filenames,nf,ild,ilinechoice,rp)
       include 'examdecl.f'
       character*100 filenames(Li)
+      real rp(20)
       integer nf,ild,ilinechoice(ndims_mesh)
       integer idj(ndims_mesh)
 
@@ -144,6 +147,7 @@ c Defaults and silence warnings.
          idj(id)=0
          ilinechoice(id)=0
       enddo
+      rread=1.
       
 
 c Deal with arguments
@@ -172,6 +176,8 @@ c Deal with arguments
 
             if(argument(1:13).eq.'--objfilename')
      $           read(argument(14:),'(a)',err=201)objfilename
+            if(argument(1:2).eq.'-r')
+     $           read(argument(3:),'(f8.4)',err=201)rread
             if(argument(1:2).eq.'-f')
      $           read(argument(3:),'(a)',err=201)phifilename
             if(argument(1:2).eq.'-h')goto 203
@@ -180,10 +186,12 @@ c Deal with arguments
             read(argument(1:),'(a)',err=201)phifilename
             nf=nf+1
             filenames(nf)(1:)=phifilename
+            rp(nf)=rread
          endif
       enddo
 
-      write(*,*)ild,ilinechoice,' ',(filenames(i)(1:30),i=1,nf)
+      write(*,*)ild,ilinechoice,' ',
+     $     (rp(i),' ',filenames(i)(1:30),i=1,nf)
       goto 202
 c------------------------------------------------------------
 c Help text
