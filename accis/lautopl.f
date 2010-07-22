@@ -54,6 +54,6 @@ c         Automatic symbol plotting of Arrays*/
       logical lx,ly
       call lautoinit(x,y,n,lx,ly)
       call axis()
-      call polymark(x,y,n,isym)
+      if(isym.gt.0)call polymark(x,y,n,isym)
       return
       end

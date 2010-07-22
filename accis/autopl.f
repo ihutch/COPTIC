@@ -56,7 +56,7 @@ c    Automatic symbol plotting of Arrays*/
       integer n,isym
       call autoinit(x,y,n)
       call axis()
-      call polymark(x,y,n,isym)
+      if(isym.gt.0)call polymark(x,y,n,isym)
       return
       end
 c******************************************************************
