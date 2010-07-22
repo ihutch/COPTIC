@@ -22,7 +22,7 @@ c silence warnings:
 
 c      write(*,*)nf,idl
       call lineargs(filenames,nf,ild,ilinechoice,rp)
-c      write(*,*)'Filenames',nf
+      write(*,*)'Filenames',nf
 
       nplot=0
       do inm=1,nf
@@ -105,10 +105,23 @@ c         write(*,*)ild,ilinechoice
          call pltend()
          call dashset(0)
          call lautomark(darray,pmax,nplot,.true.,.true.,0)
+         imark=1
          do k=1,nplot
-c            write(*,*)nint(rp(k)/.2)
-            call polymark(darray(k),pmax(k),1,nint(rp(k)/.2))
+            call color(imark)
+            if(k.eq.1)then
+               call fwrite(rp(k),iwd,2,string)
+               call legendline(.1,.02+.05*imark,imark,
+     $              ' r!dp!d='//string(1:lentrim(string)))
+            elseif(rp(k).ne.rp(k-1))then
+               imark=imark+1
+               call color(imark)
+               call fwrite(rp(k),iwd,2,string)
+               call legendline(.1,.02+.05*imark,imark,
+     $              ' r!dp!d='//string(1:lentrim(string)))
+            endif
+            call polymark(darray(k),pmax(k),1,imark)
          enddo
+         call color(15)
          call axlabels('|!Af!@!dp!d|r!dp!d/!Al!@'
      $        //'!A ~ !@Q/4!Ape!@!d0!d!Al!@',
      $        '!Af!@!dmax!d/(|!Af!@!dp!d|r!dp!d/!Al!@)')
@@ -118,10 +131,24 @@ c            write(*,*)nint(rp(k)/.2)
          call vecw(0.1,2.,1)
          call pltend()
          call lautomark(darray,punscale,nplot,.true.,.true.,0)
+         call color(imark)
+         imark=1
          do k=1,nplot
-c            write(*,*)nint(rp(k)/.2)
-            call polymark(darray(k),punscale(k),1,nint(rp(k)/.2))
+            call color(imark)
+            if(k.eq.1)then
+               call fwrite(rp(k),iwd,2,string)
+               call legendline(.1,.02+.05*imark,imark,
+     $              ' r!dp!d='//string(1:lentrim(string)))
+            elseif(rp(k).ne.rp(k-1))then
+               imark=imark+1
+               call color(imark)
+               call fwrite(rp(k),iwd,2,string)
+               call legendline(.1,.02+.05*imark,imark,
+     $              ' r!dp!d='//string(1:lentrim(string)))
+            endif
+            call polymark(darray(k),punscale(k),1,imark)
          enddo
+         call color(15)
          write(*,*)'punscale',(punscale(k),k=1,nplot)
          call axlabels('|!Af!@!dp!d|r!dp!d/!Al!@'
      $        //'!A ~ !@Q/4!Ape!@!d0!d!Al!@',
@@ -169,11 +196,6 @@ c Deal with arguments
             if(argument(1:2).eq.'-l')then
                read(argument(3:),*,end=11)ild,(idj(k),k=1,ndims_mesh-1)
  11            continue
-c               write(*,*)ild, idj
-               do k=1,ndims_mesh-1
-                  ilinechoice(mod(ild+k-1,ndims_mesh)+1,nf)=idj(k)
-c                  write(*,*)'nf,k,idj(k)',nf,k,idj(k)
-               enddo
             endif
             if(argument(1:2).eq.'-y')then
                read(argument(3:),*,end=12)ymin,ymax
@@ -191,12 +213,16 @@ c                  write(*,*)'nf,k,idj(k)',nf,k,idj(k)
      $           read(argument(14:),'(a)',err=201)objfilename
             if(argument(1:2).eq.'-r')
      $           read(argument(3:),'(f8.4)',err=201)rread
-            if(argument(1:2).eq.'-f')
-     $           read(argument(3:),'(a)',err=201)phifilename
             if(argument(1:2).eq.'-h')goto 203
             if(argument(1:2).eq.'-?')goto 203
+            if(argument(1:2).eq.'-f')goto 204
          else
-            read(argument(1:),'(a)',err=201)phifilename
+ 204        read(argument(1:),'(a)',err=201)phifilename
+c               write(*,*)ild, idj
+            do k=1,ndims_mesh-1
+               ilinechoice(mod(ild+k-1,ndims_mesh)+1,nf)=idj(k)
+c                  write(*,*)'nf,k,idj(k)',nf,k,idj(k)
+            enddo
             filenames(nf)(1:)=phifilename
             rp(nf)=rread
             nf=nf+1
