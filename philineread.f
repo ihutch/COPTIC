@@ -4,7 +4,7 @@
 
       character*100 filenames(Li)
       character*50 string
-      integer ild,ilinechoice(ndims_mesh),ip(ndims_mesh)
+      integer ild,ilinechoice(ndims_mesh,20),ip(ndims_mesh)
       real philine(Li),xline(Li)
       real darray(20),pmax(20),punscale(20),rp(20)
 
@@ -20,8 +20,9 @@ c silence warnings:
       ymax=0.
       lwrite=.false.
 
+c      write(*,*)nf,idl
       call lineargs(filenames,nf,ild,ilinechoice,rp)
-      write(*,*)'Filenames',nf
+c      write(*,*)'Filenames',nf
 
       nplot=0
       do inm=1,nf
@@ -39,9 +40,10 @@ c Select the lineout into the plotting arrays.
          if(ild.ne.0)then
             do k=1,ndims_mesh-1
                ip(mod(ild+k-1,ndims_mesh)+1)=
-     $              ilinechoice(mod(ild+k-1,ndims_mesh)+1)
+     $              ilinechoice(mod(ild+k-1,ndims_mesh)+1,inm)
+c               write(*,*)k,ilinechoice(mod(ild+k-1,ndims_mesh)+1,inm)
             enddo
-c            write(*,*)iuds(ild)
+c            write(*,*)'ild,ip(ild)',ild,ip(ild)
             do i=1,iuds(ild)
                ip(ild)=i
                xline(i)=xn(ixnp(ild)+i)/debyelen
@@ -96,12 +98,17 @@ c               call labeline(xline,philine,iuds(ild),string,iwd)
 
          write(*,'(a,3i4,$)')'On grid',iuds
          write(*,*)(',',xn(ixnp(kk)+1),xn(ixnp(kk+1)),kk=1,3)
+     $        ,ip
 c         write(*,*)ild,ilinechoice
       enddo
       if(nplot.gt.0)then
          call pltend()
          call dashset(0)
-         call lautomark(darray,pmax,nplot,.true.,.true.,1)
+         call lautomark(darray,pmax,nplot,.true.,.true.,0)
+         do k=1,nplot
+c            write(*,*)nint(rp(k)/.2)
+            call polymark(darray(k),pmax(k),1,nint(rp(k)/.2))
+         enddo
          call axlabels('|!Af!@!dp!d|r!dp!d/!Al!@'
      $        //'!A ~ !@Q/4!Ape!@!d0!d!Al!@',
      $        '!Af!@!dmax!d/(|!Af!@!dp!d|r!dp!d/!Al!@)')
@@ -110,7 +117,11 @@ c         write(*,*)ild,ilinechoice
          call vecw(0.01,2.,0)
          call vecw(0.1,2.,1)
          call pltend()
-         call lautomark(darray,punscale,nplot,.true.,.true.,1)
+         call lautomark(darray,punscale,nplot,.true.,.true.,0)
+         do k=1,nplot
+c            write(*,*)nint(rp(k)/.2)
+            call polymark(darray(k),punscale(k),1,nint(rp(k)/.2))
+         enddo
          write(*,*)'punscale',(punscale(k),k=1,nplot)
          call axlabels('|!Af!@!dp!d|r!dp!d/!Al!@'
      $        //'!A ~ !@Q/4!Ape!@!d0!d!Al!@',
@@ -126,7 +137,7 @@ c*************************************************************
       include 'examdecl.f'
       character*100 filenames(Li)
       real rp(20)
-      integer nf,ild,ilinechoice(ndims_mesh)
+      integer nf,ild,ilinechoice(ndims_mesh,20)
       integer idj(ndims_mesh)
 
       logical lrange,lwrite
@@ -139,13 +150,13 @@ c*************************************************************
 c Defaults and silence warnings.
       phifilename=' '
       fluxfilename=' '
-      nf=0
+      nf=1
       zp(1,1,1)=0.
       ild=0
       lrange=.false.
       do id=1,ndims_mesh
          idj(id)=0
-         ilinechoice(id)=0
+         ilinechoice(id,1)=0
       enddo
       rread=1.
       
@@ -158,8 +169,10 @@ c Deal with arguments
             if(argument(1:2).eq.'-l')then
                read(argument(3:),*,end=11)ild,(idj(k),k=1,ndims_mesh-1)
  11            continue
+c               write(*,*)ild, idj
                do k=1,ndims_mesh-1
-                  ilinechoice(mod(ild+k-1,ndims_mesh)+1)=idj(k)
+                  ilinechoice(mod(ild+k-1,ndims_mesh)+1,nf)=idj(k)
+c                  write(*,*)'nf,k,idj(k)',nf,k,idj(k)
                enddo
             endif
             if(argument(1:2).eq.'-y')then
@@ -184,14 +197,15 @@ c Deal with arguments
             if(argument(1:2).eq.'-?')goto 203
          else
             read(argument(1:),'(a)',err=201)phifilename
-            nf=nf+1
             filenames(nf)(1:)=phifilename
             rp(nf)=rread
+            nf=nf+1
          endif
       enddo
+      nf=nf-1
 
-      write(*,*)ild,ilinechoice,' ',
-     $     (rp(i),' ',filenames(i)(1:30),i=1,nf)
+c      write(*,*)ild,
+c     $     (ilinechoice(2,i),' ',rp(i),' ',filenames(i)(1:30),i=1,nf)
       goto 202
 c------------------------------------------------------------
 c Help text
