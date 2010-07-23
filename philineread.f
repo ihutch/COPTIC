@@ -104,20 +104,18 @@ c         write(*,*)ild,ilinechoice
       if(nplot.gt.0)then
          call pltend()
          call dashset(0)
+         string=' r!dp!d/!Al!@='
          call lautomark(darray,pmax,nplot,.true.,.true.,0)
          imark=1
          do k=1,nplot
+            call fwrite(rp(k)/debyelen,iwd,2,string(15:))
             call color(imark)
             if(k.eq.1)then
-               call fwrite(rp(k),iwd,2,string)
-               call legendline(.1,.02+.05*imark,imark,
-     $              ' r!dp!d='//string(1:lentrim(string)))
+               call legendline(.1,.02+.05*imark,imark,string)
             elseif(rp(k).ne.rp(k-1))then
                imark=imark+1
                call color(imark)
-               call fwrite(rp(k),iwd,2,string)
-               call legendline(.1,.02+.05*imark,imark,
-     $              ' r!dp!d='//string(1:lentrim(string)))
+               call legendline(.1,.02+.05*imark,imark,string)
             endif
             call polymark(darray(k),pmax(k),1,imark)
          enddo
@@ -125,26 +123,23 @@ c         write(*,*)ild,ilinechoice
          call axlabels('|!Af!@!dp!d|r!dp!d/!Al!@'
      $        //'!A ~ !@Q/4!Ape!@!d0!d!Al!@',
      $        '!Af!@!dmax!d/(|!Af!@!dp!d|r!dp!d/!Al!@)')
-         call vecw(0.04,3.,0)
-         call vecw(1.,.12,1)
-         call vecw(0.01,2.,0)
-         call vecw(0.1,2.,1)
+c         call vecw(0.04,3.,0)
+c         call vecw(1.,.12,1)
+c         call vecw(0.01,2.,0)
+c         call vecw(0.1,2.,1)
          call pltend()
          call lautomark(darray,punscale,nplot,.true.,.true.,0)
          call color(imark)
          imark=1
          do k=1,nplot
+            call fwrite(rp(k)/debyelen,iwd,2,string(15:))
             call color(imark)
             if(k.eq.1)then
-               call fwrite(rp(k),iwd,2,string)
-               call legendline(.1,.02+.05*imark,imark,
-     $              ' r!dp!d='//string(1:lentrim(string)))
+               call legendline(.1,.02+.05*imark,imark,string)
             elseif(rp(k).ne.rp(k-1))then
                imark=imark+1
                call color(imark)
-               call fwrite(rp(k),iwd,2,string)
-               call legendline(.1,.02+.05*imark,imark,
-     $              ' r!dp!d='//string(1:lentrim(string)))
+               call legendline(.1,.02+.05*imark,imark,string)
             endif
             call polymark(darray(k),punscale(k),1,imark)
          enddo
