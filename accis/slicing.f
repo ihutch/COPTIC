@@ -35,10 +35,13 @@ c Contour levels
 c Local variables:
       integer icontour,iweb,iback
       integer isw,jsw
+      integer iclipping
       character*(10) cxlab,cylab
       character*(30) form1
+      save nf1,nf2,nff,if1,if2,iff
       logical lfirst,laspect
       data lfirst/.true./laspect/.true./
+      data iclipping/0/jsw/0/
 c Tell that we are looking from the top by default.
       data ze1/1./icontour/1/iweb/1/iback/0/
       data cs/.707/sn/.707/
@@ -50,15 +53,15 @@ c Tell that we are looking from the top by default.
       if(idfix.lt.1 .or. idfix.gt.ndims)idfix=ndims
       ips=0
       irotating=0
-      iclipping=0
 c Initial slice number
       n1=iuds(idfix)/2
-c     Plot the surface. With scaling 1. Web color 6, axis color 7.
-      jsw=1 + 256*6 + 256*256*7
       call accisgradinit(64000,0,0,-64000,128000,64000)
       if(.not.lfirst)goto 19
+c     Plot the surface. With scaling 1. Web color 6, axis color 7.
+         jsw=1 + 256*6 + 256*256*7
          iweb=1
          icontour=1
+         iclipping=0
          lfirst=.false.
  20      write(*,*)' ======== Slice plotting interface:',
      $        '  arrows up/down: change slice.'
@@ -70,6 +73,8 @@ c     Plot the surface. With scaling 1. Web color 6, axis color 7.
          write(*,*)
      $        ' c: contour plane position. w: toggle web. r/e: rotate.'
      $        ,' a: toggle aspect'
+         write(*,*)
+     $        ' t: toggle truncation.'
          write(*,*)
      $        ' d: disable interface; run continuously.',
      $        ' depress f: to interrupt running.'
@@ -225,11 +230,12 @@ c      write(*,*)'isw',isw
       if(isw.eq.ichar('a')) laspect=.not.laspect
       if(isw.eq.ichar('d')) call noeye3d(0)
       if(isw.eq.ichar('s')) jsw=1 + 256*6 + 256*256*7
+      if(isw.eq.ichar('t')) call togi3trunc()
       if(isw.eq.ichar('p'))then
          call pfset(3)
          ips=3
       endif
-c Change fixed dimension, remove clipping.
+c Change fixed dimension, remove clipping, force scaling.
       if(isw.eq.65361)then
          idfix=mod(idfix+1,3)+1
          iclipping=0
@@ -380,11 +386,11 @@ c Tell that we are looking from the top by default.
       ips=0
       irotating=0
       call minmax2(u(1,1,ifixpt(3)),ifull(1),iuds(1),iuds(2),umin,umax)
-c Initial slice number
-c     Plot the surface. With scaling 1. Web color 6, axis color 7.
-      jsw=1 + 256*6 + 256*256*7
       call accisgradinit(64000,0,0,-64000,128000,64000)
       if(.not.lfirst)goto 19
+c Have to use goto so I can jump into the middle at 20.
+c     Plot the surface. With scaling 1. Web color 6, axis color 7.
+         jsw=1 + 256*6 + 256*256*7
          iweb=1
          icontour=1
          lfirst=.false.

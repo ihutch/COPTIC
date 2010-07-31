@@ -562,7 +562,7 @@ int eye3d_(value)
 
   XFlush(accis_display);
   glXSwapBuffers(accis_display, accis_window);
-  /* Disabled waiting code: */
+  /* Wait for a key press */
   if(accis_eye3d != 9999){
     if(XPending(accis_display)){
       XPeekEvent(accis_display,&event);
@@ -575,7 +575,6 @@ int eye3d_(value)
     }
   }
   ACCIS_SET_FOCUS;
-  /* Wait for a button press */
   do{
     XNextEvent(accis_display,&event);
 /*     printf("First loop:The event type: %d, %d\n",event.type,ButtonPress); */
@@ -592,10 +591,11 @@ int eye3d_(value)
   if(event.type == KeyPress) {
     if(XPending(accis_display)) XPeekEvent(accis_display,&event);
     *value=(int)XLookupKeysym(&(event.xkey),0);
-  /* Get all the queued contiguous KeyPress events so we don't over
+  /* Get all the queued contiguous KeyPress events so we don't over-
      run the rotation when the key is lifted. */
     if(XPending(accis_display)) XPeekEvent(accis_display,&event);
-    while(XPending(accis_display) && event.type==KeyPress){
+    while(XPending(accis_display) &&
+	  (event.type==KeyPress || event.type==KeyRelease) ){
       XNextEvent(accis_display,&event);
       if(XPending(accis_display)) XPeekEvent(accis_display,&event);	\
     }
@@ -604,7 +604,6 @@ int eye3d_(value)
     return *value;
   }
   do{
-/*      printf("Executing XtNextEvent "); */
     XNextEvent(accis_display,&event);
 /*        printf("The event type: %d\n",event); */
     switch(event.type) {

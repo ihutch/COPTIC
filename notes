@@ -4437,3 +4437,75 @@ However even at -p0.2 we have not apparently reached a linear regime.
 Set going the -v0.8 cases.
 
 Some code clean-up, especially of the main program. 
+
+31 July 2010
+
+In view of the discrepancies with Lampe's plot of the wake, I am
+considering a way to represent a point charge as a pseudo-object of
+zero extent. It could be added to the object file as a new type.
+
+There seem to be two ways to implement this. 
+
+1. Simply put extra point charge(s) of specified magnitude greater
+than unity into the region at arbitrary position in the grid, and
+place the charge onto the grid via the standard chargetomesh process.
+This is essentially trivial, but it suffers from accuracy challenges
+close to the charge. In effect, accurate field representation in the
+vicinity of the charge will be limited to the size of the mesh there. 
+
+2. Put into the field a coulomb representation of the point charge(s).
+This has the benefit of NOT requiring fine mesh to represent the point
+charge influence. However, we need to solve the rest of the shielding
+problem properly. It becomes a sort of PPPM approach. If we add to the
+field the force of the coulomb field, and solve the Poisson equation
+for the residual potential (with the coulomb potential removed), then
+we will have a good solution provided we resolve the shielding. This
+will permit us to do without a fine scale near the charge, and resolve
+only the shielding (Debye) scale length. This would be a serious benefit.
+(There will be some display issues in that we will want to add back the
+coulomb parts of the potential for display purposes.) 
+
+Since we solve the electron shielded Poisson problem, 
+
+      \nabla^2 \phi + \phi/\lambda^2 = \rho  ,
+
+we need to account for the coulomb field in that solution. We will be
+tracking only   u  =  \phi - \phi_c  where \phi_c is the coulomb part
+of the potential. Consequently the correct equation for u is
+
+      \nabla^2 u + u/\lambda^2 = \rho + \phi_c/\lambda^2  ,
+
+Thus we simply need to add \phi_c/\lambda^2 to the charge. This could
+perhaps be done in psumtoq.
+
+It might therefore be convenient to store \phi_c for use both in obtaining
+q and in plotting the total \phi = u + \phi_c. It is fixed (but the charge
+could perhaps be permitted to change in time). In any case it ought to be
+in a separate common block that contains the information about the additional
+charges. (There might be a cache inefficiency in it being far from u).
+
+There will then be an issue with boundary conditions on u. The
+boundary values of \phi_c will have to be subtracted from the BCs for
+\phi.  This looks like the tricky part. For example bdymach would have
+to have access to \phi_c. Since it will have the same structure as u,
+it ought not to be too problematic to access its elements appropriately.
+Looking through bdyroutine.f for u(, it does not look too difficult
+to change those all to be u+\phi_c. In the long run it might be a bit
+cumbersome to do this, but probably not more confusing than the logic
+of those iteration routines anyway. 
+
+The problem with the above is that it is only true for the linearized
+approximation to the Boltzmann factor. Really we have to solve
+
+      \lambda^2 \nabla^2 \phi = n - \exp{\phi}  ,
+
+and the non-linearity of the additional operator prevents us exactly
+translating from u to phi by the addition of constant u_c into the
+equation.  It has to be in the exponent. Part of this awkwardness
+arises from the fact that faddu is written so that it just takes the
+exponential of its argument. Because the index of the u array is not
+passed, it is not possible for the function to correct for a phi_c
+offset. It seems that it ought to be unproblematic to have additional
+arguments for faddu such as the array index. Faddu is called only in
+sorrelaxgen. One could at the index as the last argument without 
+breaking the current call (I think).

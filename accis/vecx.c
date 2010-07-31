@@ -498,7 +498,7 @@ XEvent *event;
 
 /* ******************************************************************** */
 /* Externally callable routine to set noeye3d return value.
-   Set to 9999 for normal eye3d behavior. */ 
+   Set to 9999 to disable. */ 
 int noeye3d_(value)
      int *value;
 {
@@ -544,7 +544,7 @@ int eye3d_(value)
 		      accis_keypress,NULL);
   XtAddEventHandler(accis_drawing,EnterWindowMask,FALSE,
 		      accis_keypress,NULL);
-  /* Wait for a button press */
+  /* Wait for a key/button press */
   do{
     XtNextEvent(&event);
     XtDispatchEvent(&event);  
@@ -554,6 +554,15 @@ int eye3d_(value)
   if(event.type == KeyPress) {
     *value=(int)XLookupKeysym(&(event.xkey),0);
     return *value;
+  /* Get all the queued contiguous KeyPress events so we don't over-
+     run the rotation when the key is lifted. */
+    if(XPending(accis_display)) XPeekEvent(accis_display,&event);
+    while(XPending(accis_display) &&
+	  (event.type==KeyPress || event.type==KeyRelease) ){
+      XNextEvent(accis_display,&event);
+      if(XPending(accis_display)) XPeekEvent(accis_display,&event);	\
+    }
+
   }
   do{
 /*      printf("Executing XtNextEvent "); */

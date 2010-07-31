@@ -41,6 +41,22 @@ c***********************************************************************
       z3max=wz3max
       end
 c***********************************************************************
+      subroutine seti3trunc(itrunc)
+c Set the value of the i3trunc switch that determines 3D truncation.
+      include 'world3.h'
+      i3trunc=itrunc
+      end
+c***********************************************************************
+      subroutine togi3trunc()
+c Toggle the value of the i3trunc switch that determines 3D truncation.
+      include 'world3.h'
+      if(i3trunc.ne.0)then
+         i3trunc=0
+      else
+         i3trunc=1
+      endif
+      end
+c***********************************************************************
       subroutine w2scl3
       include 'plotcom.h'
       include 'world3.h'
@@ -93,9 +109,16 @@ c Plot a vector in 3-D world coordinates.
       real xn,yn,zn
       include 'world3.h'
       include 'plotcom.h'
-      xn=w3nx*(x-wx3min)-scbx3
-      yn=w3ny*(y-wy3min)-scby3
-      zn=w3nz*(z-wz3min)-scbz3
+      if(i3trunc.eq.0)then
+         xn=w3nx*(x-wx3min)-scbx3
+         yn=w3ny*(y-wy3min)-scby3
+         zn=w3nz*(z-wz3min)-scbz3
+      else
+         xn=w3nx*(max(min(x,wx3max),wx3min)-wx3min)-scbx3
+         yn=w3ny*(max(min(y,wy3max),wy3min)-wy3min)-scby3
+         zn=w3nz*(max(min(z,wz3max),wz3min)-wz3min)-scbz3
+      endif
+c      write(*,*)z,wz3max,w3zmin
 c      write(*,*)'xn,yn,zn',xn,yn,zn
       call vec3n(xn,yn,zn,iud)
       end
