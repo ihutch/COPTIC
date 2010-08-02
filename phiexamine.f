@@ -19,13 +19,16 @@ c silence warnings:
       fluxfilename=' '
 
       call examargs(rp)
-      
+         
+c      write(*,*)(u(16,16,k),k=1,36) 
       call array3read(phifilename,ifull,iuds,u,ierr)
       if(ierr.eq.1)stop
 
       write(*,'(a,3i4,$)')'On grid',iuds
-      write(*,*)(',',xn(ixnp(kk)+1),xn(ixnp(kk+1)),kk=1,3)
+      write(*,'(a,2f7.2,a,2f7.2,a,2f7.2)')
+     $     (',',xn(ixnp(kk)+1),xn(ixnp(kk+1)),kk=1,3)
 
+c      write(*,*)(u(16,16,k),k=1,36) 
       ifix=1
 c      call noeye3d(0)
       call sliceGweb(ifull,iuds,u,Li,zp,
@@ -63,7 +66,7 @@ c         write(*,*)j,rval(j)
          enddo
 
 c plot potential versus radius.
-         write(*,*)rs
+c         write(*,*)rs
          call pltinit(0.,rs,u(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
          call axis()
          call axlabels('radius','potential')
@@ -138,11 +141,12 @@ c Plot binned data:
             call polyline(rval(1),thetadist(1,i),nr)
          enddo
 
-         write(*,*)'r, phi distribution (ir,itheta)'
-         write(*,*)nr, ntheta
-         do j=1,nr
-            write(*,'(10f8.4)')rval(j),(thetadist(j,i),i=1,ntheta)
-         enddo
+c Uncomment for written output.
+c         write(*,*)'r, phi distribution (ir,itheta)'
+c         write(*,*)nr, ntheta
+c         do j=1,nr
+c            write(*,'(10f8.4)')rval(j),(thetadist(j,i),i=1,ntheta)
+c         enddo
 
          call charsize(0.,0.)
          call color(2)
@@ -219,7 +223,7 @@ c Fill in along the axis.
             rval(0)=0.
             rvalneg(0)=0.
          do k=1,iuds(3)
- 6          rzdist(0,k)=rzdist(1,k)
+            rzdist(0,k)=rzdist(1,k)
          enddo
 
 c Now rzdist(nr,nz) is the rz-distribution of the (average) potential.
@@ -284,14 +288,13 @@ c Indicate rectangle limits.
 
       end
 
-
 c*************************************************************
       subroutine examargs(rp)
       include 'examdecl.f'
 
-      do i=1,ndims
-         ifull(i)=Li
-      enddo
+      ifull(1)=nxd
+      ifull(2)=nyd
+      ifull(3)=nzd
 
 c Defaults and silence warnings.
       phifilename=' '

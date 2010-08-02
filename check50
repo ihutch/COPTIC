@@ -1,5 +1,5 @@
 #!/bin/bash
-# This checks ccpic restart ability by default by
+# This checks coptic restart ability by default by
 #1. Running it for 45 steps. 
 #2. Restarting it for 10 steps with a check at step 50.
 #3. Running again from start for 55 steps with a check at step 50.
@@ -15,19 +15,19 @@ if [ $# == 1 ] ; then
 fi
 CHECKSTEP=$(($STEPS1+ $EXTRASTEPS/2 ))
 echo $STEPS1 $STEPS2 $EXTRASTEPS $CHECKSTEP
-make ccpic
+make coptic
 rm xpartnew
 rm uqcijnew
 rm xpart
 rm uqcij
-echo RUNNING ccpic -s$STEPS1
-./ccpic -s$STEPS1
-echo RUNNING ccpic --restart -s$EXTRASTEPS
-./ccpic --restart -s$EXTRASTEPS -ck$CHECKSTEP
+echo RUNNING coptic -s$STEPS1
+./coptic -s$STEPS1
+echo RUNNING coptic --restart -s$EXTRASTEPS
+./coptic --restart -s$EXTRASTEPS -ck$CHECKSTEP
 mv xpartnew xpart
 mv uqcijnew uqcij
-echo RUNNING ccpic -s$STEPS2 -ck$CHECKSTEP
-./ccpic -s$STEPS2 -ck$CHECKSTEP
+echo RUNNING coptic -s$STEPS2 -ck$CHECKSTEP
+./coptic -s$STEPS2 -ck$CHECKSTEP
 echo
 echo If the last ====== Finished uqcijckeck and  ====== Finished xpartcheck
 echo show no warnings or diagnostics. Everything is OK for restarting.

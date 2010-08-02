@@ -19,7 +19,7 @@ c     ifull full dimensions, iuds used dimensions
 c     iuds(ndims) declared in bbdydecls
 c     cij coefficients of the finite difference scheme, in the order
 c         east,west,north,south ... [regarding i,j, as x,y].
-c         real cij(nd2+1,Li,nj)
+c         real cij(nd2+1,ifull(1),ifull(2),...)
 c     The last cij value of the first index is a pointer to object info
 c     and if it is zero (null) then no object code affects this point.
 c     Objects cut the mesh between nodes and e.g. specify u there.
@@ -39,7 +39,7 @@ c User supplied functions which should be declared external in the
 c calling routine.
 c     bdyset subroutine that evaluates the boundary conditions and
 c               deposits into the edge values of the potential.
-c               bdyset(Li,ni,nj,cij,u,q)
+c               bdyset(ndims,ifull,iuds,cij,u,q)
 c               If non-constant coefficients are required, then
 c               bdyset could be used to adjust their values.
 c     faddu(u,fprime)  

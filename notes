@@ -4438,6 +4438,8 @@ Set going the -v0.8 cases.
 
 Some code clean-up, especially of the main program. 
 
+-------------------------------------------------------------------
+
 31 July 2010
 
 In view of the discrepancies with Lampe's plot of the wake, I am
@@ -4463,7 +4465,8 @@ we will have a good solution provided we resolve the shielding. This
 will permit us to do without a fine scale near the charge, and resolve
 only the shielding (Debye) scale length. This would be a serious benefit.
 (There will be some display issues in that we will want to add back the
-coulomb parts of the potential for display purposes.) 
+coulomb parts of the potential for display purposes. Perhaps we can do
+it right at the end so the output files are at least consistent.) 
 
 Since we solve the electron shielded Poisson problem, 
 
@@ -4500,12 +4503,107 @@ approximation to the Boltzmann factor. Really we have to solve
       \lambda^2 \nabla^2 \phi = n - \exp{\phi}  ,
 
 and the non-linearity of the additional operator prevents us exactly
-translating from u to phi by the addition of constant u_c into the
-equation.  It has to be in the exponent. Part of this awkwardness
-arises from the fact that faddu is written so that it just takes the
-exponential of its argument. Because the index of the u array is not
-passed, it is not possible for the function to correct for a phi_c
-offset. It seems that it ought to be unproblematic to have additional
-arguments for faddu such as the array index. Faddu is called only in
-sorrelaxgen. One could at the index as the last argument without 
-breaking the current call (I think).
+translating from u to phi by the addition of constant phi_c into the
+equation.  It has to be in the exponent. If we recalculate the
+contribution of phi_c nonlinearly at each step, then we will get an
+accurate result. But the contribution is then changing. One probably
+does not want to update phi_c every sor iteration step, which might be
+expensive, but if one wants a nonlinear solution, that update is needed. 
+ 
+Part of the awkwardness arises from the fact that faddu is written so
+that it just takes the exponential of its argument. Because the index
+of the u array is not passed, it is not possible for the function to
+correct for a phi_c offset. It seems that it ought to be unproblematic
+to have additional arguments for faddu such as the array index. Faddu
+is called only in sorrelaxgen. One could add the index as the last
+argument without breaking the current call (I think). Yes. Did that in
+the call without changing the function. It still works. (Might be a
+slight time cost).
+
+Thus we would have to change faddu to compensate for phi_c, instead
+of doing something to psumtoq. That in itself may be more compact and
+manageable. 
+
+To summarize: we could implement PPPM equivalent by introducing point
+charge(s), calculating their potential on the grid phi_c, changing
+faddu to use u+phi_c, changing the BC so that it applies to u+phi_c,
+and solving for u alone, which is the shielding potential with the
+phi_c subtracted off. As far as the potential calculation is concerned,
+only bdyroutine.f (which contains faddu) would have to be reprogrammed.
+(Now sorrelaxgen has been editted to add the index). Force also has
+to add the analytic (point-charge) force. This sounds as if it is fairly
+low cost.
+
+--------------------------------------------------------------------
+Found a problem with restarting. Ugh. With the check script we see
+x_part differences, but not uqcij. Moved the checkx before the padvnc
+and it goes away. So padvnc is the problem. This was the case when
+I last worked on restarting. However, this time, EVERY particle is 
+wrong after one padvnc step, and so is the particle count.
+
+It dawns on me why this is. I have to save and restore the dtprec for
+each particle, otherwise it is not initialized properly for padvnc.
+Yes that is it. Fixed.
+
+Removed the necessity for extra storage to be supplied in the main
+by limiting the check code to its own maximum size. This makes it
+completely self-contained. And we can use only modest size of storage
+so that the impact is negligible.
+--------------------------------------------------------------------
+
+The size of the phi_c array must be such as to accommodate the mesh,
+presumably the same as u, etc. Those dimensions are currently set in
+the main program (and u etc are not in common), so that's a bit of a
+problem.
+
+Start by eliminating Li from coptic. Use na_ijk.
+coptic still works. There's a problem with phiexamine. It assumes
+(defines) its arrays to have equal length in each dimension.
+When I change that in coptic, the phiexamine is not correct.
+It's not completely obvious why. array3read just reads the used 
+dimensions and appears to store accordingly. It defines the size
+of its full dimensions by its input parameter (so they must be 
+passed correctly). Needs investigation.
+
+1 Aug 2010
+
+Can't make the phiexamine misbehave this morning! Maybe it was just
+too late last night. No, it is flaky. the geombigcube.dat file caused
+problems. This is going to be hard. It appears to be the second entry
+ifull(2) that causes the problem. No sometimes the third does it.
+
+After considerable thrashing, I still can't get to the bottom of it.
+
+Try switching from g77 to gfortran. The link fails in the same way 
+that the memory overrun of sceptic caused. Perhaps there's some
+problem I don't understand here. phiexamine will not link either.
+This was caused by the n_partmax being set to 40M (not 4M) which 
+overflows the 2G virtual (though not resident).
+
+With this problem fixed, g77 compiles do not seem to give the phiexamine
+problem. Also the gfortan succeeds in compiling. 
+
+CONCLUSION: the phiexamine/coptic misbehaviour was triggered by erroneously
+specifying a 40M partmax that caused the (virtual) size of both coptic and
+phiexamine to exceed machine memory. In g77 this gave the strange errors
+that I could not diagnose. In gfortran it cause it to fail to compile.
+Both of these behaviours could be considered to be inadequacies in the 
+compiler. But anyway...
+
+Today was an excursion that mostly just discovered a typing error in 
+n_partmax. But I now have dimension setting in the main program more
+rational. It is done crucially with the following statement:
+      parameter (na_m=100,na_i=40,na_j=40,na_k=100)
+
+I could presumably separate out this declaration into a file that was
+called by appropriate programs to define the array dimensions, in particular
+phi_c could be sized by it.
+
+Observe that phiexamine occupies more virtual memory than coptic itself.
+This appears to be because of just dumping all the objects into it. 
+It is probably better to create a library and link against that. 
+So change the makefile to do that for both coptic and other mains.
+This does not drop the virtual size of phiexamine well below that of coptic,
+so it does not have the desired effect. It is not clear why phiexamine
+is so big. It makes not difference whether the lib is simply put on the 
+command line or search using -L. -lcoptic.

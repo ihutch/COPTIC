@@ -1,16 +1,16 @@
 #!/bin/bash
-make ccpic
+make coptic
 rm xpartnew
 rm uqcijnew
 rm xpart
 rm uqcij
-echo RUNNING ccpic
-./ccpic -s5
-echo RUNNING ccpic --restart -s3
-./ccpic --restart -s3 -ck6
+echo RUNNING coptic
+./coptic -s5
+echo RUNNING coptic --restart -s3
+./coptic --restart -s3 -ck6
 mv xpartnew xpart
 mv uqcijnew uqcij
-echo RUNNING ccpic -s8 -ck6
-./ccpic -s8 -ck6
+echo RUNNING coptic -s8 -ck6
+./coptic -s8 -ck6
 echo If the last ====== Finished uqcijckeck and ====== Finished xpartcheck
 echo show no warnings or diagnostics. Everything is OK for restarting.

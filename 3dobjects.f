@@ -3,6 +3,7 @@ c Initialize with zero 3d objects.
       block data com3dset
       include '3dcom.f'
       include 'meshcom.f'
+      include 'ptchcom.f'
       data ngeomobj/0/
 c Default track no objects.
       data nf_map/ngeomobjmax*0/
@@ -30,14 +31,19 @@ c Mesh default initialization (meshcom.f)
       data imeshstep/ndims_mesh*1,ndims_mesh*32,imsr*0/
       data xmeshpos/ndims_mesh*-5.,ndims_mesh*5.,imsr*0./
 
+c Default no point charges:
+      data n_ptch/0/
+
 c We don't do flux initialization in a block data. Too big.
       end
 c**********************************************************************
       subroutine geomdocument()
+      write(*,*)
       write(*,*)'Format and meaning of the object geometry file'
      $     ,' default [ ccpicgeom.dat'
       write(*,*)'First line number of dimensions: 3'
       write(*,*)'Thereafter ignored comment lines start with #'
+      write(*,*)
       write(*,*)'Object lines have the format: type, a,b,c, center(3),'
      $     ,' radii(3), [extra data]'
       write(*,*)' if a=b=c=0, no potential BC is applied and object'
@@ -50,6 +56,7 @@ c**********************************************************************
       write(*,*)'byte-2: 1(x256) Special boundary phi=0 instead of '
      $     ,'continuity.'
       write(*,*)'byte-2: 2(x256) Tally exit?'
+      write(*,*)
       write(*,'(a)')
      $     'Boolean particle region 99, n1, n1*values, n2, values,.. 0:'
      $     ,'The nk values are ored together. The groups are anded.'
@@ -59,6 +66,7 @@ c**********************************************************************
      $     ,' 99, 1, -1, 1, 2, 0'
      $     ,' or: (inside 3 OR inside 4) AND outside 5 [ors first]:'
      $     ,' 99, 2, 3, 4, 1, -5, 0'
+      write(*,*)
       write(*,'(a)')'Mesh setting: 9d,is1,is2,...,isN,0,xm1,xm2...xmN'
       write(*,'(2a)')'Set structure for dimension d. N-1 blocks.'
      $     ,' Steps between is1,is2 '

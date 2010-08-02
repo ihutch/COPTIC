@@ -19,7 +19,7 @@ FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
 OBJECTS=$(FIXEDOBJECTS) ${REINJECT}
-HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f
+HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 ##########################################################################
 G77=mpif77 -f77=g77 
@@ -44,8 +44,10 @@ NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 # interpreted as "terminal" which means it does not apply unless its
 # prerequisites exist. By my interpretation of the info, this ought not
 # to be happening (requires a double colon), but on horace, it is. 
-% : %.f  makefile $(OBJECTS) $(UTILITIES) $(ACCISLIB)
-	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+#% : %.f  makefile $(OBJECTS) $(UTILITIES) $(ACCISLIB)
+#	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+% : %.f  makefile libcoptic.a $(ACCISLIB)
+	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f libcoptic.a $(LIBRARIES)
 
 # Don't recompile accis every time the makefile is changed.
 ./accis/%.o : ./accis/%.f $(HEADERS)
@@ -63,6 +65,9 @@ smt.out : $(COPTIC) ccpicgeom.dat
 	@if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
 	./$(COPTIC)
 	@if [ -f smt.prev ] ;then if [ -f smt.out ] ;then diff smt.prev smt.out ;else touch smt.out ;fi ;fi
+
+libcoptic.a : makefile $(OBJECTS) $(UTILITIES)
+	ar -rs libcoptic.a $(OBJECTS) $(UTILITIES)
 
 #mpi checking target
 mpicheck : $(COPTIC)
@@ -86,10 +91,10 @@ bdyroutine.o : bdyroutine.f makefile $(HEADERS)
 
 #####################################################
 # Main program explicit to avoid make bugs:
-$(COPTIC) : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES)
+$(COPTIC) : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
 	if [ -f "$(GEOMFILE)" ] ; then rm -f ccpicgeom.dat ; ln -s $(GEOMFILE) ccpicgeom.dat ; fi
-	echo "      rjscheme="\'$(REINJECT)\'" " > REINJECT.f
-	$(G77)  -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f  $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+	@echo "      rjscheme="\'$(REINJECT)\'" " > REINJECT.f
+	$(G77)  -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f  libcoptic.a $(LIBRARIES)
 
 $(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h
 	make -C accis
@@ -104,8 +109,8 @@ testing : testing/mpibbdytest testing/fieldtest testing/stresstest
 testing/mpibbdytest : testing/mpibbdytest.o udisplay.o mpibbdy.o mditerate.o reduce.o makefile
 	$(G77) -o testing/mpibbdytest  testing/mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o reduce.o
 
-testing/fieldtest : testing/fieldtest.f makefile $(OBJECTS) $(ACCISLIB)
-	$(G77)  -o testing/fieldtest $(COMPILE-SWITCHES) $(PROFILING) testing/fieldtest.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+testing/fieldtest : testing/fieldtest.f makefile libcoptic.a
+	$(G77)  -o testing/fieldtest $(COMPILE-SWITCHES) $(PROFILING) testing/fieldtest.f libcoptic.a $(LIBRARIES)
 
 testing/stresstest : testing/stresstest.f stress.o $(ACCISLIB)
 	$(G77) -o testing/stresstest testing/stresstest.f stress.o $(LIBRARIES)

@@ -59,6 +59,11 @@ c      write(*,*)'Setting averein in padvnc.',phirein
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 c At most do over all particle slots. But generally we break earlier.
       do i=1,n_partmax
+c Diagnosing errors:
+c         if(i.le.2)then
+c            write(*,*)'x_part',i,(x_part(k,i),k=1,9),dtprec(i)
+c         endif
+
          dtremain=0.
 c         dtprec(i)=dt
          dtpos=dt
@@ -118,7 +123,7 @@ c---------- Subcycling ----------------
          if(subcycle.ne.0)then            
 c One might have a conditional test to set subcycling for this particle
 c such as this automatic one based on avoiding excessive acceleration.
-            dtc=dt/max(1,anint(f1*dt/subcycle))
+            dtc=dt/max(1.,anint(f1*dt/subcycle))
             if(dtc.lt.dtpos)then
 c Take sub-step.
                nsubc=nsubc+1

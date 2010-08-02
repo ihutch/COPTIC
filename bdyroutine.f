@@ -50,10 +50,15 @@ c     represented by a difference stencil of specified coefficients,
 c     f is some additional function, and q is the "charge density".
 c f is exp(u) here for Boltzmann electrons and densities normalized
 c to unity at infinity.
-      real function faddu(u,fprime)
+      real function faddu(u,fprime,index)
       real u,fprime
-      fprime=exp(u)
-      faddu=fprime
+      include 'ptchcom.f'
+c      if(n_ptch.eq.0)then
+         fprime=exp(u)
+         faddu=fprime
+c      else
+c Need to compensate for point charges.
+c      endif
       end
 c************************************************************************
       subroutine bdy3slope(inc,ipoint,indi,ndims,iused,u)

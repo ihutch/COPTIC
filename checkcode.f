@@ -2,14 +2,19 @@ c***********************************************************************
 c This contains code that checks on the writing and reading back of
 c code state. It is for debugging restarts.
 c***********************************************************************
-      subroutine checkuqcij(Li,u,q,psum,volumes,cij,
-     $     u2,q2,psum2,volumes2,cij2)
+      subroutine checkuqcij(ifull,u,q,psum,volumes,cij)
       implicit none
-      integer Li
-      real u(Li,Li,Li),q(Li,Li,Li),u2(Li,Li,Li),q2(Li,Li,Li)
-      real psum(Li,Li,Li),volumes(Li,Li,Li)
-      real psum2(Li,Li,Li),volumes2(Li,Li,Li)
-      real cij(7,Li,Li,Li),cij2(7,Li,Li,Li)
+      integer ifull(3)
+      real u(ifull(1),ifull(2),ifull(3)),q(ifull(1),ifull(2),ifull(3))
+      real psum(ifull(1),ifull(2),ifull(3)),volumes(ifull(1),ifull(2)
+     $     ,ifull(3))
+      real cij(7,ifull(1),ifull(2),ifull(3))
+c Local duplicates.
+      integer Li2
+      parameter (Li2=32)
+      real psum2(Li2,Li2,Li2),volumes2(Li2,Li2,Li2)
+      real u2(Li2,Li2,Li2),q2(Li2,Li2,Li2)
+      real cij2(7,Li2,Li2,Li2)
 
       integer i,j,k,l,ic
       logical linit,lend
@@ -23,22 +28,28 @@ c***********************************************************************
          open(40,file='uqcij',status='old',
      $        form='unformatted',err=101)
          goto 105
- 101     write(*,*)'*****Could not open uqcij file.'
+ 101     write(*,*)
+         write(*,*)'*****Could not open uqcij file.'
          close(40)
          lend=.true.
  105     continue
       endif
 
-      write(41,err=103)u,q,cij,psum,volumes
+      write(41,err=103)(((u(i,j,k),q(i,j,k),(cij(l,i,j,k),l=1,7),psum(i
+     $     ,j,k),volumes(i,j,k),i=1,Li2),j=1,Li2),k=1,Li2)
 
       if(lend) return
 
-      read(40,err=102,end=102)u2,q2,cij2,psum2,volumes2
+      read(40,err=102,end=102)(((u2(i,j,k),q2(i,j,k),(cij2(l,i,j,k),l=1
+     $     ,7),psum2(i,j,k),volumes2(i,j,k),i=1,Li2),j=1,Li2),k=1,Li2)
+
+      write(*,*)
+      write(*,*)'Successfully read:u2,q2,cij2,psum2,volumes2'
 
       ic=0
-      do k=1,Li
-         do j=1,Li
-            do i=1,Li
+      do k=1,min(Li2,ifull(3))
+         do j=1,min(Li2,ifull(2))
+            do i=1,min(Li2,ifull(1))
 
       if(u(i,j,k).ne.u2(i,j,k))then
          write(*,*)'***** u difference',i,j,k,u(i,j,k),u2(i,j,k)
@@ -75,7 +86,7 @@ c***********************************************************************
 
       return
 
- 102  write(*,*)'*****End of uqcij file'
+ 102  write(*,*)'*****Unexpected End of uqcij file'
       lend=.true.
       return
 
@@ -83,17 +94,20 @@ c***********************************************************************
       lend=.true.
       return
 
- 110  write(*,*)'*****Could not open uqcijnew'
+ 110  write(*,*)
+      write(*,*)'*****Could not open uqcijnew'
       return
 
       end
 c***********************************************************************
-      subroutine checkx(n_part2,x_part2,
-     $     if_part2,iregion_part2,ioc_part2,
-     $     dt2,ldiags2,rhoinf2,nrein2,phirein2,numprocs2,ninjcomp2)
+      subroutine checkx()
       implicit none
-      real x_part2(9,1000000)
-      integer n_part2,if_part2(1000000),iregion_part2,ioc_part2
+c The storage used here defines how far our checking goes for bigger
+c actual cases. Don't want to use too much, or too little.
+      integer icp
+      parameter (icp=100000)
+      real x_part2(9,icp)
+      integer n_part2,if_part2(icp),iregion_part2,ioc_part2
       integer nrein2,numprocs2,ninjcomp2
       real dt2,rhoinf2,phirein2
       logical ldiags2
@@ -119,20 +133,21 @@ c***********************************************************************
 
       write(51,err=103)ioc_part
       write(51,err=103)n_part
-     $     ,((x_part(ii,jj),ii=1,9),if_part(jj),jj=1,ioc_part)
+     $     ,((x_part(ii,jj),ii=1,9),if_part(jj),jj=1,min(ioc_part,icp))
      $     ,iregion_part,
      $     dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
       if(lend) return
 
       read(50,err=102)ioc_part2
       read(50,err=102)n_part2
-     $     ,((x_part2(ii,jj),ii=1,9),if_part2(jj),jj=1,ioc_part2)
+     $     ,((x_part2(ii,jj),ii=1,9),if_part2(jj),
+     $     jj=1,min(ioc_part2,icp))
      $     ,iregion_part2,
      $     dt2,ldiags2,rhoinf2,nrein2,phirein2,numprocs2,ninjcomp2
 
       if(ioc_part.ne.ioc_part2.or.n_part.ne.n_part2.or.
      $     iregion_part.ne.iregion_part2) then
-         write(*,*)'***** ioc_part difference',
+         write(*,*)'***** particle count difference',
      $        ioc_part,n_part,iregion_part,
      $        ioc_part2,n_part2,iregion_part2
       endif
@@ -146,7 +161,7 @@ c***********************************************************************
       endif
 
       ic=0
-      do j=1,ioc_part
+      do j=1,min(ioc_part,icp)
          if(if_part(j).ne.if_part2(j))then
             write(*,*)'***** if_part difference',
      $           j,if_part(j),if_part2(j)

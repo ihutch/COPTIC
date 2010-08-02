@@ -129,7 +129,7 @@ c Adjust the denominator and numerator using external call.
             call ddn_sor(io,csum,dnum)
          endif
          if(laddu) then
-            addu=faddu(u(ipoint+1),daddu)
+            addu=faddu(u(ipoint+1),daddu,ipoint+1)
             dscl=abs(addu)/max(abs(daddu),1.e-6)
 c     relative weight of f term versus L term. Use max for next iteration.
 c This seemed to be an error 2 July 09. Also dden was being calculated after.

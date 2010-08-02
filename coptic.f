@@ -2,26 +2,17 @@
 c Main program of cartesian coordinate, oblique boundary, pic code.
 
       include 'mpif.h'
-      include 'objcom.f' 
+      include 'objcom.f'
 c Storage array spatial count size
-      integer Li
-c      parameter (Li=100,ni=32,nj=32,nk=32)
-      parameter (Li=100)
-      parameter (Li2=Li*Li,Li3=Li2*Li)
-      real u(Li,Li,Li),q(Li,Li,Li),cij(2*ndims_sor+1,Li,Li,Li)
+      parameter (na_m=100,na_i=40,na_j=40,na_k=100)
+c coptic runs correctly with unequal dimensions but phiexamine does not.
+      parameter (Li1=na_i,Li2=Li1*na_j,Li3=Li2*na_k)
+      real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
+     $     ,cij(2*ndims_sor+1,na_i,na_j,na_k)
 c Running averages.
-      real qave(Li,Li,Li),uave(Li,Li,Li)
-c Additional variables for testing. Eventually should be removed.
-      real u2(Li,Li,Li),q2(Li,Li,Li),cij2(2*ndims_sor+1,Li,Li,Li)
-      real psum2(Li,Li,Li),volumes2(Li,Li,Li)
-      real x_part2(9,1000000)
-      integer n_part2,if_part2(1000000),iregion_part2,ioc_part2
-      integer nrein2,numprocs2,ninjcomp2
-      real dt2,rhoinf2,phirein2
-      logical ldiags2
-c End of extra variables.
+      real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
 c
-      real psum(Li,Li,Li),volumes(Li,Li,Li)
+      real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k)
 c Used dimensions, Full dimensions. Used dims-2
       integer iuds(ndims_sor),ifull(ndims_sor),ium2(ndims_sor)
 c Mesh spacing description structure
@@ -45,13 +36,9 @@ c Collision common data
       include 'colncom.f'
       integer ndims
       parameter (ndims=ndims_sor)
-
       external bdyset,faddu,cijroutine,cijedge,psumtoq
       external volnode,linregion
-      character*100 partfilename
-      character*100 phifilename
-      character*100 fluxfilename
-      character*100 objfilename
+      character*100 partfilename,phifilename,fluxfilename,objfilename
       character*100 argument
 c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
@@ -59,13 +46,12 @@ c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
 c      integer ixp(ndims), xfrac(ndims)
       
 c Diagnostics
-c      real usave(Li,Li,Li),error(Li,Li,Li),cijp(2*ndims_sor+1,Li,Li)
-      real zp(Li,Li)
+      real zp(na_m,na_m,ndims_mesh)
 c Set up the structure vector.
-      data iLs/1,Li,Li2,Li3/
+      data iLs/1,Li1,Li2,Li3/
 c Mesh and mpi parameter defaults:
       data idims/nblksi,nblksj,nblksk/
-      data ifull/Li,Li,Li/
+      data ifull/na_i,na_j,na_k/
 c No longer set here. Done by meshconstruct. 
 c      data iuds/ni,nj,nk/
 c Data for plotting etc.
@@ -78,7 +64,7 @@ c      data thetain,nth/.1,1/
 
 c-------------------------------------------------------------
 c Initialize the fortran random number generator with a fixed number
-c for solutions of volumes etc. Each node does the same.
+c for solutions of volumes etc. Each node then does the same.
       rs=ran1(-1)
 c Defaults:
 c Determine what reinjection scheme we use. Sets rjscheme.
@@ -113,13 +99,8 @@ c      crelax=1.*Ti/(1.+Ti)
       lmyidhead=.true.
       ifplot=-1
 c---------------------------------------------------------------------
-c mpi initialization only.
-c Obsolete approach no longer used.
-c Control bit 3 (=4) pure initialization, no communication (to get myid).
-c      call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,4,ierr
-c     $     ,myid,idims)
-c This necessary or could be hidden in sormpi and pass back numprocs.
-c      call mpicommsize(numprocs,ierr)
+c This necessary here so one knows early the mpi structure.
+c Otherwise could have been hidden in sormpi and pass back numprocs.
       call mpigetmyid(myid,nprocs,ierr)
       if(myid.ne.0) lmyidhead=.false.
       numprocs=nprocs
@@ -369,7 +350,7 @@ c     $     ,nsteps*dt*x_part(5,1)/x_part(1,1)/2./3.1415927
 c---------------------------------------------
 c Initialize the fluxdata storage and addressing.
       call fluxdatainit(myid)
-c Initialze the force tracking.
+c Initialize the force tracking.
       call forcetrackinit()
 c---------------------------------------------
       phirein=0.
@@ -413,9 +394,8 @@ c     $        nrein,n_part,ioc_part,rhoinf,dt
          lrestart=.false.
  402     continue
       endif
-
-      if(lmyidhead)write(*,*)'Step Iterations Flux:'
 c-----------------------------------------------
+      if(lmyidhead)write(*,*)'Step Iterations Flux:'
 c Main step iteration -------------------------------------
       do j=1,nsteps
          nf_step=nf_step+1
@@ -444,25 +424,21 @@ c Convert psums to charge, q. Remember external psumtoq!
 
          if(lmyidhead)write(*,'(i4.4,i4,$)')nf_step,ierr
          if(lsliceplot)then
-            if(ldenplot)call sliceGweb(ifull,iuds,q,Li,zp,
+            if(ldenplot)call sliceGweb(ifull,iuds,q,na_m,zp,
      $        ixnp,xn,ifix,'density: n')
-            if(lphiplot)call sliceGweb(ifull,iuds,u,Li,zp,
+            if(lphiplot)call sliceGweb(ifull,iuds,u,na_m,zp,
      $        ixnp,xn,ifix,'potential:'//'!Ay!@')
          endif
 
          if(nf_step.eq.ickst) then
-c This test routine assumes 3 full dimensions all equal to Li are used.
-            call checkuqcij(Li,u,q,psum,volumes,cij,
-     $           u2,q2,psum2,volumes2,cij2)
+c      write(*,*)'Checking Step',nf_step
+            call checkuqcij(ifull,u,q,psum,volumes,cij)
             call padvnc(ndims,iLs,cij,u)
-            call checkx(n_part2,x_part2,
-     $           if_part2,iregion_part2,ioc_part2,dt2,
-     $           ldiags2,rhoinf2,nrein2,phirein2,numprocs2,ninjcomp2)
+            call checkx
          else
 c The normal call:
             call padvnc(ndims,iLs,cij,u)
          endif
-c         write(*,*)(ff_data(nf_address(1,1,nf_step)+ii),ii=0,2)
          call fluxreduce()
 c Store the step's rhoinf, dt.
          ff_rho(j)=rhoinf
@@ -494,12 +470,10 @@ c      write(*,*)'Finished orbitplot.'
 
       if(lmyidhead)write(*,*)
       call partwrite(partfilename,myid)
-c      if(lmyidhead)call phiwrite(phifilename,ifull,iuds,u)
-c      if(lmyidhead)call denwrite(phifilename,ifull,iuds,qave)
-      if(lmyidhead)call namewrite(phifilename,ifull,iuds,u,'.phi')
       if(lmyidhead)call namewrite(phifilename,ifull,iuds,uave,'.pha')
       if(lmyidhead)call namewrite(phifilename,ifull,iuds,qave,'.den')
-
+      if(lmyidhead)call namewrite(phifilename,ifull,iuds,u,'.phi')
+      
 c-------------------------------------------------------------------
       call mpifinalize(ierr)
 c Check some flux diagnostics and writing.

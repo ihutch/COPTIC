@@ -29,7 +29,7 @@ c      write(*,*)name
       write(22)iregion_part,n_part,dt,ldiags,rhoinf,nrein,
      $     phirein,numprocs,
      $     ((x_part(j,i),j=1,3*npdim),if_part(i),i=1,ioc_part)
-
+      write(22)(dtprec(i),i=1,ioc_part)
       close(22)
 c      write(*,*)'Wrote particle data to ',name(1:lentrim(name))
       return
@@ -55,7 +55,11 @@ c*****************************************************************
       read(23)iregion_part,n_part,dt,ldiags,rhoinf,nrein,
      $     phirein,numprocs,
      $     ((x_part(j,i),j=1,3*npdim),if_part(i),i=1,ioc_part)
-      close(23)
+c Extra particle data written since 30 July 2010.
+      read(23,end=102)(dtprec(i),i=1,ioc_part)
+      goto 103
+ 102  write(*,*)'=========== No dtprec data in partfile.========='
+ 103  close(23)
 c      write(*,*)'Finished reading back particle data from '
 c     $     ,name(1:lentrim(name))
 c      write(*,*)'Charout=',charout(1:lentrim(charout))
@@ -91,6 +95,7 @@ c File name:
       include 'meshcom.f'
       character*(100) charout
 
+c      write(*,*)'ifull',ifull
       write(charout,51)debyelen,Ti,vd,rs,phip
  51   format('debyelen,Ti,vd,rs,phip:',5f10.4)
       open(22,file=name,status='unknown',err=101)
@@ -102,7 +107,8 @@ c File name:
       write(22)iuds
       write(22)(((u(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
       close(22)
-c      write(*,*)'Wrote array data to ',name(1:lentrim(name))
+      write(*,'(''Wrote array data to '',a,3i4)')
+     $     ,name(1:lentrim(name)),iuds
       return
 
  101  continue
@@ -128,7 +134,8 @@ c File name:
       read(23)iuds
       read(23)(((u(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
       close(23)
-      write(*,*)'Read back array data from ',name(1:lentrim(name))
+      write(*,'(''Read back array data from '',a,3i4)')
+     $     ,name(1:lentrim(name)),iuds
       ierr=0
       return
 
