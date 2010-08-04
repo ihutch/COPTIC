@@ -6,15 +6,16 @@
       real thetadist(nr,ntheta),thetaval(ntheta),rval(nr)
       integer ithetacount(nr,ntheta)
       
-
-      real oneoverr(100),ro(100)
+c silence warnings:
+      fluxfilename=' '
 c 
       call denexamargs
-c      call denread(denfilename,ifull,iuds,q,ierr)
+
       call array3read(denfilename,ifull,iuds,q,ierr)
       if(ierr.eq.1)stop
 
       rs=sqrt(3.)*rs
+c      write(*,*)na_i,na_j,na_k,na_m,ifull,iuds
 
       do j=1,nr
          do i=1,ntheta
@@ -26,7 +27,9 @@ c      call denread(denfilename,ifull,iuds,q,ierr)
 c         write(*,*)j,rval(j)
       enddo
 
-      call sliceGweb(ifull,iuds,q,Li,zp,
+c      write(*,*)(q(16,16,k),k=1,ifull(3))
+      ifix=2
+      call sliceGweb(ifull,iuds,q,na_m,zp,
      $        ixnp,xn,ifix,'Density:'//'n')
 
 c plot density versus radius.
@@ -108,10 +111,12 @@ c*************************************************************
       subroutine denexamargs()
       include 'examdecl.f'
 
-      do i=1,ndims
-         ifull(i)=Li
-      enddo
+         ifull(1)=na_i
+         ifull(2)=na_j
+         ifull(3)=na_k
 
+c silence warnings:
+      zp(1,1,1)=0.
 c Defaults
       denfilename=' '
 
@@ -146,6 +151,6 @@ c Help text
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue
-      if(lentrim(partfilename).lt.5)goto 203
+      if(lentrim(denfilename).lt.5)goto 203
       end
 c*****************************************************************

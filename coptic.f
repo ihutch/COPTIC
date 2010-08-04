@@ -4,7 +4,7 @@ c Main program of cartesian coordinate, oblique boundary, pic code.
       include 'mpif.h'
       include 'objcom.f'
 c Storage array spatial count size
-      parameter (na_m=100,na_i=40,na_j=40,na_k=100)
+      include 'griddecl.f'
 c coptic runs correctly with unequal dimensions but phiexamine does not.
       parameter (Li1=na_i,Li2=Li1*na_j,Li3=Li2*na_k)
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
@@ -34,8 +34,8 @@ c Plasma common data
       include 'plascom.f'
 c Collision common data
       include 'colncom.f'
-      integer ndims
-      parameter (ndims=ndims_sor)
+c      integer ndims
+c      parameter (ndims=ndims_sor)
       external bdyset,faddu,cijroutine,cijedge,psumtoq
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
@@ -43,7 +43,6 @@ c Collision common data
 c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
       logical lrestart,lmyidhead,lphiplot,ldenplot
-c      integer ixp(ndims), xfrac(ndims)
       
 c Diagnostics
       real zp(na_m,na_m,ndims_mesh)
@@ -61,7 +60,12 @@ c Data for plotting etc.
       data lphiplot,ldenplot/.true.,.true./
 c      data thetain,nth/.1,1/
       data lrestart/.false./
-
+c-------------------------------------------------------------
+c Consistency checks
+      if(ndims.ne.ndims_sor)then
+         write(*,*)'Inconsistent ndims, ndims_sor',ndims,ndims_sor
+         stop
+      endif
 c-------------------------------------------------------------
 c Initialize the fortran random number generator with a fixed number
 c for solutions of volumes etc. Each node then does the same.

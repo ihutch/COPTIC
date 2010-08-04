@@ -15,9 +15,6 @@
       real oneoverr(100),ro(100),cl(100)
       real xl(2),yl(2)
 c 
-c silence warnings:
-      fluxfilename=' '
-
       call examargs(rp)
          
 c      write(*,*)(u(16,16,k),k=1,36) 
@@ -31,7 +28,7 @@ c      write(*,*)(u(16,16,k),k=1,36)
 c      write(*,*)(u(16,16,k),k=1,36) 
       ifix=1
 c      call noeye3d(0)
-      call sliceGweb(ifull,iuds,u,Li,zp,
+      call sliceGweb(ifull,iuds,u,na_m,zp,
      $     ixnp,xn,ifix,'potential:'//'!Ay!@')
 
       iplot=2
@@ -292,13 +289,12 @@ c*************************************************************
       subroutine examargs(rp)
       include 'examdecl.f'
 
-      ifull(1)=nxd
-      ifull(2)=nyd
-      ifull(3)=nzd
+      ifull(1)=na_i
+      ifull(2)=na_j
+      ifull(3)=na_k
 
 c Defaults and silence warnings.
       phifilename=' '
-      fluxfilename=' '
       zp(1,1,1)=0.
 
 c Deal with arguments

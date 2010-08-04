@@ -22,6 +22,11 @@ c      common /cartdiag/fv,px,diagv,diagx
 c Spatial limits bottom-top, dimensions
       real xlimit(2,mdims)
 
+c silence warnings:
+      zp(1,1,1)=0.
+      xr(1)=0.
+
+c Defaults
       do id=1,mdims
          xlimit(1,id)=-5.
          xlimit(2,id)=5.
@@ -71,9 +76,13 @@ c*************************************************************
       include 'examdecl.f'
       real xlimit(2,3)
 
-      do i=1,ndims
-         ifull(i)=Li
-      enddo
+      ifull(1)=na_i
+      ifull(2)=na_j
+      ifull(3)=na_k
+
+c silence warnings:
+      fluxfilename=' '
+      zp(1,1,1)=0.
 c Defaults
       partfilename=' '
 
@@ -131,7 +140,7 @@ c Accumulate the particles into bins.
       include 'meshcom.f'
       real xlimit(2,mdims)
 c      include 'creincom.f'
-      character*100 string
+c      character*100 string
       logical lfirst
       data lfirst/.true./
       save lfirst

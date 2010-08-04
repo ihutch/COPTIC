@@ -52,8 +52,9 @@ c f is exp(u) here for Boltzmann electrons and densities normalized
 c to unity at infinity.
       real function faddu(u,fprime,index)
       real u,fprime
-      include 'ptchcom.f'
-c      if(n_ptch.eq.0)then
+c In order to access point-charge information we need:
+      include '3dcom.f'
+c      if(iptch_mask.eq.0)then
          fprime=exp(u)
          faddu=fprime
 c      else

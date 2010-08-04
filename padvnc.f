@@ -27,7 +27,7 @@ c Collision settings.
 c Local storage
       parameter (fieldtoolarge=1.e12)
       integer ixp(ndims_mesh)
-      real field(ndims_mesh)
+      real field(ndims_mesh),adfield(ndims_mesh)
       real xfrac(ndims_mesh)
       logical linmesh
       logical lcollided
@@ -56,16 +56,13 @@ c      write(*,*)'Setting averein in padvnc.',phirein
       n_part=0
       nsubc=0
       nwmax=20
+      do idf=1,ndims
+         adfield(idf)=0.
+      enddo
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 c At most do over all particle slots. But generally we break earlier.
       do i=1,n_partmax
-c Diagnosing errors:
-c         if(i.le.2)then
-c            write(*,*)'x_part',i,(x_part(k,i),k=1,9),dtprec(i)
-c         endif
-
          dtremain=0.
-c         dtprec(i)=dt
          dtpos=dt
 c=================================
 c Decide nature of this slot
@@ -97,20 +94,36 @@ c Ought not to be necessary, but this is a safety check.
      $           ,nrein,ninjcomp
          endif
 c---------------------------------
-c Get the ndims field components at this point. 
+c call getptchfield. adfield must always be zero arriving here.
+         irptch=IAND(iregion,iptch_mask)
+         if(irptch.ne.0)then
+c We are in a point-charge region. Get analytic part of force.
+            call getadfield(ndims,irptch,adfield,x_part(1,i),2)
+            write(*,'(i7,'' in ptch region'',i8,6f8.3)')
+     $           i,irptch,(x_part(k,i),k=1,3)
+     $           ,(adfield(k),k=1,3)
+         endif
+c Get the ndims field components at this point, from mesh potential.
 c We only use x_part information for location. So we need to pass
 c the region information.
          f2=0
          do idf=1,ndims
             call getfield(ndims,cij(ic1),u,iLs
      $           ,xn(ixnp(idf)+1),idf,x_part(ndimsx2+1,i)
-     $           ,imaskregion(iregion),field(idf))
+     $           ,IAND(iregion,ifield_mask),field(idf))
             if(.not.abs(field(idf)).lt.fieldtoolarge)then
                write(*,*)'Field corruption(?)',i,idf,field
      $              ,(x_part(kk,i),kk=1,3*ndims)
             endif
+            field(idf)=field(idf)+adfield(idf)
             f2=f2+field(idf)**2
          enddo
+c If needed, reset adfield.
+         if(irptch.ne.0)then
+            do idf=1,ndims
+               adfield(idf)=0
+            enddo
+         endif
          f1=sqrt(f2)
 c Example of testing code: the few-argument field evaluator.
 c                  call fieldatpoint(x_part(1,i),u,cij,iLs,fieldp)
@@ -213,7 +226,7 @@ c         dtpos=dtpos*ran1(myid)
          nlost=nlost+1
          nrein=nrein+ilaunch
          phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i)
-     $        ,imaskregion(iregion),2)
+     $        ,IAND(iregion,ifield_mask),2)
          phirein=phirein+ilaunch*phi
          call diaginject(x_part(1,i))
 c Restart the rest of the advance
@@ -260,6 +273,55 @@ c      write(*,*)'Padvnc',n_part,nrein,ilaunch,ninjcomp,n_partmax
       end
 
 c***********************************************************************
+      subroutine getadfield(ndims,irptch,adfield,xp,isw)
+c Cycle through the nonzero bits of irptch and add up the extra
+c potential (isw=1), field (isw=2) or charge (isw=3) contributions.
+c adfield should be zero on entry, because it ain't set,
+c just incremented.
+      real adfield(ndims)
+      real xp(ndims)
+      include '3dcom.f'
+      real xd(ns_ndims)
+      im=irptch
+      do i=1,31
+         if(im.eq.0)return
+         if(mod(im,2).ne.0)then
+c This bit set. Add analytic field.
+            p2=0
+            do id=1,ndims
+               xc=xp(id)-obj_geom(ocenter+id-1,i)
+               xr=obj_geom(oradius+id-1,i)
+               xd(id)=xc/xr
+               p2=p2+(xd(id))**2
+            enddo
+            if(p2.lt.1.e-12)then
+c Avoid overflows:
+               p2=1.e-12
+               write(*,*)'ptch field overflow corrected'
+            endif
+            p1=sqrt(p2)
+c (There are inconsistencies if radii are not equal. Not allowed.)
+            if(isw.eq.2)then
+               tfield=(obj_geom(omag,i)/p1)*(1./p2-4.*p1+3.*p2)
+               do id=1,ndims
+                  adfield(id)=adfield(id)+
+     $                 tfield*(xd(id)/obj_geom(oradius+id-1,i))
+               enddo
+            elseif(isw.eq.1)then
+               tpotl=obj_geom(omag,i)*(1/p1+2.*p2-p1*p2-2.)
+               adfield(1)=adfield(1)+tpotl
+            elseif(isw.eq.3)then
+               tchg=(obj_geom(omag,i)/p2)*12.*(1.-p1)
+               adfield(1)=adfield(1)+tchg
+            else
+               write(*,*)'getadfield switch error'
+               stop
+            endif
+         endif
+         im=im/2
+      enddo
+      
+      end
 c***********************************************************************
       subroutine partlocate(i,ixp,xfrac,iregion,linmesh)
 

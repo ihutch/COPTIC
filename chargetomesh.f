@@ -83,7 +83,7 @@ c Set the density
       ind=1+ipoint
       if(volumes(ind).gt.1.e20)then
 c This is outside the region. Compensate the electron density.
-         rho(ind)=faddu(u(ind),fprime)
+         rho(ind)=faddu(u(ind),fprime,ind)
 c         rho(ind)=0.
       else
          rho(ind)=psum(ind)/(rhoinf*volumes(ind))

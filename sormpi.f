@@ -42,9 +42,9 @@ c               deposits into the edge values of the potential.
 c               bdyset(ndims,ifull,iuds,cij,u,q)
 c               If non-constant coefficients are required, then
 c               bdyset could be used to adjust their values.
-c     faddu(u,fprime)  
+c     faddu(u,fprime,index)  
 c               real function that returns the additional component
-c               f, and as parameter fprime=f'.
+c               f, and as parameter fprime=df/du.
       external faddu
 c     ictl  integer control switches
 c           bit 1: user-defined iteration parameters (default no)

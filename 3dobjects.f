@@ -3,7 +3,6 @@ c Initialize with zero 3d objects.
       block data com3dset
       include '3dcom.f'
       include 'meshcom.f'
-      include 'ptchcom.f'
       data ngeomobj/0/
 c Default track no objects.
       data nf_map/ngeomobjmax*0/
@@ -32,7 +31,7 @@ c Mesh default initialization (meshcom.f)
       data xmeshpos/ndims_mesh*-5.,ndims_mesh*5.,imsr*0./
 
 c Default no point charges:
-      data n_ptch/0/
+      data ptch_mask/0/
 
 c We don't do flux initialization in a block data. Too big.
       end
@@ -44,18 +43,26 @@ c**********************************************************************
       write(*,*)'First line number of dimensions: 3'
       write(*,*)'Thereafter ignored comment lines start with #'
       write(*,*)
-      write(*,*)'Object lines have the format: type, a,b,c, center(3),'
+      write(*,*)'Object lines have the format: otype, a,b,c, center(3),'
      $     ,' radii(3), [extra data]'
       write(*,*)' if a=b=c=0, no potential BC is applied and object'
      $     ,' is masked.'
-      write(*,*)'type indicates how to use the line. Higher bytes'
-     $     ,' of type indicate specials.'
+      write(*,*)'otype indicates how to use the line. Higher bytes'
+     $     ,' of otype indicate specials.'
       write(*,*)'byte-1: 1 Spheroid, 2 Cuboid, 3 Cylinder, 4 Parallel'
-     $     ,'opiped,'
+     $     ,'opiped, ...'
+      write(*,*)'For Spheroid, extra data (3) indicate flux'
+     $     ,' accumulation thus:'
+      write(*,*)'ofluxtype [number of fluxes], ofn1 [size],'
+     $     ,' ofn1 [size] of uniform array.'
+      write(*,*)'Other objects do not have flux accumulation yet.'
       write(*,*)' 99 Boolean region,  91-3 Set mesh in dimension 1-3. '
       write(*,*)'byte-2: 1(x256) Special boundary phi=0 instead of '
      $     ,'continuity.'
-      write(*,*)'byte-2: 2(x256) Tally exit?'
+      write(*,*)'byte-2: 2(x256) Point-charge (spherical) object.'
+     $     ,' Special treatment'
+      write(*,*)' for which 2nd of extra (ofn1) is charge magnitude='
+     $     ,' coulomb-phi at radius.'
       write(*,*)
       write(*,'(a)')
      $     'Boolean particle region 99, n1, n1*values, n2, values,.. 0:'
@@ -127,6 +134,10 @@ c Use only lower byte.
       itype=int(type)
       type=int(itype - 256*(itype/256))
       ngeomobj=ngeomobj+1
+      if(ngeomobj.gt.ngeomobjmax)then
+         write(*,*)'More objects than can be managed in ',ngeomobjmax
+         goto 901
+      endif
       if(type.eq.1.)then
          read(cline,*,err=901,end=801)
      $        (obj_geom(k,ngeomobj),k=1,odata)
@@ -187,6 +198,18 @@ c If this is a null boundary condition clear the relevant bit.
      $     .and. obj_geom(oabc+1,ngeomobj).eq.0.
      $     .and. obj_geom(oabc+2,ngeomobj).eq.0.)
      $     ifield_mask=IBCLR(ifield_mask,ngeomobj-1)
+c If this is a point-charge object, set the relevant mask bit.
+      if(itype/256.eq.2)then
+         if(
+     $        obj_geom(oradius,ngeomobj).ne.obj_geom(oradius+1,ngeomobj)
+     $        .or.
+     $        obj_geom(oradius,ngeomobj).ne.obj_geom(oradius+2,ngeomobj)
+     $        )then
+            write(*,*)'Unequal radii not allowed for ptch'
+            stop
+         endif
+         iptch_mask=IBSET(iptch_mask,ngeomobj-1)
+       endif
  820  format(i3,a,$)
  821  format(f4.0,9f7.3)
       goto 1
@@ -294,7 +317,7 @@ c
 
       end
 c*****************************************************************
-c Return the masked iregion.
+c Return the masked iregion. Used only in fieldatpoint now.
       function imaskregion(iregion)
       include '3dcom.f'
       imaskregion=IAND(iregion,ifield_mask)
@@ -600,17 +623,22 @@ c         write(*,101)i,ipoint,idob_sor(iregion_sor,i),x
 c*****************************************************************
       subroutine reportfieldmask()
       include '3dcom.f'
-      integer ip(32)
-c Calculate the bits of the field mask.
+      integer ipb(32),ifb(32)
+c Calculate the bits of the field mask and iptch_mask.
       ifd=ifield_mask
+      ipp=iptch_mask
       do i=1,32
-         ip(32-i+1)=ifd - 2*(ifd/2)
+         ipb(32-i+1)=ipp - 2*(ipp/2)
+         ipp=ipp/2
+         ifb(32-i+1)=ifd - 2*(ifd/2)
          ifd=ifd/2
       enddo
 c      write(*,*)'Initializing Object Regions:No, pointer, region, posn.'
 c This is an unportable extension. Hence the calculation above.
 c      write(*,'('' Mask='',i11,'' ='',b32.32)')ifield_mask,ifield_mask
-      write(*,'('' Field Mask='',i11,'' ='',32i1)')ifield_mask,ip
+      write(*,'('' Field Mask='',i11,'' ='',32i1)')ifield_mask,ifb
+c      if(ipp.ne.0)
+      write(*,'('' Ptch Mask= '',i11,'' ='',32i1)')iptch_mask,ipb
       end
 c*******************************************************************
       function ireg3(i,j,k,ifull,cij)

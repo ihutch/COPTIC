@@ -4607,3 +4607,16 @@ This does not drop the virtual size of phiexamine well below that of coptic,
 so it does not have the desired effect. It is not clear why phiexamine
 is so big. It makes not difference whether the lib is simply put on the 
 command line or search using -L. -lcoptic.
+
+3 Aug 2010
+
+Rationalized array size declarations into mini-file griddecl.f
+Checked out phiexamine, denexamine, partexamine to bring them into
+conformity with the new declarations and to get rid of warnings.
+
+Implemented additional force, with the magnitude corresponding to a
+coulomb potential at the specified radius represented by the
+2nd extra data argument. Of course, the actual extra potential at that
+radius is zero because of the charge shaping/cutoff. This does not 
+perturb the plotted potential very much. But we have not yet implemented
+the effect of faddu.

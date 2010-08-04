@@ -12,21 +12,23 @@ c Ibool defining region of particles.
       integer ibtotal_part
       parameter (ibtotal_part=100)
       integer ibool_part(ibtotal_part)
-c Mask defining the bits relevant to field regions.
+c Mask defining the objects (bits) relevant to field regions.
       integer ifield_mask
+c Mask defining objects that are of special point-charge type.
+      integer iptch_mask
 c Has the particle region got an enclosed region
       logical lboundp
 c What is the reinjection scheme?
       character*50 rjscheme
 
       common /objgeomcom/ngeomobj,obj_geom,nf_map
-     $     ,ibool_part,ifield_mask,lboundp,rjscheme
+     $     ,ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
 
 c Reference to the offset of certain object parameters:
       integer otype,ocenter,oradius,oabc,ocylaxis
       parameter (otype=1,oabc=2,ocenter=5,oradius=8,ocylaxis=14)
-      integer ofluxtype,ofn1,ofn2
-      parameter (ofluxtype=11,ofn1=12,ofn2=13)
+      integer ofluxtype,ofn1,ofn2,omag
+      parameter (ofluxtype=11,ofn1=12,omag=12,ofn2=13)
 c
 c Data that describes the flux to positions on the objects:
       integer nf_quant,nf_obj,nf_maxsteps,nf_datasize
