@@ -31,7 +31,11 @@ c Local storage
       real xfrac(ndims_mesh)
       logical linmesh
       logical lcollided
+      save adfield
 c Testing storage
+      real ptot,atot
+      data ptot/0./atot/0./
+
 c      real fieldp(ndims_mesh)
 c Needed only to print out averein:
 c      common /reinextra/averein,adeficit
@@ -94,19 +98,23 @@ c Ought not to be necessary, but this is a safety check.
      $           ,nrein,ninjcomp
          endif
 c---------------------------------
-c call getptchfield. adfield must always be zero arriving here.
+c call getptchfield.
          irptch=IAND(iregion,iptch_mask)
          if(irptch.ne.0)then
+c adfield must always be zero arriving here. But we don't set it
+c always because that would be expensive.
 c We are in a point-charge region. Get analytic part of force.
             call getadfield(ndims,irptch,adfield,x_part(1,i),2)
-            write(*,'(i7,'' in ptch region'',i8,6f8.3)')
-     $           i,irptch,(x_part(k,i),k=1,3)
-     $           ,(adfield(k),k=1,3)
+c            if(i.eq.1)write(*,'(i7,'' in ptch region'',i8,6f8.3)')
+c     $           i,irptch,(x_part(k,i),k=1,3)
+c     $           ,(adfield(k),k=1,3)
          endif
 c Get the ndims field components at this point, from mesh potential.
 c We only use x_part information for location. So we need to pass
 c the region information.
-         f2=0
+         f2=0.
+         r2=0.
+         v2=0.
          do idf=1,ndims
             call getfield(ndims,cij(ic1),u,iLs
      $           ,xn(ixnp(idf)+1),idf,x_part(ndimsx2+1,i)
@@ -115,8 +123,16 @@ c the region information.
                write(*,*)'Field corruption(?)',i,idf,field
      $              ,(x_part(kk,i),kk=1,3*ndims)
             endif
+            if(i.eq.1)then
+c               write(*,*)
+c     $             idf,irptch,' field,adfield',field(idf),adfield(idf)
+c     $              ,adfield(idf)/field(idf),field(idf)
+c     $              /x_part(idf,i)
+            endif
             field(idf)=field(idf)+adfield(idf)
             f2=f2+field(idf)**2
+            r2=r2+x_part(idf,i)**2
+            v2=v2+x_part(idf+3,i)**2
          enddo
 c If needed, reset adfield.
          if(irptch.ne.0)then
@@ -136,14 +152,14 @@ c---------- Subcycling ----------------
          if(subcycle.ne.0)then            
 c One might have a conditional test to set subcycling for this particle
 c such as this automatic one based on avoiding excessive acceleration.
-            dtc=dt/max(1.,anint(f1*dt/subcycle))
+c            dtc=dt/max(1.,anint(f1*dt/subcycle))
+c            dtc=.1000
+c For testing we just set directly.
+            dtc=subcycle
             if(dtc.lt.dtpos)then
 c Take sub-step.
                nsubc=nsubc+1
-c               if(mod(nsubc,nwmax).eq.0)then
-c                  write(*,'(''Subcycle'',i7,6f8.4)')i,f1,dtc
-c     $                 ,x_part(1,i),x_part(2,i),x_part(3,i)
-c               endif
+c               write(*,*)dtpos,dtremain,dtc
                dtremain=dtpos+dtremain-dtc
                dtpos=dtc
             endif
@@ -160,12 +176,25 @@ c We collided during this step. Do the partial step.
                dtremain=dtpos+dtremain-dtc
                dtpos=dtc
             endif
-         endif
-
+         endif 
 c---------------- Particle Moving ----------------
 c Use dtaccel for acceleration. May be different from dtpos if there was
 c a subcycle, reinjection or collision last step.
          dtaccel=0.5*(dtpos+dtprec(i))
+
+         ptot=ptot+dtpos
+         atot=atot+dtaccel
+c         if(dtpos.ne.dt)then
+c            write(*,'(''Subcycle'',i7,10f8.4)')i,f1,dtc
+c     $        ,x_part(1,i),x_part(2,i),x_part(3,i)
+c     $        ,sqrt(r2),v2
+c     $        ,field(1),field(2),field(3)
+c     $        ,dtremain,dtprec(i),dtpos,dtaccel
+c     $        ,ptot,atot
+c            write(*,*)'xpart',(x_part(k,i),k=1,6)
+c            write(*,*)'field',(field(k),k=1,3)
+c         endif
+
 c Accelerate          
          do j=ndims+1,2*ndims
             x_part(j,i)=x_part(j,i)+field(j-ndims)*dtaccel
@@ -286,32 +315,37 @@ c just incremented.
       do i=1,31
          if(im.eq.0)return
          if(mod(im,2).ne.0)then
-c This bit set. Add analytic field.
-            p2=0
+c This bit set. Add analytic field. Unequal radii not allowed.
+            p2=0.
+            xr=obj_geom(oradius,i)
             do id=1,ndims
                xc=xp(id)-obj_geom(ocenter+id-1,i)
-               xr=obj_geom(oradius+id-1,i)
-               xd(id)=xc/xr
-               p2=p2+(xd(id))**2
+               p2=p2+xc**2
+               xd(id)=xc
             enddo
             if(p2.lt.1.e-12)then
 c Avoid overflows:
                p2=1.e-12
                write(*,*)'ptch field overflow corrected'
             endif
-            p1=sqrt(p2)
+            rp=sqrt(p2)
+            p1=rp/xr
+            xr2=xr**2
+            p2=p2/xr2
 c (There are inconsistencies if radii are not equal. Not allowed.)
+c            write(*,*)irptch,isw,xp,xr,p1,p2
             if(isw.eq.2)then
-               tfield=(obj_geom(omag,i)/p1)*(1./p2-4.*p1+3.*p2)
+               tfield=(obj_geom(omag,i)/xr)*(1./p2-4.*p1+3.*p2)
+c               write(*,*)tfield,obj_geom(omag,i),xr
                do id=1,ndims
                   adfield(id)=adfield(id)+
-     $                 tfield*(xd(id)/obj_geom(oradius+id-1,i))
+     $                 tfield*(xd(id)/rp)
                enddo
             elseif(isw.eq.1)then
                tpotl=obj_geom(omag,i)*(1/p1+2.*p2-p1*p2-2.)
                adfield(1)=adfield(1)+tpotl
             elseif(isw.eq.3)then
-               tchg=(obj_geom(omag,i)/p2)*12.*(1.-p1)
+               tchg=(obj_geom(omag,i)/xr2)*12.*(1.-p1)
                adfield(1)=adfield(1)+tchg
             else
                write(*,*)'getadfield switch error'
@@ -322,6 +356,75 @@ c (There are inconsistencies if radii are not equal. Not allowed.)
       enddo
       
       end
+c***********************************************************************
+      subroutine setadfield(ndimsp,ifull,iuds,irptch,lsliceplot)
+c Set the values of the potential and charge at the grid
+c points that compensate for the analytic field of getadfield.
+      integer ndimsp
+      integer ifull(ndimsp),iuds(ndimsp),irptch
+      logical lsliceplot
+c Defines iptch_copy uci, rhoc and dimensions.
+      include 'griddecl.f'
+      include 'ptchcom.f'
+c ndims must be same as ndimsp.
+c To do the slice plot we need:
+      include 'meshcom.f'
+      real zp(na_m,na_m)
+      integer ipoint
+      external ucrhoset
+      iptch_copy=irptch
+c      write(*,*)'Point charges included. Mask:',iptch_copy
+      ipoint=0
+      call mditerarg(ucrhoset,ndimsp,ifull,iuds,ipoint
+     $     ,uci,rhoci,iptch_copy,idum)
+      if(lsliceplot)then
+         call sliceGweb(ifull,iuds,uci,na_m,zp,
+     $        ixnp,xn,ifix,'u!dc!d ptch')
+         call sliceGweb(ifull,iuds,rhoci,na_m,zp,
+     $        ixnp,xn,ifix,'!Ar!@!dc!d ptch')
+      endif
+      end
+c**********************************************************************
+      subroutine ucrhoset(inc,ipoint,indi,ndims,iuds,
+     $     uci,rhoci,iptch_copy)
+c         routine(inc,ipoint,indi,ndims,iused,t,u,v,w) is called
+      integer inc,ipoint,ndims,indi(ndims),iuds(ndims)
+      real uci(*),rhoci(*)
+c Commons: For position.
+      include 'meshcom.f'
+c For debyelen
+      include 'plascom.f'
+c Local storage:
+      integer isw,iregion,irptch
+      real xp(ndims_mesh),adfield(ndims_mesh)
+c      write(*,*)'ucrhoset',ipoint,indi,iuds,ndims
+c      if(ipoint.gt.100)stop
+c Get grid point position, and irptch.
+      do id=1,ndims
+         xp(id)=xn(ixnp(id)+1+indi(id))
+      enddo
+      iregion=insideall(ndims,xp)
+      irptch=IAND(iregion,iptch_copy)
+      if(irpthc.ne.0)then
+c Get uc
+         isw=1
+         adfield(1)=0.
+         call getadfield(ndims,irptch,adfield,xp,isw)
+         uci(ipoint+1)=adfield(1)
+c Get charge
+         isw=3
+         adfield(1)=0.
+         call getadfield(ndims,irptch,adfield,xp,isw)
+         rhoci(ipoint+1)=debyelen**2*adfield(1)
+      else
+         uci(ipoint+1)=0.
+         rhoci(ipoint+1)=0.
+      endif
+c Always just increment by 1
+      inc=1
+c      write(*,*)'ucrhoset return',irptch
+      end
+
 c***********************************************************************
       subroutine partlocate(i,ixp,xfrac,iregion,linmesh)
 

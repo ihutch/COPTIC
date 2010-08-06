@@ -8,7 +8,8 @@
 # Specify flux accumulation for 5 quantities in 50 bins of cos\theta, 1 of psi.
 1 , 1.,0.,2., .0,.0,.0,  1.,1.,1.,  5, 50, 1  
 # Point charge of given center radius and magnitude 40.
-#513,0.,0.,0., 3.5,3.,0.,  1.,1.,1.,  0,400.,0
+#513,0.,0.,0., 3.3,3.0,-.2,  1.,1.,1.,  0,-4.,0
+#513,0.,0.,0., 0.,0.,0.,  2.,2.,2.,  0,-1.,0
 #
 # Boolean that specifies the particle region 99, n1, n1*values, n2, ... 0:
 # Each nk values are ored together. The groups are anded.

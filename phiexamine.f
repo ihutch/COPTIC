@@ -67,8 +67,9 @@ c         write(*,*)rs
          call pltinit(0.,rs,u(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
          call axis()
          call axlabels('radius','potential')
-         call charsize(.001,.001)
+         call charsize(.005,.005)
          phimin=0.
+         rmin=0.
          do k=1,iuds(3)
             do j=1,iuds(2)
                do i=1,iuds(1)
@@ -80,13 +81,17 @@ c         write(*,*)rs
                   if(r.gt.rs .and. u(i,j,k).ne.0)then
 c                  write(*,'(4f12.6,3i3)')x,y,z,u(i,j,k),i,j,k
                   endif
-                  if(u(i,j,k).lt.phimin)phimin=u(i,j,k)
+                  if(u(i,j,k).lt.phimin)then
+                     phimin=u(i,j,k)
+                     rmin=r
+                  endif
                enddo
             enddo
          enddo
          do i=1,100
-            ro(i)=1.+(rs-1.)*i/100
-            oneoverr(i)=phimin/ro(i)
+c            ro(i)=1.+(rs-1.)*i/100
+            ro(i)=rmin+(rs-rmin)*(i-1.)/(100-1.)
+            oneoverr(i)=phimin*rmin/ro(i)
          enddo
 c Average together.
          denmin=0.
@@ -147,8 +152,10 @@ c         enddo
 
          call charsize(0.,0.)
          call color(2)
+         call dashset(2)
          call polyline(ro,oneoverr,100)
          call legendline(.5,.1,0,'Coulomb Potential')
+         call dashset(0)
          call pltend()
 c%%%%%%%%%%%%%%% End of spherical r-theta plotting %%%%%%%%%%%
       elseif(iplot.eq.1)then

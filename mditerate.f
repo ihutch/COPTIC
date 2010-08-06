@@ -1,10 +1,11 @@
 c***********************************************************************
-      subroutine mditerate(ndims,ifull,iused,routine,u,ipin)
+c      subroutine mditerate(ndims,ifull,iused,routine,u,ipin)
+c New argument order the same as mditerarg.
+      subroutine mditerate(routine,ndims,ifull,iused,ipin,u)
 c multidimensional iteration. For dimensions ndims, iterate over the
 c array whose full dimensions are ifull(ndims) used iused(ndims).
 c At each iteration, 
 c         routine(inc,ipoint,indi,ndims,iused,u) is called,
-c
 c which accepts a pointer to the address in the array structure: ipoint
 c referred to the full dimensions of u, so u(1+ipoint) is processed.  It
 c returns the next increment in units of the lowest dimension: inc. The
@@ -210,6 +211,7 @@ c multidimensional iteration. For dimensions ndims, iterate over the
 c array whose full dimensions are ifull(ndims) used iused(ndims).
 c This version allows four (array) arguments: t,u,v,w to be passed.
 c At each iteration, the routine (which should be declared external)
+c
 c         routine(inc,ipoint,indi,ndims,iused,t,u,v,w) is called,
 c whose arguments are
 c      integer ipin,inc
@@ -333,7 +335,7 @@ c Offset.
          indinp(n)=indi(n)
          iLs(n+1)=iLs(n)*ifull(n)
          if(indinp(n)+iused(n).gt.ifull(n))then
-            write(*,*) 'MDITERATE Error. Dimension',n,' ioff + iused',
+            write(*,*) 'MDITERSET Error. Dimension',n,' ioff + iused',
      $           indinp(n),iused(n),' .gt. ifull',ifull(n)
          endif
       enddo
@@ -393,4 +395,70 @@ c On exit indi contains the corresponding (ndims)-dimensional offsets.
       indi(ndims)=ind
       if(ind.gt.ifull(3)) write(*,*)'indexexpand index too big',index
       end
-c********************************************************************
+c******************************************************************
+      subroutine mditeradd(u,ndims,ifull,iused,ipin,v)
+c Iterate over the array u, adding v(array) to it.
+c Uses the mechanisms of mditerate. But inc is always 1.
+c Normally, the starting pointer is ipin=0 for the full array.
+      integer ndims
+      integer ifull(ndims)
+      integer iused(ndims)
+      real u(*),v(*)
+
+      integer mdims
+      parameter (mdims=10)
+c Effective index in dimension, c-style (zero based)
+      integer indi(mdims),indinp(mdims)
+c Structure vector
+      integer iLs(mdims+1)
+      common /iLscom/iLs
+      
+      call offsetexpand(ndims,ifull,ipin,indi)
+      iLs(1)=1
+      do n=1,ndims
+         indinp(n)=indi(n)
+         iLs(n+1)=iLs(n)*ifull(n)
+         if(indinp(n)+iused(n).gt.ifull(n))then
+            write(*,*) 'MDITERADD Error. Dimension',n,' ioff + iused',
+     $           indinp(n),iused(n),' .gt. ifull',ifull(n)
+         endif
+      enddo
+      ipoint=ipin
+
+      inc=1
+      n=1
+c Iteration over the multidimensional array
+ 101  continue
+c      write(*,'(''('',i1,i4,'') '',$)')n,indi(n)
+      if(indi(n)-indinp(n).gt.iused(n)-1)then
+c     Overflow. Subtract off enough (inm) of next dimension
+c     and move ipoint to appropriate position in full array.
+         inm=0
+ 102     inm=inm+1
+         ipoint=ipoint+iLs(n+1)-iused(n)*iLs(n)
+         indi(n)=indi(n)-iused(n)
+         if(indi(n)-indinp(n).gt.iused(n)-1)goto 102
+c Increment the next level.
+         n=n+1
+         if(n.gt.ndims)goto 201
+         indi(n)=indi(n)+inm
+         goto 101
+      elseif(n.gt.1)then
+c We've carried and cleared an increment.
+c Return stepwise to base level
+         n=n-1
+         goto 101
+      else
+c We're at the base level and have succeeded in incrementing.
+c Do whatever we need to and increment indi(1) and ipoint
+         u(ipoint+1)=u(ipoint+1)+v(ipoint+1)
+         indi(1)=indi(1)+inc
+         ipoint=ipoint+inc
+         goto 101
+      endif
+
+ 201  continue
+c Reached the end.
+      end
+c******************************************************************
+      

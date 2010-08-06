@@ -31,7 +31,7 @@ c Mesh default initialization (meshcom.f)
       data xmeshpos/ndims_mesh*-5.,ndims_mesh*5.,imsr*0./
 
 c Default no point charges:
-      data ptch_mask/0/
+      data iptch_mask/0/
 
 c We don't do flux initialization in a block data. Too big.
       end
@@ -222,7 +222,7 @@ c This had to be associated with coptic because of makefile logic.
 c      include 'REINJECT.f'
 c      write(*,'(2a,$)')'Reinjection scheme: ',rjscheme(:40)
 c Set whether particle region has a part inside an object.
-      lboundp=lbounded(ibool_part,ndims_mesh)
+      lboundp=lbounded(ibool_part,ndims_mesh,ifield_mask)
       if(lboundp.and.rjscheme(1:4).eq.'cart')then
          write(*,'(3a)')'ERROR: using cartesian injection'
      $        ,' with bounded region.'
@@ -437,10 +437,10 @@ c************************************************************
 c Return whether the particle region specified by ibool has any
 c enclosed regions (regions inside an object. If it does, then
 c cartesian reinjection is not correct. 
-      logical function lbounded(ibool,ndims)
+      logical function lbounded(ibool,ndims,ifmask)
 c ibool structure: n1, n1*values, n2, n2*values, ... ,0
       integer ibool(*)
-      integer ndims
+      integer ndims,ifmask
       logical ltemp
 c  linregion = Prod_1^nj Sum_1^ni inside(bool(ni,nj))
 c where inside(n) is true if n is +/-ve and x is inside/outside |n|. 
@@ -454,7 +454,15 @@ c Special case for zero particle boolean.
 c Reading objects for group ending at n1-1
         i=i+1
          ib=ibool(i)
-c         write(*,*)i,ib
+c Trap subtle object error.
+         if(ibits(ifmask,abs(ib)-1,1).eq.0)then
+            write(*,*)'Particle region boolean error.'
+     $           ,(ibool(k),k=1,6),' ...'
+            write(*,*)'Specified non-field-boundary object',ib
+            call reportfieldmask()
+            write(*,*)'You must fix the object file. Aborting ...'
+            stop
+         endif
          if(ib.gt.0)then
 c A positive ib value defines inside object.
             ltemp=.true.

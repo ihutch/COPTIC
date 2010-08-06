@@ -461,6 +461,8 @@ c      write(*,*)name
       write(charout,51)debyelen,Ti,vd,rs,phip
  51   format('debyelen,Ti,vd,rs,phip:',5f10.4)
 
+c      write(*,*)'mf_obj=',mf_obj,nf_step,mf_quant(1)
+
       open(22,file=name,status='unknown',err=101)
       close(22,status='delete')
       open(22,file=name,status='new',form='unformatted',err=101)
@@ -474,13 +476,15 @@ c This write sequence must be exactly that read below.
      $     ,i=1,mf_quant(j)),j=1,mf_obj)
       write(22)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+1)
-c This and three other places:
+c      write(*,*)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
+c     $     k=1-nf_posdim,nf_step+1)
 c      write(*,*)nf_step,'nf_address',(nf_address(1,1,i),i=1,nf_step+1)
       write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
+c New force write.
+      write(22)(((fieldforce(i,j,k),pressforce(i,j,k) ,partforce(i,j,k)
+     $     ,charge_ns(j,k),i=1,ns_ndims),j=1,mf_obj),k=1,nf_step)
 
-      write(22) fieldforce,pressforce,partforce,charge_ns
       close(22)
-
 c      write(*,*)'Wrote flux data to ',name(1:lentrim(name))
 
       return
@@ -511,8 +515,15 @@ c use the following version and ignore the last step.
 c      read(23)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
 c     $     k=1-nf_posdim,nf_step)
 c      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step)-1)
-      read(23) fieldforce,pressforce,partforce,charge_ns
-      close(23)
+
+c Old force write was stupid and so was read.
+c      read(23) fieldforce,pressforce,partforce,charge_ns
+      read(23,end=102, err=102)(((fieldforce(i,j,k),pressforce(i,j,k)
+     $     ,partforce(i,j,k),charge_ns(j,k),i=1,ns_ndims),j=1,mf_obj),k
+     $     =1,nf_step)
+      goto 103
+ 102  write(*,*)'Failed to read back forces. Old format?'
+ 103  close(23)
 
       write(*,*)'Read back flux data from ',name(1:lentrim(name))
       write(*,*)charout(1:lentrim(charout))

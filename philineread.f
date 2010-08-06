@@ -2,11 +2,11 @@
 
       include 'examdecl.f'
 
-      character*100 filenames(Li)
+      character*100 filenames(na_m)
       character*50 string
       parameter (nfx=20)
       integer ild,ilinechoice(ndims_mesh,nfx),ip(ndims_mesh)
-      real philine(Li),xline(Li)
+      real philine(na_m),xline(na_m)
       real darray(nfx),pmax(nfx),punscale(nfx),rp(nfx)
 
 c philineread commons
@@ -42,14 +42,18 @@ c      write(*,*)nf,idl
       nplot=0
       do inm=1,nf
          phifilename=filenames(inm)
+c         write(*,*)ifull,iuds
          call array3read(phifilename,ifull,iuds,u,ierr)
          if(ierr.eq.1)stop
          do i=1,ndims_mesh
-            if(iuds(i).gt.Li) then
-               write(*,*)'Data too large for Li',Li,iuds(i)
+            if(iuds(i).gt.na_m) then
+               write(*,*)'Data too large for na_m',na_m,iuds(i)
                stop
             endif
          enddo
+
+c      call sliceGweb(ifull,iuds,u,na_m,zp,
+c     $     ixnp,xn,ifix,'potential:'//'!Ay!@')
 
 c Select the lineout into the plotting arrays.      
          if(ild.ne.0)then
@@ -196,7 +200,7 @@ c ild is the dimension that is fixed, and must be the same for all files.
 c the logic will break if it is changed by -l in the middle.
 
       include 'examdecl.f'
-      character*100 filenames(Li)
+      character*100 filenames(na_m)
       real rp(nf)
       integer nf,ild,ilinechoice(ndims_mesh,nf)
       integer idj(ndims_mesh)
@@ -207,11 +211,11 @@ c the logic will break if it is changed by -l in the middle.
       common /linecom/xmin,xmax,ymin,ymax,lrange,lwrite
      $     ,iover,overfile
 
+      ifull(1)=na_i
+      ifull(2)=na_j
+      ifull(3)=na_k
 c Passed in array dimension
       nfx=nf
-      do i=1,ndims
-         ifull(i)=Li
-      enddo
 
 c Defaults and silence warnings.
       phifilename=' '
@@ -295,6 +299,7 @@ c     $     //' [ccpicgeom.dat'
       write(*,301)'    and row position in other dimensions. ['
      $     ,(ilinechoice(k,1),k=1,ndims_mesh)
       write(*,301)' -y<min>,<max>   -x<min>,<max>  set plot ranges'
+      write(*,301)' -o<figfile> overplot traces using xfig2trace.'
       write(*,302)' -r<r> set radius [',rread
       write(*,301)' -h -?   Print usage.'
       call exit(0)

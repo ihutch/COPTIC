@@ -1,6 +1,6 @@
 c***********************************************************************
 c Initializing particles.
-      subroutine pinit()
+      subroutine pinit(subcycle)
 c Common data:
       include 'partcom.f'
       include 'plascom.f'
@@ -61,5 +61,20 @@ c Initialize orbit tracking
       do ko=1,norbits
          iorbitlen(ko)=0
       enddo
+c-----------------------------------------------------------------
+c A special orbit.
+c Pinit resets x_part. So set it for the special first particle.
+      x_part(1,1)=2.
+      x_part(2,1)=0.
+      x_part(3,1)=0.
+c Prior half-step radial velocity
+      x_part(4,1)=0.5*subcycle*(abs(phip)/x_part(1,1)**2)
+c      x_part(4,1)=0.5*dt*(abs(phip)/x_part(1,1)**2)
+c      x_part(4,1)=0.25*dt*(abs(phip)/x_part(1,1)**2)
+c Tangential velocity of circular orbit at r=?.
+      x_part(5,1)=sqrt(abs(phip/x_part(1,1))-x_part(4,1)**2)
+      x_part(6,1)=0.
+      call partlocate(1,ixp,xfrac,iregion,linmesh)
+      write(*,*)'PINIT',(x_part(i,1),i=1,9),phip
       end
 c***********************************************************************

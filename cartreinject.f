@@ -389,7 +389,9 @@ c Assume vd is in the last dimension
          flux=flux+a
          volume=volume*(xmeshend(i)-xmeshstart(i))
       enddo
-      if(nrein.ne.0)then
+c      if(nrein.ne.0)then
+c Better to use a significant number to avoid bias at low reinjections.
+      if(nrein.ge.10)then
 c Calculate rhoinf from nrein if there are enough.
 c Correct approximately for edge potential depression (OML).
 c         chi=min(-phirein/Ti,0.5)

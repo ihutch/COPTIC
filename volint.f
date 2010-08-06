@@ -3,6 +3,8 @@ c************************************************************************
 c Routine to be passed to mditerarg, to store the volumes calculated
 c from meshcom for unintersected points or by volintegrate.
 c Can't be called for edge nodes.
+c Does not work for objects that do not set the intersections,
+c e.g. point-charge objects. 
       subroutine volnode(inc,ipoint,indi,ndims,iused,
      $     volumes,cij)
       integer ipoint,inc

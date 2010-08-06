@@ -34,6 +34,8 @@ c Plasma common data
       include 'plascom.f'
 c Collision common data
       include 'colncom.f'
+c Point charge common data
+      include 'ptchcom.f'
 c      integer ndims
 c      parameter (ndims=ndims_sor)
       external bdyset,faddu,cijroutine,cijedge,psumtoq
@@ -310,6 +312,10 @@ c Initialize charge (set q to zero over entire array).
       call mditerset(q,ndims,ifull,iuds,0,0.)
 c Initialize potential (set u to zero over entire array).
       call mditerset(u,ndims,ifull,iuds,0,0.)
+c Initialize additional potential and charge if needed.
+      if(iptch_mask.ne.0)
+     $     call setadfield(ndims,ifull,iuds,iptch_mask,lsliceplot)
+
 c---------------------------------------------------------------     
 c An inital vacuum solution with zero density. 
 c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
@@ -327,35 +333,31 @@ c-------------------------------------------------------------------
       endif
 c End of plotting.
 c------------------------------------------------------------------
-c Now using general definition to accommodate union regions.
+c Set phip from the first object if it makes sense.
+      if(obj_geom(oabc,1).ne.0)then
+         phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
+      elseif(obj_geom(oradius,1).ne.0.)then
+         phip=obj_geom(omag,1)*obj_geom(oradius,1)
+         write(*,*)'Potential from point charge',obj_geom(omag,1)
+     $        ,' at radius ',obj_geom(oradius,1),' Charge:',phip
+      else
+         write(*,*)'Potential phip not set from objects.'
+         phip=0.
+      endif
+c------------------------------------------------------------------
 c Initialize with a specified number of particles.
 c (Re)Initialize the fortran random number generator.
       idum=-myid-1
       rdum=ran1(idum)
 c      if(lmyidhead)write(*,*)'Initializing',n_part,' particles'
-      call pinit()
+      call pinit(subcycle)
 c      if(lmyidhead)write(*,*)'Return from pinit'
-c------------------------------------------------------------------
-c A special orbit.
-      phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
-c Pinit resets x_part. So set it for the special first particle.
-      x_part(1,1)=2.
-      x_part(2,1)=0.
-      x_part(3,1)=0.
-c Prior half-step radial velocity
-      x_part(4,1)=0.5*dt*(abs(phip)/x_part(1,1)**2)
-c Tangential velocity of circular orbit at r=4.
-      x_part(5,1)=sqrt(abs(phip/x_part(1,1))-x_part(4,1)**2)
-      x_part(6,1)=0.
-c      if(lmyidhead)write(*,*)'dt=',dt,' vd=',vd
-c ' dtheta=',dt*x_part(5,1)/x_part(1,1),
-c     $     ' steps=',nsteps,' total theta/2pi='
-c     $     ,nsteps*dt*x_part(5,1)/x_part(1,1)/2./3.1415927
 c---------------------------------------------
 c Initialize the fluxdata storage and addressing.
       call fluxdatainit(myid)
 c Initialize the force tracking.
       call forcetrackinit()
+      write(*,*)'mf_obj=',mf_obj
 c---------------------------------------------
       phirein=0.
       ninjcomp0=ninjcomp
@@ -472,11 +474,16 @@ c      if(lorbitplot)call orbit3plot(ifull,iuds,u,phip,rc,rs)
      $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl,norbits)
 c      write(*,*)'Finished orbitplot.'
 
-      if(lmyidhead)write(*,*)
       call partwrite(partfilename,myid)
-      if(lmyidhead)call namewrite(phifilename,ifull,iuds,uave,'.pha')
-      if(lmyidhead)call namewrite(phifilename,ifull,iuds,qave,'.den')
-      if(lmyidhead)call namewrite(phifilename,ifull,iuds,u,'.phi')
+      if(lmyidhead)then
+         if(iptch_mask.ne.0)then
+            call mditeradd(u,ndims,ifull,iuds,0,uci)
+            call mditeradd(uave,ndims,ifull,iuds,0,uci)
+         endif
+         call namewrite(phifilename,ifull,iuds,uave,'.pha')
+         call namewrite(phifilename,ifull,iuds,qave,'.den')
+         call namewrite(phifilename,ifull,iuds,u,'.phi')
+      endif
       
 c-------------------------------------------------------------------
       call mpifinalize(ierr)

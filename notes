@@ -4620,3 +4620,169 @@ coulomb potential at the specified radius represented by the
 radius is zero because of the charge shaping/cutoff. This does not 
 perturb the plotted potential very much. But we have not yet implemented
 the effect of faddu.
+
+4 Aug 2010
+
+Changed the order of arguments in mditerate to be equivalent to that
+of mditerarg. This is to reduce potential confusion.
+
+Implemented setadfield to insert the uc and rhoc. It also plots slices
+if -gs is set, so we can examine the results. 
+
+When we write out the data to disk, we either need to add on the ptch
+potential, or we need to write it out. Implemented the addition to both
+phi and pha.
+
+Implemented faddu modifications.
+Ought now to be working.
+
+Try some cases with nothing but a point charge. Found a few problems
+with fluxwriting. Rationalized that. Found that there was a problem that
+arose from accidentally using the point-charge object to define the
+particle region. That does not work, because volint breaks when it can't
+rely on intersections being set at the boundary. They are not set with
+an object that is masked out by having all its abc equal to zero. Such
+an object can't be part of the structure that defines the particle region.
+Implement a trap to prevent that happening.
+
+Now we seem to have cases with nothing but a point charge working.
+The u potential (initially) seems to take the peak value approximately
+equal to the charge value specified (phi at r_o). I don't know if that
+makes sense. It drops a bit after some evolution and ion shielding.
+
+However, the simple test develops an overall instability in the average
+of potential! Annoying but perhaps not totally unexpected, since we
+now have no potential set anywhere. It's basically an instability
+in the rhoinf. It is suppressed by using -rx.5, or -rx0, or even -rx.8.
+Good!
+
+5 Aug 2010
+
+Exercising some benchmarks with pure point charge. 
+With large debyelen there is a problem if the bdymach condition is used.
+There is simply a big offset in potential. That's bad. 
+Instead one must switch back to bdyslpd and set the radial derivative
+to -1 (logarithmic). Then convergence is very rapid to a potential that
+agrees almost perfectly with Coulomb. (After some mods to phiexamine to
+make the plots sensible). This shows that the potential solver and 
+compensation is working correctly. At large lambda, it is dominated by
+the additional charge.
+
+Testing orbits. Used  ./coptic -s100 -go1 -l100. -ri1. 
+but did not get a closed orbit. Strong precession. That's not right
+it ought to be at least elliptical or even circular if the energy 
+is correct.
+
+Switching back to sphere potential, we get a circular orbit, potential
+-2 at r=1. 
+
+Worked on this problem and found and fixed some bugs in the getadfield
+calculation. Now we get a good circular orbit and a decent elliptical one
+affected by step size. The step size issues are puzzling. Using quite big
+steps for the circle does not produce large cumulative errors, but turning
+on subcycling produces substantial errors. Subcycling had seemed to help
+with the ellipse. Subcycling is not working as expected. The effect of
+subcycling gets worse and worse, as we force more steps with a lower limit.
+
+Logic of padvnc needs reexamining. We have the following timestep parameters
+
+dt
+dtprec(i)
+dtremain
+dtc
+dtaccel
+
+At top of each particle cycle, dtpos is set to dt and dtremain to 0.
+100 continue
+Fields are calculated at the current position.
+Subcycle evaluates dtc based on the field, and if it is .lt. dtpos,
+then it calls for a substep, setting
+       dtremain=dtpos+dtremain-dtc              dtpos=dtc
+Seems to be the same for collisions.
+Then            dtaccel=0.5*(dtpos+dtprec(i))
+Here we have a bit of a puzzle at startup as to what ought to be taken
+for dtprec(i). If we took a previous step, dtprec ought to be the duration
+of that previous step. 
+Then acceleration by dtaccel is done
+Then moving by dtpos is done.
+Then set     dtprec(i)=dtpos. 
+And          if(dtremain.gt.0.)then   
+	     dtpos=dtremain  dtremain=0. goto 100 
+In other words we try to take a step equal to the remaining time in
+this step if it is positive.
+Then we save the orbits, and move to next particle. 
+
+
+The problem is nothing to do with point-charges. Exists with finite
+objects. We appear to be seeing a sling-shot effect as the particle
+approaches the perigee. Too much acceleration when close, too little
+far away. The problem is not due to changes in dtc. Setting dtc to
+a constant gives the same problem.
+
+Found a bug on the very first getfield call. The xp fractions are not
+set correctly, so the field is incorrect. This is for the special particle.
+Fixed that bug by moving the special particle to pinit.
+
+Still haven't spotted the problem, which still seems to be present when
+dtc is set at a constant value equal to half the dt. The main thing is
+that energy conservation is broken badly. But I don't know why.
+
+FOUND IT. The effect is self force or some other related force
+error. I was running tests with -l100. Increasing that to -l10000
+essentially kills the effect. I had only one particle total. Therefore
+it could not be interacting with another particle. It must be
+interacting with itself. It is certainly the case that the field was
+coming back subtly different, and that seemed to be the cause of the
+orbit difference. By contrast, with -l10000 the differences in the
+field are greatly reduced. It is extremely interesting that the 
+case that is not subcycled appears to have a self-force such that it
+keeps it in orbit, while the subcycled case seems to be forced off
+the orbit; in particular, its energy is reduced. (I'm using subcycle
+directly in the pinit special orbit.)
+
+With -l lowered to say 20, we can see the potential perturbation (for the
+first steps when the particle is on the midplane). But obviously it is
+there even when -l is larger.
+
+Conclusion: the difference between subcycling and not subcycling is
+that in subcycling the potential is not updated between
+(sub)steps. The result is that the particle moves in a static
+self-force well, whereas without subcycling, it always experiences a
+self-potential that is centered on the current particle position. 
+
+Presumably the particle is self-repelling, so this effect ought to 
+accelerate the particle in the direction of velocity. Since it is always
+a bit ahead of its influence. That does not seem to have been what
+happens to the particle in well, but perhaps that's some interaction 
+between the well and self-force. Presumably similar spatially localized
+effects exist in unequal spacing meshes. But they are not likely to be
+progressive the way the subcycling force is.
+
+Specifying one ion but finite lambda effectively assigns a very great
+charge to the ion. Remember \lambda_D = sqrt{\epsilon_o T_e/n_e e^2}
+rhoinf is approximately the inverse of the box size. So e^2/epsilon_0 
+= 1/(lambda^2 n_e) ~ (2r_s)^3/lambda^2.N_i .
+
+6 Aug 2010
+
+One can confirm this is the problem by running different numbers of
+particles. setting -ni16 rather than -ni1 drops the orbit error a lot.
+The self force ought to be inversely proportional to -ni. But actually
+it looks as if rhoinf is actually behaving proportional to (-ni)^2 as
+we go from -ni1 to -ni2. This seems to be because the nrein is becoming
+non-zero. When nrein is zero, rhoinf is not changed. Therefore, if any
+particle escapes, setting rhoinf from the nrein, it remains set to this
+larger value thereafter. This is obviously a bias. rhoinf is used in
+chargetomesh.f to set rho from psum. That's how it determines the effective
+size of the ion charge. Arguably, if nrein is a small number it is
+unreliable to use it, and probably it ought to be ignored. Use nrein=10
+as a tolerable minimum, to avoid this bias at low -ni. 
+
+Reducing the step size (keeping subcycle half of it) does reduce the
+error, seems roughly proportional. Error increases slightly decreasing
+subcycle, but quickly saturates. In this case the step size is <~ mesh
+size. Which means we are inside the charge cloud, and roughly the
+self-force will rise linearly with (subcycle) step size. This
+expectation seems consistent with observations. If it is bigger than
+the cloud size, it falls inversely with step size. So taking steps
+about the size of the mesh is the worst self-force regime. 

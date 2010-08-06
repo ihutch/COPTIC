@@ -18,7 +18,7 @@ c Specify external the boundary setting routine.
       external bdy3slope 
 c sets the derivative to zero on boundaries 3.
       ipoint=0
-      call mditerate(ndims,ifull,iuds,bdy3slope,u,ipoint)
+      call mditerate(bdy3slope,ndims,ifull,iuds,ipoint,u)
       end
 c**********************************************************************
       subroutine bdysetfree(ndims,ifull,iuds,cij,u,q)
@@ -31,17 +31,14 @@ c Specify external the boundary setting routine.
       common /slpcom/slpD,islp
       ipoint=0
       islp=0
-c      slpD=-1.
-c      slpD=debyelen/sqrt(1.+1./(Ti+vd*vd))
-c      call mditerate(ndims,ifull,iuds,bdyslopescreen,u,ipoint)
-c Normal phi-derivative=0 :
-c      slpD=-1.e-5
-c      call mditerate(ndims,ifull,iuds,bdyslopeDh,u,ipoint)
-c Mach boundary condition for drift vd.
-      slpD=vd
+c Normal log phi-derivative=-1 :
+      slpD=-1.
+      call mditerate(bdyslopeDh,ndims,ifull,iuds,ipoint,u)
 c Make Face 3 phi=0.
 c      islp=8
-      call mditerate(ndims,ifull,iuds,bdymach,u,ipoint)
+c Mach boundary condition for drift vd.
+c      slpD=vd
+c      call mditerate(bdymach,ndims,ifull,iuds,ipoint,u)
       end
 c**********************************************************************
 c     L(u) + f(u) = q(x,y,...), 
@@ -54,12 +51,28 @@ c to unity at infinity.
       real u,fprime
 c In order to access point-charge information we need:
       include '3dcom.f'
-c      if(iptch_mask.eq.0)then
+      include 'griddecl.f'
+      include 'ptchcom.f' 
+c 
+      real ubig
+      parameter (ubig=40.)
+c      if(.true.)then
+      if(iptch_mask.eq.0)then
          fprime=exp(u)
          faddu=fprime
-c      else
+      else
 c Need to compensate for point charges.
-c      endif
+         um=u+uci(index)
+         if(abs(um).gt.ubig)um=sign(ubig,um)
+         fprime=exp(um)
+         faddu=fprime-rhoci(index)
+      endif
+c If the overflow trap above is working then this ought not to be needed.
+      if(.not.faddu.lt.1.e20)then
+         write(*,*)'ERROR: faddu singularity'
+     $        ,u,um,uci(index),fprime,faddu,index
+         stop
+      endif
       end
 c************************************************************************
       subroutine bdy3slope(inc,ipoint,indi,ndims,iused,u)
