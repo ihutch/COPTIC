@@ -405,7 +405,7 @@ c Get grid point position, and irptch.
       enddo
       iregion=insideall(ndims,xp)
       irptch=IAND(iregion,iptch_copy)
-      if(irpthc.ne.0)then
+      if(irptch.ne.0)then
 c Get uc
          isw=1
          adfield(1)=0.
