@@ -15,7 +15,7 @@ REINJECT=cartreinject.o
 GEOMFILE=geomcubic.dat
 #GEOMFILE=geomz200x25.dat
 ##########################################################################
-FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o svdsol.o padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o stress.o average.o bdyroutine.o reduce.o getfield.o interpolations.o
+FIXEDOBJECTS=bdyroutine.o reduce.o getfield.o interpolations.o sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o svdsol.o padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o stress.o average.o 
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
 OBJECTS=$(FIXEDOBJECTS) ${REINJECT}
@@ -77,6 +77,8 @@ mpicheck : $(COPTIC)
 
 #####################################################
 # Things to compile with non-standard switches
+# We make one of these the first thing in objects to force the header
+# dependence to be reported, not just ignored by make on pattern rule.
 interpolations.o : interpolations.f makefile $(HEADERS)
 	$(G77)  -c $(NOBOUNDS) $(PROFILING) $*.f
 
