@@ -347,8 +347,9 @@ c Set phip from the first object if it makes sense.
          phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
       elseif(obj_geom(oradius,1).ne.0.)then
          phip=obj_geom(omag,1)*obj_geom(oradius,1)
-         write(*,*)'Potential from point charge',obj_geom(omag,1)
-     $        ,' at radius ',obj_geom(oradius,1),' Charge:',phip
+         if(myid.eq.0)write(*,*)'Potential from point charge'
+     $        ,obj_geom(omag,1),' at radius ',obj_geom(oradius,1)
+     $        ,' Charge:',phip
       else
          write(*,*)'Potential phip not set from objects.'
          phip=0.

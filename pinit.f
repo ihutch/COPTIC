@@ -75,6 +75,6 @@ c Tangential velocity of circular orbit at r=?.
       x_part(5,1)=sqrt(abs(phip/x_part(1,1))-x_part(4,1)**2)
       x_part(6,1)=0.
       call partlocate(1,ixp,xfrac,iregion,linmesh)
-      write(*,*)'PINIT',(x_part(i,1),i=1,9),phip
+c      write(*,*)'PINIT',(x_part(i,1),i=1,9),phip
       end
 c***********************************************************************
