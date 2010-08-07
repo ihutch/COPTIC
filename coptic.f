@@ -367,7 +367,7 @@ c Initialize the fluxdata storage and addressing.
       call fluxdatainit(myid)
 c Initialize the force tracking.
       call forcetrackinit()
-      write(*,*)'mf_obj=',mf_obj
+c      write(*,*)'mf_obj=',mf_obj
 c---------------------------------------------
       phirein=0.
       ninjcomp0=ninjcomp
