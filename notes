@@ -4786,3 +4786,26 @@ self-force will rise linearly with (subcycle) step size. This
 expectation seems consistent with observations. If it is bigger than
 the cloud size, it falls inversely with step size. So taking steps
 about the size of the mesh is the worst self-force regime. 
+
+7 Aug 10
+
+Implementing automatic boundary conditions. Plan is to use bdyslopeDH
+if debyelen is >~ size of mesh, and bdymach if it is << size of mesh.
+In order to do this, we need to know the size of mesh. plascom.f has
+rs which is the radius of the domain for circular domains but at present
+is not set properly otherwise. 
+
+Put into meshconstruct() code that sets rs to half the length of the 
+maximum side-length. Move geominit to a position after meshconstruct.
+That way if a special circular case is called, rs will be reset in it.
+
+Implemented in bdysetfree a choice between a logarithmic slope if
+debyelen.gt.0.19rs, or mach bdy condition if debyelen smaller. 
+Also changed crelax default to be Ti/(1+Ti). This stabilizes the 
+bdyslopeDH case but probably one still needs to set -rx0 for mach
+cases.
+
+Fiddled with phiexamine to improve radial comparisons and to plot
+yukawa potential. 
+
+Improve -gs switch to allow setting ipstep.

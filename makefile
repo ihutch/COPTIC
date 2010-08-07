@@ -15,10 +15,13 @@ REINJECT=cartreinject.o
 GEOMFILE=geomcubic.dat
 #GEOMFILE=geomz200x25.dat
 ##########################################################################
-FIXEDOBJECTS=bdyroutine.o reduce.o getfield.o interpolations.o sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o svdsol.o padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o stress.o average.o 
+FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o svdsol.o padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o stress.o average.o 
+#
+SPECIALOBJECTS=bdyroutine.o reduce.o getfield.o interpolations.o 
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
-OBJECTS=$(FIXEDOBJECTS) ${REINJECT}
+REGULAROBJECTS= $(FIXEDOBJECTS) ${REINJECT}
+OBJECTS=$(SPECIALOBJECTS) $(REGULAROBJECTS)
 HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f griddecl.f ptchcom.f
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 ##########################################################################
@@ -53,6 +56,9 @@ NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 ./accis/%.o : ./accis/%.f $(HEADERS)
 	$(G77)  -c $(COMPILE-SWITCHES) $(PROFILING) $*.f
 
+# Static pattern is not so easy.
+#$(REGULAROBJECTS): %.o : %.f makefile $(HEADERS)
+# Just putting the specials first ensures that the compile works.
 %.o : %.f makefile $(HEADERS)
 	$(G77)  -c $(COMPILE-SWITCHES) $(PROFILING) $*.f
 

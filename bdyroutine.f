@@ -31,14 +31,25 @@ c Specify external the boundary setting routine.
       common /slpcom/slpD,islp
       ipoint=0
       islp=0
+c Decide BC based on debyelen cf domain half-size rs.
+      if(debyelen.gt.0.19*rs)then
 c Normal log phi-derivative=-1 :
-      slpD=-1.
-      call mditerate(bdyslopeDh,ndims,ifull,iuds,ipoint,u)
+c         slpD=-1.
+c Adaptive boundary condition. Only approximate for non-spheres. 
+c Direct logarithmic gradient setting.
+         slpD=-(1.+rs*sqrt(1.+1./Ti)/debyelen)
+         call mditerate(bdyslopeDh,ndims,ifull,iuds,ipoint,u)
+c Explicit screening uses buggy bdyslopescreen.
+c         slpD=debyelen/sqrt(1.+1./Ti)
+c         call mditerate(bdyslopescreen,ndims,ifull,iuds,ipoint,u)
+      else
+c Large domain. Use Mach boundary condition on slope only.
 c Make Face 3 phi=0.
 c      islp=8
 c Mach boundary condition for drift vd.
-c      slpD=vd
-c      call mditerate(bdymach,ndims,ifull,iuds,ipoint,u)
+         slpD=vd
+         call mditerate(bdymach,ndims,ifull,iuds,ipoint,u)
+      endif
       end
 c**********************************************************************
 c     L(u) + f(u) = q(x,y,...), 
@@ -284,6 +295,7 @@ c************************************************************************
       subroutine bdyslopescreen(inc,ipoint,indi,ndims,iused,u)
 c Version of bdyroutine that sets logarithmic 'radial' gradient
 c equal to that for a Debye screened potential: -(1+r/lambdas)
+c slpD needs to be set to lamdas prior to call.
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
       real u(*)

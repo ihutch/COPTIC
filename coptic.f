@@ -45,7 +45,7 @@ c      parameter (ndims=ndims_sor)
 c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
       logical lrestart,lmyidhead,lphiplot,ldenplot
-      
+      integer ipstep
 c Diagnostics
       real zp(na_m,na_m,ndims_mesh)
 c Set up the structure vector.
@@ -62,6 +62,7 @@ c Data for plotting etc.
       data lphiplot,ldenplot/.true.,.true./
 c      data thetain,nth/.1,1/
       data lrestart/.false./
+      data ipstep/1/
 c-------------------------------------------------------------
 c Consistency checks
       if(ndims.ne.ndims_sor)then
@@ -81,8 +82,7 @@ c Fixed number of particles rather than fixed injections.
 c Default to constant ripernode not n_part.
       ripernode=100.
 c Default edge-potential (chi) relaxation rate.     
-c      crelax=1.*Ti/(1.+Ti)
-      crelax=1.
+      crelax=1.*Ti/(1.+Ti)
       averein=0.
       dt=.1
       objfilename='ccpicgeom.dat'
@@ -117,7 +117,14 @@ c      if(iargc().eq.0) goto "help"
          call getarg(i,argument)
          if(argument(1:3).eq.'-gt')ltestplot=.true.
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
-         if(argument(1:3).eq.'-gs')lsliceplot=.true.
+         if(argument(1:3).eq.'-gs')then
+            lsliceplot=.true.
+            read(argument(4:),*,err=210,end=210)ipstep
+            goto 211
+ 210        ipstep=1
+ 211        continue
+            write(*,*)'ipstep=',ipstep
+         endif
          if(argument(1:3).eq.'-gd')ldenplot=.false.
          if(argument(1:3).eq.'-gp')lphiplot=.false.
          if(argument(1:3).eq.'-gi')linjplot=.true.
@@ -210,7 +217,8 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)'Debugging switches for testing'
       write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
-      write(*,301)' -gs   Plot slices of solution potential, density. '
+      write(*,301)' -gs[] Plot slices of solution potential, density. '
+     $     //'[At step n]. [',ipstep
       write(*,301)' -gd -gp Turn off slicing of density, potential. '
       write(*,301)' -gf   set quantity plotted for flux evolution and'//
      $     ' final distribution. [',ifplot
@@ -227,15 +235,16 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
  202  continue
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
-c Geometry and boundary information. Read in and initialize:
+c Geometry and boundary information. Read in.
       call readgeom(objfilename,myid)
-      call geominit(myid)
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
       call meshconstruct(ndims,iuds)
       if(lmyidhead)write(*,'(a,3i4,6f8.3)')
      $     ' Constructed mesh',iuds
      $     ,(xmeshstart(k),xmeshend(k),k=1,ndims)
+c Initialize geometry if needed for particular case.
+      call geominit(myid)
 c-----------------------------------------------------------------
       do id=1,ndims
          ium2(id)=iuds(id)-2
@@ -430,10 +439,12 @@ c Convert psums to charge, q. Remember external psumtoq!
 
          if(lmyidhead)write(*,'(i4.4,i4,$)')nf_step,ierr
          if(lsliceplot)then
-            if(ldenplot)call sliceGweb(ifull,iuds,q,na_m,zp,
-     $        ixnp,xn,ifix,'density: n')
-            if(lphiplot)call sliceGweb(ifull,iuds,u,na_m,zp,
-     $        ixnp,xn,ifix,'potential:'//'!Ay!@')
+            if(ipstep.eq.0.or.mod(j,ipstep).eq.0)then
+               if(ldenplot)call sliceGweb(ifull,iuds,q,na_m,zp,
+     $              ixnp,xn,ifix,'density: n')
+               if(lphiplot)call sliceGweb(ifull,iuds,u,na_m,zp,
+     $              ixnp,xn,ifix,'potential:'//'!Ay!@')
+            endif
          endif
 
          if(nf_step.eq.ickst) then

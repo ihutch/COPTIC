@@ -12,7 +12,7 @@
       character*1 ppath(0:nr,nzmax)
       character*20 string
 
-      real oneoverr(100),ro(100),cl(100)
+      real oneoverr(100),huckel(100),ro(100),cl(100)
       real xl(2),yl(2)
 c 
       call examargs(rp)
@@ -69,7 +69,8 @@ c         write(*,*)rs
          call axlabels('radius','potential')
          call charsize(.005,.005)
          phimin=0.
-         rmin=0.
+         rmin=1.e10
+         redge=0.
          do k=1,iuds(3)
             do j=1,iuds(2)
                do i=1,iuds(1)
@@ -81,18 +82,25 @@ c         write(*,*)rs
                   if(r.gt.rs .and. u(i,j,k).ne.0)then
 c                  write(*,'(4f12.6,3i3)')x,y,z,u(i,j,k),i,j,k
                   endif
-                  if(u(i,j,k).lt.phimin)then
-                     phimin=u(i,j,k)
+                  if(u(i,j,k).le.phimin.and.r.le.rmin)then
                      rmin=r
+                     if(abs(u(i,j,k)-phimin).gt.1.e-5
+     $                    .or.r.gt.redge)redge=r
+                     phimin=u(i,j,k)
                   endif
                enddo
             enddo
          enddo
+c If redge is nearly 1, guess it is exactly 1.
+         if(abs(redge-1.).lt..1)redge=1.
          do i=1,100
 c            ro(i)=1.+(rs-1.)*i/100
             ro(i)=rmin+(rs-rmin)*(i-1.)/(100-1.)
-            oneoverr(i)=phimin*rmin/ro(i)
+            oneoverr(i)=phimin*redge/ro(i)
+            huckel(i)=phimin*(redge/ro(i))*
+     $           exp(-max(0.,(ro(i)-redge))/debyelen)
          enddo
+         write(*,*)rmin,redge,phimin,debyelen
 c Average together.
          denmin=0.
          do k=1,iuds(3)
@@ -153,8 +161,13 @@ c         enddo
          call charsize(0.,0.)
          call color(2)
          call dashset(2)
+         call winset(.true.)
          call polyline(ro,oneoverr,100)
          call legendline(.5,.1,0,'Coulomb Potential')
+         call color(3)
+         call dashset(3)
+         call polyline(ro,huckel,100)
+         call legendline(.5,.15,0,'Yukawa Potential')
          call dashset(0)
          call pltend()
 c%%%%%%%%%%%%%%% End of spherical r-theta plotting %%%%%%%%%%%

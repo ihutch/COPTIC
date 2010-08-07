@@ -4,11 +4,15 @@ c Convert from previously set imeshstep, xmeshpos to ixnp.
 c There must be at least 2 non-zero and monotonically increasing
 c values starting imeshstep.
 c Return values of iuds(ndims) per constructed mesh.
+c Also initialize the value of rs in plascom. Put equal to
+c half the largest mesh box side length.
       subroutine meshconstruct(ndims,iuds)
       integer iuds(ndims)
       include 'meshcom.f'
+      include 'plascom.f'
 
       iof=0
+      rs=0.
       do id=1,ndims
 c Pointer to start of vector.
          ixnp(id)=iof
@@ -29,12 +33,14 @@ c Mesh data.
  11      continue
          if(iblk.le.1) write(*,*)'Too few mesh steps. Dimension',id
          xmeshend(id)=xmeshpos(id,iblk)
+         rsi=0.5*abs(xmeshend(id)-xmeshstart(id))
+         if(rsi.gt.rs)rs=rsi
 c Set iuds according to specified mesh
          iuds(id)=imeshstep(id,iblk)
 c         write(*,'(a,i3,10f8.3)')
 c     $        ' Meshspec',id,(xmeshpos(id,kk),kk=1,iblk)
       enddo
-c      write(*,*)xmeshstart,xmeshend
+c      write(*,*)'Meshcontructed',xmeshstart,xmeshend,' rs=',rs
       ixnp(ndims+1)=iof
 c      write(*,*)(ixnp(k),k=1,ndims+1)
 c      write(*,*)(xn(k),k=1,iof)
