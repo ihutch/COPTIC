@@ -324,6 +324,8 @@ c Initialize potential (set u to zero over entire array).
 c Initialize additional potential and charge if needed.
       if(iptch_mask.ne.0)
      $     call setadfield(ndims,ifull,iuds,iptch_mask,lsliceplot)
+c      if(myid.eq.0)call sliceGweb(ifull,iuds,rhoci,na_m,zp,
+c     $              ixnp,xn,ifix,'rhoci')
 
 c---------------------------------------------------------------     
 c An inital vacuum solution with zero density. 

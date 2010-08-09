@@ -158,10 +158,9 @@ c Do a relaxation.
 c            if(k_sor.le.2)
 c         write(*,*) 'Calling sorrelaxgen',delta,oaddu,relax
          call sorrelaxgen(k_sor,ndims,iLs,myside,
-     $           cij(1+(2*ndims+1)*(myorig-1)),
-     $           u(myorig),
-     $           q(myorig),
-     $           laddu,faddu,oaddu,relax,delta,umin,umax)
+     $        cij(1+(2*ndims+1)*(myorig-1)),u(myorig),q(myorig),myorig,
+     $        laddu,faddu,oaddu,
+     $        relax,delta,umin,umax)
 
 c          call checkdelta(delta,deltaold)
 c          if(k_sor.le.2)

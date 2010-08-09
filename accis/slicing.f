@@ -45,6 +45,7 @@ c Local variables:
 c Tell that we are looking from the top by default.
       data ze1/1./icontour/1/iweb/1/iback/0/
       data cs/.707/sn/.707/
+      save n1
 
       if(idfix.lt.0)then
          laspect=.false.
@@ -54,9 +55,9 @@ c Tell that we are looking from the top by default.
       ips=0
       irotating=0
 c Initial slice number
-      n1=iuds(idfix)/2
       call accisgradinit(64000,0,0,-64000,128000,64000)
       if(.not.lfirst)goto 19
+         n1=iuds(idfix)/2
 c     Plot the surface. With scaling 1. Web color 6, axis color 7.
          jsw=1 + 256*6 + 256*256*7
          iweb=1

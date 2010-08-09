@@ -138,7 +138,7 @@ c Average together.
                   elseif(ithetacount(j,im).ne.0)then
                      thetadist(j,i)=thetadist(j,im)
                   else
-                     write(*,*)'Failed setting',j,i,im,ip
+                     write(*,*)'Failed setting',j,i,im,ip,ntheta
                      write(*,'(20i4)')(ithetacount(j,ii),ii=1,ntheta)
                   endif
                endif
@@ -192,6 +192,7 @@ c            write(*,*)j,rval(j)
          enddo
 
 c Bin values
+         rmin=1.e10
          phimax=0.
          do k=1,iuds(3)
             z=xn(ixnp(3)+k)
@@ -200,15 +201,17 @@ c Bin values
                   x=xn(ixnp(1)+i)
                   y=xn(ixnp(2)+j)
                   r=sqrt(x**2+y**2)
+                  if(r.lt.rmin)rmin=r
                   ir=nint(0.5+nr*(r+.00001)/(rs+.00002))
                   if(ir.le.nr .and. ir.ge.1)then
                      irzcount(ir,k)=irzcount(ir,k)+1
                      rzdist(ir,k)=rzdist(ir,k)+u(i,j,k)
                   endif
-                  if(u(i,j,k).gt.phimax)phimax=u(i,j,k)
+                  if(u(i,j,k).gt.phimax)phimax=u(i,j,k)                  
                enddo
             enddo
          enddo
+
 c         write(*,*)((j,rval(j),irzcount(j,k),j=1,nr),k=1,1)
          do j=1,nr
             do i=1,iuds(3)
@@ -230,8 +233,9 @@ c Fix up zero values if necessary.
                   elseif(irzcount(jp,i).ne.0)then
                      rzdist(j,i)=rzdist(jp,i)
                   else
-                     write(*,*)'Failed setting',j,i,jm,jp
-                     write(*,'(20i4)')(irzcount(j,ii),ii=1,iuds(3))
+                     write(*,*)'Failed setting rzdist',j,i,jm,jp
+     $                    ,' Too coarse a mesh? rmin=',rmin
+c     $                    ,rval(jm),rval(jp)
                   endif
                endif
             enddo

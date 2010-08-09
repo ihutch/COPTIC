@@ -68,6 +68,7 @@ NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 #default target
 # Problem when using geometry that can't do smt check. 
 smt.out : $(COPTIC) ccpicgeom.dat
+	if [ -f "$(GEOMFILE)" ] ; then ln -s -f $(GEOMFILE) ccpicgeom.dat ; fi
 	@if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
 	./$(COPTIC)
 	@if [ -f smt.prev ] ;then if [ -f smt.out ] ;then diff smt.prev smt.out ;else touch smt.out ;fi ;fi
@@ -100,7 +101,6 @@ bdyroutine.o : bdyroutine.f makefile $(HEADERS)
 #####################################################
 # Main program explicit to avoid make bugs:
 $(COPTIC) : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
-	if [ -f "$(GEOMFILE)" ] ; then rm -f ccpicgeom.dat ; ln -s $(GEOMFILE) ccpicgeom.dat ; fi
 	@echo "      rjscheme="\'$(REINJECT)\'" " > REINJECT.f
 	$(G77)  -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f  libcoptic.a $(LIBRARIES)
 

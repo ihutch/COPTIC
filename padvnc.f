@@ -375,6 +375,7 @@ c To do the slice plot we need:
       iptch_copy=irptch
 c      write(*,*)'Point charges included. Mask:',iptch_copy
       ipoint=0
+      ifix=1
       call mditerarg(ucrhoset,ndimsp,ifull,iuds,ipoint
      $     ,uci,rhoci,iptch_copy,idum)
       if(lsliceplot)then

@@ -60,13 +60,17 @@ c f is exp(u) here for Boltzmann electrons and densities normalized
 c to unity at infinity.
       real function faddu(u,fprime,index)
       real u,fprime
+      integer index
 c In order to access point-charge information we need:
       include '3dcom.f'
       include 'griddecl.f'
       include 'ptchcom.f' 
 c 
-      real ubig
+      real ubig,um
       parameter (ubig=40.)
+c Testing only.
+      integer ifull(ndims),ix(ndims)
+      data ifull/na_i,na_j,na_k/
 c      if(.true.)then
       if(iptch_mask.eq.0)then
          fprime=exp(u)
@@ -77,6 +81,13 @@ c Need to compensate for point charges.
          if(abs(um).gt.ubig)um=sign(ubig,um)
          fprime=exp(um)
          faddu=fprime-rhoci(index)
+c         if(rhoci(index).ne.0.)then
+c            write(*,*)'index,uci,rhoci,faddu'
+c     $           ,index,uci(index),rhoci(index),faddu
+c
+            call indexexpand(ndims,ifull,index-1,ix)
+c            write(*,*)'indi',ix
+c         endif
       endif
 c If the overflow trap above is working then this ought not to be needed.
       if(.not.faddu.lt.1.e20)then

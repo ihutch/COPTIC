@@ -1,21 +1,32 @@
 c********************************************************************
 c Do a single relaxation.
       subroutine sorrelaxgen(k_sor,ndims,iLs,iuds,
-     $     cij,u,q,
-     $     laddu,faddu,oaddu,relax,rdelta,umin,umax)
+     $     cij,u,q,myorig,
+     $     laddu,faddu,oaddu,
+     $     relax,rdelta,umin,umax)
 c General number of dimensions ndims call.
 c iLs is dimensions structure, cij is really (2*ndims+1,iuds(1),...)
+c q charge. All IN
       integer ndims
       integer iLs(ndims+1),iuds(ndims)
-      real cij(*),u(*),q(*)
+      real cij(*),q(*)
+c Potential IN/OUT
+      real u(*)
+c Origin pointer of this block in the whole arrays, IN.
+      integer myorig 
+c laddu (IN) true if there's additional (real) function faddu
+      logical laddu
+      external faddu
+c oaddu is maximum relative weight of faddu term OUT
+      real oaddu
+c relax is the relaxation fraction IN
+c rdelta is the maximum change in this step OUT
+c umin, umax are the minimum and maximum values of u OUT
+      real relax,rdelta,umin,umax
+
       parameter (imds=10,imds2=2*imds)
 c Offset to adjacent points in stencil.
       integer iind(imds2)
-c laddu true if there's additional function faddu
-      logical laddu
-c oaddu is maximum relative weight of faddu term
-      real oaddu
-
       integer indi(imds),iused(imds)
       logical lfirst
       data lfirst/.true./
@@ -36,7 +47,6 @@ c      write(*,*)'sorrelaxgen',k_sor,iuds,iLs
 c         write(*,*)'iind=',iind
          lfirst=.false.
       endif
-
 
       addu=0.
       daddu=0.
@@ -129,7 +139,7 @@ c Adjust the denominator and numerator using external call.
             call ddn_sor(io,csum,dnum)
          endif
          if(laddu) then
-            addu=faddu(u(ipoint+1),daddu,ipoint+1)
+            addu=faddu(u(ipoint+1),daddu,ipoint+myorig)
             dscl=abs(addu)/max(abs(daddu),1.e-6)
 c     relative weight of f term versus L term. Use max for next iteration.
 c This seemed to be an error 2 July 09. Also dden was being calculated after.

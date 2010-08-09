@@ -11,6 +11,7 @@ c silence warnings:
 c 
       call denexamargs
 
+c      write(*,*)ifull
       call array3read(denfilename,ifull,iuds,q,ierr)
       if(ierr.eq.1)stop
 

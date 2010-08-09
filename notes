@@ -4808,4 +4808,44 @@ cases.
 Fiddled with phiexamine to improve radial comparisons and to plot
 yukawa potential. 
 
-Improve -gs switch to allow setting ipstep.
+Improve -gs switch to allow setting ipstep. 
+
+Start to try on big domains. Something is badly wrong with the
+potential. Get back onto t400 the wakedomain.dat so we can test
+locally. Shrink to wakehalf.dat so it's more managable. Seems as if
+the point charge is appearing to be in the wrong place for these runs.
+Might be better to get an even smaller x25 case. Let's do that.
+Ok now we have wake25.dat which runs at a decent pace. It seems clear
+that the point charge is in the wrong place. Or some part of it is.
+
+Actually the plots of uc and rhoc show the charge in the right place.
+But the potential solutions have features that don't belong.
+
+The strange features appear only to be present with multiple cpu
+mpiexec runs. Seems unaffected by changing griddecl na_i, na_j etc.
+
+Is still present with the bdyroutine hacked to use bdyslope rather than
+bdymach. It's different, but still pretty much bad. Can increase -l and
+still see it very clearly. Probably it must be in faddu. This seems confirmed
+by making the faddu test .true. so we just use an unmodified faddu.
+
+uci seems to plot correctly from main coptic. so does rhoci.
+
+Tired. This problem is caused by faddu, but it is hard to see anything
+wrong with faddu. 
+
+8 Aug 10
+
+After sleeping on this, it dawns on me that the pointer being passed
+is relative to the origin of the particular block, rather than the
+whole array. This must be the problem. It cannot be avoided by locating
+the changes in psumtoq, because faddu needs to have an effective argument
+that includes the uc (even if rhoc were in q already). So probably my
+plan to use faddu was reasonable, but ran into this unforseen problem 
+that sorrelaxgen is passed an array whose origin is already at myorig,
+and is not at present aware of where in the total array it is.
+
+It looks as if the natural way to fix this is to pass myorig to sorrelaxgen
+so it knows where it is in the total array. 
+
+Seems to work.
