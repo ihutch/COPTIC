@@ -4849,3 +4849,119 @@ It looks as if the natural way to fix this is to pass myorig to sorrelaxgen
 so it knows where it is in the total array. 
 
 Seems to work.
+
+9 Aug 10
+
+Having run some big cases on sceptic machine overnight, I find the
+agreement with the small-object equivalent runs to be excellent. This
+is using the same mesh as the object runs. Therefore, start cases with
+uniform mesh and point-charge. Basically I can already conclude that
+the wavelength discrepancy with lampe is NOT caused by the finite
+charge size.  Notice, though, that the discrepancy in wavelength is
+worse at T_i=.01, while the damping discrepancy is better (smaller)
+there. 
+
+Made significant upgrades to partexamine to be able to choose xlimits
+and vlimits, and to specify a particular partfile by giving a 3-character
+extension. One can see a slow-down of the z-velocity at the top of the
+first potential hill, which is in the right ball-park to be explained
+by simply the energy reduction there. Evidently this is a non-linear
+effect. However, it acts in the wrong direction to be an explanation of
+the observed longer wavelength. 
+
+17 Aug 10
+
+Planning for diagnostics etc. 
+We need information output about particle parameters. 
+Thought about ways of representing the distribution function in a 
+compact enough way to document its variation with position. Hard.
+
+Instead implement standard moment diagnostics: velocity, temperatures.
+May as well do it on the potential mesh (otherwise confusion!)
+Process is relatively simple. At the time we form the psum, form also
+sums for v(3) and v^2(3) moments. We require 6 more quantities on the
+mesh. This is not a big fraction of memory increase, since we already have
+cij, u, uave, q, qave etc. It is probably best to regard the moments as
+separate quantities on the grid, so we can slice plot them if desired.
+Also has the merit of giving the same structure as (e.g.) psum, for the 
+purposes of mpireduction. For ease of passing, we probably ought to make
+the diags an array whose trailing dimension enumerates the diagnostics.
+c Diagnostics
+      integer ndiagmax
+      parameter (ndiagmax=6)
+      real diags(na_i,na_j,na_k,ndiagmax)
+
+For speed during particle pushing, we just want to assign the moment the
+same way we assign the charge in chargetomesh. It is not necessary in 
+principle to mpigather the moment information until something is required
+to be done with it. And we should not. In the case of psum, it is zeroed
+at each step prior to chargetomesh. However, there we probably should not
+zero the moment diagnostics if we are averaging them. Instead they should
+just be accumulated. If we are doing trailing averages, we might need to
+multiply by (nave-1) before tomesh, then divide by nave after. But if we
+did a pure box-car average, it would be unnecessary to do that. In any
+case those decisions can be made separate from the chargetomesh process.
+
+Have to generalize array3write/read to allow an extra dimension. Did that
+and implemented detection of old version written files through the first
+two characters of charout. Fixed phiexamine, philineread, denexamine.
+
+Implemented writing in coptic. I wonder if we ought to write out the
+box addition number of steps? (array3write does not).
+
+18 Aug 10
+
+Continue working on diagnostics. I think I want to use the whole of the 
+diag iuds arrays. Psum does not. It does not use the boundaries. And it
+does not reduce the boundaries. Therefore I need a reduction code that
+reduces the whole block including boundaries. 
+
+Start by adding the used dimensions to mditcom.f. Also it was mistakenly
+omitted from the headers list. Add it. Add code to set iasuds in 
+mpisubopcreate.
+
+Found a prior bug in mpisubopcreate that the initialization call was
+occuring every time, because lfirst was not set to .false. Fixing does
+not seem to change anything.
+
+Seem to have it working for diags reduction. One can use denexamine or
+phiexamine on one diagnostic (which is the equivalent of psum). It
+appears to have face values about half of the core values, and edge
+values about one quarter. That is what is expected.
+
+It is not obvious that I want to do any additional processing within
+coptic main program. 
+
+Time costs (for particle-dominated cases):
+
+time ./coptic -s10 -a5 -ni1000000
+real    0m12.361s
+
+time ./coptic -m1 -s10 -a5 -ni1000000
+real    0m12.485s
+
+time ./coptic -m4 -s10 -a5 -ni1000000
+real    0m14.347s
+
+time ./coptic -m7 -s10 -a5 -ni1000000
+real    0m16.837s
+
+Looks as if there's a non-trivial extra cost for a substantial number
+of diagnostics. 34% extra for 7. Not too bad.
+
+Test of solver at low step size shows that using steps of ~ -dt0.00005
+or less reduces the sor iterations to 2. But that if we increase it to
+maybe -dt0.0001 we get more typically 11 iterations. (These are
+half-iterations actually). -dt0.0005 gives about 25. -dt0.001 31.
+-dt0.005 43. -dt0.05 60. Basically I think this shows the sor solver
+works sensibly to converge to its tolerance of eps_sor=1.e-5. 
+It presumably also means that if the particle numbers are large
+enough that rho fluctuations are small, then the sor solver will be
+fast. (These are 32^3 meshes).
+
+Implement minimalistic diagexamine that reads all the arrays and 
+displays them. 
+
+21 Aug 2010
+Fixed some bugs in the restart code that put time step data into the
+wrong array elements.

@@ -258,8 +258,8 @@ c Drawing above. If previously was not, draw start.
                if(istate.eq.0) then
                   xp=dx*(ix-signd)
                   yp=ytop(ix-signd)
-                  if(ytop(ix-signd).eq.0.)
-     $                 write(*,*)ix1,ix2,ix,signd,x1,x2,x,xp
+c                  if(ytop(ix-signd).eq.0.)
+c     $                 write(*,*)ix1,ix2,ix,signd,x1,x2,x,xp
                   call vecn(xp,yp,0)
                   call vecn(x,y,1)
                endif

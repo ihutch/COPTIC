@@ -15,8 +15,9 @@ c Filenames
       character*100 denfilename
       character*100 fluxfilename
       character*100 objfilename
+      character*100 diagfilename
       character*100 argument
       
       common/examcom/ifull,iuds,u,q
      $     ,partfilename,phifilename,denfilename,objfilename,argument
-     $     ,fluxfilename
+     $     ,fluxfilename,diagfilename

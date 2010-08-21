@@ -6,8 +6,8 @@ rm xpart
 rm uqcij
 echo RUNNING coptic
 ./coptic -s5
-echo RUNNING coptic --restart -s3
-./coptic --restart -s3 -ck6
+echo RUNNING coptic -rs -s3
+./coptic -rs -s3 -ck6
 mv xpartnew xpart
 mv uqcijnew uqcij
 echo RUNNING coptic -s8 -ck6

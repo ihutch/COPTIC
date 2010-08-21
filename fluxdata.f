@@ -374,7 +374,7 @@ c If quantity asked for is not available, do nothing.
 
       if(n1.lt.1)n1=1
       if(n2.gt.nf_step)n2=nf_step
-      if(n2-n1.lt.0)then
+      if(n2-n1.le.0)then
          write(*,*)'fluxave incorrect limits:',n1,n2
          return
       endif
@@ -400,13 +400,16 @@ c If quantity asked for is not available, do nothing.
          step(is)=is
          fluxofstep(is)=fluxstep
          if(is.ge.n1)then
+c            write(*,*)'n1,n2,is,ff_dt(is)',n1,n2,is,ff_dt(is)
             tdur=tdur+ff_dt(is)
             rinf=rinf+ff_rho(is)*ff_dt(is)
          endif
 c         write(*,*)'step',is,' fluxofstep',fluxofstep(is)
       enddo
+c      write(*,*)'tot,rinf,tdur,n2',tot,rinf,tdur,n1,n2
       tot=tot/tdur
       rinf=rinf/tdur
+
 
 c From here on is non-general and is mostly for testing.
       do i=1,nf_posno(iq,ifobj)

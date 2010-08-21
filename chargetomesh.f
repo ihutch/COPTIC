@@ -1,20 +1,17 @@
-      subroutine chargetomesh(psum,iLs,diags)
-c particle weight sum, having structure iLs, and (possible) diagnostics.
-      real psum(*),diags(*)
+      subroutine chargetomesh(psum,iLs,diagsum,ndiags)
+c Assign charge and other moments to the mesh accumulators.
+c Particle weight sum, having structure iLs, and (possible) diagnostics.
+c Which are enumerated up to ndiags in their trailing dimension.
+      real psum(*)
+      real diagsum(*)
 c mesh data, notably ndims_mesh, since we don't pass it:
       include 'meshcom.f'
       integer iLs(ndims_mesh+1)
-c      real xfrac(ndims_mesh)
-c      integer ixp(ndims_mesh)
 
       include 'partcom.f'
 c On entry, psum ought to have been initialized to zero.
 
-c No diagnostics for now.
-      ldiags=.false. 
-
 c For all (possibly-active) particles.
-c      do i=1,n_part
       do i=1,ioc_part
          if(if_part(i).ne.0)then
             inewregion=insideall(ndims_mesh,x_part(1,i))
@@ -54,9 +51,17 @@ c                     fac=fac*(1.-xfrac(ik))
 c Add to the particle sum the fraction for this vertex.
 c               write(*,*)'ii,iu,iinc,fac',ii,iu,iinc,fac
                psum(1+iinc)=psum(1+iinc)+fac
-               if(ldiags)then
-c Do something with diagnostics.                  
-                  diags(1)=0.
+               if(ndiags.gt.0)then
+c Do something with diagnostics. 
+c Assumption here is diags1 n, diags2-4 v, diags5-7 v^2.
+                  diagsum(1+iinc)=diagsum(1+iinc)+fac
+                  do k=1,ndiags-1
+                     temp=x_part(ndims_mesh+1+mod(k-1,ndims_mesh),i)
+                     if(k.gt.ndims_mesh)temp=temp*temp
+                     diagsum(1+iinc+k*iLs(ndims_mesh+1))=
+     $                    diagsum(1+iinc+k*iLs(ndims_mesh+1))+
+     $                    fac*temp
+                  enddo
                endif
             enddo
          endif

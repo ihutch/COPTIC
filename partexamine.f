@@ -10,18 +10,21 @@ c selected cell ranges.
       character*50 string
 
       include 'ptaccom.f'
-c Distributions
+c Distributions in ptaccom.f
 c      parameter (ndiag=100,mdims=3)
 c      real xr(3*mdims)
 c      real fv(ndiag,mdims)
 c      real px(ndiag,mdims)
-c      real diagv(ndiag)
+c      real diagv(ndiag,ndims)
 c      real diagx(ndiag,mdims)
 c      common /cartdiag/fv,px,diagv,diagx
 
 c Spatial limits bottom-top, dimensions
       real xlimit(2,mdims)
+c Velocity limits
+      real vlimit(2,mdims)
 
+      nfmax=nfilemax
 c silence warnings:
       zp(1,1,1)=0.
       xr(1)=0.
@@ -30,41 +33,50 @@ c Defaults
       do id=1,mdims
          xlimit(1,id)=-5.
          xlimit(2,id)=5.
+         vlimit(1,id)=-5.
+         vlimit(2,id)=5.
       enddo
-c      xlimit(2,3)=-4.5
 
-      call partexamargs(xlimit)
+      call partexamargs(xlimit,vlimit)
 c Now the base filename is in partfilename.
+c Initialize partaccum.      
+      call partacinit(xlimit,vlimit)
 
-      do i=0,nfilemax
-         write(chartemp,'(''.'',i3.3)')i
-         name=partfilename(1:lentrim(partfilename))//chartemp
-         write(*,*)'Reading file ',name(1:lentrim(name))
+      ip=lentrim(partfilename)-3
+      if(partfilename(ip:ip).eq.'.')then
+c If filename has a 3-character extension. Assume it is complete
+c and that we are reading just one file.
+         nfmax=0
+         name=partfilename
+         write(*,*)'Reading single file ',name(1:lentrim(name))
+      endif
+
+c Possible multiple files.
+      do i=0,nfmax
+         if(nfmax.ne.0)then
+            write(chartemp,'(''.'',i3.3)')i
+            name=partfilename(1:lentrim(partfilename))//chartemp
+            write(*,*)'Reading file ',name(1:lentrim(name))
+         endif
          call partread(name,ierr)
-         if(ierr.ne.0)goto 1
+         if(ierr.ne.0)goto 11
 c Do the accumulation for this file up to maximum relevant slot. 
-         do j=1,ioc_part
-c Only for filled slots
-            if(if_part(j).eq.1)then
-               do id=1,mdims
-                  x=x_part(id,j)
-                  if(x.lt.xlimit(1,id).or.x.gt.xlimit(2,id))goto 2
-               enddo
-               call partaccum(x_part(1,j),xlimit)
-            endif
- 2          continue
-         enddo
+         naccum=0
+         call accumulate(npdim,x_part,if_part,ioc_part,naccum,xlimit
+     $        ,vlimit)
+         write(*,*)'Accumulated',naccum,' in',xlimit,' of',ioc_part
+     $        ,' total'
       enddo
- 1    continue
+ 11   continue
+
 
       call multiframe(2,1,2)
       do id=1,mdims
          call ticnumset(10)
-         call autoplot(diagv,fv(1,id),ndiag)
+         call autoplot(diagv(1,id),fv(1,id),ndiag)
          write(string,'(a,i3)')'Distribution dimension',id
          call axlabels('velocity',string(1:lentrim(string)))
 c         call pltend()
-         call ticnumset(10)
          call autoplot(diagx(1,id),px(1,id),ndiag)
          call axlabels('position',string(1:lentrim(string)))
          call pltend()
@@ -72,9 +84,9 @@ c         call pltend()
 
       end
 c*************************************************************
-      subroutine partexamargs(xlimit)
+      subroutine partexamargs(xlimit,vlimit)
       include 'examdecl.f'
-      real xlimit(2,3)
+      real xlimit(2,3),vlimit(2,3)
 
       ifull(1)=na_i
       ifull(2)=na_j
@@ -103,6 +115,18 @@ c Deal with arguments
                read(argument(3:),*,err=201)
      $              xlimit(1,3),xlimit(2,3)
             endif
+            if(argument(1:2).eq.'-u')then
+               read(argument(3:),*,err=201)
+     $              vlimit(1,1),vlimit(2,1)
+            endif
+            if(argument(1:2).eq.'-v')then
+               read(argument(3:),*,err=201)
+     $              vlimit(1,2),vlimit(2,2)
+            endif
+            if(argument(1:2).eq.'-w')then
+               read(argument(3:),*,err=201)
+     $              vlimit(1,3),vlimit(2,3)
+            endif
             if(argument(1:13).eq.'--objfilename')
      $        read(argument(14:),'(a)',err=201)objfilename
             if(argument(1:2).eq.'-f')
@@ -111,6 +135,7 @@ c Deal with arguments
             if(argument(1:2).eq.'-?')goto 203
          else
             read(argument(1:),'(a)',err=201)partfilename
+c            write(*,*)partfilename
          endif
          
       enddo
@@ -121,57 +146,67 @@ c Help text
       write(*,*)'=====Error reading command line argument'
  203  continue
  301  format(a,i5)
- 302  format(a,f8.3)
+c 302  format(a,f8.3)
       write(*,301)'Usage: partexamine [switches] <partfile> (no ext)'
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [ccpicgeom.dat'
       write(*,301)' -x -y -z<fff,fff>  set position range. [ -5,5'
+      write(*,301)' -u -v -w<fff,fff>  set velocity range. [ -5,5'
       write(*,301)' -f   set name of partfile.'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue
-      if(lentrim(partfilename).lt.5)goto 203
+      if(lentrim(partfilename).lt.5)then
+         write(*,*)'Short filename, length<5 not allowed'
+         goto 203
+      endif
       end
-c*****************************************************************
-      subroutine partaccum(xr,xlimit)
+c****************************************************************
+      subroutine partacinit(xlimit,vlimit)
 c Accumulate the particles into bins.
       include 'ptaccom.f'
       include 'plascom.f'
       include 'meshcom.f'
-      real xlimit(2,mdims)
+      real xlimit(2,mdims),vlimit(2,mdims)
+
+c Silence warning
+      xr(1)=0.
+c Initialization.
+      do id=1,mdims
+         xmeshstart(id)=min(-5.,xlimit(1,id))
+         xmeshend(id)=max(5.,xlimit(2,id))
+         do i=1,ndiag
+            diagv(i,id)=vlimit(1,id)
+     $           +(vlimit(2,id)-vlimit(1,id))*(i-0.5)/ndiag
+            fv(i,id)=0.
+            px(i,id)=0.
+            diagx(i,id)=xmeshstart(id)+(i-0.5)*
+     $           (xmeshend(id)-xmeshstart(id))/(ndiag)
+         enddo
+c         write(*,*)'Position cell-center range',
+c     $        id,diagx(1,id),diagx(ndiag,id)
+c         write(*,*)'Velocity cell-center range',
+c     $        id,diagv(1,id),diagv(ndiag,id)
+      enddo
+      return
+      end
+c*****************************************************************
+      subroutine partaccum(xr,xlimit,vlimit)
+c Accumulate a particle into bins.
+      include 'ptaccom.f'
+      include 'plascom.f'
+      include 'meshcom.f'
+      real xlimit(2,mdims),vlimit(2,mdims)
 c      include 'creincom.f'
 c      character*100 string
-      logical lfirst
-      data lfirst/.true./
-      save lfirst
-
-
-      vrange=5.
-c Initialization
-      if(lfirst)then
-c Default mesh data.
-         do id=1,mdims
-            xmeshstart(id)=min(-5.,xlimit(1,id))
-            xmeshend(id)=max(5.,xlimit(2,id))
-         enddo
-         
-         do i=1,ndiag
-            diagv(i)=vrange*(-1.+2.*(i-0.5)/ndiag)
-            do id=1,mdims
-               fv(i,id)=0.
-               px(i,id)=0.
-               diagx(i,id)=xmeshstart(id)+(i-0.5)*
-     $              (xmeshend(id)-xmeshstart(id))/(ndiag)
-            enddo
-         enddo
-         lfirst=.false.
-      endif
 
       do id=1,mdims
 c Assign velocities to bins.
          v=xr(mdims+id)
-         v=sign(min(vrange,abs(v)),v)
-         ibin=nint(0.5*(ndiag)*(1.+0.99999*v/vrange)+0.5)
+         if(v.lt.vlimit(1,id))v=vlimit(1,id)
+         if(v.gt.vlimit(2,id))v=vlimit(2,id)
+         ibin=nint(ndiag*(.000005+0.99999*
+     $        (v-vlimit(1,id))/(vlimit(2,id)-vlimit(1,id)))+0.5)
          if(ibin.lt.1.or.ibin.gt.ndiag)
      $        write(*,*)k,nin,id,' ibin',ibin,v
          fv(ibin,id)=fv(ibin,id)+1
@@ -185,6 +220,30 @@ c Assign positions to bins
          endif
       enddo
 
-
       end
 c**********************************************************************
+      subroutine accumulate(mdims,xpart,ifpart,iocpart,naccum,xlimit
+     $     ,vlimit)
+      real xpart(3*mdims,iocpart)
+      integer ifpart(iocpart)
+c Spatial limits bottom-top, dimensions
+      real xlimit(2,mdims)
+c Velocity limits
+      real vlimit(2,mdims)
+
+      do j=1,iocpart
+c Only for filled slots
+         if(ifpart(j).eq.1)then
+            do id=1,mdims
+               x=xpart(id,j)
+               if(x.lt.xlimit(1,id).or.x.gt.xlimit(2,id))goto 12
+            enddo
+            naccum=naccum+1
+            call partaccum(xpart(1,j),xlimit,vlimit)
+         endif
+ 12      continue
+      enddo
+c         write(*,*)'Accumulated',naccum,' in',xlimit,' of',iocpart
+c     $        ,' total'
+             
+      end

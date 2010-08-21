@@ -22,7 +22,7 @@ SPECIALOBJECTS=bdyroutine.o reduce.o getfield.o interpolations.o
 UTILITIES=udisplay.o
 REGULAROBJECTS= $(FIXEDOBJECTS) ${REINJECT}
 OBJECTS=$(SPECIALOBJECTS) $(REGULAROBJECTS)
-HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f griddecl.f ptchcom.f
+HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f griddecl.f ptchcom.f mditcom.f
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 ##########################################################################
 G77=mpif77 -f77=g77 
@@ -125,7 +125,7 @@ testing/stresstest : testing/stresstest.f stress.o $(ACCISLIB)
 
 #####################################################
 clean :
-	rm -f *.o $(TARGETS) *.html *.flx *.phi *.phiave *.den T*.0?? *.ps
+	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.0?? *.ps
 	make -C accis mproper
 
 ftnchek :

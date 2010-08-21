@@ -13,6 +13,10 @@ c Running averages.
       real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
 c
       real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k)
+c Diagnostics
+      integer ndiagmax
+      parameter (ndiagmax=7)
+      real diagsum(na_i,na_j,na_k,ndiagmax)
 c Used dimensions, Full dimensions. Used dims-2
       integer iuds(ndims_sor),ifull(ndims_sor),ium2(ndims_sor)
 c Mesh spacing description structure
@@ -41,6 +45,7 @@ c      parameter (ndims=ndims_sor)
       external bdyset,faddu,cijroutine,cijedge,psumtoq
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
+      character*100 diagfilename,restartpath
       character*100 argument
 c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
@@ -103,6 +108,7 @@ c Default edge-potential (chi) relaxation rate.
       ickst=0
       iavesteps=100
       lmyidhead=.true.
+      ndiags=0
       ifplot=-1
 c---------------------------------------------------------------------
 c This necessary here so one knows early the mpi structure.
@@ -162,16 +168,26 @@ c      if(iargc().eq.0) goto "help"
          elseif(argument(1:2).eq.'-v')then
             read(argument(3:),*,err=201)vd
          endif
+         if(argument(1:2).eq.'-m')then 
+            read(argument(3:),*,err=201)ndiags
+            if(ndiags.gt.ndiagmax)then
+               write(*,*)'Error: Too many diag-moments',ndiags
+               stop
+            endif
+         endif
          if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
          if(argument(1:2).eq.'-t')read(argument(3:),*,err=201)Ti
-         if(argument(1:9).eq.'--restart')lrestart=.true.
+         if(argument(1:3).eq.'-rs')then
+            lrestart=.true.
+            read(argument(4:),'(a)',err=201)restartpath
+         endif
          if(argument(1:10).eq.'--extfield')then
             read(argument(11:),*,err=201)extfield
 c            write(*,*)'||||||||||||||extfield',extfield
             lextfield=.true.
          endif
-         if(argument(1:9).eq.'--objfile')
-     $        read(argument(10:),'(a)',err=201)objfilename
+         if(argument(1:3).eq.'-of')
+     $        read(argument(4:),'(a)',err=201)objfilename
          if(argument(1:3).eq.'-ho')then
             call geomdocument()
             call exit(0)
@@ -208,12 +224,14 @@ c Help text
       write(*,302)' -t    set Ion Temperature.       [',Ti
       write(*,302)' -l    set Debye Length.          [',debyelen
       write(*,301)' -a    set averaging steps.       [',iavesteps
+      write(*,301)' -m    set No of diag-moments(7). [',ndiags
       write(*,301)' -ct   set collision time.        [',colntime
       write(*,301)' -vn   set neutral drift velocity [',vneutral
 c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
-      write(*,301)' --objfile<filename>  set name of object data file.'
+      write(*,301)' -of<filename>  set name of object data file.'
      $     //' [ccpicgeom.dat'
-      write(*,301)' --restart  Attempt to restart from saved state.'
+      write(*,301)
+     $     ' -rs[path]  Attempt to restart from state saved [in path].'
       write(*,301)'Debugging switches for testing'
       write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
@@ -267,7 +285,6 @@ c not defined with sufficient arguments for all those in this call.
 
 c---------------------------------------------
 c Here we try to read the stored geometry volume data.
-c This is probably a bottleneck for multi-process.
       istat=1
       call stored3geometry(volumes,iuds,ifull,istat)
 c don't calculate volumes testing.      istat=1
@@ -316,11 +333,15 @@ c      iobpl=-7
          if(iobpl.ne.0.and.lmyidhead)
      $        call cijplot(ndims,ifull,iuds,cij,rs,iobpl,0)
       endif
-
+c---------------------------------------------
 c Initialize charge (set q to zero over entire array).
       call mditerset(q,ndims,ifull,iuds,0,0.)
 c Initialize potential (set u to zero over entire array).
       call mditerset(u,ndims,ifull,iuds,0,0.)
+c Initialize diagsum if necessary.
+      do idiag=1,ndiags
+         call mditerset(diagsum(1,1,1,idiag),ndims,ifull,iuds,0,0.)
+      enddo
 c Initialize additional potential and charge if needed.
       if(iptch_mask.ne.0)
      $     call setadfield(ndims,ifull,iuds,iptch_mask,lsliceplot)
@@ -381,7 +402,8 @@ c-----------------------------------------------
 c Restart code
 c 400  continue
       if(lrestart)then
-         partfilename=' '
+c         partfilename=' '
+         partfilename=restartpath
          call nameconstruct(partfilename)
          phifilename=partfilename
          nb=nbcat(phifilename,'.phi')
@@ -392,8 +414,8 @@ c 400  continue
          if(ierr.ne.0)goto 401
          call partread(partfilename,ierr)
          if(ierr.ne.0)goto 401
-c         call phiread(phifilename,ifull,iuds,u,ierr)
-         call array3read(phifilename,ifull,iuds,u,ierr)
+         ied=1
+         call array3read(phifilename,ifull,iuds,ied,u,ierr)
          if(ierr.ne.0)goto 401
          write(*,*)'Restart files read successfully.'
          if(nsteps+nf_step.gt.nf_maxsteps)then
@@ -424,7 +446,8 @@ c Acceleration code.
          if(ninjcomp.ne.0)nrein=ninjcomp
 
          call mditerset(psum,ndims,ifull,iuds,0,0.)
-         call chargetomesh(psum,iLs,diags)
+c         write(*,*)'chargetomesh calling, ndiags',ndiags
+         call chargetomesh(psum,iLs,diagsum,ndiags)
 c Psumreduce takes care of the reductions that were in rhoinfcalc 
 c and explicit psum. It encapsulates the iaddtype iaddop generation.
 c Because psumtoq internally compensates for faddu, we reduce here
@@ -434,6 +457,7 @@ c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
 c Convert psums to charge, q. Remember external psumtoq!
          call mditerarg(psumtoq,ndims,ifull,ium2,
      $        0,psum(2,2,2),q(2,2,2),volumes(2,2,2),u(2,2,2))
+         istepave=min(nf_step,iavesteps)
 
          call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $     ,myid,idims)
@@ -461,8 +485,8 @@ c The normal call:
          endif
          call fluxreduce()
 c Store the step's rhoinf, dt.
-         ff_rho(j)=rhoinf
-         ff_dt(j)=dt
+         ff_rho(nf_step)=rhoinf
+         ff_dt(nf_step)=dt
          if(lmyidhead)then
             call fluxdiag()
             if(mod(nf_step,5).eq.0)write(*,*)
@@ -473,9 +497,33 @@ c Store the step's rhoinf, dt.
      $        nrein,n_part,ioc_part,rhoinf,dt
             if(nsubc.ne.0)write(*,'(''Subcycled:'',i6)')nsubc
          endif
-         istepave=min(nf_step,iavesteps)
+
+c These running and box averages do not include the updates for this step.
+c Accumulate running q and u averages:
          call average3d(q,qave,ifull,iuds,istepave)
          call average3d(u,uave,ifull,iuds,istepave)
+c Every iavesteps, calculate the box average of the moments, and write it
+c out, if we are doing diagnostics.
+         if(ndiags.gt.0)then
+            if(mod(j,iavesteps).eq.0)then
+c Reduce the data
+               call diagreduce(diagsum,ndims,ifull,iuds,iLs,ndiags)
+c Do any other processing? Here or later?
+c               call diagstep(iLs,diagsum,ndiags)
+               if(lmyidhead)then
+c If I'm the head, write it.
+                  write(*,'(a,i3,a,$)')'Diags',ndiags,' '
+                  write(argument,'(''.dia'',i4.4)')j
+                  call namewrite(diagfilename,ifull,iuds,ndiags,diagsum
+     $                 ,argument)
+               endif
+c Now reinit diagsum
+               do idiag=1,ndiags
+                  call mditerset(diagsum(1,1,1,idiag),ndims,ifull,iuds,0
+     $                 ,0.)
+               enddo
+            endif
+         endif
 
 c This non-standard fortran call works with gfortran and g77 to flush stdout.
          if(lmyidhead)call flush()
@@ -486,17 +534,15 @@ c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
 c      if(lorbitplot)call orbit3plot(ifull,iuds,u,phip,rc,rs)
       if(norbits.ne.0)
      $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl,norbits)
-c      write(*,*)'Finished orbitplot.'
-
       call partwrite(partfilename,myid)
       if(lmyidhead)then
          if(iptch_mask.ne.0)then
             call mditeradd(u,ndims,ifull,iuds,0,uci)
             call mditeradd(uave,ndims,ifull,iuds,0,uci)
          endif
-         call namewrite(phifilename,ifull,iuds,uave,'.pha')
-         call namewrite(phifilename,ifull,iuds,qave,'.den')
-         call namewrite(phifilename,ifull,iuds,u,'.phi')
+         call namewrite(phifilename,ifull,iuds,1,uave,'.pha')
+         call namewrite(phifilename,ifull,iuds,1,qave,'.den')
+         call namewrite(phifilename,ifull,iuds,1,u,'.phi')
       endif
       
 c-------------------------------------------------------------------
@@ -506,7 +552,7 @@ c Check some flux diagnostics and writing.
          call writefluxfile(fluxfilename)
          if(linjplot)call plotinject(Ti)
          do ifobj=1,mf_obj
-            call fluxave(nsteps/2,nsteps,ifobj,ifplot,rinf)
+            call fluxave(nf_step/2,nf_step,ifobj,ifplot,rinf)
          enddo
       endif
 c      call readfluxfile(fluxfilename)

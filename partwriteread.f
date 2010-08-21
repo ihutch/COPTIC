@@ -85,19 +85,19 @@ c Zero the flags of higher slots.
       ierr=1
       end
 c******************************************************************
-      subroutine array3write(name,ifull,iuds,u)
-c 3-Dimensions assumed.
+      subroutine array3write(name,ifull,iuds,ied,u)
+c 3-Dimensions assumed. But extra dimension ied allowed.
 c File name:
       character*(*) name
-      integer ifull(3),iuds(3)
-      real u(ifull(1),ifull(2),ifull(3))
+      integer ifull(3),iuds(3),ied
+      real u(ifull(1),ifull(2),ifull(3),ied)
       include 'plascom.f'
       include 'meshcom.f'
       character*(100) charout
 
 c      write(*,*)'ifull',ifull
       write(charout,51)debyelen,Ti,vd,rs,phip
- 51   format('debyelen,Ti,vd,rs,phip:',5f10.4)
+ 51   format('V2 debyelen,Ti,vd,rs,phip:',5f9.4)
       open(22,file=name,status='unknown',err=101)
       close(22,status='delete')
       open(22,file=name,status='new',form='unformatted',err=101)
@@ -105,7 +105,9 @@ c      write(*,*)'ifull',ifull
       write(22)debyelen,Ti,vd,rs,phip
       write(22)ixnp,xn
       write(22)iuds
-      write(22)(((u(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
+      write(22)ied
+      write(22)((((u(i,j,k,l),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3)),l=1
+     $     ,ied)
       close(22)
       write(*,'(''Wrote array data to '',a,3i4)')
      $     ,name(1:lentrim(name)),iuds
@@ -117,22 +119,42 @@ c      write(*,*)'ifull',ifull
 
       end
 c******************************************************************
-      subroutine array3read(name,ifull,iuds,u,ierr)
-c 3-Dimensions assumed.
+      subroutine array3read(name,ifull,iuds,ied,u,ierr)
+c 3-Dimensions assumed. Version detection and extra dimension.
+c On entry, ied is the maximum allowed extra dimension.
+c On exit, ied is the actual number of extra dimension. That is, the
+c number of 3d arrays actually read.
 c File name:
       character*(*) name
-      integer ifull(3),iuds(3)
-      real u(ifull(1),ifull(2),ifull(3))
+      integer ifull(3),iuds(3),ied
+      real u(ifull(1),ifull(2),ifull(3),ied)
       include 'plascom.f'
       include 'meshcom.f'
       character*(100) charout
 
       open(23,file=name,status='old',form='unformatted',err=101)
       read(23)charout
+      write(*,'(2a)')'Charout=',charout(1:lentrim(charout))
       read(23)debyelen,Ti,vd,rs,phip
       read(23)ixnp,xn
       read(23)iuds
-      read(23)(((u(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
+      if(charout(1:2).eq.'de')then
+c First version
+         write(*,*)'Old version file'
+         ied=0
+         read(23)(((u(i,j,k,1),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
+      elseif(charout(1:2).eq.'V2')then
+         read(23)ie
+         write(*,*)'New version. Number of quantities in file=',ie
+         if(ie.gt.ied)then
+            write(*,*)'Greater than allowed number:',ied,' not all read'
+            ie=ied
+         else
+            ied=ie
+         endif
+         read(23)((((u(i,j,k,l),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3)),l
+     $        =1,ied)
+      endif
       close(23)
       write(*,'(''Read back array data from '',a,3i4)')
      $     ,name(1:lentrim(name)),iuds
@@ -144,14 +166,15 @@ c File name:
       ierr=1
       end
 c******************************************************************
-      subroutine namewrite(name,ifull,iuds,u,extension)
+c******************************************************************
+      subroutine namewrite(name,ifull,iuds,ied,u,extension)
       character*(*) name,extension
-      integer ifull(3),iuds(3)
+      integer ifull(3),iuds(3),ied
       real u(ifull(1),ifull(2),ifull(3))
       name=' '
       call nameconstruct(name)
       i=nbcat(name,extension)
-      call array3write(name,ifull,iuds,u)
+      call array3write(name,ifull,iuds,ied,u)
       end
 c******************************************************************
       subroutine nameconstruct(name)
@@ -169,123 +192,5 @@ c      call nameappendint(name,'P',ifix(abs(phip)),2)
       call nameappendint(name,'x',nint(xmeshend(1)),2)
       end
 c Below here are the obsolete versions which can be deleted once
-c we are convinced there are no bugs or needs.
+c we are convinced there are no bugs or needs. Done 17 Aug 2010
 c******************************************************************
-c******************************************************************
-      subroutine phiwrite_obs(name,ifull,iuds,u)
-c 3-Dimensions assumed.
-c File name:
-      character*(*) name
-      integer ifull(3),iuds(3)
-      real u(ifull(1),ifull(2),ifull(3))
-      include 'plascom.f'
-      include 'meshcom.f'
-      character*(100) charout
-
-      name=' '
-      call nameconstruct(name)
-      i=nbcat(name,'.phi')
-      write(charout,51)debyelen,Ti,vd,rs,phip
- 51   format('debyelen,Ti,vd,rs,phip:',5f10.4)
-      open(22,file=name,status='unknown',err=101)
-      close(22,status='delete')
-      open(22,file=name,status='new',form='unformatted',err=101)
-      write(22)charout
-      write(22)debyelen,Ti,vd,rs,phip
-      write(22)ixnp,xn
-      write(22)iuds
-      write(22)(((u(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
-      close(22)
-c      write(*,*)'Wrote potential data to ',name(1:lentrim(name))
-      return
-
- 101  continue
-      write(*,*)'Error opening file:',name
-      close(22,status='delete')
-
-      end
-c******************************************************************
-      subroutine phiread_obs(name,ifull,iuds,u,ierr)
-c 3-Dimensions assumed.
-c File name:
-      character*(*) name
-      integer ifull(3),iuds(3)
-      real u(ifull(1),ifull(2),ifull(3))
-      include 'plascom.f'
-      include 'meshcom.f'
-      character*(100) charout
-
-      open(23,file=name,status='old',form='unformatted',err=101)
-      read(23)charout
-      read(23)debyelen,Ti,vd,rs,phip
-      read(23)ixnp,xn
-      read(23)iuds
-      read(23)(((u(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
-      close(23)
-      write(*,*)'Read back potential data from ',name(1:lentrim(name))
-      ierr=0
-      return
-
- 101  continue
-      write(*,*)'Error opening file:',name
-      ierr=1
-      end
-c******************************************************************
-      subroutine denwrite_obs(name,ifull,iuds,q)
-c 3-Dimensions assumed.
-c File name:
-      character*(*) name
-      integer ifull(3),iuds(3)
-      real q(ifull(1),ifull(2),ifull(3))
-      include 'plascom.f'
-      include 'meshcom.f'
-      character*(100) charout
-
-      name=' '
-      call nameconstruct(name)
-      i=nbcat(name,'.den')
-      write(charout,51)debyelen,Ti,vd,rs,phip
- 51   format('debyelen,Ti,vd,rs,phip:',5f10.4)
-      open(22,file=name,status='unknown',err=101)
-      close(22,status='delete')
-      open(22,file=name,status='new',form='unformatted',err=101)
-      write(22)charout
-      write(22)debyelen,Ti,vd,rs,phip
-      write(22)ixnp,xn
-      write(22)iuds
-      write(22)(((q(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
-      close(22)
-c      write(*,*)'Wrote density data to ',name(1:lentrim(name))
-      return
-
- 101  continue
-      write(*,*)'Error opening file:',name
-      close(22,status='delete')
-
-      end
-c******************************************************************
-      subroutine denread_obs(name,ifull,iuds,q,ierr)
-c 3-Dimensions assumed.
-c File name:
-      character*(*) name
-      integer ifull(3),iuds(3)
-      real q(ifull(1),ifull(2),ifull(3))
-      include 'plascom.f'
-      include 'meshcom.f'
-      character*(100) charout
-
-      open(23,file=name,status='old',form='unformatted',err=101)
-      read(23)charout
-      read(23)debyelen,Ti,vd,rs,phip
-      read(23)ixnp,xn
-      read(23)iuds
-      read(23)(((q(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
-      close(23)
-      write(*,*)'Read back density data from ',name(1:lentrim(name))
-      ierr=0
-      return
-
- 101  continue
-      write(*,*)'Error opening file:',name
-      ierr=1
-      end

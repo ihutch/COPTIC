@@ -43,7 +43,7 @@ c      write(*,*)nf,idl
       do inm=1,nf
          phifilename=filenames(inm)
 c         write(*,*)ifull,iuds
-         call array3read(phifilename,ifull,iuds,u,ierr)
+         call array3read(phifilename,ifull,iuds,ied,u,ierr)
          if(ierr.eq.1)stop
          do i=1,ndims_mesh
             if(iuds(i).gt.na_m) then

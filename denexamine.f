@@ -12,7 +12,7 @@ c
       call denexamargs
 
 c      write(*,*)ifull
-      call array3read(denfilename,ifull,iuds,q,ierr)
+      call array3read(denfilename,ifull,iuds,ied,q,ierr)
       if(ierr.eq.1)stop
 
       rs=sqrt(3.)*rs

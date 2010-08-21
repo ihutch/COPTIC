@@ -18,7 +18,7 @@ c
       call examargs(rp)
          
 c      write(*,*)(u(16,16,k),k=1,36) 
-      call array3read(phifilename,ifull,iuds,u,ierr)
+      call array3read(phifilename,ifull,iuds,ied,u,ierr)
       if(ierr.eq.1)stop
 
       write(*,'(a,3i4,$)')'On grid',iuds

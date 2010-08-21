@@ -79,7 +79,6 @@ c Instead this new approach truncates outside window.
       if(nrows.ne.0) then
 	 call ticset(0.,0.,0.,0.,0,0,0,0)
 	 nframe=0
-	 ticnum=6
       endif
       return
       end
@@ -127,7 +126,9 @@ c Set multiple frame parameters.
 	call mregion
  	call axregion(0.31,0.91,0.1,0.7)
 	nrows=0
+        ticnum=6
       endif
+      ticnum=7-min(3,2*max(nrows-1,ncolumns-1))
       end
 c*********************************************************************
       subroutine mregion
@@ -145,7 +146,7 @@ c Try crunching up the y-labels for better clearance
 c was     call ticset(.015*csl,0.15*csl,-.03*csl,-.02*csl,0,0,0,0)
 c also made the xsp 0.22 instead of 0.2
       call ticset(.015*csl,0.15*csl,-.03*csl,-.017*csl,0,0,0,0)
-      ticnum=7-min(3,2*max(nrows-1,ncolumns-1))
+c      ticnum=7-min(3,2*max(nrows-1,ncolumns-1))
       call axregion(0.1+(nframe/nrows)*(0.88/ncolumns),
      $	  0.1+(nframe/nrows +(1.-0.22*xsp))*(0.88/ncolumns),
      $	  ytop*(0.1+0.9*(nrows-nframe+(nframe/nrows)*nrows-1)/nrows),

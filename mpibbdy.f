@@ -703,7 +703,7 @@ c dimensions idims, iLcoords, ioffset, idebug.
 
 c      include 'mpif.h'
 
-      call bbdyblockcreate( ndims,ktype,iLs,iside,isizeofreal)
+      call bbdyblockcreate( ndims,ktype,iLs,iside,iSIZEOFREAL)
       ith0=2**ndims
       if(idebug.ge.1) write(*,*)'Block types:',(ktype(ith),
      $     ith=ith0,2*ith0-1)

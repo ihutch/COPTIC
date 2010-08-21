@@ -11,7 +11,7 @@ c The full dimensions of arrays u are
 c The used dimensions of each are
       integer iuds(ndims)
 c The dimensions of square working array, zp, (nw) must be larger
-c than the greatest of iuds 
+c than the greatest of iuds. If zp(1,1)=0 on entry, give control help.
       integer nw
       real zp(nw,nw)
 c The node positions are given by vectors laminated into xn, whose
@@ -64,6 +64,7 @@ c     Plot the surface. With scaling 1. Web color 6, axis color 7.
          icontour=1
          iclipping=0
          lfirst=.false.
+         if(zp(1,1).ne.0)goto 19
  20      write(*,*)' ======== Slice plotting interface:',
      $        '  arrows up/down: change slice.'
          write(*,*)
@@ -343,7 +344,7 @@ c The full dimensions of arrays u are
 c The used dimensions of each are
       integer iuds(ndims)
 c The dimensions of square working array, zp, (nw) must be larger
-c than the greatest of iuds 
+c than the greatest of iuds. If zp(1,1,1)=0 on entry, give control help.
       integer nw
       real zp(nw,nw,ndims)
 c The node positions are given by vectors laminated into xn, whose
@@ -395,6 +396,7 @@ c     Plot the surface. With scaling 1. Web color 6, axis color 7.
          iweb=1
          icontour=1
          lfirst=.false.
+         if(zp(1,1,1).ne.0)goto 19
  20      write(*,*)' ======== Slice contouring interface:',
      $        ' up/down, l/r arrows change slice.'
          write(*,*) ' d: changes l/r dimension controlled.',
