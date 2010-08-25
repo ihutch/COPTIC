@@ -35,39 +35,6 @@ c Restartable gasdev based on NR.
       return
       end
 c**********************************************************************
-c      FUNCTION RAN1(IDUM)
-c      ran1=ran0(idum)
-c      end
-c**********************************************************************
-c      FUNCTION ran0(IDUM)
-      FUNCTION ran0()
-      save
-c Version of July 06 that removes the argument dependence.
-      DIMENSION V(97)
-      DATA IFF /0/
-      IF(IFF.EQ.0)THEN
-        IFF=1
-        DO 11 J=1,97
-c          DUM=RANd()
-          Y=RANd()
-11      CONTINUE
-        DO 12 J=1,97
-          V(J)=RANd()
-12      CONTINUE
-        Y=RANd()
-      ENDIF
-c IHH hack to prevent errors when Y=1. Was 97.
-      J=1+INT(96.9999*Y)
-      IF(J.GT.97.OR.J.LT.1)then
-         write(*,*)'RAN0 error: j=',j,'  y=',y
-c         PAUSE 'RAN0 problem'
-         j=1
-      endif
-      Y=V(J)
-      RAN0=Y
-      V(J)=RANd()
-      RETURN
-      END
 c**********************************************************************
       FUNCTION ran1(IDUM)
 c Returns a uniform random deviate between 0 and 1.

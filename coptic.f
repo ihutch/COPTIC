@@ -155,6 +155,8 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-ds')read(argument(4:),*,err=201)subcycle
          if(argument(1:7).eq.'--reinj')
      $        read(argument(8:),*,err=201)ninjcomp
+         if(argument(1:3).eq.'-rn')
+     $        read(argument(4:),*,err=201)ninjcomp
          if(argument(1:2).eq.'-s')then
             read(argument(3:),*,err=201)nsteps
             if(nsteps.gt.nf_maxsteps)then
@@ -177,7 +179,7 @@ c      if(iargc().eq.0) goto "help"
          endif
          if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
          if(argument(1:2).eq.'-t')read(argument(3:),*,err=201)Ti
-         if(argument(1:3).eq.'-rs')then
+         if(argument(1:3).eq.'-fs')then
             lrestart=.true.
             read(argument(4:),'(a)',err=201)restartpath
          endif
@@ -210,7 +212,7 @@ c Help text
      $     //' Leave no gap before value. Defaults indicated [ddd'
       write(*,301)' -ni   set No of particles/node; zero => unset.    ['
      $     ,n_part
-      write(*,301)' --reinj    set reinjection number at each step.   ['
+      write(*,301)' -rn   set reinjection number at each step.        ['
      $     ,ninjcomp
       write(*,302)' -ri   set rhoinfinity/node => reinjection number. ['
      $     ,ripernode
@@ -229,9 +231,9 @@ c Help text
       write(*,301)' -vn   set neutral drift velocity [',vneutral
 c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' -of<filename>  set name of object data file.'
-     $     //' [ccpicgeom.dat'
+     $     //'   [ccpicgeom.dat'
       write(*,301)
-     $     ' -rs[path]  Attempt to restart from state saved [in path].'
+     $     ' -fs[path]  Attempt to restart from state saved [in path].'
       write(*,301)'Debugging switches for testing'
       write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
@@ -490,12 +492,12 @@ c Store the step's rhoinf, dt.
          if(lmyidhead)then
             call fluxdiag()
             if(mod(nf_step,5).eq.0)write(*,*)
-         endif
-         if(lmyidhead.and.mod(nf_step,(nsteps/25+1)*5).eq.0)then
-            write(*,
+            if(mod(nf_step,(nsteps/25+1)*5).eq.0)then
+               write(*,
      $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i9,i9,2f10.3)')
-     $        nrein,n_part,ioc_part,rhoinf,dt
-            if(nsubc.ne.0)write(*,'(''Subcycled:'',i6)')nsubc
+     $              nrein,n_part,ioc_part,rhoinf,dt
+               if(nsubc.ne.0)write(*,'(''Subcycled:'',i6)')nsubc
+            endif
          endif
 
 c These running and box averages do not include the updates for this step.

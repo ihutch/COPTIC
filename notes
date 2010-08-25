@@ -4965,3 +4965,17 @@ displays them.
 21 Aug 2010
 Fixed some bugs in the restart code that put time step data into the
 wrong array elements.
+
+25 Aug 2010
+
+Remove the obsolete ran0 function from randf.f.
+
+Discovered that randc.o is needed on loki. But earlier this year I 
+removed it from the objects. volint still uses it. I don't understand
+how it is still working! The answer seems to be that gfortran and g77
+have an intrinsic random generator. The float version is called rand()
+and gives numbers in the 0-1 range, which is correct. This does not
+seem to exist for pathscale compiler, which is why randc is necessary.
+It probably does not hurt to list randc in the objects. With gfortran,
+etc, it will not be used. The intrinsic fortran call will be used 
+instead. Add back.
