@@ -529,7 +529,7 @@ c Now reinit diagsum
 
 c This non-standard fortran call works with gfortran and g77 to flush stdout.
          if(lmyidhead)call flush()
-c Comment it out if it causes problems.
+c Comment it out if it causes problems. (E.g. pathscale gives segfaults.)
       enddo
 c End of Main Step Iteration -------------------------------
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)

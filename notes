@@ -4979,3 +4979,20 @@ seem to exist for pathscale compiler, which is why randc is necessary.
 It probably does not hurt to list randc in the objects. With gfortran,
 etc, it will not be used. The intrinsic fortran call will be used 
 instead. Add back.
+
+I find that the Loki problem seems to be with MPI_IN_PLACE. 
+Some searching on the net shows that this is an MPI-2 spec only.
+Not in MPI-1. That presumably explains the problem. 
+I find that sceptic has a piece of code that removes the IN_PLACE
+saying that it does not work on Loki. The usage in sormpi is easily
+fixed, but the usage in reduce.f is less easy to fix.
+
+By the way, mpibbdytest is the easiest way to get to the bottom of these
+communications issues.
+
+Found that it is possible to compile a coptic with MPICH2 on gigabit
+on loki. But the flush has to be removed from the main program because
+it causes segfaults. Then in works, but one needs to run multiple processes
+under:
+/opt/mvapich2.gbe/path/bin/mpiexec
+

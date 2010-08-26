@@ -27,6 +27,8 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 ##########################################################################
 G77=mpif77 -f77=g77 
 #G77=mpif77
+# For loki:
+#G77=/opt/mvapich2.gbe/path/bin/mpif90
 # export this so it is inherited by sub-makes.
 export G77
 GFINAL=gcc-4.1 -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)

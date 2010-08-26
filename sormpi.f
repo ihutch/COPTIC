@@ -220,17 +220,33 @@ c So we have to universalize the convergence test. All blocks must be
 c converged, but the total spread depends on multiple blocks.
       subroutine testifconverged(eps,delta,umin,umax,lconverged,
      $     icommcart)
-      include 'mpif.h'
+      implicit none
+      real eps,delta,umin,umax
+      integer i,ierr,icommcart
       logical lconverged
-      real convgd(3)
+      include 'mpif.h'
+      real convgd(3),convgr(3)
       convgd(1)=abs(delta)
       convgd(2)=-umin
       convgd(3)=umax
 c Here we need to allreduce the data, selecting the maximum values,
 c doing it in place.
 c      write(*,*)'convgd,icommcart',convgd,icommcart
-      call MPI_ALLREDUCE(MPI_IN_PLACE,convgd,3,MPI_REAL,MPI_MAX,
+c........
+c This is the MPI-2 version that is most convenient.
+c      call MPI_ALLREDUCE(MPI_IN_PLACE,convgd,3,MPI_REAL,MPI_MAX,
+c     $     icommcart,ierr)
+c Since we use implicit none, if you try to use this version, then
+c one ought to get an error if MPI_IN_PLACE is not in the headers.
+c This should protect against MPI-1 problems.
+c........
+c This is the version that one must use when MPI_IN_PLACE is absent.
+      call MPI_ALLREDUCE(convgd,convgr,3,MPI_REAL,MPI_MAX,
      $     icommcart,ierr)
+      do i=1,3
+         convgd(i)=convgr(i)
+      enddo
+c........
       if(convgd(1).lt.eps*(convgd(2)+convgd(3))) then
          lconverged=.true.
       else
