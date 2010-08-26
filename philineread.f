@@ -4,10 +4,10 @@
 
       character*100 filenames(na_m)
       character*50 string
-      parameter (nfx=20)
+      parameter (nfx=30)
       integer ild,ilinechoice(ndims_mesh,nfx),ip(ndims_mesh)
       real philine(na_m),xline(na_m)
-      real darray(nfx),pmax(nfx),punscale(nfx),rp(nfx)
+      real darray(nfx),pmax(nfx),punscale(nfx),rp(nfx),pp(nfx)
 
 c philineread commons
       logical lrange,lwrite
@@ -36,7 +36,7 @@ c silence warnings:
 
 c      write(*,*)nf,idl
       nf=nfx
-      call lineargs(filenames,nf,ild,ilinechoice,rp)
+      call lineargs(filenames,nf,ild,ilinechoice,rp,pp)
       write(*,*)'Filenames',nf
 
       nplot=0
@@ -51,6 +51,11 @@ c         write(*,*)ifull,iuds
                stop
             endif
          enddo
+         
+         if(pp(inm).ne.0.)then
+            write(*,*)'Scaling internal phip by factor ',pp(inm)
+            phip=phip*pp(inm)
+         endif
 
 c      call sliceGweb(ifull,iuds,u,na_m,zp,
 c     $     ixnp,xn,ifix,'potential:'//'!Ay!@')
@@ -184,7 +189,7 @@ c         call vecw(0.1,2.,1)
       end
 
 c*************************************************************
-      subroutine lineargs(filenames,nf,ild,ilinechoice,rp)
+      subroutine lineargs(filenames,nf,ild,ilinechoice,rp,pp)
 c Deal with command line arguments.
 
 c Non-switch arguments are the names of files to read from. For each of
@@ -201,7 +206,7 @@ c the logic will break if it is changed by -l in the middle.
 
       include 'examdecl.f'
       character*100 filenames(na_m)
-      real rp(nf)
+      real rp(nf),pp(nf)
       integer nf,ild,ilinechoice(ndims_mesh,nf)
       integer idj(ndims_mesh)
 
@@ -229,6 +234,7 @@ c Defaults and silence warnings.
       enddo
       rread=1.
       iover=0
+      phiread=0.
 
 c Deal with arguments
       if(iargc().eq.0) goto 201
@@ -259,7 +265,11 @@ c Deal with arguments
             if(argument(1:13).eq.'--objfilename')
      $           read(argument(14:),'(a)',err=201)objfilename
             if(argument(1:2).eq.'-r')
-     $           read(argument(3:),'(f8.4)',err=201)rread
+     $           read(argument(3:),*,err=201)rread
+            if(argument(1:2).eq.'-p')then
+               read(argument(3:),*,err=201)phiread
+               write(*,*)'phi scaling factor',phiread
+            endif
             if(argument(1:2).eq.'-h')goto 203
             if(argument(1:2).eq.'-?')goto 203
             if(argument(1:2).eq.'-f')goto 204
@@ -272,6 +282,7 @@ c                  write(*,*)'nf,k,idj(k)',nf,k,idj(k)
             enddo
             filenames(nf)(1:)=phifilename
             rp(nf)=rread
+            pp(nf)=phiread
             if(nf.eq.nfx)then
                write(*,*)'Exhausted file dimension',nf
                return
