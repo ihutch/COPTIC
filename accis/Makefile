@@ -1,4 +1,4 @@
-# Makefile for accis routines. CCPIC version.
+# Makefile for accis routines. COPTIC version.
 
 #Default xlib path (32 bit).
 ifeq ("$(XLIB)","")
@@ -8,6 +8,7 @@ endif
 #Alternatives are vecx or vecglx
 ifeq ("$(VECX)","")
     VECX=vecglx
+#    VECX=vecx
 endif
 
 F77=$(G77)

@@ -1,3 +1,28 @@
+c**********************************************************************
+      subroutine datawrite(myid,partfilename,phifilename,ifull
+     $     ,iuds,u,uave,qave)
+      integer myid,ifull(*),iuds(*)
+      real u(*),uave(*),qave(*)
+      character*(*) partfilename,phifilename
+      include 'griddecl.f'
+      include 'ptchcom.f'
+      character*100 localfilename
+
+      call partwrite(partfilename,myid)
+      if(myid.eq.0)then
+         if(iptch_copy.ne.0)then
+            call mditeradd(u,ndims,ifull,iuds,0,uci)
+            call mditeradd(uave,ndims,ifull,iuds,0,uci)
+         endif
+         call namewrite(phifilename,ifull,iuds,1,uave,'.pha')
+         call namewrite(phifilename,ifull,iuds,1,qave,'.den')
+         call namewrite(phifilename,ifull,iuds,1,u,'.phi')
+         call writefluxfile(localfilename)
+      endif
+
+      end
+c%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 c Write particle data to disk.
       subroutine partwrite(name,myid)
 c File name:

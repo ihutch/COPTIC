@@ -50,7 +50,7 @@ c      parameter (ndims=ndims_sor)
 c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
       logical lrestart,lmyidhead,lphiplot,ldenplot
-      integer ipstep
+      integer ipstep,iwstep
 c Diagnostics
       real zp(na_m,na_m,ndims_mesh)
 c Set up the structure vector.
@@ -110,6 +110,8 @@ c Default edge-potential (chi) relaxation rate.
       lmyidhead=.true.
       ndiags=0
       ifplot=-1
+      iwstep=99999
+      rcij=0
 c---------------------------------------------------------------------
 c This necessary here so one knows early the mpi structure.
 c Otherwise could have been hidden in sormpi and pass back numprocs.
@@ -123,6 +125,7 @@ c      if(iargc().eq.0) goto "help"
          call getarg(i,argument)
          if(argument(1:3).eq.'-gt')ltestplot=.true.
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
+         if(argument(1:3).eq.'-gr')read(argument(4:),*,end=201)rcij
          if(argument(1:3).eq.'-gs')then
             lsliceplot=.true.
             read(argument(4:),*,err=210,end=210)ipstep
@@ -179,6 +182,7 @@ c      if(iargc().eq.0) goto "help"
          endif
          if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
          if(argument(1:2).eq.'-t')read(argument(3:),*,err=201)Ti
+         if(argument(1:2).eq.'-w')read(argument(3:),*,err=201)iwstep
          if(argument(1:3).eq.'-fs')then
             lrestart=.true.
             read(argument(4:),'(a)',err=201)restartpath
@@ -226,6 +230,7 @@ c Help text
       write(*,302)' -t    set Ion Temperature.       [',Ti
       write(*,302)' -l    set Debye Length.          [',debyelen
       write(*,301)' -a    set averaging steps.       [',iavesteps
+      write(*,301)' -w    set write-step period.     [',iwstep
       write(*,301)' -m    set No of diag-moments(7). [',ndiags
       write(*,301)' -ct   set collision time.        [',colntime
       write(*,301)' -vn   set neutral drift velocity [',vneutral
@@ -244,6 +249,8 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
      $     ' final distribution. [',ifplot
       write(*,301)' -gc   set wireframe [& stencils(-)] mask.'//
      $     ' objects<->bits. [',iobpl
+      write(*,301)' -gr   set wireframe override plot scale'//
+     $     ' for -gc plot.  [',rcij
       write(*,301)' -go   set No of orbits'
      $     //'(to plot on objects set by -gc). [',norbits
       write(*,301)' -at   set test angle.'
@@ -332,8 +339,10 @@ c         if(lmyidhead)write(*,*)'Finished mesh/stencil setup:',iuds
      $        ,' points.'
 c Plot objects 0,1 and 2 (bits)
 c      iobpl=-7
-         if(iobpl.ne.0.and.lmyidhead)
-     $        call cijplot(ndims,ifull,iuds,cij,rs,iobpl,0)
+         if(iobpl.ne.0.and.lmyidhead)then
+            if(rcij.eq.0.)rcij=rs
+            call cijplot(ndims,ifull,iuds,cij,rcij,iobpl,0)
+          endif
       endif
 c---------------------------------------------
 c Initialize charge (set q to zero over entire array).
@@ -527,6 +536,10 @@ c Now reinit diagsum
             endif
          endif
 
+         if(mod(nf_step,iwstep).eq.0)call datawrite(myid ,partfilename
+     $        ,phifilename,ifull,iuds,u,uave,qave)
+
+
 c This non-standard fortran call works with gfortran and g77 to flush stdout.
          if(lmyidhead)call flush()
 c Comment it out if it causes problems. (E.g. pathscale gives segfaults.)
@@ -536,27 +549,19 @@ c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
 c      if(lorbitplot)call orbit3plot(ifull,iuds,u,phip,rc,rs)
       if(norbits.ne.0)
      $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl,norbits)
-      call partwrite(partfilename,myid)
-      if(lmyidhead)then
-         if(iptch_mask.ne.0)then
-            call mditeradd(u,ndims,ifull,iuds,0,uci)
-            call mditeradd(uave,ndims,ifull,iuds,0,uci)
-         endif
-         call namewrite(phifilename,ifull,iuds,1,uave,'.pha')
-         call namewrite(phifilename,ifull,iuds,1,qave,'.den')
-         call namewrite(phifilename,ifull,iuds,1,u,'.phi')
-      endif
+
+c Everyone writes what they have to.
+      call datawrite(myid,partfilename,phifilename,ifull
+     $     ,iuds,u,uave,qave)
       
 c-------------------------------------------------------------------
       call mpifinalize(ierr)
 c Check some flux diagnostics and writing.
       if(lmyidhead)then 
-         call writefluxfile(fluxfilename)
          if(linjplot)call plotinject(Ti)
          do ifobj=1,mf_obj
             call fluxave(nf_step/2,nf_step,ifobj,ifplot,rinf)
          enddo
       endif
-c      call readfluxfile(fluxfilename)
       end
 c**********************************************************************

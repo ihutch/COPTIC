@@ -4996,3 +4996,13 @@ it causes segfaults. Then in works, but one needs to run multiple processes
 under:
 /opt/mvapich2.gbe/path/bin/mpiexec
 
+
+26 Aug 2010
+Fixed some phiexamine things.
+Implemented -w<iwstep> switch to determine how often one saves the code
+state to disk.
+
+29 Aug 2010
+Fixed some things in the makefile. It is now possible to use override
+option settings in the make command. Also make vecx will use the nonglx
+driver and remove the glu libs.

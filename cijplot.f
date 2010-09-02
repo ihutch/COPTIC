@@ -12,11 +12,13 @@ c Assumed 3-D routine, plots representation of the cij/obj data.
       integer irx(5),iry(5),ipx(5),ipy(5),ijk(3)
       integer idelta(3,3)
       character*40 mystring
+      integer iprinting
       data irx/1,0,-1,0,1/
       data iry/0,1,0,-1,0/
       data ipx/0,0,1,0,0/
       data ipy/0,0,0,1,0/
       data idelta/1,0,0,0,1,0,0,0,1/
+      data iprinting/0/
 
 c If iosw > 0, then wireframe the objects corresponding to its bits.
 c If iosw < 0, plot the sticks as well as the wireframes.
@@ -42,6 +44,7 @@ c      iwire=0
       call pltinit(0.,1.,0.,1.)
       call setcube(.2,.2,.2,.5,.4)
  51   continue
+      if(iprinting.ne.0)call pfset(3)
       call geteye(x2,y2,z2)
       call pltinit(0.,1.,0.,1.)
       call scale3(-rs,rs,-rs,rs,-rs,rs)
@@ -207,9 +210,11 @@ c      write(*,*)'norbits,length=',norbits,iorbitlen(1)
      $        iorbitlen(kk),1)
       enddo
 c User interface:
+      iprinting=0
       call eye3d(isw)
-      if(isw.eq.0)goto 55
+      if(isw.eq.0.or.isw.eq.ichar('q'))goto 55
       if(isw.eq.ichar('r').or.isw.eq.ichar('e'))irotating=1
+      if(isw.eq.ichar('p'))iprinting=mod(iprinting+1,2)
       if(irotating.gt.0)then
 c Get back current eye position xe1 etc.
          call asleep(5000)

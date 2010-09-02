@@ -12,6 +12,7 @@ c
       call denexamargs
 
 c      write(*,*)ifull
+      ied=1
       call array3read(denfilename,ifull,iuds,ied,q,ierr)
       if(ierr.eq.1)stop
 

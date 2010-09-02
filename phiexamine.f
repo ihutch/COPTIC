@@ -18,6 +18,7 @@ c
       call examargs(rp)
          
 c      write(*,*)(u(16,16,k),k=1,36) 
+      ied=1
       call array3read(phifilename,ifull,iuds,ied,u,ierr)
       if(ierr.eq.1)stop
 
@@ -29,7 +30,9 @@ c      write(*,*)(u(16,16,k),k=1,36)
       ifix=1
 c      call noeye3d(0)
       call sliceGweb(ifull,iuds,u,na_m,zp,
-     $     ixnp,xn,ifix,'potential:'//'!Ay!@')
+     $     ixnp,xn,ifix,'potential:'//'!Af!@')
+      call sliceGcont(ifull,iuds,u,na_m,zp,
+     $     ixnp,xn,ifix,'potential:'//'!Af!@')
 
       iplot=2
 c Default spherical r plot.
@@ -249,6 +252,7 @@ c Fill in along the axis.
 
 c Now rzdist(nr,nz) is the rz-distribution of the (average) potential.
 c Contour it.
+         call pfset(3)
          nc=30
          call fitrange(-phimax,phimax,nc,ipow,fac10,delta,first,xlast)
 c         write(*,*)ipow,fac10,delta,first,xlast
@@ -297,11 +301,11 @@ c Indicate rectangle limits.
          xl(2)=0.
          call polyline(xl,yl,2)
          call fwrite(vd,iwd,2,string)
-         call jdrwstr(.02,.31,'v!dd!d='//string(1:iwd),1.)
+c         call jdrwstr(.02,.31,'v!dd!d='//string(1:iwd),1.)
          call fwrite(debyelen,iwd,1,string)
-         call jdrwstr(.02,.25,'!Al!@!dDe!d='//string(1:iwd),1.)
+c         call jdrwstr(.02,.25,'!Al!@!dDe!d='//string(1:iwd),1.)
          call fwrite(phip,iwd,2,string)
-         call jdrwstr(.02,.28,'!Af!@!dp!d='//string(1:iwd),1.)
+c         call jdrwstr(.02,.28,'!Af!@!dp!d='//string(1:iwd),1.)
          call pltend()
 
       endif

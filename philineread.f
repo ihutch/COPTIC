@@ -4,10 +4,11 @@
 
       character*100 filenames(na_m)
       character*50 string
-      parameter (nfx=30)
+      parameter (nfx=200)
       integer ild,ilinechoice(ndims_mesh,nfx),ip(ndims_mesh)
       real philine(na_m),xline(na_m)
       real darray(nfx),pmax(nfx),punscale(nfx),rp(nfx),pp(nfx)
+      real tp(nfx),vp(nfx)
 
 c philineread commons
       logical lrange,lwrite
@@ -43,6 +44,7 @@ c      write(*,*)nf,idl
       do inm=1,nf
          phifilename=filenames(inm)
 c         write(*,*)ifull,iuds
+         ied=1
          call array3read(phifilename,ifull,iuds,ied,u,ierr)
          if(ierr.eq.1)stop
          do i=1,ndims_mesh
@@ -56,7 +58,8 @@ c         write(*,*)ifull,iuds
             write(*,*)'Scaling internal phip by factor ',pp(inm)
             phip=phip*pp(inm)
          endif
-
+         tp(inm)=Ti
+         vp(inm)=vd
 c      call sliceGweb(ifull,iuds,u,na_m,zp,
 c     $     ixnp,xn,ifix,'potential:'//'!Ay!@')
 
@@ -72,13 +75,14 @@ c            write(*,*)'ild,ip(ild)',ild,ip(ild)
                ip(ild)=i
                xline(i)=xn(ixnp(ild)+i)/debyelen
                philine(i)=u(ip(1),ip(2),ip(3))
-     $              /abs(rp(inm)*phip/debyelen)
+     $              /(abs(phip)*(1.+rp(inm)/debyelen)*rp(inm)/debyelen)
                if(lwrite)write(*,'(2f10.5)')xline(i),philine(i)
             enddo
             call minmax(philine,iuds(ild),pmin,pa)
             pmax(inm)=pa
-            punscale(inm)=pmax(inm)*abs(rp(inm)*phip/debyelen)
-            darray(inm)=abs(rp(inm)*phip/debyelen)
+            punscale(inm)=pmax(inm)*abs(phip)*(1.+rp(inm)/debyelen)
+     $           *(rp(inm)/debyelen)
+            darray(inm)=abs(rp(inm)*(1.+rp(inm)/debyelen)*phip/debyelen)
 
             call winset(.true.)
             call pfset(3)
@@ -138,50 +142,60 @@ c Overplot traces from specified file.
       if(nplot.gt.0)then
          call pltend()
          call dashset(0)
+         call charsize(.02,.02)
          string=' r!dp!d/!Al!@='
          call lautomark(darray,pmax,nplot,.true.,.true.,0)
          imark=1
          do k=1,nplot
+c            itc=int(tp(k)/0.0049
+            itc=int(vp(k)*4.001)
             call fwrite(rp(k)/debyelen,iwd,2,string(15:))
-            call color(imark)
+            call color(itc)
             if(k.eq.1)then
-               call legendline(.1,.02+.05*imark,imark,string)
+               call legendline(.0,.02+.05*imark,imark,string)
             elseif(rp(k).ne.rp(k-1))then
                imark=imark+1
-               call color(imark)
-               call legendline(.1,.02+.05*imark,imark,string)
+               call color(itc)
+               call legendline(.0,.02+.05*imark,imark,string)
             endif
             call polymark(darray(k),pmax(k),1,imark)
          enddo
          call color(15)
-         call axlabels('|!Af!@!dp!d|r!dp!d/!Al!@'
-     $        //'!A ~ !@Q/4!Ape!@!d0!d!Al!@',
-     $        '!Af!@!dmax!d/(|!Af!@!dp!d|r!dp!d/!Al!@)')
+         call axlabels('|!Af!@!dp!d|r!dp!d(1+r!dp!d/!Al!@)/!Al!@'
+     $        //' = Q/4!Ape!@!d0!d!Al!@',
+     $        '!Af!@!dmax!d/( Q/4!Ape!@!d0!d!Al!@)')
+c     $        '!Af!@!dmax!d/(|!Af!@!dp!d|r!dp!d/!Al!@)')
 c         call vecw(0.04,3.,0)
 c         call vecw(1.,.12,1)
 c         call vecw(0.01,2.,0)
 c         call vecw(0.1,2.,1)
          call pltend()
+c         call ticset(.015,.015,-.03,-.02,4,4,1,1) 
+         call ticset(.015,.015,-.03,-.025,4,4,1,1) 
          call lautomark(darray,punscale,nplot,.true.,.true.,0)
          call color(imark)
          imark=1
          do k=1,nplot
+c            itc=int(tp(k)/0.0049)
+            itc=int(vp(k)*4.001)
             call fwrite(rp(k)/debyelen,iwd,2,string(15:))
-            call color(imark)
+            call color(itc)
             if(k.eq.1)then
-               call legendline(.1,.02+.05*imark,imark,string)
+               call legendline(.55,.02+.05*imark,imark,string)
             elseif(rp(k).ne.rp(k-1))then
                imark=imark+1
-               call color(imark)
-               call legendline(.1,.02+.05*imark,imark,string)
+               call color(itc)
+               call legendline(.55,.02+.05*imark,imark,string)
             endif
             call polymark(darray(k),punscale(k),1,imark)
          enddo
          call color(15)
          write(*,*)'punscale',(punscale(k),k=1,nplot)
-         call axlabels('|!Af!@!dp!d|r!dp!d/!Al!@'
-     $        //'!A ~ !@Q/4!Ape!@!d0!d!Al!@',
+         call axlabels('|!Af!@!dp!d|r!dp!d(1+r!dp!d/!Al!@)/!Al!@'
+     $        //' = Q/4!Ape!@!d0!d!Al!@',
      $        '!Af!@!dmax!d')
+c'|!Af!@!dp!d|r!dp!d/!Al!@'
+c     $        //'!A ~ !@Q/4!Ape!@!d0!d!Al!@',
          call pltend()
       endif
 

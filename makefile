@@ -1,7 +1,14 @@
-GLULIBS= -lGL -lGLU
+COPTIC=coptic
+#########################################################################
 ACCISLIB=./accis/libaccisX.a
 LIBRARIES = -L/usr/X11R6/lib/ -L./accis/ -laccisX -lXt -lX11 $(GLULIBS)
-COPTIC=coptic
+#Default accis driver choice
+#Alternatives are vecx or vecglx, can be overriden by commandline option
+VECX=vecglx
+#    VECX=vecx
+ifeq ("$(VECX)","vecglx")     
+   GLULIBS= -lGL -lGLU
+endif
 ##########################################################################
 # The reinjection choice:
 #######################
@@ -15,16 +22,7 @@ REINJECT=cartreinject.o
 GEOMFILE=geomcubic.dat
 #GEOMFILE=geomz200x25.dat
 ##########################################################################
-FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o svdsol.o padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o stress.o average.o randc.o
-#
-SPECIALOBJECTS=bdyroutine.o reduce.o getfield.o interpolations.o 
-# Things just needed for the test routine:
-UTILITIES=udisplay.o
-REGULAROBJECTS= $(FIXEDOBJECTS) ${REINJECT}
-OBJECTS=$(SPECIALOBJECTS) $(REGULAROBJECTS)
-HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f griddecl.f ptchcom.f mditcom.f
-TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
-##########################################################################
+# An option setting might override default compiler.
 G77=mpif77 -f77=g77 
 #G77=mpif77
 # For loki:
@@ -36,12 +34,19 @@ GFINAL=gcc-4.1 -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -l
 OPTIMIZE=-O3
 COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I. 
 #COMPILE-SWITCHES = -Wall   $(OPTIMIZE) -I. -g -fbounds-check
-#COMPILE-SWITCHES = -Wall   $(OPTIMIZE) -I. -g 
 ##COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -g -I.
 NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
-#PROFILING=-pg
-#PROFILING= -pg -static-libgcc -lpthread_p -lm_p
+##########################################################################
+FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o svdsol.o padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o stress.o average.o randc.o
+#
+SPECIALOBJECTS=bdyroutine.o reduce.o getfield.o interpolations.o 
+# Things just needed for the test routine:
+UTILITIES=udisplay.o
+REGULAROBJECTS= $(FIXEDOBJECTS) ${REINJECT}
+OBJECTS=$(SPECIALOBJECTS) $(REGULAROBJECTS)
+HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f griddecl.f ptchcom.f mditcom.f
+TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 ##########################################################################
 # If this rule does not seem to recognize the file you are trying to make,
 # then run 'make' to completion first. It is something to do with the
@@ -51,6 +56,7 @@ NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 # to be happening (requires a double colon), but on horace, it is. 
 #% : %.f  makefile $(OBJECTS) $(UTILITIES) $(ACCISLIB)
 #	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+
 % : %.f  makefile libcoptic.a $(ACCISLIB)
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f libcoptic.a $(LIBRARIES)
 
@@ -58,8 +64,6 @@ NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 ./accis/%.o : ./accis/%.f $(HEADERS)
 	$(G77)  -c $(COMPILE-SWITCHES) $(PROFILING) $*.f
 
-# Static pattern is not so easy.
-#$(REGULAROBJECTS): %.o : %.f makefile $(HEADERS)
 # Just putting the specials first ensures that the compile works.
 %.o : %.f makefile $(HEADERS)
 	$(G77)  -c $(COMPILE-SWITCHES) $(PROFILING) $*.f
@@ -125,6 +129,11 @@ testing/fieldtest : testing/fieldtest.f makefile libcoptic.a
 testing/stresstest : testing/stresstest.f stress.o $(ACCISLIB)
 	$(G77) -o testing/stresstest testing/stresstest.f stress.o $(LIBRARIES)
 
+vecx :
+	make clean
+	make VECX=vecx -C accis
+	make
+
 #####################################################
 clean :
 	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.0?? *.ps
@@ -134,5 +143,8 @@ ftnchek :
 	./ftnchekrun "$(COPTIC).f $(OBJECTS)"
 	@echo To view do: konqueror CallTree.html &
 
-final : 
+coptic.prof : makefile $(OBJECTS) 
+	make clean
+	make PROFILING=-pg coptic
+	make PROFILING=-pg coptic.o
 	$(GFINAL)
