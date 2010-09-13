@@ -33,14 +33,15 @@ c Defaults
       do id=1,mdims
          xlimit(1,id)=-5.
          xlimit(2,id)=5.
-         vlimit(1,id)=-5.
-         vlimit(2,id)=5.
+c Overlapping vlimits make limitdeterm the usual setting method.
+         vlimit(1,id)=5.
+         vlimit(2,id)=-5.
       enddo
 
       call partexamargs(xlimit,vlimit)
 c Now the base filename is in partfilename.
-c Initialize partaccum.      
-      call partacinit(xlimit,vlimit)
+c Initialize partaccum.      Now later.
+c      call partacinit(xlimit,vlimit)
 
       ip=lentrim(partfilename)-3
       if(partfilename(ip:ip).eq.'.')then
@@ -49,6 +50,10 @@ c and that we are reading just one file.
          nfmax=0
          name=partfilename
          write(*,*)'Reading single file ',name(1:lentrim(name))
+         if(partfilename(ip:ip+3).eq.'.pex')then
+            write(*,*)'Using stored distribution file'
+            nfmax=-1
+         endif
       endif
 
 c Possible multiple files.
@@ -60,15 +65,46 @@ c Possible multiple files.
          endif
          call partread(name,ierr)
          if(ierr.ne.0)goto 11
+c Use the first file to establish the accumulation range.         
+         if(i.eq.0)then
+            call vlimitdeterm(npdim,x_part,if_part,ioc_part,xlimit
+     $           ,vlimit)
+            call partacinit(xlimit,vlimit)
+            write(*,'('' Velocity limits:'',6f7.3)') vlimit
+         endif
 c Do the accumulation for this file up to maximum relevant slot. 
          naccum=0
          call accumulate(npdim,x_part,if_part,ioc_part,naccum,xlimit
      $        ,vlimit)
-         write(*,*)'Accumulated',naccum,' in',xlimit,' of',ioc_part
-     $        ,' total'
+         write(*,*)'Accumulated',naccum,' of',ioc_part,' total'
+     $        ,' in',xlimit
       enddo
  11   continue
 
+      if(nfmax.eq.-1)then
+         open(25,file=name,status='old',form='unformatted',err=101)
+         read(25)ndiagfile,mdimsfile
+         read(25)(xlimit(1,j),xlimit(2,j),vlimit(1,j),vlimit(2,j),
+     $        j=1,mdims)
+         read(25)((diagx(i,j),px(i,j),i=1,ndiag),j=1,mdims)
+         read(25)((diagv(i,j),fv(i,j),i=1,ndiag),j=1,mdims)
+         close(25)
+      else
+         name(lentrim(name)-2:lentrim(name))='pex'
+         open(25,file=name,status='unknown',err=101)
+         close(25,status='delete')
+         open(25,file=name,status='new',form='unformatted',err=101)
+         write(25)ndiag,mdims
+         write(25)(xlimit(1,j),xlimit(2,j),vlimit(1,j),vlimit(2,j),
+     $        j=1,mdims)
+         write(25)((diagx(i,j),px(i,j),i=1,ndiag),j=1,mdims)
+         write(25)((diagv(i,j),fv(i,j),i=1,ndiag),j=1,mdims)
+         close(25)
+      endif
+      goto 102
+ 101  write(*,*)'Error opening file:',name
+      close(25,status='delete')
+ 102  continue
 
       call multiframe(2,1,2)
       do id=1,mdims
@@ -247,3 +283,93 @@ c         write(*,*)'Accumulated',naccum,' in',xlimit,' of',iocpart
 c     $        ,' total'
              
       end
+c**********************************************************************
+      subroutine vlimitdeterm(mdims,xpart,ifpart,iocpart,xlimit,vlimit)
+      real xpart(3*mdims,iocpart)
+      integer ifpart(iocpart)
+c Spatial limits bottom-top, dimensions
+      real xlimit(2,mdims)
+c Velocity limits
+      real vlimit(2,mdims)
+c Velocity Sorting arrays
+      parameter (nvlist=10)
+      real vtlist(nvlist),vblist(nvlist)
+      do id=1,mdims
+         do j=1,nvlist
+            vblist(j)=vlimit(1,id)
+            vtlist(j)=vlimit(2,id)
+         enddo
+         do j=1,iocpart
+c Only for filled slots
+            if(ifpart(j).eq.1)then
+               v=xpart(id+mdims,j)
+               call sorttoplimit(v,vtlist,nvlist)
+               call sortbottomlimit(v,vblist,nvlist)
+            endif
+         enddo
+c         write(*,*)vblist
+c         write(*,*)vtlist
+         vlimit(1,id)=vblist(nvlist)
+         vlimit(2,id)=vtlist(nvlist)
+      enddo
+c      write(*,*)'vlimits',vlimit
+      end
+c========================================================================
+      subroutine sortbottomlimit(v,vlist,nvlist)
+      real vlist(nvlist)
+c Insert the value v into its ordered place in vlist, retaining the bottom
+c nvlist values.
+c      write(*,*)'bot',v,nvlist,vlist
+      if(v.ge.vlist(nvlist))return
+      if(v.ge.vlist(1))then
+         i1=1
+         i2=nvlist
+c Find my position by bisection.
+ 1       i=(i1+i2)/2
+         if(v.lt.vlist(i))then
+            i2=i
+         else
+            i1=i
+         endif
+         if(i2.gt.i1+1)goto 1
+      else
+         i2=1
+      endif
+c Here i2 is the position of list value just greater than v.
+c      write(*,*)'botend',i1,i2,i,vlist(i2),v
+      do i=nvlist,i2+1,-1
+         vlist(i)=vlist(i-1)
+      enddo
+      vlist(i2)=v
+
+      end
+c*********************************************************************
+      subroutine sorttoplimit(v,vlist,nvlist)
+      real vlist(nvlist)
+c Insert the value v into its reverse-ordered place in vlist, retaining
+c the top nvlist values.
+c      write(*,*)'topstart',nvlist,v,vlist
+      if(v.le.vlist(nvlist))return
+      if(v.le.vlist(1))then
+         i1=1
+         i2=nvlist
+c Find my position by bisection.
+ 1       i=(i1+i2)/2
+         if(v.gt.vlist(i))then
+            i2=i
+         else
+            i1=i
+         endif
+         if(i2.gt.i1+1)goto 1
+      else
+         i2=1
+      endif
+c Here i2 is the position of list value just less than v.
+c      write(*,*)'topend',i1,i2,i,vlist(i2),v
+      do i=nvlist,i2+1,-1
+         vlist(i)=vlist(i-1)
+      enddo
+      vlist(i2)=v
+
+      end
+
