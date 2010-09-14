@@ -100,7 +100,7 @@ c or xw is, a large factor times the actual width.
 c The most efficient usage is for xw to be slightly larger than the 
 c points at which f is 10^-2 times its peak.
 c f must be declared external in the calling routine.
-c If ginfty is returned as zero, then the routine failed with cummulative
+c If ginfty is returned as zero, then the routine failed with cumulative
 c probability too small to be significant.
       subroutine cumprob(f,xw,xc,K,h,ginfty)
       external f
@@ -108,7 +108,7 @@ c probability too small to be significant.
       integer K
       real h(0:K)
 
-      parameter (tiny=1.e-15)
+      parameter (tiny=1.e-14)
 c internal storage
       integer m
       parameter (m=2000)
@@ -245,6 +245,7 @@ c solve g(h_i)=gm*i/K with linear interpolation.
                write(*,*)'Cumprob interp error',i,K,m,gt,g(m)
                write(*,*)'Integration range used:',x0,x1
                write(*,*)(g(kk),kk=1,5),(g(kk),kk=m-4,m)
+               write(*,*)'Probably the value of tiny',tiny,' is too big'
                stop
             endif
             hf=hi-ihi

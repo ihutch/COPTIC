@@ -458,3 +458,29 @@ c  That does not quite align well. Better not to mix thinkgs up.
     1 continue
       pfPS=ipf
       end
+c************************************************************************
+      subroutine polybox(xb,y,npts)
+c Plot the outline of a histogram of boxes whose (touching) boundaries are
+c at xb(0:npts) and whose heights are y(npts).
+      integer npts
+      real y(npts),xb(0:npts)
+      real xp(4),yp(4)
+
+      yp(3)=0.
+      do i=1,npts
+         xp(1)=xb(i-1)
+         yp(1)=yp(3)
+         xp(2)=xp(1)
+         yp(2)=y(i)
+         xp(3)=xb(i)
+         yp(3)=y(i)
+         if(i.lt.npts)then
+            call polyline(xp,yp,3)
+         else
+            xp(4)=xp(3)
+            yp(4)=0.
+            call polyline(xp,yp,4)
+         endif
+      enddo
+
+      end

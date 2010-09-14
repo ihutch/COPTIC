@@ -1,7 +1,12 @@
-      parameter (ndiag=100,mdims=3)
+      parameter (ndiag=200,mdims=3)
       real xr(3*mdims)
-      real fv(ndiag,mdims)
+      real fv(ndiag,mdims),cumfv(0:ndiag,mdims)
       real px(ndiag,mdims)
-      real diagv(ndiag,mdims),cumdiagv(ndiag,mdims)
-      real diagx(ndiag,mdims),cumdiagx(ndiag,mdims)
-      common /cartdiag/fv,px,diagv,diagx,cumdiagv,cumdiagx
+      real vdiag(ndiag,mdims)
+      real xdiag(ndiag,mdims)
+      parameter (nsbins=16)
+      integer ibinmap(ndiag,mdims)
+      real vsbin(nsbins,mdims),csbin(nsbins,mdims),fsv(nsbins,mdims)
+      real vhbin(0:nsbins,mdims)
+      common /cartdiag/fv,px,vdiag,xdiag,cumfv,ibinmap,vsbin,csbin,fsv
+     $     ,vhbin

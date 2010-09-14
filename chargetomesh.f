@@ -56,6 +56,7 @@ c Do something with diagnostics.
 c Assumption here is diags1 n, diags2-4 v, diags5-7 v^2.
                   diagsum(1+iinc)=diagsum(1+iinc)+fac
                   do k=1,ndiags-1
+c Six moments. 3 for v and 3 for v^2.
                      temp=x_part(ndims_mesh+1+mod(k-1,ndims_mesh),i)
                      if(k.gt.ndims_mesh)temp=temp*temp
                      diagsum(1+iinc+k*iLs(ndims_mesh+1))=

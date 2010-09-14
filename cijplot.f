@@ -74,15 +74,16 @@ c Draw joins from the point to the fraction distance.
                   xx(1)=xn(ixnp(1)+i)
                   xx(2)=xn(ixnp(2)+j)
                   xx(3)=xn(ixnp(3)+k)
-                  call vec3w(xx(1),xx(2),xx(3),0)
+c                  call vec3w(xx(1),xx(2),xx(3),0)
                   do id=1,ndims
                      do ipm=1,2
                         ispm=1-2*(ipm-1)
                         no=ndata_sor*(2*(id-1)+(ipm-1))+1
-                        call color((no+2)/ndata_sor)
                         frac=dob_sor(no,iobj)
                         if(frac.lt.1. .and. frac.gt.0.)then
 c This a true intersection.
+                           call vec3w(xx(1),xx(2),xx(3),0)
+                           call color((no+2)/ndata_sor)
                            xt(1)=xx(1)
                            xt(2)=xx(2)
                            xt(3)=xx(3)
@@ -98,7 +99,7 @@ c This a true intersection.
                            endif
 c                           write(*,*)no,id,frac,ipm,xt
                            call vec3w(xt(1),xt(2),xt(3),1)
-                           call vec3w(xx(1),xx(2),xx(3),0)
+c                           call vec3w(xx(1),xx(2),xx(3),0)
                         endif
                      enddo
                   enddo
@@ -140,10 +141,10 @@ c Draw joins between common fractions in plane normal to id.
      $                      2*( (i1-1)*mod(ipm,2)+(i2-1)*mod(ipm+1,2))
      $                       +ipx(ipm)+ipy(ipm))+1
 c                        write(*,*)'iinter',idob_sor(iinter_sor,iobj)
-                        call color(iobjcode)
                         frac=dob_sor(no,iobj)
                         if(frac.lt.1. .and. frac.ge.0.)then
 c This a true intersection. Draw to it.
+                        call color(iobjcode)
                            xt(id)=xx(id)
                            xt(i1)=xx(i1)+frac*
      $                          (xn(ixnp(i1)+ijk(i1)+irx(ipm))-xx(i1))
@@ -171,12 +172,12 @@ c Draw joins between adjacent planes in the positive direction
                         no=ndata_sor*(
      $                      2*( (i1-1)*mod(ipm,2)+(i2-1)*mod(ipm+1,2))
      $                       +ipx(ipm)+ipy(ipm))+1
-                        call color(iobjcode)
                         frac=dob_sor(no,iobj)
                         frac2=dob_sor(no,iobj2)
                         if(frac.lt.1. .and. frac.ge.0.
      $                       .and. frac2.lt.1. .and. frac2.ge.0.)then
 c Double intersections. Connect them.
+                        call color(iobjcode)
                            xt(id)=xx(id)
                            xt(i1)=xx(i1)+frac*
      $                          (xn(ixnp(i1)+ijk(i1)+irx(ipm))-xx(i1))

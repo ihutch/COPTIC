@@ -25,7 +25,7 @@ static Window accis_root;
 static Window accis_window;
 static Pixmap accis_pixmap;
 static GLint  accis_att[] = { GLX_RGBA, /* Truecolor and Directcolor */ 
-		       /* GLX_DEPTH_SIZE, 24, /* Depth 24 */
+		        GLX_DEPTH_SIZE, 24, /* Depth 24 */
 		       GLX_DOUBLEBUFFER, None };
 static XVisualInfo             *accis_vi;
 static Colormap                accis_cmap;

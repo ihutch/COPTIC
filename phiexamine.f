@@ -31,8 +31,8 @@ c      write(*,*)(u(16,16,k),k=1,36)
 c      call noeye3d(0)
       call sliceGweb(ifull,iuds,u,na_m,zp,
      $     ixnp,xn,ifix,'potential:'//'!Af!@')
-      call sliceGcont(ifull,iuds,u,na_m,zp,
-     $     ixnp,xn,ifix,'potential:'//'!Af!@')
+c      call sliceGcont(ifull,iuds,u,na_m,zp,
+c     $     ixnp,xn,ifix,'potential:'//'!Af!@')
 
       iplot=2
 c Default spherical r plot.

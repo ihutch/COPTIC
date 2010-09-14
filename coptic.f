@@ -13,10 +13,15 @@ c Running averages.
       real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
 c
       real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k)
-c Diagnostics
+c Diagnostics (moments)
       integer ndiagmax
       parameter (ndiagmax=7)
       real diagsum(na_i,na_j,na_k,ndiagmax)
+c Distribution functions
+      integer ndistmax
+      parameter (ndistmax=300)
+c      real fv(ndistmax,na_i,na_j,na_k)
+
 c Used dimensions, Full dimensions. Used dims-2
       integer iuds(ndims_sor),ifull(ndims_sor),ium2(ndims_sor)
 c Mesh spacing description structure
@@ -209,7 +214,7 @@ c Help text
      $     ,argument(:20)
  203  continue
       if(myid.ne.0)goto 202
- 301  format(a,i5)
+ 301  format(a,i5,a,i5)
  302  format(a,f8.3)
       write(*,301)'Usage: ccpic [switches]'
       write(*,301)'Parameter switches.'
@@ -230,6 +235,7 @@ c Help text
       write(*,302)' -t    set Ion Temperature.       [',Ti
       write(*,302)' -l    set Debye Length.          [',debyelen
       write(*,301)' -a    set averaging steps.       [',iavesteps
+     $     ,'     Also period of diagnostic writes.'
       write(*,301)' -w    set write-step period.     [',iwstep
       write(*,301)' -m    set No of diag-moments(7). [',ndiags
       write(*,301)' -ct   set collision time.        [',colntime

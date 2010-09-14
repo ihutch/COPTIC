@@ -5006,3 +5006,145 @@ state to disk.
 Fixed some things in the makefile. It is now possible to use override
 option settings in the make command. Also make vecx will use the nonglx
 driver and remove the glu libs.
+
+4 Sep 10
+Established that short domains z11 have indistinguishable results with
+-dt0.05 -s3000 and -dt0.1 -s1500. So we can save on computation, and be
+confident there is not a timestep convergence issue.
+
+Had a problem with cumprob on loki because tiny seemed to be a bit too
+small and we experienced interp equal points. Lowered to 1e-14 from 1e-15.
+Probably ought to do some more checking with this. It arises with a big
+shift of the distribution function when calculating reinjection for the
+downstream face (I presume). 
+
+There are various problems on loki with communications etc. It appears
+to take several minutes for the particle files to be written to disk
+at the end of a run. Also there are unterminated runs and mpds that
+hang around and screw things up.
+
+11 Sep 10
+Succeeded in runs on the cmodws cluster but only by removing the 
+-machinefile argument. 
+
+partexamine modified to save the distibution information, since it takes
+so long to acquire. For 4M particles, it takes several seconds to read
+the data per file. So a multiprocessor postprocessing takes a very long time.
+
+In point of fact, postprocessing all the particles from a particular
+run takes roughly as long as advancing them. This means that it is not
+totally crazy if one requires the average over many steps, to think that
+one should run the multiprocessing code over again to acquire the averaged
+distribution function as one goes. This has the advantage of doing the 
+computing over many nodes. The hard part is deciding the domains in which
+to do the accumulation. (And specifying that). 
+
+Right now I have accumulation in ndiag=200 mdims=3 x 4 quantities: fv,
+px, diagv, diagx. 200x3x4 = 2400 points in cartdiag for partexamine
+accumulation. But actually the diagv and diagx could reasonably be the
+same everywhere. And arguably all I need is f(v). So that's 3
+quantities.  For these quantities, it would not be excessive to
+accumulate into an array equal in size to the cell array. Then at each
+step one would be able to communicate it without excessive cost.
+Alternatively, if the communication is only at the end, we would not
+need to worry about it, and one could consider an array of size equal
+to the number of particles or bigger. (E.g. 4M) In fact it does not
+make sense to accumulate into an array bigger than the number of
+particles for one processor, because there would be less than one
+particle per cell. Of course if we are averaging over time and
+processors, that might give a decent count even with close to 1 per
+cell. Consequently, the spatial array size we could consider
+collecting distributions over would be no larger than 4M/200 =
+20k. Notice that this not quite the size of the spatial array 32x32x96
+~ 100k. But if we have only fv to accumulate, then the extra factor of
+10 is compensated by each particle having 9 reals. We could use a
+resolution in 3-D equal to the cell-mesh; but probably reduce the
+storage to an unimportant cost at about twice the cell-size (factor of
+8=2^3).
+
+Put it another way. We use typically 50 times as many particles as cells.
+Each particle costs 9 reals. We can therefore afford fv 450 reals per cell
+and only double the storage cost. 
+
+Notice that we need a computationally efficient way to assign the
+particle weight or else we'll die from the extra particle calculation
+cost. For example, suppose we had 450 moments, each of which had to be
+calculated when a particle was accumulated. This would undoubtedly far
+outweigh the moving cost for that particle. We already know that
+forming the sums for the first two velocity moments is a significant
+expense (+35%).
+
+Alternatively, if the process is simply assigning to a cell in 3
+dimensions, this requires roughly 3 multiplications, which is going to
+be cheap.
+
+What's more if we use the cell mesh at the spatial basis, we already
+have the fractional mesh position, so that is free. On the other hand
+we might well do CIC-style assignment, in which case we have to assign
+6 adjacent fractions for each charge and velocity. That means we can't
+use integers for accumulation. 
+
+Adding an extra array ndistmax,na_i,na_j,na_k, with ndistmax=300,
+(50,50,100) takes the virtual memory from 485M to 772MB. Thus if 
+we can keep the distribution to 3x100 we'll be ok.
+
+Then presumably we'll have to write this array: 300MB. If it were 
+reasonably sparse, we might be able to save a lot by not writing 
+out those velocities that were never present. This could perhaps
+be done by keeping track of a total count for each velocity (which
+is then the total over the whole domain which might be useful in its
+own right). Any zero of that is not an fv required to be written. 
+However, we would have to consider the order of indices for optimal
+access. The gain from this complication might be a compression of a
+factor of 3 or 4 in typical cases. But it would probably be better 
+to keep from being sparse. 
+
+To ensure that we have a well chosen set of velocities (assuming this
+is possible for the entire domain) we could use analysis of the actual
+particles after a tolerably small number of steps. Choose velocity
+ranges that cover the substantive range(s) before we start
+accumulating. We probably would want to be able to choose a range that
+covered all but a tiny number of particles (not all but zero particles).
+That would be a bit more elaborate than just finding the min and max
+of velocity components.
+
+Specification (q, nq, nmia, rmi, rma) for array q find the range rmi, rma
+such that there are nmia values greater than rma and less than rmi.
+Actually we can't pass a 1-d array so it's got to be more complicated.
+Also we need to do in 3-d. Have to retain the nmia smallest and largest
+values (or pointers to them). 
+
+Slot new values into the sort, in order, with overflow out of the end.
+Initial values ought to be chosen to be overflowed out. 
+Wrote code to do that. Took longer than planned. Seems to work when
+used in partexamine.
+
+13 Sep 10
+
+Idea: why use equal spaced array of bins? That's inefficient. If one
+had a bin array with (roughly) equal numbers of particles in each,
+that's efficient.  One could probably do the same sort of adaptive
+approach. Use the first step or file to decide on the bins. Thereafter
+accumulate in the fixed bins. This needs a good algorithm to decide on
+the bin placement. That's basically integrating the distribution
+function to get the cumulative dist function. Then using equal spacing
+on it (or something like that). How does one get the cumulative dist
+function or its approximate equivalent efficiently? One way would be
+to do the accumulation on a uniform grid with a large number of bins
+and then add it up.  One also then needs an indirection step so that
+one can assign particles to non-uniform bins by a single
+division. This process would in any case require the larger _uniform_
+bin array and its mapping to the non-uniform.  The mapping would be
+universal, so no big storage is required. We also need ways of dealing
+with non-uniform binning. 
+
+Implemented in partexamine. I find that using a non-linear curve to
+choose the non-uniform bins enables one to get a tolerable
+representation with only 16 bins. 32 is really quite good.  Using this
+technique, which will port readily to coptic itself, one does not need
+more than 100 times the cell mesh, and possibly 50 times would be
+enough. Then accumulation on the entire mesh will require only about
+25M reals: less than the particle storage (11 reals times 4M). This
+mesh based accumulation is highly appropriate for multiprocessing and
+averaging over a decent number of steps, because then the numbers per
+cell can become substantial. 

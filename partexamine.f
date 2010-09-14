@@ -11,13 +11,6 @@ c selected cell ranges.
 
       include 'ptaccom.f'
 c Distributions in ptaccom.f
-c      parameter (ndiag=100,mdims=3)
-c      real xr(3*mdims)
-c      real fv(ndiag,mdims)
-c      real px(ndiag,mdims)
-c      real diagv(ndiag,ndims)
-c      real diagx(ndiag,mdims)
-c      common /cartdiag/fv,px,diagv,diagx
 
 c Spatial limits bottom-top, dimensions
       real xlimit(2,mdims)
@@ -46,6 +39,7 @@ c      call partacinit(xlimit,vlimit)
       ip=lentrim(partfilename)-3
       if(partfilename(ip:ip).eq.'.')then
 c If filename has a 3-character extension. Assume it is complete
+c Should do this only the first time.
 c and that we are reading just one file.
          nfmax=0
          name=partfilename
@@ -67,8 +61,11 @@ c Possible multiple files.
          if(ierr.ne.0)goto 11
 c Use the first file to establish the accumulation range.         
          if(i.eq.0)then
+c This ought to be determined based on the number of samples.
+c But xlimits mean that's problematic.
+            nvlist=100
             call vlimitdeterm(npdim,x_part,if_part,ioc_part,xlimit
-     $           ,vlimit)
+     $           ,vlimit,nvlist)
             call partacinit(xlimit,vlimit)
             write(*,'('' Velocity limits:'',6f7.3)') vlimit
          endif
@@ -78,6 +75,10 @@ c Do the accumulation for this file up to maximum relevant slot.
      $        ,vlimit)
          write(*,*)'Accumulated',naccum,' of',ioc_part,' total'
      $        ,' in',xlimit
+c         write(*,*)'Calling bincalc'
+c Should do this only the first time.
+         if(i.eq.0)call bincalc(naccum)
+
       enddo
  11   continue
 
@@ -86,8 +87,8 @@ c Do the accumulation for this file up to maximum relevant slot.
          read(25)ndiagfile,mdimsfile
          read(25)(xlimit(1,j),xlimit(2,j),vlimit(1,j),vlimit(2,j),
      $        j=1,mdims)
-         read(25)((diagx(i,j),px(i,j),i=1,ndiag),j=1,mdims)
-         read(25)((diagv(i,j),fv(i,j),i=1,ndiag),j=1,mdims)
+         read(25)((xdiag(i,j),px(i,j),i=1,ndiag),j=1,mdims)
+         read(25)((vdiag(i,j),fv(i,j),i=1,ndiag),j=1,mdims)
          close(25)
       else
          name(lentrim(name)-2:lentrim(name))='pex'
@@ -97,8 +98,8 @@ c Do the accumulation for this file up to maximum relevant slot.
          write(25)ndiag,mdims
          write(25)(xlimit(1,j),xlimit(2,j),vlimit(1,j),vlimit(2,j),
      $        j=1,mdims)
-         write(25)((diagx(i,j),px(i,j),i=1,ndiag),j=1,mdims)
-         write(25)((diagv(i,j),fv(i,j),i=1,ndiag),j=1,mdims)
+         write(25)((xdiag(i,j),px(i,j),i=1,ndiag),j=1,mdims)
+         write(25)((vdiag(i,j),fv(i,j),i=1,ndiag),j=1,mdims)
          close(25)
       endif
       goto 102
@@ -106,14 +107,24 @@ c Do the accumulation for this file up to maximum relevant slot.
       close(25,status='delete')
  102  continue
 
+
       call multiframe(2,1,2)
       do id=1,mdims
+         do k=1,nsbins
+            fk=fsv(k,id)
+            fsv(k,id)=fk/csbin(k,id)
+c            write(*,*)k,id,fsv(k,id),csbin(k,id)
+         enddo
          call ticnumset(10)
-         call autoplot(diagv(1,id),fv(1,id),ndiag)
+         call autoplot(vdiag(1,id),fv(1,id),ndiag)
          write(string,'(a,i3)')'Distribution dimension',id
          call axlabels('velocity',string(1:lentrim(string)))
+         call color(12)
+         call polymark(vsbin(1,id),fsv(1,id),nsbins,1)
+         call polybox(vhbin(0,id),fsv(1,id),nsbins)
+         call color(15)
 c         call pltend()
-         call autoplot(diagx(1,id),px(1,id),ndiag)
+         call autoplot(xdiag(1,id),px(1,id),ndiag)
          call axlabels('position',string(1:lentrim(string)))
          call pltend()
       enddo
@@ -140,28 +151,17 @@ c Deal with arguments
          call getarg(i,argument)
          if(argument(1:1).eq.'-')then
             if(argument(1:2).eq.'-x')then
-               read(argument(3:),*,err=201)
-     $              xlimit(1,1),xlimit(2,1)
-            endif
-            if(argument(1:2).eq.'-y')then
-               read(argument(3:),*,err=201)
-     $              xlimit(1,2),xlimit(2,2)
-            endif
-            if(argument(1:2).eq.'-z')then
-               read(argument(3:),*,err=201)
-     $              xlimit(1,3),xlimit(2,3)
-            endif
-            if(argument(1:2).eq.'-u')then
-               read(argument(3:),*,err=201)
-     $              vlimit(1,1),vlimit(2,1)
-            endif
-            if(argument(1:2).eq.'-v')then
-               read(argument(3:),*,err=201)
-     $              vlimit(1,2),vlimit(2,2)
-            endif
-            if(argument(1:2).eq.'-w')then
-               read(argument(3:),*,err=201)
-     $              vlimit(1,3),vlimit(2,3)
+               read(argument(3:),*,err=201) xlimit(1,1),xlimit(2,1)
+            elseif(argument(1:2).eq.'-y')then
+               read(argument(3:),*,err=201) xlimit(1,2),xlimit(2,2)
+            elseif(argument(1:2).eq.'-z')then
+               read(argument(3:),*,err=201) xlimit(1,3),xlimit(2,3)
+            elseif(argument(1:2).eq.'-u')then
+               read(argument(3:),*,err=201) vlimit(1,1),vlimit(2,1)
+            elseif(argument(1:2).eq.'-v')then
+               read(argument(3:),*,err=201) vlimit(1,2),vlimit(2,2)
+            elseif(argument(1:2).eq.'-w')then
+               read(argument(3:),*,err=201) vlimit(1,3),vlimit(2,3)
             endif
             if(argument(1:13).eq.'--objfilename')
      $        read(argument(14:),'(a)',err=201)objfilename
@@ -207,22 +207,24 @@ c Accumulate the particles into bins.
 
 c Silence warning
       xr(1)=0.
+c Indicate csbin not initialized yet:
+      csbin(1,1)=0.
 c Initialization.
       do id=1,mdims
          xmeshstart(id)=min(-5.,xlimit(1,id))
          xmeshend(id)=max(5.,xlimit(2,id))
          do i=1,ndiag
-            diagv(i,id)=vlimit(1,id)
+            vdiag(i,id)=vlimit(1,id)
      $           +(vlimit(2,id)-vlimit(1,id))*(i-0.5)/ndiag
             fv(i,id)=0.
             px(i,id)=0.
-            diagx(i,id)=xmeshstart(id)+(i-0.5)*
+            xdiag(i,id)=xmeshstart(id)+(i-0.5)*
      $           (xmeshend(id)-xmeshstart(id))/(ndiag)
          enddo
 c         write(*,*)'Position cell-center range',
-c     $        id,diagx(1,id),diagx(ndiag,id)
+c     $        id,xdiag(1,id),xdiag(ndiag,id)
 c         write(*,*)'Velocity cell-center range',
-c     $        id,diagv(1,id),diagv(ndiag,id)
+c     $        id,vdiag(1,id),vdiag(ndiag,id)
       enddo
       return
       end
@@ -233,8 +235,6 @@ c Accumulate a particle into bins.
       include 'plascom.f'
       include 'meshcom.f'
       real xlimit(2,mdims),vlimit(2,mdims)
-c      include 'creincom.f'
-c      character*100 string
 
       do id=1,mdims
 c Assign velocities to bins.
@@ -245,7 +245,12 @@ c Assign velocities to bins.
      $        (v-vlimit(1,id))/(vlimit(2,id)-vlimit(1,id)))+0.5)
          if(ibin.lt.1.or.ibin.gt.ndiag)
      $        write(*,*)k,nin,id,' ibin',ibin,v
-         fv(ibin,id)=fv(ibin,id)+1
+         fv(ibin,id)=fv(ibin,id)+1.
+         if(csbin(1,1).ne.0.)then
+c Doing summed bin accumulation
+            ibs=ibinmap(ibin,id)
+            fsv(ibs,id)=fsv(ibs,id)+1.
+         endif
 c Assign positions to bins
          x=(xr(id)-xmeshstart(id))/(xmeshend(id)-xmeshstart(id))
          ibin=nint(0.50000+x*(ndiag-.00000))
@@ -284,7 +289,8 @@ c     $        ,' total'
              
       end
 c**********************************************************************
-      subroutine vlimitdeterm(mdims,xpart,ifpart,iocpart,xlimit,vlimit)
+      subroutine vlimitdeterm(mdims,xpart,ifpart,iocpart,xlimit,vlimit
+     $     ,nvlist)
       real xpart(3*mdims,iocpart)
       integer ifpart(iocpart)
 c Spatial limits bottom-top, dimensions
@@ -292,8 +298,9 @@ c Spatial limits bottom-top, dimensions
 c Velocity limits
       real vlimit(2,mdims)
 c Velocity Sorting arrays
-      parameter (nvlist=10)
-      real vtlist(nvlist),vblist(nvlist)
+      parameter (nvlistmax=200)
+      real vtlist(nvlistmax),vblist(nvlistmax)
+      if(nvlist.gt.nvlistmax)nvlist=nvlistmax
       do id=1,mdims
          do j=1,nvlist
             vblist(j)=vlimit(1,id)
@@ -373,3 +380,60 @@ c      write(*,*)'topend',i1,i2,i,vlist(i2),v
 
       end
 
+c***********************************************************************
+      subroutine bincalc(naccum)
+      integer naccum
+      include 'ptaccom.f'
+
+c silence warning
+      b=xr(1)
+c 
+      do id=1,mdims
+         cumfv(0,id)=0.
+         do j=1,nsbins
+            vsbin(j,id)=0.
+            csbin(j,id)=0.
+            fsv(j,id)=0.
+         enddo
+         dv=(vdiag(ndiag,id)-vdiag(1,id))/(ndiag-1)
+         vhbin(0,id)=vdiag(1,id)-dv*0.5
+         ib=1
+         do k=1,ndiag
+            cumfv(k,id)=cumfv(k-1,id)+fv(k,id)/float(naccum)
+c This linear mapping does not work well.
+c            ib=1+ int(cumfv(k,id)*(nsbins)*(.99999))
+            bx=float(ib)/nsbins
+c cubic progression.
+            cfn=1.0001*(3.*bx**2-2.*bx**3)
+            if(cumfv(k,id).gt.cfn)then
+c find the histogram bin-boundary.
+               vhbin(ib,id)=vhbin(0,id)+(k-1)*dv
+               ib=ib+1
+            endif
+            ibinmap(k,id)=ib
+            if(ib.lt.1 .or. ib.gt.nsbins)then
+               write(*,*)'ibinmap error',ib,cumfv(k,id),cfn
+               stop
+            endif
+            vsbin(ib,id)=vsbin(ib,id)+vdiag(k,id)
+            csbin(ib,id)=csbin(ib,id)+1.
+c Also accumulate this data into the summed bins
+            fsv(ib,id)=fsv(ib,id)+fv(k,id)
+         enddo
+         vhbin(nsbins,id)=vhbin(0,id)+ndiag*dv
+c Now cumfv is the cumulative probability distribution (to 1.0) over the
+c uniform bins, and ibinmap maps those bins to nonuniform bins.  The
+c uniform bin centers are in vdiag. Each non-uniform bin is composed of
+c the sum of the uniform bins that map to it. Its center is therefore at
+c the centroid of those bins = vsbin. The number of uniform bins that
+c they contain is csbin. 
+         do k=1,nsbins
+            vsbin(k,id)=vsbin(k,id)/csbin(k,id)
+         enddo
+      enddo
+      write(*,*)'Bincalc has chosen',nsbins,' bin placement.'
+c      write(*,*)' vsbin',vsbin
+c      write(*,*)' csbin',csbin
+c      write(*,*)' fsv  ',fsv
+c      write(*,*)' ibinmap',ibinmap
+      end
