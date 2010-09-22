@@ -11,6 +11,8 @@ c selected cell ranges.
 
       include 'ptaccom.f'
 c Distributions in ptaccom.f
+      real extra(ndiag,mdims),diff(ndiag,mdims)
+
 
 c Spatial limits bottom-top, dimensions
       real xlimit(2,mdims)
@@ -114,6 +116,10 @@ c Should do this only the first time.
             fk=fsv(k,id)
             fsv(k,id)=fk/csbin(k,id)
 c            write(*,*)k,id,fsv(k,id),csbin(k,id)
+            extra(nsbins+1-k,id)=fsv(k,id)
+         enddo
+         do k=1,nsbins
+            diff(k,id)=fsv(k,id)-fsv(nsbins+1-k,id)
          enddo
          call ticnumset(10)
          call autoplot(vdiag(1,id),fv(1,id),ndiag)
@@ -122,6 +128,9 @@ c            write(*,*)k,id,fsv(k,id),csbin(k,id)
          call color(12)
          call polymark(vsbin(1,id),fsv(1,id),nsbins,1)
          call polybox(vhbin(0,id),fsv(1,id),nsbins)
+         call color(13)
+c         call polybox(vhbin(0,id),extra(1,id),nsbins)
+         call polybox(vhbin(0,id),diff(1,id),nsbins)
          call color(15)
 c         call pltend()
          call autoplot(xdiag(1,id),px(1,id),ndiag)
