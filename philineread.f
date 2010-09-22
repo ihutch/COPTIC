@@ -11,22 +11,33 @@
       real tp(nfx),vp(nfx)
 
 c philineread commons
-      logical lrange,lwrite
+      logical lrange,lwrite,lvd
       integer iover
       character*(100)overfile
       common /linecom/xmin,xmax,ymin,ymax,lrange,lwrite
-     $     ,iover,overfile
+     $     ,iover,overfile,lvd
 
 c xfig2trace parameters.
-      parameter (np=200,nt=10)
+      parameter (np=200,nt=50)
       real xtraces(np,nt), ytraces(np,nt)
       integer nl(nt)
       real xyia(4)
+c Specific from IEEE
+      parameter (nlin=13)
+      real zlin(nlin),plin(nlin)
+      data zlin/.7,1.3,1.55,1.72,1.85,2.07,2.25,2.4,2.7,2.85,3.2,3.7
+     $     ,5.05/
+      data plin/1.24,1.24,1.1,.965,.827,.689,.551,.413,.276,.138,0.,
+     $     -.138,-.138/
+
+
 c      character*100 xfigfile
 c 
 c silence warnings:
       zp(1,1,1)=0.
       fluxfilename=' '
+      overfile=' '
+      lvd=.false.
       xmin=0.
       ymin=0.
       xmax=0.
@@ -56,7 +67,9 @@ c         write(*,*)ifull,iuds
          
          if(pp(inm).ne.0.)then
             write(*,*)'Scaling internal phip by factor ',pp(inm)
-            phip=phip*pp(inm)
+            phis=phip*pp(inm)
+         else
+            phis=phip
          endif
          tp(inm)=Ti
          vp(inm)=vd
@@ -75,15 +88,16 @@ c            write(*,*)'ild,ip(ild)',ild,ip(ild)
                ip(ild)=i
                xline(i)=xn(ixnp(ild)+i)/debyelen
                philine(i)=u(ip(1),ip(2),ip(3))
-     $              /(abs(phip)*(1.+rp(inm)/debyelen)*rp(inm)/debyelen)
+     $              /(abs(phis)*(1.+rp(inm)/debyelen)*rp(inm)/debyelen)
                if(lwrite)write(*,'(2f10.5)')xline(i),philine(i)
             enddo
             call minmax(philine,iuds(ild),pmin,pa)
             pmax(inm)=pa
-            punscale(inm)=pmax(inm)*abs(phip)*(1.+rp(inm)/debyelen)
+            punscale(inm)=pmax(inm)*abs(phis)*(1.+rp(inm)/debyelen)
      $           *(rp(inm)/debyelen)
-            darray(inm)=abs(rp(inm)*(1.+rp(inm)/debyelen)*phip/debyelen)
+            darray(inm)=abs(rp(inm)*(1.+rp(inm)/debyelen)*phis/debyelen)
 
+            write(*,*)'inm,rp,pp',inm,rp(inm),pp(inm)
             call winset(.true.)
             call pfset(3)
             if(inm.eq.1)then
@@ -112,11 +126,12 @@ c               call labeline(xline,philine,iuds(ild),string,iwd)
                call polyline(xline,philine,iuds(ild))
             endif
             string=' !Af!@!dp!d='
-            call fwrite(phip,iwd,2,string(lentrim(string)+1:))
+            call fwrite(phis,iwd,2,string(lentrim(string)+1:))
             string(lentrim(string):)='@'
             call fwrite(rp(inm)/debyelen,iwd,2,
      $           string(lentrim(string)+1:))
-            call legendline(.5,(.01+inm*.05),0,
+            if(rp(inm)/debyelen.ge.0.01)
+     $           call legendline(.5,(.01+inm*.05),0,
      $           string(1:lentrim(string)))
             nplot=nplot+1
          endif
@@ -131,32 +146,50 @@ c Overplot traces from specified file.
          write(*,*)iover,' Overplot ',overfile(1:40)
          call xfig2trace(np,nt,xtraces,ytraces,il,nl,xyia,overfile)
          write(*,*)'Return from xfig2',il,(nl(k),k=1,il),xyia
-            if(il.gt.0)then
-               do k=1,il
-                  call dashset(0)
-                  call color(13)
-                  call polyline(xtraces(1,k),ytraces(1,k),nl(k))
-               enddo
-            endif
+         if(il.gt.0)then
+            do k=1,il
+               call dashset(2)
+               call color(4)
+               call polyline(xtraces(1,k),ytraces(1,k),nl(k))
+            enddo
+         else
+c No valid file overplot built in.
+            write(*,*)'Plotting internal comparison',nlin
+            write(*,*)zlin
+            write(*,*)plin
+            call dashset(0)
+            call color(13)
+            call polyline(zlin,plin,nlin)
          endif
+      endif
       if(nplot.gt.0)then
          call pltend()
          call dashset(0)
          call charsize(.02,.02)
-         string=' r!dp!d/!Al!@='
          call lautomark(darray,pmax,nplot,.true.,.true.,0)
          imark=1
          do k=1,nplot
 c            itc=int(tp(k)/0.0049
             itc=int(vp(k)*4.001)
-            call fwrite(rp(k)/debyelen,iwd,2,string(15:))
             call color(itc)
-            if(k.eq.1)then
-               call legendline(.0,.02+.05*imark,imark,string)
-            elseif(rp(k).ne.rp(k-1))then
-               imark=imark+1
-               call color(itc)
-               call legendline(.0,.02+.05*imark,imark,string)
+            if(lvd)then
+               string=' M='
+               call fwrite(vp(k),iwd,2,string(4:))
+               if(k.eq.1)then
+                  call legendline(.0,.02+.05*imark,imark,string)
+               elseif(vp(k).ne.vp(k-1))then
+                  imark=imark+1
+                  call legendline(.0,.02+.05*imark,imark,string)
+               endif
+            else
+               string=' r!dp!d/!Al!@='
+               call fwrite(rp(k)/debyelen,iwd,2,string(15:))
+               if(k.eq.1)then
+                  call legendline(.0,.02+.05*imark,imark,string)
+               elseif(rp(k).ne.rp(k-1))then
+                  imark=imark+1
+                  call legendline(.0,.02+.05*imark,imark,string)
+               endif
             endif
             call polymark(darray(k),pmax(k),1,imark)
          enddo
@@ -178,14 +211,25 @@ c         call ticset(.015,.015,-.03,-.02,4,4,1,1)
          do k=1,nplot
 c            itc=int(tp(k)/0.0049)
             itc=int(vp(k)*4.001)
-            call fwrite(rp(k)/debyelen,iwd,2,string(15:))
             call color(itc)
-            if(k.eq.1)then
-               call legendline(.55,.02+.05*imark,imark,string)
-            elseif(rp(k).ne.rp(k-1))then
-               imark=imark+1
-               call color(itc)
-               call legendline(.55,.02+.05*imark,imark,string)
+            if(lvd)then
+               string=' M='
+               call fwrite(vp(k),iwd,2,string(4:))
+               if(k.eq.1)then
+                  call legendline(.3,.02+.05*imark,imark,string)
+               elseif(vp(k).ne.vp(k-1))then
+                  imark=imark+1
+                  call legendline(.3,.02+.05*imark,imark,string)
+               endif
+            else
+               string=' r!dp!d/!Al!@='
+               call fwrite(rp(k)/debyelen,iwd,2,string(15:))
+               if(k.eq.1)then
+                  call legendline(.3,.02+.05*imark,imark,string)
+               elseif(rp(k).ne.rp(k-1))then
+                  imark=imark+1
+                  call legendline(.3,.02+.05*imark,imark,string)
+               endif
             endif
             call polymark(darray(k),punscale(k),1,imark)
          enddo
@@ -224,11 +268,11 @@ c the logic will break if it is changed by -l in the middle.
       integer nf,ild,ilinechoice(ndims_mesh,nf)
       integer idj(ndims_mesh)
 
-      logical lrange,lwrite
+      logical lrange,lwrite,lvd
       integer iover
       character*(100) overfile
       common /linecom/xmin,xmax,ymin,ymax,lrange,lwrite
-     $     ,iover,overfile
+     $     ,iover,overfile,lvd
 
       ifull(1)=na_i
       ifull(2)=na_j
@@ -274,6 +318,7 @@ c Deal with arguments
                iover=1
  14            continue
             endif
+            if(argument(1:2).eq.'-v')lvd=.true.
             if(argument(1:2).eq.'-w')lwrite=.true.
 
             if(argument(1:13).eq.'--objfilename')
@@ -326,6 +371,7 @@ c     $     //' [ccpicgeom.dat'
       write(*,301)' -y<min>,<max>   -x<min>,<max>  set plot ranges'
       write(*,301)' -o<figfile> overplot traces using xfig2trace.'
       write(*,302)' -r<r> set radius [',rread
+      write(*,301)' -v sort/mark by vd, not radius.'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue

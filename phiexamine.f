@@ -9,6 +9,7 @@
 
       parameter (nzmax=500)
       real rzdist(0:nr,nzmax),irzcount(nr,nzmax)
+      real rzmval(nzmax),rzmpos(nzmax),zpos(nzmax)
       character*1 ppath(0:nr,nzmax)
       character*20 string
 
@@ -307,10 +308,49 @@ c         call jdrwstr(.02,.25,'!Al!@!dDe!d='//string(1:iwd),1.)
          call fwrite(phip,iwd,2,string)
 c         call jdrwstr(.02,.28,'!Af!@!dp!d='//string(1:iwd),1.)
          call pltend()
-
       endif
 
+c Now we want to find the r-position of the peak potential at each
+c z. 
 
+      iz0=0
+      do i=1,iuds(3)
+         rzmval(i)=0.
+         rzmpos(i)=0.
+         jrm=0
+         zpos(i)=xn(ixnp(3)+i)/debyelen
+         if(xn(ixnp(3)+i).gt.0. .and. iz0.eq.0)iz0=i
+         do j=1,nr
+            if(rzmval(i).lt.rzdist(j,i))then
+               jrm=j
+               rzmval(i)=rzdist(j,i)
+               rzmpos(i)=rval(j)/debyelen
+            endif
+         enddo
+      enddo
+      izt=iuds(3)+1-iz0
+c      call autoplot(rzmpos(iz0),xn(ixnp(3)+iz0),izt)
+      call pltinaspect(0.,rval(nr)/debyelen,0.,xn(ixnp(3)+iuds(3))
+     $     /debyelen)
+      call axis()
+      call polyline(rzmpos(iz0),zpos(iz0),izt)
+      call axlabels('peak-!Af!@ radius [/!Al!@!dDe!d]'
+     $     ,'z/!Al!@!dDe!d')
+      call pltend
+      open(22,file='peakfile.dat',status='unknown',err=101)
+      close(22,status='delete')
+      open(22,file='peakfile.dat',status='new',err=101)
+      write(22,'(a,f5.2)')'legend: M=',vd
+      write(22,*)izt
+      do i=0,izt-1
+c         write(22,*)xn(ixnp(3)+iz0+i),rzmpos(iz0+i)
+c         write(22,*)rzmpos(iz0+i),xn(ixnp(3)+iz0+i)
+         write(22,*)rzmpos(iz0+i),zpos(iz0+i)
+      enddo
+      close(22)
+
+      call exit(0)
+ 101  write(*,*)'Error writing output'
       end
 
 c*************************************************************

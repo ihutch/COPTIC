@@ -64,7 +64,9 @@ c     Plot the surface. With scaling 1. Web color 6, axis color 7.
          icontour=1
          iclipping=0
          lfirst=.false.
-         if(zp(1,1).ne.0)goto 19
+         write(*,*)' ======== Slice plotting interface. Hit h for help.'
+c         if(zp(1,1).ne.0)goto 19
+         goto 19
  20      write(*,*)' ======== Slice plotting interface:',
      $        '  arrows up/down: change slice.'
          write(*,*)
