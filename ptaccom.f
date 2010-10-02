@@ -4,7 +4,7 @@
       real px(ndiag,mdims)
       real vdiag(ndiag,mdims)
       real xdiag(ndiag,mdims)
-      parameter (nsbins=16)
+      parameter (nsbins=32)
       integer ibinmap(ndiag,mdims)
       real vsbin(nsbins,mdims),csbin(nsbins,mdims),fsv(nsbins,mdims)
       real vhbin(0:nsbins,mdims)

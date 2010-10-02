@@ -5148,3 +5148,6 @@ enough. Then accumulation on the entire mesh will require only about
 mesh based accumulation is highly appropriate for multiprocessing and
 averaging over a decent number of steps, because then the numbers per
 cell can become substantial. 
+
+2 Oct 10
+Reorganization of analysis routines into subdirectory analysis.

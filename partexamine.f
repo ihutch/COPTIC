@@ -18,6 +18,8 @@ c Spatial limits bottom-top, dimensions
       real xlimit(2,mdims)
 c Velocity limits
       real vlimit(2,mdims)
+      character*1 axnames(3)
+      data axnames/'x','y','z'/
 
       nfmax=nfilemax
 c silence warnings:
@@ -92,6 +94,13 @@ c Should do this only the first time.
          read(25)((xdiag(i,j),px(i,j),i=1,ndiag),j=1,mdims)
          read(25)((vdiag(i,j),fv(i,j),i=1,ndiag),j=1,mdims)
          close(25)
+c Calculate the binned data.
+         naccum=0
+         do i=1,ndiag
+            naccum=naccum+px(i,1)
+         enddo
+         write(*,*)'naccum',naccum
+         call bincalc(naccum)
       else
          name(lentrim(name)-2:lentrim(name))='pex'
          open(25,file=name,status='unknown',err=101)
@@ -130,13 +139,30 @@ c            write(*,*)k,id,fsv(k,id),csbin(k,id)
          call polybox(vhbin(0,id),fsv(1,id),nsbins)
          call color(13)
 c         call polybox(vhbin(0,id),extra(1,id),nsbins)
-         call polybox(vhbin(0,id),diff(1,id),nsbins)
+c         call polybox(vhbin(0,id),diff(1,id),nsbins)
          call color(15)
 c         call pltend()
          call autoplot(xdiag(1,id),px(1,id),ndiag)
          call axlabels('position',string(1:lentrim(string)))
          call pltend()
       enddo
+      if(nfmax.eq.-1)then
+         il=lentrim(name)
+         name(il-2:il-1)='fv'
+         open(25,file=name,status='unknown',err=101)
+         close(25,status='delete')
+         open(25,file=name,status='new',err=101)
+         do id=1,mdims
+c            name(il:il)=char(48+id)
+            write(25,*)'Dimension ',id
+            write(25,'(a,a,a)')'legend: f(v!d',axnames(id),'!d)'
+c The following is for mdims>3.
+c            write(25,'(a,i1,a)')'legend: f(v!d',id,'!d)'
+            write(25,*)ndiag
+            write(25,'(2g14.6)')(vdiag(i,id),fv(i,id),i=1,ndiag)
+         enddo
+         close(25)
+      endif
 
       end
 c*************************************************************
@@ -217,7 +243,7 @@ c Accumulate the particles into bins.
 c Silence warning
       xr(1)=0.
 c Indicate csbin not initialized yet:
-      csbin(1,1)=0.
+      csbin(1,1)=-1.
 c Initialization.
       do id=1,mdims
          xmeshstart(id)=min(-5.,xlimit(1,id))
@@ -255,7 +281,7 @@ c Assign velocities to bins.
          if(ibin.lt.1.or.ibin.gt.ndiag)
      $        write(*,*)k,nin,id,' ibin',ibin,v
          fv(ibin,id)=fv(ibin,id)+1.
-         if(csbin(1,1).ne.0.)then
+         if(csbin(1,1).ne.-1.)then
 c Doing summed bin accumulation
             ibs=ibinmap(ibin,id)
             fsv(ibs,id)=fsv(ibs,id)+1.
@@ -409,6 +435,7 @@ c
          ib=1
          do k=1,ndiag
             cumfv(k,id)=cumfv(k-1,id)+fv(k,id)/float(naccum)
+c            write(*,*)id,k,fv(k,id),cumfv(k,id),ib
 c This linear mapping does not work well.
 c            ib=1+ int(cumfv(k,id)*(nsbins)*(.99999))
             bx=float(ib)/nsbins
@@ -421,7 +448,7 @@ c find the histogram bin-boundary.
             endif
             ibinmap(k,id)=ib
             if(ib.lt.1 .or. ib.gt.nsbins)then
-               write(*,*)'ibinmap error',ib,cumfv(k,id),cfn
+               write(*,*)'ibinmap error',ib,cumfv(k,id),cfn,k,id
                stop
             endif
             vsbin(ib,id)=vsbin(ib,id)+vdiag(k,id)
