@@ -27,7 +27,7 @@ NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 ##########################################################################
 HEADERS=examdecl.f
-TARGETS=partexamine denexamine phiexamine
+TARGETS=partexamine denexamine phiexamine diagexamine fluxexamine
 
 % : %.f  makefile ../libcoptic.a $(ACCISLIB)
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f ../libcoptic.a $(LIBRARIES)
@@ -50,7 +50,7 @@ all: $(TARGETS)
 
 ########################################################
 $(ACCISLIB) : ../accis/*.f ../accis/*.c ../accis/*.h
-	make -C accis
+	make -C ../accis
 
 ######################################################
 vecx :
