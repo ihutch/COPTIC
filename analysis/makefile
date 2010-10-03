@@ -28,7 +28,7 @@ NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 ##########################################################################
 TARGETS=partexamine denexamine phiexamine diagexamine fluxexamine philineread phioverlay
 
-% : %.f  makefile ../libcoptic.a $(ACCISLIB)
+% : %.f  makefile $(ACCISLIB) ../libcoptic.a
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f ../libcoptic.a $(LIBRARIES)
 
 all: $(TARGETS)
