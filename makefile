@@ -136,7 +136,7 @@ vecx :
 
 #####################################################
 clean :
-	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.0?? *.ps
+	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.0?? *.ps libcoptic.a
 	make -C accis mproper
 
 ftnchek :
