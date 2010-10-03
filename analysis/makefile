@@ -26,8 +26,7 @@ COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I.
 NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 ##########################################################################
-HEADERS=examdecl.f
-TARGETS=partexamine denexamine phiexamine diagexamine fluxexamine
+TARGETS=partexamine denexamine phiexamine diagexamine fluxexamine philineread phioverlay
 
 % : %.f  makefile ../libcoptic.a $(ACCISLIB)
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f ../libcoptic.a $(LIBRARIES)
