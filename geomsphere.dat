@@ -10,7 +10,9 @@
 1 , 1.,0.,10., .0,.0,.0,  1.,1.,1.,  5, 50, 1  
 #
 # Special Sphere where slope is -phi/r. A phi + B phi' = 0, center 0., radius 5.
+# Vaccheck is bogus unless 257 is used.
 257 , 1.,5.,0. ,.0,.0,.0, 5.,5.,5. 
+#1 , 1.,5.,0. ,.0,.0,.0, 5.,5.,5. 
 #
 # Radius 2. sphere with null BC to ensure this does not mess up.
 #1 , 0.,0.,0., 0.,0.,0., 2.,2.,2.
@@ -24,10 +26,15 @@
 1 , 0.,0.,0., 0.,0.,0., 4.9,4.9,4.9 ,   5,  50, 1
 # 1 , 0.,0.,0., 0.,0.,0., .6,.6,.6 ,   1,  10, 4
 #
+# Moving the mesh around
+91,1,32,0,-5.3,5.7
+92,1,32,0,-5.3,5.7
+93,1,32,0,-5.2,5.8
 # Boolean that specifies the particle region 99, n1, n1*values, n2, ... 0:
 # Each nk values are ored together. The groups are anded.
 # value n means inside object n, -n outside, 0 filler (do nothing). 
 # In this case -1: outside object 1, and 2 inside object 2. 
 99, 1, -1, 1, 2, 0
+#99, 1, -1, 0
 # Another example: inside 3 or inside 4 and outside 5. Ors cycle faster.
 #99, 2, 3, 4, 1, 5, 0 

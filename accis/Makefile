@@ -11,7 +11,7 @@ ifeq ("$(VECX)","")
 #    VECX=vecx
 endif
 
-F77=$(G77)
+F77=$(G77) -O2
 # Use correct interpretation and suppress g77 warnings for font etc.
 NOBACKSLASH=-fno-backslash -w
 

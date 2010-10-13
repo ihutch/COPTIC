@@ -12,6 +12,38 @@ c Interpolations.
       endif
       end
 c****************************************************************
+      function box2interpnew(f,d,iw,weights)
+c 
+c Given values of a function on up to four points adjacent on a 
+c 2-D cartesian mesh: f00,f01,f10,f11; and given the fractional
+c distances: d1,d2 in the two dimensions (between 0 and 1),
+c interpolate the value at d1,d2 using box interpolation  
+c weighted by weights if iw.ne.0
+      real f(2,2)
+      real d(2)
+      integer iw
+      real weights(2,2)
+c Shortcut for unweighted case. 
+      if(iw.eq.0)then
+         box2interpnew=f(1,1)+d(1)*(f(2,1)-f(1,1))+d(2)*(f(1,2)-f(1,1))
+     $     +d(1)*d(2)*(f(2,2)-f(2,1)-f(1,2)+f(1,1))
+         return
+      endif
+      tw=0.
+      fa=0.
+      do i=1,2
+c         whx=i+(1-2*i)*d(1)
+         whx=2-i+(2*i-3)*d(1)
+         do j=1,2
+            wh=(2-j+(2*j-3)*d(2))*whx*weights(i,j)
+            tw=tw+wh
+            fa=fa+wh*f(i,j)
+         enddo
+      enddo
+      if(tw.eq.0) stop 'boxinterp zero weight everywhere error'
+      box2interpnew=fa/tw
+      end
+c****************************************************************
       function box2interp(f,flags,d)
 c 
 c Given values of a function on up to four points adjacent on a 
@@ -355,14 +387,6 @@ c Pointer to object data,
       if(icp0.eq.0)then
 c Short-cut 1: an ordinary point don't call the full routine
 c Distance forward and backward along idf-dimension to adjacent
-c         dx1=xn(ix+1)-xn(ix)
-c         dx0=xn(ix)-xn(ix-1)
-c Values of u at the points to be interpolated.
-c         ixiu=1+(ix-1)*iuinc
-c         u0=u(ixiu)
-c         up=u(ixiu+iuinc)
-c         um=u(ixiu-iuinc)
-c Distance forward and backward along idf-dimension to adjacent
          dx1=xn(2)-xn(1)
 c Avoid warnings about argument ranges.
          dx0=xn(1)-xn(ix-1)
@@ -390,7 +414,9 @@ c So this evaluation is about 25%.
       else
 c Do interpolation using extrapolation information pointed to by icp0.
 c This section is only 10% of routine cost.
-c If we are in wrong region, try to correct:
+c If we are in wrong region, try to correct by choosing as the 
+c center of interpolation the other node adjacent to point and changing
+c the xfraction accordingly:
          if(idob_sor(iregion_sor,icp0).ne.iregion)then
 c         write(*,*)'Incorrect region',iregion,idob_sor(iregion_sor,icp0)
 c     $        ,icp0,ix,xm
@@ -418,6 +444,25 @@ c Values of u at the points to be interpolated.
          up=u(ixiu+iuinc)
          um=u(ixiu-iuinc)
          uprime=gradinterp(um,u0,up,idf,icp0,xm,dx0,dx1)
+         if(abs(u0+10).lt.0.01 .and. abs(uprime).gt.1.)then
+c Specific problem case test.
+            write(*,*)'uprime,u0,up,um,ix,icp0',uprime,u0,up,um,ix,icp0
+     $           ,idob_sor(iregion_sor,icp0)
+            icd1=2*(idf-1)*ndata_sor+1
+            icd0=icd1+ndata_sor
+            fraction=dob_sor(icd0,icp0)
+            boa=dob_sor(icd0+1,icp0)
+            coa=dob_sor(icd0+2,icp0)
+            write(*,*)'icp0,icd0,frac,boa,coa',
+     $           icp0,icd0,fraction,boa,coa
+c In case this was not set previously
+            fraction=dob_sor(icd1,icp0)
+            boa=dob_sor(icd1+1,icp0)
+            coa=dob_sor(icd1+2,icp0)
+            write(*,*)'icp0,icd1,frac,boa,coa',
+     $           icp0,icd1,fraction,boa,coa
+            ix=98
+         endif
       endif
 
       end

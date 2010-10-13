@@ -1,4 +1,4 @@
-c*******************************************************************
+*******************************************************************
 c Get the field value in the direction idf appropriately interpolated
 c from nearby points, for a specified position.
 c
@@ -52,6 +52,7 @@ c for external field need 3dcom.f
 c We DONT include sormesh, because xn is passed
       parameter (ipwr2nd=2**(ndims_sor-1))
       integer iflags(ipwr2nd)
+      real weights(ipwr2nd)
       real f(ipwr2nd),d(ndims_sor-1)
       integer ii1,ii2
 
@@ -66,7 +67,8 @@ c Calculate offset and remainder the fractions.
       enddo
 
 c      write(*,*)'iux=',iux
-
+c Start assuming there is no non-unity weighting.
+      iw=0
 c xn index for passing full position
       ixn0=int(xff(idf))
 c but correct it if we are passing just fractions.
@@ -89,6 +91,7 @@ c      iimax=1
       do ii=1,(ndims-1)
          idii=mod(idf+ii-1,ndims)+1
          d(ii)=xf(idii)
+         weights(ii)=1.
          idn(ii)=idii
 c Attempts at speeding up don't do much.
 c         iimax=iimax*2
@@ -117,23 +120,107 @@ c Pass arrays with local origin.
      $        ,xfidf,f(ii),iregion,ix,xm)
          
          if(ix.ge.99)then
-c           write(*,*)'Getfield no-value',ii,idf,xff
-            iflags(ii)=0
+c            write(*,*)'Getfield no-value',ii,idf,iinc,xff
+c This gradient request has failed (probably) because the lattice leg 
+c has both end-points outside the region. Quite likely there is a point 
+c on the other side of one of them that is in the region, from which we
+c should extrapolate. We can use gradlocalregion for that (I think) by
+c adjusting the xfidf value and the base.
+c            if(.false.)then
+            if(xfidf.ge.0.)then
+               icptm=cij(1+ic1*(iinc-iuinc(idf)))
+               icptp=cij(1+ic1*(iinc+2*iuinc(idf)))
+               if((icptm.ne.0).and.(idob_sor(iregion_sor,icptm)
+     $              .eq.iregion))then
+c xf positive, node0 (relative to 1) in region, look at node 0.
+                  call gradlocalregion(cij(1+ic1*(iinc-iuinc(idf))),
+     $                 u(1+iinc-iuinc(idf)) ,idf,ic1*iuinc(idf)
+     $                 ,iuinc(idf),xn(ixn0-1) ,xfidf+1,f(ii),iregion,ix
+     $                 ,xm)
+                  if(ix.ne.99)then
+                     iw=iw+1
+                     weights(ii)=(1.-xfidf)
+c                     write(*,*)ii,xfidf,' weights=',weights(ii)
+                  endif
+               elseif(icptp.ne.0.and.idob_sor(iregion_sor,icptp)
+     $              .eq.iregion)then
+c xf positive, node3 (relative to 1) in region, look at node 3.
+                  call gradlocalregion(cij(1+ic1*(iinc+2*iuinc(idf))),
+     $                 u(1+iinc+2*iuinc(idf)) ,idf,ic1*iuinc(idf)
+     $                 ,iuinc(idf),xn(ixn0+2) ,xfidf-2,f(ii),iregion,ix
+     $                 ,xm)
+                  if(ix.ne.99)then
+                     iw=iw+1
+                     weights(ii)=(xfidf)
+c                     write(*,*)'2nd ',xfidf,' weights=',weights(ii)
+                  endif
+               endif
+            else
+               icptm=cij(1+ic1*(iinc-2*iuinc(idf)))
+               icptp=cij(1+ic1*(iinc+iuinc(idf)))
+               if((icptp.ne.0).and.(idob_sor(iregion_sor,icptp)
+     $              .eq.iregion))then
+c xf negative, node2 (relative to 1) in region, look at node 2.
+                  call gradlocalregion(cij(1+ic1*(iinc+iuinc(idf))),
+     $                 u(1+iinc+iuinc(idf)) ,idf,ic1*iuinc(idf)
+     $                 ,iuinc(idf),xn(ixn0+1) ,xfidf-1,f(ii),iregion,ix
+     $                 ,xm)
+                  if(ix.ne.99)then
+                     iw=iw+1
+                     weights(ii)=(1.+xfidf)
+c                     write(*,*)ii,xfidf,' weights=',weights(ii)
+                  endif
+               elseif(icptm.ne.0.and.idob_sor(iregion_sor,icptm)
+     $              .eq.iregion)then
+c xf negative, node-1 (relative to 1) in region, look at node -1.
+                  call gradlocalregion(cij(1+ic1*(iinc-2*iuinc(idf))),
+     $                 u(1+iinc-2*iuinc(idf)) ,idf,ic1*iuinc(idf)
+     $                 ,iuinc(idf),xn(ixn0-2) ,xfidf+2,f(ii),iregion,ix
+     $                 ,xm)
+                  if(ix.ne.99)then
+                     iw=iw+1
+                     weights(ii)=-xfidf
+c                     write(*,*)ii,xfidf,' weights=',weights(ii)
+                  endif
+               endif
+            endif
+c            endif
+            if(ix.eq.99)then
+               iflags(ii)=0
+               weights(ii)=0.
+               iw=iw+1
+            else
+               iflags(ii)=1
+c               iw=iw+1
+c               weights(ii)=1.
+               igood=igood+1
+            endif
          else
             iflags(ii)=1
+            weights(ii)=1.
             igood=igood+1
          endif            
+
+c Debugging code:
+         if(ix.eq.98)then
+            write(*,*)'ic1,iinc,idf,iregion,xfidf'
+     $           ,ic1,iinc,idf,iregion,xfidf
+            write(*,*)(dob_sor(k,cij(1+ic1*iinc)),k=1,18)
+     $           ,cij(1+ic1*iinc)
+         endif
       enddo
       
       if(igood.gt.0)then
 c         if(iflags(1).eq.0)write(*,*)'Zero iflags(1) error'
 c Field is minus the potential gradient.
-         field=-boxinterp(ndims-1,f,iflags,d)
+c         field=-boxinterp(ndims-1,f,iflags,d)
+         field=-box2interpnew(f,d,iw,weights)
       else
          write(*,'(''Getfield No good vertices. Region'',i3'//
-     $        ','' Direction'',i2,'' Fractions'',3f8.4)')
+     $        ','' Direction'',i2,'' Fracs'',3f8.4)')
      $        iregion,idf,xff
-
+c This flags a problem to the calling routine.
+         field=1.e13
 c Here we should look around for a point that really is in the region,
 c since the whole box is not, and use that as the base node with 
 c fractions greater than 1. However, this pathological case only 

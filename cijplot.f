@@ -7,7 +7,6 @@ c Assumed 3-D routine, plots representation of the cij/obj data.
       real cij(ndims*2+1,ifull(1),ifull(2),ifull(3))
       include 'objcom.f'
       include 'meshcom.f'
-      include 'partcom.f'
       real xx(3),xt(3)
       integer irx(5),iry(5),ipx(5),ipy(5),ijk(3)
       integer idelta(3,3)
@@ -201,15 +200,8 @@ c                           write(*,*)no,id,i1,i2,frac,ipm,xt
             enddo
          enddo
       enddo
-c Plot orbits if there are any.
-c      write(*,*)'norbits,length=',norbits,iorbitlen(1)
-      do kk=1,norbits
-         call color(kk)
-         call poly3line(xorbit(1,kk),yorbit(1,kk),zorbit(1,kk),
-     $        iorbitlen(kk))
-         call poly3mark(xorbit(1,kk),yorbit(1,kk),zorbit(1,kk),
-     $        iorbitlen(kk),1)
-      enddo
+c Plot orbits if there are any. (Dummy in solver.)
+      call orbit3plot()
 c User interface:
       iprinting=0
       call eye3d(isw)

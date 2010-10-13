@@ -66,10 +66,6 @@ c k_sor is the sor iteration index, for diagnostics.
       logical lconverged
       logical laddu
 
-c Declarations for MPI calls. Unfortunately this has SAVE statements in
-c it which cause warnings with the blanket save below. 
-      include 'mpif.h'
-
 c bbdydecl declares most things for bbdy, using parameter ndimsdecl.
       include 'bbdydecl.f'
 
@@ -155,6 +151,7 @@ c Do block boundary communications, returns block info icoords...myid.
 c If this is found to be an unused node, jump to barrier.
          if(mycartid.eq.-1)goto 999
 c Do a relaxation.
+c         write(*,*)'At sorrelax',myside,myorig,icoords,iLs
 c            if(k_sor.le.2)
 c         write(*,*) 'Calling sorrelaxgen',delta,oaddu,relax
          call sorrelaxgen(k_sor,ndims,iLs,myside,
@@ -208,9 +205,6 @@ c But that's not sufficient when there's a relaxation so be careful!
 c Indirection is needed here because otherwise the finalize call
 c seems to cause the return to fail. Probably unnecessary.
       mpiid=myid
-c mpi version needs gracious synchronization when some processes
-c are unused by the iteration. Should not now be needed.
-c      call MPI_BARRIER(MPI_COMM_WORLD,ierrmpi)
       end
 c**********************************************************************
 c***********************************************************************
@@ -222,30 +216,14 @@ c converged, but the total spread depends on multiple blocks.
      $     icommcart)
       implicit none
       real eps,delta,umin,umax
-      integer i,ierr,icommcart
+      integer ierr,icommcart
       logical lconverged
-      include 'mpif.h'
-      real convgd(3),convgr(3)
+      real convgd(3)
       convgd(1)=abs(delta)
       convgd(2)=-umin
       convgd(3)=umax
 c Here we need to allreduce the data, selecting the maximum values,
-c doing it in place.
-c      write(*,*)'convgd,icommcart',convgd,icommcart
-c........
-c This is the MPI-2 version that is most convenient.
-c      call MPI_ALLREDUCE(MPI_IN_PLACE,convgd,3,MPI_REAL,MPI_MAX,
-c     $     icommcart,ierr)
-c Since we use implicit none, if you try to use this version, then
-c one ought to get an error if MPI_IN_PLACE is not in the headers.
-c This should protect against MPI-1 problems.
-c........
-c This is the version that one must use when MPI_IN_PLACE is absent.
-      call MPI_ALLREDUCE(convgd,convgr,3,MPI_REAL,MPI_MAX,
-     $     icommcart,ierr)
-      do i=1,3
-         convgd(i)=convgr(i)
-      enddo
+      call mpiconvgreduce(convgd,icommcart,ierr)
 c........
       if(convgd(1).lt.eps*(convgd(2)+convgd(3))) then
          lconverged=.true.

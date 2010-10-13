@@ -12,14 +12,15 @@ endif
 ##########################################################################
 # The reinjection choice:
 #######################
-#REINJECT=orbitinjnew.o extint.o
-#GEOMFILE=geomsphere.dat
+# This does not work with vaccheck because of outer boundary alteration.
+REINJECT=orbitinjnew.o extint.o
+GEOMFILE=geomsphere.dat
 ##################
 #REINJECT=reinject.o
 #GEOMFILE=geomsphere.dat
 ###################
-REINJECT=cartreinject.o
-GEOMFILE=geomcubic.dat
+#REINJECT=cartreinject.o
+#GEOMFILE=geomcubic.dat
 #GEOMFILE=geomz200x25.dat
 ##########################################################################
 # An option setting might override default compiler.
@@ -38,11 +39,13 @@ COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I.
 NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 ##########################################################################
-FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o  cijroutine.o cijplot.o 3dobjects.o mditerate.o svdsol.o padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o ccpicplot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o stress.o average.o randc.o
+##########################################################################
+FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o cijroutine.o cijplot.o 3dobjects.o mditerate.o  padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o stress.o average.o randc.o helpusage.o
 #
-SPECIALOBJECTS=bdyroutine.o reduce.o getfield.o interpolations.o 
+SPECIALOBJECTS=bdyroutine.o faddu.o reduce.o getfield.o interpolations.o 
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
+SOLOBJECTS= cijroutine.o mditerate.o mpibbdy.o sormpi.o sorrelaxgen.o meshconstruct.o getfield.o interpolations.o cijplot.o phisoluplot.o slicesect.o 3dobjects.o bdysetsol.o faddu.o helpusage.o
 REGULAROBJECTS= $(FIXEDOBJECTS) ${REINJECT}
 OBJECTS=$(SPECIALOBJECTS) $(REGULAROBJECTS)
 HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f griddecl.f ptchcom.f mditcom.f
@@ -79,8 +82,14 @@ smt.out : $(COPTIC) ccpicgeom.dat
 	./$(COPTIC)
 	@if [ -f smt.prev ] ;then if [ -f smt.out ] ;then diff smt.prev smt.out ;else touch smt.out ;fi ;fi
 
+# For now we are using a big hammer to ensure libcoptic is clean.
 libcoptic.a : makefile $(OBJECTS) $(UTILITIES)
+	rm -f libcoptic.a
 	ar -rs libcoptic.a $(OBJECTS) $(UTILITIES)
+
+libcopsol.a : makefile $(SOLOBJECTS) $(UTILITIES)
+	rm -f libcopsol.a
+	ar -rs libcopsol.a $(SOLOBJECTS) $(UTILITIES)
 
 #mpi checking target
 mpicheck : $(COPTIC)
@@ -109,6 +118,14 @@ bdyroutine.o : bdyroutine.f makefile $(HEADERS)
 $(COPTIC) : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
 	@echo "      rjscheme="\'$(REINJECT)\'" " > REINJECT.f
 	$(G77)  -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f  libcoptic.a $(LIBRARIES)
+
+sortest : sortest.f makefile $(ACCISLIB) libcopsol.a
+	$(G77) -o sortest $(COMPILE-SWITCHES) $(PROFILING) sortest.f libcopsol.a $(LIBRARIES)
+
+sortestserial : sortest.f makefile $(ACCISLIB) $(SOLOBJECTS) nonmpibbdy.o
+	ar -d libcopsol.a mpibbdy.o
+	ar -r libcopsol.a nonmpibbdy.o
+	$(G77) -o sortestserial  $(COMPILE-SWITCHES) $(PROFILING) sortest.f libcopsol.a $(LIBRARIES)
 
 $(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h
 	make -C accis

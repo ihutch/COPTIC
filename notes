@@ -5151,3 +5151,189 @@ cell can become substantial.
 
 2 Oct 10
 Reorganization of analysis routines into subdirectory analysis.
+
+We need a more general potential variation on specified objects.  One
+idea for such an object might be the general cuboid (actually general
+parallelopiped) which is defined by three vectors vj from an origin
+corner. The corners are then defined by the triple n=(n1,n2,n3) where nj
+is either 0 or 1, and the position is \sum nj.vj. If we consider potential
+to be given at (0,0,0) and that \delta\phi is equal to \sum nj,dj, with
+dj being the potential difference at the end of vector vj, then we will
+have a consistent and linear potential progression across the object.
+
+One could do the same for a tetrahedron but that is not as likely to be
+useful.
+
+4 Oct 10 
+
+About to try to implement some of this. But first want to understand why
+with orbitinject etc we are getting Getfield No good vertices errors.
+Find that we get a few such errors with the test field case. We used not 
+to do so. 
+
+The change seems to have been in the transition to revision 1.19. Where
+the edge region was set to -1 to prevent reaching beyond the arrays. 
+Now, when a sphere cuts between the penultimate node and the edge, the 
+region outside it is 0, but the edge nodes are region -1, so for outside
+points there are no good vertices. This is actually correct in one sense. 
+When there is no object boundary nearby, this won't cause any problems. 
+But when there is, we get these nogood regions.
+
+Actually the error in the test routine only shows up when I shrink the
+sphere radius to 4.9999. Otherwise the only drawn points are inside the
+object. Basically this is working correctly.
+
+With particles, however, we are getting nogoods. These are all reported
+with fracs 1.0 or 32.0. Region 0. We ought not to have particles there.
+Guessing this is a reinjection problem.
+
+Seems to have something to do with the makefile not compiling the 
+reinjection routine. But now that I've cleared it I can't reproduce
+the error.
+
+Ahh. I think I see the problem. ar -rs is inserting with replacement
+into the libcoptic.a archive (library). When switching from one
+reinject to another, the old reinject is left in the library. Then
+when linking is done, the linker finds the old reinject code before
+the new code, and it is using the wrong reinjection code. If the
+makefile is changed we ought to delete the old libcoptic.a for
+sure. But in any case this explains why running make clean fixed
+things because it deleted libcoptic.
+
+For now just always delete libcoptic before inserting into it.
+
+Now things are all working correctly.
+
+5 Oct 2010
+
+Improving field interpolation near boundaries.  Implemented a wider
+search along the direction of field for valid points.  This helps a
+lot to improve the interpolation in cases where the point would
+otherwise be omitted. Especially when there is only one point of four
+(of a 2-D box) in the correct region. However, when the two missing
+points along the field direction are opposite a leg with two points in
+the region, then the extrapolation is not so good. A discontinuity
+occurs between the extrapolated value and that for a case where the
+upper gradient cannot be extrapolated from anywhere and so it is
+omitted.  The latter (omission) can give a _more_ accurate result than
+a long extrapolation. Maybe we should have a ramped weighting of the
+certainty of this field value, rather than a sudden omission. How to
+implement is a bit tricky. Perhaps the flags become weights?
+
+6 Oct 2010
+
+Fixed the above problem by introducing weights rather than flags for
+missing nodes. Instead of simply dropping a missing node, we try to
+interpolate it from further away. When we do this, its accuracy is
+substantially reduced compared with the accuracy of legs that are all
+in the region. So the weight of a leg that is extrapolated is reduced
+and the box interpolation is modified (actually simplified) to account
+for a continuous weight rather than a discontinous flag indicating
+absence. 
+
+For lattice legs that have both points out of region, call this
+"overextrapolation", the weight is reduced linearly from 1 to zero as
+we move from the outermost point to the innermost along the
+extrapolation direction. This allows the adjacent point (if any) in
+the region to control the value towards the inner end. This does not
+much affect squares with three points outside. But it helps very much
+for a row with four nodes outside adjacent to a row entirely
+inside. In such a case box overextrapolation from either side is
+possible for the two outer boxes of the row. They are linearly
+unweighted, reaching zero at the boundary of the middle box. for which
+the nodes are entirely missing. As a result, discontinuities that
+otherwise occur in the extrapolated values are avoided. All this is coded
+in. 
+
+However, there remains a big error in Ez when in the z-constant plane, at
+oblique angles. It is associated with boxes that have a single missing
+node. It abruptly reverses as z varies across the midplane. This must be
+arising because of unidirectional overextrapolation whose direction reverses
+as we go from one half of the box to the other. What we need for this is
+to have weighted bi-directional extrapolation to ensure continuity when
+it is possible to overextrapolate from either direction. 
+
+There appear to be other problems that are tickled by moving the mesh
+around, and are real bugs. We need better diagnostics that really know
+where the sphere center is and do proper analytic calculations.
+
+7 Oct 10 Coded in proper analytic calculation. Looks sensible.  Now
+starting to figure out the major bug(s), using shifted mesh.  
+
+Implementing some internal writing diagnostics, we find that the
+easiest way to test this is by using a specific test on the value of u
+and the gradient to flag an error. Then we find that the bug consists
+of a single point with offset 33363 whose cij pointer is 3276 which
+has both boa and coa set to zero, but fraction equal to
+0.602049947. This is incorrect for a point inside the fixed potential
+sphere. But why is it wrong? Perhaps I need a sanity check on the entire
+cij set and its pointers during initialization. It could hardly be general.
+It is specific to this particular problem, since boa=coa=o amounts to setting
+potential to zero. 
+
+8 Oct 10
+Found the source of this bug in boxedge:
+                     f1=1./(sign(max(abs(fn(i)),tiny),fn(i)))
+c Warn if any strange crossings found. Removed not necessary.
+                     if(f1.lt.1. .and. f1.ge.0)then 
+
+This warning and removal of the strange crossings was commented out.
+The results was that strange crossings were being allowed in the
+boxedge calculation whose purpose is to set some fractions determined
+by planes of intersections with nearby lattice legs. That information
+is basically unused in the present incarnation, since I found that it
+was infeasible to embed the object geometry into the cij information,
+and I currently don't.  Therefore this complex area of code ought
+probably to be cleaned up and the complexity removed. For now make
+sure the strange crossings are in fact removed. This was the real
+bug. Now there remains the poor interpolation problems. Actually this
+does not seem to be the only bug affecting the flat potential
+region. There remain some strange results but not as large in
+error. They are associated with uprime=-1.850757 and many (maybe all)
+of them with icp0=3276 (as was the case with the old bug). So perhaps
+I have not really fixed this bug.
+
+Using the stick plot and wiremesh to diagnose this more fully. The reason
+we are getting the Warning of strange crossing is not that the strange
+crossing is wrong. It is that there really is a crossing there, but for
+some unknown reason it is not being found or documented in the original
+pass. Thus the bug is not in the warning code but earlier. USE the stick
+plot (with outer sticks removed by removing outer object).
+
+Finally tracked this to an error in the algorithm of spheresect. PHEW!
+
+So now we really seem to have the bugs fixed. And we can move on to the
+problem of whether the interpolation can be improved. Right now with the
+spherical test case (shifted) we are getting max tangential field errors
+in the ball-park of 1, and lower radial errors.
+
+12 Oct 10
+Work on encapsulating the potential solution and the pic code separately.
+Created sortest which does not depend upon particles at all. It is in
+the makefile but still depends on a lot of routines. 
+
+Also get all the MPI routines into just mpibbdy.f and reduce.f
+No direct reference to anything mpi is outside those routines.
+A non-mpi version would need to have a certain number of dummy routines
+for the abstracted mpicalls. But would not need mpi. 
+
+Got a version of sortest going without mpi, using nonmpibbdy.
+
+Thus I've accomplished a couple of things. (1) Separated out the potential
+solver. (2) In the separated potential solver, separated out the mpi into
+a single file, and developed a dummy file. This is a demonstration of the 
+effective encapsulation of the mpi within the solver. 
+
+Because I can't access cvs at the moment, I note that phisoluplot.f replaces
+ccpicplot.f ; we add sortest.f nonmpibbdy.f. 
+
+How to cement the encapsulation? 
+
+13 Oct 10
+Start to get the include files sorted out of the sortest objects.
+Make faddu a separate file. Make a different bdyroutine bdysetsol.f.
+Get rid of svdsol.f by putting it into cijroutine which is the only
+place it is used.
+Get orbit3plot out of phisoluplot and make its own file.
+Clean out the includes of plascom and partcom from the solobjects.
+Then the only includes are meshcom, objcom, 3dcom, bbdydecl, accis/world3.h

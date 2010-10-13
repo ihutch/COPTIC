@@ -775,3 +775,26 @@ c Get my MPI id, and the number of processors.
       call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
       call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
       end
+c********************************************************************
+      subroutine mpiconvgreduce(convgd,icommcart,ierr)
+      implicit none
+      include 'mpif.h'
+      real convgd(3),convgr(3)
+      integer i,ierr,icommcart
+      
+c doing it in place:
+c      write(*,*)'convgd,icommcart',convgd,icommcart
+c........
+c This is the MPI-2 version that is most convenient.
+c      call MPI_ALLREDUCE(MPI_IN_PLACE,convgd,3,MPI_REAL,MPI_MAX,
+c     $     icommcart,ierr)
+c Since we use implicit none, if you try to use this version, then
+c one ought to get an error if MPI_IN_PLACE is not in the headers.
+c This should protect against MPI-1 problems.
+c This is the version that one must use when MPI_IN_PLACE is absent.
+      call MPI_ALLREDUCE(convgd,convgr,3,MPI_REAL,MPI_MAX,
+     $     icommcart,ierr)
+      do i=1,3
+         convgd(i)=convgr(i)
+      enddo
+      end

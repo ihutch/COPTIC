@@ -34,7 +34,7 @@ c     We initialize the 'true' particles'
      $        ran1(myid)*(xmeshend(3)-xmeshstart(3))
 c     If we are not in the plasma region, try again.
          if(.not.linregion(ibool_part,npdim,x_part(1,i)))then
-c            write(*,*)'Injection of',i,' wrong region',inewregion
+c            write(*,*)'Initialization of',i,' wrong region',inewregion
 c     $           ,(x_part(kk,i),kk=1,3)
             goto 1
          endif

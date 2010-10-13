@@ -218,9 +218,6 @@ c If this is a point-charge object, set the relevant mask bit.
       write(*,*)cline
       
  902  continue
-c This had to be associated with coptic because of makefile logic.
-c      include 'REINJECT.f'
-c      write(*,'(2a,$)')'Reinjection scheme: ',rjscheme(:40)
 c Set whether particle region has a part inside an object.
       lboundp=lbounded(ibool_part,ndims_mesh,ifield_mask)
       if(lboundp.and.rjscheme(1:4).eq.'cart')then
@@ -269,12 +266,20 @@ c x1 and x2 are the coordinates in system in which sphere has radius 1.
       fraction=1.
 c This condition tests for a sphere crossing.
       if(D.ne.0. .and. D*C.le.0.)then
-         if(B.ge.0. .and. A*C.le.0) then
-            fraction=(-B+sqrt(B*B-A*C))/A
-         elseif(B.lt.0. .and. A*C.ge.0)then
-            fraction=(-B-sqrt(B*B-A*C))/A
-         endif
+c This is erroneous. 8 Oct 10
+c         if(B.ge.0. .and. A*C.le.0) then
+c            fraction=(-B+sqrt(B*B-A*C))/A
+c         elseif(B.lt.0. .and. A*C.ge.0)then
+c            fraction=(-B-sqrt(B*B-A*C))/A
+c         endif
 c That should exhaust the possibilities.
+         if(C.lt.0.)then
+            fraction=(-B+sqrt(B*B-A*C))/A
+         elseif(C.gt.0.)then
+            fraction=(-B-sqrt(B*B-A*C))/A
+         else
+            fraction=0.
+         endif
       endif
       end
 c****************************************************************
@@ -523,11 +528,14 @@ c A fraction of 1 causes all the bounding conditions to be ignored.
 
       include 'meshcom.f'
       include '3dcom.f'
+c      integer debug
 
       real xx(10),xd(10)
 
 c Default no intersection.
       fraction=1
+c      debug=0
+c      if(iobjno.gt.100)debug=iobjno-100
       iobjno=0
 
 c-------------------------------------------------------------
@@ -538,9 +546,14 @@ c Process data stored in obj_geom.
 c Only for non-null BCs
 c Find the fractional intersection point if any.
 c Currently implemented just for spheres.
+c            if(debug.gt.0)fraction=101
             call spheresect(id,ipm,ndims,indi,
      $        obj_geom(oradius,i),obj_geom(ocenter,i)
      $        ,fraction,dp)
+c            if(debug.gt.0)then
+c               write(*,*)'Spheresect return',id,ipm,i,fraction
+c     $              ,obj_geom(oradius,i),obj_geom(ocenter,i)
+c            endif
          else
 c Null BC. Ignore.
             fraction=1.

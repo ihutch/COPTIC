@@ -120,8 +120,12 @@ c the region information.
      $           ,xn(ixnp(idf)+1),idf,x_part(ndimsx2+1,i)
      $           ,IAND(iregion,ifield_mask),field(idf))
             if(.not.abs(field(idf)).lt.fieldtoolarge)then
-               write(*,*)'Field corruption(?)',i,idf,field
+               write(*,*)'Field corruption(?)',i,idf,iregion,field
      $              ,(x_part(kk,i),kk=1,3*ndims)
+     $              ,linregion(ibool_part,ndims,x_part(1,i))
+c               stop
+               call partlocate(i,ixp,xfrac,inewregion,linmesh)
+               write(*,*)'inewregion,linmesh',inewregion,linmesh
             endif
             if(i.eq.1)then
 c               write(*,*)
@@ -244,7 +248,11 @@ c Reinjection:
          call reinject(x_part(1,i),ilaunch)
          call partlocate(i,ixp,xfrac,iregion,linmesh)
          if(.not.linmesh)then
-            write(*,*)'Reinject out of region',i,xfrac
+            write(*,*)'Reinject out of mesh',i,xfrac
+            stop
+         endif
+         if(.not.linregion(ibool_part,ndims,x_part(1,i)))then
+            write(*,*)'Reinject out of region',i,iregion,xfrac
             stop
          endif
 c         dtpos=dt*ran1(myid)

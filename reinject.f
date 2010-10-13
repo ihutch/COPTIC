@@ -15,7 +15,7 @@ c***********************************************************************
       subroutine reinject(xr,ilaunch)
       parameter (mdims=3)
       real xr(3*mdims)
-      integer i
+c      integer i
 c Common data for these routines:
       include 'rancom.f'
 c Plasma common data
@@ -223,5 +223,9 @@ c     having a value on the sphere normalized to Ti of minus
       end
 c********************************************************************
       subroutine avereinset()
+      return
+      end
+c********************************************************************
+      subroutine geominit()
       return
       end

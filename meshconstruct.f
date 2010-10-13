@@ -9,7 +9,6 @@ c half the largest mesh box side length.
       subroutine meshconstruct(ndims,iuds)
       integer iuds(ndims)
       include 'meshcom.f'
-      include 'plascom.f'
 
       iof=0
       rs=0.
@@ -33,8 +32,6 @@ c Mesh data.
  11      continue
          if(iblk.le.1) write(*,*)'Too few mesh steps. Dimension',id
          xmeshend(id)=xmeshpos(id,iblk)
-         rsi=0.5*abs(xmeshend(id)-xmeshstart(id))
-         if(rsi.gt.rs)rs=rsi
 c Set iuds according to specified mesh
          iuds(id)=imeshstep(id,iblk)
 c         write(*,'(a,i3,10f8.3)')
