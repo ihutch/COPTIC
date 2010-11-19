@@ -29,11 +29,16 @@ HEADERS=
 ##########################################################################
 TARGETS=partexamine denexamine phiexamine diagexamine fluxexamine philineread phioverlay
 
-% : %.f  makefile $(ACCISLIB) ../libcoptic.a $(HEADERS)
-	make -C ../ libcoptic.a
-	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f ../libcoptic.a $(LIBRARIES)
 
 all: $(TARGETS)
+
+# We presume that all these routines are serial not parallel.
+dummyreduce.o : ../dummyreduce.f
+	$(G77) -c ../dummyreduce.f
+
+% : %.f  makefile $(ACCISLIB) dummyreduce.o ../libcoptic.a $(HEADERS)
+	make -C ../ libcoptic.a
+	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f dummyreduce.o ../libcoptic.a $(LIBRARIES)
 
 # Don't recompile accis every time the makefile is changed.
 ../accis/%.o : ../accis/%.f $(HEADERS)

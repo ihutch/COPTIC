@@ -5526,4 +5526,18 @@ data write-out.
 
 Incorporated the switch -pd and display and writing.
 Allowed arrow keys to change the cell position in different dimensions.
-Basically this is now working. 
+
+Basically this is now working in serial but needs mpi reduces for 
+parallel. This also needs to worry about the initialization using the
+full information.
+
+19 Nov 10
+
+Combined fvgriddecl into ptaccom.f.
+
+Seem to have got the parallel version going with some reduces.
+
+-----------------------------------------------------
+
+What to do next:  
+     General objects with potential variation. See Oct 2.

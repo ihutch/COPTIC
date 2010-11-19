@@ -109,7 +109,38 @@ c use variable numbers of diagnostics.
       end
 
 c********************************************************************
-
+c********************************************************************
+      subroutine ptdiagreduce()
+c Reduce the particle distribution diagnostics accumulations.
+      include 'mpif.h'
+      include 'meshcom.f'
+      include 'ptaccom.f'
+      integer nfv,nfsv
+      parameter(nfv=2*nptdiag*mdims,
+     $     nfsv=nsbins*mdims*(nsub_tot+1)+nsub_tot)
+c Reduce the data for common /cartdiag/fv,px,... nfvaccum
+c Only the fv,px are to be added together. And nfvaccum.
+      call MPI_ALLREDUCE(MPI_IN_PLACE,fv,nfv,MPI_REAL
+     $     ,MPI_SUM,MPI_COMM_WORLD,ierr)
+      call MPI_ALLREDUCE(MPI_IN_PLACE,nfvaccum,1,MPI_INTEGER
+     $     ,MPI_SUM,MPI_COMM_WORLD,ierr)
+c Reduce the data for common /subdiag/ ... fsv,fvx,denfvx
+      call MPI_ALLREDUCE(MPI_IN_PLACE,fsv,nfsv,MPI_REAL 
+     $     ,MPI_SUM,MPI_COMM_WORLD,ierr)
+      end
+c********************************************************************
+      subroutine minmaxreduce(mdims,xnewlim)
+c Inefficient max and min of xnewlims structure.
+      integer mdims
+      real xnewlim(2,mdims)
+      include 'mpif.h'
+      do id=1,mdims
+         call MPI_ALLREDUCE(MPI_IN_PLACE,xnewlim(1,id),1,MPI_REAL
+     $        ,MPI_MIN,MPI_COMM_WORLD,ierr)
+         call MPI_ALLREDUCE(MPI_IN_PLACE,xnewlim(2,id),1,MPI_REAL
+     $        ,MPI_MAX,MPI_COMM_WORLD,ierr)
+      enddo
+      end
 c**************************************************************
       subroutine mpisubopcreate(nrd,ifull,iuds,iopfun,itype,iaddop)
 c For an nrd (IN) dimensional structure 

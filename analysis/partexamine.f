@@ -6,8 +6,6 @@ c (Examdecl itself includes meshcom.f)
       parameter (nfilemax=999)
       include '../partcom.f'
       include '../ptaccom.f'
-c Distributions in ptaccom.f
-      include '../fvgriddecl.f'
  
       character*10 chartemp
       character*100 name
@@ -81,7 +79,7 @@ c Possible multiple files.
          call partread(name,ierr)
          if(ierr.ne.0)goto 11
 
-         call partdistup(xlimit,vlimit,xnewlim,cellvol)
+         call partdistup(xlimit,vlimit,xnewlim,cellvol,0)
 c If we wish to accumulate to the uniform mesh for other than the first
 c occasion (when cellvol is zero) we need to do:
 c         call partsaccum(npdim,x_part,if_part,ioc_part,naccum,xlimit

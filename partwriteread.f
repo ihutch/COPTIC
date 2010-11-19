@@ -134,7 +134,7 @@ c      write(*,*)'ifull',ifull
      $     ,ied)
       close(22)
       write(*,'(''Wrote array data to '',a,3i4)')
-     $     ,name(1:lentrim(name)),iuds
+     $     name(1:lentrim(name)),iuds
       return
 
  101  continue
@@ -181,7 +181,7 @@ c First version
       endif
       close(23)
       write(*,'(''Read back array data from '',a,3i4)')
-     $     ,name(1:lentrim(name)),iuds
+     $     name(1:lentrim(name)),iuds
       ierr=0
       return
 

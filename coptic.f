@@ -572,17 +572,18 @@ c Particle distribution diagnostics
                if(idcount.ne.0)then
 c Not for the first time, print or plot.
 c Reduce the data from nodes.
+                  call ptdiagreduce()
                   if(lmyidhead)then 
                      if(2*(idistp/2)-4*(idistp/4).ne.0)
      $                    call pltsubdist(5,9,9,vlim it,xnewlim,cellvol)
                      call nameconstruct(diagfilename)
-                     write(diagfilename(lentrim(diagfilename):)
+                     write(diagfilename(lentrim(diagfilename)+1:)
      $                    ,'(''.pex'',i4.4)')j
                      if(idistp-2*(idistp/2).ne.0)
      $                    call distwrite(xlimit,vlimit,xnewlim,
      $                    diagfilename,cellvol)
                   endif
-c And reinitialize the accumulation
+c (Re)initialize the accumulation
                   call fvxinit(xnewlim,cellvol)
 c                  write(*,*)xlimit,vlimit
                   call partacinit(xlimit,vlimit)
@@ -594,7 +595,8 @@ c Particle distribution diagnostics.
 c The serial cost for this call with 1M particles is about 1s in 17s.
 c Or less than 2s if both partaccum and vaccum are called. Thus the
 c total cost is roughly 10% of particle costs.
-         if(idcount.gt.0)call partdistup(xlimit,vlimit,xnewlim,cellvol)
+         if(idcount.gt.0)call partdistup(xlimit,vlimit,xnewlim,
+     $        cellvol,myid)
 
          if(mod(nf_step,iwstep).eq.0)call datawrite(myid ,partfilename
      $        ,phifilename,ifull,iuds,u,uave,qave)

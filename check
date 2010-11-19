@@ -6,8 +6,9 @@ rm xpart
 rm uqcij
 echo RUNNING coptic
 ./coptic -s5
-echo RUNNING coptic -rs -s3
-./coptic -rs -s3 -ck6
+echo RUNNING coptic -fs -s3 -ck6
+./coptic -fs -s3 -ck6
+echo FINISHED First
 mv xpartnew xpart
 mv uqcijnew uqcij
 echo RUNNING coptic -s8 -ck6

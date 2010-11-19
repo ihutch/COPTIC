@@ -40,15 +40,15 @@ NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 ##########################################################################
 ##########################################################################
-FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o cijroutine.o cijplot.o 3dobjects.o mditerate.o  padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o randc.o helpusage.o
+FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o cijroutine.o cijplot.o 3dobjects.o mditerate.o  padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o randc.o
 #
 SPECIALOBJECTS=bdyroutine.o faddu.o reduce.o getfield.o interpolations.o 
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
-SOLOBJECTS= cijroutine.o mditerate.o mpibbdy.o sormpi.o sorrelaxgen.o meshconstruct.o getfield.o interpolations.o cijplot.o phisoluplot.o slicesect.o 3dobjects.o bdysetsol.o faddu.o helpusage.o
+SOLOBJECTS= cijroutine.o mditerate.o mpibbdy.o sormpi.o sorrelaxgen.o meshconstruct.o getfield.o interpolations.o cijplot.o phisoluplot.o slicesect.o 3dobjects.o bdysetsol.o faddu.o
 REGULAROBJECTS= $(FIXEDOBJECTS) ${REINJECT}
 OBJECTS=$(SPECIALOBJECTS) $(REGULAROBJECTS)
-HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f griddecl.f ptchcom.f mditcom.f fvgriddecl.f
+HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f griddecl.f ptchcom.f mditcom.f
 SOLHEADERS= bbdydecl.f meshcom.f objcom.f 3dcom.f accis/world3.h 
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 ##########################################################################
@@ -122,15 +122,10 @@ $(COPTIC) : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
 	@echo "      rjscheme="\'$(REINJECT)\'" " > REINJECT.f
 	$(G77)  -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f  libcoptic.a $(LIBRARIES)
 
-sortest : sortest.f makefile $(ACCISLIB) libcopsol.a
-	ar -d libcopsol.a nonmpibbdy.o
-	ar -r libcopsol.a mpibbdy.o
-	$(G77) -o sortest $(COMPILE-SWITCHES) $(PROFILING) sortest.f libcopsol.a $(LIBRARIES)
-
+# Sorserial links nonmpibbdy.o explicitly, so that none of those routines
+# are linked from the main libcopsol that need mpi.
 sorserial : sortest.f makefile $(ACCISLIB) $(SOLOBJECTS) nonmpibbdy.o
-	ar -d libcopsol.a mpibbdy.o
-	ar -r libcopsol.a nonmpibbdy.o
-	$(G77) -o sorserial  $(COMPILE-SWITCHES) $(PROFILING) sortest.f libcopsol.a $(LIBRARIES)
+	$(G77) -o sorserial  $(COMPILE-SWITCHES) $(PROFILING) sortest.f nonmpibbdy.o libcopsol.a $(LIBRARIES)
 
 $(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h
 	make -C accis
@@ -138,9 +133,6 @@ $(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h
 ######################################################
 testing : testing/mpibbdytest testing/fieldtest testing/stresstest
 	@echo Made tests in directory testing. Run them to test.
-
-#mpibbdytest : mpibbdytest.o udisplay.o mpibbdy.o mditerate.o reduce.o
-#	$(G77) -o mpibbdytest  mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o reduce.o
 
 testing/mpibbdytest : testing/mpibbdytest.o udisplay.o mpibbdy.o mditerate.o reduce.o makefile
 	$(G77) -o testing/mpibbdytest  testing/mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o reduce.o
@@ -158,7 +150,7 @@ vecx :
 
 #####################################################
 clean :
-	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.0?? *.ps libcoptic.a
+	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.* *.ps libcoptic.a
 	make -C accis mproper
 
 ftnchek :

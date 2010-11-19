@@ -1,6 +1,6 @@
 
 c********************************************************************
-      subroutine partdistup(xlimit,vlimit,xnewlim,cellvol)
+      subroutine partdistup(xlimit,vlimit,xnewlim,cellvol,myid)
 c Routine to update the particle distribution diagnostics for using the
 c current particle information. If this is called for the first time,
 c then calculate the bins for accumulating the distribution. Otherwise
@@ -9,11 +9,10 @@ c just accumulate to them.
       include 'meshcom.f'
       include 'partcom.f'
       include 'ptaccom.f'
-c Distributions in ptaccom.f
-      include 'fvgriddecl.f'
       real xlimit(2,mdims),vlimit(2,mdims),xnewlim(2,mdims)
       real cellvol
-      integer nvlist,naccum
+      integer myid
+      integer nvlist
 c Use the first occasion to establish the accumulation range.
 c Indicated by zero cellvolume.
          if(cellvol.eq.0.)then
@@ -22,23 +21,30 @@ c But xlimits mean that's problematic.
             nvlist=100
             call vlimitdeterm(npdim,x_part,if_part,ioc_part,xlimit
      $           ,vlimit,nvlist)
+c            write(*,'('' Velocity limits:'',6f7.3)') vlimit
+            call minmaxreduce(mdims,vlimit)
+c            write(*,'('' Velocity reduced:'',6f7.3)') vlimit
 c Indicate csbin not initialized and start initialization
             csbin(1,1)=-1.
             call partacinit(xlimit,vlimit)
-            write(*,'('' Velocity limits:'',6f7.3)') vlimit
 
 c Do the accumulation for this file up to maximum relevant slot. 
-            naccum=0
-            call partsaccum(npdim,x_part,if_part,ioc_part,naccum,xlimit
-     $        ,vlimit,xnewlim)
-            write(*,*)'Accumulated',naccum,' of',ioc_part,' total'
+            nfvaccum=0
+            call partsaccum(npdim,x_part,if_part,ioc_part,xlimit
+     $        ,vlimit,xnewlim,nfvaccum)
+            write(*,*)'Accumulated',nfvaccum,' of',ioc_part,' total'
      $        ,' in',xlimit
+c Reduce back the data for MPI cases.
+            call ptdiagreduce()
+            call minmaxreduce(mdims,xnewlim)
+            if(myid.eq.0)write(*,'(a,i8,a,6f8.4)')'Reduced',nfvaccum
+     $           ,' Xnewlim=',xnewlim
 c Should do this only the first time.
-            call bincalc(naccum)
+            call bincalc()
             call fvxinit(xnewlim,cellvol)
          else
-            call partsaccum(npdim,x_part,if_part,ioc_part,naccum,xlimit
-     $        ,vlimit,xnewlim)
+            call partsaccum(npdim,x_part,if_part,ioc_part,xlimit
+     $        ,vlimit,xnewlim,nfvaccum)
          endif
 c         write(*,*)'isfull',isfull,cellvol
 c         write(*,*)'calling subaccum'
@@ -52,16 +58,15 @@ c Initialize bins for accumulation of the particles.
       include 'ptaccom.f'
       include 'plascom.f'
       include 'griddecl.f'
-      include 'fvgriddecl.f'
       real xlimit(2,mdims),vlimit(2,mdims)
 
 c Initialization.
       do id=1,mdims
          do i=1,nptdiag
-            vdiag(i,id)=vlimit(1,id)
-     $           +(vlimit(2,id)-vlimit(1,id))*(i-0.5)/nptdiag
             fv(i,id)=0.
             px(i,id)=0.
+            vdiag(i,id)=vlimit(1,id)
+     $           +(vlimit(2,id)-vlimit(1,id))*(i-0.5)/nptdiag
             xdiag(i,id)=xmeshstart(id)+(i-0.5)*
      $           (xmeshend(id)-xmeshstart(id))/(nptdiag)
          enddo
@@ -78,7 +83,6 @@ c Accumulate a particle into velocity bins.
       include 'ptaccom.f'
       include 'plascom.f'
       include 'griddecl.f'
-      include 'fvgriddecl.f'
       real vlimit(2,mdims)
       real xr(3*mdims)
 
@@ -109,8 +113,8 @@ c Assign positions to bins
 
       end
 c**********************************************************************
-      subroutine partsaccum(mdims,xpart,ifpart,iocpart,naccum,xlimit
-     $     ,vlimit,xnewlim)
+      subroutine partsaccum(mdims,xpart,ifpart,iocpart,xlimit
+     $     ,vlimit,xnewlim,nfvaccum)
 c Accumulate all particles in the xlimit range into velocity bins.
 c If on entry xnewlim(2).eq.xnewlim(1) then adjust those limits.
       real xpart(3*mdims,iocpart)
@@ -137,14 +141,14 @@ c Adjust the xnewlim.
                   if(x.gt.xnewlim(2,id))xnewlim(2,id)=x
                endif
             enddo
-            naccum=naccum+1
+            nfvaccum=nfvaccum+1
             call oneaccum(xpart(1,j),vlimit)
          endif
  12      continue
       enddo
-c      write(*,*)'Accumulated',naccum,' in',xlimit,' of',iocpart
+c      write(*,*)'Accumulated',nfvaccum,' in',xlimit,' of',iocpart
 c     $        ,' total'
-      if(limadj.eq.1)write(*,'(a,6f10.5)')' xnewlim=',xnewlim
+c      if(limadj.eq.1)write(*,'(a,6f10.5)')' xnewlim=',xnewlim
 
              
       end
@@ -242,12 +246,10 @@ c      write(*,*)'topend',i1,i2,i,vlist(i2),v
       end
 
 c***********************************************************************
-      subroutine bincalc(naccum)
-      integer naccum
+      subroutine bincalc()
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'griddecl.f'
-      include 'fvgriddecl.f'
 
 c 
       do id=1,mdims
@@ -261,7 +263,7 @@ c
          vhbin(0,id)=vdiag(1,id)-dv*0.5
          ib=1
          do k=1,nptdiag
-            cumfv(k,id)=cumfv(k-1,id)+fv(k,id)/float(naccum)
+            cumfv(k,id)=cumfv(k-1,id)+fv(k,id)/float(nfvaccum)
 c            write(*,*)id,k,fv(k,id),cumfv(k,id),ib
 c This linear mapping does not work well.
 c            ib=1+ int(cumfv(k,id)*(nsbins)*(.99999))
@@ -307,7 +309,7 @@ c corrected for.
             endif
          enddo
       enddo
-      write(*,*)'Bincalc has chosen',nsbins,' bin placement.'
+c      write(*,*)'Bincalc has chosen',nsbins,' bin placement.'
 c      write(*,*)' vsbin',vsbin
 c      write(*,*)(vhbin(k,1),k=0,nsbins)
 c      write(*,*)' csbin',csbin
@@ -356,7 +358,6 @@ c Accumulate a particle into velocity bin corresponding to position ip
       include 'ptaccom.f'
       include 'plascom.f'
       include 'griddecl.f'
-      include 'fvgriddecl.f'
       real vlimit(2,mdims)
       real xr(3*mdims)
 
@@ -385,7 +386,6 @@ c*******************************************************************
       subroutine fvxinit(xnewlim,cellvol)
       include 'meshcom.f'
       include 'ptaccom.f'
-      include 'fvgriddecl.f'
       real xnewlim(2,mdims)
 
       isfull(1)=nsub_i
@@ -411,7 +411,6 @@ c**********************************************************************
 
       include 'meshcom.f'
       include 'ptaccom.f'
-      include 'fvgriddecl.f'
       real xlimit(2,mdims),vlimit(2,mdims),xnewlim(2,mdims)
       character*(*) name
 
@@ -436,7 +435,7 @@ c**********************************************************************
  103  write(*,*)'Mismatch of declared fv-cell dimensions',
      $     nsbins,nsub_i,nsub_j,nsub_k
       write(*,*)'               with those in file read:',nsbf,isfull
-      write(*,*)'Adjust fvgriddecl.f to match file and recompile.'
+      write(*,*)'Adjust ptaccom.f to match file and recompile.'
       stop
  
       end
@@ -444,7 +443,6 @@ c**********************************************************************
       subroutine distwrite(xlimit,vlimit,xnewlim,name,cellvol)
       include 'meshcom.f'
       include 'ptaccom.f'
-      include 'fvgriddecl.f'
       real xlimit(2,mdims),vlimit(2,mdims),xnewlim(2,mdims)
       character*(*) name
 
@@ -476,7 +474,6 @@ c******************************************************************
       include 'partcom.f'
       include 'ptaccom.f'
 c Distributions in ptaccom.f
-      include 'fvgriddecl.f'
       real vlimit(2,mdims),xnewlim(2,mdims)
       real cellvol
       real fvplt(nsbins)
