@@ -40,7 +40,7 @@ NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 ##########################################################################
 ##########################################################################
-FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o cijroutine.o cijplot.o 3dobjects.o mditerate.o  padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o checkcode.o stress.o average.o randc.o helpusage.o
+FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o cijroutine.o cijplot.o 3dobjects.o mditerate.o  padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o randc.o helpusage.o
 #
 SPECIALOBJECTS=bdyroutine.o faddu.o reduce.o getfield.o interpolations.o 
 # Things just needed for the test routine:
@@ -48,7 +48,8 @@ UTILITIES=udisplay.o
 SOLOBJECTS= cijroutine.o mditerate.o mpibbdy.o sormpi.o sorrelaxgen.o meshconstruct.o getfield.o interpolations.o cijplot.o phisoluplot.o slicesect.o 3dobjects.o bdysetsol.o faddu.o helpusage.o
 REGULAROBJECTS= $(FIXEDOBJECTS) ${REINJECT}
 OBJECTS=$(SPECIALOBJECTS) $(REGULAROBJECTS)
-HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f griddecl.f ptchcom.f mditcom.f
+HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f griddecl.f ptchcom.f mditcom.f fvgriddecl.f
+SOLHEADERS= bbdydecl.f meshcom.f objcom.f 3dcom.f accis/world3.h 
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 ##########################################################################
 # If this rule does not seem to recognize the file you are trying to make,
@@ -76,8 +77,7 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 
 #default target
 # Problem when using geometry that can't do smt check. 
-smt.out : $(COPTIC) ccpicgeom.dat
-	if [ -f "$(GEOMFILE)" ] ; then ln -s -f $(GEOMFILE) ccpicgeom.dat ; fi
+smt.out : $(COPTIC) copticgeom.dat
 	@if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
 	./$(COPTIC)
 	@if [ -f smt.prev ] ;then if [ -f smt.out ] ;then diff smt.prev smt.out ;else touch smt.out ;fi ;fi
@@ -87,9 +87,12 @@ libcoptic.a : makefile $(OBJECTS) $(UTILITIES)
 	rm -f libcoptic.a
 	ar -rs libcoptic.a $(OBJECTS) $(UTILITIES)
 
-libcopsol.a : makefile $(SOLOBJECTS) $(UTILITIES)
+libcopsol.a : makefile $(SOLOBJECTS) $(UTILITIES) $(SOLHEADERS)
 	rm -f libcopsol.a
 	ar -rs libcopsol.a $(SOLOBJECTS) $(UTILITIES)
+
+copticgeom.dat : $(GEOMFILE)
+	if [ -f "$(GEOMFILE)" ] ; then ln -s -f $(GEOMFILE) copticgeom.dat ; fi
 
 #mpi checking target
 mpicheck : $(COPTIC)
@@ -120,12 +123,14 @@ $(COPTIC) : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
 	$(G77)  -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f  libcoptic.a $(LIBRARIES)
 
 sortest : sortest.f makefile $(ACCISLIB) libcopsol.a
+	ar -d libcopsol.a nonmpibbdy.o
+	ar -r libcopsol.a mpibbdy.o
 	$(G77) -o sortest $(COMPILE-SWITCHES) $(PROFILING) sortest.f libcopsol.a $(LIBRARIES)
 
-sortestserial : sortest.f makefile $(ACCISLIB) $(SOLOBJECTS) nonmpibbdy.o
+sorserial : sortest.f makefile $(ACCISLIB) $(SOLOBJECTS) nonmpibbdy.o
 	ar -d libcopsol.a mpibbdy.o
 	ar -r libcopsol.a nonmpibbdy.o
-	$(G77) -o sortestserial  $(COMPILE-SWITCHES) $(PROFILING) sortest.f libcopsol.a $(LIBRARIES)
+	$(G77) -o sorserial  $(COMPILE-SWITCHES) $(PROFILING) sortest.f libcopsol.a $(LIBRARIES)
 
 $(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h
 	make -C accis

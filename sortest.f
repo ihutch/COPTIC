@@ -14,20 +14,19 @@ c Mesh spacing description structure
 c Processor cartesian geometry can be set by default.
       integer nblksi,nblksj,nblksk
       parameter (nblksi=1,nblksj=1,nblksk=1)
-      integer idims(ndims_sor)
+      integer idims(ndims_sor) 
 c mpi process information.
       include 'myidcom.f'
 c Structure vector needed for finding adjacent u values.
-c Don't use the mditerate common. It might not be right.
       integer iLs(ndims_sor+1)
       external bdyset,faddu,cijroutine,cijedge
-c      external linregion
       character*100 objfilename
-c      character*100 diagfilename,restartpath
       character*100 argument
       logical ltestplot,lsliceplot,linjplot
-      logical lrestart,lmyidhead,lphiplot,ldenplot
-      integer ipstep,iwstep
+      logical lmyidhead,lphiplot,lpgraph
+      integer ipstep
+c sor control values
+      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
 c Set up the structure vector.
       parameter (Li1=na_i,Li2=Li1*na_j,Li3=Li2*na_k)
       data iLs/1,Li1,Li2,Li3/
@@ -38,8 +37,7 @@ c Data for plotting etc.
       data iobpl/0/
       data ltestplot,lsliceplot,linjplot/
      $     .true.,.false.,.false./
-      data lphiplot,ldenplot/.true.,.true./
-      data lrestart/.false./
+      data lphiplot,lpgraph/.true.,.false./
       data ipstep/1/
 c-------------------------------------------------------------
 c Consistency checks
@@ -50,7 +48,7 @@ c Consistency checks
 c-------------------------------------------------------------
 c Defaults:
 c Default edge-potential (chi) relaxation rate.     
-      objfilename='ccpicgeom.dat'
+      objfilename='copticgeom.dat'
       debyelen=1.
       Ti=1.
       crelax=1.*Ti/(1.+Ti)
@@ -74,7 +72,6 @@ c Otherwise could have been hidden in sormpi and pass back numprocs.
       numprocs=nprocs
 c--------------------------------------------------------------
 c Deal with arguments
-c      if(iargc().eq.0) goto "help"
       do i=1,iargc()
          call getarg(i,argument)
          if(argument(1:3).eq.'-gt')ltestplot=.true.
@@ -88,7 +85,7 @@ c      if(iargc().eq.0) goto "help"
  211        continue
             write(*,*)'ipstep=',ipstep
          endif
-         if(argument(1:3).eq.'-gd')ldenplot=.false.
+         if(argument(1:3).eq.'-gw')lpgraph=.true.
          if(argument(1:3).eq.'-gp')lphiplot=.false.
          if(argument(1:3).eq.'-gi')linjplot=.true.
          if(argument(1:3).eq.'-gf')read(argument(4:),*,err=201)ifplot
@@ -100,32 +97,9 @@ c      if(iargc().eq.0) goto "help"
          elseif(argument(1:2).eq.'-a')then 
             read(argument(3:),*,err=201)iavesteps
          endif
-         if(argument(1:3).eq.'-ni')read(argument(4:),*,err=201)n_part
          if(argument(1:3).eq.'-pn')read(argument(4:),*,err=201)numprocs
-         if(argument(1:3).eq.'-ri')read(argument(4:),*,err=201)ripernode
-         if(argument(1:3).eq.'-rx')read(argument(4:),*,err=201)crelax
-         if(argument(1:3).eq.'-ck')read(argument(4:),*,err=201)ickst
-         if(argument(1:3).eq.'-ct')read(argument(4:),*,err=201)colntime
-
-         if(argument(1:3).eq.'-dt')read(argument(4:),*,err=201)dt
-         if(argument(1:3).eq.'-da')read(argument(4:),*,err=201)bdt
-         if(argument(1:3).eq.'-ds')read(argument(4:),*,err=201)subcycle
-         if(argument(1:7).eq.'--reinj')
-     $        read(argument(8:),*,err=201)ninjcomp
-         if(argument(1:3).eq.'-rn')
-     $        read(argument(4:),*,err=201)ninjcomp
-         if(argument(1:3).eq.'-vn')then
-            read(argument(4:),*,err=201)vneutral
-         elseif(argument(1:2).eq.'-v')then
-            read(argument(3:),*,err=201)vd
-         endif
          if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
          if(argument(1:2).eq.'-t')read(argument(3:),*,err=201)Ti
-         if(argument(1:2).eq.'-w')read(argument(3:),*,err=201)iwstep
-         if(argument(1:3).eq.'-fs')then
-            lrestart=.true.
-            read(argument(4:),'(a)',err=201)restartpath
-         endif
          if(argument(1:3).eq.'-of')
      $        read(argument(4:),'(a)',err=201)objfilename
          if(argument(1:3).eq.'-ho')then
@@ -135,33 +109,23 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:2).eq.'-h')goto 203
          if(argument(1:2).eq.'-?')goto 203
       enddo
-      goto 202
-c------------------------------------------------------------
-c Help text
- 201  continue
-      if(lmyidhead)write(*,*)'=====Error reading command line argument '
-     $     ,argument(:20)
- 203  continue
-      if(lmyidhead)call helpusage()
- 202  continue
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
 c Geometry and boundary information. Read in.
       call readgeom(objfilename,myid)
 c---------------------------------------------------------------
-c Construct the mesh vector(s) and ium2 from the geometry info.
+c Construct the mesh vector(s) from the geometry info.
       call meshconstruct(ndims,iuds)
       if(lmyidhead)write(*,'(a,3i4,6f8.3)')
      $     ' Constructed mesh',iuds
      $     ,(xmeshstart(k),xmeshend(k),k=1,ndims)
-c-----------------------------------------------------------------
-      do id=1,ndims
-         ium2(id)=iuds(id)-2
-      enddo         
 c----------------------------------------------------------------
 c Initializations
       if(lmyidhead)write(*,*)'Initializing the stencil data cij'
-c Initialize cij:
+c Initialize cij for just the inner part, not the edges.
+      do id=1,ndims
+         ium2(id)=iuds(id)-2
+      enddo         
       ipoint=iLs(1)+iLs(2)+iLs(3)
       call mditerarg(cijroutine,ndims,ifull,ium2,ipoint,
      $     cij(1,1,1,1),debyelen,dum3,dum4)
@@ -182,10 +146,10 @@ c Don't do plotting from any node except the master.
       else
 c---------------------------------------------
 c Some simple graphics of cij
+         if(lpgraph)call pfset(3)
          if(ltestplot)call text3rgraph(ndims,iuds,ifull,cij,volumes)
 c---------------------------------------------
 c The following requires include objcom.f
-c         if(lmyidhead)write(*,*)'Finished mesh/stencil setup:',iuds
          if(lmyidhead)write(*,*)
      $      'Used No of pointers:',oi_sor,' of',iuds(1)*iuds(2)*iuds(3)
      $        ,' points.'
@@ -205,11 +169,16 @@ c An inital vacuum solution with zero density.
 c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
       ictl=0
 c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
-c An initial solver call.
-      call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
-     $     ,myid,idims)
-      ictl=2
-c      write(*,*)'Return from initial sormpi call.'
+c Solver call.
+      do k=1,2
+         if(k.gt.1)ictl=1
+         call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
+     $        ,myid,idims)
+         write(*,*)'Completed sormpi',ierr,del_sor
+         if(ierr.gt.0)goto 2
+         eps_sor=2.e-6
+      enddo
+ 2    continue
 c Putting the finalize here prevents end mpi-crashes.
       call mpifinalize(ierr)
 c
@@ -218,5 +187,13 @@ c-------------------------------------------------------------------
          call vaccheck(ifull,iuds,cij,u,thetain,nth,rs,ltestplot)
       endif
 c End of plotting.
+      call exit(0)
+c------------------------------------------------------------
+ 201  continue
+      if(lmyidhead)write(*,*)'=====Error reading command line argument '
+     $     ,argument(:20)
+ 203  continue
+      write(*,*)'Not all switches apply to sortest'
+      if(lmyidhead)call helpusage2()
       end
 c**********************************************************************

@@ -10,7 +10,7 @@ c Assumed 3-D routine, plots representation of the cij/obj data.
       real xx(3),xt(3)
       integer irx(5),iry(5),ipx(5),ipy(5),ijk(3)
       integer idelta(3,3)
-      character*40 mystring
+c      character*40 mystring
       integer iprinting
       data irx/1,0,-1,0,1/
       data iry/0,1,0,-1,0/
@@ -110,9 +110,10 @@ c                           call vec3w(xx(1),xx(2),xx(3),0)
       if(istick.eq.1)iwire=1
  52   continue
 c     Wireframe drawing.
-      write(mystring,'(a)')'Object Mask:'
-      call iwrite(mysw/2,ilen,mystring(13:))
-      call jdrwstr(.1,.1,mystring,1.)
+      write(*,'(a,i2)')'Object Mask:',mysw/2
+c      write(mystring,'(a)')'Object Mask:'
+c      call iwrite(mysw/2,ilen,mystring(13:))
+c      call jdrwstr(.1,.1,mystring,1.)
       do i=1,iuds(1)
          do j=1,iuds(2)
             do k=1,iuds(3)

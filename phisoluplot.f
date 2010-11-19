@@ -111,7 +111,7 @@ c Master plotting routine.
 c      call fixedline(ifull,iuds,u,phi,phiinf,rc)
 c      call slicesolu(ifull,iuds,u,cij,phi,phiinf,rc,thetain,nth,rs)
       call gradradial(ifull,iuds,u,cij,phi,phiinf,rc,thetain,nth,rs)
-      call phiradial(ifull,iuds,u,cij,phi,phiinf,rc,thetain,nth,rs)
+c      call phiradial(ifull,iuds,u,cij,phi,phiinf,rc,thetain,nth,rs)
       call eremesh(ifull,iuds,u,cij,phi,phiinf,rc,thetain,nth,rs)
       end
 c***************************************************************
@@ -487,7 +487,9 @@ c         write(*,*)i,xr
       call autoplot(xp,u(1,n0,n1),iuds(1))
       call polymark(xp,u(1,n0,n1),iuds(1),1)
       call color(ibrickred())
+      call winset(.true.)
       call polyline(xp,z,iuds(1))
+      call winset(.false.)
       call color(15)
       call axlabels('x mesh (at half mesh in y, z)',
      $     'u(x) and !Af!@(r!dc!d)r!dc!d/r')
@@ -495,14 +497,14 @@ c         write(*,*)i,xr
       end
 c********************************************************************
 c***************************************************************
-c Packaged version of potential plotting.
+c Packaged version of potential error finding and plotting.
       subroutine eremesh(ifull,iuds,u,cij,phi,phiinf,rc,thetain,nth,rs)
       parameter (ndims=3,nd2=ndims*2)
       integer ifull(ndims),iuds(ndims)
       real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
       real u(ifull(1),ifull(2),ifull(3))
       integer ifmax
-      parameter (ifmax=50,Li=ifmax)
+      parameter (ifmax=100,Li=ifmax)
       real xprime(ndims),xff(ndims)
       real ere(ifmax,ifmax),xcont(ifmax),ycont(ifmax)
       character cwork(ifmax,ifmax)
@@ -519,25 +521,35 @@ c      x0=13.8
 c      y0=12.8
 c      x1=17.8
 c      y1=16.8
-      x0=12.
-      y0=12.
-      x1=21.
-      y1=21.
+      x0=12.*iuds(1)/32
+      y0=12.*iuds(2)/32
+      z0=12.*iuds(3)/32
+      x1=21.*iuds(1)/32
+      y1=21.*iuds(2)/32
+      z1=21.*iuds(3)/32
 
       idf=2
       id1=mod(idf,3)+1
       write(xtit,'(''axis-'',i1)')id1
       id2=mod(idf+1,3)+1
       write(ytit,'(''axis-'',i1)')id2
-      ide=id2
+      ide=id1
 
-      xff(idf)=iuds(idf)/2 +1.
- 1    ixff=xff(idf)
-      ff=xff(idf)-ixff
-      xprime(idf)=xn(ixnp(idf)+ixff)*(1.-ff)
-     $        +xn(ixnp(idf)+ixff+1)*ff
-c xn(ixnp(idf)+int(xff(idf)))
+      k1=1
+      k2=ifmax
+      errvtot=0.
+ 1    errvar=0.
+      count=0.
       errmax=0.
+      kerrmax=k1
+      do k=k1,k2
+         f3=(k-0.999)/(ifmax-0.998)
+         xff(idf)=(1.-f3)*z0 + f3*z1
+c         write(*,*)'f3,xff(idf)',f3,xff(idf),z0,z1,errmax
+         ixff=xff(idf)
+         ff=xff(idf)-ixff
+         xprime(idf)=xn(ixnp(idf)+ixff)*(1.-ff)
+     $        +xn(ixnp(idf)+ixff+1)*ff
       do j=1,ifmax
          f2=(j-0.999)/(ifmax-0.998)
          xff(id2)=(1.-f2)*y0 + f2*y1
@@ -575,19 +587,34 @@ c Assuming sphere is centered on origin.
             if(iregion.ne.2)anal=0.
             ere(i,j)=ere(i,j)-anal
             err=abs(ere(i,j))
+            errvar=errvar+err*err
+            count=count+1
             if(err.gt.errmax)then
                errmax=err
                errs=ere(i,j)
+               f3errmax=f3
+               kerrmax=k
             endif
          enddo
       enddo
 
-      icsw=1
-      icl=20
-      do i=1,icl
-         zclv(i)=(i-icl/2.)*4./icl
       enddo
-c      write(*,*)xcont
+      errvar=errvar/(count-1)
+      if(k1.ne.k2)then
+         k1=kerrmax
+         k2=k1
+         errvtot=errvar
+         errmtot=errmax
+         goto 1
+      endif
+      icl=20
+      call fitrange(0.,errmtot,icl/2,ipow,fac10,delta,first,flast)
+      icsw=1
+c      write(*,*)errmtot,delta,first,delta
+      do i=1,icl
+         zclv(i)=(i-icl/2)*delta
+      enddo
+      write(*,'(a,f8.4)')'Contour spacing=',delta
       call pltinit(xcont(1),xcont(ifmax),ycont(1),ycont(ifmax))
       call contourl(ere,cwork,ifmax,ifmax,ifmax,zclv,icl,
      $           xcont,ycont,icsw) 
@@ -601,16 +628,20 @@ c      write(*,*)xcont
             call polymark(xp,yp,1,1)
          enddo
       enddo
-      write(*,'(i2,2f8.4,a,f8.4,a,i1)')ide,xff(idf),xprime(idf)
+      write(*,'(2f8.4,a,f8.4,a,i1,a,2f8.4)')xff(idf),xprime(idf)
 c     $     ,' Contours',zclv(2)-zclv(1)
      $     ,' Max Field Error=',errs,' dir ',ide
+     $     ,', sd=',sqrt(errvar),sqrt(errvtot)
       icode=ieye3d()
       if(icode.eq.ichar('u'))then
-         xff(idf)=xff(idf)+.1
+         k1=k1+1
+         k2=k1
 c         write(*,*)xff(idf),xprime(idf)
          goto 1 
       elseif(icode.eq.ichar('d'))then
-         xff(idf)=xff(idf)-.1
+         k1=k1-1
+         k2=k1
+c         xff(idf)=xff(idf)-.1
 c         write(*,*)xff(idf),xprime(idf)
          goto 1
       endif

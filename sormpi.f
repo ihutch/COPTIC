@@ -166,6 +166,7 @@ c     $           ,umin,umax
 c Test convergence
          call testifconverged(eps_sor,delta,umin,umax,
      $        lconverged,icommcart)
+c         write(*,'(i5,f10.6,$)')k_sor,delta
 c         if(myid.eq.0)
 c     $        write(*,*)k_sor,delta,umin,umax,lconverged
 c     $        ,relax,omega

@@ -236,7 +236,37 @@ c On exit ix contains the corresponding (ndims)-dimensional indices.
       if(ind.gt.ifull(3)) write(*,*)'indexexpand index too big',index
       end
 c********************************************************************
-
+c Convert indices into pointer
+      function ipindex(ndims,iLs,ix)
+c ix is an ndims-dimensional tuple of indices which is converted into
+c a zero-based pointer using the structure vector iLs
+      integer iLs(ndims),ix(ndims)
+      ipindex=0
+      do id=1,ndims
+         ipindex=ipindex+(ix(id)-1)*iLs(id)
+      enddo
+      end
+c********************************************************************
+c Convert indices into pointer using ifull
+      function ipfindex(ndims,ifull,ix)
+c ix is an ndims-dimensional tuple of indices which is converted into
+c a zero-based pointer using the full dimensions ifull
+      integer ifull(ndims),ix(ndims)
+      ipfindex=0
+      do id=ndims,1,-1
+         ipfindex=(ix(id)-1)+ipfindex*ifull(id)
+      enddo
+      end
+c********************************************************************
+c Convert 3-D indices into pointer.
+      function ip3index(ifull,i,j,k)
+      integer ifull(3),i,j,k 
+      ip3index=0
+      ip3index=(k-1)+ip3index*ifull(3)
+      ip3index=(j-1)+ip3index*ifull(2)
+      ip3index=(i-1)+ip3index*ifull(1)
+      end
+c===================================================================
 c*************************************************************
       function gradinterp(um,u0,up,id,icp,xm,dx0,dx1)
 c Interpolate the gradient of potential,
@@ -470,154 +500,3 @@ c In case this was not set previously
 c***************************************************************
 cXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 c****************************************************************
-c The routines after this are unused.
-c****************************************************************
-cXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-c*************************************************************
-c Routine for interpolating gradient with correct node assignment.
-c Returns the gradient corresponding to the region the assigned point
-c is actually in.
-      subroutine gradinterpcorrect(cij,u,idf,icinc,iuinc,
-     $     xprime,uprime,ix,xm)
-
-c The cij, and u arrays, starting at the 1st element in the idf 
-c direction and the appropriate element in the other dimensions.
-c (Which for cij includes the offset to the object pointer).
-c Thus the calls generally pass: cij(nd2+1,ium2(1),ium2(2),ium2(3))
-c ,u(ium2(1),ium2(2),ium2(3)), with ium2(idf)=1. But in fact this
-c routine should work for general number of dimensions.
-      real cij(*)
-      real u(*)
-      include 'objcom.f'
-      include 'meshcom.f'
-c The direction in which we are interpolating.
-      integer idf
-c The increments to adjacent values in the direction idf of cij, and u
-      integer icinc,iuinc
-c The position in the interpolated direction: INPUT
-      real xprime
-c The value of gradient: OUTPUT
-      real uprime
-c ix and xm are returned the index and fraction of interpolation.
-c (Not much use except for diagnostics) 
-
-c Dimension along which we are interpolating: idf
-c Offset to start of idf position array.
-      ioff=ixnp(idf)
-c xn is the position array for each dimension arranged linearly.
-c Find the index of xprime in the array xn:
-      ix=interp(xn(ioff+1),ixnp(idf+1)-ioff,xprime,xm)
-      ix=nint(xm)
-      xm=xm-ix
- 701  continue
-c Pointer to object data,
-c      icp0=cij(ndims*2+1,ium(1),ium(2),ium(3))
-      icp0=int(cij(1+(ix-1)*icinc))
-c               write(*,*)'i,ix,xm,icp0',i,ix,xm,icp0
-c Distance forward and backward along idf-dimension to adjacent
-      dx1=xn(ix+ioff+1)-xn(ix+ioff)
-      dx0=xn(ix+ioff)-xn(ix+ioff-1)
-c Here we use fraction if icp0!=0 to decide if we have chosen the
-c correct mesh node to extrapolate from. If the distance of the point
-c from the mesh node is greater than fraction, switch to the further
-c node.
-      if(icp0.ne.0)then
-         if(xm.ge.0.)then
-            jpm=1
-         else
-            jpm=-1
-         endif
-         iobj=ndata_sor*(2*(idf-1)+(1-jpm)/2)+1
-         fraction=dob_sor(iobj,icp0)
-c                  write(*,*)'Boundary:',icp0,iobj,jpm,fraction
-c                  if(.false. .and. fraction.ge.0. .and.
-         if(fraction.ge.0. .and.
-     $        fraction.lt.1. .and. abs(xm).gt.fraction)then
-            write(*,*)'Adjusting ix',ix,jpm,xm,fraction,
-     $           ix+jpm
-            ix=ix+jpm
-            xm=xm-jpm
-            goto 701
-         endif
-      endif
-c Values of u at the points to be interpolated.
-      u0=u(1+(ix-1)*iuinc)
-      up=u(1+ix    *iuinc)
-      um=u(1+(ix-2)*iuinc)
-c Do interpolation.
-      uprime=gradinterp(um,u0,up,idf,icp0,xm,dx0,dx1)
-
-      end
-c*******************************************************************
-c Routine for interpolating gradient with correct node assignment.
-c Returns the gradient that would occur in the region iregion at
-c position xprime. If xprime is in region iregion, this is simple. If
-c not, the adjacent point in the direction of the gradient is examined,
-c and if it is in region iregion, extrapolation from that point to
-c xprime is used. If not, ix is returned as negative indicating the
-c interpolation has failed.
-      subroutine gradinterpregion(cij,u,idf,icinc,iuinc,
-     $     xprime,uprime,iregion,ix,xm)
-
-c The cij, and u arrays, start at the 1st element in the idf 
-c direction and the appropriate element in the other dimensions.
-c (Which for cij includes the offset to the object pointer so that
-c in effect cij is simply the array of pointers to object data).
-c Thus the calls generally pass: cij(nd2+1,ium2(1),ium2(2),ium2(3))
-c ,u(ium2(1),ium2(2),ium2(3)), with ium2(idf)=1. But in fact this
-c routine should work for general number of dimensions.
-c The increments to adjacent cij,u-values are icinc, iuinc.
-      real cij(*)
-      real u(*)
-      include 'objcom.f'
-      include 'meshcom.f'
-c The direction in which we are interpolating.
-      integer idf
-c The increments to adjacent values in the direction idf of cij, and u
-      integer icinc,iuinc
-c The position in the interpolated direction: INPUT
-      real xprime
-c The value of gradient: OUTPUT
-      real uprime
-c ix and xm are returned the index and fraction of interpolation.
-
-c Dimension along which we are interpolating: idf
-c Offset to start of idf position array.
-      ioff=ixnp(idf)
-c xn is the position array for each dimension arranged linearly.
-c Find the index of xprime in the array xn:
-      ix=interp(xn(ioff+1),ixnp(idf+1)-ioff,xprime,xm)
-      ix=nint(xm)
-      xm=xm-ix
-c Pointer to object data,
-      icp0=int(cij(1+(ix-1)*icinc))
-c               write(*,*)'ix,xm,icp0',ix,xm,icp0
-c If we are in wrong region, try to correct:
-      if(icp0.ne.0 .and. idob_sor(iregion_sor,icp0).ne.iregion)then
-c         write(*,*)'Incorrect region',iregion,idob_sor(iregion_sor,icp0)
-c     $        ,icp0,ix,xm
-         jpm=1
-         if(xm.lt.0.)jpm=-1
-         ix=ix+jpm
-         icp1=int(cij(1+(ix-1)*icinc))
-         if(icp1.eq.0 .or. idob_sor(iregion_sor,icp1).ne.iregion)then
-            ix=-ix
-            uprime=0.
-            return
-         endif
-         write(*,*)'Region Adjusted ix',ix,jpm,xm,iregion
-         xm=xm-jpm
-         icp0=icp1
-      endif
-c Distance forward and backward along idf-dimension to adjacent
-      dx1=xn(ix+ioff+1)-xn(ix+ioff)
-      dx0=xn(ix+ioff)-xn(ix+ioff-1)
-
-c Values of u at the points to be interpolated.
-      u0=u(1+(ix-1)*iuinc)
-      up=u(1+ix    *iuinc)
-      um=u(1+(ix-2)*iuinc)
-c Do interpolation.
-      uprime=gradinterp(um,u0,up,idf,icp0,xm,dx0,dx1)
-
-      end

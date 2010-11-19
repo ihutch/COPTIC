@@ -127,6 +127,8 @@ c on the other side of one of them that is in the region, from which we
 c should extrapolate. We can use gradlocalregion for that (I think) by
 c adjusting the xfidf value and the base.
 c            if(.false.)then
+            weights(ii)=0.
+            f(ii)=0.
             if(xfidf.ge.0.)then
                icptm=cij(1+ic1*(iinc-iuinc(idf)))
                icptp=cij(1+ic1*(iinc+2*iuinc(idf)))
@@ -139,19 +141,28 @@ c xf positive, node0 (relative to 1) in region, look at node 0.
      $                 ,xm)
                   if(ix.ne.99)then
                      iw=iw+1
-                     weights(ii)=(1.-xfidf)
+                     weights(ii)=weights(ii)+(1.-xfidf)
 c                     write(*,*)ii,xfidf,' weights=',weights(ii)
                   endif
-               elseif(icptp.ne.0.and.idob_sor(iregion_sor,icptp)
+c The alternative is to use only the first if it works by uncommenting
+c the following line and commenting the two after it.
+c               elseif(icptp.ne.0.and.idob_sor(iregion_sor,icptp)
+               endif
+               if(icptp.ne.0.and.idob_sor(iregion_sor,icptp)
      $              .eq.iregion)then
 c xf positive, node3 (relative to 1) in region, look at node 3.
                   call gradlocalregion(cij(1+ic1*(iinc+2*iuinc(idf))),
      $                 u(1+iinc+2*iuinc(idf)) ,idf,ic1*iuinc(idf)
-     $                 ,iuinc(idf),xn(ixn0+2) ,xfidf-2,f(ii),iregion,ix
+     $                 ,iuinc(idf),xn(ixn0+2) ,xfidf-2,fii,iregion,ix
      $                 ,xm)
                   if(ix.ne.99)then
+                     if(f(ii).ne.0.)then
+                        f(ii)=(1.-xfidf)*f(ii)+xfidf*fii
+                     else
+                        f(ii)=fii
+                     endif
                      iw=iw+1
-                     weights(ii)=(xfidf)
+                     weights(ii)=weights(ii)+(xfidf)
 c                     write(*,*)'2nd ',xfidf,' weights=',weights(ii)
                   endif
                endif
@@ -170,16 +181,25 @@ c xf negative, node2 (relative to 1) in region, look at node 2.
                      weights(ii)=(1.+xfidf)
 c                     write(*,*)ii,xfidf,' weights=',weights(ii)
                   endif
-               elseif(icptm.ne.0.and.idob_sor(iregion_sor,icptm)
+c See above for explanation of alternatives.
+c               elseif(icptm.ne.0.and.idob_sor(iregion_sor,icptm)
+               endif
+               if(icptm.ne.0.and.idob_sor(iregion_sor,icptm)
      $              .eq.iregion)then
 c xf negative, node-1 (relative to 1) in region, look at node -1.
                   call gradlocalregion(cij(1+ic1*(iinc-2*iuinc(idf))),
      $                 u(1+iinc-2*iuinc(idf)) ,idf,ic1*iuinc(idf)
-     $                 ,iuinc(idf),xn(ixn0-2) ,xfidf+2,f(ii),iregion,ix
+     $                 ,iuinc(idf),xn(ixn0-2) ,xfidf+2,fii,iregion,ix
      $                 ,xm)
                   if(ix.ne.99)then
+                     if(f(ii).ne.0.)then
+c                        write(*,*)'xfidf',xfidf
+                        f(ii)=(1.+xfidf)*f(ii)-xfidf*fii
+                     else
+                        f(ii)=fii
+                     endif
                      iw=iw+1
-                     weights(ii)=-xfidf
+                     weights(ii)=weights(ii)-xfidf
 c                     write(*,*)ii,xfidf,' weights=',weights(ii)
                   endif
                endif
@@ -199,6 +219,10 @@ c               weights(ii)=1.
             iflags(ii)=1
             weights(ii)=1.
             igood=igood+1
+c Case corresponding to extrapolation (not over extrapolation)
+c            if((xm-xfidf).ne.0)then
+c               weights(ii)=1.
+c            endif
          endif            
 
 c Debugging code:

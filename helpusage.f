@@ -1,7 +1,10 @@
-      subroutine helpusage()
+c This doesn't really work because all the defaults are not set
+c within the subroutines.
+
+      subroutine helpusage1()
  301  format(a,i5,a,i5)
  302  format(a,f8.3)
-      write(*,301)'Usage: ccpic [switches]'
+      write(*,301)'Usage: coptic [switches]'
       write(*,301)'Parameter switches.'
      $     //' Leave no gap before value. Defaults indicated [ddd'
       write(*,301)' -ni   set No of particles/node; zero => unset.    ['
@@ -27,9 +30,13 @@
       write(*,301)' -vn   set neutral drift velocity [',vneutral
 c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' -of<filename>  set name of object data file.'
-     $     //'   [ccpicgeom.dat'
+     $     //'   [copticgeom.dat'
       write(*,301)
      $     ' -fs[path]  Attempt to restart from state saved [in path].'
+      end
+c**********************************************************************
+      subroutine helpusage2()
+ 301  format(a,i5,a,i5)
       write(*,301)'Debugging switches for testing'
       write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
@@ -51,4 +58,8 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' -ho     Print geomobj file format description'
       call exit(0)
       end
-
+c*********************************************************************
+      subroutine helpusage()
+      call helpusage1
+      call helpusage2
+      end

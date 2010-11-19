@@ -35,7 +35,6 @@ c My mpi id
       include 'ran1com.f'
       character*(100) charout
 
-      name=' '
       call nameconstruct(name)
       call nameappendint(name,'.',myid,3)
 c      write(*,*)name
@@ -196,7 +195,6 @@ c******************************************************************
       character*(*) name,extension
       integer ifull(3),iuds(3),ied
       real u(ifull(1),ifull(2),ifull(3))
-      name=' '
       call nameconstruct(name)
       i=nbcat(name,extension)
       call array3write(name,ifull,iuds,ied,u)
@@ -208,6 +206,7 @@ c******************************************************************
       include 'meshcom.f'
 c Construct a filename that contains many parameters
 c Using the routines in strings_names.f
+      name=' '
       call nameappendexp(name,'T',Ti,1)
       call nameappendint(name,'v',nint(100*vd),3)
 c      call nameappendint(name,'P',ifix(abs(phip)),2)

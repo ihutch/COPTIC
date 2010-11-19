@@ -97,7 +97,7 @@ c            write(*,*)'ild,ip(ild)',ild,ip(ild)
      $           *(rp(inm)/debyelen)
             darray(inm)=abs(rp(inm)*(1.+rp(inm)/debyelen)*phis/debyelen)
 
-            write(*,*)'inm,rp,pp',inm,rp(inm),pp(inm)
+            write(*,*)'inm,rp,pp,phis',inm,rp(inm),pp(inm),phis
             call winset(.true.)
             call pfset(3)
             if(inm.eq.1)then
@@ -130,6 +130,7 @@ c               call labeline(xline,philine,iuds(ild),string,iwd)
             string(lentrim(string):)='@'
             call fwrite(rp(inm)/debyelen,iwd,2,
      $           string(lentrim(string)+1:))
+            string(lentrim(string):)='!Al!@'
             if(rp(inm)/debyelen.ge.0.01)
      $           call legendline(.5,(.01+inm*.05),0,
      $           string(1:lentrim(string)))
@@ -371,6 +372,8 @@ c     $     //' [ccpicgeom.dat'
       write(*,301)' -y<min>,<max>   -x<min>,<max>  set plot ranges'
       write(*,301)' -o<figfile> overplot traces using xfig2trace.'
       write(*,302)' -r<r> set radius [',rread
+      write(*,302)' -p<p> set phiparticle scaling factor [',phiread
+      write(*,*)'Using <r>=1/<p> is appropriate for point charges'
       write(*,301)' -v sort/mark by vd, not radius.'
       write(*,301)' -h -?   Print usage.'
       call exit(0)

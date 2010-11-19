@@ -25,10 +25,12 @@ COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I.
 ##COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -g -I.
 NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
+HEADERS=subgriddecl.f
 ##########################################################################
 TARGETS=partexamine denexamine phiexamine diagexamine fluxexamine philineread phioverlay
 
-% : %.f  makefile $(ACCISLIB) ../libcoptic.a
+% : %.f  makefile $(ACCISLIB) ../libcoptic.a $(HEADERS)
+	make -C ../ libcoptic.a
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f ../libcoptic.a $(LIBRARIES)
 
 all: $(TARGETS)
@@ -44,8 +46,8 @@ all: $(TARGETS)
 %.o : %.c makefile
 	cc -c $(PROFILING) $*.c
 
-../libcoptic.a : 
-	make -C ../ libcoptic.a
+#../libcoptic.a : 
+#	make -C ../ libcoptic.a
 
 ########################################################
 $(ACCISLIB) : ../accis/*.f ../accis/*.c ../accis/*.h

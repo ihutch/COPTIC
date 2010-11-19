@@ -1,12 +1,8 @@
-      parameter (ndiag=200,mdims=3)
-      real xr(3*mdims)
-      real fv(ndiag,mdims),cumfv(0:ndiag,mdims)
-      real px(ndiag,mdims)
-      real vdiag(ndiag,mdims)
-      real xdiag(ndiag,mdims)
-      parameter (nsbins=32)
-      integer ibinmap(ndiag,mdims)
-      real vsbin(nsbins,mdims),csbin(nsbins,mdims),fsv(nsbins,mdims)
-      real vhbin(0:nsbins,mdims)
-      common /cartdiag/fv,px,vdiag,xdiag,cumfv,ibinmap,vsbin,csbin,fsv
-     $     ,vhbin
+c The following makes this dependent on having meshcom loaded already.
+      integer nptdiag,mdims
+      parameter (nptdiag=400,mdims=ndims_mesh)
+      real fv(nptdiag,mdims),cumfv(0:nptdiag,mdims)
+      real px(nptdiag,mdims)
+      real vdiag(nptdiag,mdims)
+      real xdiag(nptdiag,mdims)
+      common /cartdiag/fv,px,vdiag,xdiag,cumfv

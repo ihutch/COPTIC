@@ -5228,7 +5228,7 @@ interpolate it from further away. When we do this, its accuracy is
 substantially reduced compared with the accuracy of legs that are all
 in the region. So the weight of a leg that is extrapolated is reduced
 and the box interpolation is modified (actually simplified) to account
-for a continuous weight rather than a discontinous flag indicating
+for a continuous weight rather than a discontinuous flag indicating
 absence. 
 
 For lattice legs that have both points out of region, call this
@@ -5248,7 +5248,7 @@ in.
 However, there remains a big error in Ez when in the z-constant plane, at
 oblique angles. It is associated with boxes that have a single missing
 node. It abruptly reverses as z varies across the midplane. This must be
-arising because of unidirectional overextrapolation whose direction reverses
+arising because of unidirectional extrapolation whose direction reverses
 as we go from one half of the box to the other. What we need for this is
 to have weighted bi-directional extrapolation to ensure continuity when
 it is possible to overextrapolate from either direction. 
@@ -5337,3 +5337,193 @@ place it is used.
 Get orbit3plot out of phisoluplot and make its own file.
 Clean out the includes of plascom and partcom from the solobjects.
 Then the only includes are meshcom, objcom, 3dcom, bbdydecl, accis/world3.h
+It's pretty much impossible to purge out the accis/world3.h reference from
+slicesect. 
+
+14 Oct 10 Thinking more about improving field extrapolation. If just
+one point is absent from region, it would in some cases be better to
+extrapolate based on both directions. Then when we reach the point
+itself, we would balance out errors, rather than them making an
+instantaneous transition from one to the other direction of
+extrapolation. There's a puzzle about a situation where the object
+simply is only one point thick. In that case one probably should NOT
+extrapolate from the other side. In fact the field might be totally
+discontinuous from one side to the other. Therefore any improvement
+obtained by smoothing is inappropriate except when the region itself
+continues from one side of the point to the other. I.e. when there's
+an unintercepted leg to the region somewhere from the point.
+
+The switch in this case is done within gradlocalregion. So there's a bit
+of a puzzle with how to set weights if one wants to. But in any case it
+is not really obvious that there is much gain to be had in further 
+refinement of the extrapolation. 
+ 
+Ran a series of cases with different resolution. 
+
+N	16	32		64		128
+Er	1.71	0.80		.167		.081
+Et	1.86	1.74		.337		.100
+Pm	1.01	.296		.056		.016
+Ey	1.90	0.82		.342		.076
+SDEy	0.33	0.11		.030		.008
+
+The Ey error really needs to be explored over the whole volume. When it is,
+the maximum converges rather more slowly. 128 max is about 0.25. But probably
+64 is also larger. It might be that the maximum error is only linear. But the
+SD is quadratic. 
+
+15 Oct 10
+
+Implemented the integration/search over 3-D in ereplot to find the worst
+error and plot at that level. 
+
+Implemented over-extrapolation from both directions being counted when
+possible. That occurs when there are just two points outside the region.
+This may be less dangerous than the case where there is just one. But maybe
+not. Still this is easy to reverse if necessary. It produces roughly a
+20% reduction in the maximum error, so arguably not a big win.
+
+Values with this new implementation and searching over the volume:
+
+N   	  16  	  24     32       48       64 	       128
+Ey	  1.67	  1.57   0.91     0.68     0.50	       0.223
+SDEy	  0.201	  0.17   0.089    0.060    0.022       0.007
+Nodal	  0.200	  0.04   0.031    0.014    0.008       0.002
+
+Plainly the maximum error is (only) linear with mesh size. SD is faster
+than linear, but not obviously quadratic (till convergence care is taken). 
+
+This is perhaps disappointing, but I think explicable on the basis of
+the fact that there are places where tangential-field is evaluated using
+no derivative information because of omitting points on the other side
+of the boundary. 
+
+If the boundary has continuous potential, it might be a better approximation
+_not_ to omit the points, but always to be sure that we never take a 
+derivative based upon potential values on either side of the interface.
+This would help only for tangential derivative. It would make things
+worse for normal derivative. 
+
+Another maybe better view might be that when multilinear interpolation
+fails because a point is outside the region, instead of omitting it,
+we should extrapolate from the other side. This ought to have the
+merit of quadratic accuracy, rather than the linear accuracy of the
+above scheme.  The danger is that it might over-reach into other
+regions. But that's probably unlikely. I think that the omission of ML
+points leads to linear convergence only if two (or three) points (in
+3D) are missing, so that no information on a gradient is obtained.
+
+There are issues to do with whether one reaches too far and thus out of the
+domain. Perhaps it is not a problem. 
+
+19 Oct 10
+Plan for validation. Get a UROP student who will then run both coptic and
+sceptic for equivalent cases. 
+
+27 Oct 10
+Getting back to the code development. Particle distribution diagnostics.
+
+Note that we track the fractional mesh position of each particle. This
+makes it trivial to assign the particle to a bin that is based upon
+the (potential) mesh. Consequently, if we generalize the partexamine
+data structure to add ndims extra suffixes to it, we will easily be
+able to assign. In fact we can pass the x_part, and that's what we
+should do.  Addressing might be a bit tricky in general
+dimensions. There's another issue that although the total number of
+assignment memory slots is less than the particle data (11 reals times
+4M) when the mesh is small, it may not be if the mesh is big. I really
+need a transparent way to either include storage for the distribution
+on the mesh or not.  Or a way to reduce the storage demand by
+concatenating cells if desired. This might be done by defining a
+concatenation number which is the number of cells (in each direction)
+that are counted as one for the purposes of fv-storage. If this is 2,
+then there are half as many in each direction. Which cuts the storage
+down to 1/8. For bigger numbers there is trickiness in accounting for
+unequal numbers concatenated. We could choose to prevent that in the
+storage assignment, and perhaps in the actually array assignment at
+run time. In fact, though, it may not matter if the concatenation is
+unequal, provided we account for it in normalizations etc. But the
+idea is that if this number is equal to the whole mesh array, this
+reduces the accumulation to the whole domain.
+
+5 Nov 10
+Implemented a spatially resolved accumulation in partexamine. The spatial
+boxes are based on the x-mesh full structure divided by isubdiv. 
+A problem arises that partexamine does not know the mesh spacing structure
+because it is not stored in the particle file. Similarly it is hard to
+make sense of the numbers in cell because their volume is different, 
+and particle file does not know the volume. These would not be so
+problematic for coptic itself, since it would know that information. 
+
+Mostly the reason for these issues is the use of the fractional mesh 
+information in x_part for position registration. If one had a totally
+different, perhaps uniform, mesh for the distribution, then this problem
+would not arise. So one should probably reconsider the idea of using 
+the x_part fraction. Once the spatial boxes are combined, it is far from
+obvious that it is a good idea to base them on the phi-mesh. 
+
+Suppose instead that we use the xlimits structure to define the total
+spatial domain, and simply divide it into equal sized boxes. It will be
+quite straightforward to assign position to bin, and I imagine not very
+much computational cost. 
+
+Changed to this approach. It is much easier to understand and implement.
+It works sensibly in partexamine. 
+
+15 Nov 10
+
+Moved most of the serious work of particle accumulation to a new file
+coptic/partaccum.f and moved fvgriddecl.f to coptic/. Then recompiled.
+This prepares us for incorporating some of the accumulation into
+coptic itself. For that purpose we need to consider the parallel 
+operation. 
+
+Recall the overall approach: we run the total accumulation first.  It
+puts every particle that is within the xlimits into a uniformly spaced
+set of velocity bins. In so doing, it produces xnewlimit.  Then
+bincalc groups those velocity bins by pointing each one to a specific
+sub-bin. With those pointers determined, it is then cheap to calculate
+the velocity sub-bin via the uniform bins and the pointer array.  The
+routine fvxinit initializes. Then the subsequent call(s) to subaccum
+accumulates particles to the spatially resolved sub-bins. Of these
+processes, the bin and newlimits etc need to be universal, otherwise
+there is no way to reduce the data back consistently if the bins are
+different between progcessors. xnewlimits could presumably be reduced
+as maxs and mins. But bincalc needs to be done centrally, after
+reduction of the original accumulation. Alternatively, the whole of
+the first global step could be done only on the particles of the
+master node. In that case no reduction would be required, only a
+scatter of the resulting pointer and xnewlimit information. If the bincalc
+were to be based on a very localized xlimit, then there might be a risk that
+the noise level would be excessive if we use only one node's particles. 
+
+Each process can do (sub)accumulation at each timestep. Then presumably 
+a reduce to the master node is required, and the data to be written to
+disk. Presumably the sub-bins would then be reinitialized and the process
+repeated. If this gather-write is not done too often then it ought not to have
+a significant time cost. 
+
+Probably the way to proceed is to package the code in partexamine without the
+plotting (routinely). 
+
+17 Nov 10
+
+Having packaged the update and plotting of the subaccumulation into
+partdistup and pltsubdist, incorporated them into coptic, and got working
+with the appropriate default values. 
+
+The extra cost if both partaccum and vaccum are done each step is
+about 10% of the particle cost. Nearly negligible (but not quite).
+
+Now we need to incorporate into the control structures. We have two
+step lengths -a which is the iavesteps the averaging length and
+diagnostic writing step length and -w which writes out to the (same)
+final files. One presumably would use the diagnostic step length,
+although at present that is examined only if ndiag is non zero. We
+could invert that priority. Ok did the inversion. Now we need a control
+for whether we are doing the particle accumulation. And to incorporate 
+data write-out. 
+
+Incorporated the switch -pd and display and writing.
+Allowed arrow keys to change the cell position in different dimensions.
+Basically this is now working. 

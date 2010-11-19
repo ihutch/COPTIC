@@ -39,7 +39,7 @@ c**********************************************************************
       subroutine geomdocument()
       write(*,*)
       write(*,*)'Format and meaning of the object geometry file'
-     $     ,' default [ ccpicgeom.dat'
+     $     ,' default [ copticgeom.dat'
       write(*,*)'First line number of dimensions: 3'
       write(*,*)'Thereafter ignored comment lines start with #'
       write(*,*)

@@ -55,9 +55,12 @@ c      parameter (ndims=ndims_sor)
 c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
       logical lrestart,lmyidhead,lphiplot,ldenplot
-      integer ipstep,iwstep
+      integer ipstep,iwstep,idistp,idcount
 c Diagnostics
       real zp(na_m,na_m,ndims_mesh)
+      real xlimit(2,ndims_mesh),vlimit(2,ndims_mesh)
+      real xnewlim(2,ndims_mesh)
+
 c Set up the structure vector.
       data iLs/1,Li1,Li2,Li3/
 c Mesh and mpi parameter defaults:
@@ -72,7 +75,7 @@ c Data for plotting etc.
       data lphiplot,ldenplot/.true.,.true./
 c      data thetain,nth/.1,1/
       data lrestart/.false./
-      data ipstep/1/
+      data ipstep/1/idistp/0/idcount/0/
 c-------------------------------------------------------------
 c Consistency checks
       if(ndims.ne.ndims_sor)then
@@ -95,7 +98,7 @@ c Default edge-potential (chi) relaxation rate.
       crelax=1.*Ti/(1.+Ti)
       averein=0.
       dt=.1
-      objfilename='ccpicgeom.dat'
+      objfilename='copticgeom.dat'
       nsteps=5
       debyelen=1.
       Ti=1.
@@ -117,6 +120,16 @@ c Default edge-potential (chi) relaxation rate.
       ifplot=-1
       iwstep=99999
       rcij=0
+      do id=1,ndims_mesh
+c Use very big xlimits by default to include whole domain
+         xlimit(1,id)=-500.
+         xlimit(2,id)=500.
+         xnewlim(1,id)=0.
+         xnewlim(2,id)=0.
+         vlimit(1,id)=5.
+         vlimit(2,id)=-5.
+      enddo
+      cellvol=0.
 c---------------------------------------------------------------------
 c This necessary here so one knows early the mpi structure.
 c Otherwise could have been hidden in sormpi and pass back numprocs.
@@ -188,6 +201,10 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
          if(argument(1:2).eq.'-t')read(argument(3:),*,err=201)Ti
          if(argument(1:2).eq.'-w')read(argument(3:),*,err=201)iwstep
+         if(argument(1:3).eq.'-pd')then
+            idistp=1
+            read(argument(4:),*,err=240)idistp
+         endif
          if(argument(1:3).eq.'-fs')then
             lrestart=.true.
             read(argument(4:),'(a)',err=201)restartpath
@@ -205,6 +222,7 @@ c            write(*,*)'||||||||||||||extfield',extfield
          endif
          if(argument(1:2).eq.'-h')goto 203
          if(argument(1:2).eq.'-?')goto 203
+ 240     continue
       enddo
       goto 202
 c------------------------------------------------------------
@@ -213,7 +231,62 @@ c Help text
       if(lmyidhead)write(*,*)'=====Error reading command line argument '
      $     ,argument(:20)
  203  continue
-      if(lmyidhead)call helpusage()
+      if(lmyidhead)then
+c         call helpusage()
+ 301  format(a,i5,a,i5)
+ 302  format(a,f8.3)
+      write(*,301)'Usage: coptic [switches]'
+      write(*,301)'Parameter switches.'
+     $     //' Leave no gap before value. Defaults indicated [ddd'
+      write(*,301)' -ni   set No of particles/node; zero => unset.    ['
+     $     ,n_part
+      write(*,301)' -rn   set reinjection number at each step.        ['
+     $     ,ninjcomp
+      write(*,302)' -ri   set rhoinfinity/node => reinjection number. ['
+     $     ,ripernode
+      write(*,302)' -rx   set Edge-potl relax rate: 0=>off, 1=>immed. ['
+     $     ,crelax
+      write(*,302)' -dt   set Timestep.              [',dt,
+     $     ' -da   set Initial dt accel-factor[',bdt
+      write(*,302)' -ds   set subcycle fraction.     [',subcycle
+      write(*,301)' -s    set No of steps.           [',nsteps
+      write(*,302)' -v    set Drift velocity.        [',vd
+      write(*,302)' -t    set Ion Temperature.       [',Ti
+      write(*,302)' -l    set Debye Length.          [',debyelen
+      write(*,301)' -a    set averaging steps.       [',iavesteps
+     $     ,'     Also period of diagnostic writes.'
+      write(*,301)' -w    set write-step period.     [',iwstep
+      write(*,301)' -pd   set distribution diags     [',idistp
+     $     ,'     Bits:1 write, 2 plot.'
+      write(*,301)' -m    set No of diag-moments(7). [',ndiags
+      write(*,301)' -ct   set collision time.        [',colntime
+      write(*,301)' -vn   set neutral drift velocity [',vneutral
+c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
+      write(*,301)' -of<filename>  set name of object data file.'
+     $     //'   [copticgeom.dat'
+      write(*,301)
+     $     ' -fs[path]  Attempt to restart from state saved [in path].'
+      write(*,301)'Debugging switches for testing'
+      write(*,301)' -gt   Plot regions and solution tests.'
+      write(*,301)' -gi   Plot injection accumulated diagnostics.'
+      write(*,301)' -gs[] Plot slices of solution potential, density. '
+     $     //'[At step n]. [',ipstep
+      write(*,301)' -gd -gp Turn off slicing of density, potential. '
+      write(*,301)' -gf   set quantity plotted for flux evolution and'//
+     $     ' final distribution. [',ifplot
+      write(*,301)' -gc   set wireframe [& stencils(-)] mask.'//
+     $     ' objects<->bits. [',iobpl
+      write(*,301)' -gr   set wireframe override plot scale'//
+     $     ' for -gc plot.  [',rcij
+      write(*,301)' -go   set No of orbits'
+     $     //'(to plot on objects set by -gc). [',norbits
+      write(*,301)' -at   set test angle.'
+     $     //' -an   set No of angles. '
+      write(*,301)' -ck   set checking timestep No. [',ickst
+      write(*,301)' -h -?   Print usage.'
+      write(*,301)' -ho     Print geomobj file format description'
+      call exit(0)
+      endif
  202  continue
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
@@ -475,8 +548,8 @@ c Accumulate running q and u averages:
          call average3d(u,uave,ifull,iuds,istepave)
 c Every iavesteps, calculate the box average of the moments, and write it
 c out, if we are doing diagnostics.
-         if(ndiags.gt.0)then
-            if(mod(j,iavesteps).eq.0)then
+         if(mod(j,iavesteps).eq.0)then
+            if(ndiags.gt.0)then
 c Reduce the data
                call diagreduce(diagsum,ndims,ifull,iuds,iLs,ndiags)
 c Do any other processing? Here or later?
@@ -494,7 +567,34 @@ c Now reinit diagsum
      $                 ,0.)
                enddo
             endif
+            if(idistp.ne.0)then
+c Particle distribution diagnostics
+               if(idcount.ne.0)then
+c Not for the first time, print or plot.
+c Reduce the data from nodes.
+                  if(lmyidhead)then 
+                     if(2*(idistp/2)-4*(idistp/4).ne.0)
+     $                    call pltsubdist(5,9,9,vlim it,xnewlim,cellvol)
+                     call nameconstruct(diagfilename)
+                     write(diagfilename(lentrim(diagfilename):)
+     $                    ,'(''.pex'',i4.4)')j
+                     if(idistp-2*(idistp/2).ne.0)
+     $                    call distwrite(xlimit,vlimit,xnewlim,
+     $                    diagfilename,cellvol)
+                  endif
+c And reinitialize the accumulation
+                  call fvxinit(xnewlim,cellvol)
+c                  write(*,*)xlimit,vlimit
+                  call partacinit(xlimit,vlimit)
+               endif
+               idcount=idcount+1
+            endif
          endif
+c Particle distribution diagnostics.
+c The serial cost for this call with 1M particles is about 1s in 17s.
+c Or less than 2s if both partaccum and vaccum are called. Thus the
+c total cost is roughly 10% of particle costs.
+         if(idcount.gt.0)call partdistup(xlimit,vlimit,xnewlim,cellvol)
 
          if(mod(nf_step,iwstep).eq.0)call datawrite(myid ,partfilename
      $        ,phifilename,ifull,iuds,u,uave,qave)
