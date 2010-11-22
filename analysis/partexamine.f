@@ -82,8 +82,7 @@ c Possible multiple files.
          call partdistup(xlimit,vlimit,xnewlim,cellvol,0)
 c If we wish to accumulate to the uniform mesh for other than the first
 c occasion (when cellvol is zero) we need to do:
-c         call partsaccum(npdim,x_part,if_part,ioc_part,naccum,xlimit
-c     $        ,vlimit,xnewlim)
+c         call partsaccum
 
       enddo
  11   continue
@@ -91,12 +90,12 @@ c     $        ,vlimit,xnewlim)
       if(nfmax.eq.-1)then
          call distread(xlimit,vlimit,xnewlim,name,cellvol)
 c Calculate the binned data.
-         naccum=0
+         nfvaccum=0
          do i=1,nptdiag
-            naccum=naccum+px(i,1)
+            nfvaccum=nfvaccum+px(i,1)
          enddo
-         write(*,*)'naccum',naccum
-         call bincalc(naccum)
+         write(*,*)'nfvaccum',nfvaccum
+         call bincalc()
       else
          name(lentrim(name)-2:lentrim(name))='pex'
          call distwrite(xlimit,vlimit,xnewlim,name,cellvol)
