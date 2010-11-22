@@ -19,7 +19,7 @@ c Velocity limits
       character*1 axnames(3)
       data axnames/'x','y','z'/ 
 
-      write(*,*)'na_i',na_i
+c      write(*,*)'na_i',na_i
       write(*,*)'nsub_i,nsub_j,nsub_k',nsub_i,nsub_j,nsub_k
       write(*,*)'nptdiag,nsbins',nptdiag,nsbins
       if(nptdiag.lt.nsbins)then
@@ -94,8 +94,9 @@ c Calculate the binned data.
          do i=1,nptdiag
             nfvaccum=nfvaccum+px(i,1)
          enddo
-         write(*,*)'nfvaccum',nfvaccum
-         call bincalc()
+c         write(*,*)'nfvaccum,cellvol',nfvaccum,cellvol
+c Don't call bincalc if we read data back.         
+c         call bincalc()
       else
          name(lentrim(name)-2:lentrim(name))='pex'
          call distwrite(xlimit,vlimit,xnewlim,name,cellvol)
@@ -162,9 +163,9 @@ c            write(25,'(a,i1,a)')'legend: f(v!d',id,'!d)'
       endif
 
 c Plot the subdistributions at a particular cell.
-      icell=3
-      jcell=4
-      kcell=2
+      icell=nsub_i/2+1
+      jcell=nsub_j/2+1
+      kcell=nsub_k/2+1
       call pltsubdist(icell,jcell,kcell,vlimit,xnewlim,cellvol)
 
       end

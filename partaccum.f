@@ -426,6 +426,9 @@ c**********************************************************************
      $     isfull(2).ne.nsub_j .or. isfull(3).ne.nsub_k) goto 103
       read(25)(((fvx(i,j,k),i=1,nsbins),j=1,mdims),k=1,nsub_tot)
       read(25)(denfvx(k),k=1,nsub_tot)
+      read(25)((vsbin(i,j),csbin(i,j),fsv(i,j),i=1,nsbins),
+     $     (vhbin(i,j),i=0,nsbins),j=1,mdims)
+      read(25)((ibinmap(i,j),i=1,nptdiag),j=1,mdims)
       close(25)
 
       return
@@ -458,6 +461,9 @@ c**********************************************************************
       write(25)nsbins,(isfull(i),i=1,mdims),cellvol
       write(25)(((fvx(i,j,k),i=1,nsbins),j=1,mdims),k=1,nsub_tot)
       write(25)(denfvx(k),k=1,nsub_tot)
+      write(25)((vsbin(i,j),csbin(i,j),fsv(i,j),i=1,nsbins),
+     $     (vhbin(i,j),i=0,nsbins),j=1,mdims)
+      write(25)((ibinmap(i,j),i=1,nptdiag),j=1,mdims)
       close(25)
 
       return

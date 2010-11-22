@@ -13,14 +13,14 @@ endif
 # The reinjection choice:
 #######################
 # This does not work with vaccheck because of outer boundary alteration.
-REINJECT=orbitinjnew.o extint.o
-GEOMFILE=geomsphere.dat
+#REINJECT=orbitinjnew.o extint.o
+#GEOMFILE=geomsphere.dat
 ##################
 #REINJECT=reinject.o
 #GEOMFILE=geomsphere.dat
 ###################
-#REINJECT=cartreinject.o
-#GEOMFILE=geomcubic.dat
+REINJECT=cartreinject.o
+GEOMFILE=geomcubic.dat
 #GEOMFILE=geomz200x25.dat
 ##########################################################################
 # An option setting might override default compiler.

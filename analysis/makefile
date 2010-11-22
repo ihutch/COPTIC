@@ -25,7 +25,7 @@ COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I.
 ##COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -g -I.
 NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
-HEADERS=
+HEADERS=../ptaccom.f
 ##########################################################################
 TARGETS=partexamine denexamine phiexamine diagexamine fluxexamine philineread phioverlay
 

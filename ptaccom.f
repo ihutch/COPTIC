@@ -14,7 +14,7 @@ c diagnostics are to be accumulated.
 
 c In this section there is an assumption that we are in 3 dimensions.
       integer nsub_i,nsub_j,nsub_k
-      parameter (nsub_i=10,nsub_j=10,nsub_k=10)
+      parameter (nsub_i=2,nsub_j=2,nsub_k=3)
       integer Lsi,Lsj,nsub_tot
       parameter (Lsi=nsub_i,Lsj=Lsi*nsub_j,nsub_tot=Lsj*nsub_k)
       integer isfull(mdims)

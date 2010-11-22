@@ -5546,3 +5546,9 @@ What to do next:
      Benchmarking with sceptic (student).
      Self force tests(?)
      Space and moons.
+
+22 Nov 10
+
+Discovered that there's a problem with the written out data from the particle
+diagnostics. It seems to arise because I've incorrectly assumed that the
+velocity bins for the subaccum can be recalculated from the other data. 
