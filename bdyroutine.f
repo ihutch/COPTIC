@@ -47,7 +47,8 @@ c Large domain. Use Mach boundary condition on slope only.
 c Make Face 3 phi=0.
 c      islp=8
 c Mach boundary condition for drift vd.
-         slpD=vd
+         slpD=min(vd,1.)
+c         slpD=vd
          call mditerate(bdymach,ndims,ifull,iuds,ipoint,u)
       endif
       end

@@ -122,8 +122,8 @@ c the region information.
             if(.not.abs(field(idf)).lt.fieldtoolarge)then
                write(*,*)'Field corruption(?)',i,idf,iregion,field
      $              ,(x_part(kk,i),kk=1,3*ndims)
-     $              ,linregion(ibool_part,ndims,x_part(1,i))
-c               stop
+     $              ,linregion(ibool_part,ndims,x_part(1,i)),iLs
+               stop
                call partlocate(i,ixp,xfrac,inewregion,linmesh)
                write(*,*)'inewregion,linmesh',inewregion,linmesh
             endif

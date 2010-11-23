@@ -5552,3 +5552,38 @@ What to do next:
 Discovered that there's a problem with the written out data from the particle
 diagnostics. It seems to arise because I've incorrectly assumed that the
 velocity bins for the subaccum can be recalculated from the other data. 
+
+Found a bug giving Field corruptions. It appears to arise at the outer
+boundary of the cuboidal region. It comes from one of the new getfield
+calls that is invoked when there are missing interpolation
+points. (Which is presumably why it is a new bug.) Tracing it through
+various diagnostic writes is tricky because of the dereferenced origin
+and the multidimensional aspects. But my best guess is that this is 
+arising because of the way that the extra getfields reach beyond the
+immediate vicinty (at least along the gradient direction). 
+
+Thus my theory of the problem is that when adjacent to (e.g.) boundary
+of 1 (x) when getting gradient component 3 (z), the box interpolation
+fails to find acceptable gradient on the outermost-x (boundary) and
+starts to look further along it. In doing so, if it is near/at the
+z-boundary too, i.e. at the edge, then it may reach outside the iused
+limit in the z-direction (gradient direction). It will try to check
+the cij region there, but that won't have been set, so it is not
+obvious that it will say, don't use this. Also, it is possible that
+this might reach beyond the ifull limits, in which case in will
+violate the bounds of this array as a whole. 
+
+Although I can't quite verify this theory, I can see that I am
+accessing a negative array position for the first corrupt localregion
+detected.  Perhaps I should simply ban the calling of getfield from a
+general origin and do checks about exceeding bounds. That might
+eventually be a handicap if the domain was divided for particles. But
+that's only a remote possibility.  In fact, checking the rest of the
+code, the only calls to getfield that currently exist pass the bottom
+of the u-array. There are no local origin calls. Therefore extended
+the tests in the extra getlocalcalls to prevent over- (or
+under-)running the array bounds. This prevents the corruption
+errors. So it presumably proves that my diagnosis was correct.
+
+There are still some box recut errors. They probably ought to be 
+understood.

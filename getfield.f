@@ -8,10 +8,14 @@ c given by integer mesh indices plus real fractions of the next mesh node:
 c x(ix)<=x<=x(ix+1), xf=x-x(ix). We allow passing of the whole position
 c x because we do remaindering internally. 
 c
+c It used to be the case that:
 c The arrays cij, u, and xn may be passed with local origins at the base
 c of the box in question. Then we don't have to know ix, only xf for each
 c dimension. This approach defeats "-ffortran-bounds-check"ing, though.
-c Alternatively, if the whole position x is passed, then the base:
+c Now, however it is assumed that the whole array is passed so that one
+c can avoid overrunning the array by using the iuinc values. 
+c 
+c So now: the whole position x is passed, and the base:
 c cij(2*ndims+1), and u(1) arrays, not the local origin, should be passed.
 c
 c In the gradient direction, we associate the point with the nearest
@@ -29,7 +33,7 @@ c overrun.
 c Pointers and potential array with origin at the box corner.
       real cij(*),u(*)
 c Increments (i.e. structure vector) of u, in each dimension.
-      integer iuinc(ndims)
+      integer iuinc(ndims+1)
 c Position array in the direction idf with origin at box corner.
       real xn(*)
 c Direction (dimension) of field component:
@@ -65,7 +69,7 @@ c Calculate offset and remainder the fractions.
          xf(ii)=xff(ii)-ix
          if(ix.gt.1)iux=iux+iuinc(ii)*(ix-1)
       enddo
-
+c Now iux is the index of the box lower origin. 
 c      write(*,*)'iux=',iux
 c Start assuming there is no non-unity weighting.
       iw=0
@@ -84,7 +88,7 @@ c Correct the index in field direction if fraction .gt.0.5:
          iu0=0+iux
          xfidf=xf(idf)
       endif
-
+c Now iu0 is the chosen (closest in field direction) box origin 
 c General-Dimensional version without extrapolation.
       igood=0
 c      iimax=1
@@ -113,16 +117,23 @@ c            iinc=iinc+ipa(ii,ik)*iuinc(idn(ik))
 c Suppose we know there's only 3 dimensions total we could replace with
 c         iinc=iinc+ipa(ii,1)*iuinc(idn(1))+ipa(ii,2)*iuinc(idn(2))
 c Which saves about 25% of the original time this routine. 
+c Now iinc is the index of u including the offset from the chosen origin 
+c to address the multilinear position under consideration. 
 c Pass arrays with local origin.
          call gradlocalregion(
      $        cij(1+ic1*iinc),u(1+iinc)
      $        ,idf,ic1*iuinc(idf),iuinc(idf),xn(ixn0)
      $        ,xfidf,f(ii),iregion,ix,xm)
-         
+c         if(abs(f(ii)).gt.1.e20)write(*,*)'Corrupt gradlocalregion'
+c     $           ,idf,ii,f
+c         do ki=1,4
+c            if(abs(f(ki)).gt.1.e20)write(*,*)'Corrupt f'
+c     $           ,idf,ii,f
+c         enddo
          if(ix.ge.99)then
 c            write(*,*)'Getfield no-value',ii,idf,iinc,xff
 c This gradient request has failed (probably) because the lattice leg 
-c has both end-points outside the region. Quite likely there is a point 
+c has both end-points outside the region. Quite possibly there is a point 
 c on the other side of one of them that is in the region, from which we
 c should extrapolate. We can use gradlocalregion for that (I think) by
 c adjusting the xfidf value and the base.
@@ -130,15 +141,20 @@ c            if(.false.)then
             weights(ii)=0.
             f(ii)=0.
             if(xfidf.ge.0.)then
+               iincm=iinc-iuinc(idf)
+               iincp=iinc+2*iuinc(idf)
                icptm=cij(1+ic1*(iinc-iuinc(idf)))
                icptp=cij(1+ic1*(iinc+2*iuinc(idf)))
-               if((icptm.ne.0).and.(idob_sor(iregion_sor,icptm)
-     $              .eq.iregion))then
+               if((iincm.ge.0).and.(icptm.ne.0).and.
+     $              (idob_sor(iregion_sor,icptm).eq.iregion))then
 c xf positive, node0 (relative to 1) in region, look at node 0.
                   call gradlocalregion(cij(1+ic1*(iinc-iuinc(idf))),
      $                 u(1+iinc-iuinc(idf)) ,idf,ic1*iuinc(idf)
      $                 ,iuinc(idf),xn(ixn0-1) ,xfidf+1,f(ii),iregion,ix
      $                 ,xm)
+c         if(abs(f(ii)).gt.1.e20)write(*,*)'Corrupt gradlocalregion2'
+c     $           ,idf,ii,f
+
                   if(ix.ne.99)then
                      iw=iw+1
                      weights(ii)=weights(ii)+(1.-xfidf)
@@ -148,13 +164,17 @@ c The alternative is to use only the first if it works by uncommenting
 c the following line and commenting the two after it.
 c               elseif(icptp.ne.0.and.idob_sor(iregion_sor,icptp)
                endif
-               if(icptp.ne.0.and.idob_sor(iregion_sor,icptp)
-     $              .eq.iregion)then
+               if(iincp.le.iuinc(ndims+1)
+     $              .and.icptp.ne.0.and.
+     $              idob_sor(iregion_sor,icptp).eq.iregion)then
 c xf positive, node3 (relative to 1) in region, look at node 3.
                   call gradlocalregion(cij(1+ic1*(iinc+2*iuinc(idf))),
      $                 u(1+iinc+2*iuinc(idf)) ,idf,ic1*iuinc(idf)
      $                 ,iuinc(idf),xn(ixn0+2) ,xfidf-2,fii,iregion,ix
      $                 ,xm)
+c         if(abs(fii).gt.1.e20)write(*,*)'Corrupt gradlocalregion3'
+c     $           ,idf,ii,f
+
                   if(ix.ne.99)then
                      if(f(ii).ne.0.)then
                         f(ii)=(1.-xfidf)*f(ii)+xfidf*fii
@@ -167,15 +187,21 @@ c                     write(*,*)'2nd ',xfidf,' weights=',weights(ii)
                   endif
                endif
             else
+               iincm=iinc-2*iuinc(idf)
+               iincp=iinc+iuinc(idf)
                icptm=cij(1+ic1*(iinc-2*iuinc(idf)))
                icptp=cij(1+ic1*(iinc+iuinc(idf)))
-               if((icptp.ne.0).and.(idob_sor(iregion_sor,icptp)
+               if((iincp.le.iuinc(ndims+1))
+     $              .and.(icptp.ne.0).and.(idob_sor(iregion_sor,icptp)
      $              .eq.iregion))then
 c xf negative, node2 (relative to 1) in region, look at node 2.
                   call gradlocalregion(cij(1+ic1*(iinc+iuinc(idf))),
      $                 u(1+iinc+iuinc(idf)) ,idf,ic1*iuinc(idf)
      $                 ,iuinc(idf),xn(ixn0+1) ,xfidf-1,f(ii),iregion,ix
      $                 ,xm)
+c         if(abs(f(ii)).gt.1.e20)write(*,*)'Corrupt gradlocalregion4'
+c     $           ,idf,ii,f
+
                   if(ix.ne.99)then
                      iw=iw+1
                      weights(ii)=(1.+xfidf)
@@ -184,13 +210,20 @@ c                     write(*,*)ii,xfidf,' weights=',weights(ii)
 c See above for explanation of alternatives.
 c               elseif(icptm.ne.0.and.idob_sor(iregion_sor,icptm)
                endif
-               if(icptm.ne.0.and.idob_sor(iregion_sor,icptm)
-     $              .eq.iregion)then
+               if((iincm.ge.0).and.(icptm.ne.0).and.
+     $              (idob_sor(iregion_sor,icptm).eq.iregion))then
 c xf negative, node-1 (relative to 1) in region, look at node -1.
                   call gradlocalregion(cij(1+ic1*(iinc-2*iuinc(idf))),
      $                 u(1+iinc-2*iuinc(idf)) ,idf,ic1*iuinc(idf)
      $                 ,iuinc(idf),xn(ixn0-2) ,xfidf+2,fii,iregion,ix
      $                 ,xm)
+c         if(abs(fii).gt.1.e20)then
+c            write(*,*)'Corrupt gradlocalregion5'
+c     $           ,idf,ii,iinc,xfidf+2,ix,xm,fii
+c            write(*,*)'icptm,icptp,xff',icptm,icptp,xff
+c            write(*,*)iinc-2*iuinc(idf)
+c         endif
+
                   if(ix.ne.99)then
                      if(f(ii).ne.0.)then
 c                        write(*,*)'xfidf',xfidf
@@ -223,7 +256,7 @@ c Case corresponding to extrapolation (not over extrapolation)
 c            if((xm-xfidf).ne.0)then
 c               weights(ii)=1.
 c            endif
-         endif            
+         endif
 
 c Debugging code:
          if(ix.eq.98)then
@@ -232,13 +265,17 @@ c Debugging code:
             write(*,*)(dob_sor(k,cij(1+ic1*iinc)),k=1,18)
      $           ,cij(1+ic1*iinc)
          endif
+c         if(abs(f(ii)).gt.1.e20)write(*,*)'Enddo corrupt',f(ii),ii
       enddo
       
       if(igood.gt.0)then
 c         if(iflags(1).eq.0)write(*,*)'Zero iflags(1) error'
 c Field is minus the potential gradient.
-c         field=-boxinterp(ndims-1,f,iflags,d)
          field=-box2interpnew(f,d,iw,weights)
+c         if(abs(field).gt.1.e20)then
+c            write(*,*)field,'  f=',f,'  d=',d,'  iw=',iw,'  weights='
+c     $           ,weights
+c         endif
       else
          write(*,'(''Getfield No good vertices. Region'',i3'//
      $        ','' Direction'',i2,'' Fracs'',3f8.4)')

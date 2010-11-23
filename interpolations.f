@@ -414,6 +414,7 @@ c xn is the position array for each dimension arranged linearly.
       xm=xf
 c Pointer to object data,
       icp0=int(cij(1))
+      jpm=0
       if(icp0.eq.0)then
 c Short-cut 1: an ordinary point don't call the full routine
 c Distance forward and backward along idf-dimension to adjacent
@@ -493,6 +494,12 @@ c In case this was not set previously
      $           icp0,icd1,fraction,boa,coa
             ix=98
          endif
+      endif
+
+      if(abs(uprime).gt.1.e20)then
+         write(*,*)'Getlocalregion excessive',icp0,jpm,ix,xm,ixiu
+     $        ,iregion
+         write(*,*)    uprime,up,u0,um,iuinc
       endif
 
       end
