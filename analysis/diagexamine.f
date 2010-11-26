@@ -41,7 +41,7 @@ c Normalize.
          do k=1,iuds(3)
             do j=1,iuds(2)
                do i=1,iuds(1)
-                  if(diagsum(i,j,k,1).ne.0)then
+                  if(diagsum(i,j,k,1).gt.5.)then
                      diagsum(i,j,k,id)=diagsum(i,j,k,id)/diagsum(i,j,k
      $                    ,1)
                   else

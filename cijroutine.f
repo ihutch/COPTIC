@@ -197,7 +197,11 @@ c Now ipa is set. Call boxedge, returning the inverse of fractions
 c in fn, and the number of intersections found in npoints.
          idiag=0
 c         if(oi_sor.eq.3276)idiag=5
+c         if(oi_sor.eq.288.or.oi_sor.eq.289)idiag=5
          call boxedge(ndims,ipa,indi,fn,npoints,idiag)
+c         if(idiag.ne.0.and.npoints.ne.0)then
+c            write(*,*)oi_sor,npoints,' fn=',(fn(iw),iw=1,ndims)
+c         endif
 c
          if(npoints.ge.ndims)then
             ftot=0
@@ -257,6 +261,8 @@ c This should never happen. If it does, it's a bug.
                         write(*,*)'Warning: Box Recut ',npoints
      $                       ,i,ipa(i),oi_sor
      $                       ,(indi(kk),kk=1,ndims),(1./fn(i))
+                        write(*,*)'Try changing the grid dimensions a',
+     $                       ' little.'
 c     $                       ,(ipa(kk),kk=1,ndims)
 c     $                       ,f0,f1,ftot
 c     $                       ,(1./fn(kk),kk=1,ndims)

@@ -5562,6 +5562,8 @@ and the multidimensional aspects. But my best guess is that this is
 arising because of the way that the extra getfields reach beyond the
 immediate vicinty (at least along the gradient direction). 
 
+23 Nov 10
+
 Thus my theory of the problem is that when adjacent to (e.g.) boundary
 of 1 (x) when getting gradient component 3 (z), the box interpolation
 fails to find acceptable gradient on the outermost-x (boundary) and
@@ -5586,4 +5588,25 @@ under-)running the array bounds. This prevents the corruption
 errors. So it presumably proves that my diagnosis was correct.
 
 There are still some box recut errors. They probably ought to be 
-understood.
+understood. They go away with very small adjustment of the mesh. 
+So they seem to be a mesh clash. It doesn't seem very rewarding to 
+go chasing after it at the moment. Just tell to adjust the grid.
+
+There's still a bug in pex reading and writing with the fv data.
+
+26 Nov 10 
+
+Working on additional diagnostic plots, especially wrt velocity.
+Cleaned up some of phiexamine.  Found that there are some spurious big
+velocities in the diagnostic files saved from recent runs for
+wakes. These apparent bugs need to be understood if we are going to be
+able to use the diagnostics for velocity plotting. It seems likely
+they arise (at the edge of low-density regions) because of divide by
+(near) zero. Yes this is the problem, because one can look at the 
+unnormalized values and they are fine. So we increase the minimum
+value required for the division in normalization to 5. rather than 0.
+But there's another calibration problem, which is that the value of the
+velocity is too large: 40 instead of 5. This must surely be something
+to do with the number of processors (8 for these runs). Yes there is
+a bug in diagreduce that means the first diag (density) was not 
+reduced. That explains the 8 times larger velocities.

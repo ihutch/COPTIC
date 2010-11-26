@@ -102,7 +102,7 @@ c         write(*,*)'Returned from mpiopcreate',iaddtype
 c We do each diagnostic reduce as a separate call so that we can
 c use variable numbers of diagnostics.
       do k=1,ndiags
-         iporig=1+k*iLs(ndims+1)
+         iporig=1+(k-1)*iLs(ndims+1)
          call MPI_ALLREDUCE(MPI_IN_PLACE,diagsum(iporig),1,iaddtype,
      $     iaddop,MPI_COMM_WORLD,ierr)
       enddo

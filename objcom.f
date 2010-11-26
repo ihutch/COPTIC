@@ -7,7 +7,8 @@ c (2=forward/backward)*(ndims)*(ndata=fraction,B/A,C/A)
 c + diagonal + potential contributors + region-code + inverse pointer
 c + intersection-code
 
-      integer ndims_sor,nobj_sor
+      integer ndims_sor,nobj_sor,ndata_sor,idgs_sor,ibdy_sor,iflag_sor
+      integer iregion_sor,ipoint_sor,iinter_sor,Lobjmax
 c 3D choice needed for sharing common, I think. 
       parameter (ndims_sor=3,ndata_sor=ndims_sor)
 c The total size of the structure member. Last= count of following

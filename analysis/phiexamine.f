@@ -6,11 +6,9 @@
       real thetadist(nr,ntheta),thetaval(ntheta),rval(0:nr)
       real rvalneg(0:nr)
       integer ithetacount(nr,ntheta)
-
-      parameter (nzmax=500)
-      real rzdist(0:nr,nzmax),irzcount(nr,nzmax)
-      real rzmval(nzmax),rzmpos(nzmax),zpos(nzmax)
-      character*1 ppath(0:nr,nzmax)
+      real rzdist(0:nr,na_k),irzcount(nr,na_k)
+      real rzmval(na_k),rzmpos(na_k),zpos(na_k)
+      character*1 ppath(0:nr,na_k)
       character*20 string
 
       real oneoverr(100),huckel(100),ro(100),cl(100)
@@ -182,74 +180,8 @@ c r-z binning and plotting
          y0=(xn(ixnp(2)+1)+xn(ixnp(3)))/2.
          ry=max(abs(xn(ixnp(2)+1)-x0),abs(xn(ixnp(3))-y0))
          rs=sqrt(rx**2+ry**2)
-         nz= ixnp(3+1)-ixnp(3)
-c         write(*,*)x0,rx,y0,ry,rs,nz
-c Set up r-mesh.
-         do j=1,nr
-            do i=1,nz
-               rzdist(j,i)=0.
-               irzcount(j,i)=0
-            enddo
-            rval(j)=(rs)*(j-0.5)/float(nr)
-            rvalneg(j)=-rval(j)
-c            write(*,*)j,rval(j)
-         enddo
 
-c Bin values
-         rmin=1.e10
-         phimax=0.
-         do k=1,iuds(3)
-            z=xn(ixnp(3)+k)
-            do j=1,iuds(2)
-               do i=1,iuds(1)
-                  x=xn(ixnp(1)+i)
-                  y=xn(ixnp(2)+j)
-                  r=sqrt(x**2+y**2)
-                  if(r.lt.rmin)rmin=r
-                  ir=nint(0.5+nr*(r+.00001)/(rs+.00002))
-                  if(ir.le.nr .and. ir.ge.1)then
-                     irzcount(ir,k)=irzcount(ir,k)+1
-                     rzdist(ir,k)=rzdist(ir,k)+u(i,j,k)
-                  endif
-                  if(u(i,j,k).gt.phimax)phimax=u(i,j,k)                  
-               enddo
-            enddo
-         enddo
-
-c         write(*,*)((j,rval(j),irzcount(j,k),j=1,nr),k=1,1)
-         do j=1,nr
-            do i=1,iuds(3)
-               if(irzcount(j,i).ne.0)then
-                  rzdist(j,i)=rzdist(j,i)/irzcount(j,i)
-               endif
-            enddo
-         enddo
-c Fix up zero values if necessary.
-         do j=1,nr
-            do i=1,iuds(3)
-               if(irzcount(j,i).eq.0)then
-                  jp=j+1
-                  if(jp.gt.nr)jp=j
-                  jm=j-1
-                  if(jm.lt.1)jm=1
-                  if(irzcount(jm,i).ne.0)then
-                     rzdist(j,i)=rzdist(jm,i)
-                  elseif(irzcount(jp,i).ne.0)then
-                     rzdist(j,i)=rzdist(jp,i)
-                  else
-                     write(*,*)'Failed setting rzdist',j,i,jm,jp
-     $                    ,' Too coarse a mesh? rmin=',rmin
-c     $                    ,rval(jm),rval(jp)
-                  endif
-               endif
-            enddo
-         enddo
-c Fill in along the axis.
-            rval(0)=0.
-            rvalneg(0)=0.
-         do k=1,iuds(3)
-            rzdist(0,k)=rzdist(1,k)
-         enddo
+         call cyl3bin(nr,rzdist,irzcount,rval,rvalneg,phimax,u)
 
 c Now rzdist(nr,nz) is the rz-distribution of the (average) potential.
 c Contour it.
@@ -301,17 +233,22 @@ c Indicate rectangle limits.
          xl(1)=0.
          xl(2)=0.
          call polyline(xl,yl,2)
-         call fwrite(vd,iwd,2,string)
+c         call fwrite(vd,iwd,2,string)
 c         call jdrwstr(.02,.31,'v!dd!d='//string(1:iwd),1.)
-         call fwrite(debyelen,iwd,1,string)
+c         call fwrite(debyelen,iwd,1,string)
 c         call jdrwstr(.02,.25,'!Al!@!dDe!d='//string(1:iwd),1.)
-         call fwrite(phip,iwd,2,string)
+c         call fwrite(phip,iwd,2,string)
 c         call jdrwstr(.02,.28,'!Af!@!dp!d='//string(1:iwd),1.)
+         write(*,'(''vd='',f7.3,'' debyelen='',f7.3,''  phip='',f7.3)')
+     $        vd,debyelen,phip
          call pltend()
       endif
 
 c Now we want to find the r-position of the peak potential at each
 c z. 
+
+      write(*,*)'Not finding potential peaks, but could do so ...'
+      call exit(1)
 
       iz0=0
       do i=1,iuds(3)
@@ -399,3 +336,89 @@ c Help text
       if(lentrim(partfilename).lt.5)goto 203
       end
 c*****************************************************************
+c Bin rectangular mesh values into radial (cylindrical) 
+c mesh values and average in angle.
+      subroutine cyl3bin(nr,rzdist,irzcount,rval,rvalneg,phimax,up)
+      implicit none
+      integer nr
+      include 'examdecl.f'
+      real rzdist(0:nr,na_k),irzcount(nr,na_k)
+      real rval(0:nr),rvalneg(0:nr)
+      real phimax
+c Passed quantity whose mesh is declared in examdecl. E.g. potential.
+c It is defined for iuds.
+      real up(ifull(1),ifull(2),ifull(3))
+c Local variables:
+      real rmin,x,y,z,r
+      integer i,j,k,ir,nz,jp,jm
+
+c r-z binning and plotting
+         nz= ixnp(3+1)-ixnp(3)
+c Set up r-mesh.
+         do j=1,nr
+            do i=1,nz
+               rzdist(j,i)=0.
+               irzcount(j,i)=0
+            enddo
+            rval(j)=(rs)*(j-0.5)/float(nr)
+            rvalneg(j)=-rval(j)
+c            write(*,*)j,rval(j)
+         enddo
+
+c Bin values
+         rmin=1.e10
+         phimax=0.
+         do k=1,iuds(3)
+            z=xn(ixnp(3)+k)
+            do j=1,iuds(2)
+               do i=1,iuds(1)
+                  x=xn(ixnp(1)+i)
+                  y=xn(ixnp(2)+j)
+                  r=sqrt(x**2+y**2)
+                  if(r.lt.rmin)rmin=r
+                  ir=nint(0.5+nr*(r+.00001)/(rs+.00002))
+                  if(ir.le.nr .and. ir.ge.1)then
+                     irzcount(ir,k)=irzcount(ir,k)+1
+                     rzdist(ir,k)=rzdist(ir,k)+up(i,j,k)
+                  endif
+                  if(up(i,j,k).gt.phimax)phimax=up(i,j,k)                  
+               enddo
+            enddo
+         enddo
+
+c         write(*,*)((j,rval(j),irzcount(j,k),j=1,nr),k=1,1)
+         do j=1,nr
+            do i=1,iuds(3)
+               if(irzcount(j,i).ne.0)then
+                  rzdist(j,i)=rzdist(j,i)/irzcount(j,i)
+               endif
+            enddo
+         enddo
+c Fix up zero values if necessary.
+         do j=1,nr
+            do i=1,iuds(3)
+               if(irzcount(j,i).eq.0)then
+                  jp=j+1
+                  if(jp.gt.nr)jp=j
+                  jm=j-1
+                  if(jm.lt.1)jm=1
+                  if(irzcount(jm,i).ne.0)then
+                     rzdist(j,i)=rzdist(jm,i)
+                  elseif(irzcount(jp,i).ne.0)then
+                     rzdist(j,i)=rzdist(jp,i)
+                  else
+                     write(*,*)'Failed setting rzdist',j,i,jm,jp
+     $                    ,' Too coarse a mesh? rmin=',rmin
+c     $                    ,rval(jm),rval(jp)
+                  endif
+               endif
+            enddo
+         enddo
+c Fill in along the axis.
+            rval(0)=0.
+            rvalneg(0)=0.
+         do k=1,iuds(3)
+            rzdist(0,k)=rzdist(1,k)
+         enddo
+
+      end
