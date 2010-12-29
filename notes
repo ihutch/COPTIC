@@ -5609,4 +5609,149 @@ But there's another calibration problem, which is that the value of the
 velocity is too large: 40 instead of 5. This must surely be something
 to do with the number of processors (8 for these runs). Yes there is
 a bug in diagreduce that means the first diag (density) was not 
-reduced. That explains the 8 times larger velocities.
+reduced. That explains the 8 times larger velocities. Fixed.
+
+27 Nov 10
+
+Implemented arrow overplot on phiexamine radial plot. It does not 
+show too much on the fast wakes, since the arrows mostly point in the z
+direction.
+
+Got puzzled about the fact that density is not zero inside the object.
+Realized that this is because of setting it to exactly cancel the electron
+density in the object. Thus one way to use the density in the object is
+to say this is the electron density at the potential of the object. 
+
+Implemented quasineutral solving for debyelen=0. Seems to work. Needed
+to fix cijroutine to avoid divide by zero. However, this may not have
+really reached a correct simulation because the potential boundary
+condition is a fixed value on the sphere, whereas for a quasineutral
+case, the BC ought to be an equivalent of the Bohm condition at the
+boundary. According to Leonardo, the way to get a correct condition is
+to put the density at the probe edge equal to the flux divided by the
+mean normal velocity. Evidently this will require changes of cij. That
+sounds very tricky. Despite this problem, the result actually does not
+look too bad. How can this be? Well we are actually not using the
+boundary condition on the probe, because that is embedded into the
+cij, and we are not using the cij for potential solving. No difference
+equation is being used. Actually we are using the cij for getting the
+acceleration.  All we are doing is evaluating the density and putting
+the potential equal to its logarithm. For mesh points whose volume is
+set large because they are outside the domain, all that happens is
+that psumtoq sets the rho=faddu(u), and then the quasineutral
+potential is set to be the inverse. So, within rounding errors,
+potential never changes (from zero).  That explains why we are seeing
+zero potential inside the sphere.
+
+We never use the potential from inside the sphere. Instead the cijs are
+used to apply boundary potential. And quadratic interpolation of the normal
+derivative is used. It might be useful to explore the extent that total
+flux depends upon specified potential. It ought to be a weak dependence. 
+
+Actually there are substantially worse problems. The flux is strongly 
+anisotropic in the quasineutral case. It is also when using lambda_d less
+than the spacing, e.g. -l.01. There are massive fluctuations in the 
+potential, maybe up to +-.3Te, for these cases. The noise is very large.
+An estimate of this is: suppose we have 4M particles on a grid 48^3, which
+has about 120k cells. That is about 33 particles per cell. So we would
+expect the fluctuations to be about 6 of 33. So perhaps this is explicable. 
+In itself, the noise hardly explains fixed anisotropy, which is visible. 
+However, perhaps the self forces are strong in these situations with 
+few particles per cell, or maybe there is some other mesh-dependent effect.
+
+
+13 Dec 10
+
+Working on Media type boundary conditions. Developed the interpolation
+and difference formulas.
+
+In cijroutine, whether there is an intersection of a lattice leg is determined
+by potlsect (in 3dobjects.f). This is probably the first place to work on to
+implement such conditions. This is currently implemented for spheres only
+through the routine spheresect. Evidently we need routines that implement
+other objects. 
+
+It might be appropriate to implement a new object type which consists of
+a plane of charge-density. I realize that there is a question as to whether
+objects like this should be implemented through boundary conditions or 
+through the equivalent of PPPM. The point-charge PPPM is really the addition
+of a screened point charge, with a radius of influence specified, over which
+it is screened. In principle one could specify a charge plane by the same
+sort of approach, but one would have to have a way to calculate the analytic
+force quickly.
+
+One might approximate the charge plane in pretty much any way that is
+(1) convenient, and (2) capable of being accurately compensated on the grid.
+But I don't really know how to do that. Perhaps should think about it. 
+
+Analytic solutions in 2-D for a finite uniform charge strip are easily
+calculated. For a strip -a<x<a at y=0, the field at (x,y) is
+
+E_y= \sigma/4\pi\epsilon_0 [arctan(x-a) - arctan(x+a)]
+E_x= \sigma/8\pi\epsilon_0 ln|[(x-a)^2+y^2]/[(x+a)^2+y^2)|
+
+(I'm not sure what the potential is.) This could be screened in some
+arbitrary way with a function that falls to zero some distance from the strip
+and the corresponding screening charge density calculate. 
+
+However, if a finite length in the third dimension (z) is needed, this
+solution does not seem to be available. Another might. Actually the Wolfram
+integrator gives an analytic form for the integrals required. But they look 
+like this:
+
+Integrate[ArcSinh[a/Sqrt[x^2 + 1]], x] ==
+x*ArcSinh[a/Sqrt[1 + x^2]] + (Sqrt[1 + x^2]*Sqrt[(1 + a^2 + x^2)/(1 + x^2)]* (2*a*Log[2*(x + Sqrt[1 + a^2 + x^2])] + I*(Log[(4*(I + I*a^2 + x + I*a*Sqrt[1 + a^2 + x^2]))/(a*(I + x))] - Log[(4*I + (4*I)*a^2 - 4*x + (4*I)*a* Sqrt[1 + a^2 + x^2])/(I*a - a*x)])))/ (2*Sqrt[1 + a^2 + x^2])
+which is rather overwhelming.
+
+In any case, although we can come up with solutions for uniform plane charge
+sheets, that does not help with the ultimate aim of implementing surfaces of
+more complex shape with possibly non-uniform charge density on them. E.g.
+a sphere with non-uniform charge-density.
+
+Therefore while an analytic test might be useful, in the longer term, I think
+my boundary approach is more likely to yield a profitable way forward.
+By the way, it might serve my purposes to implement dielectric charged
+sphere first. 
+
+27 Dec 10
+
+Implemented general parallelopiped pllelosect and inside_geom.
+
+Geometry seems now to be working. The wireframe rendering is rather lumpy
+because it is not optimized to draw the extrema connections. The connections
+that are drawn, between intersections common to a node or on adjacent
+parallel lattice legs, do not include lines between diagonally connected
+cells that might be the best extrema. In particular if diagonally
+adjacent nodes have just one intersection, in the same direction, then
+it is likely that the whole surface is below those two intersections, 
+and thus that they probably ought to be connected. It seems too much trouble
+to try to fix this, since it does not actually affect the solution. 
+It appears to be solving the equations in a sensible fashion and putting
+the potential to the correct value on the object surface. 
+
+Played around with thin slabs. They seem to work fine and the solution 
+by eye looks plausible. If they are very thin then periodic gaps appear
+for oblique slabs. These appear to be permeable, so I think it is behaving
+like a wire (mesh) screen.
+
+I think it would be possible to use this object to introduce a plane
+by making the plane a surface of a big object whose other faces were
+outside the computational domain. This then divides the domain into two.
+I don't know off hand what the boundary condition in the Neumann case
+is on the inside of the object. I don't actually think it is automatically
+the continuity condition. Perhaps I haven't specified this quite
+completely yet. Although I think I did for the sphere within sphere test.
+Yes potlsect returns B=negative for the "inactive side". And in that
+case continuity only is (normally) used. This isn't really implemented
+for anything except spheres. Actually no derivative scheme is.
+
+Implemented coordinate-aligned cuboid. Seems to work.
+
+28 Dec 10
+
+Implemented coordinate-aligned cylinder. Works.
+Fix cijplot to be able to rotate the stick only plot. 
+Now we have all the originally conceived objects working with 
+Dirichlet boundary conditions. 
+
+Needed: Neumann/Robin for other than spheres. Media/Surface-Charge.  

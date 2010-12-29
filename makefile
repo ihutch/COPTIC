@@ -48,7 +48,7 @@ UTILITIES=udisplay.o
 SOLOBJECTS= cijroutine.o mditerate.o mpibbdy.o sormpi.o sorrelaxgen.o meshconstruct.o getfield.o interpolations.o cijplot.o phisoluplot.o slicesect.o 3dobjects.o bdysetsol.o faddu.o
 REGULAROBJECTS= $(FIXEDOBJECTS) ${REINJECT}
 OBJECTS=$(SPECIALOBJECTS) $(REGULAROBJECTS)
-HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f griddecl.f ptchcom.f mditcom.f
+HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f griddecl.f ptchcom.f mditcom.f ppcom.f
 SOLHEADERS= bbdydecl.f meshcom.f objcom.f 3dcom.f accis/world3.h 
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 ##########################################################################

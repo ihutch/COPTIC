@@ -47,7 +47,7 @@ c Point charge common data
       include 'ptchcom.f'
 c      integer ndims
 c      parameter (ndims=ndims_sor)
-      external bdyset,faddu,cijroutine,cijedge,psumtoq
+      external bdyset,faddu,cijroutine,cijedge,psumtoq,quasineutral
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
       character*100 diagfilename,restartpath
@@ -323,7 +323,7 @@ c Initialize cij:
       ipoint=iLs(1)+iLs(2)+iLs(3)
       call mditerarg(cijroutine,ndims,ifull,ium2,ipoint,
      $     cij(1,1,1,1),debyelen,dum3,dum4)
-
+      write(*,*)'Finished cijroutine iteration'
 c---------------------------------------------
 c Here we try to read the stored geometry volume data.
       istat=1
@@ -392,13 +392,13 @@ c      if(myid.eq.0)call sliceGweb(ifull,iuds,rhoci,na_m,zp,
 c     $              ixnp,xn,ifix,'rhoci')
 
 c---------------------------------------------------------------     
-c An inital vacuum solution with zero density. 
+c An inital solution with zero density. 
 c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
       ictl=0
 c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
 c An initial solver call.
-      call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
-     $     ,myid,idims)
+      if(debyelen.ne.0.)call sormpi(ndims,ifull,iuds,cij,u,q,bdyset
+     $     ,faddu,ictl,ierr,myid,idims)
       ictl=2
 c      write(*,*)'Return from initial sormpi call.'
 c
@@ -498,14 +498,19 @@ c Because psumtoq internally compensates for faddu, we reduce here
          call psumreduce(psum,ndims,ifull,iuds,iLs) 
 c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
-c Convert psums to charge, q. Remember external psumtoq!
+c Convert psums to charge density, q. Remember external psumtoq!
          call mditerarg(psumtoq,ndims,ifull,ium2,
      $        0,psum(2,2,2),q(2,2,2),volumes(2,2,2),u(2,2,2))
          istepave=min(nf_step,iavesteps)
 
-         call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
-     $     ,myid,idims)
-
+         if(debyelen.eq.0)then
+            call mditerarg(quasineutral,ndims,ifull,ium2,
+     $        0,q(2,2,2),u(2,2,2),dum3,dum4)
+            call bdyslope0(ndims,ifull,iuds,cij,u,q)
+         else
+            call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
+     $           ,myid,idims)
+         endif
          call calculateforces(ndims,iLs,cij,u)
 
          if(lmyidhead)write(*,'(i4.4,i4,$)')nf_step,ierr

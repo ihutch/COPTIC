@@ -199,6 +199,8 @@ c centroid point
       z(1)=(zq(1)+zq(2)+zq(3)+zq(4))*.25
       d(1)=(dq(1)+dq(2)+dq(3)+dq(4))*.25
 
+c      write(*,*)'Centroid',x(1),y(1),z(1),d(1)
+
 c fill each subtriangle in turn.
       if((isw/2-2*(isw/4)).eq.0)then
 c Absolute. Swap d as well as xyz.
@@ -222,6 +224,7 @@ c Direction. No d changes needed. dq->d
             x(3)=xq(1+mod(i,4))
             y(3)=yq(1+mod(i,4))
             z(3)=zq(1+mod(i,4))
+            write(*,*)i,z
             call gradtri(x,y,z,dq,zg0,zg1,ng0,ng1,isw)
          enddo
       endif
@@ -280,3 +283,37 @@ c         write(*,'(3i2,9f8.4)')i,id,ip,x,y,d
 
       end
 c***********************************************************************
+c********************************************************************
+      function sineon(x,w)
+      real x,w
+      sineon=(1.+sin(3.14159*0.5*max(min(x/w,1.),-1.)))/2.
+      end
+c********************************************************************
+      subroutine blueredgreenwhite()
+
+      parameter (ngcol=240)
+      integer red(ngcol),green(ngcol),blue(ngcol)
+
+c This gives both a multicolor gradient and a decent monochrome.
+c Unfortunately because of gs weighting, green has to be above red.
+      do i=1,ngcol
+         ramp=float(i-1)/(ngcol-1)
+c         red(i)
+         green(i)
+     $        =sineon(ramp-0.5,.2)*65535
+c         green(i)
+         red(i)
+     $        =sineon(ramp-.25,.2)
+     $        *(sineon(ramp-.5,-.2)+sineon(ramp-.85,.15))
+     $        *65535
+c         blue(i)=(cos(3.14159*ramp))
+         blue(i)=(sineon(ramp-.15,-.2)+0.7*sineon(ramp-.75,.25)+0.3
+     $        *sineon(ramp-.6,.2))*(sineon(ramp-.05,.05))*65535
+c         red(i)=0
+c         green(i)=0
+c         blue(i)=0
+      enddo
+c      write(*,*)blue
+
+      call accisgradset(red,green,blue,ngcol)
+      end

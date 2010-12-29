@@ -162,6 +162,12 @@ void getcmdargs_()
   }
 }
 
+int accisinit()
+{
+  FORT_INT xp, yp, vm, nc;
+  svga_(&xp,&yp,&vm,&nc);
+}
+
 /* Subroutine */ 
 int svga_(scrxpix, scrypix, vmode, ncolor)
 FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
@@ -178,6 +184,7 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
   int oldwidth,oldheight;
 
   accis_nodisplay=0;
+  *ncolor=15;
   /* Call fortran routine to get arguments into accis_ globals*/
   if(second == 0) {
     getcmdargs_();
@@ -194,7 +201,6 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
 		 accis_wshell, NULL, 0);
 
     *vmode=88;
-    *ncolor=15;
     /* Set up a default size of the drawing window widget. 
        This is overruled by Accis*geometry resources setting wshell size.
        */
@@ -266,6 +272,7 @@ int is_truecolor()
     If we decide it is a truecolor display. Then we don't have to 
     go through the expensive business of getting the pixels by lookups.*/
   XColor theRGBColor;
+  if(accis_display==NULL)accisinit();
   if(!a_testedtrue){ /* We haven't already discovered and stored*/
     theRGBColor.red=255*256;
     theRGBColor.green=127*256;
@@ -554,15 +561,14 @@ int eye3d_(value)
   if(event.type == KeyPress) {
     *value=(int)XLookupKeysym(&(event.xkey),0);
     return *value;
-  /* Get all the queued contiguous KeyPress events so we don't over-
-     run the rotation when the key is lifted. */
+  /* Get rid of all the queued contiguous KeyPress/Release events so we don't 
+   over-run the rotation when the key is lifted. */
     if(XPending(accis_display)) XPeekEvent(accis_display,&event);
     while(XPending(accis_display) &&
 	  (event.type==KeyPress || event.type==KeyRelease) ){
       XNextEvent(accis_display,&event);
       if(XPending(accis_display)) XPeekEvent(accis_display,&event);	\
     }
-
   }
   do{
 /*      printf("Executing XtNextEvent "); */
@@ -576,7 +582,8 @@ int eye3d_(value)
 }
 /* ******************************************************************** */
 /* Routines for using 240 color gradients in preference to 16 fixed colors.*/
-/************** Setup The Gradient **********************/
+/************** Setup The Gradient *********************
+  Linear gradients from value 1 to value 2. */
 int accisgradinit_(r1,g1,b1,r2,g2,b2)
      FORT_INT *r1,*g1,*b1,*r2,*g2,*b2;
      /* On 64 bit machine this seems to need int *r1,*g1,*b1,*r2,*g2,*b2;*/
@@ -599,6 +606,60 @@ int accisgradinit_(r1,g1,b1,r2,g2,b2)
     if(j<0)j=0; else if(j>65535)j=65535;
     a_gradgreen[i]=theRGBcolor.green=j;
     j=(i* *b2+(a_gradPixno-1-i)* *b1)/(a_gradPixno-1.) ;
+    if(j<0)j=0; else if(j>65535)j=65535;
+    a_gradblue[i]=theRGBcolor.blue=j;
+/*     printf("theRGBcolor %d,%d,%d\n",theRGBcolor.red,theRGBcolor.green,theRGBcolor.blue); */
+    if(status){
+      a_gradPix[i]=
+	((theRGBcolor.red/256)*256+(theRGBcolor.green/256))*256
+	+(theRGBcolor.blue/256);
+      /* fprintf(stderr,"Allocated Color %d =%d\n",i,a_gradPix[i]);*/
+    }else if(XAllocColor(accis_display,accis_colormap,&theRGBcolor)){
+      /*      fprintf(stderr,"Allocated Color %d=%d\n",j,theRGBcolor.pixel);*/
+      a_gradPix[i]=theRGBcolor.pixel;
+    }else{
+      a_gradPix[i]=BlackPixel(accis_display,0);
+    }
+  }
+  a_grad_inited=2;
+}
+/************** Setup The Gradient *********************
+  Normalized Polynomial gradients from arrays r,g,b of length rl,gl,bl. */
+/* Currenly unused. Use accisgradset instead */
+int accisgradpoly_(rc,gc,bc,rl,gl,bl)
+     FORT_INT *rc,*gc,*bc,*rl,*gl,*bl;
+     /* RGB are specified in the range 0 to 65535 */
+{
+  int i,j,k,status;
+  double color;
+  XColor theRGBcolor;
+  if(accis_nodisplay){
+    status=1;
+  }else{
+    if(status=is_truecolor() ==0){
+      fprintf(stderr,"True Color 24 bit Status false: pixel:%lu\n",theRGBcolor.pixel);
+    }
+  }
+  for (i=0;i<a_gradPixno;i++){
+    color=0.;
+    for (k=*rl-1;k>=0;k--){
+      color=(color*i)/(a_gradPixno-1.)+rc[k];
+    }
+    j=65535*color;
+    if(j<0)j=0; else if(j>65535)j=65535;
+    a_gradred[i]=theRGBcolor.red=j;
+    color=0.;
+    for (k=*gl-1;k>=0;k--){
+      color=(color*i)/(a_gradPixno-1.)+gc[k];
+    }
+    j=65535*color;
+    if(j<0)j=0; else if(j>65535)j=65535;
+    a_gradgreen[i]=theRGBcolor.green=j;
+    color=0.;
+    for (k=*bl-1;k>=0;k--){
+      color=(color*i)/(a_gradPixno-1.)+bc[k];
+    }
+    j=65535*color;
     if(j<0)j=0; else if(j>65535)j=65535;
     a_gradblue[i]=theRGBcolor.blue=j;
 /*     printf("theRGBcolor %d,%d,%d\n",theRGBcolor.red,theRGBcolor.green,theRGBcolor.blue); */

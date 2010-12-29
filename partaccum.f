@@ -1,4 +1,3 @@
-
 c********************************************************************
       subroutine partdistup(xlimit,vlimit,xnewlim,cellvol,myid)
 c Routine to update the particle distribution diagnostics for using the
@@ -265,16 +264,19 @@ c
          do k=1,nptdiag
             cumfv(k,id)=cumfv(k-1,id)+fv(k,id)/float(nfvaccum)
 c            write(*,*)id,k,fv(k,id),cumfv(k,id),ib
+            if(.false.)then
 c This linear mapping does not work well.
-c            ib=1+ int(cumfv(k,id)*(nsbins)*(.99999))
-            bx=float(ib)/nsbins
+               ib=1+ int(cumfv(k,id)*(nsbins)*(.99999))
+            else
+               bx=float(ib)/nsbins
 c cubic progression.
-            cfn=1.0001*(3.*bx**2-2.*bx**3)
+               cfn=1.0001*(3.*bx**2-2.*bx**3)
 c            write(*,*)'cfn',cfn,cumfv(k,id)
-            if(cumfv(k,id).gt.cfn)then
+               if(cumfv(k,id).gt.cfn)then
 c find the histogram bin-boundary.
-               vhbin(ib,id)=vhbin(0,id)+(k-1)*dv
-               ib=ib+1
+                  vhbin(ib,id)=vhbin(0,id)+(k-1)*dv
+                  ib=ib+1
+               endif
             endif
             ibinmap(k,id)=ib
             if(ib.lt.1 .or. ib.gt.nsbins)then
@@ -342,12 +344,15 @@ c Only for filled slots
 c Calculate the spatial sub-bin pointer.
                isind(id)=1+int(isfull(id)*
      $              (xpart(id,j)-xnewlim(1,id))*xsf(id))
-               if(isind(id).gt.isfull(id))isind(id)=isfull(id)
+c If we are outside the range skip this particle.
+               if(isind(id).gt.isfull(id).or.isind(id).le.0)goto 1
             enddo
             ip=ipfindex(mdims,isfull,isind)
 c            if(ip.gt.1000)write(*,*)isfull,isind,ip
+            if(ip.lt.0)write(*,*)isind,ip
             call subvaccum(xpart(1,j),vlimit,ip+1)
          endif
+ 1       continue
       enddo
              
       end
@@ -375,7 +380,8 @@ c Doing summed bin accumulation
             ibs=ibinmap(ibin,id)
 c Test for corruption ought not eventually to be necessary.
             if(ip.le.0.or.ibs.lt.0.or.id.lt.0.or.ip.gt.nsub_tot)then
-               write(*,*)'ibs,id,ip,nsub_tot',ibs,id,ip,nsub_tot
+               write(*,*)'Bin address corruption ibs,id,ip,nsub_tot'
+     $              ,ibs,id,ip,nsub_tot
             endif
             fvx(ibs,id,ip)=fvx(ibs,id,ip)+1
          endif

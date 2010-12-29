@@ -55,7 +55,16 @@ c Tell that we are looking from the top by default.
       ips=0
       irotating=0
 c Initial slice number
-      call accisgradinit(64000,0,0,-64000,128000,64000)
+c red-green gradient:
+c      call accisgradinit(64000,0,0,-64000,128000,64000)
+c blue purple white gradient
+c      call accisgradinit(-32000,-65000,0,97000,65500,150000)
+c green yellow white 
+c      call accisgradinit(-32000,0,-65000,97000,150000,65500)
+c red orange white
+c      call accisgradinit(0,-32000,-65000,150000,97000,65500)
+c Better one that gives a good mono gradient too:
+      call blueredgreenwhite()
       if(.not.lfirst)goto 19
          n1=iuds(idfix)/2
 c     Plot the surface. With scaling 1. Web color 6, axis color 7.

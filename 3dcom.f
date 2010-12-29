@@ -1,7 +1,22 @@
 c Common data containing the object geometry information. 
 c Each object, i < 31 has: type, data(odata).
       integer ngeomobjmax,odata,ngeomobj
-      parameter (ngeomobjmax=31,odata=24)
+      parameter (ngeomobjmax=31)
+c Reference to the index of certain object parameters:
+      integer otype,ocenter,oradius,oabc,ocylaxis,ovec,ocontra
+      parameter (otype=1,oabc=2,ocenter=5,oradius=8,ocylaxis=11)
+c   parallelopiped vectors start at oradius, contravariant +9
+      parameter (ovec=oradius,ocontra=oradius+9)
+c Fluxes for spheres only at the moment
+      integer ofluxtype,ofn1,ofn2,omag
+c Old version clashed with complicated objects:
+c      parameter (ofluxtype=11)
+c      parameter (ofn1=12,omag=12,ofn2=13)
+c This alteration requires correction of sphere reading in 3dobjects.
+      parameter (ofluxtype=ocontra+9)
+      parameter (ofn1=ofluxtype+1,omag=ofluxtype+1,ofn2=ofluxtype+2)
+      parameter (odata=ofn2)
+
       real obj_geom(odata,ngeomobjmax)
 c
 c Mapping from obj_geom object number to nf_flux object (many->fewer)
@@ -23,12 +38,6 @@ c What is the reinjection scheme?
 
       common /objgeomcom/ngeomobj,obj_geom,nf_map
      $     ,ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
-
-c Reference to the offset of certain object parameters:
-      integer otype,ocenter,oradius,oabc,ocylaxis
-      parameter (otype=1,oabc=2,ocenter=5,oradius=8,ocylaxis=14)
-      integer ofluxtype,ofn1,ofn2,omag
-      parameter (ofluxtype=11,ofn1=12,omag=12,ofn2=13)
 c
 c Data that describes the flux to positions on the objects:
       integer nf_quant,nf_obj,nf_maxsteps,nf_datasize

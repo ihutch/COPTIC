@@ -42,14 +42,16 @@ c They are then reset by the accumulation itself.
 c Overlapping vlimits make limitdeterm the usual setting method.
          vlimit(1,id)=5.
          vlimit(2,id)=-5.
-c Needed initialization removed from partacinit.
-         xmeshstart(id)=min(-5.,xlimit(1,id))
-         xmeshend(id)=max(5.,xlimit(2,id))
       enddo
 c Use cellvol=0. to indicate the first call. Nonzero subsequent.
       cellvol=0.
 
       call partexamargs(xlimit,vlimit)
+      do id=1,mdims
+c Needed initialization removed from partacinit.
+         xmeshstart(id)=min(-5.,xlimit(1,id))
+         xmeshend(id)=max(5.,xlimit(2,id))
+      enddo
 c Now the base filename is in partfilename.
       ip=lentrim(partfilename)-3
       if(partfilename(ip:ip).eq.'.')then

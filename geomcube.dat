@@ -1,0 +1,17 @@
+3  ; Number of dimensions must be the first line.
+# After that we can have comment lines with # in column 1.
+# We can short-list the data, but only if we don't put a comment
+# on the end. In that case we'd get an error.
+# Cube (coordinate aligned) abc, low corner, high corner
+#2, 1.,0.,1.,  -1.,-1.,-1., 1.,1.,1., 
+2, 1.,0.,1.,  -1.,-1.,-1., 1.,2.,2., 
+# Parallelogram a,b,c, origin, 3vectors
+#4, 1.,0.,1., -1.,-1.,-1., 2.,0.,0., 0.,2.,0., 0.,0.,2.
+#4, 1.,0.,1., .0,-2.,-2., .3,0.,0., 2.,4.,0., 0.,0.,4.
+#4, 1.,0.,1., 0.,0.,0., 1.,1.,-.5, 0.,1.,1., 1.,0.,1.
+# Boolean for particle region. In this case -1: outside object 1.
+99, 1, -1, 0
+
+91 1,50,0,-5.,5.
+92 1,50,0,-5.,5.
+93 1,50,0,-5.,5.

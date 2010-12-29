@@ -6,15 +6,25 @@
       real thetadist(nr,ntheta),thetaval(ntheta),rval(0:nr)
       real rvalneg(0:nr)
       integer ithetacount(nr,ntheta)
-      real rzdist(0:nr,na_k),irzcount(nr,na_k)
+c Cylindrical scalar distribution:     
+      real rzdist(0:nr,na_k)
+c Cylindrical vector distribution:
+      real vrz(0:nr,na_k,3)
+      integer irzcount(nr,na_k)
       real rzmval(na_k),rzmpos(na_k),zpos(na_k)
       character*1 ppath(0:nr,na_k)
       character*20 string
 
       real oneoverr(100),huckel(100),ro(100),cl(100)
       real xl(2),yl(2)
+c
+      parameter (ndiagmax=7)
+      real diagsum(na_i,na_j,na_k,ndiagmax)
+      real phimax
+      data phimax/0./
 c 
-      call examargs(rp)
+      diagfilename=''
+      call examargs(rp,phimax)
          
 c      write(*,*)(u(16,16,k),k=1,36) 
       ied=1
@@ -241,11 +251,30 @@ c         call fwrite(phip,iwd,2,string)
 c         call jdrwstr(.02,.28,'!Af!@!dp!d='//string(1:iwd),1.)
          write(*,'(''vd='',f7.3,'' debyelen='',f7.3,''  phip='',f7.3)')
      $        vd,debyelen,phip
-         call pltend()
-      endif
 
+c Overplotting arrows.
+
+         if(lentrim(diagfilename).ne.0)then
+            ndiags=ndiagmax
+            write(*,*)'Reading diagfile: '
+     $           ,diagfilename(1:lentrim(diagfilename))
+            call array3read(diagfilename,ifull,iuds,ndiags,diagsum,ierr)
+            if(ierr.eq.1)goto 3
+            rs=sqrt(rx**2+ry**2)
+            call cyl3vbin(nr,vrz,irzcount,rval,rvalneg,vmax
+     $           ,diagsum,ndiags)
+c Use vector positions. Set skipping
+            isw=1+4
+c Draw arrows every 4,4, points.
+            call arrowplot(vrz(1,1,2),vrz(1,1,3),vmax*100,nr+1,nr,na_k
+     $           ,rval(1),xn(ixnp(3)+1),isw,4,4)
+         endif
+
+ 3    call pltend()
+      endif
 c Now we want to find the r-position of the peak potential at each
 c z. 
+
 
       write(*,*)'Not finding potential peaks, but could do so ...'
       call exit(1)
@@ -291,7 +320,7 @@ c         write(22,*)rzmpos(iz0+i),xn(ixnp(3)+iz0+i)
       end
 
 c*************************************************************
-      subroutine examargs(rp)
+      subroutine examargs(rp,phimax)
       include 'examdecl.f'
 
       ifull(1)=na_i
@@ -311,8 +340,12 @@ c Deal with arguments
      $        read(argument(14:),'(a)',err=201)objfilename
          if(argument(1:2).eq.'-f')
      $        read(argument(3:),'(a)',err=201)phifilename
+         if(argument(1:2).eq.'-d')
+     $        read(argument(3:),'(a)',err=201)diagfilename
          if(argument(1:2).eq.'-r')
      $        read(argument(3:),'(f8.4)',err=201)rp
+         if(argument(1:2).eq.'-p')
+     $        read(argument(3:),'(f8.4)',err=201)phimax
          if(argument(1:2).eq.'-h')goto 203
          if(argument(1:2).eq.'-?')goto 203
          else
@@ -328,21 +361,23 @@ c Help text
  203  continue
  301  format(a,i5)
       write(*,301)'Usage: phiexamine [switches] <phifile>'
-      write(*,301)' --objfile<filename>  set name of object data file.'
-     $     //' [ccpicgeom.dat'
+c      write(*,301)' --objfile<filename>  set name of object data file.'
+c     $     //' [copticgeom.dat'
+      write(*,301)' -d<diagfilename>  -r<rp>'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue
       if(lentrim(partfilename).lt.5)goto 203
       end
 c*****************************************************************
-c Bin rectangular mesh values into radial (cylindrical) 
+c Bin rectangular scalar mesh values into radial (cylindrical) 
 c mesh values and average in angle.
       subroutine cyl3bin(nr,rzdist,irzcount,rval,rvalneg,phimax,up)
       implicit none
       integer nr
       include 'examdecl.f'
-      real rzdist(0:nr,na_k),irzcount(nr,na_k)
+      real rzdist(0:nr,na_k)
+      integer irzcount(nr,na_k)
       real rval(0:nr),rvalneg(0:nr)
       real phimax
 c Passed quantity whose mesh is declared in examdecl. E.g. potential.
@@ -367,7 +402,8 @@ c            write(*,*)j,rval(j)
 
 c Bin values
          rmin=1.e10
-         phimax=0.
+c Now set by calling routine.
+c         phimax=0.
          do k=1,iuds(3)
             z=xn(ixnp(3)+k)
             do j=1,iuds(2)
@@ -419,6 +455,124 @@ c Fill in along the axis.
             rvalneg(0)=0.
          do k=1,iuds(3)
             rzdist(0,k)=rzdist(1,k)
+         enddo
+
+      end
+c*****************************************************************
+c Bin rectangular vector mesh values into radial (cylindrical) 
+c mesh values and average in angle. Turn a 3-D vector quantity
+c into 2-D vr,vz components over an rz mesh. Normalize by n.
+      subroutine cyl3vbin(nr,vrz,irzcount,rval,rvalneg,vmax
+     $     ,diagsum,ndiags)
+      implicit none
+      integer nr,ndiags
+      include 'examdecl.f'
+      real vrz(0:nr,na_k,3)
+      integer irzcount(nr,na_k)
+      real rval(0:nr),rvalneg(0:nr)
+      real vmax
+c Passed diagnostic quantities. n,v1,2,3, at least
+      real diagsum(na_i,na_j,na_k,ndiags)
+c Local variables:
+      real rmin,x,y,z,r,den,vz,vr
+      integer i,j,k,ir,nz,jp,jm
+
+      if(ndiags.lt.4)then
+         write(*,*)'Too few diagnostics for cyl3vbin'
+         return
+      endif
+c r-z binning and plotting
+         nz= ixnp(3+1)-ixnp(3)
+c Set up r-mesh.
+         do j=1,nr
+            do i=1,nz
+               do k=1,3
+                  vrz(j,i,k)=0.
+               enddo
+               irzcount(j,i)=0
+            enddo
+            rval(j)=(rs)*(j-0.5)/float(nr)
+            rvalneg(j)=-rval(j)
+c            write(*,*)j,rval(j)
+         enddo
+
+c Bin values
+         rmin=1.e10
+         do k=1,iuds(3)
+            z=xn(ixnp(3)+k)
+            do j=1,iuds(2)
+               do i=1,iuds(1)
+                  x=xn(ixnp(1)+i)
+                  y=xn(ixnp(2)+j)
+                  r=sqrt(x**2+y**2)
+                  if(r.lt.rmin)rmin=r
+                  ir=nint(0.5+nr*(r+.00001)/(rs+.00002))
+                  if(ir.le.nr .and. ir.ge.1)then
+                     irzcount(ir,k)=irzcount(ir,k)+1
+                     den=diagsum(i,j,k,1)
+                     vz=diagsum(i,j,k,4)
+                     if(r.ne.0)then
+                        vr=(x*diagsum(i,j,k,2)+y*diagsum(i,j,k,3))/r
+                     else
+                        vr=0.
+                     endif
+                     vrz(ir,k,1)=vrz(ir,k,1)+den
+                     vrz(ir,k,2)=vrz(ir,k,2)+vr
+                     vrz(ir,k,3)=vrz(ir,k,3)+vz
+                  endif
+               enddo
+            enddo
+         enddo
+
+c         write(*,*)((j,rval(j),irzcount(j,k),j=1,nr),k=1,1)
+c Normalize
+         vmax=0.
+         do j=1,nr
+            do i=1,iuds(3)
+               if(vrz(j,i,1).gt.10.)then
+                  vrz(j,i,2)=vrz(j,i,2)/vrz(j,i,1)
+                  vrz(j,i,3)=vrz(j,i,3)/vrz(j,i,1)
+               else
+                  vrz(j,i,2)=0.
+                  vrz(j,i,3)=0.
+               endif
+               if(vrz(j,i,3).gt.vmax)vmax=vrz(j,i,3)
+               if(irzcount(j,i).ne.0)then
+                  vrz(j,i,1)=vrz(j,i,1)/irzcount(j,i)
+               endif
+            enddo
+         enddo
+c Fix up zero values if necessary.
+         do j=1,nr
+            do i=1,iuds(3)
+               if(irzcount(j,i).eq.0)then
+                  jp=j+1
+                  if(jp.gt.nr)jp=j
+                  jm=j-1
+                  if(jm.lt.1)jm=1
+                  if(irzcount(jm,i).ne.0)then
+                     do k=1,3
+                        vrz(j,i,k)=vrz(jm,i,k)
+                     enddo
+                  elseif(irzcount(jp,i).ne.0)then
+                     do k=1,3
+                        vrz(j,i,k)=vrz(jp,i,k)
+                     enddo
+                  else
+                     write(*,*)'Failed setting vrz',j,i,jm,jp
+     $                    ,' Too coarse a mesh? rmin=',rmin
+c     $                    ,rval(jm),rval(jp)
+                  endif
+               endif
+            enddo
+         enddo
+c Fill in along the axis.
+            rval(0)=0.
+            rvalneg(0)=0.
+         do j=1,iuds(3)
+            do k=1,3
+               vrz(0,j,k)=vrz(1,j,k)
+            enddo
          enddo
 
       end

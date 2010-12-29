@@ -45,6 +45,10 @@ c Object pointer defaults to zero, unset initially..
 c      icij=icb*ipoint+2*ndims+1
       icij=icb*(ipoint+1)
       cij(icij)=0.
+c Prevent divide by zero issues with debyelen
+      debyehere=debyelen
+      if(debyehere.lt.tiny)debyehere=tiny
+
 c Iterate over dimensions.
       do id=1,ndims
          ifound=0
@@ -60,6 +64,7 @@ c For each direction in this dimension,
             iobj=ndata_sor*(2*(id-1)+(i-1))+1
             ipm=1-2*(i-1)
 c Determine whether this is a boundary point: adjacent a fraction ne 1.
+c            write(*,'(a,$)')'potlsect'
             call potlsect(id,ipm,ndims,indi,
      $           fraction(i),conditions(1,i),dpm(i),iobjno)
             if(fraction(i).lt.1. .and. fraction(i).ge.0.)then
@@ -70,9 +75,9 @@ c Here on 1 Sep 09 istart was ist. Which seemed incorrect.
 c Calculate dplus and deff for this direction.
 c dplus becomes dminus for the other direction.
                a=conditions(1,i)
-               b=conditions(2,i)/debyelen
+               b=conditions(2,i)/debyehere
                c=conditions(3,i)
-               dxp1=fraction(i)*dpm(i)/debyelen
+               dxp1=fraction(i)*dpm(i)/debyehere
                if(a.eq.0.) a=tiny
                if(b.ge.0.)then
 c Active
@@ -82,7 +87,7 @@ c Active
                else
 c Inactive
                   if(dxp1.eq.0.) dxp1=tiny
-                  dxp2=(1.-fraction(i))*dpm(i)/debyelen
+                  dxp2=(1.-fraction(i))*dpm(i)/debyehere
                   apb=a*dxp2+b
                   boapb=b/apb
 c  Without \psi'', i.e. setting it to zero and boundary.
@@ -98,13 +103,13 @@ c + diagonal + potential terms.
 c Prevent subsequent divide by zero danger.
                dob_sor(iobj,oi_sor)=max(fraction(i),tiny)
                if(a.eq.0.) a=tiny
-               dob_sor(iobj+1,oi_sor)=b/a*debyelen
+               dob_sor(iobj+1,oi_sor)=b/a*debyehere
                dob_sor(iobj+2,oi_sor)=c/a
                idob_sor(iinter_sor,oi_sor)=iobjno
             else
 c No intersection.
-               dplus(i)=dpm(i)/debyelen
-               deff(i)=dpm(i)/debyelen
+               dplus(i)=dpm(i)/debyehere
+               deff(i)=dpm(i)/debyehere
             endif
          enddo
 c Now the dplus and deff are set correctly for each direction.
@@ -121,7 +126,7 @@ c This is a boundary point.
      $              .and.dob_sor(iobj,oi_sor).ge.0.)then
 c We intersected an object in this direction. Adjust Cij and B_y
                   a=conditions(1,i)
-                  b=conditions(2,i)/debyelen
+                  b=conditions(2,i)/debyehere
                   c=conditions(3,i)
                   if(a.eq.0.) a=tiny
                   if(b.ge.0.)then
@@ -135,7 +140,7 @@ c Adjust potential sum (B_y)
      $                    - coef*c/a
                   else
 c Inactive side. Continuity.
-                     dxp2=(1.-fraction(i))*dpm(i)/debyelen
+                     dxp2=(1.-fraction(i))*dpm(i)/debyehere
                      apb=a*dxp2+b
                      boapb=b/apb
                      cij(icb*ipoint+2*(id-1)+i)=coef*boapb
@@ -198,6 +203,7 @@ c in fn, and the number of intersections found in npoints.
          idiag=0
 c         if(oi_sor.eq.3276)idiag=5
 c         if(oi_sor.eq.288.or.oi_sor.eq.289)idiag=5
+c         if(ipoint.gt.101210)idiag=5
          call boxedge(ndims,ipa,indi,fn,npoints,idiag)
 c         if(idiag.ne.0.and.npoints.ne.0)then
 c            write(*,*)oi_sor,npoints,' fn=',(fn(iw),iw=1,ndims)
@@ -450,8 +456,10 @@ c Local indices and fractions of this edge start.
             indl(j)=indi(j)+ipm(j)*icp(j)
          enddo
 c Look for intersection along this edge.
+c      if(idiag.ge.5)write(*,'(a,i2,$)')'Calling potlsect '
          call potlsect(i,ipm(i),ndims,indl,fraction,conditions,dpm
      $        ,iobjno)
+c      if(idiag.ge.5)write(*,'(a,$)')'Returned '
          if(fraction.ne.1. .and. npoints.lt.mpoints)then
 c            idiag=idiag+1
             npoints=npoints+1

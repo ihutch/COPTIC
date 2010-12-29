@@ -97,3 +97,24 @@ c         rho(ind)=0.
       endif
       inc=1
       end
+c********************************************************************
+      subroutine quasineutral(inc,ipoint,indi,ndims,iused,
+     $     q,u,dum3,dum4)
+      integer ipoint,inc
+      integer indi(ndims),iused(ndims)
+      real q(*),u(*)
+      real dum3,dum4
+
+c Silence warnings with spurious access.
+      ind=iused(1)
+      ind=indi(1)
+c This routine for use in mditerarg.
+c But we iterate only over the inner mesh (not edges).
+      ind=1+ipoint
+      if(q(ind).gt.0.)then
+         u(ind)=alog(q(ind))
+      else
+         u(ind)=0.
+      endif
+      inc=1
+      end

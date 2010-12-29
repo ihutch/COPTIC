@@ -20,12 +20,12 @@ int accis_driver_(){return 3;}
 typedef int FORT_INT;
 
 /* Globals for these routines*/
-static Display *accis_display;
+static Display *accis_display=NULL;
 static Window accis_root;
 static Window accis_window;
 static Pixmap accis_pixmap;
 static GLint  accis_att[] = { GLX_RGBA, /* Truecolor and Directcolor */ 
-		        GLX_DEPTH_SIZE, 24, /* Depth 24 */
+		       /* GLX_DEPTH_SIZE, 24, /* Depth 24 */
 		       GLX_DOUBLEBUFFER, None };
 static XVisualInfo             *accis_vi;
 static Colormap                accis_cmap;
@@ -172,6 +172,11 @@ void accis_set_focus(){
     /*XSync(accis_display,True);XSetErrorHandler(accis_old_handler);*/
 }
 
+int accisinit()
+{
+  FORT_INT xp, yp, vm, nc;
+  svga_(&xp,&yp,&vm,&nc);
+}
 /* Subroutine */ 
 int svga_(scrxpix, scrypix, vmode, ncolor)
 FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
@@ -181,12 +186,12 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
   XSizeHints hints;
   int x_size,y_size,x_off,y_off,gravity;
   accis_nodisplay=0;
+  *ncolor=15;
   if(second == 0) {
   /* Call fortran routine to get arguments into accis_ globals*/
     getcmdargs_();
     /* Obsolete compatibility settings */
     *vmode=88;
-    *ncolor=15;
 
     if( (accis_display = XOpenDisplay(NULL)) == NULL) {
         printf("\n\tcannot connect to X server\n\n");
@@ -297,6 +302,7 @@ int is_truecolor()
     If we decide it is a truecolor display. Then we don't have to 
     go through the expensive business of getting the pixels by lookups.*/
   XColor theRGBColor;
+  if(accis_display==NULL)accisinit();
   if(!a_testedtrue){ /* We haven't already discovered and stored*/
     theRGBColor.red=255*256;
     theRGBColor.green=127*256;
@@ -744,14 +750,15 @@ void accisgradset_(red,green,blue,npixel)
     a_gradred[i]=theRGBcolor.red=ilimit(0,*(red+i),65535);
     a_gradgreen[i]=theRGBcolor.green=ilimit(0,*(green+i),65535);
     a_gradblue[i]=theRGBcolor.blue=ilimit(0,*(blue+i),65535);
-    /* printf("theRGBcolor %d,%d,%d\n",theRGBcolor.red,theRGBcolor.green,theRGBcolor.blue);  */
+    /*printf("theRGBcolor %d,%d,%d\n",theRGBcolor.red,theRGBcolor.green,theRGBcolor.blue);*/
     if(is_truecolor()){
+      /*fprintf(stderr,"Setting a_gradPix, %d",i);*/
       a_gradPix[i]=
 	((theRGBcolor.red/256)*256+(theRGBcolor.green/256))*256
 	+(theRGBcolor.blue/256);
-      /* fprintf(stderr,"Allocated Color %d =%d\n",i,a_gradPix[i]);*/
+      /*fprintf(stderr,"Allocated Color %d =%d\n",i,a_gradPix[i]);*/
     }else if(XAllocColor(accis_display,accis_colormap,&theRGBcolor)){
-      /*      fprintf(stderr,"Allocated Color %d=%d\n",j,theRGBcolor.pixel);*/
+      fprintf(stderr,"Allocated Color %d=%ld\n",i,theRGBcolor.pixel);
       a_gradPix[i]=theRGBcolor.pixel;
     }else{
       a_gradPix[i]=BlackPixel(accis_display,0);

@@ -257,6 +257,18 @@ c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
       end
 c**********************************************************************
+      subroutine bdyslope0(ndims,ifull,iuds,cij,u,q)
+      integer ndims,ifull(ndims),iuds(ndims)
+      real cij(*),u(*),q(*)
+c Specify external the boundary setting routine.
+      external bdyslopeDh,bdyslopescreen,bdymach
+      common /slpcom/slpD,islp
+      ipoint=0
+      islp=0
+      slpD=0.
+      call mditerate(bdyslopeDh,ndims,ifull,iuds,ipoint,u)
+      end
+c************************************************************************
 c**********************************************************************
 c The logic of the following might miss some corners.
 c************************************************************************

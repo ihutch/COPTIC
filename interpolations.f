@@ -475,7 +475,8 @@ c Values of u at the points to be interpolated.
          up=u(ixiu+iuinc)
          um=u(ixiu-iuinc)
          uprime=gradinterp(um,u0,up,idf,icp0,xm,dx0,dx1)
-         if(abs(u0+10).lt.0.01 .and. abs(uprime).gt.1.)then
+         if(.false.)then
+c         if(abs(u0+10).lt.0.01 .and. abs(uprime).gt.1.)then
 c Specific problem case test.
             write(*,*)'uprime,u0,up,um,ix,icp0',uprime,u0,up,um,ix,icp0
      $           ,idob_sor(iregion_sor,icp0)

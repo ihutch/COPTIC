@@ -9,14 +9,14 @@ c Assumed 3-D routine, plots representation of the cij/obj data.
       include 'meshcom.f'
       real xx(3),xt(3)
       integer irx(5),iry(5),ipx(5),ipy(5),ijk(3)
-      integer idelta(3,3)
+      integer idelta(3,7)
 c      character*40 mystring
       integer iprinting
       data irx/1,0,-1,0,1/
       data iry/0,1,0,-1,0/
       data ipx/0,0,1,0,0/
       data ipy/0,0,0,1,0/
-      data idelta/1,0,0,0,1,0,0,0,1/
+      data idelta/1,0,0,0,1,0,0,0,1, 1,1,1,  0,1,1,1,0,1,1,1,0/
       data iprinting/0/
 
 c If iosw > 0, then wireframe the objects corresponding to its bits.
@@ -39,6 +39,7 @@ c If iosw = 0, plot only sticks for everything.
 c      istick=1
 c      iwire=0
       irotating=0
+      write(*,'(a,i2)')'Object Mask:',mysw/2
 
       call pltinit(0.,1.,0.,1.)
       call setcube(.2,.2,.2,.5,.4)
@@ -106,11 +107,11 @@ c                           call vec3w(xx(1),xx(2),xx(3),0)
             enddo
          enddo
       enddo
-      if(iwire.eq.0 .and. ieye3d().ne.0)goto 51
+c      if(iwire.eq.0 .and. ieye3d().ne.0)goto 51
+      if(iwire.eq.0)goto 56
       if(istick.eq.1)iwire=1
- 52   continue
 c     Wireframe drawing.
-      write(*,'(a,i2)')'Object Mask:',mysw/2
+ 52   continue
 c      write(mystring,'(a)')'Object Mask:'
 c      call iwrite(mysw/2,ilen,mystring(13:))
 c      call jdrwstr(.1,.1,mystring,1.)
@@ -122,6 +123,7 @@ c      call jdrwstr(.1,.1,mystring,1.)
                if(iobj.ne.0.and.iobjcode.ge.0)then
                isob=int(mysw/2**iobjcode-(mysw/2**(iobjcode+1))*2)
 c               write(*,*)iobj,iobjcode,isob,mysw
+               if(iobjcode.ne.igetcolor())call color(iobjcode)
                if(isob.ne.0)then
 c Origin point
                   xx(1)=xn(ixnp(1)+i)
@@ -131,7 +133,8 @@ c Origin point
                   ijk(2)=j
                   ijk(3)=k
 c This assumes 3-D.
-c Draw joins between common fractions in plane normal to id.
+c Draw joins between fractions common to a single node
+c in plane normal to id.
                   do id=1,ndims
                      i1=mod(id,3)+1
                      i2=mod(id+1,3)+1
@@ -144,7 +147,6 @@ c                        write(*,*)'iinter',idob_sor(iinter_sor,iobj)
                         frac=dob_sor(no,iobj)
                         if(frac.lt.1. .and. frac.ge.0.)then
 c This a true intersection. Draw to it.
-                        call color(iobjcode)
                            xt(id)=xx(id)
                            xt(i1)=xx(i1)+frac*
      $                          (xn(ixnp(i1)+ijk(i1)+irx(ipm))-xx(i1))
@@ -158,8 +160,9 @@ c                           write(*,*)no,id,i1,i2,frac,ipm,xt
                         endif
                      enddo
                   enddo
-c Draw joins between adjacent planes in the positive direction
+c Draw joins between intersections of adjacent parallel lattice legs
                   do id=1,ndims
+c                     id=mod(idd-1,3)+1
                      iobj2=int(cij(2*ndims+1,
      $                    i+idelta(1,id),
      $                    j+idelta(2,id),
@@ -177,7 +180,7 @@ c Draw joins between adjacent planes in the positive direction
                         if(frac.lt.1. .and. frac.ge.0.
      $                       .and. frac2.lt.1. .and. frac2.ge.0.)then
 c Double intersections. Connect them.
-                        call color(iobjcode)
+c                        call color(iobjcode)
                            xt(id)=xx(id)
                            xt(i1)=xx(i1)+frac*
      $                          (xn(ixnp(i1)+ijk(i1)+irx(ipm))-xx(i1))
@@ -205,7 +208,7 @@ c Plot orbits if there are any. (Dummy in solver.)
       call orbit3plot()
 c User interface:
       iprinting=0
-      call eye3d(isw)
+ 56   call eye3d(isw)
       if(isw.eq.0.or.isw.eq.ichar('q'))goto 55
       if(isw.eq.ichar('r').or.isw.eq.ichar('e'))irotating=1
       if(isw.eq.ichar('p'))iprinting=mod(iprinting+1,2)
@@ -229,6 +232,10 @@ c         irotating=irotating-1
       endif
       goto 51
  55   continue
+      if(iwire.eq.0)then
+         iwire=1
+         goto 51
+      endif
       if(istick.gt.0) then
          istick=0
          goto 51

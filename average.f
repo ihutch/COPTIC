@@ -8,7 +8,7 @@
          do j=1,iuds(2)
             do i=1,iuds(1)
                qave(i,j,k)=((istepave-1)*qave(i,j,k)+q(i,j,k))
-     $              /int(istepave)
+     $              /float(istepave)
             enddo
          enddo
       enddo

@@ -37,6 +37,7 @@ c      write(*,*)(q(16,16,k),k=1,ifull(3))
 c plot density versus radius.
 
       write(*,*)rs,debyelen,vd,Ti
+      write(*,*)'Plotting radial distribution'
 c      write(*,*)rs
 c      call pltinit(0.,rs,q(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
       call pltinit(0.,rs,0.,2.)
