@@ -37,10 +37,23 @@ c Set iuds according to specified mesh
 c         write(*,'(a,i3,10f8.3)')
 c     $        ' Meshspec',id,(xmeshpos(id,kk),kk=1,iblk)
       enddo
-c      write(*,*)'Meshcontructed',xmeshstart,xmeshend,' rs=',rs
+c      write(*,*)'Meshconstructed',xmeshstart,xmeshend
       ixnp(ndims+1)=iof
 c      write(*,*)(ixnp(k),k=1,ndims+1)
 c      write(*,*)(xn(k),k=1,iof)
+      end
+c**************************************************************
+      subroutine meshshift()
+      include 'meshcom.f'
+      real shift
+      parameter (shift=1.e-5)
+c      write(*,'(a)')'Shifted mesh' 
+      do id=1,ndims_mesh
+         do j=1,nspec_mesh
+            xmeshpos(id,j)=(xmeshpos(id,j)*(1.-shift)+.1*shift)
+c            write(*,'(f8.4,$)')xmeshpos(id,j)
+         enddo
+      enddo
       end
 c***************************************************************
 c Version constructs a mesh from xmstart(id) to xmend(id)

@@ -8,14 +8,27 @@ c Reference to the index of certain object parameters:
 c   parallelopiped vectors start at oradius, contravariant +9
       parameter (ovec=oradius,ocontra=oradius+9)
 c Fluxes for spheres only at the moment
-      integer ofluxtype,ofn1,ofn2,omag
-c Old version clashed with complicated objects:
-c      parameter (ofluxtype=11)
-c      parameter (ofn1=12,omag=12,ofn2=13)
-c This alteration requires correction of sphere reading in 3dobjects.
+      integer ofluxtype,ofn1,ofn2,ofn3,offc,omag
       parameter (ofluxtype=ocontra+9)
-      parameter (ofn1=ofluxtype+1,omag=ofluxtype+1,ofn2=ofluxtype+2)
-      parameter (odata=ofn2)
+      parameter (ofn1=ofluxtype+1,ofn2=ofluxtype+2,ofn3=ofluxtype+3)
+      parameter (omag=ofluxtype+1,offc=ofluxtype+4)
+      parameter (odata=offc)
+c The parallelopiped data structure in ppcom.f consists of
+c 1 pp_orig : origin x_0 (3) which points to ocenter
+c 4 pp_vec : 3 (covariant) vectors v_p equal half the edges.(3x3)
+c 13 pp_contra : 3 contravariant vectors v^q such that v_p.v^q =
+c \delta_{pq} (3x3)
+c A pp_total of 21 reals (in 3-D), of which the last 9 can be calculated
+c from the first 12, but must have been set prior to the call. 
+c A point is inside the pp if |Sum_i(x_i-xc_i).v^p_i|<1 for all p.
+c A point is on the surface if, in addition, equality holds in at least
+c one of the (6) relations. 
+c [i-k refers to cartesian components, p-r to pp basis.] 
+      integer pp_ndims,pp_orig,pp_vec,pp_contra,pp_total
+      parameter (pp_ndims=3,pp_orig=ocenter)
+      parameter (pp_vec=pp_orig+pp_ndims)
+      parameter (pp_contra=pp_vec+pp_ndims*pp_ndims)
+      parameter (pp_total=pp_contra+pp_ndims*pp_ndims-1)
 
       real obj_geom(odata,ngeomobjmax)
 c
@@ -42,7 +55,8 @@ c
 c Data that describes the flux to positions on the objects:
       integer nf_quant,nf_obj,nf_maxsteps,nf_datasize
 c Number of dimensions needed for position descriptors
-      parameter (nf_posdim=2)
+c      parameter (nf_posdim=2)
+      parameter (nf_posdim=3)
 c Maximum (i.e. storage size) of array 
       parameter (nf_quant=5,nf_obj=5,nf_maxsteps=3000)
       parameter (nf_datasize=10000000)
@@ -54,6 +68,8 @@ c The number of positions at which this quantity is measured:
       integer nf_posno(nf_quant,nf_obj)
 c The dimensional structure of these: nf_posno = prod nf_dimlens
       integer nf_dimlens(nf_quant,nf_obj,nf_posdim)
+c The offset index to the start of cube faces
+      integer nf_faceind(nf_quant,nf_obj,2*nf_posdim)
 c Reverse mapping to the geomobj number from nf_obj number
       integer nf_geommap(nf_obj)
 c The address of the data-start for the quantity, obj, step.
@@ -66,7 +82,7 @@ c The dt for each step
       real ff_dt(nf_maxsteps)
 
       common /fluxdata/nf_step,ff_rho,ff_dt,mf_quant,mf_obj,nf_posno
-     $     ,nf_dimlens,nf_geommap,nf_address,ff_data
+     $     ,nf_dimlens,nf_faceind,nf_geommap,nf_address,ff_data
 
 
 c Flux explanation:

@@ -55,7 +55,7 @@ c      parameter (ndims=ndims_sor)
 c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
       logical lrestart,lmyidhead,lphiplot,ldenplot
-      integer ipstep,iwstep,idistp,idcount
+      integer ipstep,iwstep,idistp,idcount,icijcount
 c Diagnostics
       real zp(na_m,na_m,ndims_mesh)
       real xlimit(2,ndims_mesh),vlimit(2,ndims_mesh)
@@ -75,7 +75,7 @@ c Data for plotting etc.
       data lphiplot,ldenplot/.true.,.true./
 c      data thetain,nth/.1,1/
       data lrestart/.false./
-      data ipstep/1/idistp/0/idcount/0/
+      data ipstep/1/idistp/0/idcount/0/icijcount/0/
 c-------------------------------------------------------------
 c Consistency checks
       if(ndims.ne.ndims_sor)then
@@ -221,6 +221,7 @@ c            write(*,*)'||||||||||||||extfield',extfield
             call exit(0)
          endif
          if(argument(1:2).eq.'-h')goto 203
+         if(argument(1:3).eq.'--h')goto 203
          if(argument(1:2).eq.'-?')goto 203
  240     continue
       enddo
@@ -237,7 +238,7 @@ c         call helpusage()
  302  format(a,f8.3)
       write(*,301)'Usage: coptic [switches]'
       write(*,301)'Parameter switches.'
-     $     //' Leave no gap before value. Defaults indicated [ddd'
+     $     //' Leave no gap before value. Defaults or set values [ddd'
       write(*,301)' -ni   set No of particles/node; zero => unset.    ['
      $     ,n_part
       write(*,301)' -rn   set reinjection number at each step.        ['
@@ -263,7 +264,7 @@ c         call helpusage()
       write(*,301)' -vn   set neutral drift velocity [',vneutral
 c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' -of<filename>  set name of object data file.'
-     $     //'   [copticgeom.dat'
+     $     //'   ['//objfilename(1:lentrim(objfilename))
       write(*,301)
      $     ' -fs[path]  Attempt to restart from state saved [in path].'
       write(*,301)'Debugging switches for testing'
@@ -294,7 +295,7 @@ c Geometry and boundary information. Read in.
       call readgeom(objfilename,myid)
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
-      call meshconstruct(ndims,iuds)
+ 250  call meshconstruct(ndims,iuds)
       if(lmyidhead)write(*,'(a,3i4,6f8.3)')
      $     ' Constructed mesh',iuds
      $     ,(xmeshstart(k),xmeshend(k),k=1,ndims)
@@ -321,9 +322,17 @@ c Initializations
       if(lmyidhead)write(*,*)'Initializing the stencil data cij'
 c Initialize cij:
       ipoint=iLs(1)+iLs(2)+iLs(3)
+      error=0.
       call mditerarg(cijroutine,ndims,ifull,ium2,ipoint,
-     $     cij(1,1,1,1),debyelen,dum3,dum4)
-      write(*,*)'Finished cijroutine iteration'
+     $     cij(1,1,1,1),debyelen,error,dum4)
+      if(error.ne.0.)then
+         if(lmyidhead)write(*,*)'cijroutine ERROR',error
+     $        ,' Shifting mesh and recalculating.'
+         call meshshift()
+         icijcount=icijcount+1
+         if(icijcount.le.5.)goto 250
+      endif
+c      write(*,*)'Finished cijroutine iteration'
 c---------------------------------------------
 c Here we try to read the stored geometry volume data.
       istat=1
@@ -479,6 +488,10 @@ c     $        nrein,n_part,ioc_part,rhoinf,dt
  402     continue
       endif
 c-----------------------------------------------
+c Hack
+c      call objplot(ndims,5.,0)
+
+c-----------------------------------------------
       if(lmyidhead)write(*,*)'Step Iterations Flux:'
 c Main step iteration -------------------------------------
       do j=1,nsteps
@@ -614,6 +627,7 @@ c Comment it out if it causes problems. (E.g. pathscale gives segfaults.)
 c End of Main Step Iteration -------------------------------
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
 c      if(lorbitplot)call orbitplot(ifull,iuds,u,phip,rc,rs)
+      call objplot(ndims,2.,0)
       if(norbits.ne.0)
      $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl,norbits)
 

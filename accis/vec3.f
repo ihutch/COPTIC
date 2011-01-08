@@ -123,6 +123,17 @@ c      write(*,*)'xn,yn,zn',xn,yn,zn
       call vec3n(xn,yn,zn,iud)
       end
 c***********************************************************************
+      subroutine nxyz2wxyz(xn,yn,zn,x,y,z)
+c Transform from world3 to normal3
+      real x,y,z
+      real xn,yn,zn
+      include 'world3.h'
+      include 'plotcom.h'
+      x=(xn+scbx3)/w3nx +wx3min
+      y=(yn+scby3)/w3ny +wy3min
+      z=(zn+scbz3)/w3nz +wz3min
+      end
+C********************************************************************
       subroutine wxyz2nxyz(x,y,z,xn,yn,zn)
 c Transform from world3 to normal3
       real x,y,z

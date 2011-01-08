@@ -89,12 +89,17 @@ c Set the density
       ind=1+ipoint
       if(volumes(ind).gt.1.e20)then
 c This is outside the region. Compensate the electron density.
+         if(.not.u(ind).lt.1.e20)then
+            write(*,*)'psumtoq error',indi,rho(ind),u(ind),ind
+         endif
          rho(ind)=faddu(u(ind),fprime,ind)
-c         write(*,*)'psumtoq compensation',indi,rho(ind)
 c         rho(ind)=0.
       else
          rho(ind)=psum(ind)/(rhoinf*volumes(ind))
       endif
+c      if(.not.rho(ind).lt.1.e20)then
+c         write(*,*)'psumtoq rho error',ind,rho(ind),psum(ind),rhoinf
+c      endif
       inc=1
       end
 c********************************************************************

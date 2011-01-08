@@ -45,9 +45,9 @@ c     $     ,nf_address(nf_flux,1,-1)
 c For all the objects being flux tracked.
       do k=1,mf_obj
          if(iprint.gt.0)then
-         write(*,'(a,i3,a,2i4,a,i3)') 'Position data for ',nf_posdim
-     $        ,' dimensions. nf_dimlens='
-     $        ,nf_dimlens(1,k,1),nf_dimlens(1,k,2),' Object',k
+         write(*,'(a,i3,a,3i4,a,i3)') 'Position data for ',nf_posdim
+     $        ,' flux-indices. nf_dimlens='
+     $        ,(nf_dimlens(1,k,kd),kd=1,nf_posdim),' Object',k
          write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i-1)
      $        ,i=1,nf_posno(1,k)),j=1,nf_posdim)
          

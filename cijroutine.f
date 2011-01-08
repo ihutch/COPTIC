@@ -8,7 +8,8 @@ c      end
 c****************************************************************
 c Routine for setting cij, which is used by the general mditerate.
 c      subroutine cijroutine(inc,ipoint,indm1,ndims,iused,cij)
-      subroutine cijroutine(inc,ipoint,indi,ndims,iused,cij,debyelen)
+      subroutine cijroutine(inc,ipoint,indi,ndims,iused,cij,debyelen
+     $     ,error)
 c This routine sets the object pointer in cij if there is an object
 c crossing next to the the point at indi(ndims) in the 
 c dimension id (plus or minus), adjusts the cij values,
@@ -20,6 +21,8 @@ c      integer indm1(mdims)
 c Shifted to correct for face omission.
       integer indi(mdims)
       integer ndims
+c Error indicator
+      real error
 c Not used in this routine
       integer iused(ndims)
       real cij(*)
@@ -263,12 +266,14 @@ c     $                 )then
                      f1=1./(sign(max(abs(fn(i)),tiny),fn(i)))
 c Warn if any strange crossings found.
                      if(f1.lt.1. .and. f1.ge.0)then 
-c This should never happen. If it does, it's a bug.
+c This should never happen. If it does, it's a bug or mesh clash.
                         write(*,*)'Warning: Box Recut ',npoints
      $                       ,i,ipa(i),oi_sor
      $                       ,(indi(kk),kk=1,ndims),(1./fn(i))
-                        write(*,*)'Try changing the grid dimensions a',
-     $                       ' little.'
+     $                       ,' Adjust mesh!'
+c     $                       ,' Try changing the grid'
+c     $                       ,' dimensions a little.'
+                        error=error+1
 c     $                       ,(ipa(kk),kk=1,ndims)
 c     $                       ,f0,f1,ftot
 c     $                       ,(1./fn(kk),kk=1,ndims)

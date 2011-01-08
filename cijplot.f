@@ -39,7 +39,7 @@ c If iosw = 0, plot only sticks for everything.
 c      istick=1
 c      iwire=0
       irotating=0
-      write(*,'(a,i2)')'Object Mask:',mysw/2
+      write(*,'(a,i3)')'Object Mask:',mysw/2
 
       call pltinit(0.,1.,0.,1.)
       call setcube(.2,.2,.2,.5,.4)
@@ -56,7 +56,10 @@ c      iwire=0
       if(y2.ge.0)yb=1
       if(z2.ge.0)zb=1
       if(irotating.eq.0)then
-         icorner= int((2*zb-1)*( (1 +3*yb) + (1 - 2*yb)*xb ))
+c This is slightly different.
+c         icorner= int((2*zb-1)*( (1 +3*yb) + (1 - 2*yb)*xb ))
+         icorner=igetcorner()
+         call ax3labels('x','y','z')
       else
          irotating=irotating-1
       endif

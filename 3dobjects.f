@@ -37,28 +37,36 @@ c We don't do flux initialization in a block data. Too big.
       end
 c**********************************************************************
       subroutine geomdocument()
-      write(*,*)
+      write(*,*)'######################################################'
       write(*,*)'Format and meaning of the object geometry file'
      $     ,' default [ copticgeom.dat'
       write(*,*)'First line number of dimensions: 3'
       write(*,*)'Thereafter ignored comment lines start with #'
-      write(*,*)
-      write(*,*)'Object lines have the format: otype, a,b,c, center(3),'
-     $     ,' radii(3), [extra data]'
-      write(*,*)' if a=b=c=0, no potential BC is applied and object'
+      write(*,*)'######################################################'
+      write(*,'(2a)')'Object lines have the format: otype, a,b,c,'
+     $     ,' center(3), radii(3), [extra data]'
+      write(*,*)'a,b,c, set BC in Robin form aU+bU''+c=0' 
+      write(*,*)'if a=b=c=0, no potential BC is applied and object'
      $     ,' is masked.'
       write(*,*)'otype indicates how to use the line. Higher bytes'
      $     ,' of otype indicate specials.'
       write(*,*)'byte-1: 1 Spheroid, 2 Cuboid, 3 Cylinder, 4 Parallel'
      $     ,'opiped, ...'
-      write(*,*)'For Spheroid, extra data (3) indicate flux'
-     $     ,' accumulation thus:'
-      write(*,*)'ofluxtype [number of fluxes], ofn1 [size],'
-     $     ,' ofn1 [size] of uniform array.'
+      write(*,'(2a)')'Extra data for more complex objects and'
+     $     ,' to specify flux accumulation.'
       write(*,*)'For parallelopiped, center->origin. radii->vec1. Then'
      $     ,' vec2, vec3. (x3)'
-      write(*,*)'Other objects do not have flux accumulation yet.'
-      write(*,*)' 99 Boolean region,  91-3 Set mesh in dimension 1-3. '
+      write(*,*)'Cylinder, center, radii, iaxial=number of axial axis.'
+      write(*,*)'Flux accumulation (follows geometry): ofluxtype,'
+     $     ,'ofn1,ofn3[,ofn3].'
+      write(*,*)' Indicates number-of-flux-types, sizes of uniform '
+     $     ,'index arrays [direction].'
+      write(*,*)' Sphere needs 2 arrays.'
+     $     ,' Cylinder 3 (r,th,z) arrays.'
+      write(*,*)' Cuboid (x,y,z) arrays. '
+     $     ,'Pllelopiped (1,2,3) arrays.'
+      write(*,*)'byte-1: 99 Boolean particle region,  91-3 Set mesh in'
+     $     ,'dimension 1-3. '
       write(*,*)'byte-2: 1(x256) Special boundary phi=0 instead of '
      $     ,'continuity.'
       write(*,*)'byte-2: 2(x256) Point-charge (spherical) object.'
@@ -94,15 +102,13 @@ c**********************************************************************
 c Read the geometric data about objects from the file filename
       character*(*) filename
       character*128 cline
-c      character*128 fstring
       include '3dcom.f'
       include 'meshcom.f'
 c Common data containing the object geometric information. 
 c Each object, i < 64 has: type, data(odata).
 c      integer ngeomobjmax,odata,ngeomobj
-c      parameter (ngeomobjmax=31,odata=16)
+c      parameter (ngeomobjmax=...,odata=...)
 c      real obj_geom(odata,ngeomobjmax)
-c      common /objgeomcom/ngeomobj,obj_geom
       intrinsic IBCLR
       real valread(2*nspec_mesh)
       logical lbounded
@@ -146,31 +152,54 @@ c Read the geometry definition variables and then the flux counts.
      $        (obj_geom(k,ngeomobj),k=1,oradius+nd-1)
      $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn2)
  801     if(myid.eq.0)write(*,820)ngeomobj,' Spheroid '
+c Sphere has just one facet and we must make n3=1 too:
+         obj_geom(ofn3,ngeomobj)=1
+         obj_geom(offc,ngeomobj)=1
          if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
 c         if(myid.eq.0 .and. obj_geom(ofluxtype,ngeomobj).ne.0)
 c     $        write(*,821)(obj_geom(k,ngeomobj),k=ofluxtype,ofn2)
       elseif(type.eq.2.)then
          read(cline,*,err=901,end=802)
-     $        (obj_geom(k,ngeomobj),k=1,odata)
+     $        (obj_geom(k,ngeomobj),k=1,oradius+nd-1)
+     $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn3)
  802     if(myid.eq.0)write(*,820)ngeomobj,' Cuboid '
-         if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
+c Cuboid has 6 facets and uses numbering in three coordinates:
+         obj_geom(offc,ngeomobj)=2*nd
+         if(myid.eq.0)then 
+            write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
+            do k=1,ndims_mesh
+               if(obj_geom(ocenter+k-1,ngeomobj).eq.obj_geom(oradius+k-1
+     $              ,ngeomobj)) stop 'Zero volume cube not allowed'
+            enddo
+         endif
       elseif(type.eq.3.)then
+c Cylinder
          read(cline,*,err=901,end=803)
-     $        (obj_geom(k,ngeomobj),k=1,odata)
+     $        (obj_geom(k,ngeomobj),k=1,ocylaxis)
+     $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn3)
  803     if(myid.eq.0)write(*,820)ngeomobj,' Cylinder '
+c 3 facets.
+         obj_geom(offc,ngeomobj)=3
+         if(obj_geom(ocylaxis,ngeomobj).le.0.)then
+            write(*,*)'Geometry ERROR. No cylinder axial direction in:'
+            write(*,*)cline
+            stop
+         endif
          if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.4.)then
+c Parallelopiped also serves as general cuboid.
          read(cline,*,err=901,end=804)
-     $        (obj_geom(k,ngeomobj),k=1,odata)
+     $        (obj_geom(k,ngeomobj),k=1,oradius+nd*nd-1)
+     $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn3)
+c     $        (obj_geom(k,ngeomobj),k=1,odata)
  804     if(myid.eq.0)write(*,820)ngeomobj,
-     $        ' General Cuboid/Parallelepiped '
-c         if(myid.eq.0)write(*,822)(obj_geom(k,ngeomobj),
-c     $        k=1,1+nd*(1+nd)+3)
+     $        ' Pllelopiped '
+         obj_geom(offc,ngeomobj)=2*nd
 c Now obj_geom(ocenter,ngeomobj) is the start of the pp_ data structure
 c for this pp-object. So a call to pllelosect with pp argument of
 c obj_geom(ocenter,ngeomobj) will pass the appropriate pp structure.
 c Like this:
-         call plleloinit(obj_geom(ocenter,ngeomobj))
+         call plleloinit(obj_geom(1,ngeomobj))
          if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),
      $        k=1,1+nd*(1+nd)+3)
       elseif(type.eq.99)then
@@ -290,7 +319,7 @@ c This condition tests for a sphere crossing.
       endif
       end
 c****************************************************************
-      subroutine cubesect(id,ipm,ndims,indi,tc,bc,fraction,dp)
+      subroutine cubesect1(id,ipm,ndims,indi,tc,bc,fraction,dp)
 c For mesh point indi() find the nearest intersection of the leg from
 c this point to the adjacent point in dimension id, direction ipm, with
 c the ndims-dimensional coordinate aligned cuboid 
@@ -342,6 +371,54 @@ c         x2=x1
       enddo
       end
 c****************************************************************
+c****************************************************************
+      subroutine cubesect(id,ipm,ndims,indi,rc,xc,fraction,dp)
+c For mesh point indi() find the nearest intersection of the leg from
+c this point to the adjacent point in dimension id, direction ipm, with
+c the ndims-dimensional coordinate aligned cuboid 
+c of center coordinates xc(ndims), radius (face position) rc.
+c Return the fractional distance in fraction (1 for no intersection),
+c and total mesh spacing in dp, so that bdy distance is fraction*dp.
+      integer id,ipm,ndims
+      integer indi(ndims)
+      real rc(ndims),xc(ndims)
+      real fraction,dp
+      include 'meshcom.f'
+      fraction=1.
+      do i=1,ndims
+         ix1=indi(i)+ixnp(i)+1
+         x1=(xn(ix1)-xc(i))
+         ri=abs(rc(i))
+c x1 and x2 are the coordinates relative to the center.
+         if(i.eq.id)then
+            ix2=ix1+ipm
+            x2=(xn(ix2)-xc(i))
+            dp=abs(x2-x1)
+            if(x1.ge.ri.neqv.x2.ge.ri)then
+c Crossed ri.
+c This prefers the positive-ri face if both are crossed.               
+               fraction=(x1-ri)/(x1-x2)
+c               fraction=.999999*(x1-ri)/(x1-x2)
+            elseif(x1.le.-ri.neqv.x2.le.-ri)then
+c Crossed -ri
+               fraction=(x1+ri)/(x1-x2)
+c Not fixing cases of mesh clash. Better to get warning:
+c               fraction=.999999*(x1+ri)/(x1-x2)
+            else
+c No parallel intersection.
+c               fraction=1.
+               return
+            endif
+         else
+            if(abs(x1).ge.ri)then
+c Outside box in orthogonal direction. No intersection.
+               fraction=1.
+               return
+            endif
+         endif
+      enddo
+      end
+c****************************************************************
       subroutine cylsect(id,ipm,ndims,indi,rc,xc,ida,fraction,dp)
 c For mesh point indi() find the nearest intersection of the leg from
 c this point to the adjacent point in dimension id, direction ipm, with
@@ -363,11 +440,11 @@ c z2 is only correct if id.eq.ida but it is only used then
       ix2=ix1+ipm
       z2=(xn(ix2)-xc(ida))
 c (On the boundary face counts as outside.)
-      if(z1*(rc(ida)-z1).le.0.)then
+      if(abs(z1).ge.rc(ida))then
 c z1 outside ends. if we are seeking radially no
          if(id.ne.ida)return
-c Seeking axially. If z2 on same side, no.
-         if(z1*z2.ge.0. .and. (z1-rc(ida))*(z2-rc(ida)).ge.0)return
+c Seeking axially. If z2 also outside, no.
+         if(abs(z2).ge.rc(ida))return
 c Here we are seeking axially and have found z2 inside z1 outside. 
       else
 c z1 inside ends.
@@ -409,11 +486,11 @@ c No intersection with circle.
             endif
          else
 c Searching axially. If z2 also inside, no.
-            if(z2*(rc(ida)-z2).gt.0.)return
+            if(abs(z2).lt.0.)return
 c Found z1 inside, z2 outside.
          endif
       endif
-c z1,z2 inside/outside. Check for intersection with ends
+c z1,z2 inside/outside, axial search. Check for inside orthogonal circle.
       r1=0
       dp=abs(z2-z1)
       do k=1,ndims-1
@@ -424,10 +501,10 @@ c z1,z2 inside/outside. Check for intersection with ends
       enddo
       if(r1.lt.1.)then
 c Intersection with ends
-         if(z1*z2.le.0.)then
-            fraction=z1/(z1-z2)
-         else
+         if(z1.lt.rc(ida).neqv.z2.lt.rc(ida))then
             fraction=(z1-rc(ida))/(z1-z2)
+         elseif(z1.gt.-rc(ida).neqv.z2.gt.-rc(ida))then
+            fraction=(z1+rc(ida))/(z1-z2)
          endif
       endif
 
@@ -441,20 +518,19 @@ c Return the fractional distance in fraction (1 for no intersection),
 c and total mesh spacing in dp, so that bdy distance is fraction*dp.
 c
 c The parallelopiped data structure in ppcom.f consists of
-c 1 pp_orig : origin x_0 (3=pp_ndims) 
-c 4 pp_vec : 3 (covariant) vectors v_p defining the edges from the
-c origin.(3x3)
+c 1 pp_orig : origin xc (3=pp_ndims) 
+c 4 pp_vec : 3 (covariant) vectors v_p equal half the edges.(3x3)
 c 13 pp_contra : 3 contravariant vectors v^q such that v_p.v^q =
 c \delta_{pq} (3x3)
 c A pp_total of 21 reals (in 3-D), of which the last 9 can be calculated
 c from the first 12, but must have been set prior to the call. 
-c A point is inside the pp if 0<=Sum_i(x_i-x_{0i}).v^p_i<=1 for all p.
+c A point is inside the pp if |Sum_i(x_i-xc_i).v^p_i|<1 for all p.
 c A point is on the surface if, in addition, equality holds in at least
 c one of the (6) relations. 
 c [i-k refers to cartesian components, p-r to pp basis.] 
 c
-      include 'ppcom.f'
-      real pp(pp_total)
+      include '3dcom.f'
+      real objg(pp_total)
       integer id,ipm,ndims
       integer indi(ndims)
       real fraction,dp
@@ -463,7 +539,7 @@ c
       real small
       parameter (small=1.e-6)
 
-c      write(*,*)(pp(k),k=1,pp_total)
+c      write(*,*)(objg(k),k=1,pp_total)
  1    fraction=1.
       do j=1,pp_ndims
          s1(j)=0.
@@ -471,17 +547,17 @@ c      write(*,*)(pp(k),k=1,pp_total)
       enddo
       do i=1,ndims
          ix1=indi(i)+ixnp(i)+1
-         x1=xn(ix1)-pp(pp_orig+i-1)
+         x1=xn(ix1)-objg(pp_orig+i-1)
          x2=x1
          if(i.eq.id)then
             ix2=ix1+ipm
-            x2=xn(ix2)-pp(pp_orig+i-1)
+            x2=xn(ix2)-objg(pp_orig+i-1)
             dp=abs(x2-x1)
          endif
 c x1, x2 are the coordinates with respect to the pp origin.
          do j=1,pp_ndims
-            s1(j)=s1(j)+x1*pp(pp_contra+pp_ndims*(j-1)+i-1)
-            s2(j)=s2(j)+x2*pp(pp_contra+pp_ndims*(j-1)+i-1)
+            s1(j)=s1(j)+x1*objg(pp_contra+pp_ndims*(j-1)+i-1)
+            s2(j)=s2(j)+x2*objg(pp_contra+pp_ndims*(j-1)+i-1)
          enddo
       enddo
 c Now we have the contravariant coefficients in s1,s2. 
@@ -489,27 +565,18 @@ c Determine whether outside
       is1=0
       is2=0
       do j=1,pp_ndims
-         if(s1(j).eq.0. .or. s2(j).eq.0.)then
-            write(*,*)j,' s1,2=',s1(j),s2(j)
-     $           ,' mesh clash. Moving origin'
-            do i=1,ndims
-               pp(pp_orig+pp_ndims*(j-1)+i-1)=
-     $              pp(pp_orig+pp_ndims*(j-1)+i-1)+small
-            enddo
-            goto 1
-         endif
-         if(s1(j).eq.1. .or. s2(j).eq.1.)then
+         if(abs(s1(j)).eq.1. .or. abs(s2(j)).eq.1.)then
             write(*,*)j,' s1,2=',s1(j),s2(j)
      $           ,' mesh clash. Scaling contra'
             do i=1,ndims
-               pp(pp_contra+pp_ndims*(j-1)+i-1)=
-     $              pp(pp_contra+pp_ndims*(j-1)+i-1)*(1.+small)
+               objg(pp_contra+pp_ndims*(j-1)+i-1)=
+     $              objg(pp_contra+pp_ndims*(j-1)+i-1)*(1.+small)
             enddo
             goto 1
          endif
 c (On the boundary counts as outside.)
-         if(s1(j).le.0. .or. s1(j).ge.1)is1=1
-         if(s2(j).le.0. .or. s2(j).ge.1)is2=1
+         if(abs(s1(j)).ge.1.)is1=1
+         if(abs(s2(j)).ge.1.)is2=1
       enddo
 c      write(*,*)is1,is2,s1,s2
       if(is1.ne.is2)then
@@ -517,14 +584,14 @@ c One end inside and one outside. Find crossing.
 c We want the crossing closest to the point that's inside.
 c         write(*,*)s1,s2
          do j=1,pp_ndims
-            if(s1(j).le.0. .and. s2(j).gt.0.)then
-               f1=abs(s1(j))/(abs(s1(j))+abs(s2(j)))
-            elseif(s1(j).gt.0. .and. s2(j).le.0.)then
-               f1=abs(s1(j))/(abs(s1(j))+abs(s2(j)))
+            if(s1(j).le.-1. .and. s2(j).gt.-1.)then
+               f1=abs(s1(j)+1.)/(abs(s1(j)+1.)+abs(s2(j)+1.))
+            elseif(s1(j).gt.-1. .and. s2(j).le.-1.)then
+               f1=abs(s1(j)+1.)/(abs(s1(j)+1.)+abs(s2(j)+1.))
             elseif((s1(j)-1.).ge.0. .and. (s2(j)-1.).lt.0.)then
                f1=abs(s1(j)-1.)/(abs(s1(j)-1.)+abs(s2(j)-1.))
             elseif((s1(j)-1.).lt.0. .and. (s2(j)-1.).ge.0.)then
-               f1=abs(s1(j)-1.)/(abs(s1(j)-1.)+abs(s2(j)-1.)+small)
+               f1=abs(s1(j)-1.)/(abs(s1(j)-1.)+abs(s2(j)-1.))
             else
                f1=1.
             endif
@@ -547,11 +614,11 @@ c x1 is outside, use max crossing fraction ne 1.
 c Now fraction= closest face-crossing fraction (or 1.)
       end
 c****************************************************************
-      subroutine plleloinit(pp)
+      subroutine plleloinit(objg)
 c Initialize this pp_structure by calculating the contravariant 
 c vectors from the covariant vectors.
-      include 'ppcom.f'
-      real pp(pp_total)
+      include '3dcom.f'
+      real objg(pp_total)
 
       triple=0.
       do j=1,pp_ndims
@@ -560,27 +627,28 @@ c Other vectors:
          jpv2=pp_vec+mod(j,pp_ndims)*pp_ndims-1
          jpv3=pp_vec+mod(j+1,pp_ndims)*pp_ndims-1
          jpc=pp_contra+(j-1)*pp_ndims-1
-c Set pp(jpc..) equal to the cross product between the other vectors.
+c Set objg(jpc..) equal to the cross product between the other vectors.
          do i=1,pp_ndims
             i2=mod(i,pp_ndims)+1
             i3=mod(i+1,pp_ndims)+1
-            pp(jpc+i)=(pp(jpv2+i3)*pp(jpv3+i2)-pp(jpv2+i2)*pp(jpv3+i3))
+            objg(jpc+i)=(objg(jpv2+i3)*objg(jpv3+i2)-objg(jpv2+i2)
+     $           *objg(jpv3+i3))
          enddo
 c calculate the scalar triple product the first time:
          if(j.eq.1)then
             do i=1,pp_ndims
-               triple=triple+pp(jpc+i)*pp(jpv+i)
+               triple=triple+objg(jpc+i)*objg(jpv+i)
             enddo
          endif
          if(triple.eq.0.)then
             write(*,*)'Parallelopiped of zero volume ERROR.'
-            write(*,*)(pp(k),k=1,21)
+            write(*,*)(objg(k),k=1,21)
             write(*,*)jpv,jpc
             stop
          endif
 c normalize
          do i=1,pp_ndims
-            pp(jpc+i)=pp(jpc+i)/triple
+            objg(jpc+i)=objg(jpc+i)/triple
          enddo
       enddo
 
@@ -636,7 +704,6 @@ c Return integer 0 or 1 according to whether ndims-dimensional point x
 c is outside or inside object number i. Return 0 for non-existent object.
       integer ndims,i
       real x(ndims)
-
 c Common object geometric data.
       include '3dcom.f'
       
@@ -646,10 +713,7 @@ c Common object geometric data.
       itype=int(obj_geom(otype,i))
 c Use only bottom 8 bits:
       itype=itype-256*(itype/256)
-      if(itype.eq.0)then
-         return
-
-      elseif(itype.eq.1)then
+      if(itype.eq.1)then
 c Coordinate-Aligned Spheroid data : center(ndims), semi-axes(ndims) 
          r2=0
          do k=1,ndims
@@ -657,24 +721,20 @@ c Coordinate-Aligned Spheroid data : center(ndims), semi-axes(ndims)
      $           obj_geom(oradius-1+k,i))**2
          enddo
          if(r2.lt.1.) inside_geom=1
-
       elseif(itype.eq.2)then
-c Coordinate-Aligned Cuboid data: low-corner(ndims), high-corner(ndims)
+c Coordinate-Aligned Cuboid data:
          do k=1,ndims
-            xk=x(k)
-            xl=obj_geom(ocenter-1+k,i)
-            xh=obj_geom(oradius-1+k,i)
-            if((xk-xl)*(xh-xk).lt.0) return
+            xk=x(k)-obj_geom(ocenter-1+k,i)
+            if(abs(xk).ge.abs(obj_geom(oradius-1+k,i)))return
          enddo
          inside_geom=1
-
       elseif(itype.eq.3)then
-c Coordinate-Aligned Cylinder data:  Face center(ndims), Radius=
-c Semi-axes(ndims), Axial coordinate. (Signed Axial length = semi-axis of 
-c the axial coordinate).
+c Coordinate-Aligned Cylinder data:  Center(ndims), Semi-axes(ndims), 
+c Axial coordinate. (Signed Axial 1/2 length 
+c = semi-axis of the axial coordinate).
          ic=int(obj_geom(ocylaxis,i))
          xa=(x(ic)-obj_geom(ocenter+ic-1,i))
-         if(xa*(obj_geom(oradius-1+ic,i)-xa).le.0.) return
+         if(abs(xa).ge.abs(obj_geom(oradius+ic-1,i))) return
          r2=0.
          do k=1,ndims
             if(k.ne.ic)
@@ -692,24 +752,9 @@ c "center(ndims)", vectors(ndims,ndims), contravariants.
                xcj=xcj+(x(j)-obj_geom(ocenter+j-1,i))
      $              *obj_geom(ocontra+ndims*(k-1)+j-1,i)
             enddo
-            if(xcj.gt.1.)return
-            if(xcj.lt.0.)return
+            if(abs(xcj).gt.1.)return
          enddo
          inside_geom=1
-c Old version where vectors are the face normals of
-c length equal to the distance to the opposite face.
-c         do k=1,ndims
-c            proj=0.
-c            plen=0
-c            do j=1,ndims
-c               proj=proj+(x(j)-obj_geom(ocenter-1+j,i))
-c     $              *obj_geom(oradius-1+ndims*(k-1)+j,i)
-c               plen=plen+obj_geom(oradius+ndims*(k-1)+j,i)**2
-c            enddo
-c            if(proj.gt.plen)return
-c            if(proj.lt.0.)return
-c         enddo
-c         inside_geom=1
       endif
 
       end
@@ -869,7 +914,7 @@ c               write(*,*)'Spheresect return',id,ipm,i,fraction
 c     $              ,obj_geom(oradius,i),obj_geom(ocenter,i)
 c            endif
             elseif(obj_geom(otype,i).eq.2)then
-c Coordinate aligned cube.               
+c Coordinate-aligned cuboid.               
                call cubesect(id,ipm,ndims,indi,obj_geom(oradius,i)
      $              ,obj_geom(ocenter,i),fraction,dp)   
             elseif(obj_geom(otype,i).eq.3)then
@@ -880,7 +925,7 @@ c Coordinate aligned cylinder.
             elseif(obj_geom(otype,i).eq.4)then
 c Parallelopiped.
 c               write(*,*)'Calling pllelosect'
-               call pllelosect(id,ipm,ndims,indi,obj_geom(ocenter,i)
+               call pllelosect(id,ipm,ndims,indi,obj_geom(1,i)
      $              ,fraction,dp)   
             else
                write(*,*)"Unknown object type",obj_geom(otype,i),

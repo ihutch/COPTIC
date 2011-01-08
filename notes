@@ -5755,3 +5755,199 @@ Now we have all the originally conceived objects working with
 Dirichlet boundary conditions. 
 
 Needed: Neumann/Robin for other than spheres. Media/Surface-Charge.  
+
+29 Dec 10
+
+Committed to CVS.
+
+Working on different boundary conditions. In the long run we probably want
+to link the surface charge to the flux. Therefore when we are using a
+surface charge density that varies across an object, we ought to use a
+data structure to describe it that is the same as the structure 
+describing the flux density. At present this structure assumes that the
+number of dimensions needed to describe the flux-position on the object
+is nf_posdim=2. For an object with facets, this may be inconvenient. 
+For example, for a parallelopiped, the natural way to index the position
+would be by face (2 x ndims) and then by (ndims-1) dimensions on the face.
+Thus at least nf_posdim=3 would be useful.
+Also, nf_posdim is a parameter at present, being used to define the
+array sizes of numerous objects in 3dcom. It can't be variable. 
+In 3-D then, it seems a reasonable compromise to suppose that objects
+might have facets on which 2-d indexing of position is done, but that the
+facets themselves are indexed in a single dimension. Thus nf_posdim=3,
+and the third dimension is the facet number. For a sphere there would
+be just one facet. For a cube or parallelopiped 6= 2x ndims. For a cylinder
+there might be 3=ndims (top, bottom, curved-surface). One can imagine 
+others such as cone 2, tetrahedron 4, etc. 
+
+Currently the only flux accumulation that is defined is for sphere 
+in standard cos\theta and psi. 
+
+Make nf_posdim=3. Then fluxexamine does not plot the new flux data
+properly until it is recompiled with new common. Then it appears to work.
+
+Now we need to generalize the flux tracking routine objsect.
+There are two main parts to it. The first finds the bin number.
+The second adds the contribution to the bins. Only the first needs
+to be different for each object. The second should become common.
+Split out the sphere-specific part. 
+
+Working on cuboid face and surface indexing. I find that my approach
+that uses ofn1,2,3 with ofn3 simply the number of facets (faces) is
+limited.  The problem is that it makes sense to use a specific number
+of face divisions in each of 3 dimensions. So that face 2 is indexed
+with n3 and n1 (for example). This does not quite work with the plan I
+have set up, in which ofn1 and ofn2 are the same for all faces. That
+essentially forces all face indexing to be the same numbers. What I
+really ought to be using is ofn1,2,3 for the three dimensions and offc
+for the face number. Then the dimensions of face 1,2,3 are
+ofn2*3,ofn3*1,ofn1*2, and the total is
+nf_posno=2*(ofn2*3+ofn3*1+ofn1*2) (because of two faces per
+dimension). In general I regard the indexing of the surface data as
+totally the responsibility of the object code. So I really just need
+to correctly calculate the total size of the surface data, nf_posno. 
+Any subsequent analysis has to know how the data is organized, but 
+coptic doesn't except in the fluxdata accumulation (which is what I am
+working on). There's no reason not to include this extra facility, 
+I think. Yes there is. The problem is nf_dimlens(nf_quant,nf_obj,nf_posdim)
+which is assumed to be a triple (for nf_posdim=3) in the last index,
+and hence can't really change. Actually at present, for spheres, I don't
+use the third dimension of dimlens. Therefore it would be acceptable 
+to make it equal to the third index length for a cube. It would not break
+the sphere.
+
+Had to introduce a new nf_faceind array that gives the offsets to the 
+different faces within nf_posno, because those offsets are not uniformly
+spaced when the faces are not of the same side, which now they aren't
+since I'm using constant array length for each coordinate dimension.
+
+Found that using an odd number of mesh points gives faddu singularity
+errors only when the total coordinate length is a factor of n_mesh-1.
+Not really clear why. Seems that cijroutine is not setting the regions
+correctly at the boundary of the cube. Region 0 outside of it is not
+being set. Must be because of the mesh clash.
+
+30 Dec 10
+
+I think the problem with meshclash is that on the one hand one can make
+a convention that points on the boundary are all (say) outside the object,
+but on the other, one has made the convention that fraction=1 is taken
+to be a non-intersection. These are inconsistent, when projecting from
+inside. This probably needs to be fixed in cubesect, etc. But there's
+another inconvenience with those. I should have defined the center to
+be really the center and the radii to be the distance from the center
+to the faces. I want to change that. 
+
+Changed cubes to be defined by center and radii. 
+Fixed the mesh clash by automatically shifting the mesh slightly.
+There's a down side to this in that it is asymmetric. 
+Maybe I should have shifted and scaled. Try that. Seems better.
+Seem to have got the changed cube flux accumulation working.
+
+Cubes are now working apparently consistently. 
+Fixed parallelopiped to use centered definition.
+Fixed cylinder to use centered definition.
+
+Flux on cylinder. We need 3 facets: two ends and curved surface.
+Rationally one should index the angle by the same number on each.
+Then the radius number and the axis number could be different. 
+Therefore, like the cube, we could have 3 dimlens, which we should take
+to be r,\theta,z. 
+
+31 Dec 10
+
+Despite good progress yesterday, I am mired in the cylinder case.
+It seems very complicated to determine the intersection point. 
+Rationalized the spherical intersection code to some extent by
+packaging the calculation. Also including the ability to do a cylinder
+in the same code by omiting a particular coordinate direction. 
+However, this package needs to pass some stuff back, e.g. C, D, which 
+are the radii squared -1 are useful to tell which end is inside etc.
+Also, one might as well pass back both intersections, not just the one
+that is closest positive to x1. Then we'd have all the useful information.
+
+Organized this all more carefully. Now cylfsect is working. And the 
+coordinate-aligned cylinder case appears correct.
+
+Parallelopiped flux accumulation is not yet done, but it ought to be
+very similar to the cube.
+
+Created a routine docwrite to convert plain text files into fortran
+routines that print out the same text. Have to replace single quotes
+with backquotes to make the fortran compile properly. Seems to work. 
+Fixed the parameters.txt file to bring it up to date. 
+
+Made a geommany.dat input file that illustrates many of the shapes. 
+
+3 Jan 2011
+
+Remaining to be done: pllelogram flux accumulation. Should be like 
+cuboid. 
+Implemented. Also packaged the cube to use the same code based
+upon a unit cube.
+Seems to work but there are some strange inconsistencies
+when changing from 1 to 2 bins. The exact numbers don't add up. 
+We need some diagnostics of the intersections being found.
+
+4 Jan 11
+General idea is to draw in 3-D the flux grid for an object and the
+set of intersections in the form of short lines from the prior 
+particle position to the intersection point. This should show if we
+are finding the intersections approximately correctly. Also it 
+should serve as a basis for displaying the flux accumulation. 
+Flux accumulation is done for a set of surfaces that lie between
+certain surface parameter limits. It makes sense to plot those limits.
+One problem is that there is one more boundary than there are regions.
+That might make saving in the negative index spaces of the flux data
+a problem. Since arrays are uniformly spaced maybe we don't have to 
+save the top limit. In any case, we need to
+  Calculate and store the flux position array data.
+  Develop data structures and code to do 3-D plot of intersections.
+
+Sphere has already implemented values at the center of the intervals,
+rather than the boundaries of the intervals. Might be tricky to
+change, although it is only in fluxave that it is used. And there in a
+non-general way. It is not too difficult to transform between bin
+centers and bin boundaries when they are guaranteed to be uniform in
+the quantity considered. In fact if we know the bins are uniform we
+don't need to use the bin position arrays. Just the algorithm.  The
+main problem is that we should not let things get too adhoc.  We
+already have some stuff hard wired into the various fsect routines.
+We need a programing interface turning flux index into cartesian
+position if we are going to be able to draw a mesh of the flux
+domains.  At the moment, even the sphere does not have this, because
+what is stored in the fluxdata is the angle coordinate. The flux file
+does not have enough information in itself to reconstruct the position
+of the surface elements in 3-D. In fact perhaps we need to make sure
+that the object input data is written back to a file, pehaps the flux
+file, otherwise it will be too difficult to do post-run visualization.
+
+Put object data into flux file at end. 
+
+7 Jan 11
+
+Developed plotting of objects and intersections. It shows that the 
+intersections do indeed appear to be on the objects. Need a sphere drawing
+object. Presumably an approach like the cylinder would do. 
+
+Now we need the flux accumulation grid(s). It might make sense to draw
+each surface element separately. Then they could be colored in (e.g.)
+with the flux number color. To do this, we need a way of transforming
+from the ibin number to the element position on the object, and then
+to the extent (edges of) of the element. For curved elements one might
+need interpolation along the curved edges. For uniform grids we can
+get the edge grid values from the central values. 
+
+8 Jan 11
+
+Corrected algorithms for surface painting of cylinders, spheres and made
+consistent with specified flux accumulations. Coloring so far just according
+to flux bin.
+
+The ppcom.f structure seems at this stage to be an unnecessary duplication
+of what goes on in 3dcom.f. One could simply define the pp_ pointers 
+relative to the start of the object, and then pass the object. As far
+as I can tell. Got rid of it and just use the objg reference instead.
+
+Finished implementing coloring by bin of sphere, cylinder, cube, pllelopiped.
+Sphere has a fall-back to its plotting arcs if there is no flux. 

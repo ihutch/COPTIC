@@ -2,8 +2,12 @@
 # After that we can have comment lines with # in column 1.
 # We can short-list the data, but only if we don't put a comment
 # on the end. In that case we'd get an error.
-# Cylinder abc, center(face), radii, axialcoord.
-3, 1.,0.,1., 0.,0.,0., 1.,1.5,1.5, 1
+# Cylinder abc, center(face), radii, axialcoord. 
+#3, 1.,0.,1., 0.,0.,0., 2.,1.5,1.5,   2
+# Then optionally flux specifications: quantities, number of bins in r,theta,z.
+3, 1.,0.,1., 0.,0.,0., 1.,1.,1., 3,    1, 1,11,4
+
+3, 1.,0.,1., 2.,2.,2., 1.,1.,1., 2,    1, 2,6,2
 
 # Boolean for particle region. In this case -1: outside object 1.
 99, 1, -1, 0

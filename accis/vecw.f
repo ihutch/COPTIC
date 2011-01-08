@@ -107,6 +107,8 @@ c If ifl.eq.1 set the transform: x,y,z: looked at, xt,yt,zt: eye.
 c Projection is on to the plane through x,y,z perp to r-rt.
 c Thus scaling must be done first.
 c If ifl.eq.2 axonometric transform. xt=dx/dy,zt=dz/dy
+c If ifl.eq.3 return the coordinates relative to center,
+c          rotated to the axes in which the center to eye vector is z.
 c If ifl.eq.-1 return the eye position dx,dy,dz in xt,yt,zt.
       real dx,dy,dz,rz,d,t11,t12,t13,t21,t22,t23,t31,t32,t33,dmz
       real x0,y0,z0
@@ -166,6 +168,10 @@ c Axonometric setup. x=x+dxdy*y, y=z+dzdy*y, z=y, d=infinity.
 	 t32=1.
 	 t33=0.
 	 d=1.e30
+      elseif(ifl.eq.3)then
+	 xt=(t11*(x-x0)+t12*(y-y0)+t13*(z-z0))
+	 yt=(t21*(x-x0)+t22*(y-y0)+t23*(z-z0))
+	 zt=t31*(x-x0)+t32*(y-y0)+t33*(z-z0)
       elseif(ifl.eq.-1)then
 c Return current.
          xt=dx+x0
