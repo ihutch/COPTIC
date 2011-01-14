@@ -50,20 +50,23 @@ c Might eventually need more interpretation of fluxtype.
 c The mapped object number != object number.
             nf_map(i)=mf_obj
             nf_geommap(mf_obj)=i
+            itype=int(obj_geom(otype,i))
+c Use only bottom 8 bits:
+            itype=itype-256*(itype/256)
 c There are nfluxes positions for each quantity.
 c At present there's no way to prescribe different grids for each
 c quantity in the input file. But the data structures could 
 c accommodate such difference if necessary. 
             do j=1,mf_quant(mf_obj)
-               if(obj_geom(otype,i).eq.1)then
+               if(itype.eq.1)then
 c Sphere one face only n3=1
                   nfluxes=1
                   do k=1,nf_posdim
                      nf_dimlens(j,mf_obj,k)=int(obj_geom(ofn1+k-1,i))
                      nfluxes=nfluxes*obj_geom(ofn1+k-1,i)
                   enddo
-               elseif(obj_geom(otype,i).eq.2
-     $                 .or. obj_geom(otype,i).eq.4
+               elseif(itype.eq.2
+     $                 .or. itype.eq.4
      $                 )then
 c Cuboid or parallelopiped.
 c Six faces, each using two of the three array lengths. 
@@ -81,7 +84,7 @@ c     $                    ,obj_geom(ofn1+mod(k,nf_posdim),i)
                   enddo
 c                  write(*,*)(nf_faceind(j,mf_obj,k),k=1,2*nf_posdim)
 c                  nfluxes=2*nfluxes
-               elseif(obj_geom(otype,i).eq.3)then
+               elseif(itype.eq.3)then
 c Cylinder (coordinate aligned) specifying nr, nt, nz. 
 c Three facets in the order bottom side top.
                   nfluxes=0
@@ -162,7 +165,7 @@ c Zero nums to silence incorrect warnings.
       numdata=0
       numobj=0
       nf_address(1,1,1-nf_posdim)=1
-      do k=1-nf_posdim,nf_maxsteps
+      do k=1-nf_posdim,nf_maxsteps+1
          if(k.gt.1-nf_posdim)
      $        nf_address(1,1,k)=nf_address(1,1,k-1)+numobj
          numobj=0
@@ -179,7 +182,7 @@ c               write(*,*)i,j,k,nf_posno(i,j),nf_address(i,j,k),numdata
          enddo
       enddo
 c Check if we might overrun the datasize.
-      if(nf_address(nf_quant,mf_obj,nf_maxsteps)+numobj
+      if(nf_address(nf_quant,mf_obj,nf_maxsteps+1)+numobj
      $     .gt.nf_datasize)then
          write(*,*)'DANGER: data from',nf_quant,mf_obj,nf_maxsteps,
      $        ' would exceed nf_datasize',nf_datasize
@@ -241,6 +244,8 @@ c
       include 'sectcom.f'
 
       real x1(npdim),x2(npdim)
+      integer isc
+      data isc/0/
 
       ierr=0
 
@@ -285,18 +290,23 @@ c------------------------------
 c Saving the x1 and intersection for diagnostics.
       if(sc_ipt.lt.sc_npts)then
          sc_ipt=sc_ipt+1
-         iob_sc(sc_ipt)=iobj
-c         write(*,*)'Saving intersection',sc_ipt
-         do i=1,sc_ndims
-            x_sc(i,1,sc_ipt)=x1(i)
-            x_sc(i,2,sc_ipt)=x1(i)*(1.-fraction)+x2(i)*fraction
-         enddo
       endif
+c Count up to total intersections. Then store cyclically. 
+      isc=mod(isc,sc_npts)+1
+      iob_sc(isc)=iobj
+      ibin_sc(isc)=ijbin
+c      write(*,*)'Saving intersection',isc,iobj,ijbin
+      do i=1,sc_ndims
+         x_sc(i,1,isc)=x1(i)
+         x_sc(i,2,isc)=x1(i)*(1.-fraction)+x2(i)*fraction
+      enddo
 c------------------------------
 c Adding into bins. At this point all we need is sd, ijbin.
 c Particle Flux.
       iaddress=ijbin+nf_address(nf_flux,infobj,nf_step)
       ff_data(iaddress)=ff_data(iaddress)+sd
+c This is the way to test that one is really accessing the right bin:
+c      ff_data(iaddress)=ijbin
 c Perhaps ought to consider velocity interpolation.
       if(mf_quant(infobj).ge.2)then
 c Momentum               
@@ -362,9 +372,11 @@ c Calculate normalized intersection coordinates.
          x12(i)=((1.-fraction)*xp1(i)+fraction*xp2(i)
      $        -obj_geom(ocenter,iobj))/obj_geom(oradius,iobj)
       enddo
-c Example: bin by cos(theta)=x12(3) uniform grid in first nf_dimension. 
+c Bin by cos(theta)=x12(3) uniform grid in first nf_dimension. 
+c ibin runs from 0 to N-1 cos = -1 to 1.
       ibin=int(nf_dimlens(nf_flux,infobj,1)*(0.999999*x12(3)+1.)*0.5)
       psi=atan2(x12(2),x12(1))
+c jbin runs from 0 to N-1 psi = -pi to pi.
       jbin=int(nf_dimlens(nf_flux,infobj,2)
      $     *(0.999999*psi/3.1415926+1.)*0.5)
       ijbin=ibin+jbin*nf_dimlens(nf_flux,infobj,1)
@@ -585,6 +597,7 @@ c xp1 must be always inside the cube.
       fmin=100.
       do i=1,2*npdim
          im=mod(i-1,npdim)+1
+c First half of the i's are negative. Second half positive.
          xc1=(((i-1)/npdim)*2-1)
          xd1=(xp1(im)-xc1)
          xd2=(xp2(im)-xc1)
@@ -615,12 +628,11 @@ c The following defines the order of indexation. ofn1 is the next highest
 c cyclic index following the face index. So on face 1 or 4 the other
 c two indices on the face are 2,3. But on face 2,5 they are 3,1.
          k=mod(mod(imin-1,3)+1+i-1,npdim)+1
-         xk=fmin*xp1(k)+(1.-fmin)*xp2(k)
-         xc=1.
-c         xr=-1.
-c         xcr=(xk-xc)/(xr-xc)
+         xk=(1.-fmin)*xp1(k)+fmin*xp2(k)
 c Not sure that this is the best order for the plane. Think! :
-         xcr=(1.-xk)*.5
+c         xcr=(1.-xk)*.5
+c This has xcr run from 0 to 1 as xk goes from -1. to +1. :
+         xcr=(1.+xk)*.5
          if(idebug.eq.1)write(*,'(i2,f7.2,i5,i5,'',''$)')k,xcr
      $        ,nf_dimlens(nf_flux,infobj,k)
      $        ,int(nf_dimlens(nf_flux,infobj,k)*(0.999999*xcr))
@@ -866,45 +878,43 @@ c Rhoinf is returned in rinf.
 c      logical lplot
       integer iquant
       include '3dcom.f'
-      parameter (nfluxmax=400)
-      real flux(nfluxmax),angle(nfluxmax)
+      include 'sectcom.f'
+c Use for averaging:ff_data(nf_address(iq,ifobj,nf_maxsteps+1)+i-1)
+c which is ff_data(iav+i)
       real fluxofstep(nf_maxsteps),step(nf_maxsteps)
       character*30 string
 
-c      if(iquant.le.0)then
-c         iq=1
-c      else
       iq=abs(iquant)
-c      endif
 c If quantity asked for is not available, do nothing.
       if(iq.gt.mf_quant(ifobj))return
+c Offset of averaging location:
+      iav=nf_address(iq,ifobj,nf_maxsteps+1)-1
 
+c Check step numbers for rationality.
       if(n1.lt.1)n1=1
       if(n2.gt.nf_step)n2=nf_step
-      if(n2-n1.le.0)then
+      if(n2-n1.lt.0)then
          write(*,*)'fluxave incorrect limits:',n1,n2
          return
       endif
-      if(nf_posno(iq,ifobj).gt.nfluxmax)then
-         write(*,*)'Fluxave error. Insufficient buffer space',nfluxmax,
-     $        ' for total',nf_posno(iq,ifobj)
-         stop
-      endif
-
       do i=1,nf_posno(iq,ifobj)
-         flux(i)=0.
+         ff_data(iav+i)=0.
       enddo
+c Sum the data over steps.
       tot=0
       do i=1,nf_posno(iq,ifobj)
          do is=n1,n2
-            flux(i)=flux(i)+ff_data(nf_address(iq,ifobj,is)+i-1)
+            ff_data(iav+i)=ff_data(iav+i)
+     $           +ff_data(nf_address(iq,ifobj,is)+i-1)
          enddo
-         tot=tot+flux(i)
-         flux(i)=flux(i)/(n2-n1+1)
+         tot=tot+ff_data(iav+i)
+         ff_data(iav+i)=ff_data(iav+i)/(n2-n1+1)
       enddo
+
+c Total the flux over positions as a function of step.
       tdur=0.
       rinf=0.
-      do is=1,n2
+      do is=n1,n2
          fluxstep=0
          do i=1,nf_posno(iq,ifobj)
             fluxstep=fluxstep+ff_data(nf_address(iq,ifobj,is)+i-1)
@@ -923,19 +933,15 @@ c      write(*,*)'tot,rinf,tdur,n2',tot,rinf,tdur,n1,n2
       rinf=rinf/tdur
 
 c From here on is non-general and is mostly for testing.
-      do i=1,nf_posno(iq,ifobj)
-c Here's the assumption that k=0 is angle information.
-c We could make this more general by binning everything with the same
-c angle together. But instead we plot multiple points.
-         angle(i)=ff_data(nf_address(iq,ifobj,0)+i-1)
-      enddo
       write(*,'(a,i3,a,i3,a,i4,i4,a,f10.3)')' Average flux quant',iq
-     $     ,', object',ifobj,', over steps',n1,n2,', All Positions:',tot
-      write(*,*)'rhoinf',rinf,'  Average collected per step by posn:'
-      write(*,'(10f8.2)')(flux(i),i=1,nf_posno(1,ifobj))
+     $     ,', object',ifobj,', over steps',n1,n2,', per unit time:',tot
+      write(*,*)'rhoinf:',rinf,' Total:',nint(tot*tdur)
+     $     ,'  Average collected per step by posn:'
+      write(*,'(10f8.2)')(ff_data(iav+i),i=1,nf_posno(iq,ifobj))
 
       write(*,*)'Flux density*r^2, normalized to rhoinf'
      $     ,tot/(4.*3.14159)/rinf
+c      write(*,*)'Sectcom ipt=',sc_ipt
 
       if(iquant.gt.0)then
          write(string,'(''Object '',i3,'' Quantity'',i3)')
@@ -944,9 +950,10 @@ c angle together. But instead we plot multiple points.
          call boxtitle(string)
          call axlabels('step','Spatially-summed flux number')
          call pltend()
-         call automark(angle,flux,nf_posno(iq,ifobj),1)
+         call automark(ff_data(nf_address(iq,ifobj,0)),ff_data(iav+1),
+     $        nf_posno(iq,ifobj),1)
          call boxtitle(string)
-         call axlabels('First angle variable',
+         call axlabels('First flux face variable',
      $        'Time-averaged flux number')
          call pltend()
       endif
@@ -962,7 +969,9 @@ c Particle common data
       include 'partcom.f'
 c Plasma common data
       include 'plascom.f'
-c 
+c Intersection data
+      include 'sectcom.f'
+
       character*(100) charout
 c Zero the name first. Very Important!
 c Construct a filename that contains many parameters
@@ -1001,6 +1010,9 @@ c Object data:
       write(22)ngeomobj
       write(22)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
       write(22)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
+c Intersection data:
+      write(22)sc_ipt
+      write(22)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),k=1,sc_ipt)
 
       close(22)
 c      write(*,*)'Wrote flux data to ',name(1:lentrim(name))
@@ -1015,6 +1027,7 @@ c*****************************************************************
       character*(*) name
       include '3dcom.f'
       include 'plascom.f'
+      include 'sectcom.f'
       character*(100) charout
 
       open(23,file=name,status='old',form='unformatted',err=101)
@@ -1043,9 +1056,13 @@ c Object data:
       read(23)ngeomobj
       read(23)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
       read(23)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
-      write(*,*)'Object data for',ngeomobj,' objects:'
-      write(*,*)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
-      write(*,*)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
+c      write(*,*)'Object data for',ngeomobj,' objects:'
+c      write(*,*)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
+c      write(*,*)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
+c Intersection data:
+      read(23)sc_ipt
+      read(23)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),k=1,sc_ipt)
+
       goto 103
  102  write(*,*)'Failed to read back forces. Old format?'
  103  close(23)

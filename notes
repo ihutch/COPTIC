@@ -5919,7 +5919,7 @@ domains.  At the moment, even the sphere does not have this, because
 what is stored in the fluxdata is the angle coordinate. The flux file
 does not have enough information in itself to reconstruct the position
 of the surface elements in 3-D. In fact perhaps we need to make sure
-that the object input data is written back to a file, pehaps the flux
+that the object input data is written back to a file, perhaps the flux
 file, otherwise it will be too difficult to do post-run visualization.
 
 Put object data into flux file at end. 
@@ -5950,4 +5950,90 @@ relative to the start of the object, and then pass the object. As far
 as I can tell. Got rid of it and just use the objg reference instead.
 
 Finished implementing coloring by bin of sphere, cylinder, cube, pllelopiped.
-Sphere has a fall-back to its plotting arcs if there is no flux. 
+Sphere has a fall-back to its plotting arcs if there is no flux.
+
+Emacs register can make a register bookmark in a file by 
+C-x r m <ret>
+Then you can jump back to it by
+C-x r b <ret>
+
+Alternatively one can save positions in registers by:
+C-x r <SPC> <char>
+and jump back to that register position by 
+C-x r j <char> (with the same character).
+
+12 Jan 11
+
+Change 3dcom.f to extend flux data addressing to one step more than
+the maxsteps. That last step is for averaged data. (We don't write it out).
+Fix fluxdatainit.
+
+Change fluxave to do the averaging into that ff_data position.
+
+We have sphereplot plotting the fluxaves but not really tested that
+the are perfectly in the correct position.
+
+pllel also plotting. This is somewhat better tested using the expedient
+of putting ijbin into the value to ensure consistent ijbin. However, 
+even that does not really test that what I am reconstructing as the 
+position is the same as the position I started with. This is a real
+headache. 
+
+Next we need to devise a way to test that the positions are really being
+plotted and tallied equivalently. 
+
+13 Jan 11
+
+Perhaps this is simply a matter of reducing the number of tallies till
+they can be spotted individually. Yes that seems to work, and to be 
+correct. It is hard to be sure the counting is _exactly_ right, but the
+approximate variation of count is correct and that is presumably enough
+to show the registration of the facets is correct. It does not prove
+the binning of individual intersections is exactly right. And I don't think
+they are exactly right for pllel.
+
+The case 
+ ./coptic -ofgeompllel.dat -ni5000 -s2 -dt.4
+shows points that are plainly not being attributed to the right bin.
+All the points are accounted for though. And things appear to be nearly
+correct. Just that points are being moved to an adjacent bin. It's extremely
+hard to diagnose, though. 
+
+Save the ijbin with the endpoint, then draw the number on the figure.
+That shows points are being moved, mostly within a face to wrong bins. 
+There does not seem to be a consistent direction of motion. Some points
+seem swapped. Judging by the apparent position of the intersection which
+is on the face, the fraction is being returned correctly. It is ijbin that
+is wrong. Both of these are determined by cubeexplt operating on normalize
+xn1/2. Presumably that means that xn1/2 can't be wrong. 
+FOUND. The problem was in cubeexplt using the wrong fraction balance
+frac vs (1.-frac). I can't now see any errors. Wow that was a slog to
+uncover the error I spotted 3 Jan.
+
+Rationalize the facecoloring into facecolor routine.
+Implement for spheres and for cylinders. 
+Ok. Now all are done and all use facecolor.
+Have to turn off the iosw if the plot is called for an object that
+does not have flux saved. Also need to pass iobj, not ifobj, since
+the latter might be zero/undefined if no flux accumulation. 
+Might be better if no flux accumulation to draw a shaded object of 
+all one color. There's no real reason to do multicoloring in that case
+other than to see the shape of the object. 
+
+14 Jan 11
+
+Add in 3x3vectors after flux bug before odata end to accommodate 
+gradients of the coefficients a,b,c, They are in the order c,b,a 
+because usually the c will be the only thing varying with space.
+
+Fixed some things that broke for the higher byte=3 case.
+
+Now we are ready to implement gradient of potential. This would be 
+considerably easier if the spheresect etc (in 3dobjects) operated
+on specified x1,x2 rather than on mesh indices and directions.
+If that were the case, we could rationalize the intersection finding
+by using the routines that are in fluxdata.f. Then we'd merge the code
+bases of these things. I think this probably should be done. But it's
+going to take some work. 
+
+Commit present version.

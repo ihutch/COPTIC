@@ -5,7 +5,7 @@
 # Cylinder abc, center(face), radii, axialcoord. 
 #3, 1.,0.,1., 0.,0.,0., 2.,1.5,1.5,   2
 # Then optionally flux specifications: quantities, number of bins in r,theta,z.
-3, 1.,0.,1., 0.,0.,0., 1.,1.,1., 3,    1, 1,11,4
+3, 1.,0.,1., 0.,0.,0., 1.,1.,1., 3,    1, 1,6,2
 
 3, 1.,0.,1., 2.,2.,2., 1.,1.,1., 2,    1, 2,6,2
 

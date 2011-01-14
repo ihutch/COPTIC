@@ -5,14 +5,21 @@ c Each object, i < 31 has: type, data(odata).
 c Reference to the index of certain object parameters:
       integer otype,ocenter,oradius,oabc,ocylaxis,ovec,ocontra
       parameter (otype=1,oabc=2,ocenter=5,oradius=8,ocylaxis=11)
-c   parallelopiped vectors start at oradius, contravariant +9
+c parallelopiped vectors start at oradius, contravariant +9
       parameter (ovec=oradius,ocontra=oradius+9)
-c Fluxes for spheres only at the moment
+c Flux indices.
       integer ofluxtype,ofn1,ofn2,ofn3,offc,omag
+c FluxType is really the number of quantities.
       parameter (ofluxtype=ocontra+9)
+c Dimensions in up to 3 directions. 
       parameter (ofn1=ofluxtype+1,ofn2=ofluxtype+2,ofn3=ofluxtype+3)
+c Other references. offc->number of facets (calculated from type).
       parameter (omag=ofluxtype+1,offc=ofluxtype+4)
-      parameter (odata=offc)
+c Gradients of the abc coefficients.
+      integer oagrad,obgrad,ocgrad
+      parameter (ocgrad=offc+1,obgrad=ocgrad+3,oagrad=obgrad+3)
+c Total
+      parameter (odata=oagrad+2)
 c The parallelopiped data structure in ppcom.f consists of
 c 1 pp_orig : origin x_0 (3) which points to ocenter
 c 4 pp_vec : 3 (covariant) vectors v_p equal half the edges.(3x3)
@@ -73,7 +80,9 @@ c The offset index to the start of cube faces
 c Reverse mapping to the geomobj number from nf_obj number
       integer nf_geommap(nf_obj)
 c The address of the data-start for the quantity, obj, step.
-      integer nf_address(nf_quant,nf_obj,1-nf_posdim:nf_maxsteps)
+c Positions 1-nf_posdim:0 are used for position information.
+c Position maxsteps+1 is used for averaging.
+      integer nf_address(nf_quant,nf_obj,1-nf_posdim:nf_maxsteps+1)
 c The heap where the data actually lies.
       real ff_data(nf_datasize)
 c The rhoinfin for each step 

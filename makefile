@@ -40,7 +40,7 @@ NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 ##########################################################################
 ##########################################################################
-FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o cijroutine.o cijplot.o 3dobjects.o mditerate.o  padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o randc.o objplot.o
+FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o cijroutine.o cijplot.o 3dobjects.o mditerate.o  padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o randc.o
 #
 SPECIALOBJECTS=bdyroutine.o faddu.o reduce.o getfield.o interpolations.o 
 # Things just needed for the test routine:

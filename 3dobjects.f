@@ -61,7 +61,7 @@ c**********************************************************************
      $     ,'ofn1,ofn3[,ofn3].'
       write(*,*)' Indicates number-of-flux-types, sizes of uniform '
      $     ,'index arrays [direction].'
-      write(*,*)' Sphere needs 2 arrays.'
+      write(*,*)' Sphere needs 2 arrays (cos(th),psi).'
      $     ,' Cylinder 3 (r,th,z) arrays.'
       write(*,*)' Cuboid (x,y,z) arrays. '
      $     ,'Pllelopiped (1,2,3) arrays.'
@@ -73,6 +73,9 @@ c**********************************************************************
      $     ,' Special treatment'
       write(*,*)' for which 2nd of extra (ofn1) is charge magnitude='
      $     ,' coulomb-phi at radius.'
+      write(*,*)'byte-2: 3(x256) Variable-coefficients.'
+     $     ,' Gradient vectors of c,b,a follow'
+     $     ,' flux data [which must be specified].'
       write(*,*)
       write(*,'(a)')
      $     'Boolean particle region 99, n1, n1*values, n2, values,.. 0:'
@@ -151,6 +154,7 @@ c Read the geometry definition variables and then the flux counts.
          read(cline,*,err=901,end=801)
      $        (obj_geom(k,ngeomobj),k=1,oradius+nd-1)
      $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn2)
+     $        ,(obj_geom(k,ngeomobj),k=ocgrad,oagrad+2)
  801     if(myid.eq.0)write(*,820)ngeomobj,' Spheroid '
 c Sphere has just one facet and we must make n3=1 too:
          obj_geom(ofn3,ngeomobj)=1
@@ -162,6 +166,7 @@ c     $        write(*,821)(obj_geom(k,ngeomobj),k=ofluxtype,ofn2)
          read(cline,*,err=901,end=802)
      $        (obj_geom(k,ngeomobj),k=1,oradius+nd-1)
      $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn3)
+     $        ,(obj_geom(k,ngeomobj),k=ocgrad,oagrad+2)
  802     if(myid.eq.0)write(*,820)ngeomobj,' Cuboid '
 c Cuboid has 6 facets and uses numbering in three coordinates:
          obj_geom(offc,ngeomobj)=2*nd
@@ -177,6 +182,7 @@ c Cylinder
          read(cline,*,err=901,end=803)
      $        (obj_geom(k,ngeomobj),k=1,ocylaxis)
      $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn3)
+     $        ,(obj_geom(k,ngeomobj),k=ocgrad,oagrad+2)
  803     if(myid.eq.0)write(*,820)ngeomobj,' Cylinder '
 c 3 facets.
          obj_geom(offc,ngeomobj)=3
@@ -191,6 +197,7 @@ c Parallelopiped also serves as general cuboid.
          read(cline,*,err=901,end=804)
      $        (obj_geom(k,ngeomobj),k=1,oradius+nd*nd-1)
      $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn3)
+     $        ,(obj_geom(k,ngeomobj),k=ocgrad,oagrad+2)
 c     $        (obj_geom(k,ngeomobj),k=1,odata)
  804     if(myid.eq.0)write(*,820)ngeomobj,
      $        ' Pllelopiped '
@@ -251,7 +258,17 @@ c If this is a point-charge object, set the relevant mask bit.
             stop
          endif
          iptch_mask=IBSET(iptch_mask,ngeomobj-1)
-       endif
+      elseif(itype/256.eq.3)then
+         do k=ocgrad,oagrad+2
+            if(obj_geom(k,ngeomobj).ne.0.)goto 110
+         enddo
+         write(*,*)'ERROR in Readgeom.'
+     $        ,' No non-zero gradient cooefficient'
+         stop
+ 110     continue
+         write(*,*)'   Gradients:'
+     $        ,(obj_geom(k,ngeomobj),k=ocgrad,oagrad+2)
+      endif
  820  format(i3,a,$)
  821  format(f4.0,15f7.3)
  822  format(f4.0,24f7.3)
@@ -904,7 +921,9 @@ c Process data stored in obj_geom.
 c Only for non-null BCs
 c Find the fractional intersection point if any.
 c            if(debug.gt.0)fraction=101
-            if(obj_geom(otype,i).eq.1)then
+            itype=obj_geom(otype,i)
+            itype=itype-256*(itype/256)
+            if(itype.eq.1)then
 c First implemented just for spheres.
                call spheresect(id,ipm,ndims,indi,
      $              obj_geom(oradius,i),obj_geom(ocenter,i)
@@ -913,16 +932,16 @@ c            if(debug.gt.0)then
 c               write(*,*)'Spheresect return',id,ipm,i,fraction
 c     $              ,obj_geom(oradius,i),obj_geom(ocenter,i)
 c            endif
-            elseif(obj_geom(otype,i).eq.2)then
+            elseif(itype.eq.2)then
 c Coordinate-aligned cuboid.               
                call cubesect(id,ipm,ndims,indi,obj_geom(oradius,i)
      $              ,obj_geom(ocenter,i),fraction,dp)   
-            elseif(obj_geom(otype,i).eq.3)then
+            elseif(itype.eq.3)then
 c Coordinate aligned cylinder.               
                call cylsect(id,ipm,ndims,indi,obj_geom(oradius,i)
      $              ,obj_geom(ocenter,i),int(obj_geom(ocylaxis,i))
      $              ,fraction ,dp)   
-            elseif(obj_geom(otype,i).eq.4)then
+            elseif(itype.eq.4)then
 c Parallelopiped.
 c               write(*,*)'Calling pllelosect'
                call pllelosect(id,ipm,ndims,indi,obj_geom(1,i)

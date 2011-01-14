@@ -2,6 +2,7 @@ c**************************************************************
       program fluxdatatest
       include '../3dcom.f'
       include '../plascom.f'
+      include '../sectcom.f'
 
       real plotdata(10000,5),stepdata(10000)
       character*100 filename,argument
@@ -144,6 +145,9 @@ c     $        ,avecharge/avefield
       enddo
 
       call pltend()
+
+      if(sc_ipt.ne.0)write(*,*)'Intersections=',sc_ipt
+      call objplot(ndims,2.,1)
 
       call exit(1)
  201  write(*,*)'Usage: fluxdatatest [-ffilename,'//

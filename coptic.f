@@ -277,8 +277,8 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
      $     ' final distribution. [',ifplot
       write(*,301)' -gc   set wireframe [& stencils(-)] mask.'//
      $     ' objects<->bits. [',iobpl
-      write(*,301)' -gr   set wireframe override plot scale'//
-     $     ' for -gc plot.  [',rcij
+      write(*,301)' -gr   set override plot view scale'//
+     $     ' for -gc, -gf plots.  [',rcij
       write(*,301)' -go   set No of orbits'
      $     //'(to plot on objects set by -gc). [',norbits
       write(*,301)' -at   set test angle.'
@@ -627,7 +627,6 @@ c Comment it out if it causes problems. (E.g. pathscale gives segfaults.)
 c End of Main Step Iteration -------------------------------
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
 c      if(lorbitplot)call orbitplot(ifull,iuds,u,phip,rc,rs)
-      call objplot(ndims,2.,0)
       if(norbits.ne.0)
      $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl,norbits)
 
@@ -643,6 +642,11 @@ c Check some flux diagnostics and writing.
          do ifobj=1,mf_obj
             call fluxave(nf_step/2,nf_step,ifobj,ifplot,rinf)
          enddo
+c         write(*,*)'Calling objplot'
+         if(ifplot.gt.0)then
+            if(rcij.le.0)rcij=rs
+            call objplot(ndims,rcij,1)
+         endif
       endif
       end
 c**********************************************************************

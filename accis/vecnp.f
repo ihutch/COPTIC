@@ -93,49 +93,49 @@ c g77 is incapable of handling non-printable characters properly.
       data ca(00024:00025)/crlf/
       data ca(00026:00053)/'%%BoundingBox: 28 28 575 762'/
       data ca(00054:00055)/crlf/
-      data ca(00056:00097)/'/SP0  {16 setlinewidth 1.000 1.000 1.000 s'/
+      data ca(00056:00097)/'/SP0  {12 setlinewidth 1.000 1.000 1.000 s'/
       data ca(00098:00113)/'etrgbcolor } def'/
       data ca(00114:00115)/crlf/
-      data ca(00116:00157)/'/SP1  {16 setlinewidth 0.000 0.000 0.545 s'/
+      data ca(00116:00157)/'/SP1  {12 setlinewidth 0.000 0.000 0.545 s'/
       data ca(00158:00173)/'etrgbcolor } def'/
       data ca(00174:00175)/crlf/
-      data ca(00176:00217)/'/SP2  {16 setlinewidth 0.180 0.545 0.341 s'/
+      data ca(00176:00217)/'/SP2  {12 setlinewidth 0.180 0.545 0.341 s'/
       data ca(00218:00233)/'etrgbcolor } def'/
       data ca(00234:00235)/crlf/
-      data ca(00236:00277)/'/SP3  {16 setlinewidth 0.125 0.698 0.667 s'/
+      data ca(00236:00277)/'/SP3  {12 setlinewidth 0.125 0.698 0.667 s'/
       data ca(00278:00293)/'etrgbcolor } def'/
       data ca(00294:00295)/crlf/
-      data ca(00296:00337)/'/SP4  {16 setlinewidth 0.698 0.133 0.133 s'/
+      data ca(00296:00337)/'/SP4  {12 setlinewidth 0.698 0.133 0.133 s'/
       data ca(00338:00353)/'etrgbcolor } def'/
       data ca(00354:00355)/crlf/
-      data ca(00356:00397)/'/SP5  {16 setlinewidth 0.580 0.000 0.827 s'/
+      data ca(00356:00397)/'/SP5  {12 setlinewidth 0.580 0.000 0.827 s'/
       data ca(00398:00413)/'etrgbcolor } def'/
       data ca(00414:00415)/crlf/
-      data ca(00416:00457)/'/SP6  {16 setlinewidth 0.957 0.643 0.376 s'/
+      data ca(00416:00457)/'/SP6  {12 setlinewidth 0.957 0.643 0.376 s'/
       data ca(00458:00473)/'etrgbcolor } def'/
       data ca(00474:00475)/crlf/
-      data ca(00476:00517)/'/SP7  {16 setlinewidth 0.439 0.502 0.565 s'/
+      data ca(00476:00517)/'/SP7  {12 setlinewidth 0.439 0.502 0.565 s'/
       data ca(00518:00533)/'etrgbcolor } def'/
       data ca(00534:00535)/crlf/
-      data ca(00536:00577)/'/SP8  {16 setlinewidth 0.745 0.745 0.745 s'/
+      data ca(00536:00577)/'/SP8  {12 setlinewidth 0.745 0.745 0.745 s'/
       data ca(00578:00593)/'etrgbcolor } def'/
       data ca(00594:00595)/crlf/
-      data ca(00596:00637)/'/SP9  {16 setlinewidth 0.000 0.000 1.000 s'/
+      data ca(00596:00637)/'/SP9  {12 setlinewidth 0.000 0.000 1.000 s'/
       data ca(00638:00653)/'etrgbcolor } def'/
       data ca(00654:00655)/crlf/
-      data ca(00656:00697)/'/SP10 {16 setlinewidth 0.000 1.000 0.000 s'/
+      data ca(00656:00697)/'/SP10 {12 setlinewidth 0.000 1.000 0.000 s'/
       data ca(00698:00713)/'etrgbcolor } def'/
       data ca(00714:00715)/crlf/
-      data ca(00716:00757)/'/SP11 {16 setlinewidth 0.000 1.000 1.000 s'/
+      data ca(00716:00757)/'/SP11 {12 setlinewidth 0.000 1.000 1.000 s'/
       data ca(00758:00773)/'etrgbcolor } def'/
       data ca(00774:00775)/crlf/
-      data ca(00776:00817)/'/SP12 {16 setlinewidth 1.000 0.000 0.000 s'/
+      data ca(00776:00817)/'/SP12 {12 setlinewidth 1.000 0.000 0.000 s'/
       data ca(00818:00833)/'etrgbcolor } def'/
       data ca(00834:00835)/crlf/
-      data ca(00836:00877)/'/SP13 {16 setlinewidth 1.000 0.000 1.000 s'/
+      data ca(00836:00877)/'/SP13 {12 setlinewidth 1.000 0.000 1.000 s'/
       data ca(00878:00893)/'etrgbcolor } def'/
       data ca(00894:00895)/crlf/
-      data ca(00896:00937)/'/SP14 {16 setlinewidth 1.000 1.000 0.000 s'/
+      data ca(00896:00937)/'/SP14 {12 setlinewidth 1.000 1.000 0.000 s'/
       data ca(00938:00953)/'etrgbcolor } def'/
       data ca(00954:00955)/crlf/
       data ca(00956:00976)/'/D    {  lineto } def'/
@@ -168,7 +168,7 @@ c g77 is incapable of handling non-printable characters properly.
       data ca(01387:01428)/'/LT6  { LS 3 LM 1 LM 1 LM 1 LM 1 LM 1 LE }'/
       data ca(01429:01432)/' def'/
       data ca(01433:01434)/crlf/
-      data ca(01435:01476)/'/SP15 {16 setlinewidth 0.000 0.000 0.000 s'/
+      data ca(01435:01476)/'/SP15 {12 setlinewidth 0.000 0.000 0.000 s'/
       data ca(01477:01492)/'etrgbcolor } def'/
       data ca(01493:01494)/crlf/
       data ca(01495:01533)/'/SF where { pop }  { /SF 1 def } ifelse'/

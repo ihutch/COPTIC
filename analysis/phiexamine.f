@@ -24,7 +24,8 @@ c
       data phimax/0./
 c 
       diagfilename=''
-      call examargs(rp,phimax)
+      isw=1
+      call examargs(rp,phimax,isw)
          
 c      write(*,*)(u(16,16,k),k=1,36) 
       ied=1
@@ -191,7 +192,10 @@ c r-z binning and plotting
          ry=max(abs(xn(ixnp(2)+1)-x0),abs(xn(ixnp(3))-y0))
          rs=sqrt(rx**2+ry**2)
 
-         call cyl3bin(nr,rzdist,irzcount,rval,rvalneg,phimax,u)
+c If phimax is set, don't change it.         
+         phim=0.
+         call cyl3bin(nr,rzdist,irzcount,rval,rvalneg,phim,u)
+         if(phimax.le.0.)phimax=phim
 
 c Now rzdist(nr,nz) is the rz-distribution of the (average) potential.
 c Contour it.
@@ -220,7 +224,8 @@ c         write(*,*)'ipow',ipow
          call fwrite(delta,iwd,max(-ipow,0)+1,string)
          call boxtitle('!Af!@-contours ('//string(1:iwd)
      $        //'T!de!d spaced)')
-         call gradlegend(-phimax,phimax,-.6,0.,-.6,1.,-.04,.false.) 
+         if(isw-2*(isw/2).ne.0)
+     $        call gradlegend(-phimax,phimax,-.6,0.,-.6,1.,-.04,.false.) 
 c Indicate rectangle limits.
          yl(1)=xn(ixnp(3)+1)
          yl(2)=xn(ixnp(3)+iuds(3))
@@ -320,7 +325,7 @@ c         write(22,*)rzmpos(iz0+i),xn(ixnp(3)+iz0+i)
       end
 
 c*************************************************************
-      subroutine examargs(rp,phimax)
+      subroutine examargs(rp,phimax,isw)
       include 'examdecl.f'
 
       ifull(1)=na_i
@@ -346,6 +351,8 @@ c Deal with arguments
      $        read(argument(3:),'(f8.4)',err=201)rp
          if(argument(1:2).eq.'-p')
      $        read(argument(3:),'(f8.4)',err=201)phimax
+         if(argument(1:2).eq.'-l')
+     $        read(argument(3:),*,err=201)isw
          if(argument(1:2).eq.'-h')goto 203
          if(argument(1:2).eq.'-?')goto 203
          else
@@ -363,7 +370,8 @@ c Help text
       write(*,301)'Usage: phiexamine [switches] <phifile>'
 c      write(*,301)' --objfile<filename>  set name of object data file.'
 c     $     //' [copticgeom.dat'
-      write(*,301)' -d<diagfilename>  -r<rp>'
+      write(*,301)' -d<diagfilename>  -r<rp> -r<phimax> -l<isw>'
+      write(*,301)' isw: Byte 1: gradlegend(1) 2: ...'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue
