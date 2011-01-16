@@ -326,11 +326,15 @@ c Initialize cij:
       call mditerarg(cijroutine,ndims,ifull,ium2,ipoint,
      $     cij(1,1,1,1),debyelen,error,dum4)
       if(error.ne.0.)then
-         if(lmyidhead)write(*,*)'cijroutine ERROR',error
-     $        ,' Shifting mesh and recalculating.'
-         call meshshift()
          icijcount=icijcount+1
-         if(icijcount.le.5.)goto 250
+         if(icijcount.le.2)then
+            if(lmyidhead)write(*,*)'cijroutine warnings',error
+     $        ,' Shifting mesh and recalculating.'
+            call meshshift()
+            goto 250
+         else
+            if(lmyidhead)write(*,*)'Failed to avoid cij warnings',error
+         endif
       endif
 c      write(*,*)'Finished cijroutine iteration'
 c---------------------------------------------

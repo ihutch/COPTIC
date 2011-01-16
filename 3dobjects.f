@@ -292,345 +292,6 @@ c Set whether particle region has a part inside an object.
 
       end
 c****************************************************************
-      subroutine spheresect(id,ipm,ndims,indi,rc,xc,fraction,dp)
-c For mesh point indi() find the nearest intersection of the leg from
-c this point to the adjacent point in dimension id, direction ipm, with
-c the ndims-dimensional spheroid of semi-radii rc(ndims), center xc.
-c
-c Return the fractional distance in fraction (1 for no intersection),
-c and total mesh spacing in dp, so that bdy distance is fraction*dp.
-      integer id,ipm,ndims
-      integer indi(ndims)
-      real xc(ndims),rc(ndims)
-      real fraction,dp
-      include 'meshcom.f'
-      A=0.
-      B=0.
-      C=-1.
-      D=-1.
-c x1 and x2 are the coordinates in system in which sphere has radius 1.
-      do i=1,ndims
-         ix1=indi(i)+ixnp(i)+1
-         x1=(xn(ix1)-xc(i))/rc(i)
-         x2=x1
-         if(i.eq.id)then
-            ix2=ix1+ipm
-            x2=(xn(ix2)-xc(i))/rc(i)
-            A=A+(x2-x1)**2
-            B=B+x1*(x2-x1)
-            dp=abs(x2-x1)*rc(i)
-         endif
-         C=C+x1**2
-         D=D+x2**2
-      enddo
-      fraction=1.
-c This condition tests for a sphere crossing.
-      if(D.ne.0. .and. D*C.le.0.)then
-         if(C.lt.0.)then
-            fraction=(-B+sqrt(B*B-A*C))/A
-         elseif(C.gt.0.)then
-            fraction=(-B-sqrt(B*B-A*C))/A
-         else
-            fraction=0.
-         endif
-      endif
-      end
-c****************************************************************
-      subroutine cubesect1(id,ipm,ndims,indi,tc,bc,fraction,dp)
-c For mesh point indi() find the nearest intersection of the leg from
-c this point to the adjacent point in dimension id, direction ipm, with
-c the ndims-dimensional coordinate aligned cuboid 
-c of top coordinates tc(ndims), bottom coordinates bc.
-c
-c Return the fractional distance in fraction (1 for no intersection),
-c and total mesh spacing in dp, so that bdy distance is fraction*dp.
-      integer id,ipm,ndims
-      integer indi(ndims)
-      real tc(ndims),bc(ndims)
-      real fraction,dp
-      include 'meshcom.f'
-c      write(*,*)'bc=',bc,' tc=',tc
-      fraction=1.
-      do i=1,ndims
-         ix1=indi(i)+ixnp(i)+1
-         x1=(xn(ix1)-bc(i))
-         side=tc(i)-bc(i)
-c x1 and x2 are the coordinates relative to the bottom corner as origin.
-c         x2=x1
-         if(i.eq.id)then
-            ix2=ix1+ipm
-            x2=(xn(ix2)-bc(i))
-            dp=abs(x2-x1)
-            if(x1.le.0.)then
-               if(x2.gt.0.)then
-                  fraction=x1/(x1-x2)
-               endif
-            elseif(x1.ge.side)then
-               if(x2.lt.side)then
-                  fraction=(x1-side)/(x1-x2)
-               endif
-            else
-               if(x2.gt.side)then
-                  fraction=(x1-side)/(x1-x2)
-               elseif(x2.lt.0.)then
-                  fraction=x1/(x1-x2)
-               else
-                  fraction=1.
-                  return
-               endif
-            endif
-         else
-            if(x1.lt.0. .or. x1.gt.side)then
-               fraction=1.
-               return
-            endif
-         endif
-      enddo
-      end
-c****************************************************************
-c****************************************************************
-      subroutine cubesect(id,ipm,ndims,indi,rc,xc,fraction,dp)
-c For mesh point indi() find the nearest intersection of the leg from
-c this point to the adjacent point in dimension id, direction ipm, with
-c the ndims-dimensional coordinate aligned cuboid 
-c of center coordinates xc(ndims), radius (face position) rc.
-c Return the fractional distance in fraction (1 for no intersection),
-c and total mesh spacing in dp, so that bdy distance is fraction*dp.
-      integer id,ipm,ndims
-      integer indi(ndims)
-      real rc(ndims),xc(ndims)
-      real fraction,dp
-      include 'meshcom.f'
-      fraction=1.
-      do i=1,ndims
-         ix1=indi(i)+ixnp(i)+1
-         x1=(xn(ix1)-xc(i))
-         ri=abs(rc(i))
-c x1 and x2 are the coordinates relative to the center.
-         if(i.eq.id)then
-            ix2=ix1+ipm
-            x2=(xn(ix2)-xc(i))
-            dp=abs(x2-x1)
-            if(x1.ge.ri.neqv.x2.ge.ri)then
-c Crossed ri.
-c This prefers the positive-ri face if both are crossed.               
-               fraction=(x1-ri)/(x1-x2)
-c               fraction=.999999*(x1-ri)/(x1-x2)
-            elseif(x1.le.-ri.neqv.x2.le.-ri)then
-c Crossed -ri
-               fraction=(x1+ri)/(x1-x2)
-c Not fixing cases of mesh clash. Better to get warning:
-c               fraction=.999999*(x1+ri)/(x1-x2)
-            else
-c No parallel intersection.
-c               fraction=1.
-               return
-            endif
-         else
-            if(abs(x1).ge.ri)then
-c Outside box in orthogonal direction. No intersection.
-               fraction=1.
-               return
-            endif
-         endif
-      enddo
-      end
-c****************************************************************
-      subroutine cylsect(id,ipm,ndims,indi,rc,xc,ida,fraction,dp)
-c For mesh point indi() find the nearest intersection of the leg from
-c this point to the adjacent point in dimension id, direction ipm, with
-c the ndims-dimensional coordinate-aligned cylinder
-c with  radii rc(ndims), center xc, axial coordinate ida. 
-c
-c Return the fractional distance in fraction (1 for no intersection),
-c and total mesh spacing in dp, so that bdy distance is fraction*dp.
-      integer id,ipm,ndims
-      integer indi(ndims),ida
-      real xc(ndims),rc(ndims)
-      real fraction,dp
-      include 'meshcom.f'
-
-      fraction=1.
-      ix1=indi(ida)+ixnp(ida)+1
-      z1=(xn(ix1)-xc(ida))
-c z2 is only correct if id.eq.ida but it is only used then
-      ix2=ix1+ipm
-      z2=(xn(ix2)-xc(ida))
-c (On the boundary face counts as outside.)
-      if(abs(z1).ge.rc(ida))then
-c z1 outside ends. if we are seeking radially no
-         if(id.ne.ida)return
-c Seeking axially. If z2 also outside, no.
-         if(abs(z2).ge.rc(ida))return
-c Here we are seeking axially and have found z2 inside z1 outside. 
-      else
-c z1 inside ends.
-         if(id.ne.ida)then
-c Searching radially and inside ends. Do circle intersection
-            A=0.
-            B=0.
-            C=-1.
-            D=-1.
-            do k=1,ndims-1
-               i=mod(ida+k-1,ndims)+1
-               ix1=indi(i)+ixnp(i)+1
-               x1=(xn(ix1)-xc(i))/rc(i)
-               x2=x1
-               if(i.eq.id)then
-                  ix2=ix1+ipm
-                  x2=(xn(ix2)-xc(i))/rc(i)
-                  A=A+(x2-x1)**2
-                  B=B+x1*(x2-x1)
-                  dp=abs(x2-x1)*rc(i)
-               endif
-               C=C+x1**2
-               D=D+x2**2
-            enddo
-            disc=B*B-A*C
-            if(disc.gt.0)then
-               if(C.lt.0.)then
-                  fraction=(-B+sqrt(disc))/A
-               elseif(C.gt.0.)then
-                  fraction=(-B-sqrt(disc))/A
-               else
-                  fraction=0.
-               endif
-               if(fraction.lt.0. .or. fraction.gt.1.)fraction=1.
-               return
-            else
-c No intersection with circle.
-               return
-            endif
-         else
-c Searching axially. If z2 also inside, no.
-            if(abs(z2).lt.0.)return
-c Found z1 inside, z2 outside.
-         endif
-      endif
-c z1,z2 inside/outside, axial search. Check for inside orthogonal circle.
-      r1=0
-      dp=abs(z2-z1)
-      do k=1,ndims-1
-         i=mod(ida+k-1,ndims)+1
-         ix1=indi(i)+ixnp(i)+1
-         x1=(xn(ix1)-xc(i))/rc(i)
-         r1=r1+x1**2
-      enddo
-      if(r1.lt.1.)then
-c Intersection with ends
-         if(z1.lt.rc(ida).neqv.z2.lt.rc(ida))then
-            fraction=(z1-rc(ida))/(z1-z2)
-         elseif(z1.gt.-rc(ida).neqv.z2.gt.-rc(ida))then
-            fraction=(z1+rc(ida))/(z1-z2)
-         endif
-      endif
-
-      end
-c****************************************************************
-      subroutine pllelosect(id,ipm,ndims,indi,pp,fraction,dp)
-c For mesh point indi() find the nearest intersection of the leg from
-c this point to the adjacent point in dimension id, direction ipm, with
-c a parallelopiped defined by the data structure pp.
-c Return the fractional distance in fraction (1 for no intersection),
-c and total mesh spacing in dp, so that bdy distance is fraction*dp.
-c
-c The parallelopiped data structure in ppcom.f consists of
-c 1 pp_orig : origin xc (3=pp_ndims) 
-c 4 pp_vec : 3 (covariant) vectors v_p equal half the edges.(3x3)
-c 13 pp_contra : 3 contravariant vectors v^q such that v_p.v^q =
-c \delta_{pq} (3x3)
-c A pp_total of 21 reals (in 3-D), of which the last 9 can be calculated
-c from the first 12, but must have been set prior to the call. 
-c A point is inside the pp if |Sum_i(x_i-xc_i).v^p_i|<1 for all p.
-c A point is on the surface if, in addition, equality holds in at least
-c one of the (6) relations. 
-c [i-k refers to cartesian components, p-r to pp basis.] 
-c
-      include '3dcom.f'
-      real objg(pp_total)
-      integer id,ipm,ndims
-      integer indi(ndims)
-      real fraction,dp
-      include 'meshcom.f'
-      real s1(pp_ndims),s2(pp_ndims)
-      real small
-      parameter (small=1.e-6)
-
-c      write(*,*)(objg(k),k=1,pp_total)
- 1    fraction=1.
-      do j=1,pp_ndims
-         s1(j)=0.
-         s2(j)=0.
-      enddo
-      do i=1,ndims
-         ix1=indi(i)+ixnp(i)+1
-         x1=xn(ix1)-objg(pp_orig+i-1)
-         x2=x1
-         if(i.eq.id)then
-            ix2=ix1+ipm
-            x2=xn(ix2)-objg(pp_orig+i-1)
-            dp=abs(x2-x1)
-         endif
-c x1, x2 are the coordinates with respect to the pp origin.
-         do j=1,pp_ndims
-            s1(j)=s1(j)+x1*objg(pp_contra+pp_ndims*(j-1)+i-1)
-            s2(j)=s2(j)+x2*objg(pp_contra+pp_ndims*(j-1)+i-1)
-         enddo
-      enddo
-c Now we have the contravariant coefficients in s1,s2. 
-c Determine whether outside
-      is1=0
-      is2=0
-      do j=1,pp_ndims
-         if(abs(s1(j)).eq.1. .or. abs(s2(j)).eq.1.)then
-            write(*,*)j,' s1,2=',s1(j),s2(j)
-     $           ,' mesh clash. Scaling contra'
-            do i=1,ndims
-               objg(pp_contra+pp_ndims*(j-1)+i-1)=
-     $              objg(pp_contra+pp_ndims*(j-1)+i-1)*(1.+small)
-            enddo
-            goto 1
-         endif
-c (On the boundary counts as outside.)
-         if(abs(s1(j)).ge.1.)is1=1
-         if(abs(s2(j)).ge.1.)is2=1
-      enddo
-c      write(*,*)is1,is2,s1,s2
-      if(is1.ne.is2)then
-c One end inside and one outside. Find crossing. 
-c We want the crossing closest to the point that's inside.
-c         write(*,*)s1,s2
-         do j=1,pp_ndims
-            if(s1(j).le.-1. .and. s2(j).gt.-1.)then
-               f1=abs(s1(j)+1.)/(abs(s1(j)+1.)+abs(s2(j)+1.))
-            elseif(s1(j).gt.-1. .and. s2(j).le.-1.)then
-               f1=abs(s1(j)+1.)/(abs(s1(j)+1.)+abs(s2(j)+1.))
-            elseif((s1(j)-1.).ge.0. .and. (s2(j)-1.).lt.0.)then
-               f1=abs(s1(j)-1.)/(abs(s1(j)-1.)+abs(s2(j)-1.))
-            elseif((s1(j)-1.).lt.0. .and. (s2(j)-1.).ge.0.)then
-               f1=abs(s1(j)-1.)/(abs(s1(j)-1.)+abs(s2(j)-1.))
-            else
-               f1=1.
-            endif
-c
-            if(f1.ne.1.)then
-               if(is1.eq.0)then
-c x1 is inside, use minimum crossing fraction.
-                  fraction=min(fraction,f1)
-               else
-c x1 is outside, use max crossing fraction ne 1.
-                  if(fraction.eq.1.)then
-                     fraction=f1
-                  else
-                     fraction=max(fraction,f1)
-                  endif
-               endif
-            endif
-         enddo
-      endif
-c Now fraction= closest face-crossing fraction (or 1.)
-      end
-c****************************************************************
       subroutine plleloinit(objg)
 c Initialize this pp_structure by calculating the contravariant 
 c vectors from the covariant vectors.
@@ -906,13 +567,26 @@ c A fraction of 1 causes all the bounding conditions to be ignored.
 c      integer debug
 
       real xx(10),xd(10)
-
+      real xp1(ndims_mesh),xp2(ndims_mesh)
 c Default no intersection.
       fraction=1
 c      debug=0
 c      if(iobjno.gt.100)debug=iobjno-100
       iobjno=0
 
+c-------------------------------------------------------------
+c Store the xp1 and xp2 positions of the point and its neighbor
+c so we are in a position to call the flux routines.
+      do i=1,ndims
+         ix1=indi(i)+ixnp(i)+1
+         xp1(i)=xn(ix1)
+         xp2(i)=xn(ix1)
+         if(i.eq.id)then
+            ix2=ix1+ipm
+            xp2(i)=xn(ix2)
+            dp=abs(xp2(i)-xp1(i))
+         endif
+      enddo
 c-------------------------------------------------------------
 c Process data stored in obj_geom.
       do i=1,ngeomobj
@@ -922,30 +596,49 @@ c Only for non-null BCs
 c Find the fractional intersection point if any.
 c            if(debug.gt.0)fraction=101
             itype=obj_geom(otype,i)
-            itype=itype-256*(itype/256)
+            istype=itype/256
+            itype=itype-256*(istype)
             if(itype.eq.1)then
 c First implemented just for spheres.
-               call spheresect(id,ipm,ndims,indi,
+               if(.false.)then
+                  call spheresect(id,ipm,ndims,indi,
      $              obj_geom(oradius,i),obj_geom(ocenter,i)
      $              ,fraction,dp)
-c            if(debug.gt.0)then
-c               write(*,*)'Spheresect return',id,ipm,i,fraction
-c     $              ,obj_geom(oradius,i),obj_geom(ocenter,i)
-c            endif
+               else
+                  call sphereinterp(ndims,0,xp1,xp2
+     $                 ,obj_geom(ocenter,i),obj_geom(oradius,i)
+     $                 ,fraction,f2,sd,C,D)
+                  if(fraction.gt.1.)fraction=1.
+                  if(fraction.lt.0.)fraction=1.
+               endif
             elseif(itype.eq.2)then
 c Coordinate-aligned cuboid.               
+               if(.false.)then
                call cubesect(id,ipm,ndims,indi,obj_geom(oradius,i)
      $              ,obj_geom(ocenter,i),fraction,dp)   
+               else
+                  call cubefsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+               endif
             elseif(itype.eq.3)then
-c Coordinate aligned cylinder.               
+c Coordinate aligned cylinder.
+               if(.false.)then
                call cylsect(id,ipm,ndims,indi,obj_geom(oradius,i)
      $              ,obj_geom(ocenter,i),int(obj_geom(ocylaxis,i))
-     $              ,fraction ,dp)   
+     $              ,fraction ,dp)
+               else
+               call cylfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+c               if(fraction.ne.1.)write(*,*)indi,xp1,fraction
+               endif
             elseif(itype.eq.4)then
 c Parallelopiped.
-c               write(*,*)'Calling pllelosect'
+               if(.false.)then
                call pllelosect(id,ipm,ndims,indi,obj_geom(1,i)
-     $              ,fraction,dp)   
+     $              ,fraction,dp)
+               else
+                  call pllelofsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+                  if(fraction.gt.1.)fraction=1.
+                  if(fraction.lt.0.)fraction=1.
+               endif
             else
                write(*,*)"Unknown object type",obj_geom(otype,i),
      $              " in potlsect"
@@ -955,12 +648,27 @@ c Null BC. Ignore.
             fraction=1.
          endif
          if(fraction.ne.1.)then
-            if(obj_geom(oabc+1,i).eq.0)then
-c No derivative term. Fixed Potential. No projection needed.
-               conditions(1)=obj_geom(oabc,i)
-               conditions(2)=obj_geom(oabc+1,i)
-               conditions(3)=obj_geom(oabc+2,i)
-            else
+c Default:
+            projection=0.
+            conditions(1)=obj_geom(oabc,i)
+            conditions(2)=obj_geom(oabc+1,i)
+            conditions(3)=obj_geom(oabc+2,i)
+c            write(*,'(a,$)')'Setting conditions. '
+            if(istype.eq.3)then
+c            if(.false.)then
+c Gradient of conditions exists. Calculate the local conditions.
+               do k=1,ndims
+                  xi=(xp1(k)-obj_geom(ocenter+k-1,i))*(1.-fraction)
+     $                 +(xp2(k)-obj_geom(ocenter+k-1,i))*fraction
+                  do ic=1,3
+c gradients are in reverse order
+                     conditions(ic)=conditions(ic)
+     $                    +xi*obj_geom(oagrad+k-1-(ic-1)*ndims,i)
+                  enddo
+               enddo
+c               write(*,*)'Gradient. cond=',conditions,i
+            endif
+            if(conditions(2).ne.0)then
 c Derivative term present. Calculate the projection:
 c    Calculate Coordinates of crossing
                do idi=1,ndims
@@ -978,10 +686,11 @@ c    Signed projection cosine:
                if(projection.eq.0.)then
                   fraction=1.
                else
+c I'm a bit nervous about when conditions are negative. Is this right?
 c    Continuity works for both directions.
-                  conditions(1)=sign(obj_geom(oabc,i),projection)
-                  conditions(2)=obj_geom(oabc+1,i)/projection
-                  conditions(3)=sign(obj_geom(oabc+2,i),projection)
+                  conditions(1)=sign(conditions(1),projection)
+                  conditions(2)=conditions(2)/projection
+                  conditions(3)=sign(conditions(3),projection)
 c Special Zero outside, rather than continuity alternative
                   if(int(obj_geom(otype,i))/256.eq.1
      $                 .and. projection.lt.0.)then
@@ -1093,3 +802,4 @@ c read in.
 c      write(*,'(''Set obj_geom(oabc,'',i2,'')='',3f8.4)')
 c     $     iobject,(obj_geom((oabc+i),iobject),i=0,2)
       end
+c****************************************************************

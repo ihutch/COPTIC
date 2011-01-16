@@ -67,7 +67,6 @@ c For each direction in this dimension,
             iobj=ndata_sor*(2*(id-1)+(i-1))+1
             ipm=1-2*(i-1)
 c Determine whether this is a boundary point: adjacent a fraction ne 1.
-c            write(*,'(a,$)')'potlsect'
             call potlsect(id,ipm,ndims,indi,
      $           fraction(i),conditions(1,i),dpm(i),iobjno)
             if(fraction(i).lt.1. .and. fraction(i).ge.0.)then
@@ -205,8 +204,6 @@ c Now ipa is set. Call boxedge, returning the inverse of fractions
 c in fn, and the number of intersections found in npoints.
          idiag=0
 c         if(oi_sor.eq.3276)idiag=5
-c         if(oi_sor.eq.288.or.oi_sor.eq.289)idiag=5
-c         if(ipoint.gt.101210)idiag=5
          call boxedge(ndims,ipa,indi,fn,npoints,idiag)
 c         if(idiag.ne.0.and.npoints.ne.0)then
 c            write(*,*)oi_sor,npoints,' fn=',(fn(iw),iw=1,ndims)
@@ -231,26 +228,6 @@ c Conditionally start the object: only if it does not already exist.
 c Set the flag
                ifl=2**(j-1)
                idob_sor(iflag_sor,oi_sor)=idob_sor(iflag_sor,oi_sor)+ifl
-c               idob_sor(iflag_sor,oi_sor)=
-c     $              ibset(idob_sor(iflag_sor,oi_sor),j-1)
-c-------- Diagnostics
-c               itemp=istart
-c               if(istart.ne.itemp)then 
-c                  write(*,*)'Added start',istart,npoints
-c     $              ,(indi(iw),iw=1,ndims)
-c     $              ,' fractions=',(1./fn(iw),iw=1,ndims)
-c     $              ,(fn(iw),iw=1,ndims)
-c     $                 ,(ipa(iw),iw=1,ndims)
-c                  write(*,*)ndims,ipa,(indi(iw),iw=1,ndims)
-c     $                 ,(fn(iw),iw=1,ndims),npts
-c Redo the intersect with diagnostics on:
-c                  call boxedge(ndims,ipa,indi,fn,npts,1)
-c                  write(*,*)'Diag:',npts,(fn(iw),iw=1,ndims)
-c               endif
-c 211        format(6i4,3f10.4,i4)
-c            write(*,211)(indi(kk),ipa(kk),kk=1,ndims),
-c     $           (1./fn(kk),kk=1,ndims),npoints
-c----------Diagnostics end.
 c Now use these ndims fractions to update the fractions already inserted,
 c [not] if new ones are "smaller" (closer to zero on the +ve side),
 c or if the fraction is 1, implying not set. 
@@ -259,27 +236,28 @@ c or if the fraction is 1, implying not set.
                   f0=dob_sor(iobj,oi_sor)
 c Only if this is the first entry this direction 
                   if(f0.eq.1)then 
-c                  if( f0.eq.1 
-c     $                 .or. abs(f0*fn(i)-1.).gt.0.1
-c     $                 .or. 1./(f0+sign(tiny,f0)).lt.fn(i)-1.e-3
-c     $                 )then
                      f1=1./(sign(max(abs(fn(i)),tiny),fn(i)))
 c Warn if any strange crossings found.
-                     if(f1.lt.1. .and. f1.ge.0)then 
-c This should never happen. If it does, it's a bug or mesh clash.
-                        write(*,*)'Warning: Box Recut ',npoints
-     $                       ,i,ipa(i),oi_sor
-     $                       ,(indi(kk),kk=1,ndims),(1./fn(i))
-     $                       ,' Adjust mesh!'
-c     $                       ,' Try changing the grid'
-c     $                       ,' dimensions a little.'
-                        error=error+1
+                     if(f1.lt.1. .and. f1.ge.0)then
+c Boxedge has found a fractional crossing that was not found by the
+c earlier intersection examination by potlsect. 
+c The only way this should happen is by the use of SVD on an inappropriate
+c set of box intersections that represents multiple planes crossing the
+c box. 
+c It might also be a bug or mesh clash.
+c                        write(*,*)'Warning: Box Recut ',npoints
+c     $                       ,i,ipa(i),oi_sor
+c     $                       ,(indi(kk),kk=1,ndims),f1
+c     $                       ,' Adjust mesh!'
 c     $                       ,(ipa(kk),kk=1,ndims)
 c     $                       ,f0,f1,ftot
 c     $                       ,(1./fn(kk),kk=1,ndims)
 c     $                      ,idob_sor(iflag_sor,oi_sor)
+                        error=error+1
+c Call boxedge with diagnostics
+c                        call boxedge(ndims,ipa,indi,fn,npoints,1)
 c But set it not equal to 1, so we know it was set.
-                        dob_sor(iobj,oi_sor)=1.001
+c                        dob_sor(iobj,oi_sor)=1.001
 c                        dob_sor(iobj,oi_sor)=f1
                      else
                         dob_sor(iobj,oi_sor)=f1
@@ -464,7 +442,7 @@ c Look for intersection along this edge.
 c      if(idiag.ge.5)write(*,'(a,i2,$)')'Calling potlsect '
          call potlsect(i,ipm(i),ndims,indl,fraction,conditions,dpm
      $        ,iobjno)
-c      if(idiag.ge.5)write(*,'(a,$)')'Returned '
+c      if(idiag.ge.5)write(*,'(a,$)')'Returned'
          if(fraction.ne.1. .and. npoints.lt.mpoints)then
 c            idiag=idiag+1
             npoints=npoints+1
@@ -509,7 +487,8 @@ c return solution of af.as=bs=1, which is fn=1/fractions.
                write(*,'(12f6.3)')((xf(k1,k2),k2=1,ndims),k1=1,npoints)
                write(*,*)
      $              npoints,' svdsol ',
-     $              ((afs(j,k1),j=1,ndims),k1=1,npoints)
+     $              ((afs(j,k1),j=1,npoints),k1=1,ndims)
+               write(*,*)'1/fn=',(1./fn(k1),k1=1,ndims)
             endif
          endif
 c =================================================

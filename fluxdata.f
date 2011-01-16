@@ -449,7 +449,8 @@ c*********************************************************************
 c Given a coordinate-aligned cube object iobj. Find the point of
 c intersection of the line joining xp1,xp2, with it, and determine the
 c ijbin to which it is therefore assigned, and the direction it is
-c crossed (sd=+1 means inward from 1 to 2). xp1 fraction returned.
+c crossed (sd=+1 means inward from 1 to 2). 
+c Intersection fractional distance from xp1 to xp2 returned.
 
 c The cube is specified by center and radii!=0 (to faces.) which define
 c two planes (\pm rc) in each coordinate. Inside corresponds to between
@@ -463,18 +464,21 @@ c coefficients of the adjacent vectors.
       real sd
       include '3dcom.f'
       real xn1(ns_ndims),xn2(ns_ndims)
-c      real xd(ns_ndims),xd2(ns_ndims)
       sd=0.
-      if(inside_geom(npdim,xp1,iobj).eq.1)then
-c xp1 inside
+      ig1=inside_geom(npdim,xp1,iobj)
+      ig2=inside_geom(npdim,xp2,iobj)
+      if(ig1.eq.1 .and. ig2.eq.0)then
+c xp1 inside & 2 outside
          inside=0
-c Maybe the second test is overkill. 
-      elseif(inside_geom(npdim,xp2,iobj).eq.1)then
-c xp2 inside
+      elseif(ig2.eq.1 .and. ig1.eq.0)then
+c xp2 inside & 1 outside
          inside=1
       else
-c Neither inside (error)
-         write(*,*)'cubefsect error. Neither inside',iobj,xp1,xp2
+c Both inside or outside. (Used to be neither inside). Any intersection
+c will be disallowed. This means we cut off any such edges of the
+c cube. But actually for coordinate-aligned cube there are no
+c problematic non-normal intersections.
+         fraction=1.
          return
       endif
 c In direction sd
@@ -524,10 +528,6 @@ c +v_1,+v_2,+v_3,-v_1,-v_2,-v_3.
 c      write(*,*)'Pllelo',npdim,xp1,xp2,iobj,pp_ndims
       ins1=0
       ins2=0
-c      do j=1,pp_ndims
-c         xn1(j)=0.
-c         xn2(j)=0.
-c      enddo
       do j=1,pp_ndims
          xn1(j)=0.
          xn2(j)=0.
@@ -550,13 +550,13 @@ c In direction sd
       sd=2*ins1-1.
 c And calling the unit-cube version.
 c      write(*,*)'Calling cubeexplt',xn1,xn2
-      if(ins1.eq.0)then
+      if(ins1.eq.0 .and. ins2.eq.1)then
          call cubeexplt(npdim,xn1,xn2,ijbin,iobj,fraction)
-      elseif(ins2.eq.0)then
+      elseif(ins2.eq.0 .and. ins1.eq.1)then
          call cubeexplt(npdim,xn2,xn1,ijbin,iobj,fraction)
          fraction=1.-fraction
       else
-         write(*,*)'pllelo cubefsect error. Neither inside',iobj,xp1,xp2
+         fraction=1.
          return
       endif
       end
@@ -672,7 +672,16 @@ c 3D here.
       real fn(4),zrf(4),sdf(4)
 
       ida=int(obj_geom(ocylaxis,iobj))
-
+c First, return if both points are beyond the same axial end.
+      xca=obj_geom(ocenter+ida-1,iobj)
+      xra=obj_geom(oradius+ida-1,iobj)
+      xd1=(xp1(ida)-xca)
+      xd2=(xp2(ida)-xca)
+      xd=xd2-xd1
+      fmin=1.
+      sdmin=0.
+      if((xd1.gt.xra .and. xd2.gt.xra).or.
+     $     (-xd1.gt.xra .and. -xd2.gt.xra))return
       sds=0.
 c Find the intersection (if any) with the circular surface.
       call sphereinterp(npdim,ida,xp1,xp2,
@@ -695,11 +704,6 @@ c No radial intersections
          zrf(2)=2.
       endif
 c Find the axial intersection fractions with the end planes.
-      xca=obj_geom(ocenter+ida-1,iobj)
-      xra=obj_geom(oradius+ida-1,iobj)
-      xd1=(xp1(ida)-xca)
-      xd2=(xp2(ida)-xca)
-      xd=xd2-xd1
       if(xd.ne.0)then
          fn(3)=(xra-xd1)/(xd2-xd1)
          sdf(3)=-1.
@@ -743,14 +747,8 @@ c are true. Truth is determined by abs(zrf(k))<=1. Choose closest.
       enddo
       if(fmin.gt.1.)then
 c No crossing
-         write(*,*)'No crossing!  ida=',ida,' kmin=',kmin
-     $        ,' fn,zrf,sdf;  xp1,xp1'
-         write(*,'(4f10.4)')fn,zrf,sdf
-         write(*,'(3f10.4)')xp1,xp2
-         do i=1,3
-         write(*,'(4f10.4)')(((1.-fn(k))*xp1(i)+fn(k)*xp2(i)),k=1,4)
-         enddo
          sdmin=0.
+         fmin=1.
          return
       else
          sdmin=sdf(kmin)

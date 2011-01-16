@@ -45,8 +45,9 @@ c      write(*,*)(xn(k),k=1,iof)
 c**************************************************************
       subroutine meshshift()
       include 'meshcom.f'
+      include 'objcom.f'
       real shift
-      parameter (shift=1.e-5)
+      parameter (shift=3.e-5)
 c      write(*,'(a)')'Shifted mesh' 
       do id=1,ndims_mesh
          do j=1,nspec_mesh
@@ -54,6 +55,8 @@ c      write(*,'(a)')'Shifted mesh'
 c            write(*,'(f8.4,$)')xmeshpos(id,j)
          enddo
       enddo
+c Reinitialize the intersection counter.
+      oi_sor=0
       end
 c***************************************************************
 c Version constructs a mesh from xmstart(id) to xmend(id)

@@ -3,6 +3,7 @@
       include '3dcom.f'
 c Do some analytic checking of the case with a fixed potential sphere
 c inside an object 2 sphere with its radius and BC.
+      if(obj_geom(otype,2).ne.257)return
 c Also write out some data for checking.
       rc=obj_geom(oradius,1)
       phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)

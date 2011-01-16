@@ -6037,3 +6037,98 @@ bases of these things. I think this probably should be done. But it's
 going to take some work. 
 
 Commit present version.
+
+Do the swap to using sphereintersection. Gives identical flux density etc.
+Do cubesect swap. Ok.
+Do pllelosect swap. Interesting! The old version is actually broken in
+some way and does not give the region map correctly. The swapped version
+appears to work. Gives sensible region map. And a different flux. Probably
+now more correct (though maybe not entirely).
+Do cylsect swap. Fixed one fmin problem.
+That more or less completes the swap.
+
+Timings. Cubes and Spheres are so quick that it's not worth worrying about
+them.
+
+Cylinder shows that the new routine is a lot slower: 1.68s vs 0.99s.
+This is substantially reduced to 1.1s by putting an outside-ends test
+first in the cylfsect. That's probably as much optimization as is easy.
+The old cylsect uses knowledge that either we are seeking 'radially' or
+axially (i.e. axial difference is zero or else non-axial distance is zero) 
+for field-aligned cylinder and lattice legs. That's not true in general.
+But in any case the time is now nearly the same.
+
+Spheresect is not quite right. It is that fraction needs to be set
+to 1. if outside the allowable range of intersections, because
+sphereinterp returns the actual fractions regardless. Done.
+
+Cut off the obsolete routines. They might have ideas that are worth
+keeping, though.
+
+Pllel has box recuts and mesh adjustments with new routine. Not old.
+But old takes longer and is wrong. So that's no test, and it's probably
+not worth fixing the old. However the box recuts may be themselves caused
+by an error. Apparently not by returned fractions outside the ranges.
+Perhaps by not returning the minimum intersection correctly. 
+There's no sign that the mesh shifting and scaling is reducing the 
+box recut problem. I conclude it's not a mesh clash.
+I think there's a logic problem. cubexplt returns the fraction closest
+to x1, but also requires x1 to be inside the object. 
+
+15 Jan 11
+
+I haven't got to the bottom of this problem. It needs to be solved.
+The recut arises from an SVD fit to 6 points cutting a box. Example:
+ Warning: Box Recut  6 2 -1 928 18 20 17  0.978108108 Adjust mesh!
+ Intersection fraction=  0.753565311 1 1 1 18 20 17 x=  0.753565311  0.  0.
+ Intersection fraction=  0.0625383928 3 1 1 18 20 17 x=  0.  0.  0.0625383928
+ Intersection fraction=  0.251363158 2 2 2 19 20 17 x=  1.  0.251363158  0.
+ Intersection fraction=  0.25136292 3 2 2 19 20 17 x=  1.  0.  0.25136292
+ Intersection fraction=  0.919081092 1 2 2 18 20 18 x=  0.919081092  0.  1.
+ Intersection fraction=  0.616751194 2 2 2 18 20 18 x=  0.  0.616751194  1.
+ 0.754 0.000 0.000 0.000 0.000 0.063 1.000 0.251 0.000 1.000 0.000 0.251
+ 0.919 0.000 1.000 0.000 0.617 1.000
+ 6 svdsol  -0.312387854 -0.0157415178 -0.432068348 -0.477817297 -0.632711947
+ -0.294701457  0.323155403 -0.0396499522  0.363257378  0.269468725 -0.239875913
+ -0.794914365 -0.0854396746  0.0455816351 -0.605457604  0.0698276907
+  0.624653518 -0.478513867
+ 1/fn=  1.11668324  0.978108108  3.25422573
+
+These intersections appear to arise from all box points being inside the
+object except 0 0 1, and 1 0 0. This is not consistent with there being
+a single plane through the box. There must be two planes at different 
+oblique angles, slicing out these two points. When the SVD fit is made to 
+find a single plane best giving rise to these intersections, there's no
+way to do it sensibly, so a stupid result is found that happens to 
+cut one of the legs that really isn't cut. That's a recut. It does not
+appear to be a coding bug, but rather a logic bug for a situation with
+acute angles. That was not encountered before because only a pllel will
+give it, and the pllel code was previously not working properly (apparently). 
+
+What to do about it? Well the SVD fitting procedure is really not
+useful right now because the whole idea of using the extra fractions
+>1 to tell something about the geometry has been abandoned. Is there a
+reason to try to avoid such situations by moving the mesh?
+Maybe. Actually the case in point is more or less benign, and seems to be
+unavoidable. I wonder if the whole boxedge thing is now a waste of time. 
+It's far from clear that we should go ahead and set the intersection to 
+1.01 as we currently do. Remove that for now.
+
+Hopefully we now have a fully rationalized version that works with 
+sphere, cube, cylinder, pllel using the flux intersection codes.
+
+We now need to generalize the condition setting to account for 
+coefficient gradients, if present.
+
+This is quite simple (after avoiding a bug from variable name clash).
+Implemented and working. 
+
+Ok now we have going
+   1. Flux plotting.
+   2. Gradients of boundary conditions. 
+
+Things still to do. 
+       Magnetic Field
+       Collisions
+       Surface charges
+       ...
