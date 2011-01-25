@@ -120,6 +120,8 @@ c Default edge-potential (chi) relaxation rate.
       ifplot=-1
       iwstep=99999
       rcij=0
+      rmtoz=1.
+      Bt=0.
       do id=1,ndims_mesh
 c Use very big xlimits by default to include whole domain
          xlimit(1,id)=-500.
@@ -128,6 +130,8 @@ c Use very big xlimits by default to include whole domain
          xnewlim(2,id)=0.
          vlimit(1,id)=5.
          vlimit(2,id)=-5.
+c Default zero field
+         Bfield(id)=0.
       enddo
       cellvol=0.
 c---------------------------------------------------------------------
@@ -174,6 +178,17 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-dt')read(argument(4:),*,err=201)dt
          if(argument(1:3).eq.'-da')read(argument(4:),*,err=201)bdt
          if(argument(1:3).eq.'-ds')read(argument(4:),*,err=201)subcycle
+         if(argument(1:3).eq.'-mz')read(argument(4:),*,err=201)rmtoz
+         if(argument(1:3).eq.'-Bx')then
+            read(argument(4:),*,err=201)Bfield(1)
+            Bt=Bt+Bfield(1)**2
+         elseif(argument(1:3).eq.'-By')then
+            read(argument(4:),*,err=201)Bfield(2)
+            Bt=Bt+Bfield(2)**2
+         elseif(argument(1:3).eq.'-Bz')then
+            read(argument(4:),*,err=201)Bfield(3)
+            Bt=Bt+Bfield(3)**2
+         endif
          if(argument(1:7).eq.'--reinj')
      $        read(argument(8:),*,err=201)ninjcomp
          if(argument(1:3).eq.'-rn')
@@ -191,8 +206,8 @@ c      if(iargc().eq.0) goto "help"
          elseif(argument(1:2).eq.'-v')then
             read(argument(3:),*,err=201)vd
          endif
-         if(argument(1:2).eq.'-m')then 
-            read(argument(3:),*,err=201)ndiags
+         if(argument(1:2).eq.'-md')then 
+            read(argument(4:),*,err=201)ndiags
             if(ndiags.gt.ndiagmax)then
                write(*,*)'Error: Too many diag-moments',ndiags
                stop
@@ -225,6 +240,16 @@ c            write(*,*)'||||||||||||||extfield',extfield
          if(argument(1:2).eq.'-?')goto 203
  240     continue
       enddo
+      if(Bt.ne.0)then
+c Normalize magnetic field.
+         Bt=sqrt(Bt)
+         do i=1,ndims
+            Bfield(i)=Bfield(i)/Bt
+         enddo
+      endif
+c      write(*,*)'Bfield',Bfield
+c      stop
+
       goto 202
 c------------------------------------------------------------
 c Help text
@@ -235,7 +260,7 @@ c Help text
       if(lmyidhead)then
 c         call helpusage()
  301  format(a,i5,a,i5)
- 302  format(a,f8.3)
+ 302  format(a,3f8.3)
       write(*,301)'Usage: coptic [switches]'
       write(*,301)'Parameter switches.'
      $     //' Leave no gap before value. Defaults or set values [ddd'
@@ -247,21 +272,23 @@ c         call helpusage()
      $     ,ripernode
       write(*,302)' -rx   set Edge-potl relax rate: 0=>off, 1=>immed. ['
      $     ,crelax
-      write(*,302)' -dt   set Timestep.              [',dt,
-     $     ' -da   set Initial dt accel-factor[',bdt
-      write(*,302)' -ds   set subcycle fraction.     [',subcycle
+      write(*,302)' -dt   set Timestep.              [',dt
+      write(*,302)' -da   set Initial dt accel-factor[',bdt
+      write(*,302)' -ds   set subcycle frac. Bad!    [',subcycle
       write(*,301)' -s    set No of steps.           [',nsteps
-      write(*,302)' -v    set Drift velocity.        [',vd
+      write(*,302)' -v    set Drift (z-)velocity.    [',vd
       write(*,302)' -t    set Ion Temperature.       [',Ti
       write(*,302)' -l    set Debye Length.          [',debyelen
+      write(*,302)' -mz   set mass/Z ratio           [',rmtoz
+      write(*,302)' -ct   set collision time.        [',colntime
+      write(*,302)' -vn   set neutral drift velocity [',vneutral
+      write(*,302)' -Bx -By -Bz set mag field compts [',Bfield
       write(*,301)' -a    set averaging steps.       [',iavesteps
      $     ,'     Also period of diagnostic writes.'
       write(*,301)' -w    set write-step period.     [',iwstep
       write(*,301)' -pd   set distribution diags     [',idistp
      $     ,'     Bits:1 write, 2 plot.'
-      write(*,301)' -m    set No of diag-moments(7). [',ndiags
-      write(*,301)' -ct   set collision time.        [',colntime
-      write(*,301)' -vn   set neutral drift velocity [',vneutral
+      write(*,301)' -md   set No of diag-moments(7). [',ndiags
 c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' -of<filename>  set name of object data file.'
      $     //'   ['//objfilename(1:lentrim(objfilename))
@@ -320,6 +347,8 @@ c This does not work until after we've set mesh in cartesian.
 c----------------------------------------------------------------
 c Initializations
       if(lmyidhead)write(*,*)'Initializing the stencil data cij'
+c Initialize the fluxdata storage and addressing before cijroutine
+      call fluxdatainit(myid)
 c Initialize cij:
       ipoint=iLs(1)+iLs(2)+iLs(3)
       error=0.
@@ -443,8 +472,6 @@ c      if(lmyidhead)write(*,*)'Initializing',n_part,' particles'
       call pinit(subcycle)
 c      if(lmyidhead)write(*,*)'Return from pinit'
 c---------------------------------------------
-c Initialize the fluxdata storage and addressing.
-      call fluxdatainit(myid)
 c Initialize the force tracking.
       call forcetrackinit()
 c      write(*,*)'mf_obj=',mf_obj
@@ -550,6 +577,8 @@ c The normal call:
             call padvnc(ndims,iLs,cij,u)
          endif
          call fluxreduce()
+c Now do cij update
+         call cijdirect(ndims,cij,debyelen,error)
 c Store the step's rhoinf, dt.
          ff_rho(nf_step)=rhoinf
          ff_dt(nf_step)=dt

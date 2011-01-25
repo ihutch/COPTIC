@@ -61,7 +61,7 @@ c accommodate such difference if necessary.
                if(itype.eq.1)then
 c Sphere one face only n3=1
                   nfluxes=1
-                  do k=1,nf_posdim
+                  do k=1,2
                      nf_dimlens(j,mf_obj,k)=int(obj_geom(ofn1+k-1,i))
                      nfluxes=nfluxes*obj_geom(ofn1+k-1,i)
                   enddo
@@ -72,17 +72,17 @@ c Cuboid or parallelopiped.
 c Six faces, each using two of the three array lengths. 
                   nfluxes=0
                   do kk=1,obj_geom(offc,i)
-                     k=mod(kk-1,nf_posdim)+1
-                     if(kk.le.nf_posdim)
+                     k=mod(kk-1,ns_ndims)+1
+                     if(kk.le.ns_ndims)
      $                 nf_dimlens(j,mf_obj,k)=int(obj_geom(ofn1+k-1,i))
                      nf_faceind(j,mf_obj,kk)=nfluxes
                      nfluxes=nfluxes+
-     $                    obj_geom(ofn1+mod(k,nf_posdim),i)
-     $                    *obj_geom(ofn1+mod(k+1,nf_posdim),i)
+     $                    obj_geom(ofn1+mod(k,ns_ndims),i)
+     $                    *obj_geom(ofn1+mod(k+1,ns_ndims),i)
 c                     write(*,*)k,' nfluxes=',nfluxes
-c     $                    ,obj_geom(ofn1+mod(k,nf_posdim),i)
+c     $                    ,obj_geom(ofn1+mod(k,ns_ndims),i)
                   enddo
-c                  write(*,*)(nf_faceind(j,mf_obj,k),k=1,2*nf_posdim)
+c                  write(*,*)(nf_faceind(j,mf_obj,k),k=1,2*ns_ndims)
 c                  nfluxes=2*nfluxes
                elseif(itype.eq.3)then
 c Cylinder (coordinate aligned) specifying nr, nt, nz. 
@@ -130,36 +130,13 @@ c After which, nf_address(i,j,k) points to the start of data for
 c quantity i, object j, step k. 
 c So we can pass nf_data(nf_address(i,j,k)) as a vector start.
 c-------------------------------------------------
-c The k=1-nf_posdim to k=0
-c slots exist for us to put descriptive information, such
-c as the angle-values that provide positions to correspond to the fluxes.
-      io=0
-      do i=1,ngeomobj
-         if(obj_geom(ofluxtype,i).gt.0)then
-c Spheres have only one facet, so no nf_dimlens(*,*,3) iteration needed.
-            io=io+1
-            ioff=0
-            do j=1,mf_quant(io)
-               do i2=1,nf_dimlens(j,io,2)
-                  p=3.1415926*(-1.+2.*(i2-0.5)/nf_dimlens(j,io,2))
-                  do i1=1,nf_dimlens(j,io,1)
-                     c=-1.+2.*(i1-0.5)/nf_dimlens(j,io,1)
-                     ip=i1+(i2-1)*int(nf_dimlens(j,io,1))
-                     ff_data(nf_address(nf_flux,io,0)+ioff+ip-1)=c
-                     ff_data(nf_address(nf_flux,io,-1)+ioff+ip-1)=p
-                  enddo
-               enddo
-               ioff=ioff+nf_posno(j,io)
-            enddo
-c            write(*,*)'Set ff_data',i,ioff,nf_map(i),io
-         endif
-      enddo
+c Initialize the position and area data for each object.
+      call positioninit()
 
       end
 c******************************************************************
       subroutine nfaddressinit()
       include '3dcom.f'
-
 c General iteration given correct settings of nf_posno. Don't change!
 c Zero nums to silence incorrect warnings.
       numdata=0
@@ -189,6 +166,194 @@ c Check if we might overrun the datasize.
          stop
       else
       endif
+      end
+c******************************************************************
+      subroutine positioninit()
+      include '3dcom.f'
+
+c      real xyz(ns_ndims)
+c The k=1-nf_posdim to k=0 slots exist for us to put descriptive
+c information: values that provide positions to correspond to the
+c fluxes.  Area is most important and is in 1-nf_posdim.
+c
+c Ellipses require elliptic surfaces which are a mess. For equal radii,
+c the area element is just dA=2\pi a^2 dcostheta. 
+      do i=1,ngeomobj
+         if(obj_geom(ofluxtype,i).gt.0)then
+            itype=obj_geom(otype,i)
+            itype=itype-256*(itype/256)
+            io=nf_map(i)
+            if(itype.eq.1)then
+c Sphere -----------------------
+               if(obj_geom(oradius,i).ne.obj_geom(oradius+1,i) .or.
+     $              obj_geom(oradius,i).ne.obj_geom(oradius+2,i))then
+                  write(*,*)'Warning! Non-spherical spheroid'
+     $                 ,' surface areas'
+     $                 ,' not calculated correctly.'
+               endif
+               ioff=0
+               do j=1,mf_quant(io)
+c Area of each element. They are equal only if radii are equal. 
+                  ar=4.*3.1415926*obj_geom(oradius,i)**2
+     $                 /(nf_dimlens(j,io,1)*nf_dimlens(j,io,2))
+c                  write(*,*)'Object',i,' Quant',j,' Facet areas=',ar
+                  do i2=1,nf_dimlens(j,io,2)
+                     p=3.1415926*(-1.+2.*(i2-0.5)/nf_dimlens(j,io,2))
+                     do i1=1,nf_dimlens(j,io,1)
+                        c=-1.+2.*(i1-0.5)/nf_dimlens(j,io,1)
+                        ip=i1+(i2-1)*int(nf_dimlens(j,io,1))
+c Position values are cos(theta) and psi. Third not used.
+                        ff_data(nf_address(j,io,nf_p1)+ioff+ip-1)=c
+                        ff_data(nf_address(j,io,nf_p2)+ioff+ip-1)=p
+                        ff_data(nf_address(j,io,nf_pa)+ioff+ip-1)=ar
+c This is a way to put ijbin values into the areas for testing:
+c                   ff_data(nf_address(nf_flux,io,nf_pa)+ioff+ip-1)=
+c     $                       ioff+ip-1
+                     enddo
+                  enddo
+                  ioff=ioff+nf_posno(j,io)
+               enddo
+c            write(*,*)'Set ff_data',i,ioff,nf_map(i),io
+c End of sphere case.
+            elseif(itype.eq.2 .or. itype.eq.4)then
+c Parallelopiped/Cube ----------------------------
+c facet areas are face areas divided by no of facets.
+               do j=1,mf_quant(io)
+c Over different faces:
+                  do k=1,2*ns_ndims
+                     k1=mod(k-1,ns_ndims)+1
+                     k2=mod(k  ,ns_ndims)+1
+                     k3=mod(k+1,ns_ndims)+1
+c                     write(*,'(/,a,i2,3i3,$)')'Face',k
+c     $                    ,nf_faceind(j,io,k)
+c     $                    ,nf_dimlens(j,io,k2),nf_dimlens(j,io,k3)
+                     if(itype.eq.4)then
+c Structure position of start of covariant vectors
+                        i1=pp_vec+ns_ndims*(k2-1)
+                        i2=pp_vec+ns_ndims*(k3-1)
+c face area equals magnitude of cross product. 
+c 3d assumption for convenience.
+                        ar2= (obj_geom(i1+1,i)*obj_geom(i2+2,i)
+     $                    -obj_geom(i1+2,i)*obj_geom(i2+1,i))**2
+     $                    +(obj_geom(i1+2,i)*obj_geom(i2  ,i)
+     $                    -obj_geom(i1  ,i)*obj_geom(i2+2,i))**2
+     $                    +(obj_geom(i1  ,i)*obj_geom(i2+1,i)
+     $                    -obj_geom(i1+1,i)*obj_geom(i2  ,i))**2
+                        ar=4.*sqrt(ar2)/
+     $                    (nf_dimlens(j,io,k2)*nf_dimlens(j,io,k3))
+                     else
+c Cube
+                        ar=4.*obj_geom(oradius+k2-1,i)
+     $                       *obj_geom(oradius+k3-1,i)/
+     $                    (nf_dimlens(j,io,k2)*nf_dimlens(j,io,k3))
+                     endif
+c Store data. At the moment, just the areas.
+                     do j3=1,nf_dimlens(j,io,k3)
+                     do j2=1,nf_dimlens(j,io,k2)
+                        ip=j2+(j3-1)*int(nf_dimlens(j,io,k2))
+     $                       +nf_faceind(j,io,k)
+                        ff_data(nf_address(j,io,nf_pa)+ip-1)=ar
+c                        write(*,'(i4,f8.4,$)')
+c     $                       j2,j3
+c     $                       ,int(nf_dimlens(j,io,k2))
+c     $                       ,ip,ar
+                        if(itype.eq.2)then
+c Cube position data x,y,z
+                           xr1=-obj_geom(oradius+k1-1,i)
+                           if(k.gt.ns_ndims)xr1=-xr1
+                           xr2=obj_geom(oradius+k2-1,i)*
+     $                          (-1.+2.*(j2-0.5)/nf_dimlens(j,io,k2))
+                           xr3=obj_geom(oradius+k3-1,i)*
+     $                          (-1.+2.*(j3-0.5)/nf_dimlens(j,io,k3))
+c                           write(*,*)j2,j3,xr1,xr2,xr3
+                           ff_data(nf_address(j,io,1-k1)+ip-1)=
+     $                          obj_geom(ocenter+k1-1,i)+xr1
+                           ff_data(nf_address(j,io,1-k2)+ip-1)=
+     $                          obj_geom(ocenter+k2-1,i)+xr2
+                           ff_data(nf_address(j,io,1-k3)+ip-1)=
+     $                          obj_geom(ocenter+k3-1,i)+xr3
+                        endif
+                     enddo
+                     enddo
+                  enddo
+               enddo
+            elseif(itype.eq.3)then
+c Cylinder. ----------------------------------------
+               ica=obj_geom(ocylaxis,i)
+               rc=obj_geom(oradius+mod(ica,ns_ndims),i)
+               zr=obj_geom(oradius+ica-1,i)
+               zc=obj_geom(ocenter+ica-1,i)
+               if(rc.ne.obj_geom(oradius+mod(ica+1,ns_ndims),i))then
+                  write(*,*)'Warning! Elliptical cylinder'
+     $                 ,' surface areas'
+     $                 ,' not calculated correctly.'
+               endif
+               do j=1,mf_quant(io)
+c Area of each element. Faces are in order bottom, side, top.
+c Bottom and top facet areas:
+                  ar=3.1415926*rc**2
+     $                 /(nf_dimlens(j,io,1)*nf_dimlens(j,io,2))
+                  write(*,*)'Object',i,' Quant',j,' Facet areas=',ar
+                  do i2=1,nf_dimlens(j,io,2)
+                     do i1=1,nf_dimlens(j,io,1)
+                        ip=i1+(i2-1)*int(nf_dimlens(j,io,1))
+c Positional data:
+c r (not r^2)
+                        r=rc*sqrt((i1-0.5)/nf_dimlens(j,io,1))
+                        ff_data(nf_address(j,io,nf_pr)+ip-1)=r
+                        ff_data(nf_address(j,io,nf_pr)+ip-1
+     $                       +nf_faceind(j,io,3))=r
+c theta
+                        t=3.1415927*
+     $                       (-1.+2.*(i2-0.5)/nf_dimlens(j,io,2))
+c                        write(*,*)i1,nf_dimlens(j,io,1),t
+                        ff_data(nf_address(j,io,nf_pt)+ip-1)=t
+                        ff_data(nf_address(j,io,nf_pt)+ip-1
+     $                       +nf_faceind(j,io,3))=t
+c z
+                        ff_data(nf_address(j,io,nf_pz)+ip-1)=zc-zr
+                        ff_data(nf_address(j,io,nf_pz)+ip-1
+     $                       +nf_faceind(j,io,3))=zc+zr
+c area
+                        ff_data(nf_address(j,io,nf_pa)+ip-1)=ar
+                        ff_data(nf_address(j,io,nf_pa)+ip-1
+     $                       +nf_faceind(j,io,3))=ar
+                     enddo
+                  enddo
+c Side 2 pi r 2 z:
+                  ar=4.*3.1415926*rc*zr
+     $                 /(nf_dimlens(j,io,2)*nf_dimlens(j,io,3))
+c index theta,z
+                  do i2=1,nf_dimlens(j,io,3)
+                     do i1=1,nf_dimlens(j,io,2)
+                        ip=i1+(i2-1)*int(nf_dimlens(j,io,2))
+                        ff_data(nf_address(j,io,nf_pa)+ip-1
+     $                       +nf_faceind(j,io,2))=ar
+                        ff_data(nf_address(j,io,nf_pr)+ip-1
+     $                       +nf_faceind(j,io,2))=rc
+c                        write(*,'(i4,f8.4,$)')
+c     $                       ,ip,ar
+c theta
+                        t=3.1415927*
+     $                       (-1.+2.*(i1-0.5)/nf_dimlens(j,io,2))
+c                        write(*,*)i1,nf_dimlens(j,io,1),t
+                        ff_data(nf_address(j,io,nf_pt)+ip-1
+     $                       +nf_faceind(j,io,2))=t
+c z
+                        z=zc+zr*(-1.+2.*(i2-0.5)/nf_dimlens(j,io,3))
+                        ff_data(nf_address(j,io,nf_pz)+ip-1
+     $                       +nf_faceind(j,io,2))=z
+
+                     enddo
+                  enddo
+               enddo
+            else
+c Unknown ------------------------------------------
+               write(*,*)'Flux parameters uncalculated for object'
+     $           ,i,' type',obj_geom(otype,i)
+            endif
+         endif
+      enddo
       end
 c******************************************************************
       subroutine tallyexit(i,idiffreg)
@@ -265,6 +430,7 @@ c Get the positions:
       if(itype.eq.1)then
 c Sphere intersection. Return the bin number and direction ijbin,sd.
          call spherefsect(npdim,x1,x2,iobj,ijbin,sd,fraction)
+c         write(*,*)'flux spherefsect',ijbin
       elseif(itype.eq.2)then
 c Cube intersection. Return the bin number and direction ijbin,sd.
          call cubefsect(npdim,x1,x2,iobj,ijbin,sd,fraction)
@@ -380,6 +546,8 @@ c jbin runs from 0 to N-1 psi = -pi to pi.
       jbin=int(nf_dimlens(nf_flux,infobj,2)
      $     *(0.999999*psi/3.1415926+1.)*0.5)
       ijbin=ibin+jbin*nf_dimlens(nf_flux,infobj,1)
+      if(fraction.gt.1.)fraction=1.
+      if(fraction.lt.0.)fraction=1.
       end
 
 
@@ -518,6 +686,8 @@ c others, and c_q are real coefficients.  Inside corresponds to between
 c these two planes, i.e. contravariant coefficients <1. We define the
 c facets of the cube to be the faces (planes) in the following order:
 c +v_1,+v_2,+v_3,-v_1,-v_2,-v_3. 
+c Then within each face the facet indices are in cyclic order. But that
+c is determined by the cubeexplt code.
       integer npdim,iobj,ijbin
       real xp1(npdim),xp2(npdim)
       real sd
@@ -659,8 +829,10 @@ c The cylinder is specified by center and radii!=0 (to faces.)  in each
 c coordinate. Plus the axial coordinate.  Inside corresponds to between
 c the axial planes, i.e. x-xc < |rc|, and orthogonal radius < 1.
 
+c The following appears to be incorrect. 
 c We define the facets of the cylinder to be the end faces -xr +xr, then
 c the curved boundary. 3 altogether.
+c In fact, the order of faces is bottom, side, top.
       
       integer npdim,iobj,ijbin
       real xp1(npdim),xp2(npdim)
@@ -789,7 +961,9 @@ c 3-D only here.
       it=9
       iz=9
       if(imin.ne.0)then
+c Ends
          if(imin.eq.1)then
+c offset by (nr+nz)*nt
             ijbin=(nf_dimlens(nf_flux,infobj,1)
      $           +nf_dimlens(nf_flux,infobj,3))
      $           *nf_dimlens(nf_flux,infobj,2)
@@ -800,15 +974,29 @@ c Uniform mesh in r^2 normalized.
      $     *(theta/3.1415927+1.)*0.5)
          ijbin=ijbin+ir+it*nf_dimlens(nf_flux,infobj,1)
       else
-c Offset to this facet:
+c Side. Offset to this facet nr*nt:
          ijbin=nf_dimlens(nf_flux,infobj,1)*nf_dimlens(nf_flux,infobj,2)
          it=int(nf_dimlens(nf_flux,infobj,2)
      $     *(theta/3.1415927+1.)*0.5)
          iz=int(nf_dimlens(nf_flux,infobj,3)*(0.999999*z+1.)*0.5)
+c Index in order theta,z
          ijbin=ijbin+it+iz*nf_dimlens(nf_flux,infobj,2)
       endif
 c      write(*,'(6f8.4,3i3)')xp1,xp2,ir,it,iz
       end
+c*********************************************************************
+      real function areaobj(iobj,ijbin)
+c Return the area of facet ijbin of object iobj.
+      include '3dcom.f'
+
+      ifobj=nf_map(iobj)
+c Address of flux data. Not needed I think
+c      iav=nf_address(1,ifobj,nf_maxsteps+1)
+      areaobj=0.
+      end
+
+c*********************************************************************
+c*********************************************************************
 c*********************************************************************
       subroutine timeave(nu,u,uave,ictl)
 c Average a quantity u(nu) over steps with a certain decay number
@@ -846,13 +1034,15 @@ c Normal call.
       end
 c***********************************************************************
       subroutine fluxdiag()
+c Get the total count to object 1 and convert to normalized flux.
+c Assuming it's a unit sphere.
       include '3dcom.f'
 c For rhoinf, dt
       include 'partcom.f'
 
       sum=0
-      do i=1,nf_posno(1,1)
-         sum=sum+ff_data(nf_address(1,1,nf_step)+i-1)
+      do i=1,nf_posno(nf_flux,1)
+         sum=sum+ff_data(nf_address(nf_flux,1,nf_step)+i-1)
       enddo
       flux=sum/(4.*3.14159)/rhoinf/dt
       write(*,'(f6.3,''| '',$)')flux
@@ -912,7 +1102,7 @@ c Sum the data over steps.
 c Total the flux over positions as a function of step.
       tdur=0.
       rinf=0.
-      do is=n1,n2
+      do is=1,n2
          fluxstep=0
          do i=1,nf_posno(iq,ifobj)
             fluxstep=fluxstep+ff_data(nf_address(iq,ifobj,is)+i-1)
@@ -948,8 +1138,8 @@ c      write(*,*)'Sectcom ipt=',sc_ipt
          call boxtitle(string)
          call axlabels('step','Spatially-summed flux number')
          call pltend()
-         call automark(ff_data(nf_address(iq,ifobj,0)),ff_data(iav+1),
-     $        nf_posno(iq,ifobj),1)
+         call automark(ff_data(nf_address(iq,ifobj,nf_p1))
+     $        ,ff_data(iav+1),nf_posno(iq,ifobj),1)
          call boxtitle(string)
          call axlabels('First flux face variable',
      $        'Time-averaged flux number')
@@ -993,7 +1183,8 @@ c This write sequence must be exactly that read below.
       write(22)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
       write(22)(ff_rho(k),k=1,nf_step)
       write(22)(ff_dt(k),k=1,nf_step)
-      write(22)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_posdim)
+      write(22)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_ndims)
+     $     ,(nf_faceind(i,j,k),k=1,2*nf_ndims)
      $     ,i=1,mf_quant(j)),j=1,mf_obj)
       write(22)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+1)
@@ -1010,7 +1201,8 @@ c Object data:
       write(22)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
 c Intersection data:
       write(22)sc_ipt
-      write(22)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),k=1,sc_ipt)
+      write(22)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),
+     $     ibin_sc(k),k=1,sc_ipt)
 
       close(22)
 c      write(*,*)'Wrote flux data to ',name(1:lentrim(name))
@@ -1034,7 +1226,8 @@ c*****************************************************************
       read(23)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
       read(23)(ff_rho(k),k=1,nf_step)
       read(23)(ff_dt(k),k=1,nf_step)
-      read(23)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_posdim)
+      read(23)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_ndims)
+     $     ,(nf_faceind(i,j,k),k=1,2*nf_ndims)
      $     ,i=1,mf_quant(j)),j=1,mf_obj)
       read(23)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+1)
@@ -1059,8 +1252,8 @@ c      write(*,*)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
 c      write(*,*)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
 c Intersection data:
       read(23)sc_ipt
-      read(23)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),k=1,sc_ipt)
-
+      read(23)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),
+     $     ibin_sc(k),k=1,sc_ipt)
       goto 103
  102  write(*,*)'Failed to read back forces. Old format?'
  103  close(23)

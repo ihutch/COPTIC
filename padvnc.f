@@ -29,6 +29,7 @@ c Local storage
       integer ixp(ndims_mesh)
       real field(ndims_mesh),adfield(ndims_mesh)
       real xfrac(ndims_mesh)
+      real xg(ndims_mesh),xc(ndims_mesh)
       logical linmesh
       logical lcollided
       save adfield
@@ -45,7 +46,7 @@ c Make this always last to use the checks.
       tisq=sqrt(Ti)
       lcollided=.false.
 
-      if(ndims.ne.ndims_mesh)
+      if(ndims.ne.ndims_mesh.or. ndims.ne.3)
      $        stop 'Padvnc incorrect ndims number of dimensions'
 c-----------------------------------------------------------------
       ic1=2*ndims+1
@@ -188,25 +189,34 @@ c a subcycle, reinjection or collision last step.
 
          ptot=ptot+dtpos
          atot=atot+dtaccel
-c         if(dtpos.ne.dt)then
-c            write(*,'(''Subcycle'',i7,10f8.4)')i,f1,dtc
-c     $        ,x_part(1,i),x_part(2,i),x_part(3,i)
-c     $        ,sqrt(r2),v2
-c     $        ,field(1),field(2),field(3)
-c     $        ,dtremain,dtprec(i),dtpos,dtaccel
-c     $        ,ptot,atot
-c            write(*,*)'xpart',(x_part(k,i),k=1,6)
-c            write(*,*)'field',(field(k),k=1,3)
-c         endif
-
 c Accelerate          
          do j=ndims+1,2*ndims
             x_part(j,i)=x_part(j,i)+field(j-ndims)*dtaccel
          enddo
 c Move
-         do j=1,ndims
-            x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos
-         enddo          
+         if(Bt.ne.0.)then
+c Magnetic field non-zero
+c If there were a drift velocity, subtract it off. Not done yet.
+c Find the gyro radius and gyrocenter.
+            call gyro3(Bt,Bfield,x_part(1,i),x_part(4,i),xg,xc)
+            theta=Bt*dtpos
+c Rotate the velocity and gyro radius.
+            call rotate3(x_part(4,i),theta,Bfield,x_part(4,i))
+            call rotate3(xg,theta,Bfield,xg)
+c Move xc along the B-direction.
+            call translate3(xc,x_part(4,i),dtpos,Bfield,xc)
+c Add the new gyro center and gyro radius
+c [and add back the drift velocity, not yet.]
+            do j=1,ndims
+               x_part(j,i)=xc(j)+xg(j)
+            enddo
+                      
+         else
+            do j=1,ndims
+               x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos
+            enddo          
+
+         endif
 
          if(lcollided)then
 c Treat collided particle at (partial) step end
@@ -495,4 +505,57 @@ c Vneutral is in z-direction.
 c***************************************************************
       real function getnullpot()
       getnullpot=0.
+      end
+c*******************************************************************
+      subroutine rotate3(xin,theta,u,xout)
+c Rotate the input 3-vector xin, by angle theta about the direction
+c given by direction cosines u (normalized axis vector) and return in
+c xout. 
+c This is a clockwise (right handed) rotation about positive u, I hope.
+      real xin(3),xout(3),theta,u(3)
+      c=cos(theta)
+      s=sin(-theta)
+      d=1.-c
+c Just written out is about twice as fast:
+      x1=(c+d*u(1)*u(1))*xin(1)
+     $     +(d*u(1)*u(2)-s*u(3))*xin(2)
+     $     +(d*u(1)*u(3)+s*u(2))*xin(3)
+      x2=(c+d*u(2)*u(2))*xin(2)
+     $     +(d*u(2)*u(3)-s*u(1))*xin(3)
+     $     +(d*u(2)*u(1)+s*u(3))*xin(1)
+      xout(3)=(c+d*u(3)*u(3))*xin(3)
+     $     +(d*u(3)*u(1)-s*u(2))*xin(1)
+     $     +(d*u(3)*u(2)+s*u(1))*xin(2)
+c This shuffle is necessary if xin and xout are the same storage.
+      xout(1)=x1
+      xout(2)=x2
+      end
+c********************************************************************
+      subroutine translate3(xin,vin,dt,u,xout)
+c Translate in the u direction (cosines) by the component of vin 
+c in the u-direction times dt from the input position xin to xout.
+      real xin(3),vin(3),u(3),xout(3),dt
+      vudt=(u(1)*vin(1)+u(2)*vin(2)+u(3)*vin(3))*dt
+      xout(1)=xin(1)+u(1)*vudt
+      xout(2)=xin(2)+u(2)*vudt
+      xout(3)=xin(3)+u(3)*vudt
+      end
+c*********************************************************************
+      subroutine gyro3(Bt,u,xin,vin,xg,xc)
+c Given a field Bt in direction u, obtain the gyro radius xg of
+c the particle at xin, with velocity vin. Subtract the gyro radius
+c from xin to give the gyrocenter in xout.
+      real Bt,u(3),xin(3),vin(3),xg(3),xc(3)
+c Find the perpendicular velocity, rotate it by 90 degrees, and divide 
+c by the field. 
+      vu=(u(1)*vin(1)+u(2)*vin(2)+u(3)*vin(3))
+      xg(1)=(vin(1)-u(1)*vu)/Bt
+      xg(2)=(vin(2)-u(2)*vu)/Bt
+      xg(3)=(vin(3)-u(3)*vu)/Bt
+      theta=3.1415917*0.5
+      call rotate3(xg,theta,u,xg)
+c Now xg is the gyroradius.
+      xc(1)=xin(1)-xg(1)
+      xc(2)=xin(2)-xg(2)
+      xc(3)=xin(3)-xg(3)
       end

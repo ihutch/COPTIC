@@ -6126,9 +6126,541 @@ Implemented and working.
 Ok now we have going
    1. Flux plotting.
    2. Gradients of boundary conditions. 
+we also already had:
+   3. Collisions
 
 Things still to do. 
        Magnetic Field
-       Collisions
        Surface charges
        ...
+
+17 Jan 11
+
+Surface charges. The key question to decide on implementation is
+whether we should immediately go to a dereferenced value of surface
+charge, or whether we should proceed more simply initially. A
+dereferenced charge would perhaps be stored with the flux data. It
+might be a new fluxtype, although it is not obvious we necessarily
+want to be forced to use all the momentum and energy flux accounting
+inevitably if charge accumulation is being done too. In effect, charge
+accumulation is simply integrating the charge flux, i.e. adding it
+up. There might be an electron flux that also is subtracted. For that
+to be calculated, we would need the (mean) potential of the surface
+element each step. If we were using specified potential, that would
+not be too much of a problem, but also we would then not need to do a
+surface charge calculation. So there's actually a substantial
+challenge in calculating the electron current to a flux element. We
+need to get the potential solution, and then do some sort of
+appropriate average over the facet. Since this needs to be done every
+step, it must be fast.
+
+We ought not to attempt to get the potential on a finer spatial scale
+than the mesh. Therefore it would be reasonable to use every lattice
+intersection with a particular facet to document the potential. Taking
+all such intersections one could regard the facet electron flux as
+given by the sum of the electron flux density for potentials at the
+intersections, multiplied by the corresponding area. This would then
+require getpotentials at all lattice intersections multiplied by fixed
+coefficients representing the geometry (areas). The number of real
+lattice intersections is maybe 1/3 of the total number of pointers
+used, which might be up to 10% of the mesh points. Compared with a
+single SOR iteration, this would therefore be managable. Does the
+surface charge update need to be done during SOR iteration? Well, not
+really if the charging time is long compared with timestep. But yes, if
+it is short. If it is really short, there'll be various problems. 
+
+Charging time is capacitance*potential/current. 
+
+Capacitance (of sphere) is roughly Q/phi = 4 \pi \epsilon_0 /(1/r_p
++1/lambda_s). 
+
+Current is of order 4 \pi r_p^2 e v_te n_e. 
+
+So time scale is\epsilon_0/[r_p e v_te n_e(1+r_p/lambda)]
+=  phi_p  \ep_0 /[r_p e n_e(lambda+r_p) omega_p]
+=  phi_p  e \lambda^2/[ r_p T_e (lambda + r_p) omega_p] 
+
+So if phi_p is normalized to Te/e the charging time is
+
+phi_p  \lambda^2/[rp(rp+\lambda) v_t/lambda]
+=phi_p  \lambda^2/[rp(rp/lambda +1 ) v_t]
+
+In normalized time units, v_cs/r_p = 1. So v_te = smr r_p where smr is
+the square root of the mass ratio: sqrt(1870). 
+
+Thus charging time is 
+     phi_p (lambda^3/r_p^2 (rp+lambda)) 1/smr 
+
+If lambda<r_p and we are talking about ions so smr=1, then with
+phi_p ~ 1 we get just the (lambda^3/r_p^2 (rp+lambda)) factor, which 
+could get small rather quickly. For example if lambda=0.1 rp, it is 
+about 10^-3, which will be smaller than any sensible ion step. 
+What's more, since smr is maybe ~100, 1/smr is itself a small quantity
+for electron charging. In order for the time to be of order 1, we need
+to have lambda^2/r_p^2 ~ smr. That is lambda/r_p ~ 10.
+
+Therefore, unless the debye length is >~10r_p, the charging time is 
+less than 1 normalized unit. And unless it is >~r_p the charging time
+is less than 0.01 normalized unit. (Which might be roughly a time step.)
+
+Particles charge instantaneously on the ion timescale if lambda_D <~ r_p. 
+
+Thus an implicit solution for the potential appears essential. The
+surface potential usually tracks quite quickly to cause the electron
+flux density to equal the ion. This amounts to saying that the ion
+surface charge is quickly neutralized by electron currents until it is
+consistent with the potential solution. In effect this amounts to what
+I implemented in SCEPTIC: that the surface potential becomes equal to
+the value required to make j_e=j_i. 
+ 
+The problem is that the ion flux will be very noisy on short time
+scales.  Therefore it may have to be averaged over many
+steps. (Perhaps non-physical as far as transients are concerned).
+Actually the ion flux changes on a relatively slow time scale, even if
+the debyelength is short. Roughly on the timescale of one normalized
+unit, because it is governed by the presheath, not the sheath. That's
+a reasonable time over which to average the ion flux. What's more, if
+the potential locally fluctuates faster than this, then it will act
+mostly like random kicks: collisions.
+
+Conclusion. To make ion simulations of transients, one needs the ion
+flux to vary on roughly a normalized timescale of 1. It is justifiable
+to average the flux over approximately this time scale to reduce the
+noise. If the potential still fluctuates, this will give rise to an
+unphysical effective collisionality. 
+
+
+Given concerns about noise level of surface charge, it might not be
+advisable to make the surface charge structure the same as that of
+flux collection. There might be a reason to adopt a coarser grid for
+surface charge than for flux collection. If that were necessary, it
+would presumably be possible to do appropriate spatial averaging as
+well as time averaging. So perhaps the structure does not matter so
+long as it is coarser. There might be other approaches to surface 
+charge approximation, though. For example one might want a surface
+charge (component) on a sphere that was proportional to cos theta. 
+Trouble is, low order moments (for example) are a whole different 
+approach. They can be linearly mapped from facets, though. Also 
+from the point of view of inputting surface charges from the object
+file, there is every reason to expect that one might want to do that
+with (for example) a simple gradient term. (Cos theta on a sphere). 
+
+
+Actually object data already contains a reverse pointer to the object
+in iinter_sor.  It looks easy to generalize that to include the ijbin
+in that object.  In which case one probably has the reverse reference
+required. As imagined earlier, the right place to implement new
+code is in ddn_sor. At present all this does is add on the diagonal
+and bdy contributions e.g.      dnum=dnum+dob_sor(ibdy_sor,ip). 
+Presumably it could do far more if necessary. Actually this ibdy 
+contribution is the only thing containing coefficient c. It is the sum
+of -P.C/A over all directions, for Robin condition. If C were being 
+changed dynamically, perhaps we could do a similar sum for adjustments.
+[What happens if there is more than one contribution to this sum? 
+That is not so unusual for an oblique surface. In that case we'd 
+have to add up the new contributions from each intersection. But we'd
+also have a different P in each direction, and we don't store it. Tricky.
+The calculation of P (coef) is elaborate. Requiring two passes through
+the stencil. In effect the whole cijroutine. ]
+
+It seems as if one might need quite a lot of extra stored information
+for an object that had variable boundary condition, e.g. potential. 
+At the least one needs to store the Ps separately from the cij (in the 
+bulk cij=P) so as to be able to adjust their boundary contribution.
+Perhaps the way to do this is to implement a new type of object, and
+handle the difference equation differently at its boundary. One might
+chain extra object data to the end of this cijdata, when needed.
+
+Or possibly just make more space (which would be less complicated):
+Currently cijdata count is 24 total. If we add one (P) for each direction,
+(x6) that would bring it to 30, a 25% increase, not too desperate. 
+But that might not really be enough, since one really needs a pointer
+to the variable c-data in each direction. Perhaps that pointer is what
+one really needs. It could be a pointer to a total data structure which
+has sufficient information to return whatever value is needed for this
+adjustment. This could be embedded in ddn_sor through an examination
+whether this pointer is non-zero. 
+
+In effect, then, we need the dob_sor to include for each monitored 
+point a pointer to extra structures that fully determine the additional
+adjustment to be done in ddn_sor. This is more elaborate than what we
+have at the moment which is simply for this point add on the denominator
+and numerator adjustments, precalculated. 
+
+What is needed in the new structure? 
+     a reference to where am I going to get the variable data from
+     what that variable data is in the form of
+     any coefficients that are needed to add it, such as:
+     the P's (i.e. coefs) in relevant directions
+
+Do we need this for 2*ndims directions? One might assume that there 
+is never an opposite intersection, so only ndims directions were needed.
+But I think this is unnecessarily dangerous. So make it for every direction.
+Then the actions called for in this new structure are 
+     Look through all directions from point.
+     If we need to for this direction
+     	 get the variable data
+	 multiply it by the relevant weight and add to adjustment
+	 calculate the new c/a and b/a and store.
+
+So for each direction we need 
+     A flag to say whether we are doing anything here
+     A pointer to the place where the variable data is (maybe same as flag). 
+     Some coefficient(s). 
+     At least 12 storage spaces. 24 ought to be plenty. 
+Therefore we can use the same space and pointer arrangements that
+are handled by objstart. But we would have a different meaning for
+the data in the structure. We would only start this secondary data
+in special cases where there was variable boundary value to be accessed. 
+
+There's another issue. interpolations use the fraction, boa, and coa
+information. If that is not updated, then the field finding is wrong. 
+It has to be updated to include the effective c/a and b/a. (Fraction
+does not change if the objects don't move.) ddn_sor could presumably
+do that updating. 
+
+Note that if the update consists of putting the boundary potential
+equal to some value set by the ion flux, then it does not need to be
+done every sor-iteration, only every time-step. Consequently, there
+might be a better way of doing this that did the update, including the
+update of the ddn_parameters idgs_sor and ibdy_sor and of coa, boa,
+and then the iteration just uses those parameters for the entire
+solution of this step. Given that the sor iteration is a substantial number
+of steps, then doing the update over the entire cij array is a tiny
+cost. This does not then accommodate iterative changes within the potential
+solution to the boundary data. But it's not clear that's necessary. 
+An approach that tracked the ion surface charge and then updated the 
+total charge based upon electron flux might benefit from such a scheme,
+but probably mostly if the potential is changing a lot in a timestep,
+in which case, the potential control/adjustment seems to make more sense. 
+
+Doing the update over the entire array would be wasteful if done every
+time step, because of the additional searching for non-zero pointers.
+Doing within sor updates is then less expensive (but maybe not by a
+big factor). 
+
+What happens if I want a dielectric sphere with surface charge? The two
+contributions (polarization and free) to the surface charge might be
+incompatible other than in the form of tracking the free. But then
+I would not be tracking boundary potential. Seems an abstruse case. 
+
+Summary. We can do the potential/surface-charge variation with a chained
+structure of the same size as the existing cij extra data. It might need
+to be accessed only once per time step. Quantities in the primary data
+such as boa, coa need to be updated. In fact from the iteration's perspective
+those parameters (and ibdy, idgs) once updated can be used identically 
+to now. 
+
+
+---------
+Distraction. Get rid of old unused fillin. We are using fillinlin. 
+Trying to figure out how to make it unnecessary to set pointer 
+in all nodes of a box containing a node that really has an intersection. 
+Notes say getpotential and fillinlin are broken. But I don't see how
+fillinlin is broken by this. Or getpotential, which just uses it. 
+They just use getfield. Maybe getfield is broken by it? 
+Switching this code section off changes the flux density reported by
+make (by a smallish amount so it's not clear why). That seems to 
+show that there's something different. getpotential is only called
+in padvnc, and setting the value called to zero in both cases does not
+give an identical result. Therefore it is not the value returned by
+getpotential that is affecting things. The notes of 21 July 09 describe
+why I ended up with this test in. I suspect that getfield is where 
+the issue actually lies rather than getpotential. Yes it is gradlocalregion
+that needs the pointer information. Fix misleading comment. 
+---------
+
+Adjust the _sor data structure to include iextra_sor pointer to additional
+data. 
+
+Flux dependence encoding of the input data:
+ocenter, oradius, ovec, ocontra etc remain with the same meanings.
+oabc presumably have different meanings.
+ofn1-3 etc remain as before. 
+Perhaps ofluxtype changes currently it means the number of fluxes.
+Anyway, we currently have 3 parameters (oabc) that can be used to 
+specify how the BC depends on flux. They are used in setting some
+of the default code a/b ... Perhaps we simply default to the same
+and use the otype to tell us what to do. 
+
+The standard thing to do is to set potential to be such that the
+electron flux is equal to the ion flux. For this we need the mass
+ratio over Z SCEPTIC has
+
+         flogfac=0.5*alog(2.*pi/(rmtoz*1837.))
+
+Actually flogfac depends on magnetization. The above is for zero B. 
+
+           fluxofangle(j)=finthave(j)*(nthused)/
+     $              (4.*pi*rhoinf*dt*r(1)**2)
+
+           phi(imin,j)=(alog(fluxofangle(j))+flogfac
+     $                    +(ncs-1.)*phi(imin,j))/ncs
+
+So this is averaging phi over something like ncs(50) steps. Maybe finthave
+has already been averaged? Yes it has. flogfac is the log of sqrt of
+(2.*pi/(rmtoz*1837.)), and the solution is such that
+fluxofangle = sqrt(2.*pi/(rmtoz*1837.))exp(phi)
+
+fluxofangle is the number of counts per unit time per unit area normalized
+by rhoinf. We need to know the area of our facets to get flux density. 
+Fluxes are acquired by all nodes in fluxreduce. 
+
+
+19 Jan 11
+
+A key question, it is now clear, is whether one should implement new 
+routines for the dynamic update of the cij parameters during iteration
+(triggered by flags) or whether one should use the same cij setting 
+code we currently have, but only once per time step. In effect, calling
+the cij routine for a variable-BC object might be what one wanted to do
+right from the get go. Doing so once a timestep might not be very 
+costly especially if there were a way to skip nodes that were known not
+to be affected by variability. If this view were taken, then one would
+embed the variability into potlsect setting of conditions. 
+
+The weakness with this approach is that it is wasteful to determine
+the intersection on each iteration, since that is not going to change
+for stationary objects. So we would definitely not want to do potlsect
+exactly as it now exists. We really need a way to store at least the
+reference to the flux bin for each direction. That is, the geometry 
+is one calculation, the flux is another, the conditions depends on flux,
+but the geometry does not change. We might however go through whatever
+conditions calculation is implemented at each timestep.
+
+Decision is to set iobj,ijbin and some other stuff for each direction
+intersected within a chained code during initial cijroutine, then
+reset what is needed separately.
+
+Implemented chaining and iobj,ijbin setting.
+Use spherefsect for sphere cij because we now need the ijbin.
+Had to move the fluxdatainit before cijroutine otherwise the ijbin
+is not calculated correctly.
+
+It seems we perhaps ought to use the 1-nf_posdim locations to store the
+facet areas, because it is not straightforward to calculate them on the
+fly. I previously increased nf_posdim to 3 because of needing cube positions
+in 3-d. But actually, I haven't even implemented the calculation of that.
+Instead the positions are being deduced algorithmically. The areas
+are significantly harder to deduce algorithmically and probably ought
+to be stored.
+
+Ellipse arc length for major and minor axes a,b as a function of angle
+parameter theta is sqrt dl= (dx^2+dy^2) = sqrt(a^2 sin^2 + b^2 cos^2) dtheta
+= a sqrt(1+ (b^2/a^2-1)sin^2theta)  dtheta
+ is  a.E(theta,k) where k=sqrt(1-b^2/a^2),
+E(theta,k)= \int_0^theta sqrt(1-k^2sin^2theta) dtheta
+
+It's all too messy. For now just flag that the calculation is not right
+if the axes are not identical. There's a calculation in my notes for
+a case where two of the axes are the same length. But for now just 
+divide 4pi r**2 by the total number of facets (theta and psi). That's 
+correct for a sphere. Probably one could get the surface area numerically
+using the same sort of scheme as used for the objplot, adding up multiple
+quadrilaterals. 
+
+Pulled the area data into the third slot of dob_sor. Seems to work. 
+
+So now the plan is when evaluating at node ij either in the iteration, 
+or more likely in a separate coefficient update step:
+If cij iextra set
+   for 2*Nd directions
+      if iobj ne 0 reevaluate potential by
+         get flux using ijbin, iobj, and time average
+	 divide by area, dt, and coefficients
+	 calculate corresponding potential
+	 reenter the relevant main cij parameters boa, coa, ...?
+      endif	
+   endfor
+
+20 Jan 11
+
+For recalculating the cij parameters, it seems it would make sense if
+we used some of the same code that is currently in cijroutine. We
+don't need to do the boxedge section. And we don't need to do the
+potlsect section. But we do need the dplus deff section perhaps. 
+After we've recalculated the abc. No. This is too cumbersome. Really 
+what we need is to have the coef for all directions stored (this is 
+in cutcartesian notation P). Then most of cijroutine is redundant.
+Probably we need to store coef in the third slot of dob_sor instead
+of the area, and get the area from the flux location directly. If so,
+then we will need to know the object number.
+
+Implemented cijupdate (a code for mditeration). It seems to work
+setting the potential boundary condition to the local floating potential. 
+
+Time costs with cijupdate 5.423, without 4.759 for 20 steps of
+standard settings. These are very fast steps with ni=100k. Costs are
+not zero but hardly significant. They probably could be improved by not
+iterating over the entire cij mesh, only over the stored data.
+
+Did a test with different initial potential. It converges to the same
+answer.
+
+Did some tests with different -l and -v they look qualitatively very
+sensible. These are with 5x5 flux facets.
+
+Also tests with different flux facet numbers up to 20x20 and down to 1
+seem to work.  Thus we have the ability to do floating spheres as well
+as insulating.
+
+Now I have to establish whether the absolute values make sense.
+
+First. Rewrite this so that it does not iterate over the whole of the
+mesh, instead it just iterates over the auxiliary data up to oi_sor.
+This should take negligible time. It seems to give just the same 
+result. Good.
+
+Timing. Old update 5.234. New 5.201. This shows the real cost even of the
+mditerate version is very small. I think the differences observed above
+had more to do with changes in the sor solving because of different phi
+that with the additional code execution. Still it is more elegant
+to do the update sensibly rather than looking everywhere. 
+
+With -s500 and 
+1025 , 1.,0.,5., .0,.0,.0,  1.,1.,1.,   1, 5, 5, 
+we get:
+nrein,n_part,ioc_part,rhoinf,dt= 2394    96132    98569   100.014     0.100
+
+ Average flux quant  1, object  1, over steps 250 500, per unit time:  1730.514
+ rhoinf:  100.014366 Total: 43436  Average collected per step by posn:
+    6.76    7.03    6.70    6.77    6.65    6.96    6.70    6.81    6.98    7.28
+    6.93    6.93    6.80    6.96    7.27    6.96    6.95    6.77    7.01    6.90
+    7.06    6.96    6.89    6.94    7.08
+ Flux density*r^2, normalized to rhoinf  1.37690246
+
+phiexamine shows the probe potential is about -2.6-7
+
+A very profitable day. Thanks be to God!
+
+21 Jan 11
+
+Doing a hand calculation of the floating potential. The flogfac for hydrogen
+is -5.678. If area is .5, rhoinf=100., dt=.1, count=5, then fluxdensity=1,
+and so the floating potential is 0.5*flogfac=2.84. That's just what the 
+phiofcount is getting. I think it's about right.
+
+There's an issue with the whole approach for a floating object. It is
+that we might well wish to obtain the angular dependence of the flux
+in an object that was a floating equipotential. That could not be done
+simultaneously with the present implementation. It could perhaps be done
+by introducing an additional ghost object for the flux accounting. But
+that's a bit cumbersome. 
+
+Implemented a type 5 to do floating equipotential by summing the flux 
+and area over the object.
+
+The the local flux is implemented only for spheres. 
+To make things work for other objects, we need to initialize their 
+facet areas, which is not done yet.
+
+Now we have going
+   1. Flux plotting.
+   2. Gradients of boundary conditions. 
+   3. Collisions
+   4. Insulating surfaces.
+   5. Floating objects.
+
+Things still to do. 
+       Magnetic Field
+But
+       Surface charges
+does not seem so pressing because of the considerations that have shown
+that floating/insulating objects are not well treated by using a surface
+charge. Their potential should be controlled by flux density. 
+
+Magnetic field implementation.
+I think it is essential to be able to have the magnetic field point
+in any direction. The way to prescribe this is to have a vector B(ndims)
+and to have switches -Bx -By -Bz (default B=0). ndims is not defined
+in plascom. I guess we need to set it: nplasdims.
+Ok built code to read in those components and calculate Btotal. 
+
+The cyclonic integrator does rotation of the Larmor radius and velocity 
+about the (total) magnetic field by an angle \Omega.dt. We should regard
+the B as \Omega in normalized units. It has components and a total. 
+
+For rotation, we simply need to multiply the vector by the rotation matrix.
+Wikipedia says that if u is a unit vector in the direction of the axis
+the rotation matrix is 
+R =[ cos(t)+ux^2(1-cos(t)),ux.uy.(1-cos(t))-uz.sin(t),
+					ux.uz.(1-cos(t))-uy.sin(t);
+   ...;
+   ...]
+= uu + cos(t)(I-uu) + sin(t) u_cross = I cos(t)+uu(1-cos(t))+u_cross sin(t)
+where 
+      u_cross = [ 0, -uz, uy; uz, 0, -ux; -uy, ux, 0]
+and this rotation when applied by premultiplication on vector v
+is said counterclockwise about the direction of u. 
+
+In sceptic3d Leo allows the B field to have a cosine angle cB so that
+the following rotation supposedly makes it in the new z-direction
+temp=xp(2,i) xp(2,i)=temp*cB-xp(3,i)*sB xp(3,i)=xp(3,i)*cB+temp*sB the
+1-component is unaffected, so it must be being presumed that the B
+field has zero component in the 1-direction. I probably don't want to
+assume that. It's more straightforward to use the general rotation,
+but I'm not sure how bad the extra cost will be. Also, the external
+ExB drift is subtracted off before getting the gyro radius. That's
+reasonable and might be needed here. 
+When should one subtract off ExB drift and when not? Probably only when
+it is constant.
+
+Got most of the B-field advancing going (without ExB drift). The ions
+appear to be rotating counterclockwise when viewed along the field. 
+This decided by using -go and figuring out which way the particles are 
+moving along their orbits.
+That's correct polarity. Seems to be working. Magnetic field implemented.
+
+Good Day!
+
+Needs: area calculations for non-spheres.
+
+24 Jan 11
+
+Parallelopiped area. Face area is magnitude of vector product of the
+two edge vectors. So 4 times the "radius" vector cross product. This
+is then divided by the product of the facet numbers in either direction.
+
+Implemented for parallelopiped and cube (pretty much the same).
+
+Cylinder? Ends are each pi r^2. Side is 2pi r 2z. We have issues
+with unequal radial radii as with the sphere. Don't account for
+ellipses yet. Implemented.
+
+Now we need to increase the nf_posdim again because we need to store
+3 position references in addition to the area. 
+Reorganized the references to be through mnemonics nf_pr nf_pt nf_pa...
+
+Increase. Ok. Implement cylinder consistently. Done. 
+
+Cube/Pllel positions not yet done. 
+Cube done. But I'm not sure that cube is really working right.
+There was a nf_posdim logical error when it was increased.
+
+Ran out of steam. Cube may be done, but there may be an error in the 
+flux read/write since it looks very different from the in-code plot.
+
+The Average flux quant 1 printout is the same. 
+The in-code flux of step plot is crazy.
+Found a bug in that, which was old. Correct it.
+
+Found that the problem with cube plots from fluxexamine is that 
+nf_faceind is not being written and restored. Actually it is 
+now incorrectly defined as dimension
+      integer nf_faceind(nf_quant,nf_obj,2*nf_posdim)
+nf_posdim is not the right dimension, since it is now detached from 
+the dimensionality of the position info.  The same is true of 
+nf_dimlens. This confusion needs to be cleared up. In some places 
+it needs to become nf_ndims.
+Then implement writing and reading back of nf_faceind. 
+We get correct display from fluxexamine. 
+
+Hopefully we are now done except for pllel positions.
+
+25 Jan 11
+
+Add some switches to fluxexamine.
+Test coptic with two processors. Seems to be working.
+Put zoomrotate into objplot to improve viewing.
+
+Still to do: cylinders of arbitrary orientation.

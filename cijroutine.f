@@ -24,11 +24,13 @@ c Shifted to correct for face omission.
 c Error indicator
       real error
 c Not used in this routine
-      integer iused(ndims)
+c      integer iused(ndims)
       real cij(*)
 c--------------------------------------------------
 c Object-data storage.
       include 'objcom.f'
+c Object information
+      include '3dcom.f'
 c-----------------------------------------------------
       real dpm(2),fraction(2),dplus(2),deff(2)
       real conditions(3,2)
@@ -39,8 +41,8 @@ c-----------------------------------------------------
       integer istart
       data istart/0/
 
-c iused is not used here. But silence the warning by spurious use:
-      icb=iused(1)
+      ichain=0
+
 c ipoint here is the offset (zero-based pointer)
 c The cij address is to data 2*ndims+1 long
       icb=2*ndims+1
@@ -64,16 +66,37 @@ c coefficients; so we have to loop twice over the opposite directions.
 c not used         icb2=2*icb
 c For each direction in this dimension,
          do i=1,2
-            iobj=ndata_sor*(2*(id-1)+(i-1))+1
+            ioad=ndata_sor*(2*(id-1)+(i-1))+1
             ipm=1-2*(i-1)
 c Determine whether this is a boundary point: adjacent a fraction ne 1.
             call potlsect(id,ipm,ndims,indi,
-     $           fraction(i),conditions(1,i),dpm(i),iobjno)
+     $           fraction(i),conditions(1,i),dpm(i),iobjno,ijbin)
             if(fraction(i).lt.1. .and. fraction(i).ge.0.)then
                ifound=ifound+1
 c Start object data for this point if not already started.
-c Here on 1 Sep 09 istart was ist. Which seemed incorrect.
                call objstart(cij(icij),istart,ipoint)
+c---------------
+c If this object's a,b,c depends on flux, start extra info.
+               if(int(obj_geom(otype,iobjno))/256.eq.4 .or.
+     $              int(obj_geom(otype,iobjno))/256.eq.5)then
+                  if(idob_sor(iextra_sor,oi_sor).eq.0)then
+c Start chained extra data.
+                     ichain=1
+c                     write(*,*)'Chaining',ipoint,(indi(kw),kw=1,ndims)
+c     $                    ,id,i,iobjno,ijbin,cij(icij)
+c First time, initialize the pointer
+                     idob_sor(iextra_sor,oi_sor)=oi_sor+ichain
+c and initialize the data for all directions
+                     do ie=1,nobj_sor
+                        dob_sor(ie,oi_sor+ichain)=0.
+                     enddo
+                  endif
+c Set the data for this direction.          
+                  idob_sor(ioad,oi_sor+ichain)=iobjno
+                  idob_sor(ioad+1,oi_sor+ichain)=ijbin
+c ioad+2 is set below from coef/a                 
+               endif
+c---------------
 c Calculate dplus and deff for this direction.
 c dplus becomes dminus for the other direction.
                a=conditions(1,i)
@@ -103,10 +126,10 @@ c The object data consists of data enumerated as
 c ndims*(2=forward/backward from point)*(3=fraction,b/a,c/a)
 c + diagonal + potential terms.
 c Prevent subsequent divide by zero danger.
-               dob_sor(iobj,oi_sor)=max(fraction(i),tiny)
+               dob_sor(ioad,oi_sor)=max(fraction(i),tiny)
                if(a.eq.0.) a=tiny
-               dob_sor(iobj+1,oi_sor)=b/a*debyehere
-               dob_sor(iobj+2,oi_sor)=c/a
+               dob_sor(ioad+1,oi_sor)=b/a*debyehere
+               dob_sor(ioad+2,oi_sor)=c/a
                idob_sor(iinter_sor,oi_sor)=iobjno
             else
 c No intersection.
@@ -123,9 +146,9 @@ c coefficient Cd same for all cases
             coef=2./(deff(i)*(dplus(i)+dplus(im)))
             if(ifound.gt.0)then
 c This is a boundary point.
-               iobj=ndata_sor*(2*(id-1)+(i-1))+1
-               if(dob_sor(iobj,oi_sor).lt.1
-     $              .and.dob_sor(iobj,oi_sor).ge.0.)then
+               ioad=ndata_sor*(2*(id-1)+(i-1))+1
+               if(dob_sor(ioad,oi_sor).lt.1
+     $              .and.dob_sor(ioad,oi_sor).ge.0.)then
 c We intersected an object in this direction. Adjust Cij and B_y
                   a=conditions(1,i)
                   b=conditions(2,i)/debyehere
@@ -140,6 +163,7 @@ c Diagonal term (denominator) difference Cd-Cij stored
 c Adjust potential sum (B_y)
                      dob_sor(ibdy_sor,oi_sor)=dob_sor(ibdy_sor,oi_sor)
      $                    - coef*c/a
+                     if(ichain.gt.0)dob_sor(ioad+2,oi_sor+ichain)=coef/a
                   else
 c Inactive side. Continuity.
                      dxp2=(1.-fraction(i))*dpm(i)/debyehere
@@ -152,6 +176,8 @@ c Diagonal term (denominator) difference Cd-Cij stored.
 c Adjust potential sum (B_y)
                      dob_sor(ibdy_sor,oi_sor)=dob_sor(ibdy_sor,oi_sor)
      $                    - coef*c*dxp2/apb
+                     if(ichain.gt.0)dob_sor(ioad+2,oi_sor+ichain)=coef
+     $                    *dxp2/apb
                   endif
                else
 c We did not intersect an object in this direction.
@@ -220,8 +246,7 @@ c Also in 3-D it limits additions to 6-intersection cases.
 c            if(ftot.gt.2.)then
 c However, then it is impossible to assume, when dealing with a box
 c containing a point in known region, that any box vertex with no pointer
-c is in that region. This breaks getpotential fillinlin, so disable
-c for now.
+c is in that region. That breaks gradlocalregion. So don't drop for now.
             if(.true.)then
 c Conditionally start the object: only if it does not already exist.
                call objstart(cij(icij),istart,ipoint)
@@ -232,8 +257,8 @@ c Now use these ndims fractions to update the fractions already inserted,
 c [not] if new ones are "smaller" (closer to zero on the +ve side),
 c or if the fraction is 1, implying not set. 
                do i=1,ndims
-                  iobj=ndata_sor*(2*(i-1)+(1-ipa(i))/2)+1
-                  f0=dob_sor(iobj,oi_sor)
+                  ioad=ndata_sor*(2*(i-1)+(1-ipa(i))/2)+1
+                  f0=dob_sor(ioad,oi_sor)
 c Only if this is the first entry this direction 
                   if(f0.eq.1)then 
                      f1=1./(sign(max(abs(fn(i)),tiny),fn(i)))
@@ -257,10 +282,10 @@ c     $                      ,idob_sor(iflag_sor,oi_sor)
 c Call boxedge with diagnostics
 c                        call boxedge(ndims,ipa,indi,fn,npoints,1)
 c But set it not equal to 1, so we know it was set.
-c                        dob_sor(iobj,oi_sor)=1.001
-c                        dob_sor(iobj,oi_sor)=f1
+c                        dob_sor(ioad,oi_sor)=1.001
+c                        dob_sor(ioad,oi_sor)=f1
                      else
-                        dob_sor(iobj,oi_sor)=f1
+                        dob_sor(ioad,oi_sor)=f1
                      endif
                   endif
                enddo
@@ -295,6 +320,8 @@ c            write(*,204)(dob_sor(3*k,oi_sor),k=1,nobj_sor/3)
  204        format('c/a    (3k  )=',14f8.2)
          endif
       endif
+c Skip extra data created above, if any.
+      oi_sor=oi_sor+ichain
 c----------------------------------------
 c     Return increment of 1
       inc=1
@@ -324,6 +351,8 @@ c Reverse pointer.
       idob(iflag_sor)=0
 c Set the reverse pointer to the u/c arrays:
       idob(ipoint_sor)=ipoint
+c Zero the chained pointer.
+      idob(iextra_sor)=0
       end
 c******************************************************************
       subroutine objstart(cijp,istart,ipoint)
@@ -441,7 +470,7 @@ c Local indices and fractions of this edge start.
 c Look for intersection along this edge.
 c      if(idiag.ge.5)write(*,'(a,i2,$)')'Calling potlsect '
          call potlsect(i,ipm(i),ndims,indl,fraction,conditions,dpm
-     $        ,iobjno)
+     $        ,iobjno,ijbin)
 c      if(idiag.ge.5)write(*,'(a,$)')'Returned'
          if(fraction.ne.1. .and. npoints.lt.mpoints)then
 c            idiag=idiag+1
@@ -886,3 +915,187 @@ c Silence warnings.
 49    CONTINUE
       RETURN
       END
+c********************************************************************
+      real function phiofcount(count,area)
+c Turn the particle count for the current timestep over an area 
+c into a potential at which current density is zero.
+Contains rmtoz
+      include 'plascom.f'
+Contains dt and rhoinf:
+      include 'partcom.f'
+c For preventing logarithm infinities when count is zero.
+      parameter (small=1.e-2)
+      
+      if(count.lt.0.)then
+         write(*,*)'Negative count in phiofcount!',count
+         phiofcount=-2.
+         return
+      endif
+      flogfac=0.5*alog(2.*3.1415926/(rmtoz*1837.))
+      fluxdensity=(count+small)/(area*rhoinf*dt)
+      phiofcount=alog(fluxdensity)+flogfac
+
+c Trap for singularities etc.
+      if(.not.(abs(phiofcount).lt.1.e12))then
+         write(*,*)'phiofcount error',count,area,phiofcount
+         stop
+      endif
+c      write(*,*)area,rhoinf,dt,count,fluxdensity,phiofcount
+      end
+c****************************************************************
+c Routine for directly updating cij, which needs no iteration.
+c The geometry: fractions etc, are assumed not to have changed.
+c It just treats the auxiliary data that is present, rather than
+c looking at every mesh node
+      subroutine cijdirect(ndims,cij,debyelen,error)
+c If there is an object crossing next to the point at indi(ndims) whose
+c pointer is ipoint, in the dimension id (plus or minus), this routine
+c adjusts the cij values for situations where the cij are variables
+c changing from step to step.  At present is is assumed only C changes
+c and it is updated in a smoothed manner toward the potential that
+c corresponds to floating.
+c Error indicator
+      integer ndims
+      real error,debyelen
+      real cij(*)
+c--------------------------------------------------
+c Object-data storage.
+      include 'objcom.f'
+c Object information
+      include '3dcom.f'
+c-----------------------------------------------------
+      real tiny
+      parameter (tiny=1.e-15)
+      integer oisor
+c The total areas and flux counts of all flux-tracked objects
+      real totarea(nf_obj),totflux(nf_obj)
+c Probably this ought to be set up in a common. But for now:
+      integer iavemax
+      data iavemax/50/      
+
+c Calculate the current step's totals for use in floating cases.
+      do ifobj=1,mf_obj
+         call objfluxtotal(ifobj,totflux(ifobj),totarea(ifobj))
+      enddo
+c      write(*,*)'Flux and area totals',(totflux(k),totarea(k),k=1
+c     $     ,mf_obj)
+
+c Prevent divide by zero issues with debyelen
+      debyehere=debyelen
+      if(debyehere.lt.tiny)debyehere=tiny
+
+c Instead of the above iteration over mesh, we simply iterate over 
+c the auxiliary data. That is, oisor. oi_sor is the maximum number
+c we've reached.
+      oisor=1
+      do ioi=1,oi_sor
+      if(idob_sor(iextra_sor,oisor).eq.0)then
+c Do nothing but advance to next.
+         oisor=oisor+1
+      else
+c         if(oisor.lt.20)write(*,*)'cijupdate',oisor
+c     $     ,idob_sor(iextra_sor,oisor)
+c Byte 2 of the type: If it's 4 insulating, 5 floating.
+         iobj=idob_sor(iinter_sor,oisor)
+         i2type=int(obj_geom(otype,iobj))/256
+c         write(*,*)'i2type=',i2type,iobj
+         ichain=1
+         dibdy=dob_sor(ibdy_sor,oisor)
+         dob_sor(ibdy_sor,oisor)=0.
+c Iterate over dimensions.
+         do id=1,ndims
+c For each direction in this dimension,
+            do i=1,2
+               ipm=1-2*(i-1)
+               im=mod(i,2)+1
+               ioad=ndata_sor*(2*(id-1)+(i-1))+1
+               if(dob_sor(ioad,oisor).lt.1
+     $              .and.dob_sor(ioad,oisor).ge.0.)then
+c We intersected an object in this direction. Adjust Cij and B_y
+c Get back coef
+                  iobj=idob_sor(ioad,oisor+ichain)
+                  coefoa=dob_sor(ioad+2,oisor+ichain)
+c These must get the information from somewhere.
+c Assume that a and b are unchanged by the variability:
+                  a=obj_geom(oabc,iobj)
+                  b=obj_geom(oabc+1,iobj)/debyehere
+c c is the thing that depends on flux, so it's going to be different.
+                  ifobj=nf_map(iobj)
+c-------------
+                  if(i2type.eq.4)then
+c                     write(*,*)'Insulating',ifobj
+c Address the flux data
+                     ijbin=idob_sor(ioad+1,oisor+ichain)
+c Pull the area of this facet into here
+                     iaddress=ijbin+nf_address(nf_flux,ifobj,nf_pa)
+                     area=ff_data(iaddress)
+c Pull the flux for this timestep and this facet.
+                     flux=ff_data(ijbin
+     $                    +nf_address(nf_flux,ifobj,nf_step))
+c Calculate new potential
+                     cnew=-a*phiofcount(flux,area)
+                  elseif(i2type.eq.5)then
+c Floating. Use totals
+c                     write(*,*)'Floating',ifobj
+                     cnew=-a*phiofcount(totflux(ifobj),totarea(ifobj))
+                  else
+c This should not happen.
+                     cnew=0.
+                  endif
+c Smooth over nave steps. 
+                  nave=min(nf_step,iavemax)
+                  cold=a*dob_sor(ioad+2,oisor)
+                  c=(cold*(nave-1)+cnew)/nave
+c         if(oisor.lt.20)write(*,*)'cijupdate',nf_step,iobj,ijbin
+c     $                 ,flux,cold,cnew,c
+c or test that it gives the same answer from the old value.
+c                  c=cold
+c-------------
+
+                  if(a.eq.0.) a=tiny
+c Diagonal term (denominator) difference Cd-Cij stored
+c This does not change
+c                     dob_sor(idgs_sor,oisor)=dob_sor(idgs_sor
+c     $                    ,oisor)+ coef
+c Adjust potential sum (B_y or tau in new reference)
+                  dob_sor(ibdy_sor,oisor)=dob_sor(ibdy_sor
+     $                    ,oisor)- coefoa*c
+c Now we need to update coa in the top data set. Not boa or fraction 
+c since they haven't changed.                  
+                  if(c .ne. a*dob_sor(ioad+2,oisor))then
+c                     write(*,*)'Updating coa from',dob_sor(ioad+2,oisor)
+c     $                    ,' to',c/a
+                     dob_sor(ioad+2,oisor)=c/a
+                  endif
+               endif
+            enddo
+c End of dimension iteration. cij coefficients now set.
+         enddo
+c         if(dibdy.ne.dob_sor(ibdy_sor,oisor))then
+c            write(*,*)'Boundary updated from',dibdy,' to'
+c     $           ,dob_sor(ibdy_sor,oisor)
+c         endif
+         oisor=oisor+ichain+1
+      endif
+      if(oisor.gt.oi_sor)return
+      enddo
+      
+      end
+c********************************************************************
+      subroutine objfluxtotal(ifobj,flux,area)
+c Calculate and return the total flux and total area of a
+c flux-collecting object ifobj.
+      integer ifobj
+      real flux,area
+      include '3dcom.f'
+      area=0.
+      flux=0.
+c Starting addresses of area and flux of this step.
+      iada=nf_address(nf_flux,ifobj,nf_pa)
+      iadf=nf_address(nf_flux,ifobj,nf_step)
+      do i=1,nf_posno(nf_flux,ifobj)
+         area=area+ff_data(iada+i-1)
+         flux=flux+ff_data(iadf+i-1)
+      enddo
+      
+      end

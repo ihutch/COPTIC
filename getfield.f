@@ -466,8 +466,6 @@ c Fall back.
 c No correction for region just multilin anyway.
             getpotential=smultilinearinterp(ndims,uval,xf)
          elseif(itype.eq.2)then
-c            call fillin(ndims,uval,ival)
-c            write(*,'(8i8)')ival
             call fillinlin(uval,ival,imin
      $           ,u,cij,iuinc,xff,iregion)
             getpotential=smultilinearinterp(ndims,uval,xf)
@@ -511,30 +509,11 @@ c Weight according to whether this bit is one or zero.
 
       smultilinearinterp=total
       end
-c*******************************************************************
-      subroutine fillin(ndims,uval,ival)
-c Fill in values with the average of the others.
-      real uval(2**ndims)
-      integer ival(2**ndims)
-
-      uave=0
-      utot=0
-      itot=0
-      do ik=1,2**ndims
-         itot=itot+ival(ik)
-         if(ival(ik).eq.1)utot=utot+uval(ik)
-      enddo
-      if(itot.ne.0) then
-         uave=utot/itot
-      else
-      endif
-      do ik=1,2**ndims
-         if(ival(ik).eq.0)uval(ik)=uave
-      enddo
-      end
 c*****************************************************************
 c Alternative. Fill in with values obtained by fitting a linear 
-c expansion to the existing points.
+c expansion to the existing points. ival tells whether a vertex
+c has already been filled, uval returns the values, filled in
+c if necessary.
       subroutine fillinlin(uval,ival,imin
      $     ,u,cij,iuinc,xff,iregion)
 c Fill in values with the average of the others.

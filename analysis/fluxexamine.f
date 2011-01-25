@@ -11,6 +11,8 @@ c**************************************************************
       
       fn1=0.5
       fn2=1.
+      rview=1.
+      iosw=3
 
       filename='T1e0v000r05P02L1e0.flx'
       do i=1,iargc()
@@ -25,6 +27,10 @@ c**************************************************************
      $        read(argument(3:),'(i5)')iplot
          if(argument(1:2).eq.'-w')
      $        read(argument(3:),'(i5)')iprint
+         if(argument(1:2).eq.'-r')
+     $        read(argument(3:),'(f10.4)')rview
+         if(argument(1:2).eq.'-i')
+     $        read(argument(3:),'(i5)')iosw
          if(argument(1:2).eq.'-h')goto 201
          if(argument(1:2).eq.'-?')goto 201
          if(argument(1:1).ne.'-') read(argument(1:),'(a)')filename
@@ -48,7 +54,7 @@ c For all the objects being flux tracked.
          if(iprint.gt.0)then
          write(*,'(a,i3,a,3i4,a,i3)') 'Position data for ',nf_posdim
      $        ,' flux-indices. nf_dimlens='
-     $        ,(nf_dimlens(1,k,kd),kd=1,nf_posdim),' Object',k
+     $        ,(nf_dimlens(1,k,kd),kd=1,nf_posdim-1),' Object',k
          write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i-1)
      $        ,i=1,nf_posno(1,k)),j=1,nf_posdim)
          
@@ -85,6 +91,9 @@ c For all the objects being flux tracked.
          n2=fn2*nf_step
          call fluxave(n1,n2,k,iplot,rhoinf)
       enddo
+
+c Plots if 
+      if(iplot.ne.0)then
 
       call pltinit(1.,float(nf_step),-100.,100.)
       call axis()
@@ -147,18 +156,15 @@ c     $        ,avecharge/avefield
       call pltend()
 
       if(sc_ipt.ne.0)write(*,*)'Intersections=',sc_ipt
-      call objplot(ndims,2.,1)
+      call objplot(ndims,rview,iosw)
+
+      endif
 
       call exit(1)
  201  write(*,*)'Usage: fluxdatatest [-ffilename,'//
-     $     '-n1fff,-n2fff,-piii,-wiii]'
+     $     '-n1fff,-n2fff,-piii,-wiii,-rfff,-iiii]'
 
-      write(*,*)'Read back data from file written unformatted as:'
-      write(*,*)'nf_step,mf_quant,mf_obj'
-      write(*,*)'((nf_posno(i,j),i=1,mf_quant),j=1,mf_obj)'
-      write(*,*)'(((nf_address(i,j,k),i=1,mf_quant),j=1,mf_obj),',
-     $     'k=0,nf_step+1)'
-      write(*,*)'(ff_data(i),i=1,nf_address(1,1,nf_step+1))'
+      write(*,*)'Read back flux data from file:'
 
       end
 c******************************************************************

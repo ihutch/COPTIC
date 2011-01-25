@@ -60,23 +60,25 @@ c What is the reinjection scheme?
      $     ,ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
 c
 c Data that describes the flux to positions on the objects:
-      integer nf_quant,nf_obj,nf_maxsteps,nf_datasize
-c Number of dimensions needed for position descriptors
-c      parameter (nf_posdim=2)
-      parameter (nf_posdim=3)
+      integer nf_quant,nf_obj,nf_maxsteps,nf_datasize,nf_posdim,nf_ndims
+c Number of slots needed for position descriptors. Dimensions.
+      parameter (nf_posdim=4,nf_ndims=3)
 c Maximum (i.e. storage size) of array 
       parameter (nf_quant=5,nf_obj=5,nf_maxsteps=3000)
       parameter (nf_datasize=10000000)
 c Mnemonics for quantities:
       parameter (nf_flux=1,nf_gx=2,nf_gy=3,nf_gz=4,nf_heat=5)
+c Mnemonics for positional variables.
+      parameter (nf_p1=0,nf_p2=-1,nf_p3=-2,nf_p4=-3)
+      parameter (nf_pr=nf_p1,nf_pt=nf_p2,nf_pz=nf_p3,nf_pa=nf_p4)
 c Actual numbers of quantities, objects and steps <= maxes.
       integer nf_step,mf_quant(nf_obj),mf_obj
 c The number of positions at which this quantity is measured:
       integer nf_posno(nf_quant,nf_obj)
 c The dimensional structure of these: nf_posno = prod nf_dimlens
-      integer nf_dimlens(nf_quant,nf_obj,nf_posdim)
+      integer nf_dimlens(nf_quant,nf_obj,nf_ndims)
 c The offset index to the start of cube faces
-      integer nf_faceind(nf_quant,nf_obj,2*nf_posdim)
+      integer nf_faceind(nf_quant,nf_obj,2*nf_ndims)
 c Reverse mapping to the geomobj number from nf_obj number
       integer nf_geommap(nf_obj)
 c The address of the data-start for the quantity, obj, step.
@@ -95,7 +97,8 @@ c The dt for each step
 
 
 c Flux explanation:
-c There are 
+c For
+c   nf_posno positions on the object for each of 
 c   mf_quant quantities to be recorded for each of
 c   mf_obj objects, for each of
 c   nf_step steps
@@ -103,11 +106,12 @@ c   nf_address points to the start of data for quant, obj, step.
 c     the value of nf_address(1,1,1-nf_posdim) is 1
 c     i.e. the address is 1-based, not 0-based.
 c   For each step, there are 
-c     nf_posno positions on the object where quantities are recorded.
+c     Stride of positions is 1, quantities nf_posno,
+c     objects nf_posno*mf_obj
 c ff_data is the heap of data.
 c
-c Steps 1-nf_posdim:0 stores the quantitative position information. 
-c where nf_posdim is the number of dimensions in position info.
+c Steps 1-nf_posdim:0 store the quantitative position information. 
+c where nf_posdim is the number of coefficients in position info.
 
 
 c Data for storing integrated field quantities such as forces.

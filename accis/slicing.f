@@ -65,7 +65,7 @@ c red orange white
 c      call accisgradinit(0,-32000,-65000,150000,97000,65500)
 c Better one that gives a good mono gradient too:
       call blueredgreenwhite()
-      if(.not.lfirst)goto 19
+      if(lfirst)then
          n1=iuds(idfix)/2
 c     Plot the surface. With scaling 1. Web color 6, axis color 7.
          jsw=1 + 256*6 + 256*256*7
@@ -75,23 +75,7 @@ c     Plot the surface. With scaling 1. Web color 6, axis color 7.
          lfirst=.false.
          write(*,*)' ======== Slice plotting interface. Hit h for help.'
 c         if(zp(1,1).ne.0)goto 19
-         goto 19
- 20      write(*,*)' ======== Slice plotting interface:',
-     $        '  arrows up/down: change slice.'
-         write(*,*)
-     $        ' arrows l/r: change dimension.',
-     $        ' s: rescale. p: print. Drag mouse to rotate.'
-         write(*,*)' i/o: move eye in/out.'
-     $        ,' (jkl;) (m,./): control plotting extent in 2 axes.'
-         write(*,*)
-     $        ' c: contour plane position. w: toggle web. r/e: rotate.'
-     $        ,' a: toggle aspect'
-         write(*,*)
-     $        ' t: toggle truncation.'
-         write(*,*)
-     $        ' d: disable interface; run continuously.',
-     $        ' depress f: to interrupt running.'
- 19   continue
+      endif
 c Start of controlled plotting loop.
  21   call pltinit(0.,1.,0.,1.)
 c Set the plotting arrays for fixed dimension idfix.
@@ -223,23 +207,44 @@ c We called for a local print of plot. Terminate and switch it off.
          ips=0
       endif
 
+c User interface
+      call ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping
+     $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb)
+      if(iquit.eq.0)goto 21
+
+      call hdprset(0,0.)
+      end
+c******************************************************************
+      subroutine ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping
+     $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb)
+c Encapsulated routine for controlling a 3-D plot.
+c But many things have to be passed at present. A proper API needs
+c to be designed but here's the approximate description.
+c [Plane-position] n1 is controlled by up/down arrows, within the range
+c 1-iuds(idfix), where iuds(3) are the used dimensional lengths, and
+c idfix is the one currently being fixed (sliced).
+c if1 nf1, if2 nf2 control the clipping positions  
+c icontour and iweb determine the plotting of the contours and web. 
+c idp1, idp2 are the the two other dimensions than idfix. 
+c jsw is to do with contouring. laspect preserves aspect-ratio.
+c iquit is returned as non-zero to command an end to the display.
+
+      integer iuds(3)
+
+      logical laspect
+c 3d display user interface.
 c-----------------------------------
-c Double buffering switch back. Disabled here because of the compiz
-c screen-writing performance issue.
-      if(iback.ne.0)then 
-c         call glfront()
-         call accisrefresh()
-      endif
+      iquit=0
 c Limit framing rate to 30fps.
       call usleep(15000)
 c User interface interpret key-press.
  24   call eye3d(isw)
 c      write(*,*)'isw',isw
       if(isw.eq.ichar('f')) goto 24
-      if(isw.eq.0) goto 23
+      if(isw.eq.0) iquit=1
       if(isw.eq.65364 .and. n1.gt.1) n1=n1-1
       if(isw.eq.65362 .and. n1.lt.iuds(idfix)) n1=n1+1
-      if(isw.eq.ichar('q')) goto 23
+      if(isw.eq.ichar('q')) iquit=1
       if(isw.eq.ichar('a')) laspect=.not.laspect
       if(isw.eq.ichar('d')) call noeye3d(0)
       if(isw.eq.ichar('s')) jsw=1 + 256*6 + 256*256*7
@@ -292,63 +297,34 @@ c ;
          iclipping=1
          if1=min(if1+1,nf1-1)
       endif
-      if(isw.eq.ichar('h'))goto 20
       if(isw.eq.ichar('c'))icontour=mod(icontour+1,4)
       if(isw.eq.ichar('w'))iweb=mod(iweb+1,2)
-      if(isw.eq.ichar('i'))then
-c Get back current eye position xe1 etc.
-         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
-         xe1=xe1*.9
-         ye1=ye1*.9
-         ze1=ze1*.9
-c Move it in.
-         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
-      elseif(isw.eq.ichar('o'))then
-c Get back current eye position xe1 etc.
-         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
-         xe1=xe1*1.1
-         ye1=ye1*1.1
-         ze1=ze1*1.1
-c Move it out.
-         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
-      elseif(isw.eq.ichar('r'))then
-         irotating=1
-         cs=cos(.05)
-         sn=sin(.05)
-      elseif(isw.eq.ichar('e'))then
-         irotating=1
-         cs=cos(.05)
-         sn=sin(-.05)
+      if(isw.eq.ichar('h'))then
+         write(*,*)' ======== Slice plotting interface:',
+     $        '  arrows up/down: change slice.'
+         write(*,*)
+     $        ' arrows l/r: change dimension.',
+     $        ' s: rescale. p: print. Drag mouse to rotate.'
+         write(*,*)' (jkl;) (m,./): control plotting extent in 2 axes.'
+         write(*,*)
+     $        ' c: contour plane position. w: toggle web.'
+     $        ,' a: aspect'
+     $        ,' t: truncation.'
+         write(*,*)
+     $        ' d: disable interface; run continuously.',
+     $        ' depress f: to interrupt running.'
       endif
-      if(irotating.gt.0)then
-c         call glback()
-c         iback=1
-c Get back current eye position xe1 etc.
-         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
-c         write(*,*)'irotating',irotating,xe1,ye1,ze1,cs,sn
-         xex=xe1-xe
-         yex=ye1-ye
-         xe1=xe+cs*xex-sn*yex
-         ye1=ye+sn*xex+cs*yex
-c Must tell to look at zero.
-         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
-         irotating=irotating-1
-         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
-      endif
+      call rotatezoom(isw)
 c End of user interface.
-c------------------------------------
-      goto 21
- 23   continue
-      call hdprset(0,0.)
       end
-c******************************************************************
+
 c*******************************************************************
 c Three-way slice contours.
       subroutine sliceGcont(ifull,iuds,u,nw,zp,ixnp,xn,ifixpt,utitle)
 c Plot projected contour representations on cuts in three dimensions 
 c of quantity u on fixed values of dimensions.
 c The initial intersection of the fixed planes is at ifixpt(ndims).
-c The full dimensions of arrays u are
+c The full dimensions of arrays u are iuds.
       parameter(ndims=3,nd2=2*ndims)
       integer ifull(ndims)
       real u(ifull(1),ifull(2),ifull(3))
@@ -400,24 +376,16 @@ c Tell that we are looking from the top by default.
       irotating=0
       call minmax2(u(1,1,ifixpt(3)),ifull(1),iuds(1),iuds(2),umin,umax)
       call accisgradinit(64000,0,0,-64000,128000,64000)
-      if(.not.lfirst)goto 19
-c Have to use goto so I can jump into the middle at 20.
+      if(lfirst)then
 c     Plot the surface. With scaling 1. Web color 6, axis color 7.
          jsw=1 + 256*6 + 256*256*7
          iweb=1
          icontour=1
          lfirst=.false.
-         if(zp(1,1,1).ne.0)goto 19
- 20      write(*,*)' ======== Slice contouring interface:',
-     $        ' up/down, l/r arrows change slice.'
-         write(*,*) ' d: changes l/r dimension controlled.',
-     $        ' s:rescale. p:print. Drag to move view.'
-         write(*,*)
-     $        ' r/e: rotate. toggles: t smooth color; l labels'
- 19   continue
+      endif
 
- 21   call pltinit(0.,1.,0.,1.)
       call setcube(.2,.2,.2,.5,.4)
+ 21   call pltinit(0.,1.,0.,1.)
       do id=1,3
          cmin(id)=xn(ixnp(id)+1)
          cmax(id)=xn(ixnp(id)+iuds(id))
@@ -524,14 +492,13 @@ c Prevent pltend from querying the interface.
          call pfset(0)
          ips=0
       endif
-
 c-----------------------------------
 c Double buffering switch back. Disabled here because of the compiz
 c screen-writing performance issue.
-      if(iback.ne.0)then 
+c      if(iback.ne.0)then 
 c         call glfront()
-         call accisrefresh()
-      endif
+c         call accisrefresh()
+c      endif
 c Limit framing rate to 30fps.
       call usleep(10000)
 c User interface interpret key-press.
@@ -564,26 +531,45 @@ c User interface interpret key-press.
       endif
       if(isw.eq.ichar('t'))itri=mod(itri+1,2)
       if(isw.eq.ichar('l'))icl=-icl
-      if(isw.eq.ichar('h'))goto 20
+      if(isw.eq.ichar('h'))then
+ 20      write(*,*)' ======== Slice contouring interface:',
+     $        ' up/down, l/r arrows change slice.'
+         write(*,*) ' d: changes l/r dimension controlled.',
+     $        ' s:rescale. p:print. Drag to move view.'
+         write(*,*)
+     $        ' toggles: t smooth color; l labels'
+      endif
       if(isw.eq.ichar('c'))icontour=mod(icontour+1,4)
       if(isw.eq.ichar('w'))iweb=mod(iweb+1,2)
+c Rotating and Zooming interface:
+      call rotatezoom(isw)
+c End of user interface.
+c------------------------------------
+      goto 21
+ 23   continue
+      call hdprset(0,0.)
+      end
+c********************************************************************
+      subroutine rotatezoom(isw)
+      integer irotating
+      save irotating
       if(isw.eq.ichar('i'))then
 c Get back current eye position xe1 etc.
+c Then move it in.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
          xe1=xe1*.9
          ye1=ye1*.9
          ze1=ze1*.9
-c Move it in.
          call trn32(0.,0.,0.,xe1,ye1,ze1,1)
       elseif(isw.eq.ichar('o'))then
-c Get back current eye position xe1 etc.
+c Move out.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
-         xe1=xe1*1.1
-         ye1=ye1*1.1
-         ze1=ze1*1.1
-c Move it out.
+         xe1=xe1/.9
+         ye1=ye1/.9
+         ze1=ze1/.9
          call trn32(0.,0.,0.,xe1,ye1,ze1,1)
       elseif(isw.eq.ichar('r'))then
+c Rotate
          irotating=1
          cs=cos(.05)
          sn=sin(.05)
@@ -591,25 +577,34 @@ c Move it out.
          irotating=1
          cs=cos(.05)
          sn=sin(-.05)
+      elseif(isw.eq.ichar('z'))then
+c Magnify the unit cube
+         call getcube(cbx,cby,cbz,xcbc,ycbc)
+         call setcube(cbx*1.05,cby*1.05,cbz*1.05,xcbc,ycbc)
+      elseif(isw.eq.ichar('x'))then
+c Shrink the unit cube
+         call getcube(cbx,cby,cbz,xcbc,ycbc)
+         call setcube(cbx/1.05,cby/1.05,cbz/1.05,xcbc,ycbc)
+      elseif(isw.eq.ichar('h'))then
+c Help text
+         write(*,*)' i/o: move eye in/out. r/e: rotate.'
+     $        ,' z/x: zoom/shrink.'
       endif
       if(irotating.gt.0)then
-c         call glback()
-c         iback=1
 c Get back current eye position xe1 etc.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
-c         write(*,*)'irotating',irotating,xe1,ye1,ze1,cs,sn
          xex=xe1-xe
          yex=ye1-ye
          xe1=xe+cs*xex-sn*yex
          ye1=ye+sn*xex+cs*yex
-c Must tell to look at zero.
-         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
-         irotating=irotating-1
+c Must tell to look at zero. Why? Don't think so.
+c         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
+         call trn32(xe,xe,ze,xe1,ye1,ze1,1)
+c         irotating=irotating-1
+         irotating=0
+c Is this necessary?
+c         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
       endif
-c End of user interface.
-c------------------------------------
-      goto 21
- 23   continue
-      call hdprset(0,0.)
+
       end
 c******************************************************************

@@ -76,6 +76,9 @@ c**********************************************************************
       write(*,*)'byte-2: 3(x256) Variable-coefficients.'
      $     ,' Gradient vectors of c,b,a follow'
      $     ,' flux data [which must be specified].'
+      write(*,*)'byte-2: 4(x256) [a,b,]c float by local fluxes:'
+     $     ,' insulating.'
+      write(*,*)'byte-2: 5(x256) [a,b,]c floating total fluxes.'
       write(*,*)
       write(*,'(a)')
      $     'Boolean particle region 99, n1, n1*values, n2, values,.. 0:'
@@ -214,7 +217,7 @@ c Specify the particle region.
          read(cline,*,err=901,end=899)idumtype,ibool_part
  899     if(myid.eq.0)write(*,898)
      $        ngeomobj,idumtype,(ibool_part(i),i=1,16)
- 898     format(i3,' Boolean ',17i4)
+ 898     format(i2,' Boolean ',17i4)
 c Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1
@@ -269,8 +272,8 @@ c If this is a point-charge object, set the relevant mask bit.
          write(*,*)'   Gradients:'
      $        ,(obj_geom(k,ngeomobj),k=ocgrad,oagrad+2)
       endif
- 820  format(i3,a,$)
- 821  format(f4.0,15f7.3)
+ 820  format(i2,a,$)
+ 821  format(f5.0,15f7.3)
  822  format(f4.0,24f7.3)
       goto 1
 
@@ -522,7 +525,7 @@ c      write(*,*)' lbounded=',lbounded
 
 c************************************************************
       subroutine potlsect(id,ipm,ndims,indi,fraction,conditions,dp,
-     $     iobjno)
+     $     iobjno,ijbin)
 
 c In dimension id, direction ipm, 
 c from mesh point at indi(ndims) (zero-based indices, C-style),
@@ -572,6 +575,8 @@ c Default no intersection.
       fraction=1
 c      debug=0
 c      if(iobjno.gt.100)debug=iobjno-100
+c Silence warnings.
+      istype=0
       iobjno=0
 
 c-------------------------------------------------------------
@@ -600,45 +605,21 @@ c            if(debug.gt.0)fraction=101
             itype=itype-256*(istype)
             if(itype.eq.1)then
 c First implemented just for spheres.
-               if(.false.)then
-                  call spheresect(id,ipm,ndims,indi,
-     $              obj_geom(oradius,i),obj_geom(ocenter,i)
-     $              ,fraction,dp)
-               else
-                  call sphereinterp(ndims,0,xp1,xp2
-     $                 ,obj_geom(ocenter,i),obj_geom(oradius,i)
-     $                 ,fraction,f2,sd,C,D)
-                  if(fraction.gt.1.)fraction=1.
-                  if(fraction.lt.0.)fraction=1.
-               endif
+               call spherefsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+c                  call sphereinterp(ndims,0,xp1,xp2
+c     $                 ,obj_geom(ocenter,i),obj_geom(oradius,i)
+c     $                 ,fraction,f2,sd,C,D)
             elseif(itype.eq.2)then
 c Coordinate-aligned cuboid.               
-               if(.false.)then
-               call cubesect(id,ipm,ndims,indi,obj_geom(oradius,i)
-     $              ,obj_geom(ocenter,i),fraction,dp)   
-               else
-                  call cubefsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
-               endif
+               call cubefsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
             elseif(itype.eq.3)then
 c Coordinate aligned cylinder.
-               if(.false.)then
-               call cylsect(id,ipm,ndims,indi,obj_geom(oradius,i)
-     $              ,obj_geom(ocenter,i),int(obj_geom(ocylaxis,i))
-     $              ,fraction ,dp)
-               else
                call cylfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
-c               if(fraction.ne.1.)write(*,*)indi,xp1,fraction
-               endif
             elseif(itype.eq.4)then
 c Parallelopiped.
-               if(.false.)then
-               call pllelosect(id,ipm,ndims,indi,obj_geom(1,i)
-     $              ,fraction,dp)
-               else
-                  call pllelofsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
-                  if(fraction.gt.1.)fraction=1.
-                  if(fraction.lt.0.)fraction=1.
-               endif
+               call pllelofsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+               if(fraction.gt.1.)fraction=1.
+               if(fraction.lt.0.)fraction=1.
             else
                write(*,*)"Unknown object type",obj_geom(otype,i),
      $              " in potlsect"

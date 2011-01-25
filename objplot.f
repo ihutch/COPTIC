@@ -384,17 +384,21 @@ c Coloring by flux
          iadd=ijbin+iav
          ff=ff_data(iadd)
          icolor=int(240*(ff-fmin)/(fmax-fmin))+1
+c         write(*,*)k2,k3,is,i2,imin,ifobj,nf_faceind(nf_flux,ifobj,imin)
+c     $        ,ijbin,ff,icolor
          call gradcolor(icolor)
       else
 c Coloring just by position
-         if(obj_geom(otype,iobj).eq.1)then
+         itype=obj_geom(otype,iobj)-256*(int(obj_geom(otype,iobj))/256)
+         if(itype.eq.1)then
 c Treatment for spheres.
             icolor=mod(k3-1+mod(k2,2),7)+7*mod(k2,2)+1
 c            write(*,*)k2,k3,icolor
-         elseif(obj_geom(otype,iobj).eq.3)then
+         elseif(itype.eq.3)then
 c Cylinders
             icolor=mod(k2-1+mod(k3,2),7)+7*mod(k3,2)+1
          else
+            write(*,*)'Hacked facecolor'
             icolor=(is+mod(k2+k3,2)*8)
          endif
          call color(icolor)
@@ -418,10 +422,11 @@ c Cylinders
       end
 c*******************************************************************
 c Plot edges/faces of objects. Window size rs.
-      subroutine objplot(ndims,rs,iosw)
+      subroutine objplot(ndims,rs,ioswin)
 c iosw determines the nature of the plot
 c 0: Color code according to position.
 c 1:            according to average flux already in nf_maxstep+1
+c Bit 2: 0 plot intersections [0,1], 1 don't plot intersections [2,3].
       integer ndims,iosw
       include '3dcom.f'
       include 'sectcom.f'
@@ -430,17 +435,20 @@ c 1:            according to average flux already in nf_maxstep+1
       character*10 string
       data iprinting/0/
 
+      iosw=ioswin-(ioswin/2)*2
+      ipint=ioswin-(ioswin/4)*4-iosw
+
       irotating=0
       call pltinit(0.,1.,0.,1.)
       call setcube(.2,.2,.2,.5,.4)
+      call geteye(x2,y2,z2)
+      call trn32(0.,0.,0.,x2,y2,z2,1)
 c Color gradient.
       call blueredgreenwhite()
  51   continue
-      if(iprinting.ne.0)call pfset(3)
-      call geteye(x2,y2,z2)
       call pltinit(0.,1.,0.,1.)
       call scale3(-rs,rs,-rs,rs,-rs,rs)
-      call trn32(0.,0.,0.,x2,y2,z2,1)
+      if(iprinting.ne.0)call pfset(3)
       if(irotating.eq.0)then
          icorner=igetcorner()
          call ax3labels('x','y','z')
@@ -464,18 +472,19 @@ c      write(*,*)(index(k),zta(k),k=1,ngeomobj)
 c Do drawing in order
       do ik=1,ngeomobj
          iobj=index(ik)
-c         write(*,*)'objplotting',ik,iobj,obj_geom(otype,iobj)
-         if(obj_geom(otype,iobj).eq.1.)then
+         itype=obj_geom(otype,iobj)-256*(int(obj_geom(otype,iobj))/256)
+c         write(*,*)'objplotting',ik,iobj,itype
+         if(itype.eq.1.)then
             call sphereplot(obj_geom(1,iobj),iobj,iosw)
-         elseif(obj_geom(otype,iobj).eq.2.)then
+         elseif(itype.eq.2.)then
             call cubeplot(obj_geom(1,iobj),iobj,iosw)
-         elseif(obj_geom(otype,iobj).eq.3.)then
+         elseif(itype.eq.3.)then
             call cylplot(obj_geom(1,iobj),iobj,iosw)
-         elseif(obj_geom(otype,iobj).eq.4.)then
+         elseif(itype.eq.4.)then
             call pllelplot(obj_geom(1,iobj),iobj,iosw)
          endif
       enddo
-      if(.true.)then
+      if(ipint.eq.0)then
 c Plot intersections
       call charsize(.008,.008)
 c      write(*,*)'Intersections:'
@@ -493,27 +502,9 @@ c         write(*,*)i,(x_sc(k,1,i),k=1,3)
 c User interface:
       iprinting=0
  56   call eye3d(isw)
-      if(isw.eq.0.or.isw.eq.ichar('q'))goto 55
-      if(isw.eq.ichar('r').or.isw.eq.ichar('e'))irotating=1
+      call rotatezoom(isw)
       if(isw.eq.ichar('p'))iprinting=mod(iprinting+1,2)
-      if(irotating.gt.0)then
-c Get back current eye position xe1 etc.
-         call asleep(5000)
-         call trn32(xe,ye,ze,x2,y2,z2,-1)
-         dtheta=.02
-         if(isw.eq.ichar('r'))dtheta=-.02
-         cs=cos(dtheta)
-         sn=sin(dtheta)
-c         write(*,*)xe,ye,ze,x2,y2,z2,cs,sn
-         xex=x2-xe
-         yex=y2-ye
-         x2=xe+cs*xex-sn*yex
-         y2=ye+sn*xex+cs*yex
-         call puteye(x2,y2,z2)
-         goto 51
-      endif
-      goto 51
- 55   continue
+      if(isw.ne.0.and.isw.ne.ichar('q'))goto 51
       end
 c*********************************************************************
       subroutine zsort(ngeomobj,zta,index)
