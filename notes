@@ -5544,7 +5544,7 @@ What to do next:
      Magnetic Field.
      Collisions.
      Benchmarking with sceptic (student).
-     Self force tests(?)
+     Self forrce tests(?)
      Space and moons.
 
 22 Nov 10
@@ -6751,3 +6751,12 @@ Implemented -gw switch to control coloring and annotation of surfaces.
 29 Jan 11
 
 Clean up. Commit.
+
+We now need to get back to thinking about forces, I think.  At the
+moment forcetrackinit is implemented only for spheres.  Stress
+integrations are based upon the surfobj structure which has for each
+facet position and area vectors. The number of facets in the theta and
+phi directions are defined in 3dcom.f Other object types are
+ignored. In principle that's all we really need to do for other
+surfaces to work. Likely the force evaluation works better somewhat
+away from the bounding surface, where the interpolation is more accurate.

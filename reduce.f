@@ -7,11 +7,9 @@ c returning. Thus the particle code can be immediately un-MPIed.
 c
 c***********************************************************************
       subroutine fluxreduce()
-
       include 'mpif.h'
       include '3dcom.f'
 c ALLREDUCE communicates the result to all processes.      
-
 c Old call just communicated data for quantity 1, object 1.
 c      call MPI_ALLREDUCE(MPI_IN_PLACE,ff_data(nf_address(1,1,nf_step))
 c     $     ,nf_posno(1,1),MPI_REAL,MPI_SUM,MPI_COMM_WORLD,ierr)
