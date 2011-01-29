@@ -6663,4 +6663,91 @@ Add some switches to fluxexamine.
 Test coptic with two processors. Seems to be working.
 Put zoomrotate into objplot to improve viewing.
 
+Commit. 
+
 Still to do: cylinders of arbitrary orientation.
+Input: otype, ocenter (3), axisvec (incl length) (3), radius (1)
+Do we need more than one radius?
+Could have two radius vectors, but that would be a real headache to 
+calculate correctly. Also we don't currently handle unequal radii. 
+
+Algorithm for intersections with general cylinder:
+
+	Get fractional distances from center in the axial direction as
+a fraction of the axial length (multiply by inverse axial vector?).
+Get the distances from the axis divided by the radius. This is then
+rendered into unit cylinder coordinates. Implement unit cylinder code.
+This could then be used for the other cylfsect too, if
+desired. Actually we need both radius and angle in the transverse
+plane.  (Or 2-D cartesian position). Where are we going to measure the
+angle from? Need a stable and complete specification. Perhaps we 
+project the x-axis on the radial plane? If x aligns with axial, this
+becomes singular. Use a different axis then? y?
+
+Might be best to construct the contravariant vectors from the input.
+Such that v_contra.x = cartesian coordinates in a frame in which z
+is along the axial direction and others are normal to it.
+
+26 Jan 11
+Implemented cylinit to initialize the contravariant vectors. Needs a
+second vector to be prescribed.
+
+Started to implement normalized cylfsect. It's not working. But also,
+I've found a bug in the old one with intersection binning.
+Fixed the bug. Improved the cylinder end facet labeling.
+Found the problem with normalized cylfsect and fixed.
+
+After further corrections I seem to have cylfsect working to the point
+where the volumes and cij plots look sensible. Objplot is not yet working.
+It needs a reverse transform from the unit cylinder coordinates back
+to world coordinates. With pllel this was automatically given by the 
+covariant vectors. In our case, the covariant vectors are not automatically
+present, because the specification of the cylinder is not done by them. 
+Actually the covariant z-vector is present, but in the wrong place. 
+We could make the initialization routine fill in the covariant vectors,
+but that would overwrite the read-in data. Would that be a problem?
+Probably not. Because they are orthogonal, the covariant vectors are equal
+to the contravariant vectors divided by their magnitude squared. It 
+would therefore be possible to store the three magnitude but pretty 
+cumbersome. 
+
+Although installing the contravariant vectors works, it erases the 
+radius. That's a problem, I think.  Maybe not.
+
+Positioninit done just in terms of the normalized cylinder (for now?)
+Now we have intersections working and giving flux quantity in bins. 
+Implement world3contra and contra3world to transform from world to
+contravariant coefficients and back. 
+Got cylgplot working using these transformations. It is rather
+duplicative of cylplot, but never mind for now.
+
+I think that's it. We've got general cylinders implemented.
+Add to geommany.dat
+
+We have a Tallyexit error on object 5, a coordinate-aligned cylinder.
+It does not happen with the old cylfsect. So there's a bug in the
+new one that does transformation to unit cylinder. Must fix.
+But for today, I'm tired.
+
+28 Jan 11
+
+That seemed to be an error in the transformation into unit cylinder code.
+At least there certainly was an error and now the Tallyexit has gone
+away.
+
+The flux plotting in objplot probably would be more useful if it
+colored by flux _density_ rather than flux. This is different for
+non-spheres, for which areas are not all equal. At the moment, we
+store the averages in maxsteps+1. It would be possible to store the
+averages divided by areas in maxsteps+2. Implemented.
+
+Actually I've been using maxsteps+1, but that's not what I want. I want
+to use nf_step+1 (and nf_step+2) which is the number of actual steps+1/2
+because otherwise when writing/reading one does not do so for the relevant
+data. Changed that.
+
+Implemented -gw switch to control coloring and annotation of surfaces.
+
+29 Jan 11
+
+Clean up. Commit.

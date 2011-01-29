@@ -53,8 +53,8 @@ c Set flag of unused slots to 0
       do i=n_part+1,n_partmax
          if_part(i)=0
       enddo
-      write(*,*)'Initialized ','id=',myid,
-     $     '  n=',n_part,'  ntries=',ntries
+      write(*,'('' Initialized id='',i3,'' n='',i7,'' ntries='',i7,$)')
+     $     myid,n_part,ntries
 c Initialize rhoinf:
       if(rhoinf.eq.0.)rhoinf=numprocs*n_part/(4.*pi*rs**3/3.)
 c Initialize orbit tracking

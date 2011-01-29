@@ -122,6 +122,7 @@ c Default edge-potential (chi) relaxation rate.
       rcij=0
       rmtoz=1.
       Bt=0.
+      iobpsw=1
       do id=1,ndims_mesh
 c Use very big xlimits by default to include whole domain
          xlimit(1,id)=-500.
@@ -147,6 +148,7 @@ c      if(iargc().eq.0) goto "help"
          call getarg(i,argument)
          if(argument(1:3).eq.'-gt')ltestplot=.true.
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
+         if(argument(1:3).eq.'-gw')read(argument(4:),*,end=201)iobpsw
          if(argument(1:3).eq.'-gr')read(argument(4:),*,end=201)rcij
          if(argument(1:3).eq.'-gs')then
             lsliceplot=.true.
@@ -302,6 +304,8 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' -gd -gp Turn off slicing of density, potential. '
       write(*,301)' -gf   set quantity plotted for flux evolution and'//
      $     ' final distribution. [',ifplot
+      write(*,301)' -gw   set objplot sw. [+256:intercepts]'//
+     $     ' Shade by 1:flux 2:flux-density[',iobpsw
       write(*,301)' -gc   set wireframe [& stencils(-)] mask.'//
      $     ' objects<->bits. [',iobpl
       write(*,301)' -gr   set override plot view scale'//
@@ -345,10 +349,10 @@ c Set ninjcomp if we are using ripernode
 c This does not work until after we've set mesh in cartesian.
       if(ripernode.ne.0)call ninjcalc(dt)
 c----------------------------------------------------------------
-c Initializations
-      if(lmyidhead)write(*,*)'Initializing the stencil data cij'
 c Initialize the fluxdata storage and addressing before cijroutine
       call fluxdatainit(myid)
+c Initializations
+      if(lmyidhead)write(*,*)'Initializing the stencil data cij.'
 c Initialize cij:
       ipoint=iLs(1)+iLs(2)+iLs(3)
       error=0.
@@ -519,10 +523,6 @@ c     $        nrein,n_part,ioc_part,rhoinf,dt
  402     continue
       endif
 c-----------------------------------------------
-c Hack
-c      call objplot(ndims,5.,0)
-
-c-----------------------------------------------
       if(lmyidhead)write(*,*)'Step Iterations Flux:'
 c Main step iteration -------------------------------------
       do j=1,nsteps
@@ -678,7 +678,7 @@ c Check some flux diagnostics and writing.
 c         write(*,*)'Calling objplot'
          if(ifplot.gt.0)then
             if(rcij.le.0)rcij=rs
-            call objplot(ndims,rcij,1)
+            call objplot(ndims,rcij,iobpsw)
          endif
       endif
       end

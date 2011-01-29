@@ -65,9 +65,7 @@ c Sphere one face only n3=1
                      nf_dimlens(j,mf_obj,k)=int(obj_geom(ofn1+k-1,i))
                      nfluxes=nfluxes*obj_geom(ofn1+k-1,i)
                   enddo
-               elseif(itype.eq.2
-     $                 .or. itype.eq.4
-     $                 )then
+               elseif(itype.eq.2 .or. itype.eq.4)then
 c Cuboid or parallelopiped.
 c Six faces, each using two of the three array lengths. 
                   nfluxes=0
@@ -84,8 +82,8 @@ c     $                    ,obj_geom(ofn1+mod(k,ns_ndims),i)
                   enddo
 c                  write(*,*)(nf_faceind(j,mf_obj,k),k=1,2*ns_ndims)
 c                  nfluxes=2*nfluxes
-               elseif(itype.eq.3)then
-c Cylinder (coordinate aligned) specifying nr, nt, nz. 
+               elseif(itype.eq.3 .or. itype.eq.5)then
+c Cylinder specifying nr, nt, nz. 
 c Three facets in the order bottom side top.
                   nfluxes=0
                   nf_faceind(j,mf_obj,1)=nfluxes
@@ -142,7 +140,7 @@ c Zero nums to silence incorrect warnings.
       numdata=0
       numobj=0
       nf_address(1,1,1-nf_posdim)=1
-      do k=1-nf_posdim,nf_maxsteps+1
+      do k=1-nf_posdim,nf_maxsteps+2
          if(k.gt.1-nf_posdim)
      $        nf_address(1,1,k)=nf_address(1,1,k-1)+numobj
          numobj=0
@@ -159,7 +157,7 @@ c               write(*,*)i,j,k,nf_posno(i,j),nf_address(i,j,k),numdata
          enddo
       enddo
 c Check if we might overrun the datasize.
-      if(nf_address(nf_quant,mf_obj,nf_maxsteps+1)+numobj
+      if(nf_address(nf_quant,mf_obj,nf_maxsteps+2)+numobj
      $     .gt.nf_datasize)then
          write(*,*)'DANGER: data from',nf_quant,mf_obj,nf_maxsteps,
      $        ' would exceed nf_datasize',nf_datasize
@@ -277,23 +275,29 @@ c                           write(*,*)j2,j3,xr1,xr2,xr3
                      enddo
                   enddo
                enddo
-            elseif(itype.eq.3)then
-c Cylinder. ----------------------------------------
-               ica=obj_geom(ocylaxis,i)
-               rc=obj_geom(oradius+mod(ica,ns_ndims),i)
-               zr=obj_geom(oradius+ica-1,i)
-               zc=obj_geom(ocenter+ica-1,i)
-               if(rc.ne.obj_geom(oradius+mod(ica+1,ns_ndims),i))then
-                  write(*,*)'Warning! Elliptical cylinder'
-     $                 ,' surface areas'
-     $                 ,' not calculated correctly.'
+            elseif(itype.eq.3 .or. itype.eq.5)then
+c Cylinder and Non-aligned cylinder -------------------------------
+               if(itype.eq.3)then
+                  ica=obj_geom(ocylaxis,i)
+                  rc=obj_geom(oradius+mod(ica,ns_ndims),i)
+                  zr=obj_geom(oradius+ica-1,i)
+                  zc=obj_geom(ocenter+ica-1,i)
+                  if(rc.ne.obj_geom(oradius+mod(ica+1,ns_ndims),i))then
+                     write(*,*)'Warning! Elliptical cylinder'
+     $                    ,' surface areas'
+     $                    ,' not calculated correctly.'
+                  endif
+               else
+                  rc=1.
+                  zr=1.
+                  zc=0.
                endif
                do j=1,mf_quant(io)
 c Area of each element. Faces are in order bottom, side, top.
 c Bottom and top facet areas:
                   ar=3.1415926*rc**2
      $                 /(nf_dimlens(j,io,1)*nf_dimlens(j,io,2))
-                  write(*,*)'Object',i,' Quant',j,' Facet areas=',ar
+c                  write(*,*)'Object',i,' Quant',j,' Facet areas=',ar
                   do i2=1,nf_dimlens(j,io,2)
                      do i1=1,nf_dimlens(j,io,1)
                         ip=i1+(i2-1)*int(nf_dimlens(j,io,1))
@@ -349,7 +353,7 @@ c z
                enddo
             else
 c Unknown ------------------------------------------
-               write(*,*)'Flux parameters uncalculated for object'
+               write(*,*)'Flux positions uncalculated for object'
      $           ,i,' type',obj_geom(otype,i)
             endif
          endif
@@ -380,7 +384,7 @@ c Determine (all) the objects crossed and call objsect for each.
             ireg=insideall(npdim,x_part(1,i))
             r=0.
             r1=0.
-            do id=1,3
+            do id=1,2
                r=r+x_part(id,i)**2
                r1=r1+(x_part(id,i)-dt*x_part(id+3,i))**2
             enddo
@@ -388,8 +392,8 @@ c Determine (all) the objects crossed and call objsect for each.
             r1=sqrt(r1)
             write(*,*)'Tallyexit error',ierr,i,iobj,idiffreg
             if(ierr.eq.99)write(*,*)'Unknown object type.'
-            write(*,*)(x_part(k,i),k=1,3),r,ireg
-            write(*,*)(x_part(k,i)-dt*x_part(k+3,i),k=1,3),r1
+            write(*,*)'xpart,r=',(x_part(k,i),k=1,3),r,ireg
+            write(*,*)'xp1',(x_part(k,i)-dt*x_part(k+3,i),k=1,3),r1
             stop
          endif
       endif
@@ -442,6 +446,9 @@ c Parallelopiped intersection.
 c         write(*,*)'Calling pllel',npdim,x1,x1,iobj
          call pllelofsect(npdim,x1,x2,iobj,ijbin,sd,fraction)
 c         write(*,*)'Returning from pllel',npdim,x1,x1,iobj,ijbin,sd
+      elseif(itype.eq.5)then
+c Non-aligned cylinder
+         call cylgfsect(npdim,x1,x2,iobj,ijbin,sd,fraction)
       else
 c         write(*,*)'Unknown object in objsect'
 c Unknown object type.
@@ -449,6 +456,7 @@ c Unknown object type.
          return
       endif
       if(abs(sd).ne.1.)then 
+         write(*,*)'sd problem, fraction,type,No',sd,fraction,itype,iobj
          ierr=1
          return
       endif
@@ -674,7 +682,7 @@ c      write(*,'(7f8.4)')fraction,xp1,xp2,xd,xd2
       end
 c*********************************************************************
       subroutine pllelofsect(npdim,xp1,xp2,iobj,ijbin,sd,fraction)
-c Given a coordinate-aligned parallelopiped object iobj. Find the point
+c Given a general parallelopiped object iobj. Find the point
 c of intersection of the line joining xp1,xp2, with it, and determine
 c the ijbin to which it is therefore assigned, and the direction it is
 c crossed (sd=+1 means inward from 1 to 2).
@@ -820,6 +828,485 @@ c That's it.
       end
 c*********************************************************************
       subroutine cylfsect(npdim,xp1,xp2,iobj,ijbin,sdmin,fmin)
+c Master routine for calling cylusect after normalization of cyl.
+      integer npdim,iobj,ijbin
+      real xp1(npdim),xp2(npdim)
+      real sdmin
+      include '3dcom.f'
+      real xn1(pp_ndims),xn2(pp_ndims)
+
+      ida=int(obj_geom(ocylaxis,iobj))
+      do i=1,pp_ndims
+         ii=mod(i-ida+2,pp_ndims)+1
+         xn1(ii)=(xp1(i)-obj_geom(ocenter+i-1,iobj))
+     $        /obj_geom(oradius+i-1,iobj)
+         xn2(ii)=(xp2(i)-obj_geom(ocenter+i-1,iobj))
+     $        /obj_geom(oradius+i-1,iobj)
+      enddo
+      call cylusect(npdim,xn1,xn2,iobj,ijbin,sdmin,fmin)
+      end
+c*********************************************************************
+      subroutine cylusect(npdim,xp1,xp2,iobj,ijbin,sdmin,fmin)
+c Find the point of intersection of the line joining xp1,xp2, with the
+c UNIT cylinder, and determine the ijbin to which it is therefore
+c assigned, and the direction it is crossed (sdmin=+1 means inward from
+c 1 to 2). The 1-axis is where theta is measured from and the 3-axis
+c is the axial direction.
+c The facets of the cylinder are the end faces -xr +xr, and the curved
+c side boundary. 3 altogether.  The order of faces is bottom, side, top.
+      
+      integer npdim,iobj,ijbin
+      real xp1(npdim),xp2(npdim)
+      real sdmin
+      include '3dcom.f'
+c 3D here.
+      parameter (nds=3)
+      real x12(nds)
+      real fn(4),zrf(4),sdf(4)
+      real xc(nds),rc(nds)
+      data xc/0.,0.,0./rc/1.,1.,1./
+
+      ida=3
+c First, return if both points are beyond the same axial end.
+      z1=xp1(ida)
+      z2=xp2(ida)
+      xd=z2-z1
+      fmin=1.
+      sdmin=0.
+      if((z1.gt.1. .and. z2.gt.1.).or.
+     $     (-z1.gt.1. .and. -z2.gt.1))return
+      sds=0.
+c Find the intersection (if any) with the circular surface.
+      call sphereinterp(npdim,ida,xp1,xp2,
+     $     xc,rc,fn(1),fn(2),sds,d1,d2)
+      if(sds.ne.0)then
+c Directions are both taken to be that of the closest. 
+c A bit inconsistent but probably ok. 
+         sdf(1)=sds
+         sdf(2)=sds
+         zrf(1)=(1.-fn(1))*xp1(ida)+fn(1)*xp2(ida)
+         zrf(2)=(1.-fn(2))*xp1(ida)+fn(2)*xp2(ida)
+      else
+c No radial intersections
+         zrf(1)=2.
+         zrf(2)=2.
+      endif
+c Find the axial intersection fractions with the end planes.
+      if(xd.ne.0)then
+         fn(3)=(1.-z1)/xd
+         sdf(3)=-1.
+         if(z1.gt.1.)sdf(3)=1.
+         fn(4)=(-1.-z1)/xd
+         sdf(4)=-1.
+         if(z1.lt.-1.)sdf(4)=1.
+         zrf(3)=0.
+         zrf(4)=0.
+         do k=1,npdim
+            if(k.ne.ida)then
+               xkg1=(1.-fn(3))*xp1(k)+fn(3)*xp2(k)
+               zrf(3)=zrf(3)+(xkg1)**2
+               xkg2=(1.-fn(4))*xp1(k)+fn(4)*xp2(k)
+               zrf(4)=zrf(4)+(xkg2)**2
+            endif
+         enddo
+      else
+c Pure radial difference. No end-intersections anywhere.
+         zrf(3)=2.
+         zrf(4)=2.
+      endif
+c Now we have 4 possible fractions fn(4). Two or none of those
+c are true. Truth is determined by abs(zrf(k))<=1. Choose closest.
+      fmin=10.
+      kmin=0
+      do k=1,4
+         if(abs(zrf(k)).le.1)then
+            if(fn(k).ge.0. .and. fn(k).lt.fmin)then
+               kmin=k 
+               fmin=fn(k)
+            endif
+         endif
+      enddo
+      if(fmin.gt.1.)then
+c No crossing
+         sdmin=0.
+         fmin=1.
+         return
+      else
+         sdmin=sdf(kmin)
+         if(kmin.le.2)then
+c radial crossing
+            imin=0.
+         else
+c axial crossing
+            imin=-1.
+            zida=(1.-fmin)*z1+fmin*z2
+            if(zida.gt.0.)imin=1.
+         endif
+      endif
+
+c Now the minimum fraction is in fmin, which is the crossing point.
+c imin contains the face-index of this crossing. -1,0, or +1.
+c Calculate normalized intersection coordinates.
+      do i=1,npdim
+         x12(i)=(1.-fmin)*xp1(i)+fmin*xp2(i)
+      enddo
+c Calculate r,theta,z (normalized) relative to the ida direction as z.
+      z=x12(ida)
+      theta=atan2(x12(mod(ida+1,npdim)+1),x12(mod(ida,npdim)+1))
+      r2=0.
+      do i=1,npdim-1
+         k=mod(ida+i-1,npdim)+1
+         r2=r2+x12(k)**2
+      enddo
+c      write(*,'(a,7f7.4,3i3)')'r2,theta,z,x12,fmin,imin'
+c     $     ,r2,theta,z,x12,fmin,imin
+c End blocks are of size nr x nt, and the curved is nt x nz.
+c 3-D only here. 
+      infobj=nf_map(iobj)
+      ijbin=0.
+      if(imin.ne.0)then
+c Ends
+         if(imin.eq.1)then
+c offset by (nr+nz)*nt
+            ijbin=(nf_dimlens(nf_flux,infobj,1)
+     $           +nf_dimlens(nf_flux,infobj,3))
+     $           *nf_dimlens(nf_flux,infobj,2)
+         endif
+c Uniform mesh in r^2 normalized. 
+         ir=int(nf_dimlens(nf_flux,infobj,1)*(0.999999*r2))
+         it=int(nf_dimlens(nf_flux,infobj,2)
+     $     *(theta/3.1415927+1.)*0.5)
+         ijbin=ijbin+ir+it*nf_dimlens(nf_flux,infobj,1)
+      else
+c Side. Offset to this facet nr*nt:
+         ijbin=nf_dimlens(nf_flux,infobj,1)*nf_dimlens(nf_flux,infobj,2)
+         it=int(nf_dimlens(nf_flux,infobj,2)
+     $     *(theta/3.1415927+1.)*0.5)
+         iz=int(nf_dimlens(nf_flux,infobj,3)*(0.999999*z+1.)*0.5)
+c Index in order theta,z
+         ijbin=ijbin+it+iz*nf_dimlens(nf_flux,infobj,2)
+      endif
+c      write(*,'(6f8.4,3i3)')xp1,xp2,ir,it,iz
+      end
+c*********************************************************************
+      subroutine cylgfsect(npdim,xp1,xp2,iobj,ijbin,sd,fraction)
+c Given a general cylinder object iobj. Find the point
+c of intersection of the line joining xp1,xp2, with it, and determine
+c the ijbin to which it is therefore assigned, and the direction it is
+c crossed (sd=+1 means inward from 1 to 2).
+
+c The object is specified by center and three contravariant vectors.
+c When the position relative to the center is dotted into the contra
+c variant vector it yields the coordinate relative to the unit cylinder,
+c whose third component is the axial direction. 
+
+      integer npdim,iobj,ijbin
+      real xp1(npdim),xp2(npdim)
+      real sd
+      include '3dcom.f'
+      real xn1(pp_ndims),xn2(pp_ndims)
+
+c j refers to transformed coordinates in which it is unit cyl
+      do j=1,pp_ndims
+         xn1(j)=0.
+         xn2(j)=0.
+c Contravariant projections.
+         do i=1,npdim
+c i refers to the Cartesian coordinates.
+            xc=obj_geom(ocenter+i-1,iobj)
+c xn1, xn2 are the contravariant coordinates with respect to the center.
+            ji=(pp_contra+pp_ndims*(j-1)+i-1)
+c            write(*,*)'ji',ji
+            xn1(j)=xn1(j)+(xp1(i)-xc)*obj_geom(ji,iobj)
+            xn2(j)=xn2(j)+(xp2(i)-xc)*obj_geom(ji,iobj)
+         enddo
+      enddo
+c Now xn1,2 are the coordinates relative to the unit cylinder.      
+      fraction=1.
+c Shortcut
+      z1=xn1(pp_ndims)
+      z2=xn2(pp_ndims)
+      if((z1.ge.1..and.z2.ge.1).or.(z1.le.-1..and.z2.le.-1.))return
+c Call the unit-cylinder code.
+      call cylusect(npdim,xn1,xn2,iobj,ijbin,sd,fraction)
+c      write(*,*)'cylusect return',ijbin,fraction
+
+      end
+c*********************************************************************
+c*********************************************************************
+      subroutine timeave(nu,u,uave,ictl)
+c Average a quantity u(nu) over steps with a certain decay number
+c into uave.
+c ictl controls the actions as follows:
+c       0    do the averaging.
+c       1    do nothing except set nstep=1.
+c       2    do nothing except set nstave=nu
+c       3    do both 1 and 2. 
+c       99   do nothing except increment nstep.
+c The 99 call should be done at the end of all usage of this routine
+c for the present step.
+      real u(nu),uave(nu)
+
+      integer nstep,nstave
+      data nstep/1/nstave/20/
+c Normal call.
+      if(ictl.eq.0)then
+         do i=1,nu
+            uave(i)=(uave(i)*(nstep-1)+u(i))/nstep
+         enddo
+         return
+      endif
+      
+      if(ictl.eq.1 .or. ictl.eq.3)then
+         nstep=1
+      endif
+      if(ictl.eq.2 .or. ictl.eq.3)then
+         nstave=nu
+      endif
+      if(ictl.ge.99)then
+         if(nstep.le.nstave) nstep=nstep+1
+      endif
+
+      end
+c***********************************************************************
+      subroutine fluxdiag()
+c Get the total count to object 1 and convert to normalized flux.
+c Assuming it's a unit sphere.
+      include '3dcom.f'
+c For rhoinf, dt
+      include 'partcom.f'
+
+      sum=0
+      do i=1,nf_posno(nf_flux,1)
+         sum=sum+ff_data(nf_address(nf_flux,1,nf_step)+i-1)
+      enddo
+      flux=sum/(4.*3.14159)/rhoinf/dt
+      write(*,'(f6.3,''| '',$)')flux
+c      write(*,'(a,f7.0,f8.3)')'Total flux',sum,
+c     $     sum/(4.*3.14159)/rhoinf/dt
+c      write(*,'(10f7.1)')(ff_data(nf_address(1,1,nf_step)+i-1),
+c     $     i=1,nf_posno(1,1))
+
+      end
+c***********************************************************************
+c Averaging the flux data for quantity abs(iquant)
+c over all positions for object ifobj,
+c for the steps n1 to n2.
+c The positions might be described by more than one dimension, but
+c that is irrelevant to the averaging.
+c Plot the quantity iquant if positive (not if negative).
+c Plotting does not attempt to account for the multidimensionality.
+c Rhoinf is returned in rinf.
+      subroutine fluxave(n1,n2,ifobj,iquant,rinf)
+      integer n1,n2
+c      logical lplot
+      integer iquant
+      include '3dcom.f'
+      include 'sectcom.f'
+c Use for averaging:ff_data(nf_address(iq,ifobj,nf_maxsteps+1)+i-1)
+c which is ff_data(iav+i)
+      real fluxofstep(nf_maxsteps),step(nf_maxsteps)
+      character*30 string
+
+      iq=abs(iquant)
+c If quantity asked for is not available, do nothing.
+      if(iq.gt.mf_quant(ifobj))return
+c Offset of averaging location:
+c      iav=nf_address(iq,ifobj,nf_maxsteps+1)-1
+      iav=nf_address(iq,ifobj,nf_step+1)-1
+c Offset to average flux density location
+c      iavd=nf_address(iq,ifobj,nf_maxsteps+2)-1
+      iavd=nf_address(iq,ifobj,nf_step+2)-1
+c Offset to area
+      iaa=nf_address(iq,ifobj,nf_pa)-1
+
+c Check step numbers for rationality.
+      if(n1.lt.1)n1=1
+      if(n2.gt.nf_step)n2=nf_step
+      if(n2-n1.lt.0)then
+         write(*,*)'fluxave incorrect limits:',n1,n2
+         return
+      endif
+      do i=1,nf_posno(iq,ifobj)
+         ff_data(iav+i)=0.
+         ff_data(iavd+i)=0.
+      enddo
+c Sum the data over steps.
+      tot=0
+      do i=1,nf_posno(iq,ifobj)
+         do is=n1,n2
+            ff_data(iav+i)=ff_data(iav+i)
+     $           +ff_data(nf_address(iq,ifobj,is)+i-1)
+         enddo
+         tot=tot+ff_data(iav+i)
+         ff_data(iav+i)=ff_data(iav+i)/(n2-n1+1)
+c Get the area and divide to give the flux density.
+         area=ff_data(iaa+i)
+         ff_data(iavd+i)=ff_data(iav+i)/area
+c         write(*,*)ifobj,iq,i,' Area,Flux-density',area,ff_data(iavd +i)
+      enddo
+
+c Total the flux over positions as a function of step.
+      tdur=0.
+      rinf=0.
+      do is=1,n2
+         fluxstep=0
+         do i=1,nf_posno(iq,ifobj)
+            fluxstep=fluxstep+ff_data(nf_address(iq,ifobj,is)+i-1)
+         enddo
+         step(is)=is
+         fluxofstep(is)=fluxstep
+         if(is.ge.n1)then
+c            write(*,*)'n1,n2,is,ff_dt(is)',n1,n2,is,ff_dt(is)
+            tdur=tdur+ff_dt(is)
+            rinf=rinf+ff_rho(is)*ff_dt(is)
+         endif
+c         write(*,*)'step',is,' fluxofstep',fluxofstep(is)
+      enddo
+c      write(*,*)'tot,rinf,tdur,n2',tot,rinf,tdur,n1,n2
+      tot=tot/tdur
+      rinf=rinf/tdur
+
+c From here on is non-general and is mostly for testing.
+      write(*,'(a,i3,a,i3,a,i4,i4,a,f10.3)')' Average flux quant',iq
+     $     ,', object',ifobj,', over steps',n1,n2,', per unit time:',tot
+      write(*,*)'rhoinf:',rinf,' Total:',nint(tot*tdur)
+     $     ,'  Average collected per step by posn:'
+      write(*,'(10f8.2)')(ff_data(iav+i),i=1,nf_posno(iq,ifobj))
+
+      write(*,*)'Flux density*r^2, normalized to rhoinf'
+     $     ,tot/(4.*3.14159)/rinf
+c      write(*,*)'Sectcom ipt=',sc_ipt
+
+      if(iquant.gt.0)then
+         write(string,'(''Object '',i3,'' Quantity'',i3)')
+     $        nf_geommap(ifobj),iquant
+         call autoplot(step,fluxofstep,n2)
+         call boxtitle(string)
+         call axlabels('step','Spatially-summed flux number')
+         call pltend()
+         call automark(ff_data(nf_address(iq,ifobj,nf_p1))
+     $        ,ff_data(iav+1),nf_posno(iq,ifobj),1)
+         call boxtitle(string)
+         call axlabels('First flux face variable',
+     $        'Time-averaged flux number')
+         call pltend()
+      endif
+
+      end
+c*******************************************************************
+      subroutine writefluxfile(name)
+c File name:
+      character*(*) name
+c Common data containing the BC-object geometric information
+      include '3dcom.f'
+c Particle common data
+      include 'partcom.f'
+c Plasma common data
+      include 'plascom.f'
+c Intersection data
+      include 'sectcom.f'
+
+      character*(100) charout
+c Zero the name first. Very Important!
+c Construct a filename that contains many parameters
+c Using the routines in strings_names.f
+      name=' '
+      call nameconstruct(name)
+c     np=nbcat(name,'.flx')
+      call nbcat(name,'.flx')
+c      write(*,*)name
+      write(charout,51)debyelen,Ti,vd,rs,phip
+ 51   format('debyelen,Ti,vd,rs,phip:',5f10.4)
+
+c      write(*,*)'mf_obj=',mf_obj,nf_step,mf_quant(1)
+
+      open(22,file=name,status='unknown',err=101)
+      close(22,status='delete')
+      open(22,file=name,status='new',form='unformatted',err=101)
+c This write sequence must be exactly that read below.
+      write(22)charout
+      write(22)debyelen,Ti,vd,rs,phip
+      write(22)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
+      write(22)(ff_rho(k),k=1,nf_step)
+      write(22)(ff_dt(k),k=1,nf_step)
+      write(22)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_ndims)
+     $     ,(nf_faceind(i,j,k),k=1,2*nf_ndims)
+     $     ,i=1,mf_quant(j)),j=1,mf_obj)
+      write(22)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
+     $     k=1-nf_posdim,nf_step+2)
+      write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+2)-1)
+c New force write.
+      write(22)(((fieldforce(i,j,k),pressforce(i,j,k) ,partforce(i,j,k)
+     $     ,charge_ns(j,k),i=1,ns_ndims),j=1,mf_obj),k=1,nf_step)
+c Object data:
+      write(22)ngeomobj
+      write(22)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
+      write(22)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
+c Intersection data:
+      write(22)sc_ipt
+      write(22)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),
+     $     ibin_sc(k),k=1,sc_ipt)
+
+      close(22)
+c      write(*,*)'Wrote flux data to ',name(1:lentrim(name))
+
+      return
+ 101  continue
+      write(*,*)'Error opening file:',name
+      close(22,status='delete')
+      end
+c*****************************************************************
+      subroutine readfluxfile(name,ierr)
+      character*(*) name
+      include '3dcom.f'
+      include 'plascom.f'
+      include 'sectcom.f'
+      character*(100) charout
+
+      open(23,file=name,status='old',form='unformatted',err=101)
+      read(23)charout
+      read(23)debyelen,Ti,vd,rs,phip
+      read(23)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
+      read(23)(ff_rho(k),k=1,nf_step)
+      read(23)(ff_dt(k),k=1,nf_step)
+      read(23)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_ndims)
+     $     ,(nf_faceind(i,j,k),k=1,2*nf_ndims)
+     $     ,i=1,mf_quant(j)),j=1,mf_obj)
+      read(23)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
+     $     k=1-nf_posdim,nf_step+2)
+      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+2)-1)
+      read(23,end=102, err=102)(((fieldforce(i,j,k),pressforce(i,j,k)
+     $     ,partforce(i,j,k),charge_ns(j,k),i=1,ns_ndims),j=1,mf_obj),k
+     $     =1,nf_step)
+c Object data:
+      read(23)ngeomobj
+      read(23)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
+      read(23)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
+c      write(*,*)'Object data for',ngeomobj,' objects:'
+c      write(*,*)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
+c      write(*,*)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
+c Intersection data:
+      read(23)sc_ipt
+      read(23)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),
+     $     ibin_sc(k),k=1,sc_ipt)
+      goto 103
+ 102  write(*,*)'Failed to read back forces. Old format?'
+ 103  close(23)
+
+c Now one might have to reconstruct nf_faceind from nf_dimlens.
+
+      write(*,*)'Read back flux data from ',name(1:lentrim(name))
+      write(*,*)charout(1:lentrim(charout))
+      ierr=0
+      return
+ 101  write(*,*)'Error opening file:',name
+      ierr=1
+      end
+c*********************************************************************
+c Obsolete
+c*********************************************************************
+      subroutine cylfsect1(npdim,xp1,xp2,iobj,ijbin,sdmin,fmin)
 c Given a coordinate-aligned cylinder object iobj. Find the point of
 c intersection of the line joining xp1,xp2, with it, and determine the
 c ijbin to which it is therefore assigned, and the direction it is
@@ -829,10 +1316,8 @@ c The cylinder is specified by center and radii!=0 (to faces.)  in each
 c coordinate. Plus the axial coordinate.  Inside corresponds to between
 c the axial planes, i.e. x-xc < |rc|, and orthogonal radius < 1.
 
-c The following appears to be incorrect. 
-c We define the facets of the cylinder to be the end faces -xr +xr, then
-c the curved boundary. 3 altogether.
-c In fact, the order of faces is bottom, side, top.
+c The facets of the cylinder to be the end faces -xr +xr, and the curved
+c side boundary. 3 altogether.  The order of faces is bottom, side, top.
       
       integer npdim,iobj,ijbin
       real xp1(npdim),xp2(npdim)
@@ -984,287 +1469,3 @@ c Index in order theta,z
       endif
 c      write(*,'(6f8.4,3i3)')xp1,xp2,ir,it,iz
       end
-c*********************************************************************
-      real function areaobj(iobj,ijbin)
-c Return the area of facet ijbin of object iobj.
-      include '3dcom.f'
-
-      ifobj=nf_map(iobj)
-c Address of flux data. Not needed I think
-c      iav=nf_address(1,ifobj,nf_maxsteps+1)
-      areaobj=0.
-      end
-
-c*********************************************************************
-c*********************************************************************
-c*********************************************************************
-      subroutine timeave(nu,u,uave,ictl)
-c Average a quantity u(nu) over steps with a certain decay number
-c into uave.
-c ictl controls the actions as follows:
-c       0    do the averaging.
-c       1    do nothing except set nstep=1.
-c       2    do nothing except set nstave=nu
-c       3    do both 1 and 2. 
-c       99   do nothing except increment nstep.
-c The 99 call should be done at the end of all usage of this routine
-c for the present step.
-      real u(nu),uave(nu)
-
-      integer nstep,nstave
-      data nstep/1/nstave/20/
-c Normal call.
-      if(ictl.eq.0)then
-         do i=1,nu
-            uave(i)=(uave(i)*(nstep-1)+u(i))/nstep
-         enddo
-         return
-      endif
-      
-      if(ictl.eq.1 .or. ictl.eq.3)then
-         nstep=1
-      endif
-      if(ictl.eq.2 .or. ictl.eq.3)then
-         nstave=nu
-      endif
-      if(ictl.ge.99)then
-         if(nstep.le.nstave) nstep=nstep+1
-      endif
-
-      end
-c***********************************************************************
-      subroutine fluxdiag()
-c Get the total count to object 1 and convert to normalized flux.
-c Assuming it's a unit sphere.
-      include '3dcom.f'
-c For rhoinf, dt
-      include 'partcom.f'
-
-      sum=0
-      do i=1,nf_posno(nf_flux,1)
-         sum=sum+ff_data(nf_address(nf_flux,1,nf_step)+i-1)
-      enddo
-      flux=sum/(4.*3.14159)/rhoinf/dt
-      write(*,'(f6.3,''| '',$)')flux
-c      write(*,'(a,f7.0,f8.3)')'Total flux',sum,
-c     $     sum/(4.*3.14159)/rhoinf/dt
-c      write(*,'(10f7.1)')(ff_data(nf_address(1,1,nf_step)+i-1),
-c     $     i=1,nf_posno(1,1))
-
-      end
-c***********************************************************************
-c Averaging the flux data for quantity abs(iquant)
-c over all positions for object ifobj,
-c for the steps n1 to n2.
-c The positions might be described by more than one dimension, but
-c that is irrelevant to the averaging.
-c Plot the quantity iquant if positive (not if negative).
-c Plotting does not attempt to account for the multidimensionality.
-c Rhoinf is returned in rinf.
-      subroutine fluxave(n1,n2,ifobj,iquant,rinf)
-      integer n1,n2
-c      logical lplot
-      integer iquant
-      include '3dcom.f'
-      include 'sectcom.f'
-c Use for averaging:ff_data(nf_address(iq,ifobj,nf_maxsteps+1)+i-1)
-c which is ff_data(iav+i)
-      real fluxofstep(nf_maxsteps),step(nf_maxsteps)
-      character*30 string
-
-      iq=abs(iquant)
-c If quantity asked for is not available, do nothing.
-      if(iq.gt.mf_quant(ifobj))return
-c Offset of averaging location:
-      iav=nf_address(iq,ifobj,nf_maxsteps+1)-1
-
-c Check step numbers for rationality.
-      if(n1.lt.1)n1=1
-      if(n2.gt.nf_step)n2=nf_step
-      if(n2-n1.lt.0)then
-         write(*,*)'fluxave incorrect limits:',n1,n2
-         return
-      endif
-      do i=1,nf_posno(iq,ifobj)
-         ff_data(iav+i)=0.
-      enddo
-c Sum the data over steps.
-      tot=0
-      do i=1,nf_posno(iq,ifobj)
-         do is=n1,n2
-            ff_data(iav+i)=ff_data(iav+i)
-     $           +ff_data(nf_address(iq,ifobj,is)+i-1)
-         enddo
-         tot=tot+ff_data(iav+i)
-         ff_data(iav+i)=ff_data(iav+i)/(n2-n1+1)
-      enddo
-
-c Total the flux over positions as a function of step.
-      tdur=0.
-      rinf=0.
-      do is=1,n2
-         fluxstep=0
-         do i=1,nf_posno(iq,ifobj)
-            fluxstep=fluxstep+ff_data(nf_address(iq,ifobj,is)+i-1)
-         enddo
-         step(is)=is
-         fluxofstep(is)=fluxstep
-         if(is.ge.n1)then
-c            write(*,*)'n1,n2,is,ff_dt(is)',n1,n2,is,ff_dt(is)
-            tdur=tdur+ff_dt(is)
-            rinf=rinf+ff_rho(is)*ff_dt(is)
-         endif
-c         write(*,*)'step',is,' fluxofstep',fluxofstep(is)
-      enddo
-c      write(*,*)'tot,rinf,tdur,n2',tot,rinf,tdur,n1,n2
-      tot=tot/tdur
-      rinf=rinf/tdur
-
-c From here on is non-general and is mostly for testing.
-      write(*,'(a,i3,a,i3,a,i4,i4,a,f10.3)')' Average flux quant',iq
-     $     ,', object',ifobj,', over steps',n1,n2,', per unit time:',tot
-      write(*,*)'rhoinf:',rinf,' Total:',nint(tot*tdur)
-     $     ,'  Average collected per step by posn:'
-      write(*,'(10f8.2)')(ff_data(iav+i),i=1,nf_posno(iq,ifobj))
-
-      write(*,*)'Flux density*r^2, normalized to rhoinf'
-     $     ,tot/(4.*3.14159)/rinf
-c      write(*,*)'Sectcom ipt=',sc_ipt
-
-      if(iquant.gt.0)then
-         write(string,'(''Object '',i3,'' Quantity'',i3)')
-     $        nf_geommap(ifobj),iquant
-         call autoplot(step,fluxofstep,n2)
-         call boxtitle(string)
-         call axlabels('step','Spatially-summed flux number')
-         call pltend()
-         call automark(ff_data(nf_address(iq,ifobj,nf_p1))
-     $        ,ff_data(iav+1),nf_posno(iq,ifobj),1)
-         call boxtitle(string)
-         call axlabels('First flux face variable',
-     $        'Time-averaged flux number')
-         call pltend()
-      endif
-
-      end
-c*******************************************************************
-      subroutine writefluxfile(name)
-c File name:
-      character*(*) name
-c Common data containing the BC-object geometric information
-      include '3dcom.f'
-c Particle common data
-      include 'partcom.f'
-c Plasma common data
-      include 'plascom.f'
-c Intersection data
-      include 'sectcom.f'
-
-      character*(100) charout
-c Zero the name first. Very Important!
-c Construct a filename that contains many parameters
-c Using the routines in strings_names.f
-      name=' '
-      call nameconstruct(name)
-c     np=nbcat(name,'.flx')
-      call nbcat(name,'.flx')
-c      write(*,*)name
-      write(charout,51)debyelen,Ti,vd,rs,phip
- 51   format('debyelen,Ti,vd,rs,phip:',5f10.4)
-
-c      write(*,*)'mf_obj=',mf_obj,nf_step,mf_quant(1)
-
-      open(22,file=name,status='unknown',err=101)
-      close(22,status='delete')
-      open(22,file=name,status='new',form='unformatted',err=101)
-c This write sequence must be exactly that read below.
-      write(22)charout
-      write(22)debyelen,Ti,vd,rs,phip
-      write(22)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
-      write(22)(ff_rho(k),k=1,nf_step)
-      write(22)(ff_dt(k),k=1,nf_step)
-      write(22)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_ndims)
-     $     ,(nf_faceind(i,j,k),k=1,2*nf_ndims)
-     $     ,i=1,mf_quant(j)),j=1,mf_obj)
-      write(22)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
-     $     k=1-nf_posdim,nf_step+1)
-c      write(*,*)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
-c     $     k=1-nf_posdim,nf_step+1)
-c      write(*,*)nf_step,'nf_address',(nf_address(1,1,i),i=1,nf_step+1)
-      write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
-c New force write.
-      write(22)(((fieldforce(i,j,k),pressforce(i,j,k) ,partforce(i,j,k)
-     $     ,charge_ns(j,k),i=1,ns_ndims),j=1,mf_obj),k=1,nf_step)
-c Object data:
-      write(22)ngeomobj
-      write(22)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
-      write(22)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
-c Intersection data:
-      write(22)sc_ipt
-      write(22)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),
-     $     ibin_sc(k),k=1,sc_ipt)
-
-      close(22)
-c      write(*,*)'Wrote flux data to ',name(1:lentrim(name))
-
-      return
- 101  continue
-      write(*,*)'Error opening file:',name
-      close(22,status='delete')
-      end
-c*****************************************************************
-      subroutine readfluxfile(name,ierr)
-      character*(*) name
-      include '3dcom.f'
-      include 'plascom.f'
-      include 'sectcom.f'
-      character*(100) charout
-
-      open(23,file=name,status='old',form='unformatted',err=101)
-      read(23)charout
-      read(23)debyelen,Ti,vd,rs,phip
-      read(23)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
-      read(23)(ff_rho(k),k=1,nf_step)
-      read(23)(ff_dt(k),k=1,nf_step)
-      read(23)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_ndims)
-     $     ,(nf_faceind(i,j,k),k=1,2*nf_ndims)
-     $     ,i=1,mf_quant(j)),j=1,mf_obj)
-      read(23)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
-     $     k=1-nf_posdim,nf_step+1)
-      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+1)-1)
-c If compatibility with flux files earlier than July 10 is required
-c use the following version and ignore the last step.
-c      read(23)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
-c     $     k=1-nf_posdim,nf_step)
-c      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step)-1)
-
-c Old force write was stupid and so was read.
-c      read(23) fieldforce,pressforce,partforce,charge_ns
-      read(23,end=102, err=102)(((fieldforce(i,j,k),pressforce(i,j,k)
-     $     ,partforce(i,j,k),charge_ns(j,k),i=1,ns_ndims),j=1,mf_obj),k
-     $     =1,nf_step)
-c Object data:
-      read(23)ngeomobj
-      read(23)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
-      read(23)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
-c      write(*,*)'Object data for',ngeomobj,' objects:'
-c      write(*,*)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
-c      write(*,*)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
-c Intersection data:
-      read(23)sc_ipt
-      read(23)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),
-     $     ibin_sc(k),k=1,sc_ipt)
-      goto 103
- 102  write(*,*)'Failed to read back forces. Old format?'
- 103  close(23)
-
-c Now one might have to reconstruct nf_faceind from nf_dimlens.
-
-      write(*,*)'Read back flux data from ',name(1:lentrim(name))
-      write(*,*)charout(1:lentrim(charout))
-      ierr=0
-      return
- 101  write(*,*)'Error opening file:',name
-      ierr=1
-      end
-c*********************************************************************

@@ -3,7 +3,9 @@ c*********************************************************************
 c Plot the sphere objg, number iobj, on an already set up 3D scene.
 c iosw determines the nature of the plot
 c 0: Color code according to position.
-c 1:            according to average flux already in nf_maxstep+1
+c 1:            according to average flux already in nf_step+1
+c 2:            according to average flux-density already in nf_step+2
+
       include '3dcom.f'
       real objg(odata)
       real xe(ns_ndims)
@@ -23,9 +25,7 @@ c      character*20 string
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
 c No flux for this object
-c      write(*,*)'sphereplot',iobj,ifobj,nf_maxsteps,iosw
-c     $     ,nf_posno(1,ifobj)
-      iav=nf_address(1,ifobj,nf_maxsteps+1)
+      iav=nf_address(1,ifobj,nf_step+iosw)
 c Find max and min of flux
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
@@ -97,9 +97,9 @@ c Now rface contains the positions of the face corners.
             k2=nint(ish1*(c1+1.)/2.+.5000)
             lfw=(mod(i+ism2,ism2).eq.ism2/2 .and.
      $           mod(j+ism1,ism1).eq.ism1/2)
-c            write(*,*)'Calling facecolor'
+c            write(*,*)'Calling facecolor',iosw
             call facecolor(iosw,1,k2,itc+1,iobj,iav,rface,fmin
-     $              ,fmax,itc+1,1,lfw)               
+     $              ,fmax,1,lfw,isign)               
          enddo
       enddo
 c This legend ought really to account for every object. But at the 
@@ -112,7 +112,9 @@ c*********************************************************************
 c Plot faces of cube object on an already set up 3D scene.
 c iosw determines the nature of the plot
 c 0: Color code according to position.
-c 1:            according to average flux already in nf_maxstep+1
+c 1:            according to average flux already in nf_step+1
+c 2:            according to average flux-density already in nf_step+2
+
       include '3dcom.f'
       real objg(odata)
 c      character*20 string
@@ -127,7 +129,7 @@ c      character*20 string
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
 
-      iav=nf_address(1,ifobj,nf_maxsteps+1)
+      iav=nf_address(1,ifobj,nf_step+iosw)
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -171,7 +173,7 @@ c Set the corner offsets for this face, is.
      $                 *objg(oradius+i3-1)/objg(ofn1+i3-1)
                enddo
                call facecolor(iosw,imin,k2,k3,iobj,iav,rface,fmin,fmax
-     $              ,is,i2,.true.)
+     $              ,i2,.true.,-1)
            enddo
          enddo
       enddo
@@ -181,7 +183,9 @@ c*********************************************************************
 c Plot divided faces of cylinder object objg.
 c iosw determines the nature of the plot
 c 0: Color code according to position.
-c 1:            according to average flux already in nf_maxstep+1
+c 1:            according to average flux already in nf_step+1
+c 2:            according to average flux-density already in nf_step+2
+
       include '3dcom.f'
       parameter (nadef=20,nzdef=5,pi=3.141593)
       parameter (ncorn=5)
@@ -195,7 +199,7 @@ c 1:            according to average flux already in nf_maxstep+1
       ifobj=nf_map(iobj)
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
-      iav=nf_address(1,ifobj,nf_maxsteps+1)
+      iav=nf_address(1,ifobj,nf_step+iosw)
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -254,13 +258,24 @@ c Draw curved surface.
 c Now rface contains the coordinates of the face corners.            
                lfw=(mod(i-1+ism2,ism2).eq.ism2/2)
                call facecolor(iosw,2,itc+1,j,iobj,iav,rface,fmin
-     $              ,fmax,itc+1,2,lfw)               
+     $              ,fmax,2,lfw,isign)               
          enddo
       enddo
 c Draw visible end surface, equal spacing in r^2.
+c Discover perspective, eye position in world coords:
+c Unnecessary a second time.
+c      call trn32(x,y,z,xe(1),xe(2),xe(3),-1)
+c      call nxyz2wxyz(xe(1),xe(2),xe(3),xe(1),xe(2),xe(3))
+c The eye is at angle running from minus-pi to plus-pi.
+      psie=atan2(xe(2),xe(1))
       do i=1,nangle
          t1=2.*pi*(i-1)/nangle-pi
          t2=2.*pi*(i  )/nangle-pi
+         if(abs(mod(2.*pi+t2-psie,2.*pi)-pi).lt.pi/2.)then
+            isign=-1
+         else
+            isign=1
+         endif
          itc=int(objg(ofn2)*(t1/(2.*pi)+0.50001))
          do j=1,nr
             r1=sqrt(float(j-1)/nr)
@@ -274,9 +289,132 @@ c Draw visible end surface, equal spacing in r^2.
                rface(k,ids)=objg(oradius+ids-1)*(wc(k)*r1+(1.-wc(k))*r2)
      $              *sin(wp(k)*t1+(1.-wp(k))*t2)+objg(ocenter+ids-1)
             enddo
-               lfw=(mod(i-1+ism2,ism2).eq.ism2/2)
-               call facecolor(iosw,2+ie,itc+1,j,iobj,iav,rface,fmin
-     $              ,fmax,itc+1,2,lfw)               
+            lfw=(mod(i-1+ism2,ism2).eq.ism2/2)
+            call facecolor(iosw,2+ie,j,itc+1,iobj,iav,rface,fmin
+     $           ,fmax,1,lfw,isign) 
+         enddo
+      enddo
+
+      end
+c*********************************************************************
+      subroutine cylgplot(objg,iobj,ioswin)
+c Plot divided faces of non-aligned cylinder object objg.
+c iosw determines the nature of the plot
+c 0: Color code according to position.
+c 1:            according to average flux already in nf_step+1
+c 2:            according to average flux-density already in nf_step+2
+
+      include '3dcom.f'
+      parameter (nadef=20,nzdef=5,pi=3.141593)
+      parameter (ncorn=5)
+      real rface(ncorn,ns_ndims)
+      real xe(ns_ndims),xcontra(ns_ndims)
+      real objg(odata)
+      logical lfw
+      integer wp(ncorn),wc(ncorn)
+      data wp/1,0,0,1,1/wc/0,0,1,1,0/
+
+      ifobj=nf_map(iobj)
+      iosw=ioswin
+      if(ifobj.eq.0)iosw=0
+      iav=nf_address(1,ifobj,nf_step+iosw)
+      call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
+      if(fmin.gt.0.)fmin=0.
+
+      ism1=0
+      ism2=0
+c Use position arrays compatible with flux array but not too coarse.
+      if(objg(ofn2).gt.nadef)then
+         nangle=objg(ofn2)
+      elseif(objg(ofn2).gt.0)then
+         nangle=objg(ofn2)*nint(float(nadef)/objg(ofn2))
+         ism2=nint(float(nadef)/objg(ofn2))
+      else
+         nangle=nadef
+      endif
+      if(objg(ofn3).gt.0.)then 
+         nz=objg(ofn3)
+      else
+         nz=nzdef
+      endif
+      nr=1
+      if(objg(ofn1).gt.0.)nr=objg(ofn1)
+
+c      ia=objg(ocylaxis)
+      ia=3
+c Discover perspective, eye position in world coords:
+      call trn32(x,y,z,xe(1),xe(2),xe(3),-1)
+      call nxyz2wxyz(xe(1),xe(2),xe(3),xe(1),xe(2),xe(3))
+c Transform to unit cylinder coordinates.
+      call world3contra(ns_ndims,xe,xe,iobj)
+c Flux accumulation is (zero based):
+      thetae=atan2(xe(mod(ia+1,3)+1),xe(mod(ia,3)+1))
+      thetao=mod((thetae+pi),2.*pi)
+      fto=(nangle*(thetao/(2.*pi)+0.5))
+      ito=int(fto)
+      itp=nint(fto)-ito
+      ie=sign(1.,xe(ia))
+c      write(*,*)(objg(k),k=1,odata)
+c Draw curved surface.
+      do it=1,nangle
+         isign=2*mod(it+itp,2)-1
+         i=mod(isign*(it/2)+ito+nangle,nangle)+1
+         t1=2.*pi*(i-1)/nangle-pi
+         t2=2.*pi*(i  )/nangle-pi
+         itc=int(objg(ofn2)*(t1/(2.*pi)+0.500001))
+         do j=1,nz
+            z1=(-1.+(j-1)*2./nz)
+            z2=(-1.+(j  )*2./nz)
+            do k=1,ncorn
+               ids=mod(1+ia-2,ns_ndims)+1
+               xcontra(ids)=(wc(k)*z1+(1.-wc(k))*z2)
+               ids=mod(2+ia-2,ns_ndims)+1
+               xcontra(ids)=cos(wp(k)*t1+(1.-wp(k))*t2)
+               ids=mod(3+ia-2,ns_ndims)+1
+               xcontra(ids)=sin(wp(k)*t1+(1.-wp(k))*t2)
+c Transform back from unit-cyl to world coordinates
+               call contra3world(ns_ndims,xcontra,xcontra,iobj)
+               do m=1,ns_ndims
+                  rface(k,m)=xcontra(m)
+               enddo
+            enddo
+            lfw=(mod(i-1+ism2,ism2).eq.ism2/2)
+            call facecolor(iosw,2,itc+1,j,iobj,iav,rface,fmin
+     $           ,fmax,2,lfw,isign)               
+         enddo
+      enddo
+
+c The eye is at angle running from minus-pi to plus-pi.
+      psie=atan2(xe(2),xe(1))
+      do i=1,nangle
+         t1=2.*pi*(i-1)/nangle-pi
+         t2=2.*pi*(i  )/nangle-pi
+         if(abs(mod(2.*pi+t2-psie,2.*pi)-pi).lt.pi/2.)then
+            isign=-1
+         else
+            isign=1
+         endif
+         itc=int(objg(ofn2)*(t1/(2.*pi)+0.50001))
+         do j=1,nr
+            r1=sqrt(float(j-1)/nr)
+            r2=sqrt(float(j  )/nr)
+            do k=1,ncorn
+               xcontra(ia)=ie
+               ids=mod(2+ia-2,ns_ndims)+1
+               xcontra(ids)=(wc(k)*r1+(1.-wc(k))*r2)
+     $              *cos(wp(k)*t1+(1.-wp(k))*t2)
+               ids=mod(3+ia-2,ns_ndims)+1
+               xcontra(ids)=(wc(k)*r1+(1.-wc(k))*r2)
+     $              *sin(wp(k)*t1+(1.-wp(k))*t2)
+c Transform to world
+               call contra3world(ns_ndims,xcontra,xcontra,iobj)
+               do m=1,ns_ndims
+                  rface(k,m)=xcontra(m)
+               enddo
+            enddo
+            lfw=(mod(i-1+ism2,ism2).eq.ism2/2)
+            call facecolor(iosw,2+ie,j,itc+1,iobj,iav,rface,fmin
+     $           ,fmax,1,lfw,isign) 
          enddo
       enddo
 
@@ -286,7 +424,8 @@ c********************************************************************
 c Plot divided faces of parallelopiped object objg.
 c iosw determines the nature of the plot
 c 0: Color code according to position.
-c 1:            according to average flux already in nf_maxstep+1
+c 1:            according to average flux already in nf_step+1
+c 2:            according to average flux-density already in nf_step+2
       include '3dcom.f'
       real objg(odata)
 c      character*20 string
@@ -303,7 +442,7 @@ c      character*20 string
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
 
-      iav=nf_address(1,ifobj,nf_maxsteps+1)
+      iav=nf_address(1,ifobj,nf_step+iosw)
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -356,19 +495,30 @@ c xi's run from (1-N)+-1 to (N-1)+-1 /N
                enddo
 c Here rface(ic,id) contains the id'th coordinate of ic'th corner.
                call facecolor(iosw,imin,k2,k3,iobj,iav,rface,fmin,fmax
-     $              ,is,i2,.true.)
+     $              ,i2,.true.,-1)
             enddo
          enddo
       enddo
       end
 c*******************************************************************
-      subroutine facecolor(iosw,imin,k2,k3,iobj,iav,rface,fmin,fmax,is
-     $     ,i2,lfw)
-c Color the face of the object iobj corresponding to imin,k2,k3 (is,i2)
+      subroutine facecolor(iosw,imin,k2,k3,iobj,iav,rface,fmin,fmax
+     $     ,i2,lfw,isign)
+c Color the facet of the object iobj corresponding to imin,k2,k3 (is,i2)
 c If iosw=0 with a color simply to delineate it.
 c If iosw=1 with a color corresponding to the average flux.
-c If lfw=.true. then annotate the face.
-      integer iosw,imin,k2,k3,iobj,iav,is,i2
+c If iosw=2 with a color corresponding to the average flux density.
+c If lfw=.true. then annotate the facet.
+c Arguments:
+c imin is the face index.
+c k2,k3 are the indexes of the facet within the face.
+c iobj is the object. iav is the address of the start of the face
+c rface contains the 5 corners of the facet.
+c fmin and fmax are the limits of the flux range contoured.
+c i2 is the dimension-index of the first facet index
+c lfw determines whether to write flux on this face
+c isign determines the direction of such writing.
+
+      integer iosw,imin,k2,k3,iobj,iav,i2
       real fmin,fmax
       logical lfw
       include '3dcom.f'
@@ -376,7 +526,7 @@ c If lfw=.true. then annotate the face.
       real rface(ncorn,pp_ndims)
       character*20 string
 
-      if(iosw.eq.1)then
+      if(iosw.ne.0)then
          ifobj=nf_map(iobj)
 c Coloring by flux
          ijbin=(k2-1)+nf_dimlens(nf_flux,ifobj,i2)*(k3-1)
@@ -384,8 +534,6 @@ c Coloring by flux
          iadd=ijbin+iav
          ff=ff_data(iadd)
          icolor=int(240*(ff-fmin)/(fmax-fmin))+1
-c         write(*,*)k2,k3,is,i2,imin,ifobj,nf_faceind(nf_flux,ifobj,imin)
-c     $        ,ijbin,ff,icolor
          call gradcolor(icolor)
       else
 c Coloring just by position
@@ -398,15 +546,14 @@ c            write(*,*)k2,k3,icolor
 c Cylinders
             icolor=mod(k2-1+mod(k3,2),7)+7*mod(k3,2)+1
          else
-            write(*,*)'Hacked facecolor'
-            icolor=(is+mod(k2+k3,2)*8)
+            icolor=(imin+mod(k2+k3,2)*8)
          endif
          call color(icolor)
       endif
       call poly3line(rface(1,1),rface(1,2),rface(1,3),ncorn)
       call pathfill()
       call color(15)
-      if(iosw.eq.1.and. lfw)then
+      if(iosw.ne.0.and. lfw)then
          call iwrite(ijbin,iw,string)
          string(iw+1:iw+1)=' '
          call fwrite(ff,iw,2,string(iw+2:iw+2))
@@ -415,18 +562,41 @@ c Cylinders
      $        ,(rface(4,3)+rface(2,3))/2.,0)
          call charsize(.01,.01)
          call color(15)
-         call drcstr(string)
+c         call drcstr(string)
+         if(isign.lt.0)then
+            call jdrcstr(string,1.)
+         else
+            call jdrcstr(string,-1.)
+         endif
          call color(15)
       endif
 
+      end
+c*********************************************************************
+      subroutine zsort(ngeomobj,zta,index)
+      real zta(ngeomobj)
+      integer index(ngeomobj)
+      do j=2,ngeomobj
+         a1=zta(j)
+         a2=index(j)
+         do i=j-1,1,-1
+            if(zta(i).ge.a1)goto 10
+            zta(i+1)=zta(i)
+            index(i+1)=index(i)
+         enddo
+         i=0
+ 10      zta(i+1)=a1
+         index(i+1)=a2
+      enddo
       end
 c*******************************************************************
 c Plot edges/faces of objects. Window size rs.
       subroutine objplot(ndims,rs,ioswin)
 c iosw determines the nature of the plot
 c 0: Color code according to position.
-c 1:            according to average flux already in nf_maxstep+1
-c Bit 2: 0 plot intersections [0,1], 1 don't plot intersections [2,3].
+c 1:            according to average flux already in nf_step+1
+c 2:            according to average flux density in nf_step+2
+c Byte 2: 256 plot intersections, 0 don't plot intersections.
       integer ndims,iosw
       include '3dcom.f'
       include 'sectcom.f'
@@ -435,9 +605,10 @@ c Bit 2: 0 plot intersections [0,1], 1 don't plot intersections [2,3].
       character*10 string
       data iprinting/0/
 
-      iosw=ioswin-(ioswin/2)*2
-      ipint=ioswin-(ioswin/4)*4-iosw
+      ipint=ioswin/256
+      iosw=ioswin-(ipint)*256
 
+c      write(*,*)iosw,ipint
       irotating=0
       call pltinit(0.,1.,0.,1.)
       call setcube(.2,.2,.2,.5,.4)
@@ -482,9 +653,11 @@ c         write(*,*)'objplotting',ik,iobj,itype
             call cylplot(obj_geom(1,iobj),iobj,iosw)
          elseif(itype.eq.4.)then
             call pllelplot(obj_geom(1,iobj),iobj,iosw)
+         elseif(itype.eq.5)then
+            call cylgplot(obj_geom(1,iobj),iobj,iosw)
          endif
       enddo
-      if(ipint.eq.0)then
+      if(ipint.eq.1)then
 c Plot intersections
       call charsize(.008,.008)
 c      write(*,*)'Intersections:'
@@ -505,21 +678,4 @@ c User interface:
       call rotatezoom(isw)
       if(isw.eq.ichar('p'))iprinting=mod(iprinting+1,2)
       if(isw.ne.0.and.isw.ne.ichar('q'))goto 51
-      end
-c*********************************************************************
-      subroutine zsort(ngeomobj,zta,index)
-      real zta(ngeomobj)
-      integer index(ngeomobj)
-      do j=2,ngeomobj
-         a1=zta(j)
-         a2=index(j)
-         do i=j-1,1,-1
-            if(zta(i).ge.a1)goto 10
-            zta(i+1)=zta(i)
-            index(i+1)=index(i)
-         enddo
-         i=0
- 10      zta(i+1)=a1
-         index(i+1)=a2
-      enddo
       end

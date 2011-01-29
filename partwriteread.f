@@ -133,8 +133,8 @@ c      write(*,*)'ifull',ifull
       write(22)((((u(i,j,k,l),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3)),l=1
      $     ,ied)
       close(22)
-      write(*,'(''Wrote array data to '',a,3i4)')
-     $     name(1:lentrim(name)),iuds
+c      write(*,'(''Wrote array data to '',a,3i4)')
+c     $     name(1:lentrim(name)),iuds
       return
 
  101  continue

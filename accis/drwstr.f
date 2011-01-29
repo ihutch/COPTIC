@@ -243,6 +243,24 @@ c/* Offset and draw */
       end
 
 c********************************************************************/
+      subroutine jdrcstr(str1,js)
+c draw a justified string relative to the current position.
+      character*(*) str1
+      real js
+      include 'plotcom.h'
+      real px,py,dd,wstr,width
+      external wstr
+      px=crsrx
+      py=crsry
+      width=wstr(str1)
+c/* Offset and draw */
+      dd=0.5*(js-1.)*width
+      px=px+chrscos*dd
+      py=py+chrssin*dd
+      call drwstr(px,py,str1)
+      return
+      end
+c********************************************************************/
       subroutine drcstr(str1)
 c draw a string from current position. Leave at end of string.
       character*(*) str1

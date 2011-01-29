@@ -4,9 +4,10 @@ c Each object, i < 31 has: type, data(odata).
       parameter (ngeomobjmax=31)
 c Reference to the index of certain object parameters:
       integer otype,ocenter,oradius,oabc,ocylaxis,ovec,ocontra
+      integer ocylrad
       parameter (otype=1,oabc=2,ocenter=5,oradius=8,ocylaxis=11)
 c parallelopiped vectors start at oradius, contravariant +9
-      parameter (ovec=oradius,ocontra=oradius+9)
+      parameter (ovec=oradius,ocontra=oradius+9,ocylrad=oradius+6)
 c Flux indices.
       integer ofluxtype,ofn1,ofn2,ofn3,offc,omag
 c FluxType is really the number of quantities.
@@ -83,8 +84,8 @@ c Reverse mapping to the geomobj number from nf_obj number
       integer nf_geommap(nf_obj)
 c The address of the data-start for the quantity, obj, step.
 c Positions 1-nf_posdim:0 are used for position information.
-c Position maxsteps+1 is used for averaging.
-      integer nf_address(nf_quant,nf_obj,1-nf_posdim:nf_maxsteps+1)
+c Position maxsteps+1 is used for averaging. maxsteps+2 ave/area.
+      integer nf_address(nf_quant,nf_obj,1-nf_posdim:nf_maxsteps+2)
 c The heap where the data actually lies.
       real ff_data(nf_datasize)
 c The rhoinfin for each step 

@@ -51,14 +51,17 @@ c**********************************************************************
       write(*,*)'otype indicates how to use the line. Higher bytes'
      $     ,' of otype indicate specials.'
       write(*,*)'byte-1: 1 Spheroid, 2 Cuboid, 3 Cylinder, 4 Parallel'
-     $     ,'opiped, ...'
+     $     ,'opiped, 5 General cylinder'
       write(*,'(2a)')'Extra data for more complex objects and'
      $     ,' to specify flux accumulation.'
-      write(*,*)'For parallelopiped, center->origin. radii->vec1. Then'
-     $     ,' vec2, vec3. (x3)'
-      write(*,*)'Cylinder, center, radii, iaxial=number of axial axis.'
+      write(*,*)'For Cylinder, center(3), radii(3), iaxial=number'
+     $     ,' of axial axis.'
+      write(*,*)'Parallelopiped, center(3)->origin. radii(3)->vec1.'
+     $     ,' Then vec2(3), vec3(3).'
+      write(*,*)'Non-aligned Cylinder, center(3), axial-vector(3),'
+     $     ,' reference-vector(3), radius.'
       write(*,*)'Flux accumulation (follows geometry): ofluxtype,'
-     $     ,'ofn1,ofn3[,ofn3].'
+     $     ,'ofn1,ofn2[,ofn3].'
       write(*,*)' Indicates number-of-flux-types, sizes of uniform '
      $     ,'index arrays [direction].'
       write(*,*)' Sphere needs 2 arrays (cos(th),psi).'
@@ -189,7 +192,8 @@ c Cylinder
  803     if(myid.eq.0)write(*,820)ngeomobj,' Cylinder '
 c 3 facets.
          obj_geom(offc,ngeomobj)=3
-         if(obj_geom(ocylaxis,ngeomobj).le.0.)then
+         if(obj_geom(ocylaxis,ngeomobj).le.0. .or.
+     $        obj_geom(ocylaxis,ngeomobj).ge.4. )then
             write(*,*)'Geometry ERROR. No cylinder axial direction in:'
             write(*,*)cline
             stop
@@ -205,13 +209,24 @@ c     $        (obj_geom(k,ngeomobj),k=1,odata)
  804     if(myid.eq.0)write(*,820)ngeomobj,
      $        ' Pllelopiped '
          obj_geom(offc,ngeomobj)=2*nd
-c Now obj_geom(ocenter,ngeomobj) is the start of the pp_ data structure
-c for this pp-object. So a call to pllelosect with pp argument of
-c obj_geom(ocenter,ngeomobj) will pass the appropriate pp structure.
-c Like this:
          call plleloinit(obj_geom(1,ngeomobj))
-         if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),
+         if(myid.eq.0)write(*,822)(obj_geom(k,ngeomobj),
      $        k=1,1+nd*(1+nd)+3)
+      elseif(type.eq.5)then
+c Non-aligned cylinder
+         read(cline,*,err=901,end=805)
+     $        (obj_geom(k,ngeomobj),k=1,ocylrad)
+     $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn3)
+     $        ,(obj_geom(k,ngeomobj),k=ocgrad,oagrad+2)
+ 805     if(myid.eq.0)write(*,820)ngeomobj,' General Cyl '
+         obj_geom(offc,ngeomobj)=3
+         if(obj_geom(ocylrad,ngeomobj).le.0.)then
+            write(*,*)'Geometry ERROR. No positive cylinder radius in:'
+            write(*,*)cline
+            stop
+         endif
+         if(myid.eq.0)write(*,822)(obj_geom(k,ngeomobj),k=1,1+4*nd+1)
+         call cylinit(obj_geom(1,ngeomobj))
       elseif(type.eq.99)then
 c Specify the particle region.
          read(cline,*,err=901,end=899)idumtype,ibool_part
@@ -274,7 +289,7 @@ c If this is a point-charge object, set the relevant mask bit.
       endif
  820  format(i2,a,$)
  821  format(f5.0,15f7.3)
- 822  format(f4.0,24f7.3)
+ 822  format(f3.0,24f6.2)
       goto 1
 
  901  write(*,*)'Readgeom error reading line',iline,':'
@@ -292,6 +307,69 @@ c Set whether particle region has a part inside an object.
 
  101  write(*,*) 'Readgeom File ',filename,' could not be opened.'
       stop
+
+      end
+c****************************************************************
+      subroutine cylinit(objg)
+c Initialize the non-aligned cylinder contravariant vectors
+c They are such that they yield the covariant coefficients relative
+c to a unit cylinder. They are in the order vb,vg,va.
+c Where vb is the component of u perpendicular to va, and vg is the 
+c cross product of u and va.
+      include '3dcom.f'
+      real objg(odata)
+
+      radius=objg(ovec+2*pp_ndims)
+      vamag=0.
+      umag=0.
+      uv=0.
+      do i=1,pp_ndims
+c v^2, u^2
+         vamag=vamag+objg(ovec+i-1)**2
+         umag=umag+objg(ovec+pp_ndims+i-1)**2
+c u.v
+         uv=uv+objg(ovec+i-1)*objg(ovec+pp_ndims+i-1)
+c v x u
+         ip=mod(i,pp_ndims)
+         im=mod(i+1,pp_ndims)
+         objg(ocontra+pp_ndims+i-1)=
+     $        objg(ovec+ip)*objg(ovec+pp_ndims+im)
+     $        -objg(ovec+im)*objg(ovec+pp_ndims+ip)
+      enddo
+      if(vamag.eq.0.)stop 'cylinit error axial vector zero'
+      vbmag=0.
+      vgmag=0.
+      do i=1,pp_ndims
+         vacontra=objg(ovec+i-1)/vamag
+         objg(ocontra+2*pp_ndims+i-1)=vacontra
+         vbcontra=(objg(ovec+pp_ndims+i-1)-uv*vacontra)
+         objg(ocontra+i-1)=vbcontra
+         vbmag=vbmag+vbcontra**2
+         vgmag=vgmag+objg(ocontra+pp_ndims+i-1)**2
+      enddo
+      if(vbmag.eq.0. .or. vgmag.eq.0)
+     $     stop 'cylinit error perp vector zero'
+      vbmag=sqrt(vbmag)
+      vgmag=sqrt(vgmag)
+      c1mag=0.
+      c2mag=0.
+      c3mag=0.
+      do i=1,pp_ndims
+         objg(ocontra+i-1)=objg(ocontra+i-1)/(vbmag*radius)
+         objg(ocontra+pp_ndims+i-1)=objg(ocontra+pp_ndims+i-1)
+     $        /(vgmag*radius)
+         c1mag=c1mag+objg(ocontra+i-1)**2
+         c2mag=c2mag+objg(ocontra+pp_ndims+i-1)**2
+         c3mag=c3mag+objg(ocontra+2*pp_ndims+i-1)**2
+      enddo
+      do i=1,pp_ndims
+         objg(ovec+i-1)=objg(ocontra+i-1)/c1mag
+         objg(ovec+pp_ndims+i-1)=objg(ocontra+pp_ndims+i-1)/c2mag
+         objg(ovec+2*pp_ndims+i-1)=objg(ocontra+2*pp_ndims+i-1)/c3mag
+      enddo
+c      write(*,*)'Covariant and contravariant:'
+c      write(*,'(9f8.4)')(objg(ovec+i-1),i=1,18)
+c      stop
 
       end
 c****************************************************************
@@ -401,7 +479,7 @@ c Coordinate-Aligned Spheroid data : center(ndims), semi-axes(ndims)
             r2=r2+((x(k)-obj_geom(ocenter-1+k,i))/
      $           obj_geom(oradius-1+k,i))**2
          enddo
-         if(r2.lt.1.) inside_geom=1
+         if(r2.lt.1.)inside_geom=1
       elseif(itype.eq.2)then
 c Coordinate-Aligned Cuboid data:
          do k=1,ndims
@@ -423,7 +501,7 @@ c = semi-axis of the axial coordinate).
      $           /obj_geom(oradius-1+k,i))**2
          enddo
 c         write(*,*)'Cyl. ic=',ic,' r2=',r2,' x=',x
-         if(r2.lt.1.) inside_geom=1
+         if(r2.lt.1.)inside_geom=1
       elseif(itype.eq.4)then
 c General Cuboid is equivalent to General Parallelopiped
 c "center(ndims)", vectors(ndims,ndims), contravariants.
@@ -436,6 +514,23 @@ c "center(ndims)", vectors(ndims,ndims), contravariants.
             if(abs(xcj).gt.1.)return
          enddo
          inside_geom=1
+      elseif(itype.eq.5)then
+c Non-aligned cylinder
+         r2=0.
+         do k=1,ndims
+            xcj=0.
+            do j=1,ndims
+               xcj=xcj+(x(j)-obj_geom(ocenter+j-1,i))
+     $              *obj_geom(ocontra+ndims*(k-1)+j-1,i)
+c               write(*,'(2i2,3f10.4)')k,j,xcj,obj_geom(ocenter+j-1,i)
+c     $              ,obj_geom(ocontra+ndims*(k-1)+j-1,i)
+            enddo
+            if(abs(xcj).gt.1.)return
+c radius:
+            if(k.lt.ndims)r2=r2+xcj**2
+         enddo
+c         write(*,*)r2
+         if(abs(r2).lt.1.)inside_geom=1
       endif
 
       end
@@ -620,6 +715,9 @@ c Parallelopiped.
                call pllelofsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
                if(fraction.gt.1.)fraction=1.
                if(fraction.lt.0.)fraction=1.
+            elseif(itype.eq.5)then
+c Non-aligned cylinder needed
+               call cylgfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
             else
                write(*,*)"Unknown object type",obj_geom(otype,i),
      $              " in potlsect"
@@ -784,3 +882,48 @@ c      write(*,'(''Set obj_geom(oabc,'',i2,'')='',3f8.4)')
 c     $     iobject,(obj_geom((oabc+i),iobject),i=0,2)
       end
 c****************************************************************
+      subroutine contra3world(ndims,xcontra,xw,iobj)
+c Convert from contravariant coefficients to world cartesian.
+c Covariant and Contravariant vectors are stored in obj_geom(...,iobj)
+c xcontra and xw can be the same storage positions if desired.
+      integer ndims,iobj
+      real xw(ndims),xcontra(ndims)
+      include '3dcom.f'
+      real xwl(ns_ndims)
+c Cartesian obtained as sum of covariant vectors times contra coeffs.
+      do i=1,ndims
+         xwl(i)=obj_geom(ocenter+i-1,iobj)
+c Contra 
+         do j=1,ndims
+            xwl(i)=xwl(i)
+     $           +xcontra(j)*obj_geom(ovec+ndims*(j-1)+i-1,iobj)
+         enddo
+      enddo
+      do i=1,ndims
+         xw(i)=xwl(i)
+      enddo
+      end
+c****************************************************************
+      subroutine world3contra(ndims,xw,xcontra,iobj)
+c Convert from world cartesian to contravariant coefficients 
+c Covariant and Contravariant vectors are stored in obj_geom(...,iobj)
+c xcontra and xw can overlap, if aligned.
+      integer ndims,iobj
+      real xw(ndims),xcontra(ndims)
+      include '3dcom.f'
+      real xd(ns_ndims),xcl(ns_ndims)
+
+      do j=1,ndims
+         xcl(j)=0.
+      enddo
+c Cartesian world relative to center
+      do i=1,ndims
+         xd(i)=xw(i)-obj_geom(ocenter+i-1,iobj)
+c Contra coefficients are obtained by dotting with contra vectors
+         do j=1,ndims
+            xcl(j)=xcl(j)
+     $           +xd(i)*obj_geom(ocontra+ndims*(j-1)+i-1,iobj)
+         enddo
+         xcontra(i)=xcl(i)
+      enddo
+      end
