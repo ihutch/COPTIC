@@ -6763,3 +6763,16 @@ away from the bounding surface, where the interpolation is more accurate.
 
 Compiled with gfortran and got rid of most warnings but not all. 
 Also corrected one bug found thus. It's still a factor of 2 slower.
+
+31 Jan 11
+
+I think my approach to averaging is incorrect. The code assumes that the
+data has been initialized to zero in the new slots we are writing in. 
+Hence if fluxave has been called, and has written in the current slot
+that's a mistake. We need to write it just past the last step, not the
+current step. This is a problem because the last step is not kept in 
+common. It is determined by nsteps in the main program. Since fluxave
+is only called at the end, this will not cause a problem unless we
+change that.
+
+Fix addressing bug in sphere positioninit.

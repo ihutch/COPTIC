@@ -189,7 +189,6 @@ c Sphere -----------------------
      $                 ,' surface areas'
      $                 ,' not calculated correctly.'
                endif
-               ioff=0
                do j=1,mf_quant(io)
 c Area of each element. They are equal only if radii are equal. 
                   ar=4.*3.1415926*obj_geom(oradius,i)**2
@@ -201,15 +200,13 @@ c                  write(*,*)'Object',i,' Quant',j,' Facet areas=',ar
                         c=-1.+2.*(i1-0.5)/nf_dimlens(j,io,1)
                         ip=i1+(i2-1)*int(nf_dimlens(j,io,1))
 c Position values are cos(theta) and psi. Third not used.
-                        ff_data(nf_address(j,io,nf_p1)+ioff+ip-1)=c
-                        ff_data(nf_address(j,io,nf_p2)+ioff+ip-1)=p
-                        ff_data(nf_address(j,io,nf_pa)+ioff+ip-1)=ar
-c This is a way to put ijbin values into the areas for testing:
-c                   ff_data(nf_address(nf_flux,io,nf_pa)+ioff+ip-1)=
-c     $                       ioff+ip-1
+c                        write(*,*)j,io,i1,i2,nf_p1,ioff,ip,c
+c     $                       ,nf_address(j,io,nf_p1)+ip-1
+                        ff_data(nf_address(j,io,nf_p1)+ip-1)=c
+                        ff_data(nf_address(j,io,nf_p2)+ip-1)=p
+                        ff_data(nf_address(j,io,nf_pa)+ip-1)=ar
                      enddo
                   enddo
-                  ioff=ioff+nf_posno(j,io)
                enddo
 c            write(*,*)'Set ff_data',i,ioff,nf_map(i),io
 c End of sphere case.
@@ -358,6 +355,9 @@ c Unknown ------------------------------------------
             endif
          endif
       enddo
+c      write(*,*)'Initialized positional data to:',nf_address(1,1,1)-1
+c      write(*,'(10f8.4)')(ff_data(k),k=1,nf_address(1,1,2)-1)
+
       end
 c******************************************************************
       subroutine tallyexit(i,idiffreg)
@@ -1120,6 +1120,7 @@ c      iavd=nf_address(iq,ifobj,nf_maxsteps+2)-1
 c Offset to area
       iaa=nf_address(iq,ifobj,nf_pa)-1
 
+      write(*,*)'Fluxave addresses',iav,iavd,iaa
 c Check step numbers for rationality.
       if(n1.lt.1)n1=1
       if(n2.gt.nf_step)n2=nf_step

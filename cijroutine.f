@@ -1049,7 +1049,7 @@ c Smooth over nave steps.
                   cold=a*dob_sor(ioad+2,oisor)
                   c=(cold*(nave-1)+cnew)/nave
 c         if(oisor.lt.20)write(*,*)'cijupdate',nf_step,iobj,ijbin
-c     $                 ,flux,cold,cnew,c
+c     $                 ,cold,cnew,c
 c or test that it gives the same answer from the old value.
 c                  c=cold
 c-------------
@@ -1099,6 +1099,11 @@ c Starting addresses of area and flux of this step.
       do i=1,nf_posno(nf_flux,ifobj)
          area=area+ff_data(iada+i-1)
          flux=flux+ff_data(iadf+i-1)
+c         if(flux.lt.0)then
+c            write(*,*)'Flux in objfluxtotal',ifobj,nf_step,flux
+c     $           ,iada,iadf
+c         endif
       enddo
+
       
       end
