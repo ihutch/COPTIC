@@ -260,10 +260,12 @@ c operator use or by using mpisubopcreate:
       end
 c********************************************************************
       subroutine iteradd(inc,ipoint,indi,ndims,iused,
-     $     a,b,c,d)
+     $     a,b)
+c ,c,d)
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
-      real a(*),b(*),c(*),d(*)
+      real a(*),b(*)
+c ,c(*),d(*)
 c This routine for use in mditerarg.
 c Hardly anything is used. Only inc,ipoint,a,b.
 c Add a(*) to b(*) and leave in b(*)

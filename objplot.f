@@ -28,6 +28,7 @@ c No flux for this object
       iav=nf_address(1,ifobj,nf_step+iosw)
 c Find max and min of flux
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
+      fmax=1.03*fmax
       if(fmin.gt.0.)fmin=0.
 c Use position arrays compatible with flux array but not too coarse.
       if(ish1.gt.nadef)then 
@@ -159,10 +160,10 @@ c         write(*,*)'Face center',rfc
          i1=mod(1+is-2,ns_ndims)+1
          i2=mod(2+is-2,ns_ndims)+1
          i3=mod(3+is-2,ns_ndims)+1
-         do k2=1,objg(ofn1+i2-1)
+         do k2=1,int(objg(ofn1+i2-1))
 c  fs run from 1-N to N-1 as ks run from 1 to N
             f2=2*k2-1.-objg(ofn1+i2-1)
-            do k3=1,objg(ofn1+i3-1)
+            do k3=1,int(objg(ofn1+i3-1))
                f3=2*k3-1.-objg(ofn1+i3-1)
                do ic=1,ncorn
 c Set the corner offsets for this face, is.
@@ -475,10 +476,10 @@ c Face index:
          i1=mod(1+is-2,pp_ndims)+1
          i2=mod(2+is-2,pp_ndims)+1
          i3=mod(3+is-2,pp_ndims)+1
-         do k2=1,objg(ofn1+i2-1)
+         do k2=1,int(objg(ofn1+i2-1))
 c  fs run from 1-N to N-1 as ks run from 1 to N
             f2=2*k2-1.-objg(ofn1+i2-1)
-            do k3=1,objg(ofn1+i3-1)
+            do k3=1,int(objg(ofn1+i3-1))
                f3=2*k3-1.-objg(ofn1+i3-1)
                do ic=1,ncorn
                   xi(i1)=0
@@ -591,13 +592,13 @@ c*********************************************************************
       end
 c*******************************************************************
 c Plot edges/faces of objects. Window size rs.
-      subroutine objplot(ndims,rs,ioswin)
+      subroutine objplot(rs,ioswin)
 c iosw determines the nature of the plot
 c 0: Color code according to position.
 c 1:            according to average flux already in nf_step+1
 c 2:            according to average flux density in nf_step+2
 c Byte 2: 256 plot intersections, 0 don't plot intersections.
-      integer ndims,iosw
+      integer iosw
       include '3dcom.f'
       include 'sectcom.f'
       integer index(ngeomobjmax)
@@ -674,7 +675,7 @@ c         write(*,*)i,(x_sc(k,1,i),k=1,3)
 
 c User interface:
       iprinting=0
- 56   call eye3d(isw)
+      call eye3d(isw)
       call rotatezoom(isw)
       if(isw.eq.ichar('p'))iprinting=mod(iprinting+1,2)
       if(isw.ne.0.and.isw.ne.ichar('q'))goto 51

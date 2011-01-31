@@ -552,7 +552,7 @@ c------------------------------------
 c********************************************************************
       subroutine rotatezoom(isw)
       integer irotating
-      save irotating
+      save irotating,sn,cs
       if(isw.eq.ichar('i'))then
 c Get back current eye position xe1 etc.
 c Then move it in.
@@ -577,6 +577,14 @@ c Rotate
          irotating=1
          cs=cos(.05)
          sn=sin(-.05)
+      elseif(isw.eq.ichar('t'))then
+         irotating=1
+         if(cs.ne.cos(.05))then
+            cs=cos(.05)
+            sn=sin(.05)
+         else
+            sn=-sn
+         endif
       elseif(isw.eq.ichar('z'))then
 c Magnify the unit cube
          call getcube(cbx,cby,cbz,xcbc,ycbc)

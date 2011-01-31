@@ -308,7 +308,7 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
      $     ' Shade by 1:flux 2:flux-density[',iobpsw
       write(*,301)' -gc   set wireframe [& stencils(-)] mask.'//
      $     ' objects<->bits. [',iobpl
-      write(*,301)' -gr   set override plot view scale'//
+      write(*,301)' -gr   set override view scale (box size)'//
      $     ' for -gc, -gf plots.  [',rcij
       write(*,301)' -go   set No of orbits'
      $     //'(to plot on objects set by -gc). [',norbits
@@ -578,7 +578,7 @@ c The normal call:
          endif
          call fluxreduce()
 c Now do cij update
-         call cijdirect(ndims,cij,debyelen,error)
+         call cijdirect(ndims,debyelen,error)
 c Store the step's rhoinf, dt.
          ff_rho(nf_step)=rhoinf
          ff_dt(nf_step)=dt
@@ -678,7 +678,7 @@ c Check some flux diagnostics and writing.
 c         write(*,*)'Calling objplot'
          if(ifplot.gt.0)then
             if(rcij.le.0)rcij=rs
-            call objplot(ndims,rcij,iobpsw)
+            call objplot(rcij,iobpsw)
          endif
       endif
       end

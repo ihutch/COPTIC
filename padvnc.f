@@ -407,7 +407,8 @@ c**********************************************************************
       subroutine ucrhoset(inc,ipoint,indi,ndims,iuds,
      $     uci,rhoci,iptch_copy)
 c         routine(inc,ipoint,indi,ndims,iused,t,u,v,w) is called
-      integer inc,ipoint,ndims,indi(ndims),iuds(ndims)
+      integer inc,ipoint,ndims,indi(ndims)
+      integer iuds(ndims)
       real uci(*),rhoci(*)
 c Commons: For position.
       include 'meshcom.f'
@@ -416,6 +417,8 @@ c For debyelen
 c Local storage:
       integer isw,iregion,irptch
       real xp(ndims_mesh),adfield(ndims_mesh)
+c Silence warnings
+      irptch=iuds(1)
 c      write(*,*)'ucrhoset',ipoint,indi,iuds,ndims
 c      if(ipoint.gt.100)stop
 c Get grid point position, and irptch.

@@ -41,8 +41,10 @@ c-----------------------------------------------------
       integer istart
       data istart/0/
 
+c Silence unused warning :
+      ichain=iused
+c Default no chain.
       ichain=0
-
 c ipoint here is the offset (zero-based pointer)
 c The cij address is to data 2*ndims+1 long
       icb=2*ndims+1
@@ -594,9 +596,9 @@ c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
 c****************************************************************
 c*********************************************************************
 c Print a text graphic of slices through the regions 
-      subroutine text3vgraph(ndims,iuds,ifull,cij,volumes)
+      subroutine text3vgraph(ndims,iuds,ifull,volumes)
       integer iuds(ndims),ifull(ndims)
-      real cij(*)
+c      real cij(*)
       real volumes(*)
       include 'meshcom.f'
       character*40 form1
@@ -615,10 +617,10 @@ c Text graphic of slice through volumes
      $        j=1,iuds(1)),k=1,iuds(3))
          end
 c*********************************************************************
-      subroutine text3rgraph(ndims,iuds,ifull,cij,volumes)
+      subroutine text3rgraph(ndims,iuds,ifull,cij)
       integer iuds(ndims),ifull(ndims)
       real cij(*)
-      real volumes(*)
+c      real volumes(*)
       include 'meshcom.f'
       character*40 form1
 c Text graphic of slice through cij
@@ -634,8 +636,8 @@ c Slightly more flexible ascii form:
       end
 c*********************************************************************
       subroutine text3graphs(ndims,iuds,ifull,cij,volumes)
-      call text3vgraph(ndims,iuds,ifull,cij,volumes)
-      call text3rgraph(ndims,iuds,ifull,cij,volumes)
+      call text3vgraph(ndims,iuds,ifull,volumes)
+      call text3rgraph(ndims,iuds,ifull,cij)
       end
 c Do least squares fit using svd, based on numerical recipes routines.
 c********************************************************************
@@ -947,7 +949,7 @@ c Routine for directly updating cij, which needs no iteration.
 c The geometry: fractions etc, are assumed not to have changed.
 c It just treats the auxiliary data that is present, rather than
 c looking at every mesh node
-      subroutine cijdirect(ndims,cij,debyelen,error)
+      subroutine cijdirect(ndims,debyelen,error)
 c If there is an object crossing next to the point at indi(ndims) whose
 c pointer is ipoint, in the dimension id (plus or minus), this routine
 c adjusts the cij values for situations where the cij are variables
@@ -957,7 +959,7 @@ c corresponds to floating.
 c Error indicator
       integer ndims
       real error,debyelen
-      real cij(*)
+c      real cij(*)
 c--------------------------------------------------
 c Object-data storage.
       include 'objcom.f'
@@ -1076,6 +1078,7 @@ c            write(*,*)'Boundary updated from',dibdy,' to'
 c     $           ,dob_sor(ibdy_sor,oisor)
 c         endif
          oisor=oisor+ichain+1
+         error=0.
       endif
       if(oisor.gt.oi_sor)return
       enddo

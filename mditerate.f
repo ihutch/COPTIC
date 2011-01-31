@@ -524,7 +524,7 @@ c Return stepwise to base level
       else
 c We're at the base level and have succeeded in incrementing.
 c Do whatever we need to and increment indi(1) and ipoint
-         u(ipoint+1)=u(ipoint+1)*v
+         u(ipoint+1)=u(ipoint+1)*v+w
          indi(1)=indi(1)+inc
          ipoint=ipoint+inc
          goto 101

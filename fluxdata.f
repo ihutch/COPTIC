@@ -69,7 +69,7 @@ c Sphere one face only n3=1
 c Cuboid or parallelopiped.
 c Six faces, each using two of the three array lengths. 
                   nfluxes=0
-                  do kk=1,obj_geom(offc,i)
+                  do kk=1,int(obj_geom(offc,i))
                      k=mod(kk-1,ns_ndims)+1
                      if(kk.le.ns_ndims)
      $                 nf_dimlens(j,mf_obj,k)=int(obj_geom(ofn1+k-1,i))

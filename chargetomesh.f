@@ -104,11 +104,12 @@ c      endif
       end
 c********************************************************************
       subroutine quasineutral(inc,ipoint,indi,ndims,iused,
-     $     q,u,dum3,dum4)
+     $     q,u)
+c     ,dum3,dum4)
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
       real q(*),u(*)
-      real dum3,dum4
+c      real dum3,dum4
 
 c Silence warnings with spurious access.
       ind=iused(1)

@@ -297,7 +297,7 @@ c If this is a point-charge object, set the relevant mask bit.
       
  902  continue
 c Set whether particle region has a part inside an object.
-      lboundp=lbounded(ibool_part,ndims_mesh,ifield_mask)
+      lboundp=lbounded(ibool_part,ifield_mask)
       if(lboundp.and.rjscheme(1:4).eq.'cart')then
          write(*,'(3a)')'ERROR: using cartesian injection'
      $        ,' with bounded region.'
@@ -577,14 +577,13 @@ c************************************************************
 c Return whether the particle region specified by ibool has any
 c enclosed regions (regions inside an object. If it does, then
 c cartesian reinjection is not correct. 
-      logical function lbounded(ibool,ndims,ifmask)
+      logical function lbounded(ibool,ifmask)
 c ibool structure: n1, n1*values, n2, n2*values, ... ,0
       integer ibool(*)
-      integer ndims,ifmask
+      integer ifmask
       logical ltemp
 c  linregion = Prod_1^nj Sum_1^ni inside(bool(ni,nj))
 c where inside(n) is true if n is +/-ve and x is inside/outside |n|. 
-c      write(*,'(11i4,3f10.4)')ibool(1:10),ndims,x
       ltemp=.false.
 c Special case for zero particle boolean.
       if(ibool(1).eq.0)goto 10
@@ -822,7 +821,7 @@ c         idob_sor(iregion_sor,i)=insideall(ndims,x)
          idob_sor(iregion_sor,i)=insidemask(ndims,x)
 
 c         write(*,101)i,ipoint,idob_sor(iregion_sor,i),x
- 101     format(3i8,5f10.4)
+c 101     format(3i8,5f10.4)
       enddo
 
       end

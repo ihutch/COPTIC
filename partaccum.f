@@ -18,14 +18,14 @@ c Indicated by zero cellvolume.
 c This ought to be determined based on the number of samples.
 c But xlimits mean that's problematic.
             nvlist=100
-            call vlimitdeterm(npdim,x_part,if_part,ioc_part,xlimit
+            call vlimitdeterm(npdim,x_part,if_part,ioc_part
      $           ,vlimit,nvlist)
 c            write(*,'('' Velocity limits:'',6f7.3)') vlimit
             call minmaxreduce(mdims,vlimit)
 c            write(*,'('' Velocity reduced:'',6f7.3)') vlimit
 c Indicate csbin not initialized and start initialization
             csbin(1,1)=-1.
-            call partacinit(xlimit,vlimit)
+            call partacinit(vlimit)
 
 c Do the accumulation for this file up to maximum relevant slot. 
             nfvaccum=0
@@ -51,13 +51,13 @@ c         write(*,*)'calling subaccum'
      $     isfull,vlimit,xnewlim)
          end
 c****************************************************************
-      subroutine partacinit(xlimit,vlimit)
+      subroutine partacinit(vlimit)
 c Initialize bins for accumulation of the particles.
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'plascom.f'
       include 'griddecl.f'
-      real xlimit(2,mdims),vlimit(2,mdims)
+      real vlimit(2,mdims)
 
 c Initialization.
       do id=1,mdims
@@ -152,12 +152,10 @@ c      if(limadj.eq.1)write(*,'(a,6f10.5)')' xnewlim=',xnewlim
              
       end
 c**********************************************************************
-      subroutine vlimitdeterm(mdims,xpart,ifpart,iocpart,xlimit,vlimit
+      subroutine vlimitdeterm(mdims,xpart,ifpart,iocpart,vlimit
      $     ,nvlist)
       real xpart(3*mdims,iocpart)
       integer ifpart(iocpart)
-c Spatial limits bottom-top, dimensions
-      real xlimit(2,mdims)
 c Velocity limits
       real vlimit(2,mdims)
 c Velocity Sorting arrays

@@ -262,7 +262,7 @@ c Debugging code:
          if(ix.eq.98)then
             write(*,*)'ic1,iinc,idf,iregion,xfidf'
      $           ,ic1,iinc,idf,iregion,xfidf
-            write(*,*)(dob_sor(k,cij(1+ic1*iinc)),k=1,18)
+            write(*,*)(dob_sor(k,int(cij(1+ic1*iinc))),k=1,18)
      $           ,cij(1+ic1*iinc)
          endif
 c         if(abs(f(ii)).gt.1.e20)write(*,*)'Enddo corrupt',f(ii),ii
@@ -307,13 +307,14 @@ c but if fraction .ge.0.5 in field direction, this is corrected.
       integer iuinc(3)
       real xf(3)
       real xn(*)
-      real f(2,2)
+c Local variables
       integer iflags(2,2)
+      real f(2,2)
       real d(2)
 c zero circumlocution:
       data izer0/0/
 c silence warnings
-      data d/0.,0./
+      data d/0.,0./iflags/0,0,0,0/f/0.,0.,0.,0./
 
 c Silence warning about ndims unused
       ixn0=ndims
@@ -466,7 +467,7 @@ c Fall back.
 c No correction for region just multilin anyway.
             getpotential=smultilinearinterp(ndims,uval,xf)
          elseif(itype.eq.2)then
-            call fillinlin(uval,ival,imin
+            call fillinlin(uval,ival
      $           ,u,cij,iuinc,xff,iregion)
             getpotential=smultilinearinterp(ndims,uval,xf)
          else
@@ -514,7 +515,7 @@ c Alternative. Fill in with values obtained by fitting a linear
 c expansion to the existing points. ival tells whether a vertex
 c has already been filled, uval returns the values, filled in
 c if necessary.
-      subroutine fillinlin(uval,ival,imin
+      subroutine fillinlin(uval,ival
      $     ,u,cij,iuinc,xff,iregion)
 c Fill in values with the average of the others.
 c Need object data 

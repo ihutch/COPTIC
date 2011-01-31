@@ -156,7 +156,7 @@ c     $        ,avecharge/avefield
       call pltend()
 
       if(sc_ipt.ne.0)write(*,*)'Intersections=',sc_ipt
-      call objplot(ndims,rview,iosw)
+      call objplot(rview,iosw)
 
       endif
 

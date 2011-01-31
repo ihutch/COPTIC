@@ -486,6 +486,8 @@ c     having a value on the sphere normalized to Ti of minus
 c********************************************************************
       subroutine geominit(myid)
 c Null
+c Silence warnings
+      i=myid
       end
 c********************************************************************
       subroutine avereinset(phi)

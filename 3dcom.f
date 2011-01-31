@@ -120,7 +120,7 @@ c Data for storing integrated field quantities such as forces.
       parameter (ns_ndims=3)
       integer ns_nt,ns_np
 c the size of the stress-calculating mesh in theta and psi directions
-      parameter (ns_nt=6,ns_np=6)
+      parameter (ns_nt=10,ns_np=10)
       integer ns_flags(nf_obj)
       real fieldforce(ns_ndims,nf_obj,nf_maxsteps)
       real pressforce(ns_ndims,nf_obj,nf_maxsteps)

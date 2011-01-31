@@ -1,6 +1,8 @@
       subroutine vaccheck(ifull,iuds,cij,u,thetain,nth,rs,ltestplot)
       logical ltestplot
       include '3dcom.f'
+c Silence warning:
+      r=rs
 c Do some analytic checking of the case with a fixed potential sphere
 c inside an object 2 sphere with its radius and BC.
       if(obj_geom(otype,2).ne.257)return
@@ -23,7 +25,7 @@ c         write(*,*)'Vacuum phiinfty=',phiinf,'  rabc=',r,a,b,c,oabc
       if(ltestplot)then
 c Plot some of the initial-solver data.
          call solu3plot(ifull,iuds,u,cij,
-     $        phip,phiinf,rc,thetain,nth,rs)
+     $        phip,phiinf,rc,thetain,nth)
          write(*,*)'Return from solu3plot.'
          stop
       endif
@@ -108,17 +110,17 @@ c This file has full accuracy.
 c***************************************************************
 c Master plotting routine.
       subroutine solu3plot(ifull,iuds,u,cij,
-     $     phi,phiinf,rc,thetain,nth,rs)
+     $     phi,phiinf,rc,thetain,nth)
 c      call fixedline(ifull,iuds,u,phi,phiinf,rc)
-c      call slicesolu(ifull,iuds,u,cij,phi,phiinf,rc,thetain,nth,rs)
-      call gradradial(ifull,iuds,u,cij,phi,phiinf,rc,thetain,nth,rs)
-c      call phiradial(ifull,iuds,u,cij,phi,phiinf,rc,thetain,nth,rs)
-      call eremesh(ifull,iuds,u,cij,phi,phiinf,rc,thetain,nth,rs)
+c      call slicesolu(ifull,iuds,u,cij)
+      call gradradial(ifull,u,cij,phi,phiinf,rc,thetain,nth)
+c      call phiradial(ifull,cij,phi,phiinf,rc,thetain,nth,rs)
+      call eremesh(ifull,iuds,u,cij,phi,phiinf,rc)
       end
 c***************************************************************
 c Packaged version of plotting.
-      subroutine slicesolu(ifull,iuds,u,cij,phi,phiinf,rc,thetain,nth
-     $     ,rs)
+      subroutine slicesolu(ifull,iuds,u,cij)
+
       parameter (ndims=3,nd2=ndims*2)
       integer ifull(ndims),iuds(ndims)
       real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
@@ -137,10 +139,11 @@ c Plotting slices.
       end
 c*******************************************************************
 c Packaged version of plotting.
-      subroutine gradradial(ifull,iuds,u,cij,phi,phiinf,rc,thetain,nth
-     $     ,rs)
+      subroutine gradradial(ifull,u,cij,phi,phiinf,rc,thetain,nth)
+c     $     ,rs)
       parameter (ndims=3,nd2=ndims*2)
-      integer ifull(ndims),iuds(ndims)
+      integer ifull(ndims)
+c     integer iuds(ndims)
       real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
       real u(ifull(1),ifull(2),ifull(3))
       integer ifmax
@@ -324,12 +327,13 @@ c-------------------------------------------------------------------
 c-------------------------------------------------------------------
 c***************************************************************
 c Packaged version of potential plotting.
-      subroutine phiradial(ifull,iuds,u,cij,
+      subroutine phiradial(ifull,cij,
      $     phi,phiinf,rc,thetain,nth,rs)
       parameter (ndims=3,nd2=ndims*2)
-      integer ifull(ndims),iuds(ndims)
+      integer ifull(ndims)
+c      integer iuds(ndims)
       real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
-      real u(ifull(1),ifull(2),ifull(3))
+c      real u(ifull(1),ifull(2),ifull(3))
       integer ifmax
       parameter (ifmax=1000,Li=ifmax)
       real uanal(ifmax)
@@ -499,7 +503,7 @@ c         write(*,*)i,xr
 c********************************************************************
 c***************************************************************
 c Packaged version of potential error finding and plotting.
-      subroutine eremesh(ifull,iuds,u,cij,phi,phiinf,rc,thetain,nth,rs)
+      subroutine eremesh(ifull,iuds,u,cij,phi,phiinf,rc)
       parameter (ndims=3,nd2=ndims*2)
       integer ifull(ndims),iuds(ndims)
       real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
@@ -518,6 +522,7 @@ c Packaged version of potential error finding and plotting.
       include 'meshcom.f'
 c      include '3dcom.f'
 
+c Silence warnings:,thetain,nth,rs)
 c      x0=13.8
 c      y0=12.8
 c      x1=17.8

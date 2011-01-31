@@ -148,7 +148,8 @@ c		Join the opposing points.
 			    goto 3100
 			   endif
  2200			continue
- 3100			endif
+ 3100			continue
+                     endif
 c  End of special sections.
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		     endif

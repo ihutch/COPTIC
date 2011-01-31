@@ -3,7 +3,7 @@ c This file gives examples of boundary setting for sormpi.
 c The bdyset routine can be called anything, and name passed.
       subroutine bdyset(ndims,ifull,iuds,cij,u,q)
 c      call bdysetnull
-      call bdysetfree
+      call bdysetfree(ndims,ifull,iuds,cij,u,q)
       end
 c**********************************************************************
       subroutine bdysetnull()

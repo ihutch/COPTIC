@@ -6754,9 +6754,12 @@ Clean up. Commit.
 
 We now need to get back to thinking about forces, I think.  At the
 moment forcetrackinit is implemented only for spheres.  Stress
-integrations are based upon the surfobj structure which has for each
-facet position and area vectors. The number of facets in the theta and
+integrations are based upon the surfobj structure which has, for each
+facet, position and area vectors. The number of facets in the theta and
 phi directions are defined in 3dcom.f Other object types are
 ignored. In principle that's all we really need to do for other
 surfaces to work. Likely the force evaluation works better somewhat
 away from the bounding surface, where the interpolation is more accurate.
+
+Compiled with gfortran and got rid of most warnings but not all. 
+Also corrected one bug found thus. It's still a factor of 2 slower.
