@@ -45,7 +45,13 @@ c No flux setting for this object.
          elseif(obj_geom(ofluxtype,i).ge.1
      $           .and. obj_geom(ofluxtype,i).le.nf_quant)then
 c Might eventually need more interpretation of fluxtype.
-            mf_obj=mf_obj+1
+            if(mf_obj.lt.nf_obj)then
+               mf_obj=mf_obj+1
+            else
+               write(*,*)'WARNING: Flux object number exceeds nf_obj='
+     $              ,nf_obj,' Omitting later objects.'
+               goto 1
+            endif
             mf_quant(mf_obj)= obj_geom(ofluxtype,i)
 c The mapped object number != object number.
             nf_map(i)=mf_obj
@@ -107,8 +113,8 @@ c                  write(*,*)nfluxes,(nf_faceind(j,mf_obj,k),k=1,3)
                
             enddo
             if(myid.eq.0)
-     $           write(*,'(a,i2,a,i2,a,i5,a,i3,a,i3,a,i3,a,2i3)')
-     $           ' Fluxinit of object',i
+     $           write(*,'(a,2i2,a,i2,a,i5,a,i3,a,i3,a,i3,a,2i3)')
+     $           ' Fluxinit of object',i,mf_obj
      $           ,' ftype',int(obj_geom(ofluxtype,i))
      $           ,' Total',nf_posno(1,mf_obj),' dimlens:'
      $           ,nf_dimlens(1,mf_obj,1),'x',nf_dimlens(1,mf_obj,2)
@@ -119,7 +125,7 @@ c                  write(*,*)nfluxes,(nf_faceind(j,mf_obj,k),k=1,3)
             stop
          endif
       enddo
-
+ 1    continue
 c      write(*,*)'nf_posno=',((nf_posno(j,i),j=1,2),i=1,4)
 c-------------------------------------------------
 c Now we create the addressing arrays etc.
@@ -344,6 +350,7 @@ c z
                         z=zc+zr*(-1.+2.*(i2-0.5)/nf_dimlens(j,io,3))
                         ff_data(nf_address(j,io,nf_pz)+ip-1
      $                       +nf_faceind(j,io,2))=z
+                        
 
                      enddo
                   enddo
@@ -354,9 +361,13 @@ c Unknown ------------------------------------------
      $           ,i,' type',obj_geom(otype,i)
             endif
          endif
-      enddo
 c      write(*,*)'Initialized positional data to:',nf_address(1,1,1)-1
-c      write(*,'(10f8.4)')(ff_data(k),k=1,nf_address(1,1,2)-1)
+c      write(*,'(10f8.4)')(ff_data(k),k=1,nf_address(1,1,1)-1)
+      enddo
+
+c      write(*,*)'10 steps of initialized slots:',nf_address(1,1,6)-1
+c      write(*,'(10f8.4)')(ff_data(k),k=nf_address(1,1,1)
+c     $     ,nf_address(1,1,11)-1)
 
       end
 c******************************************************************
@@ -480,6 +491,7 @@ c Particle Flux.
       iaddress=ijbin+nf_address(nf_flux,infobj,nf_step)
       ff_data(iaddress)=ff_data(iaddress)+sd
 c This is the way to test that one is really accessing the right bin:
+c      write(*,*)'ijbin=',ijbin,nf_posno(1,infobj),infobj,sd,fraction
 c      ff_data(iaddress)=ijbin
 c Perhaps ought to consider velocity interpolation.
       if(mf_quant(infobj).ge.2)then
@@ -539,12 +551,17 @@ c 3D here.
       call sphereinterp(npdim,ida,xp1,xp2,
      $     obj_geom(ocenter,iobj),obj_geom(oradius,iobj),fraction
      $     ,f2,sd,C,D)
+      if(fraction.ge.1. .or. fraction.lt.0.)then
+         fraction=1.
+         return
+      endif
 c This code decides which of the nf_posno for this object
 c to update corresponding to this crossing, and then update it. 
 c Calculate normalized intersection coordinates.
       do i=1,npdim
          x12(i)=((1.-fraction)*xp1(i)+fraction*xp2(i)
-     $        -obj_geom(ocenter,iobj))/obj_geom(oradius,iobj)
+     $        -obj_geom(ocenter+i-1,iobj))
+     $        /obj_geom(oradius+i-1,iobj)
       enddo
 c Bin by cos(theta)=x12(3) uniform grid in first nf_dimension. 
 c ibin runs from 0 to N-1 cos = -1 to 1.
@@ -554,8 +571,13 @@ c jbin runs from 0 to N-1 psi = -pi to pi.
       jbin=int(nf_dimlens(nf_flux,infobj,2)
      $     *(0.999999*psi/3.1415926+1.)*0.5)
       ijbin=ibin+jbin*nf_dimlens(nf_flux,infobj,1)
-      if(fraction.gt.1.)fraction=1.
-      if(fraction.lt.0.)fraction=1.
+      if(ijbin.gt.nf_posno(1,infobj))then
+         write(*,*)'ijbin error in spherefsect'
+         write(*,*)infobj,ijbin,nf_posno(1,infobj),ibin,jbin
+     $        ,nf_dimlens(nf_flux,infobj,1),nf_dimlens(nf_flux,infobj,2)
+     $        ,x12(3),obj_geom(ocenter+2,iobj),xp1(3),xp2(3)
+     $        ,fraction
+      endif
       end
 
 
@@ -1110,7 +1132,7 @@ c which is ff_data(iav+i)
 
       iq=abs(iquant)
 c If quantity asked for is not available, do nothing.
-      if(iq.gt.mf_quant(ifobj))return
+      if(iq.gt.mf_quant(ifobj).or.iq.eq.0)return
 c Offset of averaging location:
 c      iav=nf_address(iq,ifobj,nf_maxsteps+1)-1
       iav=nf_address(iq,ifobj,nf_step+1)-1
@@ -1120,7 +1142,7 @@ c      iavd=nf_address(iq,ifobj,nf_maxsteps+2)-1
 c Offset to area
       iaa=nf_address(iq,ifobj,nf_pa)-1
 
-      write(*,*)'Fluxave addresses',iav,iavd,iaa
+c      write(*,*)'Fluxave addresses',iav,iavd,iaa
 c Check step numbers for rationality.
       if(n1.lt.1)n1=1
       if(n2.gt.nf_step)n2=nf_step
@@ -1174,10 +1196,14 @@ c From here on is non-general and is mostly for testing.
       write(*,*)'rhoinf:',rinf,' Total:',nint(tot*tdur)
      $     ,'  Average collected per step by posn:'
       write(*,'(10f8.2)')(ff_data(iav+i),i=1,nf_posno(iq,ifobj))
-
+      fluxdensity=tot/(4.*3.14159)/rinf
       write(*,*)'Flux density*r^2, normalized to rhoinf'
-     $     ,tot/(4.*3.14159)/rinf
+     $     ,fluxdensity
 c      write(*,*)'Sectcom ipt=',sc_ipt
+      rmtoz=1.
+      flogfac=0.5*alog(2.*3.1415926/(rmtoz*1837.))
+      phifloat=alog(fluxdensity)+flogfac
+      write(*,*)'Floating potential=',phifloat
 
       if(iquant.gt.0)then
          write(string,'(''Object '',i3,'' Quantity'',i3)')

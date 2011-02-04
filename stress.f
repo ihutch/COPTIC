@@ -67,7 +67,9 @@ c which is the factor by which the electron density is reduced cf infty.
          phi=potentialatpoint(surfobj(koff+1),u,cij,iLs)
 c         phi=potentialatpointtest(surfobj(koff+1),u,cij,iLs)
          do i=1,ndims
-            force(i)=force(i)+surfobj(koff+ndims+i)*exp(phi)
+c 2 Feb 11. The sign was previously +, which was incorrect
+c for an outward directed surface normal. 
+            force(i)=force(i)-surfobj(koff+ndims+i)*exp(phi)
          enddo
          if(phi.eq.9999)then
             r2=0.
@@ -175,8 +177,8 @@ c               write(*,*)'Object radius cubed',i,r3
 c                     write(*,*)(surfobj(ii,j,k,nfmap),ii=1,3)
                      do id=1,ns_ndims
                         r=obj_geom(oradius+id-1,i)*1.00001
-                        surfobj(id,j,k,nfmap)=
-     $                       surfobj(id,j,k,nfmap)*r
+                        surfobj(id,j,k,nfmap)=obj_geom(ocenter+id-1,i)
+     $                       +surfobj(id,j,k,nfmap)*r
                         surfobj(ns_ndims+id,j,k,nfmap)=
      $                       surfobj(ns_ndims+id,j,k,nfmap)*r3/r
                      enddo

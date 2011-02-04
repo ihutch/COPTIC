@@ -156,7 +156,7 @@ c Initialize
          if(nproc.ne.numprocs)then
             if(myid.eq.0)write(*,201)numprocs,
      $           nproc,(idims(n),n=1,ndims)
- 201        format('WARNING: MPI processes',i4,
+ 201        format(' MPI processes',i4,
      $           ': don''t match this topology ',i4,':',6i3)
 c Use MPI function to redimension block structure
             do ii=1,ndims
@@ -168,11 +168,11 @@ c Use MPI function to redimension block structure
             else
                stop 'MPI_DIMS_CREATE error'
             endif
-            if(myid.eq.0)write(*,'(''Reset to'',i4,'':'',6i3)')
+            if(myid.eq.0)write(*,'('' Reset to'',i4,'':'',6i3)')
      $           nproc,idims
          else
             if(myid.eq.0 .and. numprocs.gt.1)
-     $           write(*,'(''numprocs,idims()'',i4,10i4)')
+     $           write(*,'('' numprocs,idims()'',i4,10i4)')
      $           numprocs,(idims(n),n=1,ndims)
          endif
 c End of topology idims resetting.

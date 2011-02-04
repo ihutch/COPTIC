@@ -977,7 +977,14 @@ c Probably this ought to be set up in a common. But for now:
 
 c Calculate the current step's totals for use in floating cases.
       do ifobj=1,mf_obj
-         call objfluxtotal(ifobj,totflux(ifobj),totarea(ifobj))
+         i2type=int(obj_geom(otype,nf_geommap(ifobj)))/256
+         if(i2type.eq.5)then
+            call objfluxtotal(ifobj,totflux(ifobj),totarea(ifobj))
+            if(totflux(ifobj).lt.0.)then
+               write(*,*)'Negative totflux',ifobj,totflux(ifobj)
+     $              ,totarea(ifobj)
+            endif
+         endif
       enddo
 c      write(*,*)'Flux and area totals',(totflux(k),totarea(k),k=1
 c     $     ,mf_obj)
@@ -1096,13 +1103,21 @@ c flux-collecting object ifobj.
 c Starting addresses of area and flux of this step.
       iada=nf_address(nf_flux,ifobj,nf_pa)
       iadf=nf_address(nf_flux,ifobj,nf_step)
+c      write(*,*)
+c      write(*,*)nf_step,ifobj,', 3 steps forward from where we are:'
+c     $     ,nf_address(1,ifobj,nf_step)-1
+c      write(*,'(10f8.4)')(ff_data(k),k=nf_address(1,1,nf_step)
+c     $     ,nf_address(1,ifobj,nf_step+3)-1)
+
       do i=1,nf_posno(nf_flux,ifobj)
          area=area+ff_data(iada+i-1)
          flux=flux+ff_data(iadf+i-1)
-c         if(flux.lt.0)then
-c            write(*,*)'Flux in objfluxtotal',ifobj,nf_step,flux
-c     $           ,iada,iadf
-c         endif
+         if(ff_data(iadf+i-1).lt.0)then
+            write(*,*)'Negative Flux in objfluxtotal',ifobj,nf_step,i
+     $           ,ff_data(iadf+i-1),iada,iadf
+            write(*,*)'Are you excluding the interior'
+     $           ,' of floating objects?'
+         endif
       enddo
 
       

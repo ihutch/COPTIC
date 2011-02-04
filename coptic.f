@@ -233,6 +233,9 @@ c            write(*,*)'||||||||||||||extfield',extfield
          endif
          if(argument(1:3).eq.'-of')
      $        read(argument(4:),'(a)',err=201)objfilename
+         if(argument(1:1).ne.'-')
+     $        read(argument(1:),'(a)',err=201)objfilename
+
          if(argument(1:3).eq.'-ho')then
             call geomdocument()
             call exit(0)
@@ -478,7 +481,6 @@ c      if(lmyidhead)write(*,*)'Return from pinit'
 c---------------------------------------------
 c Initialize the force tracking.
       call forcetrackinit()
-c      write(*,*)'mf_obj=',mf_obj
 c---------------------------------------------
       phirein=0.
       ninjcomp0=ninjcomp
@@ -523,7 +525,7 @@ c     $        nrein,n_part,ioc_part,rhoinf,dt
  402     continue
       endif
 c-----------------------------------------------
-      if(lmyidhead)write(*,*)'Step Iterations Flux:'
+      if(lmyidhead)write(*,'(/,a)')'Step Iterations Flux:'
 c Main step iteration -------------------------------------
       do j=1,nsteps
          nf_step=nf_step+1
@@ -583,6 +585,7 @@ c Store the step's rhoinf, dt.
          ff_rho(nf_step)=rhoinf
          ff_dt(nf_step)=dt
          if(lmyidhead)then
+c write out flux to object 1.
             call fluxdiag()
             if(mod(nf_step,5).eq.0)write(*,*)
             if(mod(nf_step,(nsteps/25+1)*5).eq.0)then
@@ -657,7 +660,7 @@ c This non-standard fortran call works with gfortran and g77 to flush stdout.
          if(lmyidhead)call flush()
 c Comment it out if it causes problems. (E.g. pathscale gives segfaults.)
       enddo
-c End of Main Step Iteration -------------------------------
+c-------- End of Main Step Iteration -------------------------------
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
 c      if(lorbitplot)call orbitplot(ifull,iuds,u,phip,rc,rs)
       if(norbits.ne.0)

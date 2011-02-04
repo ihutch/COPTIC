@@ -6776,3 +6776,356 @@ is only called at the end, this will not cause a problem unless we
 change that.
 
 Fix addressing bug in sphere positioninit.
+
+Dealing with another bug in flux accumulation that shows up when
+using floating sphere. There appear to be random negative flux entries
+in the ff_data ahead of where we are. 
+
+Found an error in spherefsect that only mattered when the sphere was
+not centered. This is the first time I've collected flux for a non
+centered sphere.
+
+1 Feb 11
+
+Running some test cases with fairly big domains and point charges
+to try to see something about force. Found a bug in that the 
+field calculation did not use the object center. Corrected. 
+Trouble is that the forces seem to be down in the noise level.
+These are for point charges with -.04 at r=5. Which is pretty small.
+Boost that to -.4 at r=5. There there's what looks to be non-zero
+field force. Much more on the back particle, which probably makes
+sense given the particle repulsion. But still there's very big
+fluctuation in the particle momentum component presumably because the
+collection crossings are just a few per step.
+
+Does this make sense? there are 400k particles in volume 130x50x50
+so density is about 1 (actually 2 because two processes). Reported 
+rhoinf 2.35 about right. At velocity 1. timestep .1 there is going
+to be about pi*.1*rho ~ 1 crossing in each direction per step for a
+radius 1 sphere. So yes, it makes sense. We need a smaller domain
+for debugging the forces. 
+
+2 Feb 11
+
+The point charge influence is not currently included in the force
+calculation, because addfield is not included in the fieldatpoint.
+What does that mean? It means the charge ought to include only the
+shielding charge, not the point charge. That's a bit puzzling in
+respect of the sign of the apparent charge (negative). Ought to be
+positive I think. Actually the charge is calculated using field at
+point times surfobj. 
+
+
+The charge is in general 4 pi r^2 times the gradient at surface
+(averaged). If the Yukawa approx holds, it is phi(r) 4pi r^2*(1/r +
+1/lambda). So for r=1, phi=-2, lambda=1. it should be -50.3 for an
+actual object. For a point charge there's a question.
+
+Here is the result for a series of radii: 1. 1.2 1.5, 2 3
+at -l100
+    Field,       part,       press,       total,     charge:
+================== End of Object 1 ->  1
+     0.44564    -0.10514     0.00000     0.34050   -24.09440
+================== End of Object 2 ->  2
+     0.34017     0.19731     0.00000     0.53748   -25.00404
+================== End of Object 3 ->  3
+     0.15454     0.37895     0.00000     0.53349   -25.09287
+================== End of Object 4 ->  4
+    -0.00017     0.09210     0.00001     0.09194   -25.04920
+================== End of Object 5 ->  5
+     0.09503    -1.49080     0.00002    -1.39575   -25.02007
+These are correct to the analytic result 25.1 to within half a percent
+except for the first object which is the radius 1 sphere itself,
+and we are extrapolating to the boundary for that, so we expect it to
+be less accurate, perhaps.
+For -l1.
+    Field,       part,       press,       total,     charge:
+================== End of Object 1 ->  1
+     0.40185    -0.81520    -0.00044    -0.41379   -42.66593
+================== End of Object 2 ->  2
+     0.15460    -0.40849     0.00360    -0.25029   -41.78420
+================== End of Object 3 ->  3
+     0.01874     0.10315     0.00845     0.13035   -37.08116
+================== End of Object 4 ->  4
+    -0.04777    -0.45493     0.01364    -0.48906   -28.70999
+================== End of Object 5 ->  5
+    -0.02963    -0.76805    -0.05416    -0.85184   -15.78975
+This is a bit less than the analytic value, but quite likely this is 
+a combination of non-linearity and boundary extrapolation error.
+
+Here is what we get with a point charge of -2. at  1. with -l100
+    Field,       part,       press,       total,     charge:
+================== End of Object 1 ->  2
+     0.28349    -5.29697     0.00000    -5.01348   -24.91903
+================== End of Object 2 ->  3
+     0.29647    -5.88335     0.00000    -5.58688   -24.97408
+================== End of Object 3 ->  4
+     0.09009    -5.08781     0.00001    -4.99771   -24.91823
+================== End of Object 4 ->  5
+     0.10640    -4.33492     0.00003    -4.22849   -24.87956
+Looks as if the point charge IS counted in the charge. Yet force seems
+pretty crazy. This is what we get with -l1. :
+    Field,       part,       press,       total,     charge:
+================== End of Object 1 ->  2
+     0.05172     0.63756    -0.00032     0.68896   -16.00428
+================== End of Object 2 ->  3
+     0.07639     0.63138     0.02616     0.73394   -12.89612
+================== End of Object 3 ->  4
+     0.02346     0.17503     0.12118     0.31967    -8.94730
+================== End of Object 4 ->  5
+    -0.00932     0.89757     0.13519     1.02344    -4.66365
+Seems rather a lot lower than I might have expected, yet perhaps
+the extra shielding inside r=1 is the reason. As an approximation,
+The potential would be exp(-1) smaller from that effect:
+at r=1 we have 42.6/16.0 = 2.66 ~ exp(1) so it makes sense.
+Looks as if the charge is being correctly calculated including the 
+point charge. 
+
+I think this makes sense because the pointcharge I am using extends
+only to radius 1. That's the place where the effective pointcharge has
+gone to zero. Consequently, my calculation outside of that region should
+be correct even though the extra point charge field is not accounted for.
+
+If I were inside that radius, then I would expect the charge to be wrong.
+Here's what we get for a ptch radius 2. potl -1.
+    Field,       part,       press,       total,     charge:
+================== End of Object 1 ->  2
+     0.00696     0.62275    -0.01049     0.61922    -2.68375
+================== End of Object 2 ->  3
+     0.03578     0.47410     0.01403     0.52391    -5.96094
+================== End of Object 3 ->  4
+     0.02476    -0.06874     0.11036     0.06638    -8.62990
+================== End of Object 4 ->  5
+    -0.00941     0.87602     0.13223     0.99884    -4.60279
+Basically it agrees in charge for r>=2.
+
+Conclusion: Maxwell stresses work only outside the defined size of 
+a point charge. 
+
+Here are the force summaries for r=1.2 to 3. for  -v1. -s500 -l5.
+    Field,       part,       press,       total,     charge:
+================== End of Object 1 ->  2
+     4.73587     6.05562     0.02025    10.81173   -24.35178
+================== End of Object 2 ->  3
+     3.85421     6.99056     0.04728    10.89205   -24.04704
+================== End of Object 3 ->  4
+     2.68490     8.25658     0.12276    11.06424   -23.23796
+================== End of Object 4 ->  5
+     1.17217    10.02062     0.35843    11.55121   -21.32471
+
+Looks fairly well converged, and field is significant component
+especially close. 
+
+Here's a case with ptch r=.5, -4. with flux collection at .8, 1. 1.2 1.5 2 3
+    Field,       part,       press,       total,     charge:
+================== End of Object 1 ->  2 Averaged over steps 250 500 :
+     5.12855     4.30121     0.00359     9.43335   -22.22561
+================== End of Object 2 ->  3 Averaged over steps 250 500 :
+     4.40905     5.04523     0.00984     9.46412   -21.94547
+================== End of Object 3 ->  4 Averaged over steps 250 500 :
+     3.86179     5.66072     0.02109     9.54360   -21.92307
+================== End of Object 4 ->  5 Averaged over steps 250 500 :
+     3.13189     6.43115     0.04756     9.61061   -21.57910
+================== End of Object 5 ->  6 Averaged over steps 250 500 :
+     2.17909     7.48203     0.11928     9.78039   -20.83145
+================== End of Object 6 ->  7 Averaged over steps 250 500 :
+     0.96240     8.96126     0.33762    10.26127   -19.09183
+It's a bit lower. Is that reasonable? Not so clear. Mesh spacing is 
+10/32 ~ .3. Not much smaller than the point charge size. Might be an 
+issue. Try with larger nmesh 10/50
+    Field,       part,       press,       total,     charge:
+================== End of Object 1 ->  2 Averaged over steps 250 500 :
+     6.37185     4.49729     0.00322    10.87236   -24.86204
+================== End of Object 2 ->  3 Averaged over steps 250 500 :
+     5.47498     5.41855     0.00930    10.90283   -24.67407
+================== End of Object 3 ->  4 Averaged over steps 250 500 :
+     4.74671     6.18794     0.02015    10.95480   -24.52661
+================== End of Object 4 ->  5 Averaged over steps 250 500 :
+     3.83298     7.12687     0.04705    11.00690   -24.05890
+================== End of Object 5 ->  6 Averaged over steps 250 500 :
+     2.66614     8.40752     0.12212    11.19578   -23.31898
+================== End of Object 6 ->  7 Averaged over steps 250 500 :
+     1.17042    10.17546     0.35528    11.70116   -21.41303
+Yep. Looks as if we did not have sufficient resolution.
+
+Evidence is that the force and charge is working pretty well for -l5
+out to r ~ 2.5.  Possibly there are influences from the boundaries
+outside that, but even so one ought to have momentum conservation,
+so there is something to explain in that the force has increased
+by about 9%.
+
+Try with -dt.05 half the timestep:
+    Field,       part,       press,       total,     charge:
+================== End of Object 1 ->  2 Averaged over steps 250 500 :
+     6.18294     5.36787     0.00312    11.55393   -24.85392
+================== End of Object 2 ->  3 Averaged over steps 250 500 :
+     5.33291     6.22361     0.00905    11.56556   -24.66480
+================== End of Object 3 ->  4 Averaged over steps 250 500 :
+     4.64108     6.94924     0.01963    11.60995   -24.51566
+================== End of Object 4 ->  5 Averaged over steps 250 500 :
+     3.75168     7.87032     0.04595    11.66795   -24.04460
+================== End of Object 5 ->  6 Averaged over steps 250 500 :
+     2.61367     9.13149     0.11955    11.86471   -23.29948
+================== End of Object 6 ->  7 Averaged over steps 250 500 :
+     1.14207    10.87260     0.34823    12.36290   -21.38397
+Force looks substantially better converged. But also substantially higher.
+Charge is hardly different. I wonder if the electron pressure term has
+the right sign. 
+
+If it were opposite, the force conservation would be very good.
+Pressure force is: 
+            force(i)=force(i)+surfobj(koff+ndims+i)*exp(phi)
+Maxwell force is:
+         do i=1,ndims
+            do j=1,ndims
+               stress=field(i)*field(j)
+               if(i.eq.j)stress=stress-es/2.
+               fieldforce(i)=fieldforce(i)+surfobj(koff+ndims+j)*stress
+            enddo
+         enddo
+Thus the magnetic pressure is applied with a sign -es/2. whereas the 
+electron pressure is applied with a sign +. These seem to be opposite.
+Which can't be correct. Not sure. Need to think more about this.
+The EM force density on a volume is Div.T where T= \epsilon_0[EE - E^2/2]
+By contrast the pressure force density is -grad p. Thus the E^2/2 term
+ought to be added to the force with the SAME sign as p. 
+
+Try with -dt0.025.
+    Field,       part,       press,       total,     charge:
+================== End of Object 1 ->  2 Averaged over steps 250 500 :
+     6.01259     6.14960     0.00303    12.16523   -24.84747
+================== End of Object 2 ->  3 Averaged over steps 250 500 :
+     5.22286     7.01671     0.00881    12.24838   -24.65675
+================== End of Object 3 ->  4 Averaged over steps 250 500 :
+     4.56712     7.71234     0.01917    12.29862   -24.50600
+================== End of Object 4 ->  5 Averaged over steps 250 500 :
+     3.69267     8.63389     0.04504    12.37160   -24.03256
+================== End of Object 5 ->  6 Averaged over steps 250 500 :
+     2.57710     9.83186     0.11744    12.52640   -23.28122
+================== End of Object 6 ->  7 Averaged over steps 250 500 :
+     1.11903    11.51102     0.34266    12.97271   -21.35380
+Seemingly no better converged. Modify the code sign and rerun:
+    Field,       part,       press,       total,     charge:
+================== End of Object 1 ->  2 Averaged over steps 250 500 :
+     6.01259     6.14960    -0.00303    12.15916   -24.84747
+================== End of Object 2 ->  3 Averaged over steps 250 500 :
+     5.22286     7.01671    -0.00881    12.23077   -24.65675
+================== End of Object 3 ->  4 Averaged over steps 250 500 :
+     4.56712     7.71234    -0.01917    12.26029   -24.50600
+================== End of Object 4 ->  5 Averaged over steps 250 500 :
+     3.69267     8.63389    -0.04504    12.28153   -24.03256
+================== End of Object 5 ->  6 Averaged over steps 250 500 :
+     2.57710     9.83186    -0.11744    12.29152   -23.28122
+================== End of Object 6 ->  7 Averaged over steps 250 500 :
+     1.11903    11.51102    -0.34266    12.28739   -21.35380
+This is consistent to better than 1% Clearly the change is correct.
+
+It looks as if the magnitude of the step size does have a strong 
+influence on the apparent force. So does the mesh size. 
+Basically the force now seems to be working for spherical measuring
+surfaces.
+
+The old force paper says that the domain has to be at least twice
+lambda_D to get the force right. So these domains aren't big enough.
+
+3 Feb 11
+
+Trying again with floating sphere. Still have a problem with negative
+counts, apparently arising from spurious ff_data value entries.
+I thought I'd fixed that. Yes I had. I was not excluding the floating
+sphere from the region. That was an input file error.
+
+Here's -l5 -t.1 -v1. -dt.05 on a 10x10x10 size 50x50x50 number
+ Flux density*r^2, normalized to rhoinf  1.56599867
+    Field,       part,       press,       total,     charge, over steps 250 500
+========== Object 1 ->  1 radius=  1.000 ========
+    52.40706    32.18951     0.00168    84.59825   -36.26878
+========== Object 2 ->  2 radius=  1.200 ========
+    42.01913    35.39398    -0.02149    77.39163   -36.11956
+========== Object 3 ->  3 radius=  1.500 ========
+    34.98729    41.46753    -0.10783    76.34700   -35.83485
+========== Object 4 ->  4 radius=  2.000 ========
+    25.78210    50.83405    -0.44894    76.16722   -34.85485
+========== Object 5 ->  5 radius=  3.000 ========
+    12.82122    65.19434    -1.89569    76.11987   -31.77205
+Sceptic got force 81.8, charge 37.7 fave=1.50
+So coptic is getting a slightly smaller force and charge, with a slightly
+higher flux, which presumably makes the floating potential a bit less
+negative and might explain the force and charge differences. 
+According to my calculation the floating potential in coptic is -2.39048
+In sceptic it is saved as -2.44023. 
+
+Using instead -dt.025 we get:
+ Flux density*r^2, normalized to rhoinf  1.46931636
+ Floating potential= -2.45420861
+    Field,       part,       press,       total,     charge, over steps 250 500
+========== Object 1 ->  1 radius=  1.000 ========
+    52.92072    31.25940     0.00173    84.18185   -36.16894
+========== Object 2 ->  2 radius=  1.200 ========
+    42.38842    34.59715    -0.02204    76.96353   -36.01539
+========== Object 3 ->  3 radius=  1.500 ========
+    35.25710    40.69879    -0.11040    75.84549   -35.72120
+========== Object 4 ->  4 radius=  2.000 ========
+    25.90463    50.27276    -0.45853    75.71886   -34.72077
+========== Object 5 ->  5 radius=  3.000 ========
+    12.78950    64.85056    -1.92698    75.71309   -31.56680
+========== Object 6 ->  6 radius=  5.000 ========
+     1.84271    80.31524    -6.17617    75.98178   -23.68394
+A lower floating potential but no better force agreement. 
+Looking more likely that the discrepancy is domain size.
+Try instead with -dt.1 :
+ Flux density*r^2, normalized to rhoinf  1.56204593
+ Floating potential= -2.39300942
+    Field,       part,       press,       total,     charge, over steps 250 500
+========== Object 1 ->  1 radius=  1.000 ========
+    53.72910    33.49794     0.00167    87.22871   -36.49997
+========== Object 2 ->  2 radius=  1.200 ========
+    43.07132    36.76583    -0.02142    79.81573   -36.35361
+========== Object 3 ->  3 radius=  1.500 ========
+    35.86864    42.91519    -0.10785    78.67598   -36.07600
+========== Object 4 ->  4 radius=  2.000 ========
+    26.39515    52.41656    -0.45035    78.36136   -35.10577
+========== Object 5 ->  5 radius=  3.000 ========
+    13.21550    66.83462    -1.90827    78.14185   -32.04988
+========== Object 6 ->  6 radius=  5.000 ========
+     1.88130    82.67591    -6.19397    78.36324   -24.44571
+
+Using a domain 15.^3 we get (-s500 -dt.1 -da8 -v1. -l5. -t.1)
+ Flux density*r^2, normalized to rhoinf  1.55521822
+ Floating potential= -2.39739013
+    Field,       part,       press,       total,     charge, over steps 250 500
+========== Object 1 ->  1 radius=  1.000 ========
+    56.00081    33.54607     0.00416    89.55104   -36.63660
+========== Object 2 ->  2 radius=  1.200 ========
+    44.98659    36.85350    -0.02179    81.81830   -36.48862
+========== Object 3 ->  3 radius=  1.500 ========
+    37.71225    43.03333    -0.11243    80.63316   -36.20971
+========== Object 4 ->  4 radius=  2.000 ========
+    28.08273    52.67813    -0.47333    80.28754   -35.23322
+========== Object 5 ->  5 radius=  3.000 ========
+    14.53309    67.52608    -2.03984    80.01932   -32.14792
+========== Object 6 ->  6 radius=  5.000 ========
+     2.86774    84.40074    -6.98550    80.28297   -24.58187
+Thus the shortfall is to do with the domain not being big enough. 
+
+Actually, judging by the potential plot the biggest problem is having
+enough room on the downstream side. 
+
+Try a different layout:
+91,1,15,36,50,0,-10.,-3.,3.,10.
+92,1,15,36,50,0,-10.,-3.,3.,10.
+93,1,8,29,50,0,-5.,-3.,3.,20.
+    Field,       part,       press,       total,     charge, over steps 250 500
+========== Object 1 ->  1 radius=  1.000 ========
+    49.05901    30.66676     0.00020    79.72597   -39.57825
+========== Object 2 ->  2 radius=  1.200 ========
+    38.68083    33.98512    -0.01521    72.65074   -39.46384
+========== Object 3 ->  3 radius=  1.500 ========
+    31.12519    40.37292    -0.07865    71.41946   -39.26323
+========== Object 4 ->  4 radius=  2.000 ========
+    20.89518    50.49304    -0.33271    71.05552   -38.45021
+========== Object 5 ->  5 radius=  3.000 ========
+     6.01135    65.98265    -1.30534    70.68866   -35.77306
+========== Object 6 ->  6 radius=  5.000 ========
+    -7.66802    79.41839    -1.35357    70.39680   -29.23763
+Rather unsuccessful. No! I accidentally set the -t to .05.

@@ -1,5 +1,5 @@
 c**************************************************************
-      program fluxdatatest
+      program fluxexamine
       include '../3dcom.f'
       include '../plascom.f'
       include '../sectcom.f'
@@ -23,6 +23,7 @@ c**************************************************************
      $        read(argument(4:),'(f10.4)')fn2
          if(argument(1:2).eq.'-f')
      $        read(argument(3:),'(a)')filename
+c iplot is the quantity number to plot and average.
          if(argument(1:2).eq.'-p')
      $        read(argument(3:),'(i5)')iplot
          if(argument(1:2).eq.'-w')
@@ -94,15 +95,13 @@ c For all the objects being flux tracked.
 
 c Plots if 
       if(iplot.ne.0)then
-
-      call pltinit(1.,float(nf_step),-100.,100.)
-      call axis()
-      call axlabels('step','Force')
+         call pltinit(1.,float(nf_step),-100.,100.)
+         call axis()
+         call axlabels('step','Force')
+      endif
       write(*,*)'   Field,       part,       press,'
-     $     ,'       total,     charge:'
+     $     ,'       total,     charge, over steps',n1,n2
       do k=1,mf_obj
-         call color(k)
-         call iwrite(k,iwd,argument)
          avefield=0.
          avepart=0.
          avepress=0.
@@ -113,7 +112,8 @@ c Plots if
             plotdata(i,2)=pressforce(3,k,i)
             plotdata(i,3)=partforce(3,k,i)               
             plotdata(i,4)=plotdata(i,1)+plotdata(i,2)+plotdata(i,3)
-            plotdata(i,5)=charge_ns(k,i)               
+            plotdata(i,5)=charge_ns(k,i)
+c            write(*,'(10f8.4)')charge_ns(k,i)
 c            write(*,*)(plotdata(i,j),j=1,3)
             stepdata(i)=i
             if(i.ge.n1 .and. i.le.n2)then
@@ -128,43 +128,44 @@ c            write(*,*)(plotdata(i,j),j=1,3)
          avepress=avepress/float(iavenum)
          avepart=avepart/float(iavenum)
          avecharge=avecharge/float(iavenum)
-c         call autoplot(stepdata,plotdata(1,3),nf_step)
-         call polyline(stepdata,plotdata(1,3),nf_step)
-         call legendline(.1+.4*(k-1),.2,0,
+         if(iplot.ne.0)then
+            call color(k)
+            call iwrite(k,iwd,argument)
+            call polyline(stepdata,plotdata(1,3),nf_step)
+            call legendline(.1+.4*(k-1),.2,0,
      $        'partforce '//argument(1:iwd))
-         call dashset(1)
-         call polyline(stepdata,plotdata(1,1),nf_step)
-         call legendline(.1+.4*(k-1),.15,0,
+            call dashset(1)
+            call polyline(stepdata,plotdata(1,1),nf_step)
+            call legendline(.1+.4*(k-1),.15,0,
      $        'fieldforce '//argument(1:iwd))
-         call dashset(2)
-         call polyline(stepdata,plotdata(1,2),nf_step)
-         call legendline(.1+.4*(k-1),.1,0,
-     $        'pressforce '//argument(1:iwd))
-         call dashset(4)
-         call polyline(stepdata,plotdata(1,4),nf_step)
-         call legendline(.1+.4*(k-1),.25,0,
-     $        'total '//argument(1:iwd))
-         call dashset(0)
-         write(*,'(''================== End of Object'',i2,'' ->'',i3)')
-     $     k,nf_geommap(k)
+            call dashset(2)
+            call polyline(stepdata,plotdata(1,2),nf_step)
+            call legendline(.1+.4*(k-1),.1,0,
+     $           'pressforce '//argument(1:iwd))
+            call dashset(4)
+            call polyline(stepdata,plotdata(1,4),nf_step)
+            call legendline(.1+.4*(k-1),.25,0,
+     $           'total '//argument(1:iwd))
+            call dashset(0)
+         endif
+         write(*,101)k,nf_geommap(k),obj_geom(oradius,nf_geommap(k))
+ 101     format('========== Object',i2,' ->'
+     $        ,i3,' radius=',f7.3,' ========')
          write(*,'(6f12.5  )')
      $        avefield,avepart,avepress,
      $        avefield+avepart+avepress,avecharge
 c     $        ,avecharge/avefield
       enddo
 
-      call pltend()
-
-      if(sc_ipt.ne.0)write(*,*)'Intersections=',sc_ipt
-      call objplot(rview,iosw)
-
+      if(iplot.ne.0)then
+         call pltend()
+         call objplot(rview,iosw)
       endif
 
       call exit(1)
- 201  write(*,*)'Usage: fluxdatatest [-ffilename,'//
+ 201  write(*,*)'Usage: fluxexamine [-ffilename,'//
      $     '-n1fff,-n2fff,-piii,-wiii,-rfff,-iiii]'
-
-      write(*,*)'Read back flux data from file:'
+      write(*,*)'Read back flux data from file and display.'
 
       end
 c******************************************************************

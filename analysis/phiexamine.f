@@ -370,7 +370,7 @@ c Help text
       write(*,301)'Usage: phiexamine [switches] <phifile>'
 c      write(*,301)' --objfile<filename>  set name of object data file.'
 c     $     //' [copticgeom.dat'
-      write(*,301)' -d<diagfilename>  -r<rp> -r<phimax> -l<isw>'
+      write(*,301)' -d<diagfilename>  -r<rp> -p<phimax> -l<isw>'
       write(*,301)' isw: Byte 1: gradlegend(1) 2: ...'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
