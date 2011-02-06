@@ -110,6 +110,7 @@ c**********************************************************************
       subroutine readgeom(filename,myid)
 c Read the geometric data about objects from the file filename
       character*(*) filename
+      integer myid
       character*128 cline
       include '3dcom.f'
       include 'meshcom.f'
@@ -455,6 +456,7 @@ c*****************************************************************
 c Return the masked iregion. Used only in fieldatpoint now.
       function imaskregion(iregion)
       include '3dcom.f'
+      integer iregion
       imaskregion=IAND(iregion,ifield_mask)
       end
 c*****************************************************************
@@ -629,7 +631,7 @@ c the intersection occurs (1 if no intersection), the "conditions" at
 c the intersection (irrelevant if fraction=1), the +ve length
 c in computational units of the full leg in dp, and the object number
 c in iobjno
-      integer id,ipm,ndims,iobjno
+      integer id,ipm,ndims,iobjno,ijbin
       integer indi(ndims)
       real fraction,dp
       real conditions(3)
@@ -794,6 +796,7 @@ c*************************************************************
 c Initialize the iregion flags of the existing nodes with boundary
 c object data.
       subroutine iregioninit(ndims,ifull)
+      integer ndims
       integer ifull(ndims)
 
       include 'objcom.f'
@@ -847,6 +850,7 @@ c      if(ipp.ne.0)
       end
 c*******************************************************************
       function ireg3(i,j,k,ifull,cij)
+      integer i,j,k
       include 'objcom.f'
       integer ifull(3)
       real cij(ndims_sor*2+1,ifull(1),ifull(2),ifull(3))
@@ -881,12 +885,18 @@ c      write(*,'(''Set obj_geom(oabc,'',i2,'')='',3f8.4)')
 c     $     iobject,(obj_geom((oabc+i),iobject),i=0,2)
       end
 c****************************************************************
+c> Convert from contravariant coefficients to world cartesian.
+c> Covariant and Contravariant vectors are stored in obj_geom(...,iobj)
+c> xcontra and xw can be the same storage positions if desired.
       subroutine contra3world(ndims,xcontra,xw,iobj)
-c Convert from contravariant coefficients to world cartesian.
-c Covariant and Contravariant vectors are stored in obj_geom(...,iobj)
-c xcontra and xw can be the same storage positions if desired.
-      integer ndims,iobj
-      real xw(ndims),xcontra(ndims)
+c> Number of dimensions. 
+      integer ndims
+c> Object number
+      integer iobj
+c> World coordinates
+      real xw(ndims)
+c> Contravariant coordinates
+      real xcontra(ndims)
       include '3dcom.f'
       real xwl(ns_ndims)
 c Cartesian obtained as sum of covariant vectors times contra coeffs.

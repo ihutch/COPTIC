@@ -7129,3 +7129,166 @@ Try a different layout:
 ========== Object 6 ->  6 radius=  5.000 ========
     -7.66802    79.41839    -1.35357    70.39680   -29.23763
 Rather unsuccessful. No! I accidentally set the -t to .05.
+Here's from -n 8 with  -s500 -dt.1 -da4 -v1. -l5. -t.1 -ri70
+91,1,15,36,50,0,-20.,-3.,3.,20.
+92,1,15,36,50,0,-20.,-3.,3.,20.
+93,1,8,29,50,0,-10.,-3.,3.,20.
+ Flux density*r^2, normalized to rhoinf  1.51346183
+ Floating potential= -2.42460632
+    Field,       part,       press,       total,     charge, over steps 250 500
+========== Object 1 ->  1 radius=  1.000 ========
+    54.36328    33.12401     0.00478    87.49207   -36.79696
+========== Object 2 ->  2 radius=  1.200 ========
+    43.79966    36.23051    -0.02060    80.00957   -36.65427
+========== Object 3 ->  3 radius=  1.500 ========
+    36.79764    42.14454    -0.10813    78.83405   -36.38494
+========== Object 4 ->  4 radius=  2.000 ========
+    27.46853    51.54213    -0.45674    78.55392   -35.42867
+========== Object 5 ->  5 radius=  3.000 ========
+    14.17500    66.08906    -1.97374    78.29031   -32.40749
+========== Object 6 ->  6 radius=  5.000 ========
+     2.64290    82.94704    -6.85779    78.73215   -24.91580
+One can see that the leading edge at z=-10 is in fact significant in
+the potential solution. It looks as if even the leading edge needs
+to be far away. 
+
+With
+91,1,15,36,50,0,-20.,-3.,3.,20.
+92,1,15,36,50,0,-20.,-3.,3.,20.
+93,1,15,36,50,0,-20.,-3.,3.,20.
+we get 
+ Flux density*r^2, normalized to rhoinf  1.54259562
+ Floating potential= -2.40553951
+    Field,       part,       press,       total,     charge, over steps 250 500
+========== Object 1 ->  1 radius=  1.000 ========
+    55.57957    33.41187     0.00557    88.99701   -36.60782
+========== Object 2 ->  2 radius=  1.200 ========
+    44.81544    36.56225    -0.02148    81.35622   -36.46081
+========== Object 3 ->  3 radius=  1.500 ========
+    37.71716    42.56567    -0.11317    80.16965   -36.18245
+========== Object 4 ->  4 radius=  2.000 ========
+    28.22109    52.14386    -0.47762    79.88733   -35.20405
+========== Object 5 ->  5 radius=  3.000 ========
+    14.76352    66.94378    -2.07169    79.63561   -32.12032
+========== Object 6 ->  6 radius=  5.000 ========
+     3.12687    84.30839    -7.06419    80.37107   -24.36137
+Looks like we've got what we'll get. 
+
+Increase to -l10 (floating. 20.^2)
+ Flux density*r^2, normalized to rhoinf  1.58223844
+ Floating potential= -2.38016534
+    Field,       part,       press,       total,     charge, over steps 250 500
+========== Object 1 ->  1 radius=  1.000 ========
+    82.47508    34.32501     0.00254   116.80263   -32.96266
+========== Object 2 ->  2 radius=  1.200 ========
+    69.27230    36.64183    -0.00902   105.90512   -32.95042
+========== Object 3 ->  3 radius=  1.500 ========
+    62.79748    41.54189    -0.04652   104.29284   -32.96438
+========== Object 4 ->  4 radius=  2.000 ========
+    54.03246    50.05941    -0.19974   103.89213   -32.73141
+========== Object 5 ->  5 radius=  3.000 ========
+    39.37125    65.06497    -0.96813   103.46809   -31.79218
+========== Object 6 ->  6 radius=  5.000 ========
+    20.33151    88.01800    -4.43408   103.91543   -28.86920
+Compare with sceptic:
+==> T1m1v100r20P02L1e1.dat <==  
+ dt       vd       Ti  steps   rhoinf     phiinf   fave  debyelen  Vp / nr/ phi
+0.05000 1.00000  0.1000  2000    190.8047    5.25125  1.5857 10.00000  -2.36912
+ Charge      E-field       Electrons      Ions     Total
+ -34.1119576  0.76158464 -6.75517142E-10  35.8557892  112.014252
+ -3.82497454  0.0045971889 -52.9793701  163.565552  111.045898
+Agreement is not great. But one can see that we have not incorporated
+the whole of the positive potential peak. And not even all rho peak. 
+
+T=.01 -l5 floating: T1m2v100P025L5e0z020x20.flx
+ Flux density*r^2, normalized to rhoinf  1.6818924
+ Floating potential= -2.31908631
+    Field,       part,       press,       total,     charge, over steps 250 500
+========== Object 1 ->  1 radius=  1.000 ========
+    73.62286    41.47784     0.00801   115.10871   -36.11523
+========== Object 2 ->  2 radius=  1.200 ========
+    58.49369    45.84773    -0.02990   104.31152   -35.93894
+========== Object 3 ->  3 radius=  1.500 ========
+    48.03215    54.48299    -0.15543   102.35971   -35.60561
+========== Object 4 ->  4 radius=  2.000 ========
+    34.47293    68.05175    -0.64462   101.88007   -34.51732
+========== Object 5 ->  5 radius=  3.000 ========
+    15.89227    88.27644    -2.70578   101.46294   -31.17728
+========== Object 6 ->  6 radius=  5.000 ========
+     0.27191   110.13190    -8.57866   101.82516   -22.76466
+Sceptic equivalent:
+==> T1m2v100r20P02L5e0.dat <==
+dt       vd       Ti  steps   rhoinf     phiinf   fave  debyelen Vp  / nr/ phi
+0.05000 1.00000  0.0100  2000    206.2824    5.32925  1.5893  5.00000  -2.37589
+ Charge      E-field       Electrons      Ions     Total
+ -37.1715889  2.51376629 -1.71099135E-10  40.6259079  103.470062
+ -10.1660223  0.0073696305  47.7507477  52.3004951  100.235481
+Flux agreement is not too good, but force is good. 
+
+With the above meshes, the dz is about 6/20 at the probe, i.e. 0.33. 
+Thus, the resolution near the probe edge is not great. There is a very 
+steep gradient of density near the edge behind the probe. That seems 
+probably to be the cause of the momentum apparent nonconservation. 
+It seems that one probably needs to be at least one times dx from the
+boundary for the force calculation to be reliable. 
+Increase the z-mesh density to
+91,1,15,36,50,0,-20.,-3.,3.,20.
+92,1,15,36,50,0,-20.,-3.,3.,20.
+93,1,15,58,72,0,-20.,-3.,3.,20.
+Result:
+ Flux density*r^2, normalized to rhoinf  1.67777085
+ Floating potential= -2.32153988
+    Field,       part,       press,       total,     charge, over steps 250 500
+========== Object 1 ->  1 radius=  1.000 ========
+    65.69753    41.45311     0.00996   107.16059   -35.68893
+========== Object 2 ->  2 radius=  1.200 ========
+    58.64346    45.80416    -0.03127   104.41637   -35.92920
+========== Object 3 ->  3 radius=  1.500 ========
+    48.44096    54.44807    -0.15888   102.73014   -35.62333
+========== Object 4 ->  4 radius=  2.000 ========
+    34.61152    68.05910    -0.65155   102.01907   -34.54094
+========== Object 5 ->  5 radius=  3.000 ========
+    15.96391    88.41527    -2.73084   101.64834   -31.24056
+========== Object 6 ->  6 radius=  5.000 ========
+     0.26093   110.37730    -8.62403   102.01421   -22.76320
+The error at the sphere is decreased by more than a factor of 2. But there's
+little or no change at radius 1.2. Thus the result is not substantially 
+better. But it does say that provided we avoid the object itself we
+don't need to go to high resolution. 
+
+Try to document the effect of walls. Move the particle to position x=10
+in a 20^3 domain. We get
+[./coptic test1.dat -s500 -dt.1 -da4 -v1. -l5. -t.1 -ri60]
+ Flux density*r^2, normalized to rhoinf  1.53941882
+ Floating potential= -2.40760088
+    Field,       part,       press,       total,   ave over steps 250 500
+========== Object 1 ->  1 radius=  1.000 ========  Charge=  -36.6542
+     0.56419    -0.30757     0.00007     0.25669
+    -0.11836     0.05651    -0.00001    -0.06186
+    55.26081    33.32751     0.00551    88.59383
+========== Object 2 ->  2 radius=  1.200 ========  Charge=  -36.5060
+     0.50242    -0.29941    -0.00023     0.20277
+    -0.10309     0.06281     0.00005    -0.04023
+    44.48288    36.54395    -0.02127    81.00556
+========== Object 3 ->  3 radius=  1.500 ========  Charge=  -36.2226
+     0.46840    -0.23163    -0.00126     0.23551
+    -0.12979     0.09512     0.00033    -0.03434
+    37.31798    42.62213    -0.11201    79.82810
+========== Object 4 ->  4 radius=  2.000 ========  Charge=  -35.2406
+     0.41672    -0.22586    -0.00571     0.18516
+    -0.18482     0.17877     0.00205    -0.00400
+    27.90334    52.16618    -0.47223    79.59729
+========== Object 5 ->  5 radius=  3.000 ========  Charge=  -32.1702
+     0.37379    -0.15386    -0.03115     0.18878
+    -0.17052     0.15924     0.01519     0.00391
+    14.49882    66.91687    -2.04443    79.37125
+========== Object 6 ->  6 radius=  5.000 ========  Charge=  -25.6056
+    -4.11204    17.45297   -12.43861     0.90232
+    -0.11563    -0.01325     0.08904    -0.03984
+     5.31671    81.13351    -6.06404    80.38618
+There is an x-force but in the reliable regions it is only about 0.2
+compared with the z-force of 80. This gives a feel for how much the 
+proximity of a wall might affect us. About 0.2%.
+Not a lot when we are half way out. Incidentally, the last object is
+centered at x=12, not on the particle center. That's the reason for the
+big field and part components separately (presumably).

@@ -10,6 +10,8 @@ ftnchek -nopure\
  -truncation=no-significant-figures\
  -usage=no-com-block-unused,no-var-set-unused\
  -noarray -noextern\
- -calltree -mkhtml\
+ -calltree=tree,no-prune\
+ -nonovice\
+ -mkhtml=vars-and-consts-lowercase,keywords-lowercase\
  -quiet\
  $FFILES

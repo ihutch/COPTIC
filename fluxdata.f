@@ -1132,7 +1132,10 @@ c which is ff_data(iav+i)
 
       iq=abs(iquant)
 c If quantity asked for is not available, do nothing.
-      if(iq.gt.mf_quant(ifobj).or.iq.eq.0)return
+      if(iq.gt.mf_quant(ifobj).or.iq.eq.0)then
+c         write(*,*)ifobj,iq,mf_quant(ifobj)
+         return
+      endif
 c Offset of averaging location:
 c      iav=nf_address(iq,ifobj,nf_maxsteps+1)-1
       iav=nf_address(iq,ifobj,nf_step+1)-1

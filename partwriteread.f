@@ -66,6 +66,7 @@ c      write(*,*)'Wrote particle data to ',name(1:lentrim(name))
 c*****************************************************************
       subroutine partread(name,ierr)
       character*(*) name
+      integer ierr
       include 'partcom.f'
       include 'plascom.f'
       include 'ran1com.f'

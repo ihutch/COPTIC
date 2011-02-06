@@ -91,14 +91,12 @@ c Correct the index in field direction if fraction .gt.0.5:
 c Now iu0 is the chosen (closest in field direction) box origin 
 c General-Dimensional version without extrapolation.
       igood=0
-c      iimax=1
       do ii=1,(ndims-1)
          idii=mod(idf+ii-1,ndims)+1
          d(ii)=xf(idii)
          weights(ii)=1.
          idn(ii)=idii
 c Attempts at speeding up don't do much.
-c         iimax=iimax*2
       enddo
       do ii=1,2**(ndims-1)
          ii1=ii-1
@@ -110,8 +108,6 @@ c This break saves unnecessary iterations, about 15%.
             ii2=ii1/2
             if(ii1-2*ii2.ne.0)iinc=iinc+iuinc(idn(ik))
             ii1=ii2
-c This is slightly quicker but less than 25%. And not general-dimensional.
-c            iinc=iinc+ipa(ii,ik)*iuinc(idn(ik))
          enddo
  41      continue
 c Suppose we know there's only 3 dimensions total we could replace with
@@ -636,7 +632,7 @@ c Include the mesh xn, and ndims_mesh.
       include 'meshcom.f'
       real x(ndims_mesh),u(*),cij(*),field(ndims_mesh)
       integer iLs(ndims_mesh+1)
-
+      external imaskregion
       real xff(ndims_mesh)
 
 c Determine the region

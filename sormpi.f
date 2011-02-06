@@ -234,21 +234,3 @@ c........
       delta=sign(convgd(1),delta)
       end
 c**********************************************************************
-c This is of dubious sense.
-      subroutine avederiv(x,xval,xd,ns)
-c return value and change of x averaged over the last ns (<ntot) steps.
-c If ns=1, return the value of x now, and the change since last call.
-c Be careful with the first call which might have rubbish in it.
-c To initialize to xval and xd, call twice with ns=1.
-      data xave,xdav,xlast/0.,0.,0./
-      save xave,xdav,xlast
-      
-      if(ns.eq.0)stop 'avederiv error ns=0'
-      xave=(xave*(ns-1) + x)/ns
-      xval=xave
-      xdn=x-xlast
-      xdav=(xdav*(ns-1) + xdn)/ns
-      xd=xdav
-      xlast=x
-      end
-c***********************************************************************

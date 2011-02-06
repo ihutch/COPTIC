@@ -7,6 +7,7 @@ c**************************************************************
       real plotdata(10000,5),stepdata(10000)
       character*100 filename,argument
       integer iplot,iprint
+      real avefield(ns_ndims),avepress(ns_ndims),avepart(ns_ndims)
       data iplot/1/iprint/1/
       
       fn1=0.5
@@ -42,17 +43,17 @@ c iplot is the quantity number to plot and average.
 c      write(*,*)'found',ff_data(nf_address(nf_flux,1,-1)+1-1)
 c     $     ,nf_address(nf_flux,1,-1)
 
-      write(*,*)'   No. objects,   No. steps,    No. quantities(obj)'
-      write(*,'(i12,i12,i12,20i3)')mf_obj,nf_step,
+      write(*,*)'   No. objects,   No. steps, dt,   No. quantities(obj)'
+      write(*,'(i12,i12,f10.4,20i3)')mf_obj,nf_step,ff_dt(nf_step),
      $     (mf_quant(j),j=1,mf_obj)
-      if(iprint.gt.0)write(*,*) 'Posn and first 2 step addresses ',
-     $     (((nf_address(i,j,k),i=1,mf_quant(j)),' ,'
-     $     ,j=1,mf_obj),k=1-nf_posdim,2),'...'
+c      write(*,*) 'Posn and first 2 step addresses ',
+c     $     (((nf_address(i,j,k),i=1,mf_quant(j)),' ,'
+c     $     ,j=1,mf_obj),k=1-nf_posdim,2),'...'
 
 
 c For all the objects being flux tracked.
       do k=1,mf_obj
-         if(iprint.gt.0)then
+         if(k.eq.iprint)then
          write(*,'(a,i3,a,3i4,a,i3)') 'Position data for ',nf_posdim
      $        ,' flux-indices. nf_dimlens='
      $        ,(nf_dimlens(1,k,kd),kd=1,nf_posdim-1),' Object',k
@@ -100,11 +101,13 @@ c Plots if
          call axlabels('step','Force')
       endif
       write(*,*)'   Field,       part,       press,'
-     $     ,'       total,     charge, over steps',n1,n2
+     $     ,'       total,   ave over steps',n1,n2
       do k=1,mf_obj
-         avefield=0.
-         avepart=0.
-         avepress=0.
+         do j=1,ns_ndims
+            avefield(j)=0.
+            avepart(j)=0.
+            avepress(j)=0.
+         enddo
          avecharge=0.
          iavenum=0
          do i=1,nf_step
@@ -113,20 +116,22 @@ c Plots if
             plotdata(i,3)=partforce(3,k,i)               
             plotdata(i,4)=plotdata(i,1)+plotdata(i,2)+plotdata(i,3)
             plotdata(i,5)=charge_ns(k,i)
-c            write(*,'(10f8.4)')charge_ns(k,i)
-c            write(*,*)(plotdata(i,j),j=1,3)
             stepdata(i)=i
             if(i.ge.n1 .and. i.le.n2)then
                iavenum=iavenum+1
-               avefield=avefield+fieldforce(3,k,i)
-               avepress=avepress+pressforce(3,k,i)
-               avepart=avepart+partforce(3,k,i)
+               do j=1,ns_ndims
+                  avefield(j)=avefield(j)+fieldforce(j,k,i)
+                  avepress(j)=avepress(j)+pressforce(j,k,i)
+                  avepart(j)=avepart(j)+partforce(j,k,i)
+               enddo
                avecharge=avecharge+charge_ns(k,i)
             endif
          enddo
-         avefield=debyelen**2*avefield/float(iavenum)
-         avepress=avepress/float(iavenum)
-         avepart=avepart/float(iavenum)
+         do j=1,ns_ndims
+            avefield(j)=debyelen**2*avefield(j)/float(iavenum)
+            avepress(j)=avepress(j)/float(iavenum)
+            avepart(j)=avepart(j)/float(iavenum)
+         enddo
          avecharge=avecharge/float(iavenum)
          if(iplot.ne.0)then
             call color(k)
@@ -149,23 +154,30 @@ c            write(*,*)(plotdata(i,j),j=1,3)
             call dashset(0)
          endif
          write(*,101)k,nf_geommap(k),obj_geom(oradius,nf_geommap(k))
+     $        ,avecharge
  101     format('========== Object',i2,' ->'
-     $        ,i3,' radius=',f7.3,' ========')
-         write(*,'(6f12.5  )')
-     $        avefield,avepart,avepress,
-     $        avefield+avepart+avepress,avecharge
-c     $        ,avecharge/avefield
+     $        ,i3,' radius=',f7.3,' ========  Charge=',f10.4)
+         do j=1,ns_ndims            
+            write(*,'(5f12.5  )')
+     $        avefield(j),avepart(j),avepress(j),
+     $        avefield(j)+avepart(j)+avepress(j)
+         enddo
       enddo
 
       if(iplot.ne.0)then
          call pltend()
-         call objplot(rview,iosw)
+         if(iplot.eq.1)call objplot(rview,iosw)
       endif
 
       call exit(1)
- 201  write(*,*)'Usage: fluxexamine [-ffilename,'//
-     $     '-n1fff,-n2fff,-piii,-wiii,-rfff,-iiii]'
+ 201  write(*,*)'Usage: fluxexamine [filename '//
+     $     '-n1fff -n2fff -piii -wiii -rfff -iiii]'
       write(*,*)'Read back flux data from file and display.'
+      write(*,*)'-n1,-n2 step range over which to average.'
+      write(*,*)'-p set quantity to average and plot'
+      write(*,*)'-w set object whose data is to be written'
+      write(*,*)'-r set size of plot window'
+      write(*,*)'-i set iosw for objplot'
 
       end
 c******************************************************************

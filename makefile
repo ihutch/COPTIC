@@ -155,7 +155,19 @@ clean :
 
 ftnchek :
 	./ftnchekrun "$(COPTIC).f $(OBJECTS)"
-	@echo To view do: konqueror CallTree.html &
+	@echo To view do: google-chrome CallTree.html
+
+tree :
+	./ftnchekrun "-nocheck $(COPTIC).f $(OBJECTS)"
+	@echo To view do: 
+	google-chrome CallTree.html
+
+vcg :
+	./ftnchekrun "-nocheck -vcg $(COPTIC).f $(OBJECTS)"
+
+fordocu :
+	testing/fordocu.sh "$(COPTIC).f $(OBJECTS)"
+	google-chrome html/index.html
 
 coptic.prof : makefile $(OBJECTS) 
 	make clean

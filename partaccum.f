@@ -524,7 +524,7 @@ c         call automark(vsbin(1,id),fvx(1,id,ip),nsbins,1)
          if(id.eq.3)then
             call axlabels('Velocity',string(1:lentrim(string)))
          else
-            call axlabels('',string(1:lentrim(string)))
+            call axlabels(' ',string(1:lentrim(string)))
          endif
          call winset(.true.)
 c         call polybox(vhbin(0,id),fvx(1,id,ip),nsbins)

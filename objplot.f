@@ -575,6 +575,7 @@ c         call drcstr(string)
       end
 c*********************************************************************
       subroutine zsort(ngeomobj,zta,index)
+c Sort the values zta of length ngeomobj returning sorted index.
       real zta(ngeomobj)
       integer index(ngeomobj)
       do j=2,ngeomobj

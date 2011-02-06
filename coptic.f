@@ -1,7 +1,7 @@
       program coptic
 c Main program of cartesian coordinate, oblique boundary, pic code.
 
-c      include 'mpif.h'
+c Object data storage.
       include 'objcom.f'
 c Storage array spatial count size
       include 'griddecl.f'
@@ -45,8 +45,6 @@ c Collision common data
       include 'colncom.f'
 c Point charge common data
       include 'ptchcom.f'
-c      integer ndims
-c      parameter (ndims=ndims_sor)
       external bdyset,faddu,cijroutine,cijedge,psumtoq,quasineutral
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
@@ -266,7 +264,7 @@ c Help text
 c         call helpusage()
  301  format(a,i5,a,i5)
  302  format(a,3f8.3)
-      write(*,301)'Usage: coptic [switches]'
+      write(*,301)'Usage: coptic [objectfile] [-switches]'
       write(*,301)'Parameter switches.'
      $     //' Leave no gap before value. Defaults or set values [ddd'
       write(*,301)' -ni   set No of particles/node; zero => unset.    ['
@@ -295,7 +293,7 @@ c         call helpusage()
      $     ,'     Bits:1 write, 2 plot.'
       write(*,301)' -md   set No of diag-moments(7). [',ndiags
 c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
-      write(*,301)' -of<filename>  set name of object data file.'
+      write(*,301)' [-of]<filename>  set name of object data file.'
      $     //'   ['//objfilename(1:lentrim(objfilename))
       write(*,301)
      $     ' -fs[path]  Attempt to restart from state saved [in path].'
@@ -354,7 +352,6 @@ c This does not work until after we've set mesh in cartesian.
 c----------------------------------------------------------------
 c Initialize the fluxdata storage and addressing before cijroutine
       call fluxdatainit(myid)
-c Initializations
       if(lmyidhead)write(*,*)'Initializing the stencil data cij.'
 c Initialize cij:
       ipoint=iLs(1)+iLs(2)+iLs(3)

@@ -499,16 +499,16 @@ c      averein=phi
       end
 c********************************************************************
 c Cubic interpolation. Not used.
-      real function yinterp4pt(y,xi)
+c      real function yinterp4pt(y,xi)
 c Given four points on an equally spaced mesh: y(1-4)
 c and a fractional mesh position xi between the middle two,
 c so that xi=x-x(2), [and we form et=1-xi],
 c return the interpolated y value, cubically interpolated.
-      real y(4)
-      real xi
-
-      et=1.-xi
-      a= -et*xi*y(1)+(2.+2.*xi-3.*xi**2)*y(2)
-      b= -xi*et*y(4)+(2.+2.*et-3.*et**2)*y(3)
-      yinterp4pt=0.5*(et*a+xi*b)
-      end
+c      real y(4)
+c      real xi
+c
+c      et=1.-xi
+c      a= -et*xi*y(1)+(2.+2.*xi-3.*xi**2)*y(2)
+c      b= -xi*et*y(4)+(2.+2.*et-3.*et**2)*y(3)
+c      yinterp4pt=0.5*(et*a+xi*b)
+c      end

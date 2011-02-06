@@ -1,9 +1,9 @@
-c Particle advancing routine
       subroutine padvnc(ndims,iLs,cij,u)
+c Particle advancing routine.
 c If ninjcomp (in partcom) is non-zero, then we are operating in a mode
 c where the number of reinjections at each timestep is prescribed.
 c Otherwise we are using a fixed number npart of particles.
-c
+
 c Number of dimensions: ndims
       integer ndims
 c Storage size of the mesh arrays.
@@ -125,8 +125,8 @@ c the region information.
      $              ,(x_part(kk,i),kk=1,3*ndims)
      $              ,linregion(ibool_part,ndims,x_part(1,i)),iLs
                stop
-               call partlocate(i,ixp,xfrac,inewregion,linmesh)
-               write(*,*)'inewregion,linmesh',inewregion,linmesh
+c               call partlocate(i,ixp,xfrac,inewregion,linmesh)
+c               write(*,*)'inewregion,linmesh',inewregion,linmesh
             endif
             if(i.eq.1)then
 c               write(*,*)
@@ -325,6 +325,8 @@ c Cycle through the nonzero bits of irptch and add up the extra
 c potential (isw=1), field (isw=2) or charge (isw=3) contributions.
 c adfield should be zero on entry, because it ain't set,
 c just incremented.
+
+      integer ndims,irptch,isw
       real adfield(ndims)
       real xp(ndims)
       include '3dcom.f'
@@ -378,6 +380,7 @@ c***********************************************************************
       subroutine setadfield(ndimsp,ifull,iuds,irptch,lsliceplot)
 c Set the values of the potential and charge at the grid
 c points that compensate for the analytic field of getadfield.
+
       integer ndimsp
       integer ifull(ndimsp),iuds(ndimsp),irptch
       logical lsliceplot
@@ -406,7 +409,7 @@ c      write(*,*)'Point charges included. Mask:',iptch_copy
 c**********************************************************************
       subroutine ucrhoset(inc,ipoint,indi,ndims,iuds,
      $     uci,rhoci,iptch_copy)
-c         routine(inc,ipoint,indi,ndims,iused,t,u,v,w) is called
+c Set uci and rhoci when point charges are present.
       integer inc,ipoint,ndims,indi(ndims)
       integer iuds(ndims)
       real uci(*),rhoci(*)
@@ -449,7 +452,6 @@ c      write(*,*)'ucrhoset return',irptch
 
 c***********************************************************************
       subroutine partlocate(i,ixp,xfrac,iregion,linmesh)
-
 c Locate the particle numbered i (from common partcom) 
 c in the mesh (from common meshcom).
 c Return the integer cell-base coordinates in ixp(ndims)
@@ -458,13 +460,13 @@ c Return the region identifier in iregion.
 c Return whether the particle is in the mesh in linmesh.
 c Store the mesh position into common partcom (x_part).
 
+      integer i,iregion
+      logical linmesh
 c meshcom provides ixnp, xn, the mesh spacings. (+ndims_mesh)
       include 'meshcom.f'
-      parameter (ndimsx2=ndims_mesh*2)
-      integer i,iregion
       integer ixp(ndims_mesh)
       real xfrac(ndims_mesh)
-      logical linmesh
+      parameter (ndimsx2=ndims_mesh*2)
 
       include 'partcom.f'
 
@@ -496,18 +498,17 @@ c         if(i.eq.2298489) write(*,*)i,isz,ix,xm,linmesh
       end
 c********************************************************************
       subroutine postcollide(i,tisq)
+c Get new velocity; reflects neutral maxwellian shifted by vneutral.
+
+      integer i
+      real tisq
       include 'partcom.f'
       include 'colncom.f'
-c Get new velocity; reflects neutral maxwellian shifted by vneutral.
       do k=1,npdim
          x_part(npdim+k,i)=tisq*gasdev(idum)
       enddo
 c Vneutral is in z-direction.
       x_part(npdim+npdim,i)=x_part(npdim+npdim,i)+vneutral
-      end
-c***************************************************************
-      real function getnullpot()
-      getnullpot=0.
       end
 c*******************************************************************
       subroutine rotate3(xin,theta,u,xout)
@@ -515,6 +516,7 @@ c Rotate the input 3-vector xin, by angle theta about the direction
 c given by direction cosines u (normalized axis vector) and return in
 c xout. 
 c This is a clockwise (right handed) rotation about positive u, I hope.
+
       real xin(3),xout(3),theta,u(3)
       c=cos(theta)
       s=sin(-theta)
@@ -537,6 +539,7 @@ c********************************************************************
       subroutine translate3(xin,vin,dt,u,xout)
 c Translate in the u direction (cosines) by the component of vin 
 c in the u-direction times dt from the input position xin to xout.
+
       real xin(3),vin(3),u(3),xout(3),dt
       vudt=(u(1)*vin(1)+u(2)*vin(2)+u(3)*vin(3))*dt
       xout(1)=xin(1)+u(1)*vudt
@@ -545,10 +548,20 @@ c in the u-direction times dt from the input position xin to xout.
       end
 c*********************************************************************
       subroutine gyro3(Bt,u,xin,vin,xg,xc)
-c Given a field Bt in direction u, obtain the gyro radius xg of
-c the particle at xin, with velocity vin. Subtract the gyro radius
-c from xin to give the gyrocenter in xout.
-      real Bt,u(3),xin(3),vin(3),xg(3),xc(3)
+c Find gyro radius and center of particle at xin, velocity vin.
+
+c Given a field Bt
+      real Bt
+c in direction u, 
+      real u(3)
+c obtain the gyro radius xg 
+      real xg(3)
+c of the particle at xin, 
+      real xin(3)
+c with velocity vin. 
+      real vin(3)
+c Subtract the gyro radius from xin to give the gyrocenter in xc.
+      real xc(3)
 c Find the perpendicular velocity, rotate it by 90 degrees, and divide 
 c by the field. 
       vu=(u(1)*vin(1)+u(2)*vin(2)+u(3)*vin(3))

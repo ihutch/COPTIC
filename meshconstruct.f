@@ -59,27 +59,3 @@ c Reinitialize the intersection counter.
       oi_sor=0
       end
 c***************************************************************
-c Version constructs a mesh from xmstart(id) to xmend(id)
-      subroutine meshconstructold(ndims,iuds,xmstart,xmend)
-      integer iuds(ndims)
-      real xmstart(ndims),xmend(ndims)
-      include 'meshcom.f'
-
-      iof=0
-      do id=1,ndims
-         xmeshstart(id)=xmstart(id)
-         xmeshend(id)=xmend(id)
-c Pointer to start of vector.
-         ixnp(id)=iof
-c Mesh data.
-         do i=1,iuds(id)
-            xn(i+iof)=((iuds(id)-i)*xmstart(id)+
-     $           (i-1.)*xmend(id))/(iuds(id)-1.)
-c            write(*,*)xmstart(id),xmend(id),xn(i+iof)
-c Non-uniform needs specific programming.
-         enddo
-         iof=iof+iuds(id)
-      enddo
-      ixnp(ndims+1)=iof
-
-      end

@@ -414,7 +414,7 @@ c xn is the position array for each dimension arranged linearly.
       xm=xf
 c Pointer to object data,
       icp0=int(cij(1))
-      jpm=0
+c      jpm=0
       if(icp0.eq.0)then
 c Short-cut 1: an ordinary point don't call the full routine
 c Distance forward and backward along idf-dimension to adjacent
@@ -433,6 +433,11 @@ c A uprime=0. test reduces the time in this routine by about 25%.
 c So this evaluation is about 25%.
             uprime= ((2.*xm+1.) * (up-u0)
      $           +(1.-2.*xm) * (u0-um))/(dx0+dx1)
+c This makes hardly any difference.
+c            uprime= 2.*((xm+0.5) * (up-u0)
+c     $           +(0.5-xm) * (u0-um))/(dx0+dx1)
+c This seems if anything marginally slower:
+c            uprime= (2.*xm*(up-u0-u0+um) + up-um)/(dx0+dx1)
          else
             if(xm.lt.0)then
                x=xm*dx0
