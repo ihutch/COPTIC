@@ -7292,3 +7292,15 @@ proximity of a wall might affect us. About 0.2%.
 Not a lot when we are half way out. Incidentally, the last object is
 centered at x=12, not on the particle center. That's the reason for the
 big field and part components separately (presumably).
+
+12 Feb 11
+Tried a long run on sceptic machine. Got tallyexit error with M=1
+(not with M=1.5)
+0091 149-0.001| 0092 150-0.076| 0093 147-0.094| 0094 145 0.056| 0095 152-0.012| 
+0096 148 0.109| 0097 158 sd problem, fraction,type,No  0.  1. 1 6
+ Tallyexit error 1 721545 6 113
+ xpart,r=  4.45770645 -3.3805542  52.4564285  5.59457731 128
+ xp1 -0.0105438232  0.00775885582 -0.114601135  0.013090915
+rank 7 in job 54  sceptic.psfc.mit.edu_59249   caused collective abort of all ra
+nks
+  exit status of rank 7: killed by signal 9 

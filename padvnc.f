@@ -31,7 +31,7 @@ c Local storage
       real xfrac(ndims_mesh)
       real xg(ndims_mesh),xc(ndims_mesh)
       logical linmesh
-      logical lcollided
+      logical lcollided,ltlyerr
       save adfield
 c Testing storage
       real ptot,atot
@@ -227,10 +227,11 @@ c Treat collided particle at (partial) step end
          call partlocate(i,ixp,xfrac,inewregion,linmesh)
 c---------------------------------
 c If we crossed a boundary, do tallying.
+         ltlyerr=.false.
          if(inewregion.ne.iregion)
-     $        call tallyexit(i,inewregion-iregion)
+     $        call tallyexit(i,inewregion-iregion,ltlyerr)
 c------------ Possible Reinjection ----------
-         if(.not.linmesh .or.
+         if(ltlyerr .or. .not.linmesh .or.
      $        .not.linregion(ibool_part,ndims,x_part(1,i)))then
 c We left the mesh or region.
             if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)goto 200

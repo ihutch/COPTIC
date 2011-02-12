@@ -371,14 +371,18 @@ c     $     ,nf_address(1,1,11)-1)
 
       end
 c******************************************************************
-      subroutine tallyexit(i,idiffreg)
+      subroutine tallyexit(i,idiffreg,ltlyerr)
 c Document the exit of this particle just happened. 
 c Assign the exit to a specific object, and bin on object.
 c (If it is a mapped object, decided by objsect.)      
 c On entry
 c        i is particle number, 
 c        idiffreg is the difference between its region and active.
-c
+c On exit ltlyerr is true if an error occurred else unchanged.
+c Normally, returning an error will cause this particle to be
+c considered to have left the particle region, so it will be discarded.
+      integer i,idiffreg
+      logical ltlyerr
       include 'partcom.f'
       include '3dcom.f'
 
@@ -403,9 +407,10 @@ c Determine (all) the objects crossed and call objsect for each.
             r1=sqrt(r1)
             write(*,*)'Tallyexit error',ierr,i,iobj,idiffreg
             if(ierr.eq.99)write(*,*)'Unknown object type.'
-            write(*,*)'xpart,r=',(x_part(k,i),k=1,3),r,ireg
+            write(*,*)'xpart,r=',(x_part(k,i),k=1,6),r,ireg
             write(*,*)'xp1',(x_part(k,i)-dt*x_part(k+3,i),k=1,3),r1
-            stop
+            ltlyerr=.true.
+            return
          endif
       endif
       idp=idp/2
