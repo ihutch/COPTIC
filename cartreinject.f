@@ -101,8 +101,10 @@ c The most efficient usage is for xw to be slightly larger than the
 c points at which f is 10^-2 times its peak.
 c f must be declared external in the calling routine.
 c If ginfty is returned as zero, then the routine failed with cumulative
-c probability too small to be significant.
-      subroutine cumprob(f,xw,xc,K,h,ginfty)
+c probability too small to be significant. 
+c If myid .gt. 0 then don't print warning messages. 
+c If myid .lt. 0 print extra warnings.
+      subroutine cumprob(f,xw,xc,K,h,ginfty,myid)
       external f
       real xw,xc
       integer K
@@ -114,7 +116,8 @@ c internal storage
       parameter (m=2000)
       real fv(m),g(m),x(m)
 
-      if(K.gt.m)write(*,*)'cumprob warning: too fine a grid ',K
+      if(K.gt.m .and. myid.le.0)
+     $     write(*,*)'cumprob warning: too fine a grid ',K
 
 c      write(*,*)'cumprob entry',xw,xc,K
 
@@ -224,7 +227,7 @@ c               write(*,*)'Integrate count too high.'
             goto 1
          endif
       enddo
-      write(*,*) "Cumprob exhausted end adjustment steps"
+      if(myid.le.0)write(*,*) "Cumprob exhausted end adjustment steps"
       ginfty=0.
       return
  2    continue
@@ -232,8 +235,8 @@ c               write(*,*)'Integrate count too high.'
       if(ii.eq.1 .and. ia.eq.m)then
 c We have the right range. Finish.
          if(.not.g(m).gt.tiny)then
-            write(*,*)'Cumprob total too small',g(m),' set to zero'
-     $           ,' xw=',xw,' xc=',xc
+            if(myid.le.0)write(*,*)'Cumprob total too small',g(m)
+     $           ,' set to zero',' xw=',xw,' xc=',xc
             ginfty=0.
             return
          endif
@@ -271,6 +274,7 @@ c maxwellians of width given by Ti
       include 'plascom.f'
       include 'meshcom.f'
       include 'creincom.f'
+      include 'myidcom.f'
       external ffcrein
       external fvcrein
       parameter (bdys=6.)
@@ -286,7 +290,7 @@ c idrein determines the sign of velocity. id odd => idrein negative.
             idrein=id*(2*i2-3)
             index=2*(id-1)+i2
             call cumprob(ffcrein,0.,0.,
-     $           ncrein,hrein(0,index),grein(index))
+     $           ncrein,hrein(0,index),grein(index),myid)
 c Kludge fix of ends to avoid negative velocity injections.
             if(idrein.gt.0)then
                if(hrein(0,index).lt.0.)hrein(0,index)=0.
@@ -298,7 +302,7 @@ c     $           ,(hrein(kk,index),kk=ncrein-4,ncrein)
          enddo
          idrein=id
          call cumprob(fvcrein,0.,0.,
-     $           ncrein,prein(0,id),gdummy)
+     $           ncrein,prein(0,id),gdummy,myid)
       enddo
 c      write(*,*)'grein',grein
       gtot=0.
