@@ -399,7 +399,7 @@ c Determine (all) the objects crossed and call objsect for each.
             ireg=insideall(npdim,x_part(1,i))
             r=0.
             r1=0.
-            do id=1,2
+            do id=1,3
                r=r+x_part(id,i)**2
                r1=r1+(x_part(id,i)-dt*x_part(id+3,i))**2
             enddo
@@ -544,6 +544,8 @@ c the fractional position between xp1 and xp2 in frac
       real xp1(npdim),xp2(npdim)
       integer ijbin
       real sd,fraction
+      real tiny,onemtiny
+      parameter (tiny=1.e-5,onemtiny=1.-2.*tiny)
       include '3dcom.f'
 c 3D here.
       parameter (nds=3)
@@ -556,8 +558,12 @@ c 3D here.
       call sphereinterp(npdim,ida,xp1,xp2,
      $     obj_geom(ocenter,iobj),obj_geom(oradius,iobj),fraction
      $     ,f2,sd,C,D)
-      if(fraction.ge.1. .or. fraction.lt.0.)then
+      if(sd.eq.0 .or. fraction-1..ge.tiny .or. fraction.lt.0.)then
+c This section can be triggered inappropriately if rounding causes
+c fraction to be >=1 when really the point is just outside or on the 
+c surface. Then we get a sd problem message.
          fraction=1.
+         sd=0.
          return
       endif
 c This code decides which of the nf_posno for this object
@@ -570,7 +576,7 @@ c Calculate normalized intersection coordinates.
       enddo
 c Bin by cos(theta)=x12(3) uniform grid in first nf_dimension. 
 c ibin runs from 0 to N-1 cos = -1 to 1.
-      ibin=int(nf_dimlens(nf_flux,infobj,1)*(0.999999*x12(3)+1.)*0.5)
+      ibin=int(nf_dimlens(nf_flux,infobj,1)*(onemtiny*x12(3)+1.)*0.5)
       psi=atan2(x12(2),x12(1))
 c jbin runs from 0 to N-1 psi = -pi to pi.
       jbin=int(nf_dimlens(nf_flux,infobj,2)
