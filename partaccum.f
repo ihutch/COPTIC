@@ -102,7 +102,7 @@ c Doing summed bin accumulation
          endif
 c Assign positions to bins
          x=(xr(id)-xmeshstart(id))/(xmeshend(id)-xmeshstart(id))
-         ibin=nint(0.50000+x*(nptdiag-.00000))
+         ibin=nint(0.500001+x*(nptdiag-.000001))
          if(ibin.lt.1 .or. ibin.gt.nptdiag)then
             write(*,*)'ibin=',ibin,id,x,xr(id)
          else
@@ -187,7 +187,8 @@ c========================================================================
       subroutine sortbottomlimit(v,vlist,nvlist)
       real vlist(nvlist)
 c Insert the value v into its ordered place in vlist, retaining the bottom
-c nvlist values.
+c nvlist values. 
+c So on return vlist(1:nvlist) are the ordered bottommost v-values.
 c      write(*,*)'bot',v,nvlist,vlist
       if(v.ge.vlist(nvlist))return
       if(v.ge.vlist(1))then
@@ -216,7 +217,8 @@ c*********************************************************************
       subroutine sorttoplimit(v,vlist,nvlist)
       real vlist(nvlist)
 c Insert the value v into its reverse-ordered place in vlist, retaining
-c the top nvlist values.
+c the top nvlist values. 
+c On return vlist(1:nvlist) contain the (reversed) topmost nvlist values.
 c      write(*,*)'topstart',nvlist,v,vlist
       if(v.le.vlist(nvlist))return
       if(v.le.vlist(1))then
@@ -239,7 +241,6 @@ c      write(*,*)'topend',i1,i2,i,vlist(i2),v
          vlist(i)=vlist(i-1)
       enddo
       vlist(i2)=v
-
       end
 
 c***********************************************************************
