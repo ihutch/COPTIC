@@ -450,7 +450,6 @@ c Get the positions:
       if(itype.eq.1)then
 c Sphere intersection. Return the bin number and direction ijbin,sd.
          call spherefsect(npdim,x1,x2,iobj,ijbin,sd,fraction)
-c         write(*,*)'flux spherefsect',ijbin
       elseif(itype.eq.2)then
 c Cube intersection. Return the bin number and direction ijbin,sd.
          call cubefsect(npdim,x1,x2,iobj,ijbin,sd,fraction)
@@ -541,8 +540,9 @@ c the flux bin to which that point corresponds and return the bin index
 c in ijbin (zero-based), and the direction in which the sphere was
 c crossed in sd. If no intersection is found return sd=0. Return
 c the fractional position between xp1 and xp2 in frac
+      integer npdim
       real xp1(npdim),xp2(npdim)
-      integer ijbin
+      integer iobj,ijbin
       real sd,fraction
       real tiny,onemtiny
       parameter (tiny=1.e-5,onemtiny=1.-2.*tiny)
@@ -590,8 +590,6 @@ c jbin runs from 0 to N-1 psi = -pi to pi.
      $        ,fraction
       endif
       end
-
-
 c*********************************************************************
       subroutine sphereinterp(npdim,ida,xp1,xp2,xc,rc,f1,f2,sd,C,D)
 c Given two different npdim dimensioned vectors xp1,xp2,and a sphere
