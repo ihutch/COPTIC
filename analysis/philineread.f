@@ -6,16 +6,16 @@
       character*50 string
       parameter (nfx=200)
       integer ild,ilinechoice(ndims_mesh,nfx),ip(ndims_mesh)
-      real philine(na_m),xline(na_m)
+      real philine(na_m),xline(na_m),dphidx(na_m),xd(na_m)
       real darray(nfx),pmax(nfx),punscale(nfx),rp(nfx),pp(nfx)
       real tp(nfx),vp(nfx)
 
 c philineread commons
-      logical lrange,lwrite,lvd
+      logical lrange,lwrite,lvd,ldiff
       integer iover
       character*(100)overfile
       common /linecom/xmin,xmax,ymin,ymax,lrange,lwrite
-     $     ,iover,overfile,lvd
+     $     ,iover,overfile,lvd,ldiff
 
 c xfig2trace parameters.
       parameter (np=200,nt=50)
@@ -78,12 +78,15 @@ c     $     ixnp,xn,ifix,'potential:'//'!Ay!@')
 
 c Select the lineout into the plotting arrays.      
          if(ild.ne.0)then
+            write(*,*)'Dim, Mesh-No, Positions, /debye:'
             do k=1,ndims_mesh-1
-               ip(mod(ild+k-1,ndims_mesh)+1)=
-     $              ilinechoice(mod(ild+k-1,ndims_mesh)+1,inm)
-c               write(*,*)k,ilinechoice(mod(ild+k-1,ndims_mesh)+1,inm)
+               ik=mod(ild+k-1,ndims_mesh)+1
+               ip(ik)=ilinechoice(ik,inm)
+               write(*,'(2i5,2f10.4)')ik,ip(ik),xn(ixnp(ik)+ip(ik))
+     $              ,xn(ixnp(ik)+ip(ik))/debyelen
             enddo
 c            write(*,*)'ild,ip(ild)',ild,ip(ild)
+            if(lwrite)write(*,*)iuds(ild)
             do i=1,iuds(ild)
                ip(ild)=i
                xline(i)=xn(ixnp(ild)+i)/debyelen
@@ -91,6 +94,11 @@ c            write(*,*)'ild,ip(ild)',ild,ip(ild)
      $              /(abs(phis)*(1.+rp(inm)/debyelen)*rp(inm)/debyelen)
                if(lwrite)write(*,'(2f10.5)')xline(i),philine(i)
             enddo
+            if(ldiff)then
+               call differentiate(iuds(ild),xline,philine,xd,dphidx)
+               write(*,*)iuds(ild)-1
+               write(*,'(2f10.5)')(xd(k),dphidx(k),k=1,iuds(ild)-1)
+            endif
             call minmax(philine,iuds(ild),pmin,pa)
             pmax(inm)=pa
             punscale(inm)=pmax(inm)*abs(phis)*(1.+rp(inm)/debyelen)
@@ -110,12 +118,26 @@ c            write(*,*)'ild,ip(ild)',ild,ip(ild)
                   endif
                   call pltinit(xmin,xmax,ymin,ymax)
                   call axis()
-                  call axlabels('z/!Al!@',
+                  if(ild.eq.3)then
+                     call axlabels('z/!Al!@',
      $                 '!Af!@/(|!Af!@!dp!d|r!dp!d/!Al!@)')
+                  elseif(ild.eq.2)then
+                     call axlabels('y/!Al!@',
+     $                 '!Af!@/(|!Af!@!dp!d|r!dp!d/!Al!@)')
+                  else
+                     call axlabels('x/!Al!@',
+     $                 '!Af!@/(|!Af!@!dp!d|r!dp!d/!Al!@)')
+                  endif
                   call winset(.true.)
                   call polyline(xline,philine,iuds(ild))
+                  if(ldiff)then
+                     call dashset(2)
+                     call polyline(xd,dphidx,iuds(ild)-1)
+                     call dashset(0)
+                  endif
                else
                   call autoplot(xline,philine,iuds(ild))
+                  if(ldiff)call polyline(xd,dphidx,iuds(ild)-1)
                endif
                call axis2()
             else
@@ -124,6 +146,7 @@ c               call iwrite(inm,iwd,string)
 c               call labeline(xline,philine,iuds(ild),string,iwd)
                call dashset(inm)
                call polyline(xline,philine,iuds(ild))
+               if(ldiff)call polyline(xd,dphidx,iuds(ild)-1)
             endif
             string=' !Af!@!dp!d='
             call fwrite(phis,iwd,2,string(lentrim(string)+1:))
@@ -269,11 +292,11 @@ c the logic will break if it is changed by -l in the middle.
       integer nf,ild,ilinechoice(ndims_mesh,nf)
       integer idj(ndims_mesh)
 
-      logical lrange,lwrite,lvd
+      logical lrange,lwrite,lvd,ldiff
       integer iover
       character*(100) overfile
       common /linecom/xmin,xmax,ymin,ymax,lrange,lwrite
-     $     ,iover,overfile,lvd
+     $     ,iover,overfile,lvd,ldiff
 
       ifull(1)=na_i
       ifull(2)=na_j
@@ -321,6 +344,7 @@ c Deal with arguments
             endif
             if(argument(1:2).eq.'-v')lvd=.true.
             if(argument(1:2).eq.'-w')lwrite=.true.
+            if(argument(1:2).eq.'-d')ldiff=.true.
 
             if(argument(1:13).eq.'--objfilename')
      $           read(argument(14:),'(a)',err=201)objfilename
@@ -373,8 +397,10 @@ c     $     //' [ccpicgeom.dat'
       write(*,301)' -o<figfile> overplot traces using xfig2trace.'
       write(*,302)' -r<r> set radius [',rread
       write(*,302)' -p<p> set phiparticle scaling factor [',phiread
+      write(*,*)'-w  write out the line data'
       write(*,*)'Using <r>=1/<p> is appropriate for point charges'
       write(*,301)' -v sort/mark by vd, not radius.'
+      write(*,301)' -d plot the derivative of potential as well'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue
@@ -502,3 +528,21 @@ c Transform to world coordinates.
 
       end
 c****************************************************************
+      subroutine differentiate(npts,x,y,xd,dydx)
+c On entry x,y are arrays of a fuction y(x) of length npts. 
+c x is not necessarily uniform.
+c On exit the differential dy/dx is in dydx on an x-array xd.
+c xd are the center points of the differences, length strictly npts-1
+c although the arrays will normally have a total of npts.
+      integer npts
+      real x(npts),y(npts),dydx(npts),xd(npts)
+
+      do i=1,npts-1
+         dx=x(i+1)-x(i)
+         dy=y(i+1)-y(i)
+         dydx(i)=0.
+         if(dx.ne.0.)dydx(i)=dy/dx
+         xd(i)=(x(i+1)+x(i))*0.5
+      enddo
+
+      end
