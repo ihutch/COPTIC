@@ -470,9 +470,13 @@ c Unknown object type.
          ierr=99
          return
       endif
-      if(abs(sd).ne.1.)then 
-         write(*,*)'sd problem, fraction,type,No',sd,fraction,itype,iobj
-         ierr=1
+      if(abs(sd).ne.1.)then
+c One end seems on exactly the boundary. Don't count this intersection.
+         if(fraction.ne.1.)then
+c There's a worse problem. Report the error.
+            write(*,*)'sd fraction,type,No',sd,fraction,itype,iobj
+            ierr=1
+         endif
          return
       endif
 c------------------------------
