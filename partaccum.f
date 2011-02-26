@@ -102,7 +102,7 @@ c Doing summed bin accumulation
          endif
 c Assign positions to bins
          x=(xr(id)-xmeshstart(id))/(xmeshend(id)-xmeshstart(id))
-         ibin=nint(0.500001+x*(nptdiag-.000001))
+         ibin=nint(0.500001+x*(nptdiag-.0002))
          if(ibin.lt.1 .or. ibin.gt.nptdiag)then
             write(*,*)'ibin=',ibin,id,x,xr(id)
          else
