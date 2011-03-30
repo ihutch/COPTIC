@@ -215,6 +215,247 @@ c User interface
       call hdprset(0,0.)
       end
 c******************************************************************
+c*******************************************************************
+c General slicing routine with surf projection.
+      subroutine sliceGsurf(ifull,iuds,u,nw,zp,ixnp,xn,idfix,utitle)
+c Plot web-projected and/or projected contour representations 
+c of quantity u on slices with
+c fixed values of dimension idfix.
+c The full dimensions of arrays u are
+      parameter(ndims=3,nd2=2*ndims)
+      integer ifull(ndims)
+      real u(ifull(1),ifull(2),ifull(3))
+c The used dimensions of each are
+      integer iuds(ndims)
+c The dimensions of square working array, zp, (nw) must be larger
+c than the greatest of iuds. If zp(1,1)=0 on entry, give control help.
+      integer nw
+      real zp(nw,nw,ndims)
+c The zp are used for the x,y,z arrays. Positions must be specified
+c fully by arrays formed within this routine.
+c The node positions are given by vectors laminated into xn, whose
+c starts for dimensions id are at ixnp(id)+1. 
+c So the vector of positions for dimension id is 
+c   ixnp(id)+1 to ixnp(id)+iuds(id) [and ixnp(id+1)-ixnp(id)>=iuds(id)]
+      integer ixnp(ndims+1)
+      real xn(*)
+c The fixed dimension which is chosen to start, and returned after, is:
+      integer idfix
+c If idfix<0, then don't maintain aspect ratio.
+c The plotted quantity title is
+      character*(*) utitle
+c Needed for perspective plot
+      include 'world3.h'
+c Workspace size is problematic.
+      parameter (nwksp=40000)
+      character*1 pp(nwksp)
+      real work(nwksp)
+c Contour levels
+      real cl(30)
+c Local variables:
+      integer icontour,iweb,iback
+      integer isw,jsw
+      integer iclipping
+      character*(10) cxlab,cylab
+      character*(30) form1
+      save nf1,nf2,nff,if1,if2,iff
+      logical lfirst,laspect
+      data lfirst/.true./laspect/.true./
+      data iclipping/0/jsw/0/
+c Tell that we are looking from the top by default.
+      data ze1/1./icontour/1/iweb/1/iback/0/
+      data cs/.707/sn/.707/
+      integer iwcol
+      data iwcol/2/
+      save n1
+
+      if(idfix.lt.0)then
+         laspect=.false.
+         idfix=abs(idfix)
+      endif
+      if(idfix.lt.1 .or. idfix.gt.ndims)idfix=ndims
+      ips=0
+      irotating=0
+c Initial slice number
+c red-green gradient:
+c      call accisgradinit(64000,0,0,-64000,128000,64000)
+c blue purple white gradient
+c      call accisgradinit(-32000,-65000,0,97000,65500,150000)
+c green yellow white 
+c      call accisgradinit(-32000,0,-65000,97000,150000,65500)
+c red orange white
+c      call accisgradinit(0,-32000,-65000,150000,97000,65500)
+c Better one that gives a good mono gradient too:
+      call blueredgreenwhite()
+      if(lfirst)then
+         n1=iuds(idfix)/2
+c     Plot the surface. With scaling 1. Web color 6, axis color 7.
+c         jsw=1 + 256*6 + 256*256*7
+         jsw=2 + 256*iwcol + 256*256*7
+         iweb=1
+         icontour=1
+         iclipping=0
+         lfirst=.false.
+         write(*,*)' ======== Slice plotting interface. Hit h for help.'
+c         if(zp(1,1).ne.0)goto 19
+      endif
+c Start of controlled plotting loop.
+ 21   call pltinit(0.,1.,0.,1.)
+c Set the plotting arrays for fixed dimension idfix.
+      idp1=mod(idfix,3)+1
+      idp2=mod(idfix+1,3)+1
+      if(iclipping.eq.0)then
+c Plot the full used array.
+         nf1=iuds(idp1)
+         nf2=iuds(idp2)
+         nff=iuds(idfix)
+         if1=1
+         if2=1
+         iff=1
+         if(nf2*nf1.gt.nwksp)then
+            write(*,101)nwksp,nf1,nf2
+ 101        format('sliceGweb error: need bigger nwksp',i6,
+     $           ' smaller than',i4,' x',i4)
+            return
+         endif
+      endif
+      xdp1=xn(ixnp(idp1)+nf1)-xn(ixnp(idp1)+if1)
+      xdp2=xn(ixnp(idp2)+nf2)-xn(ixnp(idp2)+if2)
+c      write(*,*)'nf2,if2,xdp2',nf2,if2,xdp2
+c Only works for 3-D in present implementation.
+c Could be fixed to be general, I suppose.
+      do i=if1,nf1
+         do j=if2,nf2
+            if(idfix.eq.1)then
+               zp(i,j,3)=u(n1,i,j)
+            elseif(idfix.eq.2)then
+               zp(i,j,3)=u(j,n1,i)
+            elseif(idfix.eq.3)then
+               zp(i,j,3)=u(i,j,n1)
+            endif
+            zp(i,j,1)=xn(ixnp(idp1)+i)
+            zp(i,j,2)=xn(ixnp(idp2)+j)
+         enddo
+      enddo
+
+c 3D plot ranges.
+      xmin=xn(ixnp(idp1)+if1)
+      xmax=xn(ixnp(idp1)+nf1)
+      ymin=xn(ixnp(idp2)+if2)
+      ymax=xn(ixnp(idp2)+nf2)
+      zmin=xn(ixnp(idfix)+iff)
+      zmax=xn(ixnp(idfix)+nff)
+c Web drawing. First call is needed to set scaling.
+c      write(*,*)'jsw=',jsw
+      if(iweb.ne.0)then
+c Old buggy setting, only works for centered cube.
+         if(laspect)then
+            if(xdp2.gt.xdp1)then
+               yc=.3
+               xc=xdp1*yc/xdp2
+            elseif(xdp2.lt.xdp1)then
+               xc=.3
+               yc=xdp2*xc/xdp1
+            else
+               xc=.25
+               yc=.25
+            endif
+            zc=.2
+            call setcube(xc,yc,zc,.5,.4)
+         endif
+c Rescale x and y (if necessary), but not z.
+c         if(iclipping.ne.0)
+         call scale3(xmin,xmax,ymin,ymax,wz3min,wz3max)
+c         ksw=-(jsw- (256*256)*(jsw/(256*265)) )
+c         if(icontour.ne.3)then
+c At present this means we draw the surface twice when icontour=3
+c because it is drawn again after the contour plot. Ought to fix
+c but it's tricky
+            ksw=-jsw
+            write(*,*)'ksw1',ksw,jsw-16*(jsw/16)
+            call surf3d(zp(if1,if2,1),zp(if1,if2,2),
+     $           zp(if1,if2,3),nw,nf1+1-if1,nf2+1-if2,jsw,work)
+c         call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
+c     $        zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
+c            endif
+      endif
+c Use this scaling until explicitly reset.
+      jsw=0 + 256*iwcol + 256*256*7
+      write(form1,'(''Dimension '',i1,'' Plane'',i4)')idfix,n1
+c      call drwstr(.1,.02,form1)
+c      call iwrite(idp1,iwidth,cxlab)
+c      call iwrite(idp2,iwidth,cylab)
+c      call ax3labels('axis-'//cxlab,'axis-'//cylab,utitle)
+
+c Projected contouring.
+      if(icontour.ne.0)then
+c       Draw a contour plot in perspective. Need to reset color anyway.
+         call color(4)
+         call axregion(-scbx3,scbx3,-scby3,scby3)
+         call scalewn(xmin,xmax,ymin,ymax,.false.,.false.)
+c Calculate place of plane. 
+         zplane=scbz3*(-1+(xn(ixnp(idfix)+n1)-zmin)*2./(zmax-zmin))
+c accis perspective corner for axes and cube.
+         icorner=igetcorner()
+         if(iweb.eq.0)then
+c Draw axes.
+            call hdprset(0,0.)
+c Ought to rescale the z-axis, but that was done in hidweb.
+            call scale3(xmin,xmax,ymin,ymax,zmin,zmax)
+c If we do, then we must reset jsw:
+            jsw=1 + 256*iwcol + 256*256*7
+            call axproj(icorner)
+         else
+c Set contour levels using the scaling of the box.
+            icl=6
+            do ic=1,icl
+               cl(ic)=wz3min+(wz3max-wz3min)*(ic-1.)/(icl-1.)
+            enddo
+         endif
+c Get back current eye position xe1 etc.
+         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
+         if(icontour.eq.1)call hdprset(-3,sign(scbz3,ze1))
+         if(icontour.eq.2)call hdprset(-3,zplane)
+         if(icontour.eq.3)call hdprset(-3,-sign(scbz3,ze1))
+c Contour without labels, with coloring, using vector axes
+         call contourl(zp(if1,if2,3),pp,nw,
+     $        nf1+1-if1,nf2+1-if2,cl,icl,
+     $        xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),17+64)
+         call ticlabtog()
+         call axis()
+         call ticlabtog()
+         call axis2()
+         if(iweb.ne.1)call cubed(icorner-8*(icorner/8))
+      endif
+
+      if(iweb.eq.1.and.icontour.eq.3)then
+c         call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
+c     $        zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
+         ksw=-jsw
+         write(*,*)'ksw2=',ksw
+c         ksw=-(jsw- (256*256)*(jsw/(256*265)) )
+         call surf3d(zp(if1,if2,1),zp(if1,if2,2),
+     $        zp(if1,if2,3),nw,nf1+1-if1,nf2+1-if2,jsw,work)
+
+c This was necessary when hidweb used to change jsw.
+c         jsw=0 + 256*6 + 256*256*7
+      endif
+
+      if(ips.ne.0)then
+c We called for a local print of plot. Terminate and switch it off.
+         call pltend()
+         call pfset(0)
+         ips=0
+      endif
+
+c User interface
+      call ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping
+     $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb)
+      if(iquit.eq.0)goto 21
+
+      call hdprset(0,0.)
+      end
+c******************************************************************
       subroutine ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping
      $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb)
 c Encapsulated routine for controlling a 3-D plot.
@@ -577,7 +818,7 @@ c Rotate
          irotating=1
          cs=cos(.05)
          sn=sin(-.05)
-      elseif(isw.eq.ichar('t'))then
+      elseif(isw.eq.ichar('y'))then
          irotating=1
          if(cs.ne.cos(.05))then
             cs=cos(.05)

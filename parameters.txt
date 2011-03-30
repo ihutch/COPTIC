@@ -49,13 +49,23 @@ If restarting, this is the number of _additional_ steps.
 
 -a....  Set the averaging time, istepave. Default 100.
 This controls the number of steps over which diagnostic and other
-quantities are averaged.
+quantities are averaged. Writing or plotting of diagnostic and
+distribution data takes place only every istepsave steps.
 
 -w....  Set period of write steps. Default 99999=never.
+This says how often (in steps) the total data is written out to
+disk. It is independent of the diagnostic averaging or moment writing.
+The data overwrites the files of prior steps, giving the running
+values. In any case, the particle data for all steps is contained in
+the files. 
 
 -pd...  Set distribution diagnostics. Bit1: write, Bit2: plot. Default 0.
+This controls whether particle distribution diagnostics will be
+written and/or plotted at the end of each iavestep steps. 
 
 -m....  Set number of diagnostic moments to save (max 7). Default 0.
+This controls which diagnostic files and messages will be written
+every istepsave steps. If zero, no files or messages.
 
 -ct.... Set the collision time, colntime. Default 0 [off].
 

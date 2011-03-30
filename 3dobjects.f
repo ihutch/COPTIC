@@ -170,12 +170,12 @@ c Sphere has just one facet and we must make n3=1 too:
 c         if(myid.eq.0 .and. obj_geom(ofluxtype,ngeomobj).ne.0)
 c     $        write(*,821)(obj_geom(k,ngeomobj),k=ofluxtype,ofn2)
       elseif(type.eq.2.)then
+c Cuboid has 6 facets and uses numbering in three coordinates:
          read(cline,*,err=901,end=802)
      $        (obj_geom(k,ngeomobj),k=1,oradius+nd-1)
      $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn3)
      $        ,(obj_geom(k,ngeomobj),k=ocgrad,oagrad+2)
  802     if(myid.eq.0)write(*,820)ngeomobj,' Cuboid '
-c Cuboid has 6 facets and uses numbering in three coordinates:
          obj_geom(offc,ngeomobj)=2*nd
          if(myid.eq.0)then 
             write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)

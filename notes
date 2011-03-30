@@ -7294,8 +7294,8 @@ centered at x=12, not on the particle center. That's the reason for the
 big field and part components separately (presumably).
 
 12 Feb 11
-Tried a long run on sceptic machine. Got tallyexit error with M=1
-(not with M=1.5)
+Tried a long run on sceptic machine. Got tallyexit error with -v1
+(not with -v1.5)
 0091 149-0.001| 0092 150-0.076| 0093 147-0.094| 0094 145 0.056| 0095 152-0.012| 
 0096 148 0.109| 0097 158 sd problem, fraction,type,No  0.  1. 1 6
  Tallyexit error 1 721545 6 113
@@ -7304,3 +7304,63 @@ Tried a long run on sceptic machine. Got tallyexit error with M=1
 rank 7 in job 54  sceptic.psfc.mit.edu_59249   caused collective abort of all ra
 nks
   exit status of rank 7: killed by signal 9 
+
+Tracked this down after a great deal of effort to a problem in spherefsect.
+We are getting fraction =1+ from the sphereinterp, but this is actually 
+a situation that inside_geom has decided is a crossing because a point
+is exactly on the boundary. Then I was not setting sd to 0 but I was 
+returning without calculating ijbin. The unset value of ijbin was being
+used for an address with an overrun. The simple fix is to put sd=0.
+Then tallyexit decides there's an error and I've now made it discard the
+particle if such an apparent error arises. This works to prevent crashes
+but with 8 processes 30M particles total, the number of such tallyexit
+errors is annoying. One every 20 steps maybe. I'd prefer a better solution
+that did not seem like an error. It seems that the rounding differences
+arise because of the differences in inside_geom and sphereinterp 
+calculations. 
+
+Got some cases to run. There seems to be more y-force coming from the 
+particles than is easily accounted for. It ought to be zero by symmetry.
+On the second run this doesn't happen. Hmmm...
+
+Made adjustments to spherefsect so that it permits fraction up to 1+tiny,
+but only if sd is not equal to zero. Thus it errs on the side of allowing
+a slight over-run of fraction when deciding whether to calculate the ijbin.
+It is in principle possible for calling programs to reject cases that
+are allowed through on that basis, because fraction is left slightly 
+higher than 1, even though ijbin is calculated. This is not debugged
+because it is only on major runs that this problem arises.
+
+29 Apr 2011
+
+Idea is to calculate the force on point charge object(s) from the field
+(and any non-local contribution perhaps if any) within coptic and put it
+out in the flux file.
+ 
+At present obj_geom(ofluxtype) is zero for point charges. And we do 
+no flux accumulation, which means that they are not accounted for in
+the mf_obj list. One would wish to leave the point charge masked out
+of the region calculation, but have it listed in the mf_obj list.
+Also ns_flags needs to be set to something. 
+When read back, we need to set the address so this is null:
+      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+2)-1)
+Now the obj_geom(ofluxtype) doubles as the number of flux quantities
+mf_quant. A point charge for which we wish to calculate the force 
+should have mf_quant = 0 so there is no flux accumulation, but a value
+of ns_flags that tells it to get the field force and multiply by the
+charge. In order to leave the point charge out of the calculation, we
+retain the idea that ofluxtype=0 simply turns it off. However we implement
+a test in the flux initialization that detects a point charge and if the
+ofluxtype is 1 we turn on force calculation but still set mf_quant to zero.
+Implemented in fluxdata.f. 
+
+Seem to have got this going including writing and reading back. However,
+although the force is in the right ballpark, it seems too low, by up
+to a factor of 2 in some minimal runs on small domains with T=1.
+At lower T, results look better. Probably need some big-domain runs
+to check consistency more thoroughly. I find that the point field force
+estimate is in fact much less susceptible to noise than the others.
+That's a good sign. It isn't enough to run 100 steps with 3M particles.
+This is neither steady nor sufficiently overcoming the noise. 
+
+We need to do major tests on sceptic machine.

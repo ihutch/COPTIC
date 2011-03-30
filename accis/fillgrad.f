@@ -224,7 +224,7 @@ c Direction. No d changes needed. dq->d
             x(3)=xq(1+mod(i,4))
             y(3)=yq(1+mod(i,4))
             z(3)=zq(1+mod(i,4))
-            write(*,*)i,z
+c            write(*,*)i,z
             call gradtri(x,y,z,dq,zg0,zg1,ng0,ng1,isw)
          enddo
       endif

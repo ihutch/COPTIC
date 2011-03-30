@@ -6,9 +6,10 @@ c**************************************************************
 
       real plotdata(10000,5),stepdata(10000)
       character*100 filename,argument
-      integer iplot,iprint
+      integer iplot,iprint,ifmask
       real avefield(ns_ndims),avepress(ns_ndims),avepart(ns_ndims)
       data iplot/1/iprint/1/
+      data ifmask/1023/
       
       fn1=0.5
       fn2=1.
@@ -29,6 +30,8 @@ c iplot is the quantity number to plot and average.
      $        read(argument(3:),'(i5)')iplot
          if(argument(1:2).eq.'-w')
      $        read(argument(3:),'(i5)')iprint
+         if(argument(1:2).eq.'-m')
+     $        read(argument(3:),'(i5)')ifmask
          if(argument(1:2).eq.'-r')
      $        read(argument(3:),'(f10.4)')rview
          if(argument(1:2).eq.'-i')
@@ -50,48 +53,51 @@ c      write(*,*) 'Posn and first 2 step addresses ',
 c     $     (((nf_address(i,j,k),i=1,mf_quant(j)),' ,'
 c     $     ,j=1,mf_obj),k=1-nf_posdim,2),'...'
 
+c      write(*,*)'geommap for objects',mf_obj,(nf_geommap(k),k=1,mf_obj)
+
 
 c For all the objects being flux tracked.
       do k=1,mf_obj
          if(k.eq.iprint)then
-         write(*,'(a,i3,a,3i4,a,i3)') 'Position data for ',nf_posdim
-     $        ,' flux-indices. nf_dimlens='
-     $        ,(nf_dimlens(1,k,kd),kd=1,nf_posdim-1),' Object',k
-         write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i-1)
-     $        ,i=1,nf_posno(1,k)),j=1,nf_posdim)
-         
-         do kk=1,nf_step,max(nf_step/5,1)
-            write(*,'(a,i3,a,f10.4,a)')'Step(',kk,') rho=',ff_rho(kk)
-     $           ,'  Flux data'
-            write(*,'(10f8.2)')(ff_data(nf_address(nf_flux,k,kk)+i-1)
-     $           ,i=1,nf_posno(nf_flux,k))
-            if(mf_quant(k).ge.2)then
-               write(*,'(''x-momentum'',i4)')nf_posno(nf_gx,k)
-               write(*,'(10f8.3)')(ff_data(nf_address(nf_gx,k,kk)+i-1)
-     $              ,i=1,nf_posno(nf_gx,k))
+            if(mf_quant(k).ge.1)then
+               write(*,'(a,i3,a,3i4,a,i3)') 'Position data for '
+     $              ,nf_posdim,' flux-indices. nf_dimlens='
+     $              ,(nf_dimlens(1,k,kd),kd=1,nf_posdim-1),' Object',k
+               write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i
+     $              -1),i=1,nf_posno(1,k)),j=1,nf_posdim)
             endif
-            if(mf_quant(k).ge.3)then
-               write(*,'(''y-momentum'',i4)')nf_posno(nf_gy,k)
-               write(*,'(10f8.3)')(ff_data(nf_address(nf_gy,k,kk)+i-1)
-     $              ,i=1,nf_posno(nf_gy,k))
-            endif
-            if(mf_quant(k).ge.4)then
-               write(*,'(''z-momentum'',i4)')nf_posno(nf_gz,k)
-               write(*,'(10f8.3)')(ff_data(nf_address(nf_gz,k,kk)+i-1)
-     $              ,i=1,nf_posno(nf_gz,k))
-            endif
-         enddo
-         kk=nf_step
-            write(*,'(a,i3,a,f10.4,a)')'Step(',kk,') rho=',ff_rho(kk)
-     $           ,'  Flux data'
-            write(*,'(10f8.2)')(ff_data(nf_address(nf_flux,k,kk)+i-1)
-     $           ,i=1,nf_posno(nf_flux,k))
+            do kk=max(nf_step/5,1),nf_step,max(nf_step/5,1)
+               if(mf_quant(k).ge.1)then
+                  write(*,'(a,i4,a,f10.4,a)')'Step(',kk,') rho='
+     $                 ,ff_rho(kk),'  Flux data'
+                  write(*,'(10f8.2)')(ff_data(nf_address(nf_flux,k,kk)+i
+     $                 -1),i=1,nf_posno(nf_flux,k))
+               endif
+               if(mf_quant(k).ge.2)then
+                  write(*,'(''x-momentum'',i4)')nf_posno(nf_gx,k)
+                  write(*,'(10f8.3)')(ff_data(nf_address(nf_gx,k,kk)+i
+     $                 -1),i=1,nf_posno(nf_gx,k))
+               endif
+               if(mf_quant(k).ge.3)then
+                  write(*,'(''y-momentum'',i4)')nf_posno(nf_gy,k)
+                  write(*,'(10f8.3)')(ff_data(nf_address(nf_gy,k,kk)+i
+     $                 -1),i=1,nf_posno(nf_gy,k))
+               endif
+               if(mf_quant(k).ge.4)then
+                  write(*,'(''z-momentum'',i4)')nf_posno(nf_gz,k)
+                  write(*,'(10f8.3)')(ff_data(nf_address(nf_gz,k,kk)+i
+     $                 -1),i=1,nf_posno(nf_gz,k))
+               endif
+            enddo
          endif
          plotdata(i,j)=pressforce(j,k,i)
       
          n1=fn1*nf_step
          n2=fn2*nf_step
-         call fluxave(n1,n2,k,iplot,rhoinf)
+         if(mf_quant(k).ge.iplot)then
+c            write(*,*)'Plotting',k,mf_quant(k),iplot
+            call fluxave(n1,n2,k,iplot,rhoinf)
+         endif
       enddo
 
 c Plots if 
@@ -102,7 +108,11 @@ c Plots if
       endif
       write(*,*)'   Field,       part,       press,'
      $     ,'       total,   ave over steps',n1,n2
+      nplot=0
       do k=1,mf_obj
+         imk=ifmask/2**(k-1)
+         imk=imk-2*(imk/2)
+
          do j=1,ns_ndims
             avefield(j)=0.
             avepart(j)=0.
@@ -134,24 +144,27 @@ c Plots if
          enddo
          avecharge=avecharge/float(iavenum)
          if(iplot.ne.0)then
+         if(imk.ne.0)then
+            nplot=nplot+1
             call color(k)
             call iwrite(k,iwd,argument)
             call polyline(stepdata,plotdata(1,3),nf_step)
-            call legendline(.1+.4*(k-1),.2,0,
+            call legendline(.1+.4*(nplot-1),.2,0,
      $        'partforce '//argument(1:iwd))
             call dashset(1)
             call polyline(stepdata,plotdata(1,1),nf_step)
-            call legendline(.1+.4*(k-1),.15,0,
+            call legendline(.1+.4*(nplot-1),.15,0,
      $        'fieldforce '//argument(1:iwd))
             call dashset(2)
             call polyline(stepdata,plotdata(1,2),nf_step)
-            call legendline(.1+.4*(k-1),.1,0,
+            call legendline(.1+.4*(nplot-1),.1,0,
      $           'pressforce '//argument(1:iwd))
             call dashset(4)
             call polyline(stepdata,plotdata(1,4),nf_step)
-            call legendline(.1+.4*(k-1),.25,0,
+            call legendline(.1+.4*(nplot-1),.25,0,
      $           'total '//argument(1:iwd))
             call dashset(0)
+         endif
          endif
          write(*,101)k,nf_geommap(k),obj_geom(oradius,nf_geommap(k))
      $        ,avecharge
@@ -176,6 +189,7 @@ c Plots if
       write(*,*)'-n1,-n2 step range over which to average.'
       write(*,*)'-p set quantity to average and plot'
       write(*,*)'-w set object whose data is to be written'
+      write(*,*)'-m mask objects whose data is to be plotted'
       write(*,*)'-r set size of plot window'
       write(*,*)'-i set iosw for objplot'
 

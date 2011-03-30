@@ -136,6 +136,17 @@ c     $           (fieldforce(k,i,nf_step),k=1,3)
             call totalcharge(ndims,km,
      $           surfobj(1,1,1,i),charge_ns(i,nf_step),
      $           u,cij,iLs)
+         elseif(ns_flags(i).eq.513)then
+c Point charge object. Just fieldforce.
+            call fieldatpoint(obj_geom(ocenter,nf_geommap(i)),
+     $           u,cij,iLs,fieldforce(1,i,nf_step))
+            charge_ns(i,nf_step)=obj_geom(oradius,nf_geommap(i))
+     $           *obj_geom(ofn1,nf_geommap(i))*4.*3.14159
+            do nd=1,ns_ndims
+               pressforce(nd,i,nf_step)=0.
+               fieldforce(nd,i,nf_step)=fieldforce(nd,i,nf_step)*
+     $              charge_ns(i,nf_step)
+            enddo
          else
 c Unknown type. Do nothing.
 
@@ -163,27 +174,31 @@ c            write(*,*)'Forceinit:'
 c     $           ,i,nfmap,'  type',it
             if(it.eq.1)then
 c Spheroid.
-c               ns_flags(nfmap)=0
-               ns_flags(nfmap)=it
+               if(itype-it.ne.512)then
+                  ns_flags(nfmap)=it
 c Initialize the area facet mesh for a unit sphere
-               call spheremesh(ns_nt,ns_np,surfobj(1,1,1,nfmap))
+                  call spheremesh(ns_nt,ns_np,surfobj(1,1,1,nfmap))
 c Now apply the transformation to a spheroid with possibly different
 c radii in each direction:
-               r3=obj_geom(oradius,i)*obj_geom(oradius+1,i)
-     $              *obj_geom(oradius+2,i)
+                  r3=obj_geom(oradius,i)*obj_geom(oradius+1,i)
+     $                 *obj_geom(oradius+2,i)
 c               write(*,*)'Object radius cubed',i,r3
-               do k=1,ns_np
-                  do j=1,ns_nt
+                  do k=1,ns_np
+                     do j=1,ns_nt
 c                     write(*,*)(surfobj(ii,j,k,nfmap),ii=1,3)
-                     do id=1,ns_ndims
-                        r=obj_geom(oradius+id-1,i)*1.00001
-                        surfobj(id,j,k,nfmap)=obj_geom(ocenter+id-1,i)
-     $                       +surfobj(id,j,k,nfmap)*r
-                        surfobj(ns_ndims+id,j,k,nfmap)=
-     $                       surfobj(ns_ndims+id,j,k,nfmap)*r3/r
+                        do id=1,ns_ndims
+                           r=obj_geom(oradius+id-1,i)*1.00001
+                           surfobj(id,j,k,nfmap)=
+     $                          obj_geom(ocenter+id-1,i)+
+     $                          surfobj(id,j,k,nfmap)*r
+                           surfobj(ns_ndims+id,j,k,nfmap)=
+     $                          surfobj(ns_ndims+id,j,k,nfmap)*r3/r
+                        enddo
                      enddo
                   enddo
-               enddo
+               else
+                  ns_flags(nfmap)=itype
+               endif
             else
 c An object type I don't know how to handle. Ignore.
             endif

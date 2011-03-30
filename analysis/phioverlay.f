@@ -1,4 +1,6 @@
       program phioverlay
+c Overlay contours obtained using xfig2trace on a contour plot of 
+c potential. 
 
       include 'examdecl.f'
       parameter (ntheta=4,nr=38)

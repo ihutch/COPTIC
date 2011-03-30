@@ -140,9 +140,15 @@ c Transform from world3 to normal3
       real xn,yn,zn
       include 'world3.h'
       include 'plotcom.h'
-      xn=w3nx*(x-wx3min)-scbx3
-      yn=w3ny*(y-wy3min)-scby3
-      zn=w3nz*(z-wz3min)-scbz3
+      if(i3trunc.eq.0)then
+         xn=w3nx*(x-wx3min)-scbx3
+         yn=w3ny*(y-wy3min)-scby3
+         zn=w3nz*(z-wz3min)-scbz3
+      else
+         xn=w3nx*(max(min(x,wx3max),wx3min)-wx3min)-scbx3
+         yn=w3ny*(max(min(y,wy3max),wy3min)-wy3min)-scby3
+         zn=w3nz*(max(min(z,wz3max),wz3min)-wz3min)-scbz3
+      endif
       end
 C********************************************************************
       subroutine xy2ncbc(x,y)

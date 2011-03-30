@@ -53,12 +53,19 @@ c Might eventually need more interpretation of fluxtype.
                goto 1
             endif
             mf_quant(mf_obj)= obj_geom(ofluxtype,i)
+            itype=int(obj_geom(otype,i))
+            i2type=(itype/256)
+            if(i2type.eq.2)then
+c Point object. No flux accumulations.
+               write(*,*)'Measuring force, no flux, on point object',i
+     $              ,mf_obj
+               mf_quant(mf_obj)=0
+            endif
 c The mapped object number != object number.
             nf_map(i)=mf_obj
             nf_geommap(mf_obj)=i
-            itype=int(obj_geom(otype,i))
-c Use only bottom 8 bits:
-            itype=itype-256*(itype/256)
+c Use only bottom 8 bits from now on:
+            itype=itype-256*i2type
 c There are nfluxes positions for each quantity.
 c At present there's no way to prescribe different grids for each
 c quantity in the input file. But the data structures could 
@@ -434,9 +441,10 @@ c
 
       ierr=0
 
-c Do nothing for untracked object and report no error.
+c Do nothing for untracked objects and report no error.
       if(nf_map(iobj).eq.0)return
       infobj=nf_map(iobj)
+      if(mf_quant(infobj).eq.0)return
 
       itype=int(obj_geom(otype,iobj))
 c Use only bottom 8 bits:
@@ -1271,6 +1279,7 @@ c This write sequence must be exactly that read below.
       write(22)charout
       write(22)debyelen,Ti,vd,rs,phip
       write(22)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
+c      write(*,*)'geommap',(nf_geommap(j),j=1,mf_obj)
       write(22)(ff_rho(k),k=1,nf_step)
       write(22)(ff_dt(k),k=1,nf_step)
       write(22)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_ndims)
@@ -1278,7 +1287,8 @@ c This write sequence must be exactly that read below.
      $     ,i=1,mf_quant(j)),j=1,mf_obj)
       write(22)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+2)
-      write(22)(ff_data(i),i=1,nf_address(1,1,nf_step+2)-1)
+      ndatalen=nf_address(1,1,nf_step+2)-1
+      write(22)(ff_data(i),i=1,ndatalen)
 c New force write.
       write(22)(((fieldforce(i,j,k),pressforce(i,j,k) ,partforce(i,j,k)
      $     ,charge_ns(j,k),i=1,ns_ndims),j=1,mf_obj),k=1,nf_step)
@@ -1311,6 +1321,7 @@ c*****************************************************************
       read(23)charout
       read(23)debyelen,Ti,vd,rs,phip
       read(23)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
+c      write(*,*)'geommap',(nf_geommap(j),j=1,mf_obj)
       read(23)(ff_rho(k),k=1,nf_step)
       read(23)(ff_dt(k),k=1,nf_step)
       read(23)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_ndims)
@@ -1318,7 +1329,17 @@ c*****************************************************************
      $     ,i=1,mf_quant(j)),j=1,mf_obj)
       read(23)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+2)
-      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+2)-1)
+c      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+2)-1)
+      ndatalen=0
+      do j=1,mf_obj
+         if(mf_quant(j).ge.1)then
+            ndatalen=nf_address(1,j,nf_step+2)-1
+            goto 201
+         endif
+      enddo
+ 201  continue
+c      write(*,*)'Datalen',ndatalen
+      read(23)(ff_data(i),i=1,ndatalen)
       read(23,end=102, err=102)(((fieldforce(i,j,k),pressforce(i,j,k)
      $     ,partforce(i,j,k),charge_ns(j,k),i=1,ns_ndims),j=1,mf_obj),k
      $     =1,nf_step)

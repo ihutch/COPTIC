@@ -316,19 +316,18 @@ c Switch: isw.lt.0 draw no axes.
 c Second byte of isw gives web color. Third byte gives axis color.
 c Lowest nibble levd (absolute value): 
 c   =0 perform no scaling and use last perspective
+c This 1-d x,y can't work because of surfdr3 requirements.
 c   =1 scale to fit the region, 1-d x,y
 c   =2 scale to fit the region, 2-d x,y
 c Second nibble (16+): isw for the surfdr3 call. bit0=1 => smooth tri.
 c Eye obtained from file eye.dat, or default if none exists.
-c Obsolete:
-c   abs(isw)=0, 1 scale to fit the region, 1-d x,y.
-c   abs(isw)=2 perform no scaling and use last perspective.
-c   abs(isw)=4 scale to fit region 2-d x,y.
       integer iLx, nx,ny,isw
       real x(iLx,*),y(iLx,*),z(iLx,ny),work(0:iLx+1,0:ny+1)
       integer icorner,colw,cola
       real x2,y2,z2
       real zmin,zmax
+      real d(5)
+      data d/0.,0.,1.,0.,1./
       save
 
       cola=isw/256
@@ -343,31 +342,35 @@ c isw is second nibble (bits 4-7).
       if(colw.ne.0) call color(colw)
 c Set the top and bottom horizons.
       call hidinit(0.,1.)
+c     Set to non-hiding 3-D calls.
+      call hdprset(0,0.)
       if(levd.ne.0)then
          call geteye(x2,y2,z2)
-c     Set to non-hiding 3-D calls.
-         call hdprset(0,0.)
 c     Set the perspective transform.
          call trn32(0.,0.,0.,x2,y2,z2,1)
 c     Set the scaling.
-            call minmax2(z,iLx,nx,ny,zmin,zmax)
-            itics=5
-            call fitrange(zmin,zmax,itics,ipow,fac10,delta,first,xlast)
-            zmin=first
-            zmax=xlast
-         if(levd.eq.2)then
+         call minmax2(z,iLx,nx,ny,zmin,zmax)
+         itics=5
+         call fitrange(zmin,zmax,itics,ipow,fac10,delta,first,xlast)
+         zmin=first
+         zmax=xlast
+         if(levd.eq.2 .or. levd.eq.1)then
             call minmax2(x,iLx,nx,ny,xmin,xmax)
             call minmax2(y,iLx,nx,ny,ymin,ymax)
-         elseif(levd.eq.1)then
-            call minmax(x,nx,xmin,xmax)
-            call minmax(y,ny,ymin,ymax)            
+c         elseif(levd.eq.1)then
+c            call minmax(x,nx,xmin,xmax)
+c            call minmax(y,ny,ymin,ymax)            
          endif
          call scale3(xmin,xmax,ymin,ymax,zmin,zmax)
       endif
 c Draw the surface.
-      call surfdr3(x,y,z,iLx,nx,ny,work,isw,dummy)
+      d(4)=zmin
+      d(5)=zmax
+c      isw=isw+2
+      call surfdr3(x,y,z,iLx,nx,ny,work,isw+2,d)
       if(cola.ne.0) call color(cola)
-      if(isw.ge.0)then
+c      if(isw.ge.0)then
+      if(isw.gt.0)then
 c Draw cube.
          icorner=igetcorner()
 	 icube=sign(1.,z2)*icorner
@@ -417,6 +420,7 @@ c that. So the surf3d was done instead.
 c********************************************************************
       subroutine surfdr3(x,y,z,iLx,nx,ny,work,isw,d)
 c Draw a 3-d surface of z(x,y), dim(iLx\nx,ny), using current scaling.
+c Must have 2-d x,y specification.
 c Version using filled quadrilaterals.
 c isw bit 0 set => triangular fills, else chunks. If in addition,
 c isw bit 1 set => directional shading, optional argument d(5)
