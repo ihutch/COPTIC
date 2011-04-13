@@ -18,14 +18,16 @@ c Cylindrical vector distribution:
       real oneoverr(100),huckel(100),ro(100),cl(100)
       real xl(2),yl(2)
 c
+      logical lsd
       parameter (ndiagmax=7)
       real diagsum(na_i,na_j,na_k,ndiagmax)
       real phimax
       data phimax/0./
+      data lsd/.false./
 c 
       diagfilename=''
       isw=1
-      call examargs(rp,phimax,isw)
+      call examargs(rp,phimax,isw,lsd)
          
 c      write(*,*)(u(16,16,k),k=1,36) 
       ied=1
@@ -39,6 +41,13 @@ c      write(*,*)(u(16,16,k),k=1,36)
 c      write(*,*)(u(16,16,k),k=1,36) 
       ifix=1
 c      call noeye3d(0)
+      if(lsd)then
+c Scale the size to debyelen
+         do i=1,ixnp(4)
+            xn(i)=xn(i)/debyelen
+         enddo
+      endif
+
       call sliceGweb(ifull,iuds,u,na_m,zp,
      $     ixnp,xn,ifix,'potential:'//'!Af!@')
 c      call sliceGcont(ifull,iuds,u,na_m,zp,
@@ -217,9 +226,6 @@ c         write(*,*)' Contours',nc,(cl(k),k=1,nc)
      $        cl,nc,rval,xn(ixnp(3)+1),iconsw)
          call contourl(rzdist,ppath,nr+1,nr+1,iuds(3),
      $        cl,nc,rvalneg,xn(ixnp(3)+1),iconsw)
-         call color(15)
-         call axis()
-         call axlabels('r','z')
 c         write(*,*)'ipow',ipow
          call fwrite(delta,iwd,max(-ipow,0)+1,string)
          call boxtitle('!Af!@-contours ('//string(1:iwd)
@@ -254,6 +260,20 @@ c         call fwrite(debyelen,iwd,1,string)
 c         call jdrwstr(.02,.25,'!Al!@!dDe!d='//string(1:iwd),1.)
 c         call fwrite(phip,iwd,2,string)
 c         call jdrwstr(.02,.28,'!Af!@!dp!d='//string(1:iwd),1.)
+         call color(15)
+         if(lsd)then
+            call axlabels('r/!Al!@!dDe!d','z/!Al!@!dDe!d')
+            delta=0.
+            call xaxis(first,delta)
+            call ticnumset(10)
+            call yaxis(first,delta)
+            call axbox()
+            call axis2()
+         else
+            call axlabels('r','z')
+            call axis()
+         endif
+
          write(*,'(''vd='',f7.3,'' debyelen='',f7.3,''  phip='',f7.3)')
      $        vd,debyelen,phip
 
@@ -325,8 +345,9 @@ c         write(22,*)rzmpos(iz0+i),xn(ixnp(3)+iz0+i)
       end
 
 c*************************************************************
-      subroutine examargs(rp,phimax,isw)
+      subroutine examargs(rp,phimax,isw,lsd)
       include 'examdecl.f'
+      logical lsd
 
       ifull(1)=na_i
       ifull(2)=na_j
@@ -351,6 +372,7 @@ c Deal with arguments
      $        read(argument(3:),'(f8.4)',err=201)rp
          if(argument(1:2).eq.'-p')
      $        read(argument(3:),'(f8.4)',err=201)phimax
+         if(argument(1:2).eq.'-s')lsd=.not.lsd
          if(argument(1:2).eq.'-l')
      $        read(argument(3:),*,err=201)isw
          if(argument(1:2).eq.'-h')goto 203
@@ -372,6 +394,7 @@ c      write(*,301)' --objfile<filename>  set name of object data file.'
 c     $     //' [copticgeom.dat'
       write(*,301)' -d<diagfilename>  -r<rp> -p<phimax> -l<isw>'
       write(*,301)' isw: Byte 1: gradlegend(1) 2: ...'
+      write(*,301)' -s scale size to debyelen'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue

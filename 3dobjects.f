@@ -820,7 +820,6 @@ c Convert index to multidimensional indices.
             x(k)=xn(ixnp(k)+ix(k))
          enddo
 c Store in object-data.
-c         idob_sor(iregion_sor,i)=insideall(ndims,x)
          idob_sor(iregion_sor,i)=insidemask(ndims,x)
 
 c         write(*,101)i,ipoint,idob_sor(iregion_sor,i),x

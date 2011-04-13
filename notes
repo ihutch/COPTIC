@@ -7331,7 +7331,7 @@ are allowed through on that basis, because fraction is left slightly
 higher than 1, even though ijbin is calculated. This is not debugged
 because it is only on major runs that this problem arises.
 
-29 Apr 2011
+29 Mar 2011
 
 Idea is to calculate the force on point charge object(s) from the field
 (and any non-local contribution perhaps if any) within coptic and put it
@@ -7364,3 +7364,229 @@ That's a good sign. It isn't enough to run 100 steps with 3M particles.
 This is neither steady nor sufficiently overcoming the noise. 
 
 We need to do major tests on sceptic machine.
+
+Here's the v=1 result for r_p=2, r_p\phi_p=1 on a 110x25 size mesh.
+
+    Field,       part,       press,       total,   ave over steps 750 1500
+========== Object 1 ->  1 radius=  2.000 ========  Charge=  -12.5664
+    -0.13769     0.00000     0.00000    -0.13769
+     0.00107     0.00000     0.00000     0.00107
+    20.98632     0.00000     0.00000    20.98632
+========== Object 2 ->  2 radius=  5.000 ========  Charge=  -10.7190
+    -0.06480     1.21881     0.02813     1.18214
+     0.00021    -4.02067    -0.00296    -4.02342
+     4.49055    27.66972    -3.72163    28.43864
+========== Object 3 ->  3 radius=  4.000 ========  Charge=  -11.0850
+    -0.07555     1.25581     0.01572     1.19599
+     0.00655    -4.03701    -0.00099    -4.03144
+     6.79924    24.02388    -2.30635    28.51677
+========== Object 4 ->  4 radius=  3.000 ========  Charge=  -11.9277
+    -0.08995     1.28759     0.00703     1.20467
+     0.00827    -4.05602     0.00034    -4.04740
+     7.48934    20.37780    -0.95641    26.91072
+========== Object 5 ->  5 radius=  2.000 ========  Charge=  -11.9285
+    -0.09585     1.31110     0.00195     1.21720
+    -0.01691    -4.00246     0.00022    -4.01915
+    10.30984    16.43853    -0.25337    26.49500
+========== Object 6 ->  6 radius=  1.000 ========  Charge=   -3.7371
+    -0.03220     1.30913     0.00019     1.27712
+    -0.00306    -4.01847     0.00001    -4.02153
+     4.50617    11.54300    -0.02968    16.01949
+
+This seems to show that the local field calculation is very significantly
+lower than the integration over spheres. I'm not terribly happy with the
+agreement across the radii: from 26.49 to 28.51 either. We know that 
+r=1 is going to give a wrong answer, and maybe r=2 is suspicious, but the
+others ought to agree. 
+
+Looks like the mesh spacing outside the inner region is as great as 
+1.6 or so. This might be a bit big. But in any case the inner region is
+better resolved. I don't understand. There are comparable discrepancies 
+at v=1.5.
+
+Went back to laptop and using geomforce and geomforce2 which has twice
+the resolution, I seem to get agreement between the point measurement
+and the surface measurements at -v1. -t.1 -l10 that improves with resolution. 
+At 64^3 we get (200 steps on a +-5^3 domain).
+========== Object 1 ->  1 radius=  1.000 ========  Charge=  -12.5664
+     0.23548     0.00000     0.00000     0.23548
+    -0.12161     0.00000     0.00000    -0.12161
+    14.90358     0.00000     0.00000    14.90358
+========== Object 2 ->  2 radius=  1.000 ========  Charge=  -12.2314
+     0.12728     0.33798    -0.00012     0.46514
+    -0.15539    -0.46727     0.00017    -0.62249
+     7.63848     7.31926    -0.01387    14.94387
+========== Object 3 ->  3 radius=  0.500 ========  Charge=   -3.8205
+     0.01426     0.46699     0.00000     0.48125
+    -0.01897    -0.54087     0.00001    -0.55983
+     3.31843     4.22225    -0.00121     7.53946
+========== Object 4 ->  4 radius=  2.000 ========  Charge=  -11.9920
+     0.11133     0.40623    -0.00188     0.51568
+    -0.02513    -0.51600     0.00148    -0.53965
+     4.09672    10.80441    -0.11957    14.78156
+
+-l5:
+    Field,       part,       press,       total,   ave over steps 100 200
+========== Object 1 ->  1 radius=  1.000 ========  Charge=  -12.5664
+    -0.02662     0.00000     0.00000    -0.02662
+    -0.07211     0.00000     0.00000    -0.07211
+    13.33594     0.00000     0.00000    13.33594
+========== Object 2 ->  2 radius=  1.000 ========  Charge=  -11.9781
+     0.00245    -0.02488     0.00016    -0.02227
+    -0.03551    -0.38794    -0.00005    -0.42350
+     5.79478     7.75847    -0.04958    13.50367
+========== Object 3 ->  3 radius=  0.500 ========  Charge=   -3.7635
+    -0.01770     0.04770     0.00002     0.03002
+     0.01322    -0.46171    -0.00002    -0.44851
+     2.68749     4.63474    -0.00459     7.31764
+========== Object 4 ->  4 radius=  2.000 ========  Charge=  -11.0783
+     0.01740     0.04902    -0.00096     0.06546
+    -0.02187    -0.42372     0.00293    -0.44265
+     2.55158    11.36046    -0.39078    13.52126
+
+-l2:   Not so good!
+    Field,       part,       press,       total,   ave over steps 100 200
+========== Object 1 ->  1 radius=  1.000 ========  Charge=  -12.5664
+    -0.08077     0.00000     0.00000    -0.08077
+     0.03787     0.00000     0.00000     0.03787
+     8.46597     0.00000     0.00000     8.46597
+========== Object 2 ->  2 radius=  1.000 ========  Charge=  -10.6575
+    -0.00736    -0.14493     0.00136    -0.15093
+     0.00222    -0.00104    -0.00155    -0.00037
+     1.70747     7.27180    -0.16739     8.81188
+========== Object 3 ->  3 radius=  0.500 ========  Charge=   -3.4301
+    -0.01574    -0.09479     0.00024    -0.11029
+     0.01126    -0.05549    -0.00014    -0.04437
+     1.09785     4.89843    -0.02017     5.97612
+========== Object 4 ->  4 radius=  2.000 ========  Charge=   -7.3739
+     0.01402    -0.06781    -0.00556    -0.05934
+    -0.00764     0.00118     0.00398    -0.00247
+     0.16782     9.49809    -0.81142     8.85449
+-l1
+    Field,       part,       press,       total,   ave over steps 100 200
+========== Object 1 ->  1 radius=  1.000 ========  Charge=  -12.5664
+    -0.01964     0.00000     0.00000    -0.01964
+     0.04107     0.00000     0.00000     0.04107
+     4.86549     0.00000     0.00000     4.86549
+========== Object 2 ->  2 radius=  1.000 ========  Charge=   -8.0949
+    -0.01932    -0.01404     0.00764    -0.02572
+     0.01614    -0.05005    -0.00875    -0.04266
+     0.21513     5.27831    -0.26057     5.23287
+========== Object 3 ->  3 radius=  0.500 ========  Charge=   -2.5923
+    -0.00825    -0.00650     0.00088    -0.01388
+     0.01075    -0.06147    -0.00104    -0.05176
+     0.27169     3.98918    -0.04810     4.21277
+========== Object 4 ->  4 radius=  2.000 ========  Charge=   -3.6314
+     0.00393    -0.00332     0.01446     0.01507
+    -0.00176    -0.07535    -0.00118    -0.07829
+    -0.05562     5.75820    -0.54000     5.16258
+-l.5
+    Field,       part,       press,       total,   ave over steps 100 200
+========== Object 1 ->  1 radius=  1.000 ========  Charge=  -12.5664
+     0.03778     0.00000     0.00000     0.03778
+     0.07824     0.00000     0.00000     0.07824
+     2.57617     0.00000     0.00000     2.57617
+========== Object 2 ->  2 radius=  1.000 ========  Charge=   -4.2711
+    -0.00236     0.23551     0.01142     0.24457
+     0.00280     0.05457     0.00158     0.05895
+    -0.02972     2.93894    -0.21933     2.68990
+========== Object 3 ->  3 radius=  0.500 ========  Charge=   -0.6572
+    -0.00026     0.27244     0.00152     0.27369
+     0.00268     0.06801    -0.00461     0.06607
+    -0.01624     2.56229    -0.09923     2.44682
+========== Object 4 ->  4 radius=  2.000 ========  Charge=   -1.5672
+    -0.00067     0.28145    -0.00817     0.27261
+    -0.00131     0.05740    -0.00729     0.04880
+    -0.00465     2.72331    -0.04260     2.67606
+
+Switching to uniform grid in geomforce2 we get -l1 rather worse.
+    Field,       part,       press,       total,   ave over steps 100 200
+========== Object 1 ->  1 radius=  1.000 ========  Charge=  -12.5664
+     0.01859     0.00000     0.00000     0.01859
+     0.01352     0.00000     0.00000     0.01352
+     4.62026     0.00000     0.00000     4.62026
+========== Object 2 ->  2 radius=  1.000 ========  Charge=   -8.1152
+    -0.02191    -0.04323     0.01097    -0.05417
+     0.01764     0.06283    -0.00849     0.07198
+     0.20519     5.45752    -0.26392     5.39879
+========== Object 3 ->  3 radius=  0.500 ========  Charge=   -2.6212
+    -0.01194    -0.01557     0.00079    -0.02673
+     0.00766     0.06462    -0.00086     0.07143
+     0.29040     4.08004    -0.04873     4.32170
+========== Object 4 ->  4 radius=  2.000 ========  Charge=   -3.7099
+     0.00518    -0.03094     0.02029    -0.00547
+    -0.00061     0.03528    -0.00171     0.03296
+    -0.05509     5.89466    -0.52665     5.31291
+
+Examining the raw ug, in the case of -l1 it has a negative peak of magnitude
+-1, and not very smooth in the vicinity of zero. Therefore its electric field
+is actually varying very quickly in the vicinity of the axis and just 
+picking the r=0 value off is not going to be very accurate. It's a bit 
+surprising. Even with -l10 the negative potential peak on ug is very big.
+Nearly -2. Why is that? 
+
+Run on sceptic with 33 cells across +-6 gives result that has good agreement
+between all the full-sphere forces and about half the error with the 
+point force (~10% versus ~20%) cf the much coarser mesh. Thus discrepancies
+do arise in the force estimates when the resolution is insufficient and or
+there are mesh size changes in the interesting areas. Also the point force
+calculation is not reliable even with a cell size of 0.36 with charge size
+2 and -l10. 
+
+This explains some of the strange results during the runs we've done for
+transverse force. It's basically a problem with mesh resolution. 
+
+4 Apr 11
+
+To explore this further we need a routine that reads back the field file
+and then uses the force structures to calculate the field average over
+a series of spheres of different size. I think it would be a mess to 
+use phiexamine itself. We should create a new analysis program. This can
+use some additional routines in stress that are designed for this case.
+
+A problem is where we should get cij from, since it is not stored in the 
+phi file. Actually cij is only needed near an object boundary. We ought to
+be able to use a simple field evaluation getsimple3field. Yes we can
+but that means we need to change the routine in stress.f not to use
+fieldatpoint.
+
+Seem to have got this going but the results are all over the place.
+We get completely different answers from pha and ua files. None of this
+makes much sense. I think there must be bugs. Yes wrung them out. 
+Now measuring the field force on at 4pi charge by averaging the field
+over a sphere of radius r gives from both ua and .pha files:
+r=    0.0100 Fieldforce   -0.043290    0.041318  -14.475240
+r=    0.0200 Fieldforce   -0.041516    0.039458  -14.473969
+r=    0.0500 Fieldforce   -0.036141    0.033882  -14.470119
+r=    0.1000 Fieldforce   -0.027171    0.025364  -14.436084
+r=    0.2000 Fieldforce   -0.016220    0.019686  -13.873970
+r=    0.3000 Fieldforce   -0.025746    0.032109  -12.923309
+r=    0.4000 Fieldforce   -0.035169    0.044168  -11.885883
+r=    0.6000 Fieldforce   -0.037832    0.068202  -10.156130
+r=    0.8000 Fieldforce   -0.041531    0.080158   -8.874148
+r=    1.0000 Fieldforce   -0.052499    0.093228   -7.850270
+This is a case that gives an average point force of 14.6507,
+and at r=1 a field force of 7.50117 on charge of 12.1702. 
+The latter is quite close to the force 7.85027 when charge is 12.5664.
+
+I conclude that there is not a big interpolation error in the fieldforce.
+Instead the fieldforce is actually too low by a significant amount.
+This appears to be because the asymmetric charge that gives rise to 
+the drag force is actually very significant close to the point. 
+It actually peaks at about z=0.3. Therefore if one has cell size of
+0.15, the charge is not being well resolved there within the Poisson 
+solver. The charge-to-mesh spread is smoothing it substantially. 
+There is also, by the way, a structure in the charge on this small scale. 
+This is quite alarming if one wanted to use the field directly to 
+estimate forces. Of course I don't. I use the particle momentum flux.
+
+Interim Summary
+
+Direct field evaluation for the point charge does give a force that is
+less susceptible to fluctuations than the particle momentum flux
+included in evaluations at larger r. However, it is instead
+susceptible to substantial systematic errors apparently arising from
+lack of resolution of the mesh charge in the vicinity of the point.
+Perhaps if one had a finer resolution in the vicinity one might be
+able to escape this problem, but I have a gut feeling one might at the
+same time get back the noise problem.

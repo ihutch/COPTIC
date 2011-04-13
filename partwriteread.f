@@ -10,6 +10,7 @@ c**********************************************************************
 
       call partwrite(partfilename,myid)
       if(myid.eq.0)then
+         call namewrite(phifilename,ifull,iuds,1,uave,'.ua')
          if(iptch_copy.ne.0)then
             call mditeradd(u,ndims,ifull,iuds,0,uci)
             call mditeradd(uave,ndims,ifull,iuds,0,uci)

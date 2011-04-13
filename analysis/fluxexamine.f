@@ -6,11 +6,14 @@ c**************************************************************
 
       real plotdata(10000,5),stepdata(10000)
       character*100 filename,argument
-      integer iplot,iprint,ifmask
+      integer iplot,iprint,ifmask,idimf
       real avefield(ns_ndims),avepress(ns_ndims),avepart(ns_ndims)
+      real rp
       data iplot/1/iprint/1/
       data ifmask/1023/
-      
+      data idimf/0/
+      data rp/0./
+
       fn1=0.5
       fn2=1.
       rview=1.
@@ -24,7 +27,7 @@ c**************************************************************
          if(argument(1:3).eq.'-n2')
      $        read(argument(4:),'(f10.4)')fn2
          if(argument(1:2).eq.'-f')
-     $        read(argument(3:),'(a)')filename
+     $        read(argument(3:),'(i5)')idimf
 c iplot is the quantity number to plot and average.
          if(argument(1:2).eq.'-p')
      $        read(argument(3:),'(i5)')iplot
@@ -32,8 +35,11 @@ c iplot is the quantity number to plot and average.
      $        read(argument(3:),'(i5)')iprint
          if(argument(1:2).eq.'-m')
      $        read(argument(3:),'(i5)')ifmask
-         if(argument(1:2).eq.'-r')
-     $        read(argument(3:),'(f10.4)')rview
+         if(argument(1:3).eq.'-rp')then
+            read(argument(4:),*)rp
+         elseif(argument(1:2).eq.'-r')then
+            read(argument(3:),'(f10.4)')rview
+         endif
          if(argument(1:2).eq.'-i')
      $        read(argument(3:),'(i5)')iosw
          if(argument(1:2).eq.'-h')goto 201
@@ -106,7 +112,9 @@ c Plots if
          call axis()
          call axlabels('step','Force')
       endif
-      write(*,*)'   Field,       part,       press,'
+      if(rp.ne.0.)write(*,'(a,f10.4,a,f10.4)')
+     $     'Radius',rp,' Potential',phip
+      if(idimf.eq.0)write(*,*)'   Field,       part,       press,'
      $     ,'       total,   ave over steps',n1,n2
       nplot=0
       do k=1,mf_obj
@@ -166,15 +174,20 @@ c Plots if
             call dashset(0)
          endif
          endif
-         write(*,101)k,nf_geommap(k),obj_geom(oradius,nf_geommap(k))
-     $        ,avecharge
- 101     format('========== Object',i2,' ->'
-     $        ,i3,' radius=',f7.3,' ========  Charge=',f10.4)
-         do j=1,ns_ndims            
-            write(*,'(5f12.5  )')
-     $        avefield(j),avepart(j),avepress(j),
-     $        avefield(j)+avepart(j)+avepress(j)
-         enddo
+         if(idimf.eq.0)then
+            write(*,101)k,nf_geommap(k),obj_geom(oradius,nf_geommap(k))
+     $           ,avecharge
+ 101        format('========== Object',i2,' ->'
+     $           ,i3,' radius=',f7.3,' ========  Charge=',f10.4)
+            do j=1,ns_ndims            
+               write(*,'(5f12.5  )')
+     $              avefield(j),avepart(j),avepress(j),
+     $              avefield(j)+avepart(j)+avepress(j)
+            enddo
+         else
+            write(*,*)obj_geom(oradius,nf_geommap(k))
+     $           ,avefield(idimf)+avepart(idimf)+avepress(idimf)
+         endif
       enddo
 
       if(iplot.ne.0)then
@@ -192,6 +205,7 @@ c Plots if
       write(*,*)'-m mask objects whose data is to be plotted'
       write(*,*)'-r set size of plot window'
       write(*,*)'-i set iosw for objplot'
+      write(*,*)'-f<id> set dimension whose force to summarize'
 
       end
 c******************************************************************

@@ -1,4 +1,4 @@
-*******************************************************************
+c******************************************************************
 c Get the field value in the direction idf appropriately interpolated
 c from nearby points, for a specified position.
 c
@@ -296,13 +296,21 @@ c External field
 
 c********************************************************************
       subroutine getsimple3field(ndims,u,iuinc,xn,idf,xf,field)
-c Do interpolation on the field (gradient of u) in a totally
-c simple minded way. u is passed with appropriate node selected.
+c Do interpolation on the field (gradient of u) in a
+c simple minded way. 
+c u is passed with appropriate node selected as its base index,
 c but if fraction .ge.0.5 in field direction, this is corrected.
+c iuinc is the structure vector of the u array.
+c xn is the compact position vector, local to the array position.
+c idf is the direction (axis) in which to get the field.
+c xf is the position fraction in 3d
+c On output the field is in field.
+      integer ndims
       real u(*)
       integer iuinc(3)
       real xf(3)
       real xn(*)
+      real field
 c Local variables
       integer iflags(2,2)
       real f(2,2)
@@ -336,6 +344,8 @@ c Circumlocution to prevent spurious bounds warning
       do id1=1,3
          do id2=id1+1,3
             if(id1.ne.idf .and. id2.ne.idf)then
+               if(xf(id1).gt.1)write(*,*
+     $              )'Getsimple3field fraction error',xf(id1)
                d(1)=xf(id1)
                d(2)=xf(id2)
                do ip1=0,1
@@ -358,6 +368,7 @@ c,xf
 
       field=-box2interp(f,iflags,d)
 
+c      write(*,'(a,10f10.4)')'get3field=',field,f
       end
 c*******************************************************************
       real function getpotential(u,cij,iuinc,xff,iregion,itype)
@@ -685,5 +696,42 @@ c      if(potentialatpoint.eq.999)then
 c         xs=sqrt(x(1)**2+x(2)**2+x(3)**2)
 c         write(*,'(7f10.5)')x,xs,xff
 c      endif
+
+      end
+c*****************************************************************
+c Get the field at a specified position x, without having to pass lots
+c of arguments. Return it as a vector in field.
+c This simple version assumes no object boundary in the vicinity.
+      subroutine fieldsimple3atpoint(x,u,iLs,field)
+c u is potential, iLs is the structure of u.
+c All the other parameters must be obtained from commons. 
+c Include the mesh xn, and ndims_mesh. 
+      include 'meshcom.f'
+      real x(ndims_mesh),u(*),field(ndims_mesh)
+      integer iLs(ndims_mesh+1)
+      real xff(ndims_mesh)
+      integer kxf(ndims_mesh)
+
+      koff=1
+c Locate the mesh full fractional postion of x.
+      do id=1,ndims_mesh
+c Offset to start of dimension-id-position array.
+         ioff=ixnp(id)
+c xn is the position array for each dimension arranged linearly.
+c Find the index of x in the array xn:
+         ix=interp(xn(ioff+1),ixnp(id+1)-ioff,x(id),xm)
+         if(ix.le.0)write(*,*)'fs3 interp error',x(id),xm
+         kxf(id)=int(xm)
+         koff=koff+(kxf(id)-1)*iLs(id)
+         xff(id)=xm-kxf(id)
+      enddo
+      
+
+c Get each component of the field.
+      do id=1,ndims_mesh
+         call getsimple3field(ns_ndims,u(koff)
+     $        ,iLs,xn(ixnp(id)+kxf(id)),id,xff,field(id))
+      enddo
+c      write(*,*)kxf,koff,xff,field
 
       end

@@ -149,7 +149,6 @@ c Point charge object. Just fieldforce.
             enddo
          else
 c Unknown type. Do nothing.
-
          endif
       enddo
 
@@ -205,20 +204,20 @@ c An object type I don't know how to handle. Ignore.
          endif
       enddo
 
-      do i=1,nf_obj
-         iobj=nf_geommap(i)
-         if(iobj.ne.0)then
-         do k=1,ns_np
-            do j=1,ns_nt
-               r=0.
-               do id=1,3
-                  r=r+surfobj(id,j,k,i)**2
-               enddo
+c      do i=1,nf_obj
+c         iobj=nf_geommap(i)
+c         if(iobj.ne.0)then
+c         do k=1,ns_np
+c            do j=1,ns_nt
+c               r=0.
+c               do id=1,3
+c                  r=r+surfobj(id,j,k,i)**2
+c               enddo
 c               write(*,*)'Radius of surface:',i,j,k,r
-            enddo
-         enddo
-         endif
-      enddo
+c            enddo
+c         enddo
+c         endif
+c      enddo
 
 
       end
@@ -285,3 +284,67 @@ c Pointer to start of data for next facet
 
       end
 
+c**********************************************************************
+      subroutine chargeforce(ndims,km,surfobj,fieldforce,u,iLs)
+c Calculate the force on a unit point charge inside a surface 
+c By averaging the electric field on the surface whose
+c representation consists of km facets each of which has 
+c ndims position + ndims surface coefficients. 2.ndims.km.
+
+      real surfobj(2*ndims*km),fieldforce(ndims)
+      integer km,ndims
+      real u(*)
+      integer iLs(*)
+
+c Local storage
+      parameter (mdims=3)
+      real field(mdims)
+
+      do i=1,ndims
+         fieldforce(i)=0.
+      enddo
+      totarea=0.
+      do k=1,km
+         koff=2*ndims*(k-1)
+c         call fieldatpoint(surfobj(koff+1),u,cij,iLs,field)
+         call fieldsimple3atpoint(surfobj(koff+1),u,iLs,field)
+         area=0
+         do j=1,ndims
+            area=area+surfobj(koff+ndims+j)**2
+         enddo
+         area=sqrt(area)
+c         write(*,*)'k=',k,' area=',area,' psn',(surfobj(koff+i),i=1,3)
+         totarea=totarea+area
+         do i=1,ndims
+            fieldforce(i)=fieldforce(i)+field(i)*area
+         enddo
+c         write(*,*)' field=',field
+      enddo
+c      write(*,*)'surfobj',surfobj
+c      write(*,*)'totarea',totarea,' fieldforce',fieldforce
+      do i=1,ndims
+         fieldforce(i)=fieldforce(i)/totarea
+      enddo
+      end
+c***************************************************************
+c Initialize the force tracking for one object with center xc and 
+c radius r. With angular mesh ns_nt, ns_np.
+      subroutine forceinitone(ns_nt,ns_np,ndims,r,xc,surfobj)
+      real surfobj(2*ndims,ns_nt,ns_np)
+      real r,xc(ndims)
+
+c Initialize the area facet mesh for a unit sphere
+      call spheremesh(ns_nt,ns_np,surfobj(1,1,1))
+c Now apply the transformation to a spheroid with radius r
+      do k=1,ns_np
+         do j=1,ns_nt
+            do id=1,ndims
+               surfobj(id,j,k)=
+     $              xc(id)+surfobj(id,j,k)*r
+               surfobj(ndims+id,j,k)=
+     $              surfobj(ndims+id,j,k)*r**2
+            enddo
+         enddo
+      enddo
+
+      end
