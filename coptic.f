@@ -238,9 +238,15 @@ c            write(*,*)'||||||||||||||extfield',extfield
             call geomdocument()
             call exit(0)
          endif
+c Help text options
          if(argument(1:2).eq.'-h')goto 203
          if(argument(1:3).eq.'--h')goto 203
          if(argument(1:2).eq.'-?')goto 203
+c Indicator that coptic arguments are ended.
+         if(argument(1:3).eq.'-ea'.or.argument(1:2).eq.'--')then
+            write(*,*)'Arguments terminated by: ',argument(1:3)
+            goto 202
+         endif
  240     continue
       enddo
       if(Bt.ne.0)then
@@ -297,6 +303,7 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
      $     //'   ['//objfilename(1:lentrim(objfilename))
       write(*,301)
      $     ' -fs[path]  Attempt to restart from state saved [in path].'
+      write(*,301)' -ea --  end argument parsing. Skip succeeding.'
       write(*,301)'Debugging switches for testing'
       write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
