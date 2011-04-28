@@ -500,6 +500,7 @@ c------------------------------------------
       icell=icellin
       jcell=jcellin
       kcell=kcellin
+      write(*,*)'Adjust cell position with arrow keys.'
  1    ip=ip3index(isfull,icell,jcell,kcell)+1
       call multiframe(3,1,2)
       wicell=(xnewlim(2,1)-xnewlim(1,1))/nsub_i
@@ -536,9 +537,11 @@ c Increment one of the dimensions using arrow keys.
       if(ip.eq.65361)then
          icell=mod(icell,nsub_i)+1
       elseif(ip.eq.65362)then
-         jcell=mod(jcell,nsub_j)+1
-      elseif(ip.eq.65363)then
          kcell=mod(kcell,nsub_k)+1
+      elseif(ip.eq.65364)then
+         kcell=max(1,kcell-1)
+      elseif(ip.eq.65363)then
+         jcell=mod(jcell,nsub_j)+1
       else
          return
       endif
