@@ -8,11 +8,11 @@ c Storage array spatial count size
 c coptic runs correctly with unequal dimensions but phiexamine does not.
       parameter (Li1=na_i,Li2=Li1*na_j,Li3=Li2*na_k)
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
-     $     ,cij(2*ndims_sor+1,na_i,na_j,na_k)
 c Running averages.
       real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
 c
       real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k)
+      real cij(2*ndims_sor+1,na_i,na_j,na_k)
 c Diagnostics (moments)
       integer ndiagmax
       parameter (ndiagmax=7)

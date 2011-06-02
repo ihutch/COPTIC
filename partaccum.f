@@ -486,7 +486,7 @@ c******************************************************************
       include 'ptaccom.f'
 c Distributions in ptaccom.f
       real vlimit(2,mdims),xnewlim(2,mdims)
-      real cellvol
+      real cellvol,ftot,vtot,v2tot
       real fvplt(nsbins)
       integer ip,id,iv
       integer ip3index
@@ -512,6 +512,7 @@ c------------------------------------------
      $     ,xnewlim(1,1)+(icell-1)*wicell,xnewlim(1,1)+icell*wicell
      $     ,xnewlim(1,2)+(jcell-1)*wjcell,xnewlim(1,2)+jcell*wjcell
      $     ,xnewlim(1,3)+(kcell-1)*wkcell,xnewlim(1,3)+kcell*wkcell
+      write(*,'(a,$)')'v, T in bin'
       do id=1,3
 c Do correct scaling:
          do iv=1,nsbins
@@ -531,8 +532,20 @@ c         call automark(vsbin(1,id),fvx(1,id,ip),nsbins,1)
          call winset(.true.)
 c         call polybox(vhbin(0,id),fvx(1,id,ip),nsbins)
          call polybox(vhbin(0,id),fvplt,nsbins)
+         ftot=0.
+         vtot=0.
+         v2tot=0.
+         do iv=1,nsbins
+            vtot=vtot+vsbin(iv,id)*fvx(iv,id,ip)
+            v2tot=v2tot+vsbin(iv,id)**2*fvx(iv,id,ip)
+            ftot=ftot+fvx(iv,id,ip)
+         enddo
+         write(*,'('','',2f10.5,$)')vtot/ftot,sqrt(v2tot/ftot-(vtot/ftot
+     $        )**2)
       enddo
+      write(*,*)
       call eye3d(ip)
+c      write(*,*)'ip',ip
 c Increment one of the dimensions using arrow keys.
       if(ip.eq.65361)then
          icell=mod(icell,nsub_i)+1

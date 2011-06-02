@@ -1,0 +1,1030 @@
+\documentclass[12pt]{article}
+\usepackage{fullpage}
+\usepackage{hyperref}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\sentence#1{\par\noindent\textbf{#1}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{COPTIC Reference Manual}
+\author{I H Hutchinson}
+\begin{document}
+\maketitle
+\tableofcontents
+
+\section{Introduction}
+
+This manual documents the code COPTIC. The code is substantially
+self-documenting through comments, but the manual ought to assist a
+newcomer with fuller explanations. To run the code, the material of
+sections \ref{infile} and \ref{cmdline} are sufficient. Subsequent
+sections describe the structure of the code and how it works.
+
+\section{Object Data and Geometry Input File}\label{infile}
+
+COPTIC acquires its settings from a combination of command line
+arguments and an input file that gives information about geometry,
+which is referred to at the object file.  The purpose of this section
+is to explain the format and meaning of the object file.
+
+
+\paragraph{The default name} of the input file is \verb!copticgeom.dat!, but it
+may be set to any other name by using the command line object file
+switch in the form \verb!-ofNewFileName.Ext!.
+
+\subsection{Overall format}
+
+\paragraph{Each line of the object file} is treated separately: read and parsed to
+extract its settings. If COPTIC does not reach the end of the file
+because it encounters an error in reading or parsing before that, then
+it stops with an error message.
+
+\paragraph{Comment lines.} A line that starts with a hash (\#) 
+or with 6 or more spaces, or is blank is ignored as a
+comment. Comments can also be placed at the right-hand end of data
+lines that provide all the data that is expected of a line of that
+type. Some types of line can be written short: without providing some
+optional data. A comment cannot be placed at the end of a short line.
+It is better for most object lines to avoid trailing comments.
+
+\paragraph{The first line} of the file must start with the number of
+dimensions: 3. Nothing else on this line is read.
+
+\subsection{Object Lines}
+
+\paragraph{The format} of an object line is a sequence of numbers
+separated by standard fortran separators (blanks, commas, or
+semicolons). These are read as reals into a data structure
+\verb!obj_geom(i,nobj)! whose first index refers to the different
+values, and whose second refers to the object number ($\le31$ at
+present).  Some of the numbers are expected to be integers but it does
+not matter if they are written as reals. The position in the first
+index of \verb!obj_geom(i,nobj)!, i.e.\ the value of \verb!i!, is
+referred to using a number of pre-defined integer parameters (defined
+in \verb!3dcom.f!), most of which begin with the letter
+\verb!o!. There is overloading of the positions, with different
+parameters for different types of line. The index parameters are
+mentioned below.
+
+\paragraph{The first entry} 
+\verb!obj_geom(otype,iobj)! of every object line is an integer which
+determines the type of line this is, what sort of object or other
+entity it refers to. The first byte specifies the object type and the
+second byte further qualifies it. Five types of normal object are
+defined (so far): 1 spheroid, 2 (coordinate-aligned) cuboid, 3
+(coordinate-aligned) cylinder, 4 Parallelopiped, 5 General
+(non-aligned) cylinder. They are specified with \emph{required}
+subsequent values
+as follows:
+
+\paragraph{Spheroid}: position of center and three radii in the
+direction of the coordinate axes.
+
+\paragraph{Cuboid}: center and three half-side-lengths, so that the
+cube extends in each coordinate direction from center minus
+half-side-length to center plus half-side-length.
+
+\paragraph{Cylinder (coordinate aligned)}: center, three ``radii''
+along the respective coordinates, axis-number specifying the
+coordinate along which the cylinder's axis is aligned. For this
+direction the ``radius'' is the cylinder's half-length.
+
+\paragraph{Parallelopiped}: center ${\bf x}_c$, and three vectors
+${\bf v}_k$ specifying the
+direction and half-length of the parallelopiped's edges. The volume
+consists of those points whose vectorial position can be expressed as
+\begin{equation}\label{parallelocoef}
+{\bf x} = {\bf x}_c + \sum_k^3 c_k {\bf v}_k,  
+\end{equation}
+with each coefficient
+$c_k$ satisfying $-1\le c_k \le 1$. A non-aligned cuboid (for example)
+is a
+particular case of the parallelopiped. 
+
+\paragraph{Cylinder (non-aligned)}: center, axis-vector specifying the
+direction and half-length of the cylinder's axis, reference-vector
+whose direction perpendicular to the axis-vector specifies the
+direction from which angles in the cylinder are to be measured, and
+radius. (This specifies only circular cross-section cylinders.)
+
+\bigskip
+For each object, the boundary conditions to be applied in the form 
+$$A\phi + B \hat{\bf n}.\nabla\phi + C =0$$
+are specified immediately after the type. If all of $A,B,C$ are zero,
+then no potential boundary condition is applied on this object. The data
+positions in the input file for different objects are specified in
+Table \ref{geomtable}. The parameters that refer to the positions are
+indicated in the first column. Each line in the table refers to
+multiple numbers.
+\begin{table}[htp]
+\caption{Position of geometric data in object file for different objects.\label{geomtable}}
+\begin{tabular}{|l|l|l|l|l|l|}
+\hline
+  Byte-1: & 1& 2& 3& 4& 5\\
+  Object: & Spheroid& Cuboid& Cylinder& Parallelopiped& General
+  Cylinder\\
+\hline
+\verb!oabc! 2-4 & ABC  & ABC  & ABC  & ABC  & ABC 
+\\
+\verb!ocenter! 5-7 & Center& Center& Center& Center& Center\\
+\verb!oradius! 8-10 & Radii& ${1\over2}$-Sides&
+Radii&  vector-1& Axis-vector\\
+\verb!ocylaxis! 11-16 & & & Axis number& vector-2,3& Ref-vector, radius\\ 
+\hline
+\end{tabular}
+\end{table}
+
+
+Examples of lines of each of these types are given in the following
+extract suitably formatted to represent possible input lines.
+\begin{verbatim}
+# Spheroid
+#type=1  A, B, C ,    Center,      Radii
+1,       1.,0.,2.,  -2.,-2.,-2.,  1.,.5,1., 
+# Cuboid
+#type=2  A, B, C,     Center     Half-sides
+2,       1.,0.,1.5,  2,-1,2,      1.,1.,1.
+# Cylinder (Coordinate-aligned)
+#type=3  A, B, C,     Center        Radii,  axial-direction. 
+3,       1.,0.,1.,   0.,0.,0.,    1.,1.,1.,     3,
+# Parallelopiped
+#type=4  A, B, C,     Center      Vector1   Vector2    Vector3
+4,       1.,0.,.5,  -2.,2.,-2.,   1.,0,.1,  -1.,0.,1., 0.,.7,0.
+# Cylinder (Non-aligned)
+#type=5  A, B, C,     Center      Axial-vec  Ref-vec   Radius
+5,       1.,0.,1.,  2.,-2.,-2.,   1.,0.,1.,  1.,0.,0.,  1. ,
+\end{verbatim}
+
+\subsection{Flux accumulation}
+
+Optionally, every object line can include specification of the
+accumulation of ion flux to its surface. This specification consists
+of one integer specifying the number of types of flux (up to 5 at
+present) to be accumulated, and then two or three integers defining
+the way the surface is to be subdivided into bins in which the
+accumulation takes place. The flux types are 1 ion-flux, 2-4
+ion-momentum-flux in the coordinate directions, and 5 ion-energy-flux.
+
+Subdivision of the object surface is into equal intervals of
+appropriate surface-coordinates. Spheroid surfaces are subdivided
+using just two directions, into equal-interval bins in cosine of the
+polar angle ($\cos\theta$) relative to the $z$-coordinate, and
+azimuthal angle $\psi$. These bins are therefore all the same
+area for a sphere. Cylinder-surfaces are divided into equal-intervals of
+cylindrical coordinates ($r,\theta,z$) relative to the cylinder's
+axial direction, $z$. The cylinder faces (constant-$z$) are divided by
+$r$ and $\theta$, while the curved cylinder surface is divided by
+$\theta$ and $z$. Cuboidal or parallelopiped surfaces are divided
+into equal intervals in the vector coefficients along the edges. In
+other words, with reference to eq (\ref{parallelocoef}), the surfaces
+at $c_1=\pm1$ are divided into equal intervals of $c_2$ and $c_3$, and
+so forth. Spheroids therefore require two face-counts, which
+correspond to the number of equal divisions of $\cos\theta$ and
+$\psi$, while cylinders and parallelopipeds require three face-counts
+specifying the number of facets in $r,\theta,z$ or $c_1,c_2,c_3$
+respectively.
+
+The three or four numbers specifying the surface facets are appended
+immediately after the geometry specification, on the same line of the
+object file. They are stored in adjacent locations
+\verb!obj_geom(i,iobj)! with \verb!i!  equal to \verb!ofluxtype!,
+\verb!ofn1!, \verb!ofn2![, \verb!ofn3!].  [To leave room for other
+  information, \verb!ofluxtype! is defined equal to \verb!oradius+18!.]
+
+Total flux to the object is always separately accumulated regardless
+of the optional specification.  Therefore, it is not necessary to
+specify the flux accumulation information unless measurement of the
+flux as a function of \emph{subdivided} position on the object is
+required. The signed flux for both directions of particle-crossing
+is accumulated (positive inward, negative outward). 
+
+If flux entering or leaving any region of the domain is required to be
+monitored, then an object which represents the boundary of that region
+should be defined with null boundary conditions. 
+
+\subsection{Mesh Geometry}
+
+The setting of the mesh spacing in each dimension is specified by
+special object lines that may appear anywhere within the object file,
+for which \verb!otype! is equal to 91, 92, or 93, referring to the
+three directions 1, 2, 3 or x, y, z. The last such line overrules any
+earlier lines.
+
+The format these special mesh lines consists of a monotonic sequence
+of integers starting with 1, a separator 0, and then a monotonic
+sequence of reals of length equal to the sequence of integers. This
+format is thus $9d,im_1,im_2,...,im_N,0,xm_1,xm_2,...,xm_N$, where $d$
+is 1, 2, or 3, and $N$ is the sequence length. The integer sequence
+refers to the mesh index in this dimension, and the real sequence
+specifies the position in calculation space of the corresponding mesh
+node. Between two indices adjacent in the sequence, the mesh positions
+are equally spaced. An
+example might be
+\begin{verbatim}
+   92,1,12,21,32,0;-5.,-1.,1.,5.
+\end{verbatim}
+This line (92) refers to the $y$-direction. It specifies four integers
+and four reals separated by 0. The first mesh node (1) is at position
+$y=-5$. The twelfth node (12) is at $y=-1$; node (21) is at $y=1$ and the
+last node position (32) is at $y=5$. This is therefore a mesh with 32
+nodes in the $y$-direction covering the domain $-5$ to $5$, with 11
+equal spaces between $-5$ and $-1$, 9 spaces between $-1$ and $+1$,
+and 11 spaces between $+1$ and $+5$. The total mesh node-count of each
+dimension (32 here) cannot exceed the storage allocated by parameters
+\verb!na_i,j,k! in \verb!griddecl.f!. The maximum sequence length that
+can be used is specified by parameter \verb!nspec_mesh! in
+\verb!meshcom.f!.
+
+Any dimension which is not referred to by a mesh line in the object
+file acquires the default specification which is equivalent to
+\begin{verbatim}
+  9d,1,32,0,-5.,5.
+\end{verbatim}
+a uniformly spaced mesh of 32 nodes from $-5$ to $5$.
+
+\subsection{Boolean Region}
+
+An object line of type 99 defines the particle region, the region
+inside which the ions are allowed to move, and outside which they are
+considered to have escaped, and require reinjection. This line defines
+a boolean region, meaning that different objects can be combined by
+the operations of AND, OR, or NOT. This provides the ability to define
+a complicated volume region in a relatively small number of operations
+with respect to various geometrical shapes. The format of this line,
+following its type specification (99) consists of successive blocks
+of an integer $n_k$ followed by $n_k$ integer values. So a line is
+schematically $99,n1,v_{11},v_{12},...,v_{1,n1},n2,v_{21},v_{22},...,v_{2,n2},...$
+The values $v$ refer to objects in the object file in the order in
+which they appear. (Mesh and boolean lines do not count as objects). 
+They may be positive referring to \emph{inside} or negative referring
+to \emph{outside}. The list of blocks is terminated by a zero. All
+objects in each block are ORed together. Then the blocks are ANDed. For example
+\begin{verbatim}
+     n1  v11 v12 v13  n2  v21  termination
+  99, 3, 3,   4,  -6,  1, -5,    0
+\end{verbatim}
+means that the particle region is (inside 3 OR inside 4 OR outside 6)
+AND (outside 5). OR indicates the union of two regions, while AND defines
+their intersection. Another example, if we had nested objects with 1
+inside 2, and the particles exist between them, is
+\verb!99,1,-1,1,2,0!, which illustrates that ``subtraction'' of
+objects can be implemented by intersection of the complement.  The
+default boolean (if no boolean line is in the object file) is that the
+particle region is everywhere within the mesh.
+
+\subsection{Special Object Qualifications}
+
+The second byte of the object type indicates special qualities of the
+object as follows. 
+
+\paragraph{1($\times256$) Special Boundary} for the outside region of this
+object set the potential to zero at the boundary rather than the
+normal continuity condition when a Robin form is used.
+
+\paragraph{2($\times256$) Point-Charge} This spherical object is a point charge,
+which is treated by the PPPM technique. Its potential is represented
+by an analytic part that is non-zero out to a radius specified as
+usual. Outside that (isotropic) radius, the analytic part is zero. The
+magnitude of the point charge is specified by the input value in the
+position of \verb!ofn1! (12th position in the object line; the 11th
+position requires a number (0) but is ignored.) This value equals
+the Coulomb potential that would exist at the object's radius if the
+charge were isolated.
+
+\paragraph{3($\times256$) Variable Boundary Conditions} The
+coefficients $A,B,C$ of the Robin boundary condition in this object vary
+linearly in space. Their values at the object center are specified as
+usual. Their gradients are specified by three vectors which follow the
+flux accumulation specification (which must be present).
+
+\paragraph{4($\times256$) Insulating Object} The boundary condition is
+the specification of the potential ($A,C\ne 0$). But the value of $C$
+is determined by requiring the value of the ion flux density to the
+local facet to equal the electron flux density there. 
+
+\paragraph{5($\times256$) Floating Object} The potential is constant
+on the object, but takes a value determined by requiring the total ion
+flux to the object to equal the electron flux.
+
+\section{Command Line Parameters}\label{cmdline}
+
+Commandline values, following switches that take an argument in COPTIC,
+must always follow the switch that invokes them \emph{without
+  whitespace in between}. In other words, any numeric value must be
+embedded into the switch argument itself, not regarded as the next
+argument on the command line.
+
+\subsection{Code control parameters}
+
+\paragraph{-ni....} Set number of particles per node. Zero implies
+unset. Default 0.
+If set non-zero, specifies the exact number of particles per processor
+(node) \verb!n_part!. So that the total number of particles is \verb!nproc!$\times$\verb!n_part!. Every time a particle leaves the domain, a new one is
+injected.
+
+\paragraph{-rn....} Set the reinjection number for each step, per
+node, ninjcomp. 
+A complement of exactly ninjcomp particles per processor is injected
+at each step.
+
+\paragraph{-ri....} Set the rhoinfinity per node, and hence
+ninjcomp. Default 100. 
+The value of -ri is converted into \verb!ninjcomp! by \verb!ninjcalc! during
+initialization. The total \verb!rhoinfinity! is \verb!nproc! times the value
+specified. This is the equivalent of -rn but more convenient.
+
+\paragraph{-rx....} 
+Set the potential relaxation rate per step, \verb!crelax!. Default 1.
+The edge potential phirein is used to set the factor chi, which
+adjusts the reinjection rate by the OML factor, and averein which
+increments the injection energy. However, the update of phirein is
+multiplied at each step by \verb!crelax!. So if \verb!crelax!=1, the update is
+immediate, while if \verb!crelax!=0. the update is zero, and chi and averein
+remain zero throughout.
+
+\paragraph{-dt....}
+ Set the timestep during the main part of the iteration. Default .1
+
+\paragraph{-da....}
+ Set the timestep acceleration factor during the first part of
+ the time duration, bdt. Default 1. The timestep dt is multiplied by a
+ factor $max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)$, where
+ \verb!maccel=nsteps/3!.  So the timestep ramps down linearly from bdt*dt to
+ dt in the first 1/3 of the timesteps.
+
+\paragraph{-ds....}
+Set the timestep subcycle-fraction, subcycle. Default 0.  
+If non-zero, sets the maximum permissible momentum increment per step
+arising from electric field. Divide the timestep by an integer, to
+give a shorter step: dtc = dt/max(1, int(f*dt/subcycle)), where f is
+the local acceleration of this particle.
+
+\paragraph{-s....}
+Set the total number of steps to take. Default 5. 
+If restarting, this is the number of \emph{additional} steps. 
+
+\paragraph{-v....}  Set the drift velocity, vd . Default 0.
+
+\paragraph{-t....}  Set the ion temperature, $T_i$ ($/T_e$). Default 1.
+
+\paragraph{-l....}  Set the electron Debye length, debyelen. Default 1.
+
+\paragraph{-a....}  Set the averaging time, \verb!iavesteps!. Default 100.
+This controls the number of steps over which diagnostic and other
+quantities are averaged. Writing or plotting of diagnostic and
+distribution data takes place only every \verb!iavesteps! steps.
+
+\paragraph{-w....}  Set period of write steps. Default 99999=never.
+This says how often (in steps) the total data is written out to
+disk. It is independent of the diagnostic averaging or moment writing.
+The data overwrites the files of prior steps, giving the running
+values. In any case, the particle flux data for all steps is contained in
+the files. 
+
+\paragraph{-pd...}
+Set distribution diagnostics. Bit1: write, Bit2: plot. Default 0.
+This controls whether particle distribution diagnostics will be
+written and/or plotted at the end of each \verb!iavesteps! steps. 
+
+\paragraph{-m....}  Set number of diagnostic moments to save (max 7). Default 0.
+This controls which diagnostic files and messages will be written
+every istepsave steps. If zero, no files or messages.
+
+\paragraph{-ct....} Set the collision time, colntime. Default 0 [off].
+
+\paragraph{-vn....} Set the neutral drift velocity, vn. Default 0.
+
+\paragraph{-ofFilename} Set the name of the object file. Default ccpicgeom.dat
+
+\paragraph{-fs[path]}     Attempt to restart the code from a saved
+state. Optionally define the path to the saved state files.
+
+\subsection{Display and debugging parameters}
+
+Although COPTIC gives no graphic output unless explicit switches are
+set, it can give a variety of diagnostic information during its
+operation, including sophisticated multidimensional plots of current
+mesh parameters. It includes a full-scale graphics library for this
+purpose, distributed in the directory \verb!accis!. The graphics
+drivers require the code to be linked either with the X11 libraries
+\verb!libX11! and \verb!libXt! or with the OpenGL libraries
+\verb!libGL! and \verb!libGLU!. The default is to use OpenGL. In
+many modern linux distributions, the required libraries for linking are not
+found unless the \emph{development} package of OpenGL is
+installed. For example, in UBUNTU the package \verb!libgl1-mesa-dev!
+is required. If the GL libraries are not found, it may still be
+possible to link using the X11 libraries by the command
+\verb!make vecx!. However, often those libraries are also unavailable
+unless development packages are installed such as \verb!libxt-dev!.
+(There is also a MSWindows driver, but
+no support is provided for running COPTIC under MSWindows.)
+
+\begin{verbatim}
+Debugging switches for testing
+ -gt   Plot regions and solution tests.
+ -gi   Plot injection accumulated diagnostics.
+ -gs[] Plot slices of solution potential, density. [At step n]. [    1
+ -gd -gp Turn off slicing of density, potential. 
+ -gf   set quantity plotted for flux evolution and final distribution. [   -1
+ -gw   set objplot sw. [+256:intercepts] Shade by 1:flux 2:flux-density[    1
+ -gc   set wireframe [& stencils(-)] mask. objects<->bits. [    0
+ -gr   set override view scale (box size) for -gc, -gf plots.  [    0
+ -go   set No of orbits(to plot on objects set by -gc). [    0
+ -at   set test angle. -an   set No of angles. 
+ -ck   set checking timestep No. [    0
+ -h -?   Print usage.
+ -ho     Print geomobj file format description
+\end{verbatim}
+These are required only for rather sophisticated use of COPTIC, and
+should be understood by reference to the source and comments. In
+brief, \verb!-gt! gives text representations of region and volumes
+slices. \verb!-gi! is for debugging reinjection. \verb!-gs! causes
+plotting slices of potential and density at an optionally specified
+step interval. \verb!-gc! sets the objects to display initially
+through its bits. \verb!-gf! sets the flux quantity to be plotted in
+graphics emitted after the final step. 
+
+\section{Data Structures}
+
+\subsection{Particles}
+
+Particle information resides, as defined in file \verb!partcom.f!, in
+common block \verb!particles!.
+\begin{verbatim}
+      real x_part(3*npdim,n_partmax)
+      integer if_part(n_partmax)
+      real dtprec(n_partmax)
+        common/particles/n_part,x_part,if_part,iregion_part,ioc_part
+     $     ,dtprec,dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
+     $     ,ripernode,crelax
+\end{verbatim}
+The number of active particles is \verb!n_part!, and the maximum slot
+in the particle array that might have a particle in it is
+\verb!ioc_part!. These must not exceed the allocated length of the
+particle array \verb!n_partmax!. The ion density at infinity summed over the
+\verb!numprocs! processes is \verb!rhoinf!. The number of reinjections
+in this step is \verb!nrein! and the average potential at which they
+were reinjected is \verb!phirein!. If \verb!ninjcomp! is non-zero,
+then it defines the specified number of reinjections per step. [But is
+  that changed during acceleration?] 
+The other scalar variables describe a few other setting such as the
+unperturbed timestep \verb!dt!. 
+
+The main data consists of \verb!x_part! whose first index references
+the {\bf position}, {\bf velocity}, and {\bf fractional mesh
+  position}. The flag \verb!if_part! indicates whether there is actually
+a particle in this storage slot, and \verb!dtprec! saves the size of
+the previous timestep this particle executed.
+
+The file \verb!partcom.f! also defines the storage space for tracking
+orbits of up to \verb!nobsmax! particles for up to \verb!nstepmax! steps.
+\begin{verbatim}
+        real xorbit(nstepmax,nobsmax),yorbit(nstepmax,nobsmax),
+     $     zorbit(nstepmax,nobsmax)
+      integer iorbitlen(nobsmax)
+      common /orbits/norbits,iorbitlen,xorbit,yorbit,zorbit
+\end{verbatim}
+
+
+\subsection{Fields}
+
+Potentials, charges and fields are defined on a cartesian mesh. It is
+described by two commons in \verb!meshcom.f!. The first is the mesh
+specification data that is read in from the object file.
+\begin{verbatim}
+      integer imeshstep(ndims_mesh,nspec_mesh)
+      real xmeshpos(ndims_mesh,nspec_mesh)
+      common /meshspec/imeshstep,xmeshpos  
+\end{verbatim}
+It is used in the routine \verb!meshconstruct! to construct the mesh,
+but is generally unimportant during running, because the information
+is coded into the second common:
+\begin{verbatim}
+      real xn(ixnlength)
+      real xmeshstart(ndims_mesh),xmeshend(ndims_mesh)
+      integer ixnp(ndims_mesh+1)
+      common /sormesh/ixnp,xn,xmeshstart,xmeshend
+\end{verbatim}
+
+The array \verb!xn! contains the x, y, and z mesh positions
+concatenated one after the other. Its allocated length,
+\verb!ixnlength! must exceed the sum of the mesh numbers for the three
+dimensions. It is usually indexed using a mesh pointer
+\verb!ixnp(ndims_mesh+1)! whose integer values are the offsets from
+the start of array \verb!xn! at which each new dimension's mesh
+positions begin. Therefore \verb!ixnp(1)=0!. And \verb!ixnp(id)+1! is
+the position in \verb!xn! of the start of the positions for dimension
+\verb!id!. The final value, \verb!ixnp(ndims_mesh+1)! points to the
+address of the last of the last-dimension's positions. Therefore for
+each dimension \verb!id!, the mesh ranges from \verb!xn(ixnp(id)+1)!
+to \verb!xn(ixnp(id+1))!  and the length of the mesh is
+\verb!ixnp(id+1)-ixnp(id)!.
+
+\paragraph{Non-standard stencils,} which occur at object surfaces,
+are controlled by data structures in file \verb!objcom.f!.
+
+\begin{verbatim}
+      parameter (ndims_sor=3,ndata_sor=ndims_sor)
+      parameter (nobj_sor=2*ndims_sor*ndata_sor+7)
+      parameter (Lobjmax=1000000)
+      real dob_sor(nobj_sor,Lobjmax)
+      integer oi_sor
+      common /objcom/oi_sor,dob_sor
+      integer idob_sor(nobj_sor,Lobjmax)
+      equivalence (idob_sor,dob_sor)
+\end{verbatim}
+The array \verb!dob_sor! which is equivalenced to \verb!idob_sor!
+contains the information accessed by a pointer into its second index.
+For any node of the mesh, there is a pointer which if non-zero refers
+to the corresponding column of this array. The integer
+\verb!oi_sor! is the column last filled with data. 
+
+Each column of \verb!dob_sor! contains data describing the stencil
+surrounding this boundary node. The fractional nodal distance to the
+adjacent node (equal to 1 if there's no interface in this direction), and the
+values of $B/A$ and $C/A$ are stored for the forward and backward
+directions of each coordinate. 
+\begin{verbatim}
+      parameter (idgs_sor=2*ndims_sor*ndata_sor+1)
+      parameter (ibdy_sor=2*ndims_sor*ndata_sor+2)
+      parameter (iflag_sor=2*ndims_sor*ndata_sor+3)
+      parameter (iregion_sor=2*ndims_sor*ndata_sor+4)
+      parameter (ipoint_sor=2*ndims_sor*ndata_sor+5)
+      parameter (iinter_sor=2*ndims_sor*ndata_sor+6)
+      parameter (iextra_sor=2*ndims_sor*ndata_sor+7)
+\end{verbatim}
+Then come the diagonal coefficient, boundary potential contributors,
+and the following integers: the flags, the region-code of this point,
+the inverse pointer back to the node within \verb!cij(2,2,2)!, the
+intersection object code, and finally an extra pointer which if non
+zero points to a different column of \verb!dob_sor! used to chain
+extra data specifically for a boundary whose potential varies with
+time (because it is floating or insulating). The extra data consists
+for each stencil direction of the triple: \verb!iobj! which references a
+flux-collecting object number, \verb!ijbin!, the flux facet on that
+object which this stencil intersects, and \verb!coefoa!, the value by
+which to multiply $C$ when adding it to the boundary contribution.
+
+
+\paragraph{The field arrays} are declared in the main program in \verb!coptic.f!,
+not in common, using length parameters defined in file \verb!griddecl.f!.
+\begin{verbatim}
+      real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
+      real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
+      real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k)
+      real cij(2*ndims_sor+1,na_i,na_j,na_k)
+\end{verbatim}
+The potential and charge are \verb!u, q!. The volumes of the cells
+whose centers are at the nodes are calculated once using routines from
+\verb!volint.f! and stored in \verb!volumes!. 
+
+The stencil information is calculated by \verb!cijroutine! and stored
+in \verb!cij!. Its first index references the stencil coefficients in
+the directions $\pm x, \pm y, \pm z$, followed by a single value
+which, if non-zero, is a pointer to the second index of \verb!dob_sor!
+and indicates that this is a non-standard stencil needing special
+interpretation. The maximum length \verb!Lobjmax! is therefore limited
+to the largest integer that can be correctly represented by a
+real. Since only boundary nodes have non-zero pointers, this is not a
+severe limitation, and it could be fixed by equivalencing cij to an
+integer array.
+
+\subsection{Objects}
+
+The parameters of the objects are maintained in a common within file
+\verb!3dcom.f!. Parameters define the relevant array sizes and provide
+pointers to the positions of different values within the array
+\verb!obj_geom!, which contains most of the data.
+
+\begin{verbatim}
+      parameter (ngeomobjmax=31)
+      parameter (otype=1,oabc=2,ocenter=5,oradius=8,ocylaxis=11)
+      parameter (ovec=oradius,ocontra=oradius+9,ocylrad=oradius+6)
+      parameter (ofluxtype=ocontra+9)
+      parameter (ofn1=ofluxtype+1,ofn2=ofluxtype+2,ofn3=ofluxtype+3)
+      parameter (omag=ofluxtype+1,offc=ofluxtype+4)
+      parameter (ocgrad=offc+1,obgrad=ocgrad+3,oagrad=obgrad+3)
+      parameter (odata=oagrad+2)
+      real obj_geom(odata,ngeomobjmax)
+\end{verbatim}
+In addition, the flux accumulation number of object \verb!iobj! is
+given in \verb!nf_map(iob)!.
+\begin{verbatim}
+      integer nf_map(ngeomobjmax)
+      parameter (ibtotal_part=100)
+      integer ibool_part(ibtotal_part)
+      integer ifield_mask
+      integer iptch_mask
+      logical lboundp
+      character*50 rjscheme
+      common /objgeomcom/ngeomobj,obj_geom,nf_map
+     $     ,ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
+\end{verbatim}
+The particle region boolean is stored as an integer array. An integer
+masks the objects to indicate which have no consequences for the
+potential. A point-charge mask indicates which objects are point
+charges. A character variable indicates the reinjection scheme. [And
+  why is that here?]
+
+\subsection{Flux and Stress}\label{fluxstruct}
+
+\paragraph{The accumulation of flux} to different regions (called facets) of the
+surfaces of different objects is performed with data structures
+defined in file \verb!3dcom.f! using an explicit heap of data
+\verb!ff_data!, into which various addresses and pointers are defined.
+\begin{verbatim}
+      parameter (nf_posdim=4,nf_ndims=3)
+      parameter (nf_quant=5,nf_obj=20,nf_maxsteps=3000)
+      real ff_rho(nf_maxsteps),real ff_dt(nf_maxsteps)
+      parameter (nf_datasize=10000000)
+      parameter (nf_flux=1,nf_gx=2,nf_gy=3,nf_gz=4,nf_heat=5)
+      parameter (nf_p1=0,nf_p2=-1,nf_p3=-2,nf_p4=-3)
+      parameter (nf_pr=nf_p1,nf_pt=nf_p2,nf_pz=nf_p3,nf_pa=nf_p4)
+      integer nf_step,mf_quant(nf_obj),mf_obj
+      integer nf_posno(nf_quant,nf_obj)
+      integer nf_dimlens(nf_quant,nf_obj,nf_ndims)
+      integer nf_faceind(nf_quant,nf_obj,2*nf_ndims)
+      integer nf_geommap(nf_obj)
+      integer nf_address(nf_quant,nf_obj,1-nf_posdim:nf_maxsteps+2)
+      real ff_data(nf_datasize)
+      common /fluxdata/nf_step,ff_rho,ff_dt,mf_quant,mf_obj,nf_posno
+     $     ,nf_dimlens,nf_faceind,nf_geommap,nf_address,ff_data
+\end{verbatim}
+Data is acquired for each time step up to the maximum available size
+\verb!nf_maxsteps!. For each of up to \verb!nf_obj! objects, we
+collect up to \verb!nf_quant! flux quantities, corresponding to
+particle flux, three components of momentum flux, and heat flux. The
+actual number of quantities tracked for object \verb!i! is
+\verb!mf_quant(i)!.  The collection is tracked by the facet into which
+the collection occurs. Each object has, for quantity \verb!j! a total
+of \verb!nf_posno(j,i)! facets. (At present these are the same for all
+\verb!j!.) For different shaped objects, the facet fluxes are
+designated by appropriate dimensional arrays, whose dimensional
+structure is \verb!nf_dimlens(j,i,k)!, so that total number of facets,
+\verb!nf_posno(j,i)! is equal to the product over \verb!k! of the dimlens.
+The starting position, within the heap, of the flux data for step \verb!n! is 
+\verb!nf_address(j,i,n)!. The offset to the start of the different
+faces of a parallelopiped type object are \verb!nf_faceind(j,i,k)!,
+where \verb!k! is the face number (up to $2*ndims$).
+Because the flux-tracking objects are not all the objects there are,
+they are numbered differently from the objects within
+\verb!objgeomcom!, and we need mapping back and forth. 
+The index within \verb!obj_geom! that
+corresponds to this flux-tracked object \verb!i! is
+\verb!nf_geommap(i)! (just as \verb!i=nf_map(nf_geommap(i))!.
+
+\paragraph{Stresses} contributing to the forces on objects are
+accumulated using integrations over positions numbering \verb!ns_nt! and
+\verb!ns_np! in two directions the surface of objects (only
+spheres at present). 
+\begin{verbatim}
+      parameter (ns_ndims=3)
+      parameter (ns_nt=20,ns_np=20)
+      integer ns_flags(nf_obj)
+      real fieldforce(ns_ndims,nf_obj,nf_maxsteps)
+      real pressforce(ns_ndims,nf_obj,nf_maxsteps)
+      real partforce(ns_ndims,nf_obj,nf_maxsteps)
+      real charge_ns(nf_obj,nf_maxsteps)
+      real surfobj(2*ns_ndims,ns_nt,ns_np,nf_obj)
+      common /stress/ns_flags,surfobj,fieldforce,pressforce
+     $     ,partforce,charge_ns
+\end{verbatim}
+
+\subsection{Diagnostics}
+
+\paragraph{Particle distribution} diagnostics structures are defined in file
+\verb!ptaccom.f!, and used only in routines in \verb!partaccum.f!. 
+
+For accumulation of the distribution averaged over large regions, the
+following structures are used. 
+\begin{verbatim}
+      parameter (nptdiag=400,mdims=ndims_mesh)
+      real fv(nptdiag,mdims),cumfv(0:nptdiag,mdims)
+      real px(nptdiag,mdims)
+      real vdiag(nptdiag,mdims)
+      real xdiag(nptdiag,mdims)
+      integer nfvaccum
+      common /cartdiag/fv,px,vdiag,xdiag,cumfv,nfvaccum
+\end{verbatim}
+There are \verb!nptdiag! points in each direction for position and velocity.
+
+Spatially resolved velocity distributions are collected over blocks of
+cells. The sizes of the blocks are given by 
+\begin{verbatim}
+      parameter (nsub_i=8,nsub_j=8,nsub_k=8)
+      parameter (Lsi=nsub_i,Lsj=Lsi*nsub_j,nsub_tot=Lsj*nsub_k)
+\end{verbatim}
+The velocity bins are unevenly spaced so as to allow representation
+of the velocity distribution with a limited number of bins that are
+the combination of bins defined over \verb!nptdiag! velocities:
+\begin{verbatim}
+      parameter (nsbins=32)
+      integer ibinmap(nptdiag,mdims)
+      real vsbin(nsbins,mdims),csbin(nsbins,mdims)
+      real fsv(nsbins,mdims)
+      real vhbin(0:nsbins,mdims)
+      real fvx(nsbins,mdims,nsub_tot)
+      real denfvx(nsub_tot)
+      common /subdiag/ibinmap,isfull,vsbin,csbin,vhbin,fsv,fvx,denfvx
+\end{verbatim}
+Here \verb!ibinmap! is the map from uniform bins to combined bins;
+\verb!vsbin! is the central velocity of the combined bin; \verb!csbin!
+is the number of fine bins in the combined bin. The spatially resolved
+distribution data is \verb!fvx!.
+
+\section{Code Execution Flow}
+
+\subsection{Overview of main program}
+
+\paragraph{Parameter Initialization} of the default scalar parameters occurs
+first, generally by assignment (rather than data) statements. The MPI
+system in initialized by calling \verb!mpigetmyid!, from file
+\verb!mpibbdy.f!, which contains the MPI block boundary communications
+code. 
+
+\paragraph{Command line arguments} are dealt with in a loop, until
+they exhausted or an error occurs. In the latter case, or when it is
+specifically asked for, a help message is given, which indicates the
+current values of the command-line parameters after which the program
+then terminates.
+
+\paragraph{Initializations} are performed as follows.
+\sentence{The mesh is constructed} \verb!meshconstruct!, and if
+necessary for this type of reinjection its geometry is initialized
+by \verb!geominit!.
+
+\sentence{Injection is initialized} if we have specified a certain
+rho-infinity per node, \verb!ninjcalc!.
+
+\sentence{Flux data collection is initialized} \verb!fluxdatainit!.
+
+\sentence{Stencil data is calculated} by iterating over the mesh the
+\verb!cijroutine!. If warnings of object-mesh clashes are received,
+then the mesh is shifted slightly and things are reinitialized.
+
+\sentence{Stored volume information} is sought and read using
+\verb!stored3geometry!. If appropriate information is not retrieved then
+
+\sentence{Volumes are calculated}
+
+\sentence{Various cij pointers masks and flags are set}
+
+\paragraph{Optional diagnostic displays} of the solver geometry are given:
+
+\sentence{Optionally, regions and volumes are displayed} using simple text
+graphs. 
+
+\sentence{Optionally, cij is plotted} showing intersections of the
+lattice with the objects.
+
+\paragraph{Fields and particles are initialized} in appropriate order
+as follows.
+
+\sentence{Charges and potentials are zeroed}
+
+\sentence{An initial Poisson solution} is calculated with zero
+charge, and optionally tested against vacuum solutions.
+
+\sentence{The Random number generator is initialized} using the (MPI) id
+number. 
+
+\sentence{Particles are initialized} randomly.
+
+\sentence{Force tracking is initialized.}
+
+\sentence{Optionally, a restart} is attempted from saved disk data
+files. If successful, this resets the particles and random number
+generator to where they stood at the end of the saved run.
+
+\paragraph{Main iteration loop is entered} and executed for the set
+number of steps, as follows.
+\begin{itemize}\itemsep=0pt
+\item The current timestep is adjusted for acceleration.
+\item The \verb!psum! is zeroed and then \verb!chargetomesh! generates
+  the \verb!psum!
+\item \verb!psum! is reduced from all nodes. \verb!rhoinfinity! is calculated.
+\item \verb!psumtoq! converts psums to charge density.
+\item The solver is called (\verb!sormpi!) or
+  quasi-neutrality invoked to determine potential.
+\item Force contributions are accumulated by \verb!calculateforces!.
+\item Optionally, plotting is done. Optionally checking is done.
+\item The particles are advanced by \verb!padvnc!
+\item Fluxes are reduced.
+\item The stencils are updated by \verb!cijdirect!
+\item Running averages are calculated and optionally diagnostic data
+  is written. 
+\item On occasion, particle distribution data is written. 
+\end{itemize}
+
+
+\paragraph{Main iteration is exited} and finalization occurs.
+
+\sentence{Optionally, orbits are plotted}
+
+\sentence{Data is written to disk} by the routine \verb!datawrite!
+
+\sentence{Optionally, additional diagnostics} are written and/or
+plotted.
+
+\paragraph{The main program terminates.}
+
+\subsection{Poisson Solver}
+
+Poisson's equation is solved by the Successive Over-Relaxation code
+\verb!sormpi!. This is a red-black SOR scheme in general dimensions
+that is thoroughly commented for documentation. It solves the scheme
+${\cal L}u+f(u) = q({\bf x})$, where ${\cal L}$ is a second order
+elliptical differential operator represented by the coefficients in
+\verb!cij!. It accepts external routines: function
+\verb!faddu(u,fprime,index)!, which evaluates the additional function
+$f(u)$ (possibly dependent upon its position in the array indicated by
+\verb!index!) and also returns the derivative of $df/du$ in
+\verb!fprime!. In COPTIC, \verb!faddu! is the exponential function to
+represent the electron Boltzmann distribution. The additional access
+to the array index is necessary to compensate for point charges by
+adding their effective density \verb!rhoci!; that density is
+obtained through inclusion of commons. The
+subroutine \verb!bdyset! evaluates the boundary conditions and
+deposits into the edge values of the potential, after each (full)
+iteration.
+
+Considerable care is taken to optimize the relaxation parameter in
+accordance with Chebychev acceleration principles, with the result
+that convergence is quite rapid (the count of half-iterations is
+reported). This code is practically as fast in this application as
+modern conjugate gradient techniques. Moreover, each step is an
+implicit \emph{nonlinear} solve, because of the additional function,
+not just a linear solve with constant total charge density.
+
+The solver automatically accommodates itself to the available number
+of compute nodes, dividing the mesh up into cartesian blocks
+accordingly.  The MPI code for this parallelism is contained in file
+\verb!mpibbdy.f! and called implicitly through the routine
+\verb!bbdy!. If there is incompatibility between the default block
+structure and the number of compute nodes available (which is often
+the case) the \verb!MPI_DIMS_CREATE! funtion is used to define the
+cartesian communicator topology. In normal usage, the MPI parallel
+features of this solver should be invisible except for some
+informational messages.  
+
+\subsection{Field Interpolation}
+
+At each time-step the electric field at each particle position is
+required to ascertain the acceleration. The field is derived from the
+potential by a second-order interpolation at positions unaffected by
+object boundaries. In the vicinity of object boundaries, more
+complicated interpolation is required. The routine \verb!getfield! in
+file \verb!getfield.f! is responsible for deciding how to interpolate
+and getting the field. Details of the algorithms for interpolation are
+given in the document http://arxiv.org/abs/1105.1356 ``Cartesian
+Coordinate, Oblique Boundary, Finite Differences and Interpolation''
+by I H Hutchinson.
+
+\subsection{Particle Advance}
+
+Particle advance is handled by the routine \verb!padvnc! in file
+\verb!padvnc.f!. It cycles through all the existing particles, making
+a time-step advance in velocity and time, ascertaining their new
+region, reinjecting them and possibly new particles if necessary, and
+performing various flux and diagnostic accumulations.
+
+\paragraph{The advancing scheme} without magnetic field, is a simple
+leap-frog combination of kick and drift. With non-zero magnetic field,
+the Cyclotronic mover is used. [Drift velocity not yet included.]  The
+acceleration (kick) step is taken to have a duration equal to the mean
+of the prior and current step durations. The drift is taken to have a
+duration equal to the current step. Thus one should interpret the
+current time step as the time between successive kicks. Each kick
+involves a momentum change equal to the force at the point where the
+kick occurs, multiplied by the duration between the mid-times of the
+steps prior-to and subsequent-to the kick. The velocity after the kick
+at the beginning of the current time-step then applies for the full
+time-step. 
+
+\paragraph{Collisions} when present change the behavior as follows. A
+random number is drawn which is converted to the time duration to the
+first collision this step \verb!dtc!. If that is smaller than the
+time-step duration, a collision is going to happened to the particle
+this step. This time-step is divided into \verb!dtc! and the remainder
+\verb!dtremain!. The first part \verb!dtc! is carried out in the
+standard way. Then the particle's momentum is randomized: redrawn from
+the neutral distribution, and the remainder step is begun. It it
+possible for additional collisions to intervene. If so, they are
+treated the same way. Eventually the remainder is exhausted, and the
+step is ended.
+
+\paragraph{Boundary crossings} between different regions are detected
+at the end of each (partial) time-step. The routine \verb!tallyexit!
+is used to accumulate the particle crossing count (including momentum
+and energy accumulations). 
+
+\paragraph{Reinjection} is required if the particle crosses out of the
+particle region. The reinjected particle is placed just inside the
+region with a velocity and space distribution determined by routine
+\verb!reinject!. (If a reinjection locates a particle outside the mesh
+or particle region, then a fatal error occurs.) The reinjection is
+supposed to have occurred a random fraction of the current (or
+remaining) time-step prior to the end of the current step. So the step
+is restarted with that fractional timestep still to be executed. But
+the \verb!dtprec(i)! is set to zero so that only a half-step
+acceleration (kick) will occur prior to the drift. This is the
+appropriate choice if the velocity distribution of reinjection is
+exactly equal to the background distribution.
+
+
+\paragraph{Subcycling} of particles, by making multiple smaller
+timesteps in between each potential update, is possible regardless of
+collisions. It is of very dubious benefit, since subcycling is known
+to give rise to self-force (actually self-acceleration).
+
+\section{Output and Postprocessing}
+
+\subsection{Diagnostics}
+
+\paragraph{Moment Diagnostics} consist of sums of particle
+contributions to the different velocity-moments. They are calculated
+ for each cell of the whole mesh. The sums are (in order) density,
+ velocity and squared velocity, up to 7 total.
+\begin{verbatim}
+      integer ndiagmax
+      parameter (ndiagmax=7)
+      real diagsum(na_i,na_j,na_k,ndiagmax)
+\end{verbatim}
+When diagnostics are being accumulated, because the command line
+switch \verb!-mX! has set a non-zero number of moments \verb!X!, then
+\verb!chargetomesh! updates this sum as well as the charge. Every
+\verb!iavesteps! (set by \verb!-a!) the sums are reduced from all
+processors and written to a file whose name indicates the step-number
+and \verb!.dia!. The sums are then reset to zero.
+
+\paragraph{Particle Distribution Diagnostics} are somewhat more
+complicated. This is because to maintain a full distribution function
+resolved over the whole position and momentum space would require
+excessive storage. Therefore some judicious representational choices
+must be made. 
+
+The call from COPTIC to routine \verb!partdistup! updates
+the distribution diagnostics. The first time it is called it
+calculates appropriate combined velocity bin structure designed to be able to
+represent well the velocity distribution averaged over the mesh. To do
+this, it uses data for every particle present, everywhere, to decide
+where to place the upper and lower limits of velocity. Then it
+accumulates the particle data into the fine distribution structure, by
+routine \verb!partsaccum!, and calculates an appropriate array of
+combined velocity bins by calling \verb!bincalc!. The routine
+\verb!subaccum! accumulates the particles into the spatially resolved
+combined-velocity bins. Subsequent calls just do the \verb!partsaccum!
+and \verb!subaccum! accumulations. (Reinitialization is possible by
+resetting \verb!cellvol! to zero.)
+
+Distributions are written (bit 1) and/or displayed (bit 2) as
+determined by switch \verb!-pd!, at the same time as other diagnostic
+writes, i.e.\ every \verb!iavesteps! steps.
+
+
+\subsection{Final Output}
+
+Always at the end of the run, and optionally at every \verb!iwstep!
+  steps (set by switch \verb!-w!), the state of the code is written to
+  disk and is available for postprocessing. The writing routine
+  \verb!datawrite! in file \verb!partwriteread.f! writes for each
+  processor the particles that belong to it into a file whose
+  extension is the cpu-node number. In addition, the master node
+  writes the grid quantities density (\verb!.den!), potential
+  (\verb!.phi!), and time-averaged potential (\verb!.pha!) in a simple
+  array write. It also writes the fluxes (\verb!.flx! via
+  \verb!writefluxfile! in file \verb!fluxdata.f!). These writes are to
+  fortran unformatted (binary) files. Each write routine is
+  accompanied by a read routine to read the data back into the same
+  structures from which it was written.
+
+\subsection{Postprocessing and data examination}
+
+The subdirectory \verb!analysis! contains routines that read back the
+data files written and display them in various ways. They are in the
+form of main programs with names like \verb!diagexamine!,
+\verb!fluxexamine!, \verb!denexamine!, \verb!phiexamine!. 
+Obviously the possible sorts of postprocessing are unlimited, but
+these routines provide both general purpose inspection routines and
+examples that can serve as templates for other analyses.
+
+\section{Code Restart}
+
+It is possible to restart the code from a state written to disk.
+Specifying the switch \verb!-fs! or \verb!-fspath! and steps
+\verb!-sXXX! will cause the code to attempt such a restart from data
+saved in the current directory or the optionally specified \verb!path!
+and execute an additional \verb!XXX! steps.  The results are then
+exactly what would have been obtained if the prior execution had
+been for \verb!XXX! steps more than it actually was. In other words,
+breaking a run into multiple stages with restarts has no effect on the
+simulation result. The geometry file is still read by
+COPTIC. It must be identical to the one used in the prior
+execution. The parameters are checked and if any discrepancies are
+found, the restart is considered to have failed, and COPTIC simply
+initializes and runs as normal without the restart switch.
+
+
+
+
+\end{document}

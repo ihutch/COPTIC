@@ -23,6 +23,7 @@ c Can't be passed here because of mditerate argument conventions.
       parameter (mdims=10)
       integer iLs(mdims+1)
       common /iLscom/iLs
+      include 'myidcom.f'
       integer icall
       save icall
       data icall/0/
@@ -30,7 +31,7 @@ c Can't be passed here because of mditerate argument conventions.
 c Silence warnings with spurious iused acces.
       icb=iused(1)
       icall=icall+1
-      if(mod(icall,300).eq.0)write(*,'(''.'',$)')
+      if(mod(icall,300).eq.0.and.myid.eq.0)write(*,'(''.'',$)')
 c The cij address is to data 2*ndims+1 long
       icb=2*ndims+1
 c Object pointer

@@ -57,7 +57,8 @@ c Might eventually need more interpretation of fluxtype.
             i2type=(itype/256)
             if(i2type.eq.2)then
 c Point object. No flux accumulations.
-               write(*,*)'Measuring force, no flux, on point object',i
+               if(myid.eq.0)write(*,*
+     $              )'Measuring force, no flux, on point object',i
      $              ,mf_obj
                mf_quant(mf_obj)=0
             endif

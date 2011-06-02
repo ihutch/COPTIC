@@ -4,8 +4,10 @@ ACCISLIB=./accis/libaccisX.a
 LIBRARIES = -L/usr/X11R6/lib/ -L./accis/ -laccisX -lXt -lX11 $(GLULIBS)
 #Default accis driver choice
 #Alternatives are vecx or vecglx, can be overriden by commandline option
-VECX=vecglx
-#    VECX=vecx
+ifeq ("$(VECX)","")
+	VECX=vecglx
+endif	
+# Alternative is    VECX=vecx
 ifeq ("$(VECX)","vecglx")     
    GLULIBS= -lGL -lGLU
 endif
@@ -24,12 +26,13 @@ GEOMFILE=geomcubic.dat
 #GEOMFILE=geomz200x25.dat
 ##########################################################################
 # An option setting might override default compiler.
-G77=mpif77 -f77=g77 
-#G77=mpif77
-# For loki:
-#G77=/opt/mvapich2.gbe/path/bin/mpif90
+ifeq ("$(G77)","")     
+	G77=mpif77 -f77=g77 
+endif
+#
 # export this so it is inherited by sub-makes.
 export G77
+##########################################################################
 GFINAL=gcc-4.1 -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
 #OPTIMIZE=-O3 -funroll-loops -finline-functions
 OPTIMIZE=-O3
@@ -128,6 +131,7 @@ sorserial : sortest.f makefile $(ACCISLIB) $(SOLOBJECTS) nonmpibbdy.o
 	$(G77) -o sorserial  $(COMPILE-SWITCHES) $(PROFILING) sortest.f nonmpibbdy.o libcopsol.a $(LIBRARIES)
 
 $(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h
+	@echo "******************* Making accis with VECX=${VECX} **********"
 	make -C accis
 
 ######################################################
@@ -145,8 +149,7 @@ testing/stresstest : testing/stresstest.f stress.o $(ACCISLIB)
 
 vecx :
 	make clean
-	make VECX=vecx -C accis
-	make
+	make VECX=vecx
 
 #####################################################
 clean :
