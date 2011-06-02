@@ -164,16 +164,16 @@ c            write(25,'(a,i1,a)')'legend: f(v!d',id,'!d)'
          call exit(1)
  102     continue
       endif
-         do id=1,mdims
-            vmean(id)=0.
-            ftot=0.
-            do i=1,nptdiag
-               vmean(id)=vmean(id)+fv(i,id)*vdiag(i,id)
-               ftot=ftot+fv(i,id)
-            enddo
-            vmean(id)=vmean(id)/ftot
+      do id=1,mdims
+         vmean(id)=0.
+         ftot=0.
+         do i=1,nptdiag
+            vmean(id)=vmean(id)+fv(i,id)*vdiag(i,id)
+            ftot=ftot+fv(i,id)
          enddo
-         write(*,'(''Mean velocity:'',3f10.4)')(vmean(i),i=1,mdims)
+         vmean(id)=vmean(id)/ftot
+      enddo
+      write(*,'(''Mean velocity:'',3f10.4)')(vmean(i),i=1,mdims)
 
 c Plot the subdistributions at a particular cell.
       icell=nsub_i/2+1

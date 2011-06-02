@@ -215,247 +215,6 @@ c User interface
       call hdprset(0,0.)
       end
 c******************************************************************
-c*******************************************************************
-c General slicing routine with surf projection.
-      subroutine sliceGsurf(ifull,iuds,u,nw,zp,ixnp,xn,idfix,utitle)
-c Plot web-projected and/or projected contour representations 
-c of quantity u on slices with
-c fixed values of dimension idfix.
-c The full dimensions of arrays u are
-      parameter(ndims=3,nd2=2*ndims)
-      integer ifull(ndims)
-      real u(ifull(1),ifull(2),ifull(3))
-c The used dimensions of each are
-      integer iuds(ndims)
-c The dimensions of square working array, zp, (nw) must be larger
-c than the greatest of iuds. If zp(1,1)=0 on entry, give control help.
-      integer nw
-      real zp(nw,nw,ndims)
-c The zp are used for the x,y,z arrays. Positions must be specified
-c fully by arrays formed within this routine.
-c The node positions are given by vectors laminated into xn, whose
-c starts for dimensions id are at ixnp(id)+1. 
-c So the vector of positions for dimension id is 
-c   ixnp(id)+1 to ixnp(id)+iuds(id) [and ixnp(id+1)-ixnp(id)>=iuds(id)]
-      integer ixnp(ndims+1)
-      real xn(*)
-c The fixed dimension which is chosen to start, and returned after, is:
-      integer idfix
-c If idfix<0, then don't maintain aspect ratio.
-c The plotted quantity title is
-      character*(*) utitle
-c Needed for perspective plot
-      include 'world3.h'
-c Workspace size is problematic.
-      parameter (nwksp=40000)
-      character*1 pp(nwksp)
-      real work(nwksp)
-c Contour levels
-      real cl(30)
-c Local variables:
-      integer icontour,iweb,iback
-      integer isw,jsw
-      integer iclipping
-      character*(10) cxlab,cylab
-      character*(30) form1
-      save nf1,nf2,nff,if1,if2,iff
-      logical lfirst,laspect
-      data lfirst/.true./laspect/.true./
-      data iclipping/0/jsw/0/
-c Tell that we are looking from the top by default.
-      data ze1/1./icontour/1/iweb/1/iback/0/
-      data cs/.707/sn/.707/
-      integer iwcol
-      data iwcol/2/
-      save n1
-
-      if(idfix.lt.0)then
-         laspect=.false.
-         idfix=abs(idfix)
-      endif
-      if(idfix.lt.1 .or. idfix.gt.ndims)idfix=ndims
-      ips=0
-      irotating=0
-c Initial slice number
-c red-green gradient:
-c      call accisgradinit(64000,0,0,-64000,128000,64000)
-c blue purple white gradient
-c      call accisgradinit(-32000,-65000,0,97000,65500,150000)
-c green yellow white 
-c      call accisgradinit(-32000,0,-65000,97000,150000,65500)
-c red orange white
-c      call accisgradinit(0,-32000,-65000,150000,97000,65500)
-c Better one that gives a good mono gradient too:
-      call blueredgreenwhite()
-      if(lfirst)then
-         n1=iuds(idfix)/2
-c     Plot the surface. With scaling 1. Web color 6, axis color 7.
-c         jsw=1 + 256*6 + 256*256*7
-         jsw=2 + 256*iwcol + 256*256*7
-         iweb=1
-         icontour=1
-         iclipping=0
-         lfirst=.false.
-         write(*,*)' ======== Slice plotting interface. Hit h for help.'
-c         if(zp(1,1).ne.0)goto 19
-      endif
-c Start of controlled plotting loop.
- 21   call pltinit(0.,1.,0.,1.)
-c Set the plotting arrays for fixed dimension idfix.
-      idp1=mod(idfix,3)+1
-      idp2=mod(idfix+1,3)+1
-      if(iclipping.eq.0)then
-c Plot the full used array.
-         nf1=iuds(idp1)
-         nf2=iuds(idp2)
-         nff=iuds(idfix)
-         if1=1
-         if2=1
-         iff=1
-         if(nf2*nf1.gt.nwksp)then
-            write(*,101)nwksp,nf1,nf2
- 101        format('sliceGweb error: need bigger nwksp',i6,
-     $           ' smaller than',i4,' x',i4)
-            return
-         endif
-      endif
-      xdp1=xn(ixnp(idp1)+nf1)-xn(ixnp(idp1)+if1)
-      xdp2=xn(ixnp(idp2)+nf2)-xn(ixnp(idp2)+if2)
-c      write(*,*)'nf2,if2,xdp2',nf2,if2,xdp2
-c Only works for 3-D in present implementation.
-c Could be fixed to be general, I suppose.
-      do i=if1,nf1
-         do j=if2,nf2
-            if(idfix.eq.1)then
-               zp(i,j,3)=u(n1,i,j)
-            elseif(idfix.eq.2)then
-               zp(i,j,3)=u(j,n1,i)
-            elseif(idfix.eq.3)then
-               zp(i,j,3)=u(i,j,n1)
-            endif
-            zp(i,j,1)=xn(ixnp(idp1)+i)
-            zp(i,j,2)=xn(ixnp(idp2)+j)
-         enddo
-      enddo
-
-c 3D plot ranges.
-      xmin=xn(ixnp(idp1)+if1)
-      xmax=xn(ixnp(idp1)+nf1)
-      ymin=xn(ixnp(idp2)+if2)
-      ymax=xn(ixnp(idp2)+nf2)
-      zmin=xn(ixnp(idfix)+iff)
-      zmax=xn(ixnp(idfix)+nff)
-c Web drawing. First call is needed to set scaling.
-c      write(*,*)'jsw=',jsw
-      if(iweb.ne.0)then
-c Old buggy setting, only works for centered cube.
-         if(laspect)then
-            if(xdp2.gt.xdp1)then
-               yc=.3
-               xc=xdp1*yc/xdp2
-            elseif(xdp2.lt.xdp1)then
-               xc=.3
-               yc=xdp2*xc/xdp1
-            else
-               xc=.25
-               yc=.25
-            endif
-            zc=.2
-            call setcube(xc,yc,zc,.5,.4)
-         endif
-c Rescale x and y (if necessary), but not z.
-c         if(iclipping.ne.0)
-         call scale3(xmin,xmax,ymin,ymax,wz3min,wz3max)
-c         ksw=-(jsw- (256*256)*(jsw/(256*265)) )
-c         if(icontour.ne.3)then
-c At present this means we draw the surface twice when icontour=3
-c because it is drawn again after the contour plot. Ought to fix
-c but it's tricky
-            ksw=-jsw
-            write(*,*)'ksw1',ksw,jsw-16*(jsw/16)
-            call surf3d(zp(if1,if2,1),zp(if1,if2,2),
-     $           zp(if1,if2,3),nw,nf1+1-if1,nf2+1-if2,jsw,work)
-c         call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
-c     $        zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
-c            endif
-      endif
-c Use this scaling until explicitly reset.
-      jsw=0 + 256*iwcol + 256*256*7
-      write(form1,'(''Dimension '',i1,'' Plane'',i4)')idfix,n1
-c      call drwstr(.1,.02,form1)
-c      call iwrite(idp1,iwidth,cxlab)
-c      call iwrite(idp2,iwidth,cylab)
-c      call ax3labels('axis-'//cxlab,'axis-'//cylab,utitle)
-
-c Projected contouring.
-      if(icontour.ne.0)then
-c       Draw a contour plot in perspective. Need to reset color anyway.
-         call color(4)
-         call axregion(-scbx3,scbx3,-scby3,scby3)
-         call scalewn(xmin,xmax,ymin,ymax,.false.,.false.)
-c Calculate place of plane. 
-         zplane=scbz3*(-1+(xn(ixnp(idfix)+n1)-zmin)*2./(zmax-zmin))
-c accis perspective corner for axes and cube.
-         icorner=igetcorner()
-         if(iweb.eq.0)then
-c Draw axes.
-            call hdprset(0,0.)
-c Ought to rescale the z-axis, but that was done in hidweb.
-            call scale3(xmin,xmax,ymin,ymax,zmin,zmax)
-c If we do, then we must reset jsw:
-            jsw=1 + 256*iwcol + 256*256*7
-            call axproj(icorner)
-         else
-c Set contour levels using the scaling of the box.
-            icl=6
-            do ic=1,icl
-               cl(ic)=wz3min+(wz3max-wz3min)*(ic-1.)/(icl-1.)
-            enddo
-         endif
-c Get back current eye position xe1 etc.
-         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
-         if(icontour.eq.1)call hdprset(-3,sign(scbz3,ze1))
-         if(icontour.eq.2)call hdprset(-3,zplane)
-         if(icontour.eq.3)call hdprset(-3,-sign(scbz3,ze1))
-c Contour without labels, with coloring, using vector axes
-         call contourl(zp(if1,if2,3),pp,nw,
-     $        nf1+1-if1,nf2+1-if2,cl,icl,
-     $        xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),17+64)
-         call ticlabtog()
-         call axis()
-         call ticlabtog()
-         call axis2()
-         if(iweb.ne.1)call cubed(icorner-8*(icorner/8))
-      endif
-
-      if(iweb.eq.1.and.icontour.eq.3)then
-c         call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
-c     $        zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
-         ksw=-jsw
-         write(*,*)'ksw2=',ksw
-c         ksw=-(jsw- (256*256)*(jsw/(256*265)) )
-         call surf3d(zp(if1,if2,1),zp(if1,if2,2),
-     $        zp(if1,if2,3),nw,nf1+1-if1,nf2+1-if2,jsw,work)
-
-c This was necessary when hidweb used to change jsw.
-c         jsw=0 + 256*6 + 256*256*7
-      endif
-
-      if(ips.ne.0)then
-c We called for a local print of plot. Terminate and switch it off.
-         call pltend()
-         call pfset(0)
-         ips=0
-      endif
-
-c User interface
-      call ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping
-     $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb)
-      if(iquit.eq.0)goto 21
-
-      call hdprset(0,0.)
-      end
-c******************************************************************
       subroutine ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping
      $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb)
 c Encapsulated routine for controlling a 3-D plot.
@@ -565,7 +324,7 @@ c Three-way slice contours.
 c Plot projected contour representations on cuts in three dimensions 
 c of quantity u on fixed values of dimensions.
 c The initial intersection of the fixed planes is at ifixpt(ndims).
-c The full dimensions of arrays u are iuds.
+c The full dimensions of arrays u are ifull, used iuds.
       parameter(ndims=3,nd2=2*ndims)
       integer ifull(ndims)
       real u(ifull(1),ifull(2),ifull(3))
@@ -579,9 +338,9 @@ c The node positions are given by vectors laminated into xn, whose
 c starts for dimensions id are at ixnp(id)+1. 
 c So the vector of positions for dimension id is 
 c   ixnp(id)+1 to ixnp(id)+iuds(id) [and ixnp(id+1)-ixnp(id)>=iuds(id)]
-      integer ixnp(ndims)
+      integer ixnp(ndims+1)
       real xn(*)
-c The fixed dimension which is chosen to start, and returned after, is:
+c The plane intersection, chosen to start, and returned after, is:
       integer ifixpt(ndims)
 c The plotted quantity title is
       character*(*) utitle
@@ -594,19 +353,28 @@ c Contour levels
       real cl(30)
 c Make pfsw visible:
       include 'plotcom.h'
+
 c Local variables:
+      integer np
+      parameter (np=100)
+      real tp(np),up(np)
       integer idire(3),idir(3)
       real cbsize(3),cmin(3),cmax(3)
+      real xpl(3),xnl(3)
+      integer idtx(5)
+      real tx(5)
       integer icontour,iweb,iback
-      integer isw,jsw
+      integer isw,jsw,imode,itype,ifileno
       character*(10) cxlab,cylab
       character*(30) form1
-      logical lfirst
-      data lfirst/.true./
+      logical lfirst,lsideplot
+      data lfirst/.true./lsideplot/.false./
 c Tell that we are looking from the top by default.
       data ze1/1./icontour/1/iweb/1/iback/0/
-      data cs/.707/sn/.707/
+      data cs/.707/sn/.707/imode/0/itype/0/
+      data xpl/0.,0.,0./xnl/1.,0.,0./ifileno/0/
 
+      ierr=1
       imv=1
       itri=0
       icl=0
@@ -626,7 +394,8 @@ c     Plot the surface. With scaling 1. Web color 6, axis color 7.
       endif
 
       call setcube(.2,.2,.2,.5,.4)
- 21   call pltinit(0.,1.,0.,1.)
+c Start of plotting loop.
+ 21   if(.not.lsideplot)call pltinit(0.,1.,0.,1.)
       do id=1,3
          cmin(id)=xn(ixnp(id)+1)
          cmax(id)=xn(ixnp(id)+iuds(id))
@@ -667,13 +436,96 @@ c Get back current eye position xe1 etc.
          enddo
       enddo
 
-c This needs to be generalized to accommodate multiple levels.
+c---------------------------
+      if(ierr.eq.0)then
+c      write(*,*)'Starting line processing'
+c Line processing. Create a line of up to 5 points in order with 
+c a rank index indicating how many planes it is in front of 0-3.
+         do ic=1,5
+            tx(ic)=0.
+            idtx(ic)=0
+         enddo
+         tx(1)=tp(1)
+         tx(2)=tp(np)
+         ntx=2
+c The number of plane crossings that are behind this point, which is the
+c number of planes in front of which this point is. idtx
+         do id=1,3
+c Iterate over directions/planes. Prevent a divide by zero
+            if(xnl(id).eq.0)xnl(id)=1.e-20
+            tc=(xn(ixnp(id)+ifixpt(id))-xpl(id))/xnl(id)
+c            write(*,*)id,xnl(id),tc,ifixpt(id),xn(ixnp(id)+ifixpt(id))
+c Insert it into the sorted tx array of crossings. 
+c            write(*,*)'ntx',ntx,tc,tx(1),tx(ntx)
+            if(tc.gt.tx(1).and.tc.lt.tx(ntx))then
+               do ix=ntx,1,-1
+c Is the higher t side of this plane closer to eye?
+c If so, then points at higher t are in front of this plane.
+                  isn=0
+                  if(xnl(id)*idire(id).gt.0.)isn=1
+                  if(tc.lt.tx(ix))then
+c Shift up crossing that is higher, and adjust its plane-crossing rank.
+                     tx(ix+1)=tx(ix)
+                     idtx(ix+1)=idtx(ix)+isn
+                  else
+c Put this intersection into its slot
+                     if(tc.gt.tx(1))then
+                        tx(ix+1)=tc
+c                        idtx(ix+1)=idtx(ix+1)+isn
+                        idtx(ix+1)=idtx(ix)+isn
+                        ntx=ntx+1
+c Mark as used up:
+                        tc=tx(1)
+                     endif
+c Adjust the plane-crossing rank of the lower slots.
+                     idtx(ix)=idtx(ix)+(1-isn)
+                  endif
+c                  write(*,'(a,7i4)')'ix,isn,idtx',ix,isn,idtx
+               enddo
+            else
+c This plane perhaps behind everything. Increment ranks.
+               if(xnl(id)*idire(id).gt.0.and.tc.le.tx(1) .or.
+     $              xnl(id)*idire(id).lt.0.and.tc.gt.tx(ntx))then
+                  do ix=1,ntx
+                     idtx(ix)=idtx(ix)+1
+                  enddo
+               endif
+            endif
+         enddo
+c Now tx(1:ntx) contains the ends and intersections of the line in order.
+c And idtx(1:ntx) contains the number of planes behind each segment.
+c tx(1) and tx(ntx) are the ends of the segment at tp=0,1.
+c Draw the entire line.
+         ir=-1
+c         write(*,*)'idire',idire
+         write(*,*)'Rankdraw with points',ntx,ir
+         write(*,61)(k,idtx(k),tx(k),k=1,ntx)
+ 61      format(2i3,f10.4,';',2i3,f10.4,';',
+     $        2i3,f10.4,';',2i3,f10.4,';',2i3,f10.4)
+         call rankdraw(xpl,xnl,ntx,tx,idtx,ir)
+      endif
+c End of line sorting and ranking.
+c---------------------------
+
 c There are for each dimension three points: 1, ifixpt(id), iuds(id).
 c The position of the plane is specified in 3-d normal units. 
 c Each contour is called with an origin and iud in the other dims.
 c Because of memory, we need to make the the origin the smaller index.
+      ifix1=1
+      ifix2=3
+      if(itype.eq.1)then
+         ifix1=imv
+         ifix2=imv
+      elseif(itype.eq.2)then
+         ifix1=3
+         ifix2=3
+      endif
 c Here we need to cycle through 4 levels of plane from back to front.
-
+c Any plane (fixed dimension 3 of them) has four segments. 
+c The furthest segment must be drawn first, then the two next most far
+c in any order, then the closest. We call the distance the "level"
+c The three dimensions must be interleaved with each other, drawing 
+c their planes at the same level together. 
       do ilev=1,4
          if(ilev.eq.1)then
             do i=1,3
@@ -684,7 +536,7 @@ c Here we need to cycle through 4 levels of plane from back to front.
                idir(i)=idire(i)
             enddo
          endif
-         do ifix=1,3
+         do ifix=ifix1,ifix2
             id1=mod(ifix,3)+1
             id2=mod(ifix+1,3)+1
             if(ilev.eq.2)idir(id1)=-idir(id1)
@@ -721,9 +573,19 @@ c            write(*,*)it1,ib1,it2,ib2,ifix
             if(ilev.eq.2)idir(id1)=-idir(id1)
             if(ilev.eq.3)idir(id2)=-idir(id2)
          enddo
+         call hdprset(0,0.)
+         if(ilev.eq.3.and.ierr.eq.0)call rankdraw(xpl,xnl,ntx,tx,idtx,1)
       enddo
       call axproj(igetcorner())
       call ax3labels('x','y','z')
+      if(ierr.eq.0)call rankdraw(xpl,xnl,ntx,tx,idtx,2)
+c To do the lineout properly obscured
+c 1. Draw whole before all planes. This shows it in the correct areas of 
+c volumes behind any 2 (and 3 but it never shows) planes.
+c 2. Draw planes at levels 1-3.
+c 3. Redraw line only in places that are in front of at least 2 planes.
+c 4. Draw planes at level 4 (front box).
+c 5. Draw line only in places in front of all 3 planes. 
 
       if(ips.ne.0)then
 c We called for a local print of plot. Terminate and switch it off.
@@ -734,65 +596,211 @@ c Prevent pltend from querying the interface.
          ips=0
       endif
 c-----------------------------------
-c Double buffering switch back. Disabled here because of the compiz
-c screen-writing performance issue.
-c      if(iback.ne.0)then 
-c         call glfront()
-c         call accisrefresh()
-c      endif
 c Limit framing rate to 30fps.
       call usleep(10000)
+ 31   continue
+      iy=0
 c User interface interpret key-press.
       call eye3d(isw)
+c      write(*,*)'isw=',isw
       if(isw.eq.0) goto 23
-      if(isw.eq.65364)then
-         ifixpt(3)=ifixpt(3)-1
-         if(ifixpt(3).lt.1)ifixpt(3)=1
-      endif
-      if(isw.eq.65362)then
-         ifixpt(3)=ifixpt(3)+1
-         if(ifixpt(3).gt.iuds(3))ifixpt(3)=iuds(3)
-      endif
       if(isw.eq.ichar('q')) goto 23
+      if(isw.eq.ichar('0'))then
+         imode=0                !48
+         ierr=1
+      endif
+      if(isw.eq.49)imode=1
       if(isw.eq.ichar('d')) imv=mod(imv,2)+1
+      if(isw.eq.ichar('j'))itype=mod(itype+1,3)
+      if(imode.eq.0)then
+c Start of plane crossing control
+         if(isw.eq.65364)then
+            ifixpt(3)=ifixpt(3)-1
+            if(ifixpt(3).lt.1)ifixpt(3)=1
+         elseif(isw.eq.65362)then
+            ifixpt(3)=ifixpt(3)+1
+            if(ifixpt(3).gt.iuds(3))ifixpt(3)=iuds(3)
+         elseif(isw.eq.65361)then
+            ifixpt(imv)=ifixpt(imv)+1*idire(imv)
+            if(ifixpt(imv).lt.1)ifixpt(imv)=1
+            if(ifixpt(imv).gt.iuds(imv))ifixpt(imv)=iuds(imv)
+         elseif(isw.eq.65363)then
+            ifixpt(imv)=ifixpt(imv)-1*idire(imv)
+            if(ifixpt(imv).lt.1)ifixpt(imv)=1
+            if(ifixpt(imv).gt.iuds(imv))ifixpt(imv)=iuds(imv)
+         endif
+c End of plane crossing control
+      elseif(imode.eq.1)then
+c         write(*,*)'Plane crossing control'
+         if(isw.eq.65364)then
+            xpl(3)=xpl(3)-.01*(xn(ixnp(4))-xn(ixnp(3)+1))
+            iy=1
+         elseif(isw.eq.65362)then
+            xpl(3)=xpl(3)+.01*(xn(ixnp(4))-xn(ixnp(3)+1))
+            iy=1
+         elseif(isw.eq.65361)then
+            xpl(imv)=xpl(imv)+.01*(xn(ixnp(imv+1))-xn(ixnp(imv)+1))
+            iy=1
+         elseif(isw.eq.65363)then
+            xpl(imv)=xpl(imv)-.01*(xn(ixnp(imv+1))-xn(ixnp(imv)+1))
+            iy=1
+         endif
+      endif
+      if(isw.eq.ichar('a'))then
+         ifileno=ifileno+1
+         write(form1,'(''line'',i4.4,''.dat'')')ifileno
+         open(unit=10,FILE=form1,status='unknown',err=901)
+         close(unit=10,status='delete',err=901)
+         open(unit=10,FILE=form1,status='new',err=901)
+         write(*,*)'Writing line to file ',form1
+         goto 902
+ 901     write(10,*)'Error opening file ',form1
+ 902     write(10,'(a,6f10.4)')'# Line from: ',xpl
+         write(10,'(a,6f10.4)')'# In direction: ',xnl
+         write(10,*)np
+         write(10,'(2f12.5)')(tp(k),up(k),k=1,np)
+         close(10)
+      endif
       if(isw.eq.ichar('s')) call minmax2(u(1,1,ifixpt(3)),
      $     ifull(1),iuds(1),iuds(2),umin,umax)
       if(isw.eq.ichar('p'))then
          call pfset(3)
          ips=3
       endif
-      if(isw.eq.65361)then
-         ifixpt(imv)=ifixpt(imv)+1*idire(imv)
-         if(ifixpt(imv).lt.1)ifixpt(imv)=1
-         if(ifixpt(imv).gt.iuds(imv))ifixpt(imv)=iuds(imv)
-      elseif(isw.eq.65363)then
-         ifixpt(imv)=ifixpt(imv)-1*idire(imv)
-         if(ifixpt(imv).lt.1)ifixpt(imv)=1
-         if(ifixpt(imv).gt.iuds(imv))ifixpt(imv)=iuds(imv)
-      endif
       if(isw.eq.ichar('t'))itri=mod(itri+1,2)
       if(isw.eq.ichar('l'))icl=-icl
       if(isw.eq.ichar('h'))then
  20      write(*,*)' ======== Slice contouring interface:',
-     $        ' up/down, l/r arrows change slice.'
-         write(*,*) ' d: changes l/r dimension controlled.',
-     $        ' s:rescale. p:print. Drag to move view.'
+     $        ' up/down, <-/-> arrows change slice.'
+         write(*,*) ' d: changes <-/-> dimension controlled.',
+     $        ' s:rescale. p:plot-to-file.'
+         write(*,*)' modes: 1: linerotate. 0: object-rotate.'
          write(*,*)
-     $        ' toggles: t smooth color; l labels'
+     $        ' toggles: t smooth color; l labels; g sideplot;'
+     $        ,' j slice type.'
+         write(*,*)' Drag cursor to move view.'
       endif
       if(isw.eq.ichar('c'))icontour=mod(icontour+1,4)
       if(isw.eq.ichar('w'))iweb=mod(iweb+1,2)
-c Rotating and Zooming interface:
-      call rotatezoom(isw)
+
+      if(isw.eq.ichar('g'))then
+         lsideplot=.not.lsideplot
+         if(lsideplot)then
+c Move the 3-D plot to bottom right            
+            call setcube(.1,.1,.1,.8,.2)
+         else
+c Move it to the center.
+            call setcube(.2,.2,.2,.5,.4)
+         endif
+      endif
+      if(imode.eq.0)then
+c Rotating and Zooming of slices control interface:
+         call rotatezoom(isw)
+      elseif(imode.eq.1)then
+c Rotating and shifting of lineout.         
+         call rotateline(isw,xnl,xpl,iy)
+      endif
 c End of user interface.
 c------------------------------------
+      if(imode.eq.1)call line3out(ifull,iuds,u,ixnp,xn,xpl,xnl,np,tp,up
+     $     ,ierr)
+c         write(*,*)xpl,xnl
+c         write(*,'(2f10.4)')(tp(k),up(k),k=1,np)
+
+      if(lsideplot)then
+c The sideplot commands.
+         call axregion(.12,.5,.12,.5)
+         call autoplot(tp,up,np)
+         write(form1,'(a,3f7.2)')'From',xpl
+         call axlabels(form1,utitle)
+         write(form1,'(a,3f6.2)')'Direction',xnl
+         call jdrwstr(.31,.55,form1,.0)
+      endif
+c Show the lineout position if it is changed.
+      if(iy.ne.0)then
+         call vec3w(xpl(1),xpl(2),xpl(3),0)
+         call vec3w(xnl(1)+xpl(1),xnl(2)+xpl(2),xnl(3)+xpl(3),1)
+         goto 31
+      endif
       goto 21
  23   continue
       call hdprset(0,0.)
+
+      end
+c********************************************************************
+      subroutine rotateline(isw,xnl,xpl,iy)
+      real xnl(3),xpl(3)
+      integer irotating
+c g77 does not support these intrinsics in parameters:
+c      parameter (angle=3.141593/180.,cs=cos(angle),sn=sin(angle))
+      parameter (angle=3.141593/180.,
+     $     cs=1-angle*angle*0.5*(1.-angle*angle/12.),
+     $     sn=angle*(1.-angle*angle*(1-angle*angle/20.)/6.))
+      real ssn
+      data irotating/0/ssn/1./
+      save irotating
+c      iy=0
+      if(isw.eq.ichar('r'))then
+c Rotate
+         ssn=1.
+         irotating=1
+      elseif(isw.eq.ichar('e'))then
+         irotating=1
+         ssn=-1.
+      elseif(isw.eq.ichar('y'))then
+         irotating=1
+         ssn=-ssn
+      elseif(isw.eq.ichar('h'))then
+c Help text
+         write(*,*)' Line direction r/e: rotate in x/y-plane.'
+         write(*,*)' z/x: elevation in z. n: enter dir. m: enter point.'
+      elseif(isw.eq.ichar('z'))then
+         irotating=2
+         ssn=1.
+      elseif(isw.eq.ichar('x'))then
+         irotating=2
+         ssn=-1.
+      endif
+      if(irotating.eq.1)then
+         yn1=cs*xnl(1)-ssn*sn*xnl(2)
+         yn2=ssn*sn*xnl(1)+cs*xnl(2)
+         xnl(1)=yn1
+         xnl(2)=yn2
+         irotating=0
+         iy=1
+c         write(*,*)'Direction rotation',yn1,yn2
+      elseif(irotating.eq.2)then
+         r=sqrt(xnl(1)**2+xnl(2)**2)
+         if(r.ne.0)then
+            rc=xnl(1)/r
+            rs=xnl(2)/r
+         else
+            rc=1.
+            rs=0.
+         endif
+         z=xnl(3)
+c         write(*,*)'Elevation change',r,z,ssn
+         xnl(1)=(cs*r-ssn*sn*z)*rc
+         xnl(2)=(cs*r-ssn*sn*z)*rs
+         xnl(3)=ssn*sn*r+cs*z
+         irotating=0
+         iy=2
+      endif
+      if(isw.eq.ichar('n'))then
+         write(*,'(''Enter lineout direction as 3 reals here:'',$)')
+         read(*,*)xnl
+         iy=3
+      endif
+      if(isw.eq.ichar('m'))then
+         write(*,'(''Enter lineout point as 3 reals here:'',$)')
+         read(*,*)xpl
+         iy=4
+      endif
       end
 c********************************************************************
       subroutine rotatezoom(isw)
       integer irotating
+      data irotating/0/
       save irotating,sn,cs
       if(isw.eq.ichar('i'))then
 c Get back current eye position xe1 etc.
@@ -801,14 +809,16 @@ c Then move it in.
          xe1=xe1*.9
          ye1=ye1*.9
          ze1=ze1*.9
-         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
+c         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
+         call trn32(xe,ye,ze,xe1,ye1,ze1,1)
       elseif(isw.eq.ichar('o'))then
 c Move out.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
          xe1=xe1/.9
          ye1=ye1/.9
          ze1=ze1/.9
-         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
+c         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
+         call trn32(xe,ye,ze,xe1,ye1,ze1,1)
       elseif(isw.eq.ichar('r'))then
 c Rotate
          irotating=1
@@ -857,3 +867,182 @@ c         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
 
       end
 c******************************************************************
+c Obtain a line profile through a quantity u on n-dimensional space.
+c ndims is fixed as 3 in this version.
+      subroutine line3out(ifull,iuds,u,ixnp,xn,xpl,xnl,np,tp,up,ierr)
+c ifull(ndims) full dimensions of u
+c iuds(ndims)  used dimensions of u
+c Node positions are given by vectors laminated into xn, whose
+c starts for dimensions id are at ixnp(id)+1. 
+c Line passes through point xpl with cartesian direction xnl.
+c So for each dimension x=xpl+t*xnl.
+c np  length of line profile array to return.
+c tp, up  values of line parameter and u returned along the line.
+c ierr non-zero on error.
+      integer ndims
+      parameter (ndims=3)
+      integer ifull(ndims),iuds(ndims)
+      real u(ifull(1),ifull(2),ifull(3))
+      integer ixnp(ndims+1)
+      real xn(*)
+      real xpl(ndims)
+      real xnl(ndims)
+      integer np
+      real tp(np),up(np)
+
+      integer ip(ndims)
+      real pf(ndims)
+
+      ierr=0
+c Calculate the end points of the line
+      tmin=-1.e30
+      tmax=1.e30
+      do id=1,ndims
+         x0=xn(ixnp(id)+1)
+         x1=xn(ixnp(id+1))
+c         write(*,*)x0,x1
+         if(xnl(id).ne.0.)then
+            t0=(x0-xpl(id))/xnl(id)
+            t1=(x1-xpl(id))/xnl(id)
+            if((tmin-t0)*(t0-tmax).gt.0)then
+c t0 is a new bound
+               if(t0.le.t1)then
+                  tmin=t0
+               else
+                  tmax=t0
+               endif
+            endif
+            if((tmin-t1)*(t1-tmax).gt.0)then
+c t1 is a new bound
+               if(t0.le.t1)then
+                  tmax=t1
+               else
+                  tmin=t1
+               endif
+            endif
+         endif
+      enddo
+c Now tmin and tmax are the end parameters of the lineout, 
+c and tmax>=tmin or else there's no intersection.
+      if(tmax.lt.tmin)then
+c There's no intersection with the box.
+         write(*,*)'Null intersection of lineout.',tmin,tmax
+         ierr=1
+         return
+      endif
+c For each point in the lineout
+      do i=1,np
+         tp(i)=tmin+(tmax-tmin)*(.00001+.99998*(i-1)/(np-1))
+c Find the interpolated u value. First tell what box we are in.
+         do id=1,ndims
+            xp=xpl(id)+tp(i)*xnl(id)
+            ip(id)=accinterp(xn(ixnp(id)+1),ixnp(id+1)-ixnp(id),
+     $           xp,pf(id))
+            if(ip(id).eq.0)then
+               write(*,*)'Line profile error. Outside box.',id
+     $           ,ixnp(id)+1,ixnp(id+1)-ixnp(id),xp,pf(id)
+               write(*,*)(xn(k),k=ixnp(id)+1,ixnp(id+1)-ixnp(id))
+               ierr=2
+               return
+            endif
+            pf(id)=pf(id)-ip(id)
+         enddo
+c Now we have in ip(id) and pf(id), the array position information
+c Do the average over the box's vertices 
+         total=0.
+         do il=0,2**ndims-1
+c For each box vertex use a logical offset that
+c amounts to the binary representation of its sequence number, i1.
+c Weight according to whether this bit is one or zero.
+            thisval=u(ip(1)+ibits(il,0,1),ip(2)+ibits(il,1,1),
+     $           ip(3)+ibits(il,2,1))
+            i1=il
+            do ik=1,ndims
+               i2=i1/2
+               if(i1-2*i2.ne.0)then 
+                  thisval=pf(ik)*thisval
+               else
+                  thisval=(1.-pf(ik))*thisval
+               endif
+               i1=i2
+            enddo
+            total=total+thisval
+         enddo
+c Now total is the interpolated value at this point.
+         up(i)=total
+      enddo
+c Completed the lineout.
+      end
+
+
+c********************************************************************
+      subroutine rankdraw(xpl,xnl,ntx,tx,idtx,ir)
+c Draw visibly, those segments of the line which have rank greater than
+c ir.
+      real xpl(3),xnl(3)
+      real tx(ntx)
+      integer idtx(ntx)
+      integer ntx,ir
+
+c      write(*,*)idtx
+      ipen=0
+      do i=1,ntx
+         call vec3w(xpl(1)+xnl(1)*tx(i),xpl(2)
+     $        +xnl(2)*tx(i),xpl(3)+xnl(3)*tx(i),ipen)
+c         write(*,*)'drawn',i,ipen
+         if(idtx(i).gt.ir)then
+            ipen=1
+         else
+            ipen=0
+         endif
+      enddo
+
+      end
+c********************************************************************
+c Given a monotonic function Q(x)
+c on a 1-D grid x=1..nq, solve Q(x)=y for x with interpolation.
+c If return is 0, then the y is outside Q's range or other error.
+c The function returns the integer part of x.
+      function accinterp(Q,nq,y,x)
+      real Q(nq)
+      integer nq
+      real y,x
+c
+      integer iqr,iql,iqx
+      real Qx,Qr,Ql
+
+c      write(*,*)'nq=',nq
+      accinterp=0
+      Ql=Q(1)
+      Qr=Q(nq)
+      iql=1
+      iqr=nq
+c Circumlocution to catch y=NAN
+      if(.not.((y-Ql)*(y-Qr).le.0.)) then
+c Value is outside the range.
+         x=0
+         return
+      endif
+ 200  if(iqr-iql.eq.1)goto 210
+      iqx=(iqr+iql)/2
+      Qx=Q(iqx)
+c      write(*,*)y,Ql,Qx,Qr,iql,iqr
+      if((Qx-y)*(Qr-y).le.0.) then
+         Ql=Qx
+         iql=iqx
+      else
+         Qr=Qx
+         iqr=iqx
+      endif
+      goto 200
+ 210  continue
+c Now iql and iqr, Ql and Qr bracket Q
+      if(Qr-Ql.ne.0.)then
+         xpart=(y-Ql)/(Qr-Ql)
+         x=xpart+iql
+         accinterp=iql
+      else
+         x=iql
+         write(*,*)'****** Error!: interp coincident points'
+      endif
+      end

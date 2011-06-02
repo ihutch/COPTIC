@@ -19,6 +19,7 @@ c Cylindrical vector distribution:
       real xl(2),yl(2)
 c
       logical lsd
+      integer ifix(3)
       parameter (ndiagmax=7)
       real diagsum(na_i,na_j,na_k,ndiagmax)
       real phimax
@@ -39,7 +40,6 @@ c      write(*,*)(u(16,16,k),k=1,36)
      $     (',',xn(ixnp(kk)+1),xn(ixnp(kk+1)),kk=1,3)
 
 c      write(*,*)(u(16,16,k),k=1,36) 
-      ifix=1
 c      call noeye3d(0)
       if(lsd)then
 c Scale the size to debyelen
@@ -48,11 +48,16 @@ c Scale the size to debyelen
          enddo
       endif
 
-      call sliceGweb(ifull,iuds,u,na_m,zp,
-     $     ixnp,xn,ifix,'potential:'//'!Af!@')
-c      call sliceGcont(ifull,iuds,u,na_m,zp,
-c     $     ixnp,xn,ifix,'potential:'//'!Af!@')
-
+      isw2=isw/2
+      if(isw2-(isw2/2)*2.eq.0)then
+         ifix(1)=1
+         call sliceGweb(ifull,iuds,u,na_m,zp,
+     $        ixnp,xn,ifix,'potential:'//'!Af!@')
+      else
+         ifix(3)=iuds(3)/2
+         call sliceGcont(ifull,iuds,u,na_m,zp,
+     $        ixnp,xn,ifix,'potential:'//'!Af!@')
+      endif
       iplot=2
 c Default spherical r plot.
       do k=1,ndims_mesh-1
@@ -289,10 +294,10 @@ c Overplotting arrows.
             call cyl3vbin(nr,vrz,irzcount,rval,rvalneg,vmax
      $           ,diagsum,ndiags)
 c Use vector positions. Set skipping
-            isw=1+4
+            isw2=1+4
 c Draw arrows every 4,4, points.
             call arrowplot(vrz(1,1,2),vrz(1,1,3),vmax*100,nr+1,nr,na_k
-     $           ,rval(1),xn(ixnp(3)+1),isw,4,4)
+     $           ,rval(1),xn(ixnp(3)+1),isw2,4,4)
          endif
 
  3    call pltend()
@@ -393,7 +398,7 @@ c Help text
 c      write(*,301)' --objfile<filename>  set name of object data file.'
 c     $     //' [copticgeom.dat'
       write(*,301)' -d<diagfilename>  -r<rp> -p<phimax> -l<isw>'
-      write(*,301)' isw: Byte 1: gradlegend(1) 2: ...'
+      write(*,301)' isw: Byte 1: gradlegend(1) 2: SliceCont(0) ...'
       write(*,301)' -s scale size to debyelen'
       write(*,301)' -h -?   Print usage.'
       call exit(0)

@@ -13,8 +13,12 @@ c	B	to font 2 (italic)
 c       R       to font 3 (roman)
 c       E       to font 4 (English gothic)
 c       G       to font 5 (German gothic)
-c	D	Toggle subscript mode
-c	U	Toggle superscript mode
+c	d/D     Toggle subscript mode
+c	u	Toggle superscript mode
+c       p       Save this position
+c       q       Return to saved position (and save current position)
+c       o       Toggle Overbar mode.
+c       n/N     Toggle Underbar mode
       real px,py,width
       character*(*) str1
       integer drw
@@ -110,6 +114,7 @@ c         Special string switch handler   */
       include 'plotcom.h'
       real  dx,dy,height,width,sgn
       integer su
+      real scrsx,scrsy,sx,sy
       save
       data su/0/
       isw=1
@@ -137,24 +142,31 @@ c Font shift: \G
       elseif(sw.eq.92.or.sw.eq.33)then
 c Not a switch literal: \\, or \!, or !!.
 	 isw=0
-      elseif(sw.eq.100.or.sw.eq.117)then
-c /* Toggle super/sub-script mode  */
+      elseif(sw.eq.100.or.sw.eq.117.or.sw.eq.111.or.sw.eq.110)then
+c /* Toggle sUper/sub-script mode or Overbar/uNderbar mode */
 	 if(su.eq.0)then
-	    if(sw.eq.ichar('u'))then
+	    if(sw.eq.ichar('u').or.sw.eq.ichar('o'))then
 	       sgn=1.
-	    elseif(sw.eq.ichar('d'))then
+	    elseif(sw.eq.ichar('d').or.sw.eq.ichar('n'))then
 	       sgn=-1.
 	    endif
-	    dx=-chrshght*.6*chrssin*sgn
-	    dy= chrshght*.6*chrscos*sgn
+            if(sw.eq.100.or.sw.eq.117)then
+               dxc=0.6
+               hs=0.7
+            elseif(sw.eq.111.or.sw.eq.110)then
+               dxc=1.
+               hs=1.
+            endif
+	    dx=-chrshght*dxc*chrssin*sgn
+	    dy= chrshght*dxc*chrscos*sgn
 	    crsrx=crsrx+dx
 	    crsry=crsry+dy
 c Needed to ensure that the ps fonts move down.
             call vecn(crsrx,crsry,0)
 	    height=chrshght
 	    width=chrswdth
-	    chrshght=0.7*height
-	    chrswdth=0.7*width
+	    chrshght=hs*height
+	    chrswdth=hs*width
             if(pfPS.eq.1 .and. pfsw.ge.2) call PSsetfont(offset/128)
 	    su=1
 	 else
@@ -166,6 +178,17 @@ c Needed to ensure that the ps fonts move down.
             if(pfPS.eq.1 .and. pfsw.ge.2)call PSsetfont(offset/128)
 	    su=0
 	 endif
+      elseif(sw.eq.112)then
+c save position
+         scrsx=crsrx
+         scrsy=crsry
+      elseif(sw.eq.113)then
+c return to saved position
+         sx=crsrx
+         sy=crsry
+         call vecn(scrsx,scrsy,0)
+         scrsx=sx
+         scrsy=sy
       else
 c Not a valid switch
 	 isw=-1
