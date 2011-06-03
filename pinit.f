@@ -43,6 +43,28 @@ c     $           ,(x_part(kk,i),kk=1,3)
          x_part(4,i)=tisq*gasdev(myid)
          x_part(5,i)=tisq*gasdev(myid)
          x_part(6,i)=tisq*gasdev(myid) + vd
+
+c One idea that might improve the initialization would be to add the 
+c (electric) potential energy here, by scaling up the total velocity,
+c but keeping the direction the same. 
+
+c However, to make this accurate, one would have to have solved the
+c initial potential better than the simple Laplace solve currently
+c used. A solution of the electron-shielded case might be nearer the
+c mark, but it would not be correct when Ti<Te. It is perhaps
+c advantageous because it constitutes a minimal estimate of the
+c shielding, which is probably what one wants.
+
+c One advantage of using the Laplace or electron-shielded case is that
+c it enhances the kinetic energy. Thus if the potential rises towards
+c zero during initial evolution, one has indeed avoided spuriously
+c trapped ions. 
+
+c Asymmetries are of course not accounted for. The particles in the
+c close wake are in fact going to have mostly negative velocities. They
+c are therefore completely unmodelled in this initialization, which
+c fills in positive drifting ions even where they could not be present.
+
          dtprec(i)=0.
 c Initialize the mesh fraction data in x_part.
          call partlocate(i,ixp,xfrac,iregion,linmesh)
@@ -53,8 +75,10 @@ c Set flag of unused slots to 0
       do i=n_part+1,n_partmax
          if_part(i)=0
       enddo
-      write(*,'('' Initialized id='',i3,'' n='',i7,'' ntries='',i7,$)')
-     $     myid,n_part,ntries
+      if(myid.eq.0)then
+       write(*,'('' Initialized '',i3,'' n='',i7,'' ntries='',i7,$)')
+     $     nprocs,n_part,ntries
+      endif
 c Initialize rhoinf:
       if(rhoinf.eq.0.)rhoinf=numprocs*n_part/(4.*pi*rs**3/3.)
 c Initialize orbit tracking

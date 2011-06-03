@@ -104,23 +104,29 @@ c      endif
       end
 c********************************************************************
       subroutine quasineutral(inc,ipoint,indi,ndims,iused,
-     $     q,u)
+     $     q,u,volumes)
 c     ,dum3,dum4)
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
-      real q(*),u(*)
+      real q(*),u(*),volumes(*)
+      include 'plascom.f'
 c      real dum3,dum4
 
-c Silence warnings with spurious access.
+c Silence warnings with spurious accesses. 
+c (Which ought to be optimized away.)
       ind=iused(1)
       ind=indi(1)
 c This routine for use in mditerarg.
-c But we iterate only over the inner mesh (not edges).
+c But we iterate only over the inner mesh (not edges) by virtue of call.
       ind=1+ipoint
-      if(q(ind).gt.0.)then
+c This test in ineffective, because q was set by the psumtoq to
+c compensate electron density.
+c      if(q(ind).gt.0.)then
+c So instead tell directly from volumes if we are outside:
+      if(volumes(ind).le.1.e20)then
          u(ind)=alog(q(ind))
       else
-         u(ind)=0.
+         u(ind)=phip
       endif
       inc=1
       end

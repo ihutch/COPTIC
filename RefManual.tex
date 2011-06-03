@@ -54,15 +54,15 @@ dimensions: 3. Nothing else on this line is read.
 
 \paragraph{The format} of an object line is a sequence of numbers
 separated by standard fortran separators (blanks, commas, or
-semicolons). These are read as reals into a data structure
-\verb!obj_geom(i,nobj)! whose first index refers to the different
-values, and whose second refers to the object number ($\le31$ at
-present).  Some of the numbers are expected to be integers but it does
-not matter if they are written as reals. The position in the first
-index of \verb!obj_geom(i,nobj)!, i.e.\ the value of \verb!i!, is
-referred to using a number of pre-defined integer parameters (defined
-in \verb!3dcom.f!), most of which begin with the letter
-\verb!o!. There is overloading of the positions, with different
+semicolons). For actual objects, these are read as reals into a data
+structure \verb!obj_geom(i,nobj)! whose first index refers to the
+different values, and whose second refers to the object number
+($\le31$ at present).  Some of the numbers are expected to be integers
+but it does not matter if they are written as reals. The position in
+the first index of \verb!obj_geom(i,nobj)!, i.e.\ the value of
+\verb!i!, is referred to using a number of pre-defined integer
+parameters (defined in \verb!3dcom.f!), most of which begin with the
+letter \verb!o!. There is overloading of the positions, with different
 parameters for different types of line. The index parameters are
 mentioned below.
 
@@ -208,9 +208,10 @@ The setting of the mesh spacing in each dimension is specified by
 special object lines that may appear anywhere within the object file,
 for which \verb!otype! is equal to 91, 92, or 93, referring to the
 three directions 1, 2, 3 or x, y, z. The last such line overrules any
-earlier lines.
+earlier lines. These lines do not constitute actual objects and do not
+contribute to the object count \verb!ngeomobj!.
 
-The format these special mesh lines consists of a monotonic sequence
+The format of these special mesh lines consists of a monotonic sequence
 of integers starting with 1, a separator 0, and then a monotonic
 sequence of reals of length equal to the sequence of integers. This
 format is thus $9d,im_1,im_2,...,im_N,0,xm_1,xm_2,...,xm_N$, where $d$
@@ -251,16 +252,19 @@ a boolean region, meaning that different objects can be combined by
 the operations of AND, OR, or NOT. This provides the ability to define
 a complicated volume region in a relatively small number of operations
 with respect to various geometrical shapes. The format of this line,
-following its type specification (99) consists of successive blocks
-of an integer $n_k$ followed by $n_k$ integer values. So a line is
-schematically $99,n1,v_{11},v_{12},...,v_{1,n1},n2,v_{21},v_{22},...,v_{2,n2},...$
-The values $v$ refer to objects in the object file in the order in
-which they appear. (Mesh and boolean lines do not count as objects). 
-They may be positive referring to \emph{inside} or negative referring
-to \emph{outside}. The list of blocks is terminated by a zero. All
-objects in each block are ORed together. Then the blocks are ANDed. For example
+following its type specification (99) consists of successive blocks of
+an integer $n_k$ followed by $n_k$ integer values. So a line is
+schematically
+$99,n1,v_{11},v_{12},...,v_{1,n1},n2,v_{21},v_{22},...,v_{2,n2},...$
+The values $v$ refer to actual objects in the object file in the order
+in which they appear. (Mesh and boolean lines do not count as objects
+but objects of whatever shape, even if their ABC values are all zero,
+do.)  The values $v$ may be positive referring to \emph{inside} or
+negative referring to \emph{outside}. The list of blocks is terminated
+by a zero. All objects in each block are ORed together. Then the
+blocks are ANDed. For example
 \begin{verbatim}
-     n1  v11 v12 v13  n2  v21  termination
+#     n1 v11 v12  v13 n2  v21  termination
   99, 3, 3,   4,  -6,  1, -5,    0
 \end{verbatim}
 means that the particle region is (inside 3 OR inside 4 OR outside 6)
@@ -308,11 +312,11 @@ flux to the object to equal the electron flux.
 
 \section{Command Line Parameters}\label{cmdline}
 
-Commandline values, following switches that take an argument in COPTIC,
-must always follow the switch that invokes them \emph{without
-  whitespace in between}. In other words, any numeric value must be
-embedded into the switch argument itself, not regarded as the next
-argument on the command line.
+Command line values, entered following switches that take an argument
+in COPTIC, must always immediately follow the switch that invokes them
+\emph{without whitespace in between}. In other words, any numeric
+value must be embedded into the switch argument itself, not regarded
+as the next argument on the command line.
 
 \subsection{Code control parameters}
 
@@ -393,6 +397,9 @@ every istepsave steps. If zero, no files or messages.
 \paragraph{-ct....} Set the collision time, colntime. Default 0 [off].
 
 \paragraph{-vn....} Set the neutral drift velocity, vn. Default 0.
+
+\paragraph{-Bx.. -By.. -Bz..} Set the respective components of the
+magnetic field. 
 
 \paragraph{-ofFilename} Set the name of the object file. Default ccpicgeom.dat
 
@@ -851,8 +858,8 @@ iteration.
 Considerable care is taken to optimize the relaxation parameter in
 accordance with Chebychev acceleration principles, with the result
 that convergence is quite rapid (the count of half-iterations is
-reported). This code is practically as fast in this application as
-modern conjugate gradient techniques. Moreover, each step is an
+reported). This algorithm is practically as fast in this application as
+conjugate gradient techniques, and easier to code. Moreover, each step is an
 implicit \emph{nonlinear} solve, because of the additional function,
 not just a linear solve with constant total charge density.
 

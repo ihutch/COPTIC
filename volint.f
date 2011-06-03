@@ -31,7 +31,7 @@ c Can't be passed here because of mditerate argument conventions.
 c Silence warnings with spurious iused acces.
       icb=iused(1)
       icall=icall+1
-      if(mod(icall,300).eq.0.and.myid.eq.0)write(*,'(''.'',$)')
+      if(mod(icall,1000).eq.0.and.myid.eq.0)write(*,'(''.'',$)')
 c The cij address is to data 2*ndims+1 long
       icb=2*ndims+1
 c Object pointer

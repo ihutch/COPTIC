@@ -25,9 +25,11 @@ REINJECT=cartreinject.o
 GEOMFILE=geomcubic.dat
 #GEOMFILE=geomz200x25.dat
 ##########################################################################
+NGW=-Wno-globals
 # An option setting might override default compiler.
 ifeq ("$(G77)","")     
 	G77=mpif77 -f77=g77 
+	NGW=
 endif
 #
 # export this so it is inherited by sub-makes.
@@ -40,7 +42,7 @@ COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I.
 #COMPILE-SWITCHES = -Wall   $(OPTIMIZE) -I. -g -fbounds-check
 ##COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -g -I.
 NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
-NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
+NOGLOBALS= $(COMPILE-SWITCHES) $(NGW)
 ##########################################################################
 ##########################################################################
 FIXEDOBJECTS=sormpi.o sorrelaxgen.o mpibbdy.o cijroutine.o cijplot.o 3dobjects.o mditerate.o  padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o randc.o

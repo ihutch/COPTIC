@@ -7590,3 +7590,32 @@ lack of resolution of the mesh charge in the vicinity of the point.
 Perhaps if one had a finer resolution in the vicinity one might be
 able to escape this problem, but I have a gut feeling one might at the
 same time get back the noise problem.
+
+2 June 11
+
+Finished first draft of RefManual.tex and cvs added it.
+Moved the fieldave.f file responsible for the above data to /testing
+and cvs added it. 
+
+Added dealing with a perpendicular velocity to the Bfield section
+by subtracting and adding the perpendicular drift around the cyclotron
+move.
+
+Also discovered a bug in the cyclotronic mover. Sign error fixed.
+Implemented a fall-back to summed acceleration if the Bfield is very weak
+otherwise rounding in the subtraction of gyro radius becomes too large.
+
+Profiled the costs. Adjusted placement of sin and cosine calls to make
+sure they aren't done unnecessarily, since they otherwise would tend to
+become a dominant factor in the costs. As it is, they are now much smaller
+than the field interpolation costs.
+
+Seems as if we have working cross-field (FxB) drifts.
+
+Moving back to wakesmalllambda on sceptic. The initial runs were done
+with -l.2 which is resolved by the mesh. We might be able to go another
+factor of 2 to -l.1, but then we are going to have to go to quasineutral.
+So tried quasineutral.
+
+There's a display problem in that the potential inside the object is set
+to 0, even when the object's boundary potential is non-zero. 

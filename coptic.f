@@ -255,6 +255,19 @@ c Normalize magnetic field.
          do i=1,ndims
             Bfield(i)=Bfield(i)/Bt
          enddo
+c Assume that vd is in the z-direction
+         vpar=vd*Bfield(ndims)
+         do i=1,ndims
+            vperp(i)=-Bfield(i)*vpar
+         enddo
+         vperp(ndims)=vperp(ndims)+vd
+         write(*,*)'vpar,vperp',vpar,vperp
+      else
+c Zero the vparallel and vperp. Probably not necessary; but tidy.
+         vpar=0.
+         do i=1,ndims
+            vperp(i)=0.
+         enddo
       endif
 c      write(*,*)'Bfield',Bfield
 c      stop
@@ -464,6 +477,7 @@ c------------------------------------------------------------------
 c Set phip from the first object if it makes sense.
       if(obj_geom(oabc,1).ne.0)then
          phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
+         if(myid.eq.0)write(*,*)'Object 1 potential=',phip
       elseif(obj_geom(oradius,1).ne.0.)then
          phip=obj_geom(omag,1)*obj_geom(oradius,1)
          if(myid.eq.0)write(*,*)'Potential from point charge'
@@ -555,7 +569,7 @@ c Convert psums to charge density, q. Remember external psumtoq!
 
          if(debyelen.eq.0)then
             call mditerarg(quasineutral,ndims,ifull,ium2,
-     $        0,q(2,2,2),u(2,2,2),dum3,dum4)
+     $        0,q(2,2,2),u(2,2,2),volumes(2,2,2),dum4)
             call bdyslope0(ndims,ifull,iuds,cij,u,q)
          else
             call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr

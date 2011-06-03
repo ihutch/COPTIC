@@ -24,6 +24,12 @@ c Meshcom provides ixnp, xn, the mesh spacings. (+ndims_mesh)
 c Collision settings.
       include 'colncom.f'
 
+c Local parameters
+c Lowest particle to print debugging data for.
+      integer npr
+      parameter (npr=0)
+      real fieldtoosmall
+      parameter (fieldtoosmall=1.e-3)
 c Local storage
       parameter (fieldtoolarge=1.e12)
       integer ixp(ndims_mesh)
@@ -196,26 +202,55 @@ c Accelerate
 c Move
          if(Bt.ne.0.)then
 c Magnetic field non-zero
-c If there were a drift velocity, subtract it off. Not done yet.
-c Find the gyro radius and gyrocenter.
-            call gyro3(Bt,Bfield,x_part(1,i),x_part(4,i),xg,xc)
             theta=Bt*dtpos
+c Rotation is counterclockwise for ions. We only want to call the 
+c trig functions once, otherwise they dominate the cost.
+            stheta=sin(-theta)
+            ctheta=cos(theta)
+c            if(i.eq.1)write(*,*)'theta=',theta,fieldtoosmall
+            if(theta.lt.fieldtoosmall)then
+c Weak B-field. Advance using summed accelerations. First half-move
+               do j=1,ndims
+                  x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
+               enddo          
+c Rotate the velocity to add the magnetic field acceleration.
+c This amounts to a presumption that the magnetic field acceleration
+c acts at the mid-point of the translation (drift) rather than at
+c the kick between translations.
+               call rotate3(x_part(4,i),stheta,ctheta,
+     $              Bfield,x_part(4,i))
+c Second half-move.
+               do j=1,ndims
+                  x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
+               enddo          
+            else
+c Strong B-field case:
+c Subtract off the perpendicular drift velocity.
+               do j=ndims+1,2*ndims
+                  x_part(j,i)=x_part(j,i)-vperp(j-ndims)
+               enddo
+c Find the gyro radius and gyrocenter.
+               call gyro3(Bt,Bfield,x_part(1,i),x_part(4,i),xg,xc)
 c Rotate the velocity and gyro radius.
-            call rotate3(x_part(4,i),theta,Bfield,x_part(4,i))
-            call rotate3(xg,theta,Bfield,xg)
+               call rotate3(x_part(4,i),stheta,ctheta,Bfield,
+     $              x_part(4,i))
+               call rotate3(xg,stheta,ctheta,Bfield,xg)
 c Move xc along the B-direction.
-            call translate3(xc,x_part(4,i),dtpos,Bfield,xc)
+               call translate3(xc,x_part(4,i),dtpos,Bfield,xc)
 c Add the new gyro center and gyro radius
-c [and add back the drift velocity, not yet.]
-            do j=1,ndims
-               x_part(j,i)=xc(j)+xg(j)
-            enddo
-                      
+c And add back the drift velocity.
+               do j=1,ndims
+c Move the gyro-center perpendicular and add gyro-radius:
+                  x_part(j,i)=xc(j)+vperp(j)*dtpos+xg(j)
+                  x_part(j+ndims,i)=x_part(j+ndims,i)+vperp(j)
+               enddo
+            endif
+ 801        format(a,6f10.6)
+            if(i.le.npr)write(*,801)'x_part2',(x_part(k,i),k=1,6)
          else
             do j=1,ndims
                x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos
             enddo          
-
          endif
 
          if(lcollided)then
@@ -512,16 +547,17 @@ c Vneutral is in z-direction.
       x_part(npdim+npdim,i)=x_part(npdim+npdim,i)+vneutral
       end
 c*******************************************************************
-      subroutine rotate3(xin,theta,u,xout)
-c Rotate the input 3-vector xin, by angle theta about the direction
-c given by direction cosines u (normalized axis vector) and return in
-c xout. 
-c This is a clockwise (right handed) rotation about positive u, I hope.
+      subroutine rotate3(xin,s,c,u,xout)
+c Rotate the input 3-vector xin, by angle theta whose sine and cosine
+c are inputs about the direction given by direction cosines u
+c (normalized axis vector) and return in xout.  This is a clockwise
+c (right handed) rotation about positive u, I hope.
 
       real xin(3),xout(3),theta,u(3)
-      c=cos(theta)
-      s=sin(-theta)
+c      c=cos(theta)
+c      s=sin(theta)
       d=1.-c
+c      if(d.lt.1.e-5)d=s**2*0.5
 c Just written out is about twice as fast:
       x1=(c+d*u(1)*u(1))*xin(1)
      $     +(d*u(1)*u(2)-s*u(3))*xin(2)
@@ -563,14 +599,16 @@ c with velocity vin.
       real vin(3)
 c Subtract the gyro radius from xin to give the gyrocenter in xc.
       real xc(3)
-c Find the perpendicular velocity, rotate it by 90 degrees, and divide 
+c Find the perpendicular velocity, rotate it by -90 degrees, and divide 
 c by the field. 
       vu=(u(1)*vin(1)+u(2)*vin(2)+u(3)*vin(3))
       xg(1)=(vin(1)-u(1)*vu)/Bt
       xg(2)=(vin(2)-u(2)*vu)/Bt
       xg(3)=(vin(3)-u(3)*vu)/Bt
-      theta=3.1415917*0.5
-      call rotate3(xg,theta,u,xg)
+c      theta=3.1415917*0.5
+      s=1.
+      c=0.
+      call rotate3(xg,s,c,u,xg)
 c Now xg is the gyroradius.
       xc(1)=xin(1)-xg(1)
       xc(2)=xin(2)-xg(2)
