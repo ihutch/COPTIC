@@ -200,11 +200,13 @@ c Plots if
      $     '-n1fff -n2fff -piii -wiii -rfff -iiii]'
       write(*,*)'Read back flux data from file and display.'
       write(*,*)'-n1,-n2 step range over which to average.'
-      write(*,*)'-p set quantity to average and plot'
+      write(*,*)'-p set quantity to average and plot.'
+     $     ,' Default -p1, no plotting -p'
       write(*,*)'-w set object whose data is to be written'
       write(*,*)'-m mask objects whose data is to be plotted'
       write(*,*)'-r set size of plot window'
-      write(*,*)'-i set iosw for objplot'
+      write(*,*)'-i set iosw for objplot:'
+     $     ,' Coloring 0 position, 1 flux, 2 flux-density.'
       write(*,*)'-f<id> set dimension whose force to summarize'
 
       end

@@ -217,8 +217,7 @@ c Rotate the velocity to add the magnetic field acceleration.
 c This amounts to a presumption that the magnetic field acceleration
 c acts at the mid-point of the translation (drift) rather than at
 c the kick between translations.
-               call rotate3(x_part(4,i),stheta,ctheta,
-     $              Bfield,x_part(4,i))
+               call rotate3(x_part(4,i),stheta,ctheta,Bfield)
 c Second half-move.
                do j=1,ndims
                   x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
@@ -232,9 +231,8 @@ c Subtract off the perpendicular drift velocity.
 c Find the gyro radius and gyrocenter.
                call gyro3(Bt,Bfield,x_part(1,i),x_part(4,i),xg,xc)
 c Rotate the velocity and gyro radius.
-               call rotate3(x_part(4,i),stheta,ctheta,Bfield,
-     $              x_part(4,i))
-               call rotate3(xg,stheta,ctheta,Bfield,xg)
+               call rotate3(x_part(4,i),stheta,ctheta,Bfield)
+               call rotate3(xg,stheta,ctheta,Bfield)
 c Move xc along the B-direction.
                call translate3(xc,x_part(4,i),dtpos,Bfield,xc)
 c Add the new gyro center and gyro radius
@@ -547,15 +545,16 @@ c Vneutral is in z-direction.
       x_part(npdim+npdim,i)=x_part(npdim+npdim,i)+vneutral
       end
 c*******************************************************************
-      subroutine rotate3(xin,s,c,u,xout)
+      subroutine rotate3(xin,s,c,u)
 c Rotate the input 3-vector xin, by angle theta whose sine and cosine
 c are inputs about the direction given by direction cosines u
-c (normalized axis vector) and return in xout.  This is a clockwise
+c (normalized axis vector) and return in xin.  This is a clockwise
 c (right handed) rotation about positive u, I hope.
 
-      real xin(3),xout(3),theta,u(3)
-c      c=cos(theta)
+      real xin(3),u(3)
+      real x1,x2
 c      s=sin(theta)
+c      c=cos(theta)
       d=1.-c
 c      if(d.lt.1.e-5)d=s**2*0.5
 c Just written out is about twice as fast:
@@ -565,12 +564,18 @@ c Just written out is about twice as fast:
       x2=(c+d*u(2)*u(2))*xin(2)
      $     +(d*u(2)*u(3)-s*u(1))*xin(3)
      $     +(d*u(2)*u(1)+s*u(3))*xin(1)
-      xout(3)=(c+d*u(3)*u(3))*xin(3)
+      xin(3)=(c+d*u(3)*u(3))*xin(3)
      $     +(d*u(3)*u(1)-s*u(2))*xin(1)
      $     +(d*u(3)*u(2)+s*u(1))*xin(2)
-c This shuffle is necessary if xin and xout are the same storage.
-      xout(1)=x1
-      xout(2)=x2
+c This shuffle is necessary because xin and xout are the same storage.
+      xin(1)=x1
+      xin(2)=x2
+c And it is not permitted to make xin and xout different dummy
+c arguments, if some calls are done with them being the same
+c variables. That violates the fortran standard which requires that no
+c aliased locations be written to in dummy arguments.
+c Therefore this call assumes they are always the same and avoids 
+c any aliases.
       end
 c********************************************************************
       subroutine translate3(xin,vin,dt,u,xout)
@@ -608,7 +613,7 @@ c by the field.
 c      theta=3.1415917*0.5
       s=1.
       c=0.
-      call rotate3(xg,s,c,u,xg)
+      call rotate3(xg,s,c,u)
 c Now xg is the gyroradius.
       xc(1)=xin(1)-xg(1)
       xc(2)=xin(2)-xg(2)

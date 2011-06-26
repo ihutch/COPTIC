@@ -155,7 +155,7 @@ vecx :
 
 #####################################################
 clean :
-	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.* *.ps libcoptic.a
+	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.* *.ps *.aux *.log *.out *.toc libcoptic.a
 	make -C accis mproper
 
 ftnchek :

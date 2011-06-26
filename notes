@@ -7619,3 +7619,16 @@ So tried quasineutral.
 
 There's a display problem in that the potential inside the object is set
 to 0, even when the object's boundary potential is non-zero. 
+
+Actually it's not clear that there's much advantage in going all the way 
+to quasineutral. Once -l is smaller than the mesh size, we are close to
+getting the same result anyway. The number of iterations is small, so 
+there's no big advantage in going to QN. 
+
+The boundary condition at the probe is something of an issue. Provided the
+probe is attracting, relative to the local potential, then probably there
+is some place between the boundary and the first set of nodes where the
+effective boundary position is located. Thus one can think of the BC
+position as being the uncertain point. It seems unlikely that one can do
+very much better than this by some sort of square-root shape assumption. 
+

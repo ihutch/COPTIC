@@ -897,7 +897,7 @@ performing various flux and diagnostic accumulations.
 
 \paragraph{The advancing scheme} without magnetic field, is a simple
 leap-frog combination of kick and drift. With non-zero magnetic field,
-the Cyclotronic mover is used. [Drift velocity not yet included.]  The
+the Cyclotronic mover is used.  The
 acceleration (kick) step is taken to have a duration equal to the mean
 of the prior and current step durations. The drift is taken to have a
 duration equal to the current step. Thus one should interpret the
@@ -908,7 +908,7 @@ steps prior-to and subsequent-to the kick. The velocity after the kick
 at the beginning of the current time-step then applies for the full
 time-step. 
 
-\paragraph{Collisions} when present change the behavior as follows. A
+\paragraph{Collisions,} when present, change the behavior as follows. A
 random number is drawn which is converted to the time duration to the
 first collision this step \verb!dtc!. If that is smaller than the
 time-step duration, a collision is going to happened to the particle
@@ -925,9 +925,17 @@ at the end of each (partial) time-step. The routine \verb!tallyexit!
 is used to accumulate the particle crossing count (including momentum
 and energy accumulations). 
 
-\paragraph{Reinjection} is required if the particle crosses out of the
-particle region. The reinjected particle is placed just inside the
-region with a velocity and space distribution determined by routine
+\paragraph{Subcycling} of particles, by making multiple smaller
+timesteps in between each potential update, is possible regardless of
+collisions. It is of very dubious benefit, since subcycling is known
+to give rise to self-force (actually self-acceleration).
+
+\subsection{Reinjection} 
+Reinjection is required when the particle number is fixed if the
+particle crosses out of the particle region, or for a fixed number of
+new particles per step when the injection rate (\verb!rhoinfinity!) is
+fixed. The reinjected particle is placed just inside the region with a
+velocity and space distribution determined by routine
 \verb!reinject!. (If a reinjection locates a particle outside the mesh
 or particle region, then a fatal error occurs.) The reinjection is
 supposed to have occurred a random fraction of the current (or
@@ -938,11 +946,32 @@ acceleration (kick) will occur prior to the drift. This is the
 appropriate choice if the velocity distribution of reinjection is
 exactly equal to the background distribution.
 
+Reinjection must be appropriate to the specific outer boundary shape
+chosen as well as to the external ion distribution function. Different
+routines are linked in for different geometries by using different
+versions of the file \verb!reinject.f! which must provide two
+self-initializing routines \verb!reinject(xr,ilaunch)! and
+\verb!rhoinfcalc!. The first argument to \verb!reinject! is the
+particle slot into which to reinject, and the second, \verb!ilaunch!,
+returns the number of launches required to fill it. The use of
+\verb!ilaunch! enables reinjection in some schemes to be calculated
+from beyond the outer boundary, e.g.\ at infinity in an assumed
+external potential profile that might reject some reinjection orbits
+as unsuccessful, but still track the total number of injections at
+infinity.
 
-\paragraph{Subcycling} of particles, by making multiple smaller
-timesteps in between each potential update, is possible regardless of
-collisions. It is of very dubious benefit, since subcycling is known
-to give rise to self-force (actually self-acceleration).
+Two versions are incorporated into the COPTIC distribution. The first,
+\verb!cartreinject.f!, reinjects at the outer boundary of the
+cartesian grid, which should be entirely in the particle region, as it
+will be if, for example, one is modelling a set of distinct objects
+embedded in a plasma. The second, \verb!reinject.f!, injects into the
+interior of a sphere centered on the origin, whose radius is
+\verb!rs!, specified in \verb!plascom.f!. By default \verb!rs! is set
+to be half the largest side of the domain. Therefore spherical
+injection works only if the domain is a cube centered on the origin.
+The velocity distributions (and spatial distributions) are those of
+shifted Maxwellians. [So collisional distributions are not yet
+  properly handled.]
 
 \section{Output and Postprocessing}
 
