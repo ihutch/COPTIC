@@ -7632,3 +7632,123 @@ effective boundary position is located. Thus one can think of the BC
 position as being the uncertain point. It seems unlikely that one can do
 very much better than this by some sort of square-root shape assumption. 
 
+26 Jun 11
+
+Improved the testing built into make to compare prior potential file
+if one exists. 
+
+11 Aug 11
+
+Fix reinjection outside particle region simply to retry.
+
+Implement "infinite" magnetic field case (>1.e5) which amounts to
+one-dimensional dynamics along B plus a fixed drift velocity perpendicular
+to B.
+
+There's a problem concerning reinjection with this implementation. It
+is that no particle ever moves perpendicularly out of the region, but
+there are particles that are reinjected perpendicularly. That
+perpendicular reinjection must be stopped. I think. When B is finite,
+we follow the Larmor orbit and constant escape and reinjection happens
+across the field. Therefore the old cartreinject is ok (except maybe
+for the drift velocity, must check, it seems to be ok).
+
+As far as reinjection is concerned, in the infinite-B case, the drift
+is purely along B, but so also is the random motion. Therefore the 
+statistics of reinjection do seem to be rather different. 1-Dimensional.
+It looks as if this needs changes only to cijinit which sets up the
+statistical arrays. These are based upon (possibly) shifted maxwellian
+flux and distributions from the functions ffcrein and fvcrein, which
+assume the drift to be in the z-direction and have equal temperatures
+in all dimensions.
+
+Instead we want functions where the drift consists of two parts:
+parallel and perpendicular to B projected in the coordinate directions:
+vpar*Bfield(j)+vperp(j).
+Also the thermal velocity (spread) must be the parallel velocity
+projected into the coordinate direction. I.e. it is multiplied by the
+direction cosine Bfield(j). 
+
+Implemented new functions ff1crein and fv1crein and put in calls to them
+if Bt is "infinity" meaning >1.e5
+
+
+Plotting orbits we seem to get sensible results both with high B (<1.e5)
+and with infinite B (>1.e5). Perhaps the issue with reinjection was not
+so bad, since the orbits become nearly straight with high B well before
+the new code is triggered. Of course I am not actually looking at reinjected
+particles for the most part. 
+
+I think the problem is that if the timestep becomes longer than the gyro
+period, then during each step the particle actually makes (multiple) cycles
+that when it is near the edge are in and out of the region. These exits
+are not captured. Each of them would give rise to a reinjection of the 
+particles that are close enough to the edge that their Larmor orbit 
+intersects it. There are then multiple issues:
+
+(1) Because the timestep is too large, even a particle whose Larmor orbit
+intersects the boundary might statistically be able to move into the region
+because it might take several steps with gyrophase such as to be inside
+the region. In other words, just looking at the initial and final positions 
+of a timestep is badly mistaken about whether or not one leaves the 
+region during the timestep. 
+
+(2) If particles are placed "just" inside the region, where the
+distance inside is bigger than the Larmor radius, then they are artificially
+prevented from making the multiple entrances and exits. 
+
+If all this is right, then it appears that the reinjection scheme is 
+already erroneous when B>~1/dt. I wonder if there's a way to correct it
+in intermediate cases, rather than immediately going to B=infinity.
+If not then evidently infinity ought to be considered to be a lot smaller
+than 1.e5. More like 1/dt.
+
+15 Aug 2011
+
+One way to think about this for the edge of the computational boundary
+is to do a calculation of whether the Larmor orbit intersects the
+edge.  If it does, then during a time step of dt, a total of Nc=\Omega
+dt/2\pi transits in and out of the region occur. There's no point in 
+_actually_ reinjecting the particle Nc times, because we are trying to
+model a region that is part of a bigger plasma. However, one might 
+count the times that the particle would have transitted, and consider
+that many reinjections to have occurred. 
+
+The problem is that some surfaces have many of these type of
+injections, and some don't. Consequently, the probabilities for edge
+face at which to reinject need to be adjusted in the light of the 
+reinjections already taken into account by the cyclotron process. 
+
+One ought also to distinguish between solid surfaces, which would remove
+the particle immediately in the first cycle, and computational boundaries
+which would not. 
+
+Clearly the effective statistics depend upon the timestep length dt. 
+Perhaps one could set up the probability distributions to account for
+this in the first place, but they would then depend upon dt, so 
+acceleration would not be appropriate. 
+
+18 Aug 11
+
+Worked more on the infinite-Bt case, because the analytic efforts on the 
+intermediate cases yield only rather uncertain interpolations.
+Had to implement also the rhoinfcalc and ninjcalc appropriate for the
+projected parallel distributions. 
+
+Tests with -gi flag show plausible results. Particles are injected with
+a spread of parallel velocities and with perpendicular velocity essentially
+equal to the drift. The spatial distribution of injection appears to be
+inconsistent with expectations. Zero on faces with no v- or B- component, 
+but insufficient on the z-face into which the flow is directed when
+B is in an orthogonal direction.
+
+That's because I omitted to scale the distribution when projecting 
+it so that the total area is constant. Did that. Then get sensible
+result. Tried some vt2min adjustments. Smaller is better, but if you
+make it too small then it can lose the integration entirely. 1e-5 is
+safe and gives only about .002 flux through the side walls. That's
+unlikely to be significant. The minimum v-difference with 2000 points
+in the integration (starting at -2,2) is <1e-3. When vt2min=1e-6,
+then the maximum value of arg is <1 so certainly there will be a nonzero
+position. I think 1e-6 is safe. It gives flux .0007. That's pretty much
+negligible.

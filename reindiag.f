@@ -122,12 +122,19 @@ c Actually the flux is not a gaussian. So this isn't yet useful
       enddo
       write(*,*)Ti,gaussian(1)
 
+      call multiframe(3,1,0)
       call automark(vfv,fv(1,1),ndth,1)
-      call axlabels('velocity distributions','count')
-      call polymark(vfv,fv(1,2),ndth,2)
-      call polymark(vfv,fv(1,3),ndth,3)
+      call boxtitle('!A1!@ x, !A2!@ y, !A3!@ z')
+      call axlabels('','x count')
+      call automark(vfv,fv(1,2),ndth,2)
+      call axlabels('','y count')
+      call automark(vfv,fv(1,3),ndth,3)
+c      call polymark(vfv,fv(1,2),ndth,2)
+c      call polymark(vfv,fv(1,3),ndth,3)
 c      call polyline(vfv,gaussian,ndth)
+      call axlabels('velocity distributions','z count')
       call pltend()
+      call multiframe(0,0,0)
 
       call automark(vs,sv,ndth,1)
       call axlabels('speed distribution','count')

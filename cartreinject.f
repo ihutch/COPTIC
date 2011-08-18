@@ -139,7 +139,7 @@ c Cycle over integrations.
       g(1)=0.
       x(1)=x0
       fv(1)=f(x0)
-c Form \int_x0^{x0+m*xd}
+c Form the integral \int_x0^{x0+m*xd}
       do i=2,m
          x(i)=x0+i*xd
          fv(i)=f(x(i))
@@ -277,20 +277,28 @@ c maxwellians of width given by Ti
       include 'myidcom.f'
       external ffcrein
       external fvcrein
+      external ff1crein
+      external fv1crein
       parameter (bdys=6.)
       real area(3)
 
-c testing only
-c      parameter (nt=1000)
-c      real yt(nt)
-
+      xc=0.
+      xw=sqrt(Ti)
       do id=1,3
          do i2=1,2
 c idrein determines the sign of velocity. id odd => idrein negative.
             idrein=id*(2*i2-3)
             index=2*(id-1)+i2
-            call cumprob(ffcrein,0.,0.,
+            if(Bt.lt.Btinf)then
+               call cumprob(ffcrein,xw,xc,
      $           ncrein,hrein(0,index),grein(index),myid)
+            else
+c Infinite-Bt case 1-d projection.
+               xc=vpar*Bfield(id)+vperp(id)
+               xw=sqrt(Ti)*Bfield(id)
+               call cumprob(ff1crein,xw,xc,
+     $           ncrein,hrein(0,index),grein(index),myid)
+            endif
 c Kludge fix of ends to avoid negative velocity injections.
             if(idrein.gt.0)then
                if(hrein(0,index).lt.0.)hrein(0,index)=0.
@@ -301,10 +309,16 @@ c            write(*,*)index,(hrein(kk,index),kk=0,5)
 c     $           ,(hrein(kk,index),kk=ncrein-4,ncrein)
          enddo
          idrein=id
-         call cumprob(fvcrein,0.,0.,
+         if(Bt.lt.Btinf)then
+            call cumprob(fvcrein,xw,xc,
      $           ncrein,prein(0,id),gdummy,myid)
+         else
+            call cumprob(fv1crein,xw,xc,
+     $           ncrein,prein(0,id),gdummy,myid)
+         endif
       enddo
-c      write(*,*)'grein',grein
+c
+      write(*,*)'grein',grein
       gtot=0.
       do id=1,3
          i2=mod(id,3)+1
@@ -362,6 +376,71 @@ c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
       endif
       end
 c*********************************************************************
+c**********************************************************************
+      real function ff1crein(v)
+c This is the flux function for 1-D motion in the direction of Bfield.
+c
+c Return the flux from a maxwellian for dimension idrein (in creincom)
+c In the positive or negative direction, determined by idrein's sign.
+c Maxwellian is shifted by vdj=Bfield(j)*vpar+vperp(j).
+c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
+c But here, the thermal spread along Bfield must be projected into
+c the coordinate direction idrein. 
+
+      include 'plascom.f'
+      include 'creincom.f'
+      real vt2min,argmax
+      parameter (vt2min=1.e-6,argmax=12.)
+      
+      if(int(sign(1.,v)).eq.sign(1,idrein))then
+         j=abs(idrein)
+         vs=Bfield(j)*vpar+vperp(j)
+         vt2=2.*Ti*Bfield(j)**2
+         if(vt2.gt.vt2min)then
+            arg=-(v-vs)**2/vt2
+            scale=1./Bfield(j)
+         else
+            arg=-(v-vs)**2/vt2min
+            scale=sqrt(2.*Ti/vt2min)
+         endif
+         if(abs(arg).gt.argmax)then
+            ff1crein=0.
+         else
+c            if(Bfield(j).eq.0.)write(*,*)'v,vs,arg',v,vs,arg
+            ff1crein=scale*abs(v)*exp(arg)
+         endif
+      else
+         ff1crein=0.
+      endif
+      end
+c**********************************************************************
+      real function fv1crein(v)
+c This is the 1-d probability distribution projected in coordinate
+c direction idrein (in crein).
+c
+c Return the probability distribution value.
+
+      include 'plascom.f'
+      include 'creincom.f'
+      real vt2min,argmax
+      parameter (vt2min=1.e-5,argmax=12.)
+      
+      j=abs(idrein)
+      vs=Bfield(j)*vpar+vperp(j)
+      vt2=2.*Ti*Bfield(j)**2
+      if(vt2.gt.vt2min)then
+         arg=-(v-vs)**2/vt2
+      else
+         arg=-(v-vs)**2/vt2min
+      endif
+      if(abs(arg).gt.argmax)then
+         fv1crein=0.
+      else
+         fv1crein=exp(arg)
+      endif
+
+      end
+c*********************************************************************
       subroutine rhoinfcalc(dtin)
 c Obtain the rhoinf to be used in calculating the electron shielding,
 c based upon the number and average potential of the reinjections.
@@ -371,7 +450,7 @@ c Use particle information for initializing.
       include 'partcom.f'
       include 'meshcom.f'
       real area(ndims_mesh),volume,flux
-      real a,td,cfactor
+      real a,cfactor
       real chi
       save chi
       data chi/0./
@@ -385,12 +464,7 @@ c Use particle information for initializing.
             area(i)=area(i)*(xmeshend(id)-xmeshstart(id))
          enddo
          a=area(i)*sqrt(2.*Ti/3.1415926)
-         if(i.eq.ndims_mesh)then
-c Assume vd is in the last dimension
-            td=vd/sqrt(2.*Ti)
-            a=a*(exp(-td**2)+
-     $           0.5*sqrt(3.1415926)*td*(erfcc(-td)-erfcc(td)))
-         endif
+         a=a*fonefac(i)
          flux=flux+a
          volume=volume*(xmeshend(i)-xmeshstart(i))
       enddo
@@ -429,7 +503,7 @@ c Particle information
       include 'partcom.f'
       include 'meshcom.f'
       real area(ndims_mesh),volume,flux
-      real a,td,cfactor
+      real a,cfactor
 c 
 c Calculate ninjcomp from ripernode
       volume=1.
@@ -441,12 +515,7 @@ c Calculate ninjcomp from ripernode
             area(i)=area(i)*(xmeshend(id)-xmeshstart(id))
          enddo
          a=area(i)*sqrt(2.*Ti/3.1415926)
-         if(i.eq.ndims_mesh)then
-c Assume vd is in the last dimension
-            td=vd/sqrt(2.*Ti)
-            a=a*(exp(-td**2)+
-     $           0.5*sqrt(3.1415926)*td*(erfcc(-td)-erfcc(td)))
-         endif
+         a=a*fonefac(i)
          flux=flux+a
          volume=volume*(xmeshend(i)-xmeshstart(i))
       enddo
@@ -467,6 +536,38 @@ c Correct approximately for edge potential depression (OML).
       endif
 c      write(*,*)'Ending ninjcalc',rhoinf,nrein,n_part
 
+      end
+c********************************************************************
+      real function fonefac(i)
+c Return the one-way flux correction factor in coordinate direction i,
+c accounting for the possibility of infinite Bfield which
+c one-dimensionalizes the problem, for the parameters of this plasma
+c given in
+      include 'plascom.f'
+c
+      if(Bt.lt.Btinf)then
+         a=1.
+c Assume vd is in the last dimension
+         if(i.eq.nplasdims)then
+            td=vd/sqrt(2.*Ti)
+            a=(exp(-td**2)+
+     $           0.5*sqrt(3.1415926)*td*(erfcc(-td)-erfcc(td)))
+         endif
+      else
+c Infinite Bt. Projected total drift velocity normalized:            
+         td=(Bfield(i)*vpar+vperp(i))/sqrt(2.*Ti)
+c One-way flux consists of the part of the parallel distribution whose
+c projected parallel velocity exceeds -vs.
+         if(abs(Bfield(i)).gt.max(abs(td)*0.1,1.e-10))then
+            td=td/Bfield(i)
+            a=Bfield(i)*(exp(-td**2)+
+     $           0.5*sqrt(3.1415926)*td*(erfcc(-td)-erfcc(td)))
+         else
+c Vanishing Bfield component. One or other surface has vperp flux.
+            a=abs(vperp(i))/sqrt(2.*Ti/3.1415926)
+         endif
+      endif
+      fonefac=a
       end
 c********************************************************************
       real function smaxflux(uc,chi)

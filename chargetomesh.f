@@ -15,15 +15,16 @@ c For all (possibly-active) particles.
       do i=1,ioc_part
          if(if_part(i).ne.0)then
             inewregion=insideall(ndims_mesh,x_part(1,i))
-            x1=x_part(ndims_mesh*2+1,i)
+c            x1=x_part(ndims_mesh*2+1,i)
 c Alternative to partlocate:
             iu=0
             do id=1,ndims_mesh
                ix=int(x_part(ndims_mesh*2+id,i))
                iu=iu+(ix-1)*iLs(id)
             enddo
-            x2=x_part(ndims_mesh*2+1,i)
-            if(x1.ne.x2)write(*,*)'Mesh pos change',i,x1,x2
+c            x2=x_part(ndims_mesh*2+1,i)
+c This test is irrelevant now partlocate is not used.
+c            if(x1.ne.x2)write(*,*)'Mesh pos change',i,x1,x2
 c Cycle through the vertices of the box we are in.
             do ii=0,2**ndims_mesh-1
                ii1=ii

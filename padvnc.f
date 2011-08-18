@@ -192,16 +192,19 @@ c---------------- Particle Moving ----------------
 c Use dtaccel for acceleration. May be different from dtpos if there was
 c a subcycle, reinjection or collision last step.
          dtaccel=0.5*(dtpos+dtprec(i))
-
          ptot=ptot+dtpos
          atot=atot+dtaccel
-c Accelerate          
+c Accelerate ----------
          do j=ndims+1,2*ndims
             x_part(j,i)=x_part(j,i)+field(j-ndims)*dtaccel
          enddo
-c Move
-         if(Bt.ne.0.)then
-c Magnetic field non-zero
+c Move ----------------
+         if(Bt.eq.0.)then
+            do j=1,ndims
+               x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos
+            enddo          
+         elseif(Bt.lt.Btinf)then
+c Magnetic field non-zero but finite
             theta=Bt*dtpos
 c Rotation is counterclockwise for ions. We only want to call the 
 c trig functions once, otherwise they dominate the cost.
@@ -223,7 +226,7 @@ c Second half-move.
                   x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
                enddo          
             else
-c Strong B-field case:
+c Strong but finite B-field case:
 c Subtract off the perpendicular drift velocity.
                do j=ndims+1,2*ndims
                   x_part(j,i)=x_part(j,i)-vperp(j-ndims)
@@ -246,10 +249,22 @@ c Move the gyro-center perpendicular and add gyro-radius:
  801        format(a,6f10.6)
             if(i.le.npr)write(*,801)'x_part2',(x_part(k,i),k=1,6)
          else
+c Infinite magnetic field; i.e. one-dimensional motion plus a
+c perpendicular steady drift velocity. Set non-drift perp particle
+c velocity to zero.
+c Bfield is normalized: i.e. a direction cosine.
+            vp=0.
             do j=1,ndims
-               x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos
-            enddo          
+               vp=vp+Bfield(j)*x_part(j+ndims,i)
+            enddo
+            do j=1,ndims
+c Parallel particle and perpendicular drift move:
+               x_part(j,i)=x_part(j,i)+(vp*Bfield(j)+vperp(j))*dtpos
+c Zero perp velocity.
+               x_part(j+ndims,i)=vp*Bfield(j)
+            enddo
          endif
+c End of Move ---------
 
          if(lcollided)then
 c Treat collided particle at (partial) step end
@@ -296,11 +311,12 @@ c Reinjection:
             stop
          endif
          if(.not.linregion(ibool_part,ndims,x_part(1,i)))then
-            write(*,*)'Reinject out of region',i,iregion,xfrac
-            stop
+c This situation is benign and not an error if we have a region that
+c happens not to cover the entire mesh edge. So don't stop, retry.
+c            write(*,*)'Reinject out of region',i,iregion,xfrac
+c            stop
+            goto 200
          endif
-c         dtpos=dt*ran1(myid)
-c         dtpos=dtpos*ran1(myid)
          dtpos=(dtpos+dtremain)*ran1(myid)
          dtprec(i)=0.
          dtremain=0.
@@ -308,7 +324,11 @@ c         dtpos=dtpos*ran1(myid)
          nrein=nrein+ilaunch
          phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i)
      $        ,IAND(iregion,ifield_mask),2)
-         phirein=phirein+ilaunch*phi
+c This version multiply-weights a relaunched case:
+c         phirein=phirein+ilaunch*phi
+c But has to compensate for final division by nrein.
+c It's probably better to count the relaunches as average:
+         phirein=phirein*(1+ilaunch-1)+phi
          call diaginject(x_part(1,i))
 c Restart the rest of the advance
          goto 100

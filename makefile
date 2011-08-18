@@ -25,11 +25,13 @@ REINJECT=cartreinject.o
 GEOMFILE=geomcubic.dat
 #GEOMFILE=geomz200x25.dat
 ##########################################################################
-NGW=-Wno-globals
 # An option setting might override default compiler.
+# In g77 -Wno-globals silences spurious type messages on reduce.f
+# This is unrecognized by gfortan. For which no-unused is better.
+NGW=-Wno-unused
 ifeq ("$(G77)","")     
 	G77=mpif77 -f77=g77 
-	NGW=
+	NGW=-Wno-globals
 endif
 #
 # export this so it is inherited by sub-makes.
@@ -84,8 +86,10 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 # Problem when using geometry that can't do smt check. 
 smt.out : $(COPTIC) copticgeom.dat
 	@if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
+	@if [ -f T1e0v000P020L1e0z005x05.phi ] ; then mv T1e0v000P020L1e0z005x05.phi prior.phi ; echo "Created prior.phi" ; fi
 	./$(COPTIC)
 	@if [ -f smt.prev ] ;then if [ -f smt.out ] ;then diff smt.prev smt.out ;else touch smt.out ;fi ;fi
+	@if [ -f prior.phi ] && [ -f T1e0v000P020L1e0z005x05.phi ] ; then if ! diff T1e0v000P020L1e0z005x05.phi prior.phi ; then echo "**** RESULT CHANGED" ; fi; rm prior.phi; else echo "File[s] lacking to compare result."; fi 
 
 # For now we are using a big hammer to ensure libcoptic is clean.
 libcoptic.a : makefile $(OBJECTS) $(UTILITIES)
