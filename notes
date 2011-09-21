@@ -7752,3 +7752,5 @@ in the integration (starting at -2,2) is <1e-3. When vt2min=1e-6,
 then the maximum value of arg is <1 so certainly there will be a nonzero
 position. I think 1e-6 is safe. It gives flux .0007. That's pretty much
 negligible.
+
+NOW: we seem to have infinite-B reinjection working.
