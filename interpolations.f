@@ -12,7 +12,7 @@ c Interpolations.
       endif
       end
 c****************************************************************
-      function box2interpnew(f,d,iw,weights)
+      function box2interpnew(f,d,iw,weights,ierr)
 c 
 c Given values of a function on up to four points adjacent on a 
 c 2-D cartesian mesh: f00,f01,f10,f11; and given the fractional
@@ -40,7 +40,15 @@ c         whx=i+(1-2*i)*d(1)
             fa=fa+wh*f(i,j)
          enddo
       enddo
-      if(tw.eq.0) stop 'boxinterp zero weight everywhere error'
+      if(tw.eq.0.)then
+         write(*,*)'boxinterp zero weight everywhere error'
+         write(*,*)'weights',weights,'  ds',d
+         ierr=1
+c Instead of stopping, just let the divide by zero throw a field 
+c corruption error which will give us better diagnostics of where
+c the error occurred. It usually happens because we are outside mesh.
+c         stop
+      endif
       box2interpnew=fa/tw
       end
 c****************************************************************

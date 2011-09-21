@@ -7751,6 +7751,92 @@ unlikely to be significant. The minimum v-difference with 2000 points
 in the integration (starting at -2,2) is <1e-3. When vt2min=1e-6,
 then the maximum value of arg is <1 so certainly there will be a nonzero
 position. I think 1e-6 is safe. It gives flux .0007. That's pretty much
+<<<<<<< notes
+negligible.
+
+NOW: we seem to have infinite-B reinjection working.
+
+Start working on copticthin which is going to be a thin domain to
+do effectively 2-D calculations with infinite Bt. We can't currently
+make the z-direction thin because the drift velocity is purely in that
+direction. So make the x-direction thin. 
+
+Even with a mesh of four nodes in the thin direction there are big
+problems with No Good Vertices if the object is as big as the domain.
+And there are boxinterp zero weight everwhere errors. That's with a
+sphere. Change to a cylinder, as is my plan. Still get those boxinterp
+errors. It looks as if I am not rejecting ions initialized inside the 
+cylinder, since I am using only 20650 tries for 20000. This is a 
+radius 1 cylinder in a box 10x10. So that fraction is pi/100, which
+is about right. So no. The fraction of rejections is reasonable.
+
+Found the problem to be the special particle-1. It was being set outside
+the mesh. Moved it in pinit so as to catch this sort of error and give
+a warning.
+
+Now we can use down to 4 cells in the thin direction. 3 gives a
+sorelax error. But we ought not to need to use sorelax for
+quasineutral, so setting -l0 this runs too. 2 won't initialize.
+Recall that the first and last nodes in each dimension are ON the boundary. 
+Their volumes are set to zero because the presumption is that they 
+are going to be set by boundary conditions, not by solving Poisson's 
+equation. psumtoq works only on non-edge nodes.
+
+Seems to be working with quasineutral 3 nodes in x-direction up to 
+velocity of 5. Trying 10 gives Getlocalregion excessive error and
+field corruption. Arising because a potential is minus infinity.
+I suspect that must be because the density happens to be zero. 
+Probably we need some sort of truncation in the quasineutral 
+calculation. Yes, added a floor to the density before taking its log
+and the error goes away.
+
+Tests with 400k particles on a 3x32x64 mesh give fluctuations of density
+that are roughly 0.07. Particles per cell are something like 400k/32x64
+=200 which seems to be statistically correct. 
+
+With mesh allocation 4x100x100,   time is 43s. For 100 steps of 0.4M
+With mesh allocation 100x100x100, time is 46s. Not that much
+different!
+4x200x200 allocation 44s.
+Hardly changes when the used mesh sizes are doubled.
+4x200x200 used: 1m6s. Slower.
+
+Clearly it is possible to run with large grids without much explicit
+penalty other than the need for more particles. 
+
+
+21 Sep 2011
+
+Took a long detour based on the realization that the stability calculation
+is in many ways better done by analytics, than relying on PIC. Did not
+come to a definitive answer but 
+
+Trying to get back to this thin case for cylindrical operation in
+general.  For the infinite-B situation there was no need to solve the
+problem of ions leaving along an axis of translational symmetry,
+because the drift velocity would normally be set to zero in that
+direction. However, for finite-B if one wants to do a cylindrical
+calculation, then periodic reinjection ought to be used for exits
+through the symmetry faces. Otherwise one loses lots of orbits in a
+perpendicular direction if the domain size is literally thin. An
+alternative is to regard the domain as extremely large in the symmetry
+direction (even though having only few cells). If large enough then
+very few particles leave across it. This is almost equivalent to
+reducing the symmetry-direction velocity of the particles. This sounds
+like an easier way to solve the problem. 
+
+Change the nameconstruct to use the y-length as the second parameter
+that way the long x-domain does not screw name up. Seems to sort of work
+with a long (100) x-domain and shorter in other directions. The inherent
+inefficiency of using 4 x-nodes is that the ends take up 1/3 of the charge
+which are then not used because the potential there is set from the 
+boundary condition. So even if we average the potential in the x-direction
+thereafter, we will have lost some efficiency. However, this does not 
+seem a very serious problem. I therefore conclude that the thin version
+is actually able to do cylindrical problems reasonably well. The bigger
+inefficiency is probably in the particle moving where three rather than 
+two field components are used and the interpolation over three dimensions
+is probably a non-trivial cost. =======
 negligible.
 
 NOW: we seem to have infinite-B reinjection working.

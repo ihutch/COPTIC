@@ -318,7 +318,7 @@ c     $           ,(hrein(kk,index),kk=ncrein-4,ncrein)
          endif
       enddo
 c
-      write(*,*)'grein',grein
+c      write(*,*)'grein',grein
       gtot=0.
       do id=1,3
          i2=mod(id,3)+1

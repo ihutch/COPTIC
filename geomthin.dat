@@ -1,0 +1,16 @@
+3  ; Number of dimensions must be the first line.
+#
+# Radius 1 cylinder centered on axis with potential set (-2.) Axis 1
+3 , 1.,0.,2., .0,.0,.0,  200.,1.,1.,  1,
+#
+# Boolean that specifies the particle region 99, n1, n1*values, n2, ... 0:
+# Each nk values are ored together. The groups are anded.
+# value n means inside object n, -n outside, 0 filler (do nothing). 
+# In this case -1: outside object 1.
+99, 1, -1, 0
+# Thin (few cells) in the x-direction for effectively 2-D.
+# Might use this with infinite B in the y-z plane.
+91,1,4,0,-100.,100.
+92,1,64,0,-5.,5.
+93,1,64,0,-3.,17.
+# It's important to end the last line.

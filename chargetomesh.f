@@ -125,6 +125,8 @@ c compensate electron density.
 c      if(q(ind).gt.0.)then
 c So instead tell directly from volumes if we are outside:
       if(volumes(ind).le.1.e20)then
+c There still might be too small a density, so set a floor for it.
+         if(q(ind).lt.1.e-6)q(ind)=1.e-6
          u(ind)=alog(q(ind))
       else
          u(ind)=phip

@@ -267,7 +267,9 @@ c         if(abs(f(ii)).gt.1.e20)write(*,*)'Enddo corrupt',f(ii),ii
       if(igood.gt.0)then
 c         if(iflags(1).eq.0)write(*,*)'Zero iflags(1) error'
 c Field is minus the potential gradient.
-         field=-box2interpnew(f,d,iw,weights)
+         ierr=0
+         field=-box2interpnew(f,d,iw,weights,ierr)
+         if(ierr.ne.0)write(*,*)xff,f
 c         if(abs(field).gt.1.e20)then
 c            write(*,*)field,'  f=',f,'  d=',d,'  iw=',iw,'  weights='
 c     $           ,weights

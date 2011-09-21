@@ -14,15 +14,35 @@ c Local dummy variables for partlocate.
       integer ixp(ndims_mesh)
       logical linmesh
 
+
+c-----------------------------------------------------------------
+c A special orbit.
+c Pinit resets x_part. So set it for the special first particle.
+      x_part(1,1)=2.
+      x_part(2,1)=0.
+      x_part(3,1)=0.
+c Prior half-step radial velocity
+      x_part(4,1)=0.5*subcycle*(abs(phip)/x_part(1,1)**2)
+c      x_part(4,1)=0.5*dt*(abs(phip)/x_part(1,1)**2)
+c      x_part(4,1)=0.25*dt*(abs(phip)/x_part(1,1)**2)
+c Tangential velocity of circular orbit at r=?.
+      x_part(5,1)=sqrt(abs(phip/x_part(1,1))-x_part(4,1)**2)
+      x_part(6,1)=0.
+      if_part(1)=1
+      call partlocate(1,ixp,xfrac,iregion,linmesh)
+      i1=2
+      if(.not.linmesh)then
+         write(*,*)'WARNING Special particle-1 outside region.'
+         write(*,*)'Coordinates',(x_part(i,1),i=1,9),' Resetting.'
+         i1=1
+      endif
+c-----------------------------------------------------------------
       ntries=0
 c      ntrapped=0
-c      rmax=0.99999*rs
-c      write(*,*) 'Pinit. rmax=',rmax,'xmeshend=',xmeshend
-c      rmax2=rmax*rmax
 c The maximum used slot is the same as the number of particles initially
       ioc_part=n_part
 c     We initialize the 'true' particles'
-      do i=1,n_part
+      do i=i1,n_part
          if_part(i)=1
  1       continue
          ntries=ntries+1
@@ -85,20 +105,5 @@ c Initialize orbit tracking
       do ko=1,norbits
          iorbitlen(ko)=0
       enddo
-c-----------------------------------------------------------------
-c A special orbit.
-c Pinit resets x_part. So set it for the special first particle.
-      x_part(1,1)=2.
-      x_part(2,1)=0.
-      x_part(3,1)=0.
-c Prior half-step radial velocity
-      x_part(4,1)=0.5*subcycle*(abs(phip)/x_part(1,1)**2)
-c      x_part(4,1)=0.5*dt*(abs(phip)/x_part(1,1)**2)
-c      x_part(4,1)=0.25*dt*(abs(phip)/x_part(1,1)**2)
-c Tangential velocity of circular orbit at r=?.
-      x_part(5,1)=sqrt(abs(phip/x_part(1,1))-x_part(4,1)**2)
-      x_part(6,1)=0.
-      call partlocate(1,ixp,xfrac,iregion,linmesh)
-c      write(*,*)'PINIT',(x_part(i,1),i=1,9),phip
       end
 c***********************************************************************
