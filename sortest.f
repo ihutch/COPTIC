@@ -112,10 +112,10 @@ c Deal with arguments
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
 c Geometry and boundary information. Read in.
-      call readgeom(objfilename,myid)
+      call readgeom(objfilename,myid,ifull)
 c---------------------------------------------------------------
 c Construct the mesh vector(s) from the geometry info.
-      call meshconstruct(ndims,iuds)
+      call meshconstruct(ndims,iuds,ifull)
       if(lmyidhead)write(*,'(a,3i4,6f8.3)')
      $     ' Constructed mesh',iuds
      $     ,(xmeshstart(k),xmeshend(k),k=1,ndims)

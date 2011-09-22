@@ -7751,7 +7751,6 @@ unlikely to be significant. The minimum v-difference with 2000 points
 in the integration (starting at -2,2) is <1e-3. When vt2min=1e-6,
 then the maximum value of arg is <1 so certainly there will be a nonzero
 position. I think 1e-6 is safe. It gives flux .0007. That's pretty much
-<<<<<<< notes
 negligible.
 
 NOW: we seem to have infinite-B reinjection working.
@@ -7836,7 +7835,10 @@ seem a very serious problem. I therefore conclude that the thin version
 is actually able to do cylindrical problems reasonably well. The bigger
 inefficiency is probably in the particle moving where three rather than 
 two field components are used and the interpolation over three dimensions
-is probably a non-trivial cost. =======
-negligible.
+is probably a non-trivial cost. 
 
-NOW: we seem to have infinite-B reinjection working.
+Did a commit. Big mistake. This version was not correct with a standard
+copticgeom.dat. Mditerate error. Mditermults error. Ok this seems to be
+caused by using ifull too small. Yes. Fixed by increasing to a decent
+number. Ought to have a more sensible check. Implemented in meshconstruct
+and in readgeom.

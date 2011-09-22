@@ -107,10 +107,11 @@ c**********************************************************************
       end
 
 c**********************************************************************
-      subroutine readgeom(filename,myid)
+      subroutine readgeom(filename,myid,ifull)
 c Read the geometric data about objects from the file filename
       character*(*) filename
       integer myid
+      integer ifull(*)
       character*128 cline
       include '3dcom.f'
       include 'meshcom.f'
@@ -245,10 +246,17 @@ c Mesh specification for a particular dimension.
  880     do i=1,nspec_mesh
             ist=i
             imeshstep(id,i)=int(valread(i))
+            if(imeshstep(id,i).gt.ifull(id))then
+               write(*,*)cline
+               write(*,*)'Readgeom: Meshpos',imeshstep(id,i)
+     $              ,'  too large for ifull',ifull(id),id
+               stop
+            endif
             if(valread(i).eq.0.)goto 881
          enddo
  881     do j=1,ist-1
             xmeshpos(id,j)=valread(ist+j)
+c            write(*,*)id,j,xmeshpos(id,j)
             if(j.gt.1)then
                if(xmeshpos(id,j).le.xmeshpos(id,j-1))then
                   write(*,*)'Readgeom: Meshpos not monotonic'

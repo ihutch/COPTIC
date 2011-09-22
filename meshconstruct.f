@@ -6,8 +6,8 @@ c values starting imeshstep.
 c Return values of iuds(ndims) per constructed mesh.
 c Also initialize the value of rs in plascom. Put equal to
 c half the largest mesh box side length.
-      subroutine meshconstruct(ndims,iuds)
-      integer iuds(ndims)
+      subroutine meshconstruct(ndims,iuds,ifull)
+      integer iuds(ndims),ifull(ndims)
       include 'meshcom.f'
 
       iof=0
@@ -32,6 +32,12 @@ c Mesh data.
  11      continue
          if(iblk.le.1) write(*,*)'Too few mesh steps. Dimension',id
          xmeshend(id)=xmeshpos(id,iblk)
+         if(imeshstep(id,iblk).gt.ifull(id))then
+            write(*,*)'Meshconstruct ERROR: Meshpos(',id,')='
+     $           ,imeshstep(id,iblk),'  too large for ifull=',(ifull(k)
+     $           ,k=1,ndims)
+            stop
+            endif
 c Set iuds according to specified mesh
          iuds(id)=imeshstep(id,iblk)
 c         write(*,'(a,i3,10f8.3)')
