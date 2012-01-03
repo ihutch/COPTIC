@@ -96,7 +96,7 @@ c Set flag of unused slots to 0
          if_part(i)=0
       enddo
       if(myid.eq.0)then
-       write(*,'('' Initialized '',i3,'' n='',i7,'' ntries='',i7,$)')
+       write(*,'('' Initialized '',i3,''x n='',i7,'' ntries='',i7,$)')
      $     nprocs,n_part,ntries
       endif
 c Initialize rhoinf:
