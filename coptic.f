@@ -155,7 +155,7 @@ c      if(iargc().eq.0) goto "help"
             goto 211
  210        ipstep=1
  211        continue
-            write(*,*)'ipstep=',ipstep
+            if(myid.eq.0)write(*,*)'Plotting ipstep=',ipstep
          endif
          if(argument(1:3).eq.'-gd')ldenplot=.false.
          if(argument(1:3).eq.'-gp')lphiplot=.false.
