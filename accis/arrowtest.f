@@ -24,4 +24,10 @@
       call arrowplot(E1,E2,imax/2.,Li,imax,jmax,x,y,1) 
       call pltend()
 
+      call pfset(3)
+      call pltinit(0.,x(imax),0.,y(jmax))
+      call axis()
+      call arrowplot(E1,E2,imax/2.,Li,imax,jmax,x,y,5,4,4) 
+      call pltend()
+
       end

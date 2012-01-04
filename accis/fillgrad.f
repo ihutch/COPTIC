@@ -190,7 +190,7 @@ c Second byte of isw: level-skip.
       include 'plotcom.h'
 c Make line width minimal for contouring
        if(abs(pfsw).eq.2 .or. abs(pfsw).eq.3)
-     $     call abufwrt(' 0 setlinewidth ',16,12)
+     $     call abufwrt(' ST 0 setlinewidth ',19,12)
       
 
 c centroid point
@@ -224,7 +224,7 @@ c Direction. No d changes needed. dq->d
             x(3)=xq(1+mod(i,4))
             y(3)=yq(1+mod(i,4))
             z(3)=zq(1+mod(i,4))
-c            write(*,*)i,z
+            write(*,*)i,z
             call gradtri(x,y,z,dq,zg0,zg1,ng0,ng1,isw)
          enddo
       endif
@@ -246,7 +246,7 @@ c which the value changes most.
       include 'plotcom.h'
 c Make line width minimal for contouring
        if(abs(pfsw).eq.2 .or. abs(pfsw).eq.3)
-     $     call abufwrt(' 0 setlinewidth ',16,12)
+     $     call abufwrt(' ST 0 setlinewidth ',19,12)
       
        id=0
       if((isw/2-2*(isw/4)).eq.0)then

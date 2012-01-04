@@ -271,8 +271,13 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
   glLoadIdentity();
   gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
 
-  /* Start the main drawing list */
-  if(accis_listing==0){
+  /* Start the main drawing list. Clear the frame. */
+  /* Always clearing gives behavior equivalent to vecx. Otherwise, if
+     pltend() is not called then drawing actions build up in the listing
+     and are redrawn on refresh. There might be some cases where that 
+     behavior is preferable, but such cases are not yet identified.
+     if(accis_listing==0)*/
+  {
     accis_listing=1;
     /* XSync(accis_display,True);  This discards expose events when mapped */
     /* on compiz this seems to break things */
@@ -280,14 +285,6 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   }
-  /*Irrelevant test for nothing.
-  glBegin(GL_TRIANGLE_FAN);
-   glColor3f(1., 0., 0.); glVertex3f(-47.5, -47.5, 0.);
-   glColor3f(0., 1., 0.); glVertex3f( 47.5, -47.5, 0.);
-   glColor3f(0., 0., 1.); glVertex3f( 47.5,  47.5, 0.);
-   glColor3f(1., 1., 0.); glVertex3f(-47.5,  47.5, 0.);
-  glEnd();*/
-
 
  glColor3f(0.,0.,0.);
 
@@ -407,7 +404,7 @@ void txtmode_()
 /*     printf("Event: type=%d\n",event.type); */
     if(event.type == Expose){EXPOSE_ACTION;}
   }while(event.type != ButtonPress && event.type != KeyPress );
-  accis_listing=0;
+  /*seems a duplicate  accis_listing=0; */
 /*     printf("Escaping Event: type=%d\n",event.type); */
     /* We don't do this; but here's how to terminate cleanly.
     glXMakeCurrent(accis_display, None, NULL);
@@ -454,7 +451,7 @@ FORT_INT *px, *py, *ud;
     px2 = *px;
     py2 = *py;
 /*     printf("px %.0f, py %.0f\n",px2,py2); */
-    if( *ud != 0) {
+    if( *ud > 0) {
       glBegin(GL_LINES);
       glVertex2f(px1,py1);
       glVertex2f(px2,py2);
@@ -463,7 +460,13 @@ FORT_INT *px, *py, *ud;
       if(accis_pathlen<accis_path_max){      /* Add point to path */
 	accis_pathlen++;
       }
-    }else{ /* Restart path */
+    }else{ 
+      if(*ud==-1){
+	glBegin(GL_POINTS);
+	glVertex2f(px2,py2);
+	glEnd();
+      }
+      /* Restart path */
       accis_pathlen=0;
     }
     accis_path[accis_pathlen].x=*px;

@@ -1312,6 +1312,8 @@ c      write(*,*)'Wrote flux data to ',name(1:lentrim(name))
       end
 c*****************************************************************
       subroutine readfluxfile(name,ierr)
+c On entry ierr .ne.0 indicates write informational messages.
+c On exit  ierr .ne.0 indicates error.
       character*(*) name
       include '3dcom.f'
       include 'plascom.f'
@@ -1361,8 +1363,9 @@ c Intersection data:
 
 c Now one might have to reconstruct nf_faceind from nf_dimlens.
 
-      write(*,*)'Read back flux data from ',name(1:lentrim(name))
-      write(*,*)charout(1:lentrim(charout))
+      if(ierr.ne.0)write(*,*)'Read back flux data from '
+     $     ,name(1:lentrim(name))
+c      write(*,*)charout(1:lentrim(charout))
       ierr=0
       return
  101  write(*,*)'Error opening file:',name

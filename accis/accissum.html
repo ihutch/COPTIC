@@ -1,8 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
            "http://www.w3.org/TR/REC-html40/loose.dtd">
 <html>
-<meta name="GENERATOR" content="TtHgold 3.86">
-<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="TtHgold 3.89">
  <style type="text/css"> div.p { margin-top: 7pt;}</style>
  <style type="text/css"><!--
  td div.comp { margin-top: -0.6ex; margin-bottom: -1ex;}
@@ -185,8 +184,7 @@ a set of vectors all drawn with pen down one after the other.
 IDARKBLUE(), IDARKGREEN(),  ISKYBLUE(),  IBRICKRED(),  IPURPLE(),
 IGOLD(),  IGRAY(),  ILIGHTGRAY(),  IBLUE(),  IGREEN(),  ICYAN(),
 IRED(),  IMAGENTA(),  IYELLOW(),  IBLACK(): Integer functions returning
-the 16-color number that gives what their name indicates (=1<font face="symbol">-</font
->15).
+the 16-color number that gives what their name indicates (=1&#8722;15).
 
 <div class="p"><!----></div>
 GRADTRI(xv,yv,zv,dv,zg0,zg1,ng0,ng1,isw) shade triangle specified by
@@ -251,8 +249,7 @@ the full lengths of the axes. This determines where the axes are drawn.
 <div class="p"><!----></div>
 TICSET(xlen,ylen,xoff,yoff,ixw,iyw,ixp,iyp) Set tic lengths, label
 offsets, widths, decimal points. Labels switched off by width
-ixw <font face="symbol">£</font
-> 0. Defaults set respectively if reals all =0 or ints all
+ixw &#8804; 0. Defaults set respectively if reals all =0 or ints all
 =0. (Defaults: .015,.015,-.03,-.02,4,4,1,1)
 
 <div class="p"><!----></div>
@@ -271,7 +268,7 @@ TICNUMSET(itics) Set the number of tics of axis (approximately).
 <img align="right" src="fontshow.png"> 
 
 <div class="p"><!----></div>
-Special text is accessed via "\" or "!" followed by one of 
+Special text is accessed via ["\" or] "!" followed by one of 
 the following:
 
 
@@ -308,6 +305,22 @@ D</dt>
  <dt>
 U</dt>
 <dd>       Toggle superscript mode
+</dd>
+ <dt>
+P</dt>
+<dd>       Save current position
+</dd>
+ <dt>
+Q</dt>
+<dd>       Return to saved position (and save current)
+</dd>
+ <dt>
+O</dt>
+<dd>       Toggle overbar mode (write high, full size)
+</dd>
+ <dt>
+N</dt>
+<dd>       Toggle underbar mode
 </dd></dl>
 JDRWSTR(xn,yn,cstring,just) Draw cstring at (xn,yn)(normal), justified
 per parameter just:  0. centered, +1. normal left-justified, etc.
@@ -339,8 +352,7 @@ GETFONT(fontname) Read a new fontset from file.
 
 <div class="p"><!----></div>
 LEGENDLINE(xg,yg,nsym,cstring) Draw a legendline at fractional
-position in plot box: xg, yg.  Use symbol nsym if positive and  <font face="symbol">£</font
-> 256.
+position in plot box: xg, yg.  Use symbol nsym if positive and  &#8804; 256.
 If nsym &lt; 0 use both line and symbol. If nsym=0 put only line.  
 If nsym=257 use nothing but put the string at the usual place.
 If nsym=258 use nothing but put the string at the start of the line.
@@ -449,8 +461,7 @@ fxd. For left handed system, isw=(-4,-5 or -6).
 
 <div class="p"><!----></div>
 HDPROJECT(ihide,iproject,ifixedcoord,fxdworld,irlsys)
-Set hiding (ihide = 1), projecting 2<font face="symbol">®</font
->3 (iproject.ne.0), which
+Set hiding (ihide = 1), projecting 2&#8594;3 (iproject.ne.0), which
 coordinate to hold fixed (ifixedcoord), what its world value is
 (fxdworld), and right (+1) or left (-1) handed system (irlsys).
 
@@ -472,7 +483,8 @@ position of cube center. Defaults .25,.25,.2,.5,.4.
 <div class="p"><!----></div>
 TRN32(x,y,z,xt,yt,zt,ifl) If ifl=1, set 3-D transform; (x,y,z) is
 point looked at, (xt,yt,zt) is eye. If ifl=2, set axonometric, offset
-xt,zt.  If ifl=0 transform (x,y,z) to (xt,yt).
+xt,zt.  If ifl=0 transform (x,y,z) to (xt,yt). If ifl=-1 return the 
+current point in (x,y,z) and eye position in (xt,yt,zt).
 
 <div class="p"><!----></div>
 CUBEPROJ() Draw the cube outline faces closest to eye.
@@ -509,13 +521,7 @@ you do: call hdprset(-3,-scbn(3))
 TN2S(px,py,sx,sy) Transform normalized to px,py to screen coordinates
 sx,sy. If (world3.h) ihiding is  &lt; 0, project in direction of 3-d axis
 mod(abs(ihiding),2) at value fixedn, right/left-handed when
-(1 <font face="symbol">£</font
-> <font face="symbol">-</font
->ihiding <font face="symbol">£</font
-> 3 ) or (4 <font face="symbol">£</font
-> <font face="symbol">-</font
->ihiding <font face="symbol">£</font
-> 6).
+(1 &#8804; &#8722;ihiding &#8804; 3 ) or (4 &#8804; &#8722;ihiding &#8804; 6).
 
 <div class="p"><!----></div>
 EYE3D(isw) Enter interactive rotation of the view of 3-D drawing. The
@@ -542,7 +548,7 @@ Continue
 </dd>
  <dt>
 </dt>
-<dd>if(isw.eq.1)goto 51</dd></dl> Key presses with focus in the plot window, return isw= keysym of key
+<dd>if(isw.ne.ichar('q') .and. isw.ne.0)goto 51</dd></dl> Key presses with focus in the plot window, return isw= keysym of key
 pressed. For example in X, left, up, right, down cursor arrows are
 ff51-4 respectively (65361-4 decimal). Letters are their lower case
 ASCII codes, etc.  The return value can be used for other control
@@ -551,6 +557,12 @@ purposes. But the codes for cursors are different under Windows
 
 <div class="p"><!----></div>
 IEYE3D() Integer function of convenience to return switch value of eye3d.
+
+<div class="p"><!----></div>
+ROTATEZOOM(isw) Respond to return of interactive keypress from eye3d, by
+rotating the viewpoint by small angles right (r) or left (e), or by
+moving eye in (i) or out (o), or by magnifying (z) or shrinking (x) the
+unit cube (effectively changing the field of view).
 
 <div class="p"><!----></div>
 
@@ -579,9 +591,11 @@ provided.
 <h2> Primitives
 </h2>
 VECW(x,y,ipen) Draw world-unit vector to (x,y) with pen up (ipen=0) or down (1).
+If ipen=-1, then just draw a single point (pixel) at (x,y). 
 
 <div class="p"><!----></div>
-VECN(x,y,ipen) Draw norm-unit vector to (x,y) with pen up (0) or down (1).
+VECN(x,y,ipen) Draw norm-unit vector to (x,y) with pen up (0), down
+(1), point (-1).
 
 <div class="p"><!----></div>
 WX2NX(wx), WY2NY(wy) Real functions convert world to normal units.
@@ -610,7 +624,8 @@ GTIC(xgw,ilab,xg,yg,tcos,tsin,axcos,axsin,lpara) Low level tic drawing.
 FITRANGE(min,max,itics,ipow,fac10,delta,first,xlast) Fit a maximum of
 itics ticks to range (min, max). Decide a scaling factor 10<sup><span class="roman">ipow</span></sup>=fac10 and a sensible (scaled) delta between tics. First (xlast)
 is integer multiple of delta lying closest to min (max) outside the
-range (min,max). So fac10*(first+i*delta) are the tick values.
+range (min,max). Then (first+i*delta) are the tick values, but one
+might label them with (first+i*delta)/fac10 multiplied by 10<sup>ipow</sup>.
 
 <div class="p"><!----></div>
 MINMAX(xv,isize,min,max) Find min and max of vector of size isize.
@@ -672,5 +687,5 @@ for compiler/linker arguments such as  -L/usr/X11R6/lib/ -lXt
 T<sub><font size="-1">E</font></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><font size="-1">T</font></sub>Hgold</a>,
-version 3.86.<br />On 15 Nov 2009, 17:06.</small>
+version 3.89.<br />On 21 May 2011, 17:32.</small>
 </html>

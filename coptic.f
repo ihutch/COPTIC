@@ -121,6 +121,7 @@ c Default edge-potential (chi) relaxation rate.
       rmtoz=1.
       Bt=0.
       iobpsw=1
+      ierr=0
       do id=1,ndims_mesh
 c Use very big xlimits by default to include whole domain
          xlimit(1,id)=-500.
@@ -464,7 +465,7 @@ c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
 c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
 c An initial solver call.
       if(debyelen.ne.0.)call sormpi(ndims,ifull,iuds,cij,u,q,bdyset
-     $     ,faddu,ictl,ierr,myid,idims)
+     $     ,faddu,ictl,ierrsor,myid,idims)
       ictl=2
 c      write(*,*)'Return from initial sormpi call.'
 c
@@ -525,7 +526,7 @@ c         partfilename=' '
          ied=1
          call array3read(phifilename,ifull,iuds,ied,u,ierr)
          if(ierr.ne.0)goto 401
-         write(*,*)'Restart files read successfully.'
+         write(*,*)'Node',myid,' Restart files read successfully.'
          if(nsteps+nf_step.gt.nf_maxsteps)then
             if(lmyidhead)write(*,*)'Asked for',
      $           nsteps,' in addition to',nf_step,

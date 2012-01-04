@@ -240,4 +240,36 @@ c*************************************************************************
          a_grad_inited=2;
       enddo
       end
+c*************************************************************************
+      subroutine accisgradset(red,green,blue,ngcol)
+c Set the gradient colors from three fortran arrays.
+c Limiting the range to 0-65535, warning if the pixel number is not right.
 
+      integer red(ngcol),green(ngcol),blue(ngcol)
+      integer a_gradPixno
+      parameter (a_gradPixno=240)
+      integer a_gradPix(a_gradPixno)
+      integer a_grad_inited
+      integer a_gradred(a_gradPixno)
+      integer a_gradgreen(a_gradPixno)
+      integer a_gradblue(a_gradPixno)
+      common /a_grad/a_gradPix,a_gradred,a_gradgreen,a_gradblue
+     $     ,a_grad_inited
+
+      do i=1,a_gradPixno
+         if(i.le.ngcol)then
+            a_gradred(i)=max(0,min(red(i),65535))
+            a_gradgreen(i)=max(0,min(green(i),65535))
+            a_gradblue(i)=max(0,min(blue(i),65535))
+         else
+            a_gradred(i)=0
+            a_gradgreen(i)=0
+            a_gradblue(i)=0
+         endif
+      enddo
+      end
+c***********************************************************************
+c Dummy
+      integer function igradtri(x,y,z,h,i3d)
+      igradtri=0
+      end

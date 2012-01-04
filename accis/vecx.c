@@ -372,7 +372,7 @@ FORT_INT *li;
 /* ******************************************************************** */
 /* Subroutine */ int vec_(px, py, ud)
 FORT_INT *px, *py, *ud;
-{ /*  Draw vector on screen, with pen up or down. */
+{ /*  Draw vector on screen, with pen up or down. Or point.*/
     static int px1=0,py1=0,px2=0,py2=0;
     extern XPoint accis_path[];
     extern int accis_pathlen;
@@ -381,7 +381,7 @@ FORT_INT *px, *py, *ud;
     py1=py2;
     px2 = *px;
     py2 = *py;
-    if( *ud != 0) {
+    if( *ud > 0) {
       if(accis_back==0)XDrawLine(XtDisplay(accis_drawing),
 				 XtWindow(accis_drawing),
 				 accis_gc,px1,py1,px2,py2);
@@ -390,7 +390,15 @@ FORT_INT *px, *py, *ud;
       if(accis_pathlen<accis_path_max){      /* Add point to path */
 	accis_pathlen++;
       }
-    }else{ /* Restart path */
+    }else{ 
+      if(*ud == -1){ /* Write Point only */
+	if(accis_back==0)XDrawPoint(XtDisplay(accis_drawing),
+				    XtWindow(accis_drawing),
+				    accis_gc,px2,py2);
+	XDrawPoint(XtDisplay(accis_drawing),accis_pixmap, 
+		  accis_gc,px2,py2);
+      }
+      /* Restart path for disconnected point */
       accis_pathlen=0;
     }
     accis_path[accis_pathlen].x=*px;

@@ -8,9 +8,7 @@ c Automatic plotting of an array versus its index
       real xfac,xdelta
       integer nxfac
       call minmax(y,n,ymin,ymax)
-c      call fitrange(1.,float(n),ticnum,nxfac,xfac,xdelta,xmin,xmax)
       call fitrange(ymin,ymax,ticnum,nxfac,xfac,xdelta,ymin,ymax)
-c      call pltinit(xmin,xmax,ymin,ymax)
       call pltinit(1.,float(n),ymin,ymax)
       call axis()
       call ypolyline(y,n)
@@ -45,8 +43,10 @@ c******************************************************************
       integer nxfac
       call minmax(x,n,xmin,xmax)
       call minmax(y,n,ymin,ymax)
+c      write(*,*)'xmin,xmax,ymin,ymax before',xmin,xmax,ymin,ymax,ticnum
       call fitrange(xmin,xmax,ticnum,nxfac,xfac,xdelta,xmin,xmax)
       call fitrange(ymin,ymax,ticnum,nxfac,xfac,xdelta,ymin,ymax)
+c      write(*,*)'xmin,xmax,ymin,ymax after',xmin,xmax,ymin,ymax
       call pltinit(xmin,xmax,ymin,ymax)
       end
 c********************************************************************

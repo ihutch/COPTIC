@@ -40,10 +40,10 @@ C********************************************************************
       include 'plotcom.h'
       real xd
       if(lxlog)then
-         if(wx.lt.0.01*wxmin .or. wx.gt.100.*wxmax) then
+         if(wx.lt.0.001*wxmin .or. wx.gt.1000.*wxmax) then
             write(*,*)'ACCIS WARNING world log x value outside range:'
      $           ,wx,' plotting outside box.'
-            xd=.1/w2nx
+            xd=.01/w2nx
          else
             xd=log10(wx)-log10(wxmin)
          endif
@@ -58,11 +58,28 @@ C********************************************************************
       real wy2ny,wy
       include 'plotcom.h'
       real yd
+      integer errcount
+      data errcount/0/
       if(lylog)then
-         if(wy.lt.0.01*wymin .or. wy.gt.100.*wymax) then
-            write(*,*)'ACCIS WARNING world log y value outside range:'
-     $           ,wy,' plotting outside box.'
-            yd=.1/w2ny
+         if(wy.lt.0.01*wymin)then
+            if(errcount.lt.5)then
+               write(*,*)'ACCIS WARNING world log y value',wy
+     $           ,' far below box.'
+            elseif(errcount.eq.5)then
+               write(*,*)'Further log value warnings suppressed'
+            endif
+            errcount=errcount+1
+            yd=-.01/w2ny
+c            write(*,*)naymin,w2ny,naymin+yd*w2ny
+         elseif(wy.gt.1000.*wymax) then
+            if(errcount.lt.5)then
+            write(*,*)'ACCIS WARNING world log y value',wy
+     $           ,' far outside box.'
+            elseif(errcount.eq.5)then
+               write(*,*)'Further log value warnings suppressed'
+            endif
+            errcount=errcount+1
+            yd=.01/w2ny
          else
             yd=log10(wy)-log10(wymin)
          endif

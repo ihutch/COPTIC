@@ -32,9 +32,7 @@ c Specify external the boundary setting routine.
       ipoint=0
       islp=0
 c Decide BC based on debyelen cf domain half-size rs.
-c      if(debyelen.gt.0.19*rs)then
-c Less sensitive version for tight meshes:
-      if(debyelen.gt.1.*rs)then
+      if(debyelen.gt.0.19*rs)then
 c Normal log phi-derivative=-1 :
 c         slpD=-1.
 c Adaptive boundary condition. Only approximate for non-spheres. 

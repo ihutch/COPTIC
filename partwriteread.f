@@ -148,6 +148,7 @@ c******************************************************************
       subroutine array3read(name,ifull,iuds,ied,u,ierr)
 c 3-Dimensions assumed. Version detection and extra dimension.
 c On entry, ied is the maximum allowed extra dimension.
+c           ierr if .ne.0 indicates write informational messages.
 c On exit, ied is the actual number of extra dimension. That is, the
 c number of 3d arrays actually read.
 c File name:
@@ -160,18 +161,19 @@ c File name:
 
       open(23,file=name,status='old',form='unformatted',err=101)
       read(23)charout
-      write(*,'(2a)')'Charout=',charout(1:lentrim(charout))
+c      write(*,'(2a)')'Charout=',charout(1:lentrim(charout))
       read(23)debyelen,Ti,vd,rs,phip
       read(23)ixnp,xn
       read(23)iuds
       if(charout(1:2).eq.'de')then
 c First version
-         write(*,*)'Old version file'
+         if(ierr.ne.0)write(*,*)'Old version file'
          ied=0
          read(23)(((u(i,j,k,1),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
       elseif(charout(1:2).eq.'V2')then
          read(23)ie
-         write(*,*)'New version. Number of quantities in file=',ie
+         if(ierr.ne.0)write(*,*
+     $        )'New version. Number of quantities in file=',ie
          if(ie.gt.ied)then
             write(*,*)'Greater than allowed number:',ied,' not all read'
             ie=ied
@@ -182,7 +184,7 @@ c First version
      $        =1,ied)
       endif
       close(23)
-      write(*,'(''Read back array data from '',a,3i4)')
+      if(ierr.ne.0)write(*,'(''Read back array data from '',a,3i4)')
      $     name(1:lentrim(name)),iuds
       ierr=0
       return

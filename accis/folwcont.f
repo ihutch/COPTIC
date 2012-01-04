@@ -46,6 +46,7 @@ c Color (only) Contour of z on rectangular mesh.
       cldummy(1)=0.
       call contourl(z,ppathdummy,ildx,imax,jmax,
      $     cldummy,0,xdummy,ydummy,48)
+      call color(15)
       call axbox
       call gradlegend(c1st,clast,-.2,0.,-.2,1.,.03,.false.) 
       end
@@ -134,6 +135,7 @@ c         write(*,*)ctic,c1st,xtic,x1st,cyc,xcyc,in
          endif
       endif
 c Coloring.
+c      write(*,*)'c1st,clast',c1st,clast
       if(icfil.ne.0)then
       id=4
       incolor=igetcolor() 
@@ -150,7 +152,7 @@ c Block chunky.
                x2=i+0.500001
                if(i.eq.1)x1=1.001
                if(i.eq.imax)x2=i-.001
-               icolor=(z(i,j)-c1st)*(ngradcol-1)/(clast-c1st)
+               icolor=nint((z(i,j)-c1st)*(ngradcol-1.)/(clast-c1st))
                if(icolor.gt.ngradcol-1)icolor=ngradcol-1
                if(icolor.lt.0)icolor=0
 c               write(*,*)'icolor=',icolor
@@ -566,12 +568,15 @@ c      parameter (ngradcol=256)
          endif
       endif
 
-      if(colwidth.eq.0.)colwidth=.01
       th=atan2(y2-y1,x2-x1)
 c      r=sqrt((y2-y1)**2+(x2-x1)**2)
       ct=cos(th)
       st=sin(th)
-      cpb=colwidth*(ct*(wxmax-wxmin)+st*(wymax-wymin))
+      if(colwidth.eq.0.)then
+         cpb=0.01*(ct*(wxmax-wxmin)+st*(wymax-wymin))
+      else
+         cpb=colwidth*(ct*(wxmax-wxmin)+st*(wymax-wymin))
+      endif
       incolor=igetcolor()
 
       xb=wxmin*(1.-x1) + wxmax*x1
