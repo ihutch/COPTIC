@@ -316,7 +316,9 @@ Command line values, entered following switches that take an argument
 in COPTIC, must always immediately follow the switch that invokes them
 \emph{without whitespace in between}. In other words, any numeric
 value must be embedded into the switch argument itself, not regarded
-as the next argument on the command line.
+as the next argument on the command line.  The default values of
+parameters can be checked by \verb!coptic -h! which prints out the
+actual value of the parameter at that stage in processing.
 
 \subsection{Code control parameters}
 
@@ -338,7 +340,7 @@ initialization. The total \verb!rhoinfinity! is \verb!nproc! times the value
 specified. This is the equivalent of -rn but more convenient.
 
 \paragraph{-rx....} 
-Set the potential relaxation rate per step, \verb!crelax!. Default 1.
+Set the potential relaxation rate per step, \verb!crelax!. Default 0.
 The edge potential phirein is used to set the factor chi, which
 adjusts the reinjection rate by the OML factor, and averein which
 increments the injection energy. However, the update of phirein is

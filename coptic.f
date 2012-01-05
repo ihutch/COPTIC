@@ -658,8 +658,10 @@ c Reduce the data from nodes.
                   endif
 c (Re)initialize the accumulation
                   call fvxinit(xnewlim,cellvol)
-c                  write(*,*)xlimit,vlimit
-                  call partacinit(xlimit,vlimit)
+                  call partacinit(vlimit)
+c Unless we want fsv to accumulate all the particle counts, it also
+c ought to be reinitialized here. (partexamine expects this.)
+                  call fsvzero()
                endif
                idcount=idcount+1
             endif

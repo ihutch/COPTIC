@@ -52,7 +52,7 @@ c         write(*,*)'calling subaccum'
          end
 c****************************************************************
       subroutine partacinit(vlimit)
-c Initialize bins for accumulation of the particles.
+c Initialize uniform bins for accumulation of the particles.
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'plascom.f'
@@ -245,6 +245,18 @@ c      write(*,*)'topend',i1,i2,i,vlist(i2),v
 
 c***********************************************************************
       subroutine bincalc()
+c Calculate the non-uniform bins for particle distribution accumlation.
+c There are nsbins combined bins for each dimension. 
+c These are in common subdiag:
+c ibinmap(nptdiag,mdims) is the map from uniform to combined bins
+c pointing to an nsbins bin for each of the nptdiag uniform bins.
+c vsbin(nsbins,mdims) is the center velocity of the combined bins
+c csbin(nsbins,mdims) is the number of fine bins in each combined bin
+c fsv is the sum of fv in each combined bin during the initial
+c     accumulation and bin calculation.
+c vhbin(0:nsbins,mdims) is the histogram boundaries of the combined bins
+
+
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'griddecl.f'
@@ -462,6 +474,7 @@ c**********************************************************************
      $     j=1,mdims)
       write(25)((xdiag(i,j),px(i,j),i=1,nptdiag),j=1,mdims)
       write(25)((vdiag(i,j),fv(i,j),i=1,nptdiag),j=1,mdims)
+c      write(*,'(2f10.4)')((vdiag(i,j),fv(i,j),i=1,5),j=1,mdims)
       write(25)(xnewlim(1,j),xnewlim(2,j),j=1,mdims)
       write(25)nsbins,(isfull(i),i=1,mdims),cellvol
       write(25)(((fvx(i,j,k),i=1,nsbins),j=1,mdims),k=1,nsub_tot)
@@ -560,4 +573,15 @@ c Increment one of the dimensions using arrow keys.
       endif
       goto 1
 c--------------------------------------
+      end
+c****************************************************************
+      subroutine fsvzero()
+      include 'meshcom.f'
+      include 'partcom.f'
+      include 'ptaccom.f'
+      do id=1,mdims
+         do jj=1,nsbins
+            fsv(jj,id)=0.
+         enddo
+      enddo
       end

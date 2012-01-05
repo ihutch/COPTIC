@@ -7842,3 +7842,7 @@ copticgeom.dat. Mditerate error. Mditermults error. Ok this seems to be
 caused by using ifull too small. Yes. Fixed by increasing to a decent
 number. Ought to have a more sensible check. Implemented in meshconstruct
 and in readgeom.
+
+4 Jan 2012
+Fixed some bugs in pex file writing where arrays were not being 
+properly reinitialized for subsequent writes after the first.
