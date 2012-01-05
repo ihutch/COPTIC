@@ -1,4 +1,4 @@
-
+cd 
 c************************************************************************
 c Obsolete version.
       subroutine fitrangeold(xmin,xmax,ntics,nxfac,xfac,xtic,xt1st
@@ -124,7 +124,7 @@ c Choose the increment
             n2=anint((xmin+span)/xt+0.49999)
             n1=anint(xmin/xt-0.49999)
             atr=abs((n2-n1)*xt)
-            write(*,*)i,incpos(i),atr,xt,sfac,fspan,n1,n2
+c            write(*,*)i,incpos(i),atr,xt,sfac,fspan,n1,n2
             if(atr.lt.fspan .and. abs(n2-n1).le.ntics)then
                ichoice=i
                xtic=incpos(i)
