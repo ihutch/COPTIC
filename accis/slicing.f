@@ -722,6 +722,7 @@ c Show the lineout position if it is changed.
          call vec3w(xnl(1)+xpl(1),xnl(2)+xpl(2),xnl(3)+xpl(3),1)
          goto 31
       endif
+c      write(*,*)'Returning to 21'
       goto 21
  23   continue
       call hdprset(0,0.)
