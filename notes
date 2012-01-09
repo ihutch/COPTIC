@@ -7846,3 +7846,12 @@ and in readgeom.
 4 Jan 2012
 Fixed some bugs in pex file writing where arrays were not being 
 properly reinitialized for subsequent writes after the first.
+
+6 Jan 2012
+
+Rationalize the boundary setting code in bdyroutine.f. Add slpcom.f
+and the ability to set BC type from command line.
+Encapsulate the command-line argument handling code and remove it from
+the main program to cmdline.f.
+
+CVS commit.

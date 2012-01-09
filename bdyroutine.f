@@ -1,107 +1,53 @@
 c**********************************************************************
 c This file gives examples of boundary setting for sormpi.
 c The bdyset routine can be called anything, and name passed.
+c Its arguments must of course be correct.
       subroutine bdyset(ndims,ifull,iuds,cij,u,q)
 c      call bdysetnull
       call bdysetfree(ndims,ifull,iuds,cij,u,q)
-      end
-c**********************************************************************
-      subroutine bdysetnull()
-c (ndims,ifull,iuds,cij,u,q)
-c     Null version
-      end
-c**********************************************************************
-      subroutine bdyset3sl(ndims,ifull,iuds,cij,u,q)
-      integer ndims,ifull(ndims),iuds(ndims)
-      real cij(*),u(*),q(*)
-c Specify external the boundary setting routine.
-      external bdy3slope 
-c sets the derivative to zero on boundaries 3.
-      ipoint=0
-      call mditerate(bdy3slope,ndims,ifull,iuds,ipoint,u)
       end
 c**********************************************************************
       subroutine bdysetfree(ndims,ifull,iuds,cij,u,q)
       integer ndims,ifull(ndims),iuds(ndims)
       real cij(*),u(*),q(*)
 c Specify external the boundary setting routine.
+c If    Bit-0 of islp is not set, then use logarithmic derivative.
+c else  use Mach slope condition (higher bits relevant).
       external bdyslopeDh,bdyslopescreen,bdymach
       include 'plascom.f'
-
-      common /slpcom/slpD,islp
+c      common /slpcom/slpD,islp
+      include 'slpcom.f'
       ipoint=0
-      islp=0
-c Decide BC based on debyelen cf domain half-size rs.
-      if(debyelen.gt.0.19*rs)then
+c      islp=0
+      if(ibits(islp,0,1).eq.0)then
 c Normal log phi-derivative=-1 :
 c         slpD=-1.
 c Adaptive boundary condition. Only approximate for non-spheres. 
 c Direct logarithmic gradient setting.
          slpD=-(1.+rs*sqrt(1.+1./Ti)/debyelen)
          call mditerate(bdyslopeDh,ndims,ifull,iuds,ipoint,u)
-c Explicit screening uses buggy bdyslopescreen.
+c Explicit screening uses buggy bdyslopescreen. Obsolete.
 c         slpD=debyelen/sqrt(1.+1./Ti)
 c         call mditerate(bdyslopescreen,ndims,ifull,iuds,ipoint,u)
       else
-c Large domain. Use Mach boundary condition on slope only.
-c Make Face 3 phi=0.
-c      islp=8
-c Mach boundary condition for drift vd.
-c drift angles larger than about 1.5 cause instabilities.
-         slpD=min(vd,1.5)
-c         slpD=vd
+c Use Mach boundary condition on slope only.
+c To make Face 3 phi=0. Set bit-3 of islp =8
+c Mach boundary condition for drift vd. M-value in slpD.
+c Drift angles larger than about 1.5 cause instabilities.
+         if(slpD.gt.1.5)then
+            slpD=min(vd,1.5)
+            write(*,*)'Mach BC slpD too large. Reset to',slpD
+         endif
          call mditerate(bdymach,ndims,ifull,iuds,ipoint,u)
       endif
       end
 c************************************************************************
-      subroutine bdy3slope(inc,ipoint,indi,ndims,iused,u)
-c Version of bdyroutine that sets derivative=0 on 3-boundary.
-      integer ipoint,inc
-      integer indi(ndims),iused(ndims)
-      real u(*)
-
-c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerate argument conventions.
-      parameter (mdims=10)
-      integer iLs(mdims+1)
-      common /iLscom/iLs
-
-c Algorithm: take steps of 1 in all cases except
-c when on a lower boundary face of dimension 1. 
-c There the step is iused(1)-1.
-      inc=1
-      do n=ndims,1,-1
-c------------------------------------------------------------------
-c Between here and ^^^ is boundary setting. Adjust upper and lower.
-         if(indi(n).eq.0)then
-c The exception in step. Do not change!:
-            if(n.eq.1)inc=iused(1)-1
-c On lower boundary face
-            u(ipoint+1)=0.
-            if(n.eq.3)then
-c First derivative is zero:
-               u(ipoint+1)=u(ipoint+1+iLs(n))
-            endif
-c Second derivative is zero:
-c               u(ipoint+1)=2.*u(ipoint+1+iLs(n))-u(ipoint+1+2*iLs(n))
-            goto 101
-         elseif(indi(n).eq.iused(n)-1)then
-c On upper boundary face
-            u(ipoint+1)=0.
-            if(n.eq.3) u(ipoint+1)=u(ipoint+1-iLs(n))
-            goto 101
-         endif
-c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-      enddo
-      write(*,*)'BDY3s Error. We should not be here',n,ipoint,indi
-      stop
- 101  continue
-c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
-      end
-c************************************************************************
       subroutine bdyslopeDh(inc,ipoint,indi,ndims,iused,u)
 c Version of bdyroutine that sets logarithmic 'radial' gradient
-c equal to D
+c equal to D=slpD
+c BC is du/dr=D u/r     in the form   (ub-u0)=  D*(ub+u0)*f/(1-f)
+c where f = Sum_j[(xb_j+x0_j)dx_j]/(2*rm^2), dx=xb-x0
+c Thus ub=u0(1-f-D.f)/(1-f+D.f) using radii from position (0,0,..)
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
       real u(*)
@@ -113,7 +59,7 @@ c Can't be passed here because of mditerate argument conventions.
       common /iLscom/iLs
 
       include 'meshcom.f'
-      common /slpcom/slpD,islp
+      include 'slpcom.f'
       D=slpD
 c Algorithm: take steps of 1 in all cases except when on a lower
 c boundary face of dimension 1 (and not other faces).  There the step is
@@ -161,7 +107,12 @@ c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
       end
 c************************************************************************
       subroutine bdymach(inc,ipoint,indi,ndims,iused,u)
-c Version of bdyroutine that sets   du/dr + M du/dz =0.
+c Version of bdyroutine that sets the BC on the x, y boundaries
+c as being  du/dr + M du/dz =0. (r the cylindrical radius)
+c The z-mach number, M, is the value of slpD in slpcom.
+c Default z-boundary conditions: du/dz=0
+c islp indicates other BC choices as follows:
+c    Bit-3 (8): set BC at lower-z boundary u=0.
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
       real u(*)
@@ -172,7 +123,7 @@ c Can't be passed here because of mditerate argument conventions.
       common /iLscom/iLs
 c Value of mach number passed in common.
       include 'meshcom.f'
-      common /slpcom/slpD,islp
+      include 'slpcom.f'
       DM=slpD
 c Algorithm: take steps of 1 in all cases except when on a lower
 c boundary face of dimension 1 (and not other faces).  There the step is
@@ -250,25 +201,12 @@ c -M*(fac/r)*dubydz is the radial difference, and add z-difference.
       endif
 c Special cases:
       if(ibits(islp,3,1).ne.0)then
-c Bit 3+1 set, put lower z-face to zero.
+c Bit 3(+1) (=8) set, put lower z-face to zero.
          if(indi(n).eq.0)u(ipoint+1)=0.
       endif
 c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
       end
-c**********************************************************************
-      subroutine bdyslope0(ndims,ifull,iuds,cij,u,q)
-      integer ndims,ifull(ndims),iuds(ndims)
-      real cij(*),u(*),q(*)
-c Specify external the boundary setting routine.
-      external bdyslopeDh,bdyslopescreen,bdymach
-      common /slpcom/slpD,islp
-      ipoint=0
-      islp=0
-      slpD=0.
-      call mditerate(bdyslopeDh,ndims,ifull,iuds,ipoint,u)
-      end
-c************************************************************************
 c**********************************************************************
 c The logic of the following might miss some corners.
 c************************************************************************
@@ -288,7 +226,7 @@ c Can't be passed here because of mditerate argument conventions.
 
       real x(mdims)
       include 'meshcom.f'
-      common /slpcom/slpD,islp
+      include 'slpcom.f'
 
       r2=r2indi(ndims,indi,x)
       r1=sqrt(r2)
@@ -347,3 +285,81 @@ c using information in meshcom.
          r2indi=r2indi+x(i)**2
       enddo
       end
+c********************************************************************
+c********************************************************************
+c Obsolete or Currently unused routines:
+c**********************************************************************
+      subroutine bdyset3sl(ndims,ifull,iuds,cij,u,q)
+      integer ndims,ifull(ndims),iuds(ndims)
+      real cij(*),u(*),q(*)
+c Specify external the boundary setting routine.
+      external bdy3slope 
+c sets the derivative to zero on boundaries 3.
+      ipoint=0
+      call mditerate(bdy3slope,ndims,ifull,iuds,ipoint,u)
+      end
+c************************************************************************
+      subroutine bdy3slope(inc,ipoint,indi,ndims,iused,u)
+c Version of bdyroutine that sets derivative=0 on 3-boundary.
+      integer ipoint,inc
+      integer indi(ndims),iused(ndims)
+      real u(*)
+
+c Structure vector needed for finding adjacent u values.
+c Can't be passed here because of mditerate argument conventions.
+      parameter (mdims=10)
+      integer iLs(mdims+1)
+      common /iLscom/iLs
+
+c Algorithm: take steps of 1 in all cases except
+c when on a lower boundary face of dimension 1. 
+c There the step is iused(1)-1.
+      inc=1
+      do n=ndims,1,-1
+c------------------------------------------------------------------
+c Between here and ^^^ is boundary setting. Adjust upper and lower.
+         if(indi(n).eq.0)then
+c The exception in step. Do not change!:
+            if(n.eq.1)inc=iused(1)-1
+c On lower boundary face
+            u(ipoint+1)=0.
+            if(n.eq.3)then
+c First derivative is zero:
+               u(ipoint+1)=u(ipoint+1+iLs(n))
+            endif
+c Second derivative is zero:
+c               u(ipoint+1)=2.*u(ipoint+1+iLs(n))-u(ipoint+1+2*iLs(n))
+            goto 101
+         elseif(indi(n).eq.iused(n)-1)then
+c On upper boundary face
+            u(ipoint+1)=0.
+            if(n.eq.3) u(ipoint+1)=u(ipoint+1-iLs(n))
+            goto 101
+         endif
+c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      enddo
+      write(*,*)'BDY3s Error. We should not be here',n,ipoint,indi
+      stop
+ 101  continue
+c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
+      end
+c**********************************************************************
+      subroutine bdyslope0(ndims,ifull,iuds,cij,u,q)
+      integer ndims,ifull(ndims),iuds(ndims)
+      real cij(*),u(*),q(*)
+c Specify external the boundary setting routine.
+      external bdyslopeDh,bdyslopescreen,bdymach
+      include 'slpcom.f'
+      ipoint=0
+      islp=0
+      slpD=0.
+      call mditerate(bdyslopeDh,ndims,ifull,iuds,ipoint,u)
+      end
+c**********************************************************************
+      subroutine bdysetnull()
+c   (ndims,ifull,iuds,cij,u,q)
+c     Null version
+      end
+c************************************************************************
+
+c********************************************************************
