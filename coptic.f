@@ -109,6 +109,7 @@ c Default zero field
 c---------------------------------------------------------------------
 c This necessary here so one knows early the mpi structure.
 c Otherwise could have been hidden in sormpi and pass back numprocs.
+      myid=0
       call mpigetmyid(myid,nprocs,ierr)
       if(myid.ne.0) lmyidhead=.false.
       numprocs=nprocs

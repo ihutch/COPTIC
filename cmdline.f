@@ -51,7 +51,6 @@ c Default edge-potential (chi) relaxation rate.
       norbits=0
       ickst=0
       iavesteps=100
-      lmyidhead=.true.
       ndiags=0
       ifplot=-1
       iwstep=99999
