@@ -9,13 +9,15 @@
       real philine(na_m),xline(na_m),dphidx(na_m),xd(na_m)
       real darray(nfx),pmax(nfx),punscale(nfx),rp(nfx),pp(nfx)
       real tp(nfx),vp(nfx)
+      integer ip2(ndims_mesh)
 
 c philineread commons
-      logical lrange,lwrite,lvd,ldiff
+      logical lrange,lwrite,lvd,ldiff,lbva
       integer iover
       character*(100)overfile
       common /linecom/xmin,xmax,ymin,ymax,lrange,lwrite
-     $     ,iover,overfile,lvd,ldiff
+     $     ,iover,overfile,lvd,ldiff,lbva
+
 
 c xfig2trace parameters.
       parameter (np=200,nt=50)
@@ -45,6 +47,7 @@ c silence warnings:
       lwrite=.false.
       iover=0
       ild=3
+      lbva=.false.
 
 c      write(*,*)nf,idl
       nf=nfx
@@ -75,22 +78,32 @@ c         write(*,*)ifull,iuds
          vp(inm)=vd
 c      call sliceGweb(ifull,iuds,u,na_m,zp,
 c     $     ixnp,xn,ifix,'potential:'//'!Ay!@')
-
 c Select the lineout into the plotting arrays.      
          if(ild.ne.0)then
             write(*,*)'Dim, Mesh-No, Positions, /debye:'
             do k=1,ndims_mesh-1
                ik=mod(ild+k-1,ndims_mesh)+1
                ip(ik)=ilinechoice(ik,inm)
+               ip2(ik)=1
                write(*,'(2i5,2f10.4)')ik,ip(ik),xn(ixnp(ik)+ip(ik))
      $              ,xn(ixnp(ik)+ip(ik))/debyelen
             enddo
+            bv=0.
+            if(lbva)then
+c Find the average boundary value. 
+               do i=1,iuds(ild)
+                  ip2(ild)=i
+                  bv=bv+ u(ip2(1),ip2(2),ip2(3))
+               enddo
+               bv=bv/iuds(ild)
+            endif
+c Get the line out.
 c            write(*,*)'ild,ip(ild)',ild,ip(ild)
             if(lwrite)write(*,*)iuds(ild)
             do i=1,iuds(ild)
                ip(ild)=i
                xline(i)=xn(ixnp(ild)+i)/debyelen
-               philine(i)=u(ip(1),ip(2),ip(3))
+               philine(i)=(u(ip(1),ip(2),ip(3))-bv)
      $              /(abs(phis)*(1.+rp(inm)/debyelen)*rp(inm)/debyelen)
                if(lwrite)write(*,'(2f10.5)')xline(i),philine(i)
             enddo
@@ -148,15 +161,22 @@ c               call labeline(xline,philine,iuds(ild),string,iwd)
                call polyline(xline,philine,iuds(ild))
                if(ldiff)call polyline(xd,dphidx,iuds(ild)-1)
             endif
-            string=' !Af!@!dp!d='
-            call fwrite(phis,iwd,2,string(lentrim(string)+1:))
-            string(lentrim(string):)='@'
-            call fwrite(rp(inm)/debyelen,iwd,2,
-     $           string(lentrim(string)+1:))
-            string(lentrim(string):)='!Al!@'
-            if(rp(inm)/debyelen.ge.0.01)
-     $           call legendline(.5,(.01+inm*.05),0,
-     $           string(1:lentrim(string)))
+            if(lvd)then
+               string=' !Av!@!dd!d='
+               call fwrite(vd,iwd,2,string(lentrim(string)+1:))
+               call legendline(.5,(.01+inm*.05),0,
+     $              string(1:lentrim(string)))
+            else
+               string=' !Af!@!dp!d='
+               call fwrite(phis,iwd,2,string(lentrim(string)+1:))
+               string(lentrim(string):)='@'
+               call fwrite(rp(inm)/debyelen,iwd,2,
+     $              string(lentrim(string)+1:))
+               string(lentrim(string):)='!Al!@'
+               if(rp(inm)/debyelen.ge.0.01)
+     $              call legendline(.5,(.01+inm*.05),0,
+     $              string(1:lentrim(string)))
+            endif
             nplot=nplot+1
          endif
 
@@ -292,11 +312,11 @@ c the logic will break if it is changed by -l in the middle.
       integer nf,ild,ilinechoice(ndims_mesh,nf)
       integer idj(ndims_mesh)
 
-      logical lrange,lwrite,lvd,ldiff
+      logical lrange,lwrite,lvd,ldiff,lbva
       integer iover
       character*(100) overfile
       common /linecom/xmin,xmax,ymin,ymax,lrange,lwrite
-     $     ,iover,overfile,lvd,ldiff
+     $     ,iover,overfile,lvd,ldiff,lbva
 
       ifull(1)=na_i
       ifull(2)=na_j
@@ -342,6 +362,7 @@ c Deal with arguments
                iover=1
  14            continue
             endif
+            if(argument(1:2).eq.'-b')lbva=.not.lbva
             if(argument(1:2).eq.'-v')lvd=.true.
             if(argument(1:2).eq.'-w')lwrite=.true.
             if(argument(1:2).eq.'-d')ldiff=.true.
@@ -401,6 +422,7 @@ c     $     //' [ccpicgeom.dat'
       write(*,*)'Using <r>=1/<p> is appropriate for point charges'
       write(*,301)' -v sort/mark by vd, not radius.'
       write(*,301)' -d plot the derivative of potential as well'
+      write(*,301)' -b subtract boundary value of phi'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue
