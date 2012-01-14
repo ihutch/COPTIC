@@ -12,11 +12,11 @@
       integer ip2(ndims_mesh)
 
 c philineread commons
-      logical lrange,lwrite,lvd,ldiff,lbva
+      logical lrange,lwrite,lvd,ldiff,lbva,llout
       integer iover
       character*(100)overfile
       common /linecom/xmin,xmax,ymin,ymax,lrange,lwrite
-     $     ,iover,overfile,lvd,ldiff,lbva
+     $     ,iover,overfile,lvd,ldiff,lbva,llout
 
 
 c xfig2trace parameters.
@@ -69,7 +69,7 @@ c         write(*,*)ifull,iuds
          enddo
          
          if(pp(inm).ne.0.)then
-            write(*,*)'Scaling internal phip by factor ',pp(inm)
+            write(*,*)'Scaling internal phip',phip,' by factor ',pp(inm)
             phis=phip*pp(inm)
          else
             phis=phip
@@ -162,10 +162,17 @@ c               call labeline(xline,philine,iuds(ild),string,iwd)
                if(ldiff)call polyline(xd,dphidx,iuds(ild)-1)
             endif
             if(lvd)then
-               string=' !Av!@!dd!d='
+               string=' M='
                call fwrite(vd,iwd,2,string(lentrim(string)+1:))
-               call legendline(.5,(.01+inm*.05),0,
-     $              string(1:lentrim(string)))
+               if(llout)then
+                  call winset(.false.)
+                  call legendline(-0.5,(.01+inm*.05),0,
+     $                 string(1:lentrim(string)))
+                  call winset(.true.)
+               else
+                  call legendline(.5,(.01+inm*.05),0,
+     $                 string(1:lentrim(string)))
+               endif
             else
                string=' !Af!@!dp!d='
                call fwrite(phis,iwd,2,string(lentrim(string)+1:))
@@ -312,11 +319,11 @@ c the logic will break if it is changed by -l in the middle.
       integer nf,ild,ilinechoice(ndims_mesh,nf)
       integer idj(ndims_mesh)
 
-      logical lrange,lwrite,lvd,ldiff,lbva
+      logical lrange,lwrite,lvd,ldiff,lbva,llout
       integer iover
       character*(100) overfile
       common /linecom/xmin,xmax,ymin,ymax,lrange,lwrite
-     $     ,iover,overfile,lvd,ldiff,lbva
+     $     ,iover,overfile,lvd,ldiff,lbva,llout
 
       ifull(1)=na_i
       ifull(2)=na_j
@@ -337,6 +344,7 @@ c Defaults and silence warnings.
       rread=1.
       iover=0
       phiread=0.
+      llout=.false.
 
 c Deal with arguments
       if(iargc().eq.0) goto 201
@@ -364,6 +372,7 @@ c Deal with arguments
             endif
             if(argument(1:2).eq.'-b')lbva=.not.lbva
             if(argument(1:2).eq.'-v')lvd=.true.
+            if(argument(1:2).eq.'-m')llout=.not.llout
             if(argument(1:2).eq.'-w')lwrite=.true.
             if(argument(1:2).eq.'-d')ldiff=.true.
 
@@ -423,6 +432,7 @@ c     $     //' [ccpicgeom.dat'
       write(*,301)' -v sort/mark by vd, not radius.'
       write(*,301)' -d plot the derivative of potential as well'
       write(*,301)' -b subtract boundary value of phi'
+      write(*,301)' -m move legend outside box'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue
