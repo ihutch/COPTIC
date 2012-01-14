@@ -7855,3 +7855,8 @@ Encapsulate the command-line argument handling code and remove it from
 the main program to cmdline.f.
 
 CVS commit.
+
+14 Jan 2012
+Trying out second derivative style boundary condition at trailing edge.
+Doesn't seem to converge during SOR, although does not blow up, when
+lambda=1, vd=.2. but dxk2 is too big: 2.6

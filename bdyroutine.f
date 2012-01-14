@@ -15,8 +15,11 @@ c If    Bit-0 of islp is not set, then use logarithmic derivative.
 c else  use Mach slope condition (higher bits relevant).
       external bdyslopeDh,bdyslopescreen,bdymach
       include 'plascom.f'
-c      common /slpcom/slpD,islp
+      include 'meshcom.f'
       include 'slpcom.f'
+      integer ifirst
+      data ifirst/1/
+c      write(*,*)'1 islp=',islp
       ipoint=0
 c      islp=0
       if(ibits(islp,0,1).eq.0)then
@@ -30,6 +33,7 @@ c Explicit screening uses buggy bdyslopescreen. Obsolete.
 c         slpD=debyelen/sqrt(1.+1./Ti)
 c         call mditerate(bdyslopescreen,ndims,ifull,iuds,ipoint,u)
       else
+c      write(*,*)'islp=',islp,vd,debyelen
 c Use Mach boundary condition on slope only.
 c To make Face 3 phi=0. Set bit-3 of islp =8
 c Mach boundary condition for drift vd. M-value in slpD.
@@ -37,6 +41,23 @@ c Drift angles larger than about 1.5 cause instabilities.
          if(slpD.gt.1.5)then
             slpD=min(vd,1.5)
             write(*,*)'Mach BC slpD too large. Reset to',slpD
+         endif
+         if(ibits(islp,13,1).eq.1)then
+c Second derivative setting on trailing edge.
+            dx=xn(ixnp(4))-xn(ixnp(4)-1)
+            if(vd*debyelen.gt.0)then
+               dxk2=(dx/(vd*debyelen))**2
+               if(ifirst.eq.1)write(*,*)'2nd deriv BC, dxk2=',dxk2
+               ifirst=0
+               if(dxk2.gt.1)then
+                  write(*,*)'dxk2 too large',dxk2,' Switching off.'
+                  islp=islp-8192
+               endif
+            else
+               write(*,*)'Cannot use second derivative when vd=',vd,
+     $              ' debylen=',debyelen,' Switching off.'
+               islp=islp-8192
+            endif
          endif
          call mditerate(bdymach,ndims,ifull,iuds,ipoint,u)
       endif
@@ -112,7 +133,9 @@ c as being  du/dr + M du/dz =0. (r the cylindrical radius)
 c The z-mach number, M, is the value of slpD in slpcom.
 c Default z-boundary conditions: du/dz=0
 c islp indicates other BC choices as follows:
-c    Bit-3 (8): set BC at lower-z boundary u=0.
+c    Bit-3  (8): set BC at lower-z boundary u=0.
+c    Bit-13 (8192): set BC at upper-z boundary u''= -k^2u, k=1/M.lambdaD
+c dxk2 is in slpcom.
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
       real u(*)
@@ -165,7 +188,12 @@ c Fall back to du/dz=0.
          if(indi(ndims).eq.0)then
             u(ipoint+1)=u(ipoint+1+iLs(n))
          else
-            u(ipoint+1)=u(ipoint+1-iLs(n))
+            if(ibits(islp,13,1).ne.0)then
+               u(ipoint+1)=(2.-dxk2)*u(ipoint+1-iLs(n))
+     $              -u(ipoint+1-2*iLs(n))
+            else
+               u(ipoint+1)=u(ipoint+1-iLs(n))
+            endif
          endif
          inc=1
       else

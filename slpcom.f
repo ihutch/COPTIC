@@ -1,3 +1,3 @@
       integer islp
-      real slpD
-      common /slpcom/slpD,islp
+      real slpD,dxk2
+      common /slpcom/slpD,islp,dxk2

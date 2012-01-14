@@ -238,7 +238,9 @@ c         call helpusage()
      $     ,'     Bits:1 write, 2 plot.'
       write(*,301)' -md   set No of diag-moments(7). [',ndiags
       write(*,301)' -BC   set boundary condition type[',islp
-     $     ,'     Bits:1 Mach/Log[=0]  2-4:Face1-3=0'
+     $     ,'     E.g. 8201=1(1)+4(8)+13(8192)'
+      write(*,301)
+     $     '     Bits:1 Mach/Log[=0]  2-7:Face1-6=0  8-13:u''''=k2u'
 c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' [-of]<filename>  set name of object data file.'
      $     //'   ['//objfilename(1:lentrim(objfilename))
