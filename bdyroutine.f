@@ -17,9 +17,9 @@ c else  use Mach slope condition (higher bits relevant).
       include 'plascom.f'
       include 'meshcom.f'
       include 'slpcom.f'
+      include 'myidcom.f'
       integer ifirst
       data ifirst/1/
-c      write(*,*)'1 islp=',islp
       ipoint=0
 c      islp=0
       if(ibits(islp,0,1).eq.0)then
@@ -40,21 +40,25 @@ c Mach boundary condition for drift vd. M-value in slpD.
 c Drift angles larger than about 1.5 cause instabilities.
          if(slpD.gt.1.5)then
             slpD=min(vd,1.5)
-            write(*,*)'Mach BC slpD too large. Reset to',slpD
+            if(myid.eq.0)write(*,*)
+     $           'Mach BC slpD too large. Reset to',slpD
          endif
          if(ibits(islp,13,1).eq.1)then
 c Second derivative setting on trailing edge.
             dx=xn(ixnp(4))-xn(ixnp(4)-1)
             if(vd*debyelen.gt.0)then
                dxk2=(dx/(vd*debyelen))**2
-               if(ifirst.eq.1)write(*,*)'2nd deriv BC, dxk2=',dxk2
+               if(ifirst.eq.1 .and. myid.eq.0)
+     $              write(*,*)'2nd deriv BC, dxk2=',dxk2
                ifirst=0
                if(dxk2.gt.1)then
-                  write(*,*)'dxk2 too large',dxk2,' Switching off.'
+                  if(myid.eq.0)write(*,*)'dxk2 too large',dxk2
+     $                 ,' Switching off.'
                   islp=islp-8192
                endif
             else
-               write(*,*)'Cannot use second derivative when vd=',vd,
+               if(myid.eq.0)write(*,*)
+     $              'Cannot use second derivative when vd=',vd,
      $              ' debylen=',debyelen,' Switching off.'
                islp=islp-8192
             endif
