@@ -124,16 +124,18 @@ c Choose the increment
             n2=anint((xmin+span)/xt+0.49999)
             n1=anint(xmin/xt-0.49999)
             atr=abs((n2-n1)*xt)
-c            write(*,*)i,incpos(i),atr,xt,sfac,fspan,n1,n2
-            if(atr.lt.fspan .and. abs(n2-n1).le.ntics)then
+c            write(*,*)i,incpos(i),atr,xt,sfac,fspan,n1,n2,ntics
+c            if(atr.lt.fspan .and. abs(n2-n1).le.ntics)then
+            if(atr.lt.fspan .and. abs(n2-n1).le.ntics
+     $           .and. abs(n2-n1).ge.3)then
                ichoice=i
                xtic=incpos(i)
                fspan=atr*.9999
             endif
          enddo
+         if(ichoice.eq.0)write(*,*)'Fitrange choice error',ichoice,nsfac
+     $        ,sfac,xmin,span,ntics
       endif
-c      if(ichoice.eq.0)write(*,*)'Fitrange choice error',ichoice,nsfac
-c     $     ,sfac,xmin,span,ntics
 c Don't do this final setting till the end.
       xtic=sign(xtic,span)*sfac
 c Use span to cope with error cases:

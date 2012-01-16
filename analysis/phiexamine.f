@@ -235,8 +235,11 @@ c         write(*,*)'ipow',ipow
          call fwrite(delta,iwd,max(-ipow,0)+1,string)
          call boxtitle('!Af!@-contours ('//string(1:iwd)
      $        //'T!de!d spaced)')
-         if(isw-2*(isw/2).ne.0)
-     $        call gradlegend(-phimax,phimax,-.6,0.,-.6,1.,-.04,.false.) 
+         if(isw-2*(isw/2).ne.0)then
+            xgl=-0.3*(xn(ixnp(3)+iuds(3))-xn(ixnp(3)+1))/(2.*rval(nr))
+c            write(*,*)'xgl=',xgl,phimax
+            call gradlegend(-phimax,phimax,xgl,0.,xgl,1.,-.04,.false.) 
+         endif
 c Indicate rectangle limits.
          yl(1)=xn(ixnp(3)+1)
          yl(2)=xn(ixnp(3)+iuds(3))

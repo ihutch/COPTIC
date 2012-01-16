@@ -613,6 +613,7 @@ c         write(*,*)xb,yb
       delta=0.
       xgmax=wx2nx(xb)
       ygmax=wy2ny(yb)
+c      write(*,*)'gradlegend fit',c1,c2 
       call gaxis(c1,c2,ngpow,first,delta,
      $	   xgmin,xgmax,ygmin,ygmax,lpara,laxlog)
 
