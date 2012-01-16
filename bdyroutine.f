@@ -48,14 +48,14 @@ c Second derivative setting on trailing edge.
             dx=xn(ixnp(4))-xn(ixnp(4)-1)
             if(vd*debyelen.gt.0)then
                dxk2=(dx/(vd*debyelen))**2
-               if(ifirst.eq.1 .and. myid.eq.0)
-     $              write(*,*)'2nd deriv BC, dxk2=',dxk2
-               ifirst=0
-               if(dxk2.gt.1)then
-                  if(myid.eq.0)write(*,*)'dxk2 too large',dxk2
-     $                 ,' Switching off.'
-                  islp=islp-8192
+               if(ifirst.eq.1 .and. myid.eq.0)then
+                  write(*,*)'2nd deriv BC, dxk2=',dxk2
+                  if(dxk2.gt.1)
+     $                 write(*,*)'dxk2 too large',dxk2,' Limit to 1.'
+c Turn off alternative                  islp=islp-8192
                endif
+               ifirst=0
+               if(dxk2.gt.1.)dxk2=1.
             else
                if(myid.eq.0)write(*,*)
      $              'Cannot use second derivative when vd=',vd,
