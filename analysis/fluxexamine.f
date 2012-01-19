@@ -8,6 +8,7 @@ c**************************************************************
       character*100 filename,argument
       integer iplot,iprint,ifmask,idimf
       real avefield(ns_ndims),avepress(ns_ndims),avepart(ns_ndims)
+      real avetotal(ns_ndims)
       real rp
       data iplot/1/iprint/1/
       data ifmask/1023/
@@ -107,11 +108,6 @@ c            write(*,*)'Plotting',k,mf_quant(k),iplot
       enddo
 
 c Plots if 
-      if(iplot.ne.0)then
-         call pltinit(1.,float(nf_step),-100.,100.)
-         call axis()
-         call axlabels('step','Force')
-      endif
       if(rp.ne.0.)write(*,'(a,f10.4,a,f10.4)')
      $     'Radius',rp,' Potential',phip
       if(idimf.eq.0)write(*,*)'   Field,       part,       press,'
@@ -149,12 +145,21 @@ c Plots if
             avefield(j)=debyelen**2*avefield(j)/float(iavenum)
             avepress(j)=avepress(j)/float(iavenum)
             avepart(j)=avepart(j)/float(iavenum)
+            avetotal(j)=avefield(j)+avepart(j)+avepress(j)
          enddo
          avecharge=avecharge/float(iavenum)
          if(iplot.ne.0)then
+            if(k.eq.1)then
+               call pltinit(1.,float(nf_step)
+     $              ,-avetotal(3),2.*avetotal(3))
+               call axis()
+               call axlabels('step','Force')
+               call winset(.true.)
+            endif
          if(imk.ne.0)then
             nplot=nplot+1
             call color(k)
+            call dashset(4)
             call iwrite(k,iwd,argument)
             call polyline(stepdata,plotdata(1,3),nf_step)
             call legendline(.1+.4*(nplot-1),.2,0,
@@ -167,7 +172,7 @@ c Plots if
             call polyline(stepdata,plotdata(1,2),nf_step)
             call legendline(.1+.4*(nplot-1),.1,0,
      $           'pressforce '//argument(1:iwd))
-            call dashset(4)
+            call dashset(0)
             call polyline(stepdata,plotdata(1,4),nf_step)
             call legendline(.1+.4*(nplot-1),.25,0,
      $           'total '//argument(1:iwd))
