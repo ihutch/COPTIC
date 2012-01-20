@@ -7885,3 +7885,7 @@ Oh well, found some bugs as a result.
 
 Fixed bug in collisional code arising when a particle slot is set to 
 empty. I had never used the collisional operation.
+
+Realize that I have not got compensating Eneutral in code at present.
+So program to put vneutral equal to vd by default. Can override with 
+the -vn switch.

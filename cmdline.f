@@ -127,6 +127,8 @@ c      if(iargc().eq.0) goto "help"
             read(argument(3:),*,err=201)vd
 c For Mach bdy, set slpD equal to M.
             slpD=vd
+c By default put the vneutral the same
+            vneutral=vd
          endif
          if(argument(1:2).eq.'-md')then 
             read(argument(4:),*,err=201)ndiags
