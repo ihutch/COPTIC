@@ -1,4 +1,5 @@
 c Collision settings
-      real colntime,subcycle,vneutral
-      integer nsubc
-      common /colncom/colntime,subcycle,nsubc,vneutral
+      real colntime,subcycle,vneutral,fcollided
+      integer nsubc,ncollided
+      common /colncom/colntime,subcycle,nsubc,vneutral,ncollided
+     $     ,fcollided

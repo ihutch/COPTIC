@@ -331,7 +331,10 @@ c     $        nrein,n_part,ioc_part,rhoinf,dt
  402     continue
       endif
 c-----------------------------------------------
-      if(lmyidhead)write(*,'(/,a)')'Step Iterations Flux:'
+      if(lmyidhead)then
+         if(colntime.ne.0)write(*,'(a,f8.2)')' Collision time=',colntime
+         write(*,'(/,a)')'Step Iterations Flux:'
+      endif
 c Main step iteration -------------------------------------
       do j=1,nsteps
          nf_step=nf_step+1
@@ -392,7 +395,7 @@ c Store the step's rhoinf, dt.
          ff_dt(nf_step)=dt
          if(lmyidhead)then
 c write out flux to object 1.
-            call fluxdiag()
+            write(*,'(f6.3,''| '',$)')fluxdiag()
             if(mod(nf_step,5).eq.0)write(*,*)
             if(mod(nf_step,(nsteps/25+1)*5).eq.0)then
                write(*,

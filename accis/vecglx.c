@@ -830,7 +830,7 @@ FORT_INT *i3d;
       getwy2ny_(&yw,&yn);
       tn2s_(&xn,&yn,&ixs,&iys);
       xs=ixs; ys=iys;
-      li=(int) h[i];
+      li=(int) h[i] +1; /* +1 compensates for adj in gradtri */
       /* printf("xw %f, yw %f, xn %f, yn %f, xs %.0f, ys %.0f, li %d\n", 
 	 xw,yw,xn,yn,xs,ys,li); */
       acgradcolor_(&li);

@@ -139,7 +139,12 @@ c            if(.false.)then
             if(xfidf.ge.0.)then
                iincm=iinc-iuinc(idf)
                iincp=iinc+2*iuinc(idf)
-               icptm=cij(1+ic1*(iinc-iuinc(idf)))
+               if(iincm.lt.0)then
+c                  write(*,*)'1st iinc,iincm,iincp',iinc,iincm,iincp
+                  icptm=0
+               else
+                  icptm=cij(1+ic1*(iinc-iuinc(idf)))
+               endif
                icptp=cij(1+ic1*(iinc+2*iuinc(idf)))
                if((iincm.ge.0).and.(icptm.ne.0).and.
      $              (idob_sor(iregion_sor,icptm).eq.iregion))then
@@ -185,7 +190,12 @@ c                     write(*,*)'2nd ',xfidf,' weights=',weights(ii)
             else
                iincm=iinc-2*iuinc(idf)
                iincp=iinc+iuinc(idf)
-               icptm=cij(1+ic1*(iinc-2*iuinc(idf)))
+               if(iincm.le.0)then
+c                  write(*,*)'idf, iinc,iincm,iincp',idf,iinc,iincm,iincp
+                  icptm=0
+               else
+                  icptm=cij(1+ic1*(iinc-2*iuinc(idf)))
+               endif
                icptp=cij(1+ic1*(iinc+iuinc(idf)))
                if((iincp.le.iuinc(ndims+1))
      $              .and.(icptp.ne.0).and.(idob_sor(iregion_sor,icptp)

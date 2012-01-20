@@ -51,6 +51,7 @@ c Make this always last to use the checks.
 
       tisq=sqrt(Ti)
       lcollided=.false.
+      ncollided=0
 
       if(ndims.ne.ndims_mesh.or. ndims.ne.3)
      $        stop 'Padvnc incorrect ndims number of dimensions'
@@ -186,6 +187,7 @@ c We collided during this step. Do the partial step.
                lcollided=.true.
                dtremain=dtpos+dtremain-dtc
                dtpos=dtc
+               ncollided=ncollided+1
             endif
          endif 
 c---------------- Particle Moving ----------------
@@ -271,7 +273,6 @@ c Treat collided particle at (partial) step end
             call postcollide(i,tisq)
             lcollided=.false.
          endif
-
          call partlocate(i,ixp,xfrac,inewregion,linmesh)
 c---------------------------------
 c If we crossed a boundary, do tallying.
@@ -283,8 +284,10 @@ c------------ Possible Reinjection ----------
      $        .not.linregion(ibool_part,ndims,x_part(1,i)))then
 c We left the mesh or region.
             if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)goto 200
-c Reinject because we haven't exhausted complement. Else empty slot
+c Reinject because we haven't exhausted complement. 
+c Else empty slot and move to next particle.
             if_part(i)=0
+            goto 300
          else
 c The standard exit point for a particle that is active
             iocthis=i
@@ -367,6 +370,10 @@ c            if(myid.eq.0)write(*,*)'PROBLEM: phirein>0:',phirein
          endif
       else
          if(ninjcomp.gt.100)write(*,*)'No reinjections'
+      endif
+
+      if(colntime.gt.0)then
+         fcollided=float(ncollided)/n_part
       endif
 
 c      if(nsubc.ne.0) write(*,*)'Subcycled:',nsubc

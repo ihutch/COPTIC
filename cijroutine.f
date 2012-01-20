@@ -636,6 +636,8 @@ c Slightly more flexible ascii form:
       end
 c*********************************************************************
       subroutine text3graphs(ndims,iuds,ifull,cij,volumes)
+      integer iuds(ndims),ifull(ndims)
+      real cij(*),volumes(*)
       call text3vgraph(ndims,iuds,ifull,volumes)
       call text3rgraph(ndims,iuds,ifull,cij)
       end

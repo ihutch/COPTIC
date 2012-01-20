@@ -37,7 +37,8 @@ dummyreduce.o : ../dummyreduce.f
 	$(G77) -c ../dummyreduce.f
 
 % : %.f  makefile $(ACCISLIB) dummyreduce.o ../libcoptic.a $(HEADERS)
-	make -C ../ libcoptic.a
+# I don't remember why this explicit form was preferred to a dependency below.
+#	make -C ../ libcoptic.a
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f dummyreduce.o ../libcoptic.a $(LIBRARIES)
 
 # Don't recompile accis every time the makefile is changed.
@@ -51,8 +52,8 @@ dummyreduce.o : ../dummyreduce.f
 %.o : %.c makefile
 	cc -c $(PROFILING) $*.c
 
-#../libcoptic.a : 
-#	make -C ../ libcoptic.a
+../libcoptic.a : 
+	make -C ../ libcoptic.a
 
 ########################################################
 $(ACCISLIB) : ../accis/*.f ../accis/*.c ../accis/*.h

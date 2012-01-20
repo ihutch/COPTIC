@@ -1113,7 +1113,7 @@ c Normal call.
 
       end
 c***********************************************************************
-      subroutine fluxdiag()
+      real function fluxdiag()
 c Get the total count to object 1 and convert to normalized flux.
 c Assuming it's a unit sphere.
       include '3dcom.f'
@@ -1124,8 +1124,7 @@ c For rhoinf, dt
       do i=1,nf_posno(nf_flux,1)
          sum=sum+ff_data(nf_address(nf_flux,1,nf_step)+i-1)
       enddo
-      flux=sum/(4.*3.14159)/rhoinf/dt
-      write(*,'(f6.3,''| '',$)')flux
+      fluxdiag=sum/(4.*3.14159)/rhoinf/dt
 c      write(*,'(a,f7.0,f8.3)')'Total flux',sum,
 c     $     sum/(4.*3.14159)/rhoinf/dt
 c      write(*,'(10f7.1)')(ff_data(nf_address(1,1,nf_step)+i-1),

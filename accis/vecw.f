@@ -79,7 +79,8 @@ c            write(*,*)naymin,w2ny,naymin+yd*w2ny
                write(*,*)'Further log value warnings suppressed'
             endif
             errcount=errcount+1
-            yd=.01/w2ny
+c            yd=.01/w2ny
+            yd=log10(1000.*wymax)
          else
             yd=log10(wy)-log10(wymin)
          endif

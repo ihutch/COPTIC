@@ -47,13 +47,13 @@ c absolute
       endif
       if(zg1-zg0.eq.0.) stop 'ERROR gradtri: zero dzng'
       hr=(ng1-ng0)/(zg1-zg0)
-
       hmin= 1.e30
       hmax=-1.e30
+      adj=0.5
       do i=1,3
          if(labs)then
 c absolute normalized to color index
-            h(i)=(d(i)-zg0)*hr+ng0
+            h(i)=(d(i)-zg0)*hr+ng0-adj
          else
 c Distance in d-direction normalized to effective color index.
             h(i)=((x(i)*d(1)+y(i)*d(2)+z(i)*d(3))/dn-zg0)*hr+ng0
@@ -67,6 +67,7 @@ c Distance in d-direction normalized to effective color index.
             imin=i
          endif
       enddo
+c      write(*,*)hmin,d(imin),hmax,d(imax)
 c At this point we have the levels in h(i). If we are using glx driver,
 c maybe do the gradient with that internal driver igradtri.
 c Otherwise, and for ps etc, do it directly. 
@@ -76,8 +77,11 @@ c      write(*,*)'Calling igradtri'
       if(pfsw.ge.0) iglx=igradtri(x,y,z,h,i3d)
 c Maybe try to do postscript gradient.
       inpg=-1
-      if(pfsw.ne.0) inpg=npgradtri(x,y,z,h,i3d)
+c This location tries a PS fill even if nonglx
+c      if(pfsw.ne.0) inpg=npgradtri(x,y,z,h,i3d)
       if(iglx.ne.0) then
+c This location only tries PS fill for glx driver.
+         if(pfsw.ne.0) inpg=npgradtri(x,y,z,h,i3d)
 c If neither call failed (if made) then we've finished. Return.
          if(inpg.ne.0) return
       endif
@@ -87,7 +91,7 @@ c Turn off screen plotting if we already succeeded.
 c Turn off ps-plotting if we succeeded.
       if(inpg.eq.1) pfsw=0
 
-c Now we have to do the gradient by hand because 
+c Now we have to do the gradient by hand
 c Index the vertices in the standard order:
       id(1)=imin
       id(2)=imax
@@ -108,8 +112,11 @@ c      lmin=max(int(hmin/istep),min(ng0,ng1)/istep)*istep
 c      lmax=min(int(hmax+istep),max(ng0,ng1))
 c But these continue to draw saturated above the range.
 c Below does not quite work at present, for reasons not understood.
+c I don't understand this assignment Dec 2011.
       lmin=nint(hmin/istep-0.5)*istep
       lmax=nint(hmax+istep-0.5)
+c      lmin=nint(hmin/istep-1)*istep
+c      lmax=nint(hmax+istep)
 c Ensure we don't divide by zero. Because we are normalized to level 
 c number, we can just add a small quantity. 
       hdn=hmid-hmin+1.e-20
@@ -125,23 +132,23 @@ c Do over the levels:
             fp=(l-hmin)/hdn
             if(fp.gt.1.)fp=1.
             if(fp.lt.0.)fp=0.
-            xp(1)=x(id(1))*(1-fp)+x(id(3))*fp
-            yp(1)=y(id(1))*(1-fp)+y(id(3))*fp
-            zp(1)=z(id(1))*(1-fp)+z(id(3))*fp
+            xp(1)=x(id(1))*(1.-fp)+x(id(3))*fp
+            yp(1)=y(id(1))*(1.-fp)+y(id(3))*fp
+            zp(1)=z(id(1))*(1.-fp)+z(id(3))*fp
          else
             fp=(l-hmid)/hxd
             if(fp.gt.1.)fp=1.
             if(fp.lt.0.)fp=0.
-            xp(1)=x(id(3))*(1-fp)+x(id(2))*fp
-            yp(1)=y(id(3))*(1-fp)+y(id(2))*fp
-            zp(1)=z(id(3))*(1-fp)+z(id(2))*fp
+            xp(1)=x(id(3))*(1.-fp)+x(id(2))*fp
+            yp(1)=y(id(3))*(1.-fp)+y(id(2))*fp
+            zp(1)=z(id(3))*(1.-fp)+z(id(2))*fp
          endif
          fp=(l-hmin)/hxn
          if(fp.gt.1.)fp=1.
          if(fp.lt.0.)fp=0.
-         xp(2)=x(id(1))*(1-fp)+x(id(2))*fp
-         yp(2)=y(id(1))*(1-fp)+y(id(2))*fp
-         zp(2)=z(id(1))*(1-fp)+z(id(2))*fp
+         xp(2)=x(id(1))*(1.-fp)+x(id(2))*fp
+         yp(2)=y(id(1))*(1.-fp)+y(id(2))*fp
+         zp(2)=z(id(1))*(1.-fp)+z(id(2))*fp
          if(l.gt.lmin)then
 c         if(.true.)then
 c Except the first time, fill the polygon.
@@ -151,6 +158,7 @@ c If we crossed the mid point.
             else
                np=4
             endif
+c            write(*,'(i4,$)')l
             call gradcolor(l)
             if((isw-2*(isw/2)).eq.0)then
                call polyline(xp,yp,np)
@@ -224,7 +232,7 @@ c Direction. No d changes needed. dq->d
             x(3)=xq(1+mod(i,4))
             y(3)=yq(1+mod(i,4))
             z(3)=zq(1+mod(i,4))
-            write(*,*)i,z
+c            write(*,*)i,z
             call gradtri(x,y,z,dq,zg0,zg1,ng0,ng1,isw)
          enddo
       endif

@@ -135,6 +135,12 @@ c 'Dot short'.
 	 dashlen(2)=.005
 	 dashlen(3)=.01
 	 dashlen(4)=.01
+      elseif(i.eq.10)then
+c 'Medium dashes Long/Short breaks'.
+	 dashlen(1)=.02
+	 dashlen(2)=.005
+	 dashlen(3)=.02
+	 dashlen(4)=.02
       endif
       dashdist=1.e-6
       jmask=1

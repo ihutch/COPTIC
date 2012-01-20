@@ -16,6 +16,7 @@ c      real rzmval(nzmax),rzmpos(nzmax),zpos(nzmax)
 
       real cl(100)
       real xl(2),yl(2)
+      integer z1,z2
 c xfig2trace parameters.
       parameter (np=200,nt=50)
       real xtraces(np,nt), ytraces(np,nt)

@@ -87,7 +87,7 @@ c*********************************************************************/
       parameter (crlf=' \')
 c See lnswrt below for the end-of line character definition here.
 c g77 is incapable of handling non-printable characters properly.
-      common /cacom/ca
+      save ca
 
       data ca(00001:00023)/'%!PS-Adobe-3.0 EPSF-2.0'/
       data ca(00024:00025)/crlf/
@@ -396,7 +396,7 @@ c      call abufwrt(' color-triplet)x3',17,12)
          plx=pldx
          ply=pldy
 
-         li=h(i)
+         li=h(i)+1
          call getrgbcolor(li,ired,igreen,iblue)
          call abufwrt(spc,ns,12)
          red=ired/65535.
@@ -407,7 +407,7 @@ c      call abufwrt(' color-triplet)x3',17,12)
          call abufwrt('  0  ',5,12)
          call ibufwrt(pldx,12)
          call abufwrt(spc,ns,12)
-         call ibufwrt(pldy,12)
+         call ibufwrt(pldy,12) 
          call abufwrt(spc,ns,12)
          write(string,'(3f8.4,'' '')')red,green,blue
          call abufwrt(string,istlen(string,59)+1,12)

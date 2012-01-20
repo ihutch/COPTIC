@@ -29,9 +29,12 @@ GEOMFILE=geomcubic.dat
 # In g77 -Wno-globals silences spurious type messages on reduce.f
 # This is unrecognized by gfortan. For which no-unused is better.
 NGW=-Wno-unused
-ifeq ("$(G77)","")     
-	G77=mpif77 -f77=g77 
-	NGW=-Wno-globals
+ifeq ("$(G77)","")
+	G77=$(shell cat compiler 2>/dev/null)
+	ifeq ("$(G77)","")	
+		G77=mpif77 -f77=g77
+		NGW=-Wno-globals
+	endif
 endif
 #
 # export this so it is inherited by sub-makes.
@@ -43,7 +46,12 @@ OPTIMIZE=-O3
 COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I. 
 #COMPILE-SWITCHES = -Wall   $(OPTIMIZE) -I. -g -fbounds-check
 ##COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -g -I.
-NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
+# Noboundscheck switches are not compatible with e.g. pathscale compiler:
+ifeq ($(findstring g77,$(G77)),g77)
+	NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
+else
+	NOBOUNDS= $(COMPILE-SWITCHES)
+endif
 NOGLOBALS= $(COMPILE-SWITCHES) $(NGW)
 ##########################################################################
 ##########################################################################
@@ -82,9 +90,11 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 %.o : %.c makefile
 	cc -c $(PROFILING) $*.c
 
+##########################################
 #default target
 # Problem when using geometry that can't do smt check. 
 smt.out : $(COPTIC) copticgeom.dat
+	echo $(ISG77)
 	@if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
 	@if [ -f T1e0v000P020L1e0z005x05.phi ] ; then mv T1e0v000P020L1e0z005x05.phi prior.phi ; echo "Created prior.phi" ; fi
 	./$(COPTIC)
@@ -108,6 +118,22 @@ mpicheck : $(COPTIC)
 	mpiexec -l -n 2 ./$(COPTIC) >mpicheck.out
 	if [ -f mpicheck.prev ] ; then diff mpicheck.prev mpicheck.out ; else mv mpicheck.out mpicheck.prev  ; fi
 	mv mpicheck.out mpicheck.prev
+
+# Attempt to implement makefile configure for compiler.
+compiler : 
+	@if which mpif77 >/dev/null;\
+ then echo -n "MPI system. ";\
+  if which g76 >/dev/null ;then  echo -n "Force g77. ";GHERE="mpif77 -f77=g77";\
+  else GHERE=mpif77 ; fi\
+ else echo -n "Not MPI System. ";\
+  if which g77 >/dev/null ; then GHERE="g77";fi\
+ fi;\
+ echo "G77="$${GHERE}; G77=$${GHERE}; echo $${G77} > compiler
+# The question then is how to use this compiler setting.
+# A recursive way is:
+#	@make 
+#	@rm compiler
+## @if mpif77 | grep gfortran >/dev/null; then echo gfortran also available; fi
 
 #####################################################
 # Things to compile with non-standard switches

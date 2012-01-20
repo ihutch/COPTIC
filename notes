@@ -7860,3 +7860,28 @@ CVS commit.
 Trying out second derivative style boundary condition at trailing edge.
 Doesn't seem to converge during SOR, although does not blow up, when
 lambda=1, vd=.2. but dxk2 is too big: 2.6
+
+16 Jan 2012
+
+Struggling with segfaults with the pathscale compiler on loki.
+Using no optimization -ffortran-bounds-check -DEBUG
+
+Found some bugs in getfield that cause array bounds overrun. 
+Circumvented.
+
+Found an error in obj_geom zeroing. 
+However, there's a big problem with pathscale bounds checking. 
+It gives false positives for implied array subscripts during read
+or write. Without the -DEBUG switch those mostly don't happen. 
+
+Now we have an apparent error in the unit number for writing. 
+That implies either a compiler bug or some serious overwriting. 
+
+Actually I have a prior comment that pathscale segfaults from 
+flush. Commenting that out stops it. Should have noticed.
+Oh well, found some bugs as a result.
+
+20 Jan 2012
+
+Fixed bug in collisional code arising when a particle slot is set to 
+empty. I had never used the collisional operation.

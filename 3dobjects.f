@@ -128,7 +128,7 @@ c      real obj_geom(odata,ngeomobjmax)
 c Zero the obj_geom data.
       do j=1,odata
          do i=1,ngeomobjmax 
-            obj_geom(odata,ngeomobjmax)=0.
+            obj_geom(j,i)=0.
          enddo
       enddo
 c Read

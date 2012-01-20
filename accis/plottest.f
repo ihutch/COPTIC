@@ -52,7 +52,7 @@ c Use the built in response facility by calling with negative switch.
 c This will prompt for plotting to file.
 c      call pfset(3)
 c Set to dashed line plotting, only polylines are dashed:
-      call dashset(2)
+      call dashset(10)
 c Do a log autoplot of the arrays. x logarithmic, y linear.
       call lautoplot(x,y,length,.true.,.false.)
 c Label the axes using different fonts.

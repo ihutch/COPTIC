@@ -51,6 +51,27 @@ c x,y matrices used since last arg 2. Coloring since +16. +64 tricolor.
        call axis
        call axlabels('x','y')
        call pltend
+       call pltinit(x(1,1),x(nx,1),y(1,1),y(1,ny))
+       npixel=ipno
+       do k=1,npixel 
+          if(k.le.npixel/2)then
+             ired(k)=65535
+             iblue(k)=65535
+             igreen(k)=65535
+          else
+             ired(k)=55000
+             iblue(k)=55000
+             igreen(k)=55000
+          endif
+       enddo
+       call accisgradset(ired,igreen,iblue,ipno)
+c x,y matrices used since last arg 2. Coloring since +16. +64 tricolor.
+       isw=2+16
+       if(icolsmooth.ne.0)isw=isw+64+256*icolsmooth
+       call contourl(z,ppath,nx,nx,ny,cl,snl,x,y,isw)
+       call axis
+       call axlabels('x','y')
+       call pltend
       stop
       end
 

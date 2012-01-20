@@ -20,7 +20,7 @@ c Encapsulation of parameter setting.
       character*100 restartpath,objfilename
 
 c Local variables:
-      integer lentrim
+      integer lentrim,iargc
       external lentrim
       integer i
       real Bt
