@@ -4,11 +4,11 @@ c**************************************************************
       include '../plascom.f'
       include '../sectcom.f'
 
-      real plotdata(10000,5),stepdata(10000)
+      real plotdata(10000,6),stepdata(10000)
       character*100 filename,argument
       integer iplot,iprint,ifmask,idimf
       real avefield(ns_ndims),avepress(ns_ndims),avepart(ns_ndims)
-      real avetotal(ns_ndims)
+      real avetotal(ns_ndims),avecoln(ns_ndims)
       real rp
       data iplot/1/iprint/1/
       data ifmask/1023/
@@ -111,7 +111,7 @@ c Plots if
       if(rp.ne.0.)write(*,'(a,f10.4,a,f10.4)')
      $     'Radius',rp,' Potential',phip
       if(idimf.eq.0)write(*,*)'   Field,       part,       press,'
-     $     ,'       total,   ave over steps',n1,n2
+     $     ,'     collision,    total,  steps ave',n1,n2
       nplot=0
       do k=1,mf_obj
          imk=ifmask/2**(k-1)
@@ -121,6 +121,7 @@ c Plots if
             avefield(j)=0.
             avepart(j)=0.
             avepress(j)=0.
+            avecoln(j)=0.
          enddo
          avecharge=0.
          iavenum=0
@@ -130,6 +131,7 @@ c Plots if
             plotdata(i,3)=partforce(3,k,i)               
             plotdata(i,4)=plotdata(i,1)+plotdata(i,2)+plotdata(i,3)
             plotdata(i,5)=charge_ns(k,i)
+            plotdata(i,6)=colnforce(3,k,i)               
             stepdata(i)=i
             if(i.ge.n1 .and. i.le.n2)then
                iavenum=iavenum+1
@@ -137,6 +139,7 @@ c Plots if
                   avefield(j)=avefield(j)+fieldforce(j,k,i)
                   avepress(j)=avepress(j)+pressforce(j,k,i)
                   avepart(j)=avepart(j)+partforce(j,k,i)
+                  avecoln(j)=avecoln(j)+colnforce(j,k,i)
                enddo
                avecharge=avecharge+charge_ns(k,i)
             endif
@@ -145,6 +148,7 @@ c Plots if
             avefield(j)=debyelen**2*avefield(j)/float(iavenum)
             avepress(j)=avepress(j)/float(iavenum)
             avepart(j)=avepart(j)/float(iavenum)
+            avecoln(j)=avecoln(j)/float(iavenum)
             avetotal(j)=avefield(j)+avepart(j)+avepress(j)
          enddo
          avecharge=avecharge/float(iavenum)
@@ -172,11 +176,16 @@ c Plots if
             call polyline(stepdata,plotdata(1,2),nf_step)
             call legendline(.1+.4*(nplot-1),.1,0,
      $           'pressforce '//argument(1:iwd))
+            if(avecoln(1).ne.0)then
+               call dashset(3)
+               call polyline(stepdata,plotdata(1,6),nf_step)
+               call legendline(.1+.4*(nplot-1),.05,0,
+     $              'collisions '//argument(1:iwd))
+            endif
             call dashset(0)
             call polyline(stepdata,plotdata(1,4),nf_step)
             call legendline(.1+.4*(nplot-1),.25,0,
      $           'total '//argument(1:iwd))
-            call dashset(0)
          endif
          endif
          if(idimf.eq.0)then
@@ -186,8 +195,8 @@ c Plots if
      $           ,i3,' radius=',f7.3,' ========  Charge=',f10.4)
             do j=1,ns_ndims            
                write(*,'(5f12.5  )')
-     $              avefield(j),avepart(j),avepress(j),
-     $              avefield(j)+avepart(j)+avepress(j)
+     $              avefield(j),avepart(j),avepress(j),avecoln(j),
+     $              avefield(j)+avepart(j)+avepress(j)+avecoln(j)
             enddo
          else
             write(*,*)obj_geom(oradius,nf_geommap(k))

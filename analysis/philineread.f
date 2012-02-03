@@ -78,12 +78,15 @@ c         write(*,*)ifull,iuds
          vp(inm)=vd
 c      call sliceGweb(ifull,iuds,u,na_m,zp,
 c     $     ixnp,xn,ifix,'potential:'//'!Ay!@')
+         write(*,*)'ild=',ild
 c Select the lineout into the plotting arrays.      
-         if(ild.ne.0)then
+c         if(ild.ne.0)then
             write(*,*)'Dim, Mesh-No, Positions, /debye:'
             do k=1,ndims_mesh-1
                ik=mod(ild+k-1,ndims_mesh)+1
                ip(ik)=ilinechoice(ik,inm)
+c implement default here
+               if(ip(ik).eq.0)ip(ik)=iuds(ik)/2
                ip2(ik)=1
                write(*,'(2i5,2f10.4)')ik,ip(ik),xn(ixnp(ik)+ip(ik))
      $              ,xn(ixnp(ik)+ip(ik))/debyelen
@@ -185,7 +188,7 @@ c               call labeline(xline,philine,iuds(ild),string,iwd)
      $              string(1:lentrim(string)))
             endif
             nplot=nplot+1
-         endif
+c         endif
 
          write(*,'(a,3i4,$)')'On grid',iuds
          write(*,*)(',',xn(ixnp(kk)+1),xn(ixnp(kk+1)),kk=1,3)
@@ -421,14 +424,19 @@ c Help text
 c      write(*,301)' --objfile<filename>  set name of object data file.'
 c     $     //' [ccpicgeom.dat'
       write(*,301)' -l<idim>,<irow1>,<irow2> set fixed dimension [',ild
-      write(*,301)'    and row position in other dimensions. ['
-     $     ,(ilinechoice(k,1),k=1,ndims_mesh)
+      if(idj(1).eq.0)then
+         write(*,301)
+     $        '    and row position in other dimensions. [ 3,n/2,n/2'
+      else
+         write(*,301)'    and row position in other dimensions. ['
+     $        ,ild,idj(1),idj(2)
+      endif
       write(*,301)' -y<min>,<max>   -x<min>,<max>  set plot ranges'
       write(*,301)' -o<figfile> overplot traces using xfig2trace.'
       write(*,302)' -r<r> set radius [',rread
       write(*,302)' -p<p> set phiparticle scaling factor [',phiread
+      write(*,*)'  Use <r>=1/<p>=tiny for point charges'
       write(*,*)'-w  write out the line data'
-      write(*,*)'Using <r>=1/<p> is appropriate for point charges'
       write(*,301)' -v sort/mark by vd, not radius.'
       write(*,301)' -d plot the derivative of potential as well'
       write(*,301)' -b subtract boundary value of phi'

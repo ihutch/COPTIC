@@ -338,6 +338,7 @@ c Restart the rest of the advance
 c----------------------------------------------
 c Non-injection completion.
  300     continue
+         call bulkforce(x_part(1,i),iregion,colntime,vd)
 c Special diagnostic orbit tracking:
          if(i.le.norbits.and. if_part(i).ne.0)then
             iorbitlen(i)=iorbitlen(i)+1
@@ -645,4 +646,46 @@ c Now xg is the gyroradius.
       xc(1)=xin(1)-xg(1)
       xc(2)=xin(2)-xg(2)
       xc(3)=xin(3)-xg(3)
+      end
+c*****************************************************************
+      subroutine bulkforce(xpart,iregion,colntime,vd)
+c Add on the contribution of this particle to the collision force.
+c colntime is the collision time, vd the drift velocity, dt time step.
+c The total force is the contained momentum difference over the
+c collision time. Needs subsequently to be properly normalized.
+      include 'partcom.f'
+      include '3dcom.f'
+      real xpart(3*ns_ndims),colntime,vd
+      integer iregion
+      if(colntime.gt.0)then
+         do i=1,mf_obj
+            igeom=nf_geommap(i)
+c            if(iregion.ne.0)write(*,*)'iregion',iregion
+            if(btest(iregion,igeom-1))then
+c Inside object i->igeom which is a flux measuring object.
+               vid=0.
+c The scalar drift velocity is in the z-direction.
+               do id=1,ns_ndims
+                  if(id.eq.ns_ndims)vid=vd
+                  colnforce(id,i,nf_step)=colnforce(id,i,nf_step)+
+     $                 (vid-xpart(ns_ndims+id))
+               enddo
+c               write(*,*)'colnforce',i,colnforce(3,i,nf_step),vd
+c     $              ,xpart(ns_ndims+3),vid,iregion
+            endif
+         enddo
+      endif
+      end
+c********************************************************************
+      subroutine bulknorm(fac)
+c Normalize the bulkforce, multiplying by factor fac
+      include '3dcom.f'
+      do i=1,mf_obj
+         do id=1,ns_ndims
+            if(id.eq.ns_ndims)v=vd
+            colnforce(id,i,nf_step)=colnforce(id,i,nf_step)
+     $           *fac
+         enddo
+c         write(*,*)'bulknorm',nf_step,i,fac,colnforce(3,i,nf_step)
+      enddo
       end

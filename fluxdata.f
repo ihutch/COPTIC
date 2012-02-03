@@ -32,6 +32,7 @@ c This initialization ought not to be necessary except for partforce.
                fieldforce(i,j,k)=0.
                pressforce(i,j,k)=0.
                partforce(i,j,k)=0.
+               colnforce(i,j,k)=0.
             enddo
             charge_ns(j,k)=0.
          enddo
@@ -1259,6 +1260,7 @@ c Intersection data
       include 'sectcom.f'
 
       character*(100) charout
+
 c Zero the name first. Very Important!
 c Construct a filename that contains many parameters
 c Using the routines in strings_names.f
@@ -1268,7 +1270,7 @@ c     np=nbcat(name,'.flx')
       call nbcat(name,'.flx')
 c      write(*,*)name
       write(charout,51)debyelen,Ti,vd,rs,phip
- 51   format('debyelen,Ti,vd,rs,phip:',5f10.4)
+ 51   format('debyelen,Ti,vd,rs,phip:',5f10.4,' Version: 1')
 
 c      write(*,*)'mf_obj=',mf_obj,nf_step,mf_quant(1)
 
@@ -1291,7 +1293,8 @@ c      write(*,*)'geommap',(nf_geommap(j),j=1,mf_obj)
       write(22)(ff_data(i),i=1,ndatalen)
 c New force write.
       write(22)(((fieldforce(i,j,k),pressforce(i,j,k) ,partforce(i,j,k)
-     $     ,charge_ns(j,k),i=1,ns_ndims),j=1,mf_obj),k=1,nf_step)
+     $     ,colnforce(i,j,k),i=1,ns_ndims)
+     $     ,charge_ns(j,k),j=1,mf_obj),k=1,nf_step)
 c Object data:
       write(22)ngeomobj
       write(22)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
@@ -1321,6 +1324,14 @@ c On exit  ierr .ne.0 indicates error.
 
       open(23,file=name,status='old',form='unformatted',err=101)
       read(23)charout
+c Figure out the version:
+      iend=lentrim(charout)
+      if(charout(iend-9:iend-3).eq.'Version')then
+         read(charout(iend-1:iend),*)iversion
+         write(*,*)'Flux file version',iversion
+      else
+         iversion=0
+      endif
       read(23)debyelen,Ti,vd,rs,phip
       read(23)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
 c      write(*,*)'geommap',(nf_geommap(j),j=1,mf_obj)
@@ -1342,9 +1353,17 @@ c      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+2)-1)
  201  continue
 c      write(*,*)'Datalen',ndatalen
       read(23)(ff_data(i),i=1,ndatalen)
-      read(23,end=102, err=102)(((fieldforce(i,j,k),pressforce(i,j,k)
-     $     ,partforce(i,j,k),charge_ns(j,k),i=1,ns_ndims),j=1,mf_obj),k
-     $     =1,nf_step)
+      if(iversion.gt.0)then
+         read(23,end=102, err=102)(((fieldforce(i,j,k),pressforce(i,j,k)
+     $     ,partforce(i,j,k)
+     $     ,colnforce(i,j,k)
+     $     ,i=1,ns_ndims),charge_ns(j,k),j=1,mf_obj),k=1,nf_step)
+      else
+         read(23,end=102, err=102)(((fieldforce(i,j,k),pressforce(i,j,k)
+     $     ,partforce(i,j,k)
+     $     ,colnforce(i,j,k)
+     $     ,charge_ns(j,k),i=1,ns_ndims),j=1,mf_obj),k=1,nf_step)
+      endif
 c Object data:
       read(23)ngeomobj
       read(23)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)

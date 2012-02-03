@@ -125,10 +125,11 @@ c the size of the stress-calculating mesh in theta and psi directions
       real fieldforce(ns_ndims,nf_obj,nf_maxsteps)
       real pressforce(ns_ndims,nf_obj,nf_maxsteps)
       real partforce(ns_ndims,nf_obj,nf_maxsteps)
+      real colnforce(ns_ndims,nf_obj,nf_maxsteps)
       real charge_ns(nf_obj,nf_maxsteps)
       real surfobj(2*ns_ndims,ns_nt,ns_np,nf_obj)
       common /stress/ns_flags,surfobj,fieldforce,pressforce
-     $     ,partforce,charge_ns
+     $     ,partforce,colnforce,charge_ns
 
 c External field data (when used)
       logical lextfield

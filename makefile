@@ -33,6 +33,8 @@ ifeq ("$(G77)","")
 	G77=$(shell cat compiler 2>/dev/null)
 	ifeq ("$(G77)","")	
 		G77=mpif77 -f77=g77
+	endif
+	ifeq ("$(G77)","mpif77 -f77=g77")	
 		NGW=-Wno-globals
 	endif
 endif
@@ -94,7 +96,6 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 #default target
 # Problem when using geometry that can't do smt check. 
 smt.out : $(COPTIC) copticgeom.dat
-	echo $(ISG77)
 	@if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
 	@if [ -f T1e0v000P020L1e0z005x05.phi ] ; then mv T1e0v000P020L1e0z005x05.phi prior.phi ; echo "Created prior.phi" ; fi
 	./$(COPTIC)
@@ -120,10 +121,10 @@ mpicheck : $(COPTIC)
 	mv mpicheck.out mpicheck.prev
 
 # Attempt to implement makefile configure for compiler.
-compiler : 
+compiler :
 	@if which mpif77 >/dev/null;\
  then echo -n "MPI system. ";\
-  if which g76 >/dev/null ;then  echo -n "Force g77. ";GHERE="mpif77 -f77=g77";\
+  if which g77 >/dev/null ;then  echo -n "Force g77. ";GHERE="mpif77 -f77=g77";\
   else GHERE=mpif77 ; fi\
  else echo -n "Not MPI System. ";\
   if which g77 >/dev/null ; then GHERE="g77";fi\
@@ -133,6 +134,7 @@ compiler :
 # A recursive way is:
 #	@make 
 #	@rm compiler
+# But this does not seem to inherit G77. So you have to make compiler;make.
 ## @if mpif77 | grep gfortran >/dev/null; then echo gfortran also available; fi
 
 #####################################################
@@ -154,6 +156,7 @@ bdyroutine.o : bdyroutine.f makefile $(HEADERS)
 #####################################################
 # Main program explicit to avoid make bugs:
 $(COPTIC) : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
+	echo G77=$G77
 	@echo "      rjscheme="\'$(REINJECT)\'" " > REINJECT.f
 	$(G77)  -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f  libcoptic.a $(LIBRARIES)
 

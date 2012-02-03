@@ -7889,3 +7889,51 @@ empty. I had never used the collisional operation.
 Realize that I have not got compensating Eneutral in code at present.
 So program to put vneutral equal to vd by default. Can override with 
 the -vn switch.
+
+23 Jan 2012
+
+For collisional cases I need another force variable colnforce(i,j,k).
+This would be the rate of change of momentum in each dimension (i) for
+each object (j), and step (k). This is equal to \nu.Sum_iparticles
+(vd-v(i_p)). This is a bit tricky, since it is not evaluated by object
+intersections or surface integrals like the other forces. It has to 
+be evaluated by examining each particle and finding if it is in the 
+object under consideration. It could perhaps be incorporated into the 
+particle advance, to minimize the computational burden. The place to 
+put it is right at the end of each particle advance, using iregion.
+
+Updated the fluxdata to read and write the extra colnforce, and account
+for the version number to accomodate old versions.
+
+Implemented in the relevant places.
+
+I realize now that there's a booby trap for these diagnostics. It is
+that if I have millions of particles, and I add each one's
+contribution separately, then I end up adding roughly speaking 1. to a
+total of over a million. Therefore there's potentially lost accuracy,
+using reals. Eventually the increment will be lost. Do I have to think
+about using doubles for these? Wow, that's an issue for some other
+things too! But all the other diagnostics apply only to particles
+crossing boundaries, so they are presumably far fewer than the total
+particles. And the bulk force will also apply to far fewer particles
+provided the region of measurement is much smaller than the whole.
+But it might not be (especially in sceptic). This problem is partly
+alleviated by keeping the number of particles per node smaller than
+about a million. Have to think about this in the sceptic context as
+well. Sceptic seems to bundle up the particles into the cells first, I
+think. If so, that's a big help, provided the number of cells to be
+added together is not too large. OR provided one does preliminary sums
+in (e.g.) dimensional directions, followed by summing the sub-sums.
+The problem can in general be alleviated by making sub-sums. 
+
+Working on makefile I seem to blow away coptic.f. I've lost the additions 
+to it. I think that was mostly the addition of call to bulknorm. 
+Put it back in. I think that's all needed.
+
+How to fix the rounding problem. Probably implement an intermediate 
+summation stage around 3000 long.
+
+24 Jan 2012
+The sceptic code uses partsum and vzsum diagnostics to calculate the 
+collisional force. Therefore the most particles they sum is one cell's 
+worth. Then cells are added. Hence there's no problem.
