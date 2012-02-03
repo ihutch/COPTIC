@@ -236,6 +236,7 @@ c         call helpusage()
       write(*,301)' -a    set averaging steps.       [',iavesteps
      $     ,'     Also period of diagnostic writes.'
       write(*,301)' -w    set write-step period.     [',iwstep
+     $     ,'     If <1, only myid writes final.'
       write(*,301)' -pd   set distribution diags     [',idistp
      $     ,'     Bits:1 write, 2 plot.'
       write(*,301)' -md   set No of diag-moments(7). [',ndiags

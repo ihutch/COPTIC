@@ -463,10 +463,10 @@ c Or less than 2s if both partaccum and vaccum are called. Thus the
 c total cost is roughly 10% of particle costs.
          if(idcount.gt.0)call partdistup(xlimit,vlimit,xnewlim,
      $        cellvol,myid)
-
-         if(mod(nf_step,iwstep).eq.0)call datawrite(myid ,partfilename
-     $        ,phifilename,ifull,iuds,u,uave,qave)
-
+         if(iwstep.gt.0)then
+            if(mod(nf_step,iwstep).eq.0)call datawrite(myid
+     $           ,partfilename,phifilename,ifull,iuds,u,uave,qave)
+         endif
 
 c This non-standard fortran call works with gfortran and g77 to flush stdout.
          if(lmyidhead)call flush()
@@ -479,8 +479,8 @@ c      if(lorbitplot)call orbitplot(ifull,iuds,u,phip,rc,rs)
      $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl,norbits)
 
 c Everyone writes what they have to.
-      call datawrite(myid,partfilename,phifilename,ifull
-     $     ,iuds,u,uave,qave)
+      if(iwstep.gt.0 .or. myid.eq.0)call datawrite(myid,partfilename
+     $     ,phifilename,ifull,iuds,u,uave,qave)
       
 c-------------------------------------------------------------------
       call mpifinalize(ierr)
