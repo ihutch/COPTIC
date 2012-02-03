@@ -387,7 +387,7 @@ c      write(*,*)'Checking Step',nf_step
 c The normal call:
             call padvnc(ndims,iLs,cij,u)
          endif
-         call bulknorm(1./(rhoinf*colntime))
+         if(rhoinf*colntime.ne.0.)call bulknorm(1./(rhoinf*colntime))
          call fluxreduce()
 c Now do cij update
          call cijdirect(ndims,debyelen,error)

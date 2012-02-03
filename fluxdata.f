@@ -1306,6 +1306,15 @@ c Intersection data:
 
       close(22)
 c      write(*,*)'Wrote flux data to ',name(1:lentrim(name))
+      do k=1,nf_step
+         do j=1,mf_obj
+            do i=1,ns_ndims
+               if(.not.colnforce(i,j,k).lt.1.e30)then
+                  write(*,*)'Strange colnforce',i,j,k,colnforce(i,j,k)
+               endif
+            enddo
+         enddo
+      enddo
 
       return
  101  continue
@@ -1380,8 +1389,22 @@ c Intersection data:
      $     ,iversion
  103  close(23)
 
-c Now one might have to reconstruct nf_faceind from nf_dimlens.
+c Hack to fix nans when colnforce was wrong.
+      isc=0
+      do k=1,nf_step
+         do j=1,mf_obj
+            do i=1,ns_ndims
+               if(.not.colnforce(i,j,k).lt.1.e30)then
+                  if(isc.eq.0)write(*,*)'Strange colnforce',i,j,k
+     $                 ,colnforce(i,j,k)
+                  colnforce(i,j,k)=0.
+                  isc=isc+1
+               endif
+            enddo
+         enddo
+      enddo
 
+c Now one might have to reconstruct nf_faceind from nf_dimlens.
       if(ierr.ne.0)write(*,*)'Read back flux data from '
      $     ,name(1:lentrim(name))
 c      write(*,*)charout(1:lentrim(charout))
