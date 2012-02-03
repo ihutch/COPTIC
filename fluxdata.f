@@ -1389,7 +1389,8 @@ c Intersection data:
      $     ,iversion
  103  close(23)
 
-c Hack to fix nans when colnforce was wrong.
+c Hack to fix nans when colnforce was wrong. Delete when that data is 
+c obsolete.
       isc=0
       do k=1,nf_step
          do j=1,mf_obj

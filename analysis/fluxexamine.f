@@ -190,9 +190,10 @@ c Plots if
          endif
          if(idimf.eq.0)then
             write(*,101)k,nf_geommap(k),obj_geom(oradius,nf_geommap(k))
-     $           ,avecharge
- 101        format('========== Object',i2,' ->'
-     $           ,i3,' radius=',f7.3,' ========  Charge=',f10.4)
+     $           ,obj_geom(ocenter+2,nf_geommap(k)),avecharge
+ 101        format('===== Object',i2,' ->'
+     $           ,i3,' radius=',f7.3,' zcenter=',f7.3,' Charge='
+     $           ,f10.4,' =====')
             do j=1,ns_ndims            
                write(*,'(5f12.5  )')
      $              avefield(j),avepart(j),avepress(j),avecoln(j),
