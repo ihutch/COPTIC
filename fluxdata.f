@@ -1359,9 +1359,9 @@ c      write(*,*)'Datalen',ndatalen
      $     ,colnforce(i,j,k)
      $     ,i=1,ns_ndims),charge_ns(j,k),j=1,mf_obj),k=1,nf_step)
       else
+         write(*,*)'Old force data version',iversion
          read(23,end=102, err=102)(((fieldforce(i,j,k),pressforce(i,j,k)
      $     ,partforce(i,j,k)
-     $     ,colnforce(i,j,k)
      $     ,charge_ns(j,k),i=1,ns_ndims),j=1,mf_obj),k=1,nf_step)
       endif
 c Object data:
@@ -1376,7 +1376,8 @@ c Intersection data:
       read(23)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),
      $     ibin_sc(k),k=1,sc_ipt)
       goto 103
- 102  write(*,*)'Failed to read back forces. Old format?'
+ 102  write(*,*)'Failed to read back forces. Old format? Version='
+     $     ,iversion
  103  close(23)
 
 c Now one might have to reconstruct nf_faceind from nf_dimlens.
