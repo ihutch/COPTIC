@@ -1,5 +1,5 @@
 c*********************************************************************
-      subroutine sphereplot(objg,iobj,ioswin)
+      subroutine sphereplot(iq,objg,iobj,ioswin,fmin,fmax)
 c Plot the sphere objg, number iobj, on an already set up 3D scene.
 c iosw determines the nature of the plot
 c 0: Color code according to position.
@@ -8,12 +8,13 @@ c 2:            according to average flux-density already in nf_step+2
 
       include '3dcom.f'
       real objg(odata)
+      real fmin,fmax
       real xe(ns_ndims)
       parameter (nadef=20,ncosdef=20,pi=3.141593)
       parameter (ncorn=5)
       real rface(ncorn,ns_ndims)
       integer wp(ncorn),wc(ncorn)
-c      character*20 string
+      character*20 string
       logical lfw
       data wp/1,0,0,1,1/wc/0,0,1,1,0/
 
@@ -25,11 +26,13 @@ c      character*20 string
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
 c No flux for this object
-      iav=nf_address(1,ifobj,nf_step+iosw)
+      iav=nf_address(iq,ifobj,nf_step+iosw)
 c Find max and min of flux
-      call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
-      fmax=1.03*fmax
-      if(fmin.gt.0.)fmin=0.
+      if(fmax.eq.fmin)then
+         call minmax(ff_data(iav),nf_posno(iq,ifobj),fmin,fmax)
+         fmax=1.03*fmax
+         if(fmin.gt.0.)fmin=0.
+      endif
 c Use position arrays compatible with flux array but not too coarse.
       if(ish1.gt.nadef)then 
          ncos=ish1
@@ -105,11 +108,16 @@ c            write(*,*)'Calling facecolor',iosw
       enddo
 c This legend ought really to account for every object. But at the 
 c moment only spheres do it. 
-      if(iosw.ne.0)call gradlegend(fmin,fmax,-.4,0.,-.4,.7,-.1,.false.)
+      if(iosw.ne.0)then
+         call gradlegend(fmin,fmax,-.4,0.,-.4,.7,-.1,.false.)
+         string='Flux: iosw='
+         call iwrite(iosw,iwd,string(12:))
+         call jdrwstr(.05,.6,string,1.)
+      endif
 
       end
 c*********************************************************************
-      subroutine cubeplot(objg,iobj,ioswin)
+      subroutine cubeplot(iq,objg,iobj,ioswin)
 c Plot faces of cube object on an already set up 3D scene.
 c iosw determines the nature of the plot
 c 0: Color code according to position.
@@ -130,7 +138,7 @@ c      character*20 string
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
 
-      iav=nf_address(1,ifobj,nf_step+iosw)
+      iav=nf_address(iq,ifobj,nf_step+iosw)
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -180,7 +188,7 @@ c Set the corner offsets for this face, is.
       enddo
       end
 c*********************************************************************
-      subroutine cylplot(objg,iobj,ioswin)
+      subroutine cylplot(iq,objg,iobj,ioswin)
 c Plot divided faces of cylinder object objg.
 c iosw determines the nature of the plot
 c 0: Color code according to position.
@@ -200,7 +208,7 @@ c 2:            according to average flux-density already in nf_step+2
       ifobj=nf_map(iobj)
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
-      iav=nf_address(1,ifobj,nf_step+iosw)
+      iav=nf_address(iq,ifobj,nf_step+iosw)
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -298,7 +306,7 @@ c The eye is at angle running from minus-pi to plus-pi.
 
       end
 c*********************************************************************
-      subroutine cylgplot(objg,iobj,ioswin)
+      subroutine cylgplot(iq,objg,iobj,ioswin)
 c Plot divided faces of non-aligned cylinder object objg.
 c iosw determines the nature of the plot
 c 0: Color code according to position.
@@ -318,7 +326,7 @@ c 2:            according to average flux-density already in nf_step+2
       ifobj=nf_map(iobj)
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
-      iav=nf_address(1,ifobj,nf_step+iosw)
+      iav=nf_address(iq,ifobj,nf_step+iosw)
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -421,7 +429,7 @@ c Transform to world
 
       end
 c********************************************************************
-      subroutine pllelplot(objg,iobj,ioswin)
+      subroutine pllelplot(iq,objg,iobj,ioswin)
 c Plot divided faces of parallelopiped object objg.
 c iosw determines the nature of the plot
 c 0: Color code according to position.
@@ -443,7 +451,7 @@ c      character*20 string
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
 
-      iav=nf_address(1,ifobj,nf_step+iosw)
+      iav=nf_address(iq,ifobj,nf_step+iosw)
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -506,13 +514,13 @@ c*******************************************************************
      $     ,i2,lfw,isign)
 c Color the facet of the object iobj corresponding to imin,k2,k3 (is,i2)
 c If iosw=0 with a color simply to delineate it.
-c If iosw=1 with a color corresponding to the average flux.
-c If iosw=2 with a color corresponding to the average flux density.
+c If iosw.ne.0 with a color corresponding to the data at ff_data(iav+offsets)
 c If lfw=.true. then annotate the facet.
 c Arguments:
 c imin is the face index.
 c k2,k3 are the indexes of the facet within the face.
-c iobj is the object. iav is the address of the start of the face
+c iobj is the object. 
+c iav is the address of the start of the face within ff_data.
 c rface contains the 5 corners of the facet.
 c fmin and fmax are the limits of the flux range contoured.
 c i2 is the dimension-index of the first facet index
@@ -592,14 +600,18 @@ c Sort the values zta of length ngeomobj returning sorted index.
       enddo
       end
 c*******************************************************************
-c Plot edges/faces of objects. Window size rs.
-      subroutine objplot(rs,ioswin)
+c Plot edges/faces of objects.
+      subroutine objplot(iq,rs,ioswin,iomask)
 c iosw determines the nature of the plot
 c 0: Color code according to position.
 c 1:            according to average flux already in nf_step+1
 c 2:            according to average flux density in nf_step+2
 c Byte 2: 256 plot intersections, 0 don't plot intersections.
-      integer iosw
+c iomask is a mask where non-zero bits mask _out_ objects.
+c iq references the quantity, 1 flux, 2-4 momentum etc, to be plotted.
+c rs gives the Window size
+      integer iq,iosw,iomask
+      real rs
       include '3dcom.f'
       include 'sectcom.f'
       integer index(ngeomobjmax)
@@ -642,21 +654,26 @@ c Get the position in view coordinates.
       call zsort(ngeomobj,zta,index)
 c      write(*,*)(index(k),zta(k),k=1,ngeomobj)
 
+      fmin=0.
+      fmax=0.
 c Do drawing in order
       do ik=1,ngeomobj
          iobj=index(ik)
+         iobjmask=ibits(iomask,iobj-1,1)
          itype=obj_geom(otype,iobj)-256*(int(obj_geom(otype,iobj))/256)
-c         write(*,*)'objplotting',ik,iobj,itype
-         if(itype.eq.1.)then
-            call sphereplot(obj_geom(1,iobj),iobj,iosw)
-         elseif(itype.eq.2.)then
-            call cubeplot(obj_geom(1,iobj),iobj,iosw)
-         elseif(itype.eq.3.)then
-            call cylplot(obj_geom(1,iobj),iobj,iosw)
-         elseif(itype.eq.4.)then
-            call pllelplot(obj_geom(1,iobj),iobj,iosw)
-         elseif(itype.eq.5)then
-            call cylgplot(obj_geom(1,iobj),iobj,iosw)
+c         write(*,*)'objplotting',ik,iobj,itype,iobjmask
+         if(iobjmask.ne.1 .and. 0.lt.iq.and.iq.le.mf_quant(iobj))then
+            if(itype.eq.1.)then
+               call sphereplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
+            elseif(itype.eq.2.)then
+               call cubeplot(iq,obj_geom(1,iobj),iobj,iosw)
+            elseif(itype.eq.3.)then
+               call cylplot(iq,obj_geom(1,iobj),iobj,iosw)
+            elseif(itype.eq.4.)then
+               call pllelplot(iq,obj_geom(1,iobj),iobj,iosw)
+            elseif(itype.eq.5)then
+               call cylgplot(iq,obj_geom(1,iobj),iobj,iosw)
+            endif
          endif
       enddo
       if(ipint.eq.1)then

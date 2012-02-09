@@ -493,7 +493,7 @@ c Check some flux diagnostics and writing.
 c         write(*,*)'Calling objplot'
          if(ifplot.gt.0)then
             if(rcij.le.0)rcij=rs
-            call objplot(rcij,iobpsw)
+            call objplot(1,rcij,iobpsw,0)
          endif
       endif
       end

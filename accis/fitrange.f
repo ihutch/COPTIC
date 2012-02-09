@@ -84,10 +84,10 @@ c       xt1st: The integer multiple of xtic closest to xmin
 c             lying outside the range (xmin,xmax).
 c       xtlast: The integer multiple of xtic closest to xmax
 c             lying outside the range (xmin,xmax).
-      real span,nsfac,sfac
-      parameter (npos=5)
-      integer incpos(npos)
-      data incpos/1,2,4,5,10/
+      real span,sfac
+      parameter (npos=7)
+      integer incpos(npos),nsfac
+      data incpos/1,2,4,5,10,20,40/
 
       span=(xmax-xmin)
       if(xmax.eq.0. .and. xmin.eq.0)then
@@ -116,25 +116,32 @@ c             lying outside the range (xmin,xmax).
          xfac=1.
       else
 c Choose the increment
-         fspan=1.e30
+         iret=0
+ 201     fspan=1.e30
          ichoice=0
          do i=1,npos
             xt=incpos(i)*sfac
             xt=sign(xt,span)
-            n2=anint((xmin+span)/xt+0.49999)
-            n1=anint(xmin/xt-0.49999)
+            n2=anint((xmin+span)/xt-0.49999)
+            n1=anint(xmin/xt+0.49999)
             atr=abs((n2-n1)*xt)
-c            write(*,*)i,incpos(i),atr,xt,sfac,fspan,n1,n2,ntics
+            if(iret.eq.1)write(*,'(2i3,4f7.3,3i4)')i,incpos(i),atr,xt
+     $           ,sfac,fspan,n1,n2,ntics
 c            if(atr.lt.fspan .and. abs(n2-n1).le.ntics)then
             if(atr.lt.fspan .and. abs(n2-n1).le.ntics
-     $           .and. abs(n2-n1).ge.3)then
+     $           .and. abs(n2-n1).ge.ntics/2)then
                ichoice=i
                xtic=incpos(i)
                fspan=atr*.9999
             endif
          enddo
-         if(ichoice.eq.0)write(*,*)'Fitrange choice error',ichoice,nsfac
-     $        ,sfac,xmin,span,ntics
+         if(ichoice.eq.0 .and. iret.eq.0)then
+            write(*,*)'Fitrange choice error',ichoice,nsfac
+     $        ,sfac,xmin,xmax,span,ntics,xtic
+            write(*,*)'i,incpos(i),atr,xt,sfac,fspan,n1,n2,ntics'
+            iret=1
+            goto 201
+         endif
       endif
 c Don't do this final setting till the end.
       xtic=sign(xtic,span)*sfac
