@@ -59,13 +59,14 @@ c*************************************************************
 
       parameter (ifd1=40,ifd2=20,ifd12=ifd1*ifd2)
       parameter (ifd3=20,ifd123=ifd12*ifd3)
-      real u(ifd1,ifd2,ifd3),v(ifd1,ifd2,ifd3)
+      real u(ifd1,ifd2,ifd3)
+c      real v(ifd1,ifd2,ifd3)
       real u123(ifd123)
       equivalence (u,u123)
 c ifull full dimensions of u
       integer ifull(ndimsdecl)
-      integer ktype(2**(ndimsdecl+1))
-      integer iside(2,ndimsdecl)
+c      integer ktype(2**(ndimsdecl+1))
+c      integer iside(2,ndimsdecl)
 
 c Access iorig via common block since arguments removed.
       parameter (norigmax=1000)

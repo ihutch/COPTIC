@@ -54,7 +54,7 @@ c Make this always last to use the checks.
       ncollided=0
 
       if(ndims.ne.ndims_mesh.or. ndims.ne.3)
-     $        stop 'Padvnc incorrect ndims number of dimensions'
+     $     stop 'Padvnc incorrect ndims number of dimensions'
 c-----------------------------------------------------------------
       ic1=2*ndims+1
       ndimsx2=2*ndims
@@ -128,9 +128,14 @@ c the region information.
      $           ,xn(ixnp(idf)+1),idf,x_part(ndimsx2+1,i)
      $           ,IAND(iregion,ifield_mask),field(idf))
             if(.not.abs(field(idf)).lt.fieldtoolarge)then
-               write(*,*)'Field corruption(?)',i,idf,iregion,field
-     $              ,(x_part(kk,i),kk=1,3*ndims)
-     $              ,linregion(ibool_part,ndims,x_part(1,i)),iLs
+               write(*,*)'Field corruption(?) by getfield.'
+               write(*,'(''Particle'',i8,'' dimension='',i2,
+     $'' iregion='',i3,'' masked='',i3,'' Field='',3f10.5)')i,idf
+     $              ,iregion ,IAND(iregion,ifield_mask),field(idf)
+               write(*,'(''xp:'',9f8.4)')(x_part(kk,i),kk=1,3
+     $              *ndims)
+               write(*,'(''In region'',l2,''  iLs='',4i8)')linregion(i
+     $              bool_part,ndims,x_part(1,i)),iLs
                stop
 c               call partlocate(i,ixp,xfrac,inewregion,linmesh)
 c               write(*,*)'inewregion,linmesh',inewregion,linmesh

@@ -120,8 +120,17 @@ c Pass arrays with local origin.
      $        cij(1+ic1*iinc),u(1+iinc)
      $        ,idf,ic1*iuinc(idf),iuinc(idf),xn(ixn0)
      $        ,xfidf,f(ii),iregion,ix,xm)
-c         if(abs(f(ii)).gt.1.e20)write(*,*)'Corrupt gradlocalregion'
-c     $           ,idf,ii,f
+         if(.not.abs(f(ii)).lt.1.e20)then
+            write(*,*)'Corrupt gradlocalregion'
+     $           ,idf,ii,f
+            write(*,*)'iinc,ic1,iuinc(idf),cij(1+ic1*iinc),u(1+iinc)'
+     $           ,iinc,ic1,iuinc(idf),cij(1+ic1*iinc),u(1+iinc)
+            iad=1
+            do ki=1,ndims
+               iad=iad+(int(xff(ki))-1)*iuinc(ki)
+            enddo
+            write(*,*)'xff=',xff,iad
+         endif
 c         do ki=1,4
 c            if(abs(f(ki)).gt.1.e20)write(*,*)'Corrupt f'
 c     $           ,idf,ii,f
@@ -280,10 +289,11 @@ c Field is minus the potential gradient.
          ierr=0
          field=-box2interpnew(f,d,iw,weights,ierr)
          if(ierr.ne.0)write(*,*)xff,f
-c         if(abs(field).gt.1.e20)then
-c            write(*,*)field,'  f=',f,'  d=',d,'  iw=',iw,'  weights='
-c     $           ,weights
-c         endif
+         if(.not.abs(field).lt.1.e20)then
+            write(*,*)'box2interpnew field corruption in getfield'
+            write(*,*)field,'  f=',f,'  d=',d,'  iw=',iw,'  weights='
+     $           ,weights,'   igood=',igood,'   ix=',ix
+         endif
       else
          write(*,'(''Getfield No good vertices. Region'',i3'//
      $        ','' Direction'',i2,'' Fracs'',3f8.4)')

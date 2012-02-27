@@ -65,12 +65,14 @@ c k_sor is the sor iteration index, for diagnostics.
 
       logical lconverged
       logical laddu
+      logical ldebugs
 
 c bbdydecl declares most things for bbdy, using parameter ndimsdecl.
       include 'bbdydecl.f'
 
       real delta,umin,umax
 c This saves data between calls so we can use separate initialization
+      data ldebugs/.false./
       save
 c-------------------------------------------------------------------
       if(ndims.ne.ndimsdecl)then
@@ -78,7 +80,7 @@ c-------------------------------------------------------------------
      $        ndims,ndimsdecl
          stop
       endif
-c      write(*,*)'In sormpi',ictl,ndims,ifull,iuds,idims,ierr
+      if(ldebugs)write(*,*)'In sormpi',ictl,ndims,ifull,iuds,idims,ierr
 c      return
       do nd=1,ndims
          lperiod(nd)=.false.
@@ -160,9 +162,9 @@ c         write(*,*) 'Calling sorrelaxgen',delta,oaddu,relax
      $        relax,delta,umin,umax)
 
 c          call checkdelta(delta,deltaold)
-c          if(k_sor.le.2)
-c            write(*,'(''sorrelaxgen'',i4,4f13.5)')k_sor,delta,oaddu
-c     $           ,umin,umax
+         if(ldebugs.and.k_sor.le.2) write(*,
+     $        '(''sorrelaxgen returned'',i4,4f13.5)')
+     $        k_sor,delta,oaddu ,umin,umax
 c Test convergence
          call testifconverged(eps_sor,delta,umin,umax,
      $        lconverged,icommcart)

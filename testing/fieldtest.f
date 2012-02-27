@@ -5,7 +5,7 @@ c
 c      parameter (Li=100,ni=40,nj=40,nk=16)
 c      parameter (Li=100,ni=16,nj=16,nk=20)
 c      parameter (Li=100,ni=64,nj=64,nk=64)
-      parameter (Li=100,ni=32,nj=32,nk=40)
+      parameter (Li=50,ni=32,nj=32,nk=40)
       integer nblks
       parameter (nblks=1)
       integer nd
@@ -24,7 +24,7 @@ c      real x(Li),y(Li)
       character*100 form1,argument
 c      character*10 cxlab,cylab
       common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
-      logical lplot,l1plot
+      logical lplot,l1plot,linmesh
 c testing arrays
       parameter (ntests=1)
       integer iuds(nd),ifull(nd),idims(nd),ium2(nd),itemp(nd)
@@ -58,8 +58,14 @@ c Initialize ids to silence spurious warnings.
       data id1,id2,idf/0,0,0/
 c For rs:
       include 'plascom.f' 
+c For islp
+      include 'slpcom.f'
 
-
+c These things have to be set for the adaptive boundary condition:
+      islp=0
+      Ti=1.
+      debyelen=1000000.
+c
       filename='geomtest.dat'
       thetain=.1
       nth=1
@@ -418,7 +424,7 @@ c If this is actually inside anything. We can try particles.
       write(*,*)'iregion_part=',iregion_part
       if(iregion_part.ne.0)then
          write(*,*)'Calling pinit'
-         call pinit()
+         call pinit(0)
          write(*,*)'Return from pinit'
          norbits=1
          dt=.025 
@@ -430,7 +436,7 @@ c      x_part(2,1)=-.4
          x_part(4,1)=2*dt
          x_part(5,1)=1.1
          x_part(6,1)=0.
-         call partlocate(1,iLs,iu,ixp,xfrac,irg)
+         call partlocate(1,ixp,xfrac,irg,linmesh)
 c Already set.
 c      do id=1,ndims
 c         ium2(id)=iuds(id)-2
@@ -441,14 +447,22 @@ c      enddo
      $           j,ierr, (x_part(k,1),k=1,6)
             call zero3array(psum,iLs,ni,nj,nk)
             call zero3array(q,iLs,ni,nj,nk)
-            call chargetomesh(psum,iLs,diags)
+            call chargetomesh(psum,iLs,diags,0)
 c Some diagnostics.
-c         write(*,*)'Psum:'
-c         call diag3array(psum,iLs,ni,nj,nk)
-c         write(*,*)'q:'
-c         call diag3array(q,iLs,ni,nj,nk)
+            if(.false.)then
+               write(*,*)'Testing Psum for non-zero elements:'
+               call diag3array(psum,iLs,ni,nj,nk)
+               write(*,*)'Testing q for non-zero elements:'
+               call diag3array(q,iLs,ni,nj,nk)
+               write(*,*)'Testing u for unreasonable elements:'
+               call giant3array(u,iLs,ni,nj,nk,1.e20)
+            endif
             ictl=0
-            call sormpi(ndims,ifull,iuds,cij,u,q,bdyset
+c            write(*,*)ndims,ifull,iuds,ictl,ierr,myid,idims
+c This call uses whatever is current for bdyset:
+c            call sormpi(ndims,ifull,iuds,cij,u,q,bdyset
+c This call makes no changes to the boundary. Stays zero:
+            call sormpi(ndims,ifull,iuds,cij,u,q,bdysetnull
      $           ,faddu,ictl,ierr,myid,idims)
 
             if(lplot.and. mod(j,nsteps/2).eq.0)

@@ -207,17 +207,26 @@ c******************************************************************
       subroutine nameconstruct(name)
       character*(*) name
       include 'plascom.f'
+      include 'colncom.f'
       include 'meshcom.f'
 c Construct a filename that contains many parameters
 c Using the routines in strings_names.f
       name=' '
       call nameappendexp(name,'T',Ti,1)
-      call nameappendint(name,'v',nint(10*vd),3)
-c      call nameappendint(name,'P',ifix(abs(phip)),2)
-      call nameappendint(name,'P',ifix(abs(phip*10)),3)
+      if(vd.lt.9.5)then
+         call nameappendint(name,'v',nint(100*vd),3)
+      else
+         call nameappendint(name,'v',nint(10*vd),3)
+      endif
+      if(abs(phip).lt.9.5)then
+         call nameappendint(name,'P',nint(abs(phip*100)),3)
+      else
+         call nameappendint(name,'P',nint(abs(phip*10)),3)
+      endif
       call nameappendexp(name,'L',debyelen,1)
       call nameappendint(name,'z',nint(xmeshend(3)),3)
       call nameappendint(name,'x',nint(xmeshend(2)),2)
+      if(colntime.ne.0)call nameappendexp(name,'c',colntime,1)
       end
 c Below here are the obsolete versions which can be deleted once
 c we are convinced there are no bugs or needs. Done 17 Aug 2010

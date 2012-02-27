@@ -7946,3 +7946,36 @@ Changed object plotting routines to have a leading argument iq which
 refers to the quantity to be plotted. By default it has been taken 
 to be one (flux) before now, but perhaps one might want to surface-plot
 the particle momentum or energy.
+
+11 Feb 2012
+Change nameconstruct to use 100*vd unless vd is very large. 
+Do the same for P the probe potential.
+Fix makefile to refer to the new code.
+
+22 Feb 2012
+Various upgrades to philineread to improve plotting and analysis capabilities. 
+
+Checking on the functioning of the collisional bulk force with 
+./coptic -v1 -ct1. -ofgeomforce.dat -s200 -ri400
+gives
+    Field,       part,       press,     collision,    total,  steps ave 100 200
+===== Object 1 ->  2 radius=  1.000 zcenter=  0.000 Charge=   -8.5655 =====
+     0.01101    -0.01232    -0.00235    -0.09590    -0.09957
+     0.00600     0.32662    -0.00069     0.00334     0.33526
+     0.22893     1.79832    -0.15775     1.22717     3.09667
+===== Object 2 ->  3 radius=  0.500 zcenter=  0.000 Charge=   -2.7139 =====
+    -0.00124     0.19713    -0.00001    -0.03246     0.16343
+    -0.00070     0.39909     0.00046    -0.00257     0.39628
+     0.20808     1.76245    -0.02563     0.57719     2.52208
+===== Object 3 ->  4 radius=  1.500 zcenter=  0.000 Charge=   -6.0945 =====
+     0.00624    -0.07546    -0.01251    -0.13619    -0.21792
+     0.00681     0.23792    -0.00955     0.02475     0.25994
+     0.05635     1.62745    -0.33953     1.73184     3.07611
+===== Object 4 ->  5 radius=  2.000 zcenter=  0.000 Charge=   -4.0442 =====
+     0.00080     0.05888    -0.02615    -0.24646    -0.21293
+     0.00534     0.42357    -0.03260    -0.00527     0.39104
+     0.01015     1.56578    -0.47526     1.94861     3.04928
+
+Showing good z-force agreement for radii bigger than 1, the point charge
+radius. That seems to indicate that we can in fact measure the force
+for collisional cases.

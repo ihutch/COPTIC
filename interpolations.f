@@ -510,10 +510,10 @@ c In case this was not set previously
          endif
       endif
 
-      if(abs(uprime).gt.1.e20)then
-         write(*,*)'Getlocalregion excessive',icp0,jpm,ix,xm,ixiu
+      if(.not.abs(uprime).lt.1.e20)then
+         write(*,*)'Getlocalregion excessive uprime',icp0,xm,ix,ixiu
      $        ,iregion
-         write(*,*)    uprime,up,u0,um,iuinc
+         write(*,*) dx0,dx1,   uprime,up,u0,um,u(1),iuinc
       endif
 
       end

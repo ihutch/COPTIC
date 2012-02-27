@@ -122,6 +122,10 @@ c Start of treatment
 c ipoint here is the offset (zero-based pointer)            
 c         write(*,*)k_sor,ipoint,indi(1),indi(2),u(ipoint+1)
          dnum=q(ipoint+1)
+         if(.not.dnum.lt.1.e30)then
+            write(*,*)'dnum q-error',dnum,ipoint,q(ipoint+1)
+         endif
+
          csum=0.
 c         write(*,*)'cij',(cij((2*ndims+1)*ipoint+ic),ic=1,2*ndims)
 c         write(*,*)'address,u',(ipoint+1+iind(ic),
@@ -131,6 +135,11 @@ c     $        u(ipoint+1+iind(ic)),ic=1,2*ndims)
             icind=icind0+ic
             csum=csum+cij(icind)
             dnum=dnum+cij(icind)*u(ipoint+1+iind(ic))
+c            if(.not.dnum.lt.1.e30)then
+c               write(*,*)'dnum error',dnum,csum,icind,cij(icind)
+c     $              ,u(ipoint+1+iind(ic)),ic,ipoint,iind(ic)
+c     $              ,ipoint+1+iind(ic),myorig
+c            endif
          enddo
 c Pointer to object data (converted to integer)
          io=int(cij(icind0+2*ndims+1))
@@ -165,9 +174,14 @@ c            write(*,*)addu,daddu,u(ipoint+1),csum,dnum,dden,delta
          if(abs(delta).gt.abs(rdelta))rdelta=delta
          uij=u(ipoint+1)+delta
          u(ipoint+1)=uij
-         if(uij.lt.umin)umin=uij
-         if(uij.gt.umax)umax=uij
-c         write(*,*)ipoint,q(ipoint+1),dnum,dden,uij
+c Inverted tests to catch nans.
+         if(.not.uij.ge.umin)umin=uij
+         if(.not.uij.le.umax)umax=uij
+c         if(.not.uij.le.1.e20)then
+c            write(*,*)ipoint,q(ipoint+1),uij,dnum,dden
+c     $        ,addu
+c            stop
+c         endif
 c Corresponds to iftrue
          else
 c test 

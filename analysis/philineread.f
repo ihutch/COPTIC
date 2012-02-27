@@ -1,4 +1,4 @@
-      program philineread
+       program philineread
 
       include 'examdecl.f'
 
@@ -12,11 +12,12 @@
       integer ip2(ndims_mesh)
 
 c philineread commons
-      logical lrange,lwrite,lvd,ldiff,lbva,llout
+      logical lrange,lwrite,lvd,ldiff,lbva,llout,llw
       integer iover
       character*(100)overfile
       common /linecom/xmin,xmax,ymin,ymax,lrange,lwrite
-     $     ,iover,overfile,lvd,ldiff,lbva,llout
+     $     ,iover,overfile,lvd,ldiff,lbva,llout,llw,diffval
+     $     ,xlmin,ylmin
 
 
 c xfig2trace parameters.
@@ -114,6 +115,18 @@ c            write(*,*)'ild,ip(ild)',ild,ip(ild)
                call differentiate(iuds(ild),xline,philine,xd,dphidx)
                write(*,*)iuds(ild)-1
                write(*,'(2f10.5)')(xd(k),dphidx(k),k=1,iuds(ild)-1)
+               if(diffval.ne.0.)then
+c Find the mesh position                  
+                  ixi=interp(xd,iuds(ild)-1,diffval,xi)
+                  if(ixi.ne.0)then
+                     xf=xi-ixi
+                     val=dphidx(ixi)*(1-xf)+dphidx(ixi+1)*xf
+                     write(*,'(a,f10.5,af10.5)')'Position:',diffval
+     $                    ,'  Derivative Value:',val
+                  else
+                     write(*,*)'Fixed value outside range.'
+                  endif
+               endif
             endif
             call minmax(philine,iuds(ild),pmin,pa)
             pmax(inm)=pa
@@ -167,14 +180,11 @@ c               call labeline(xline,philine,iuds(ild),string,iwd)
             if(lvd)then
                string=' M='
                call fwrite(vd,iwd,2,string(lentrim(string)+1:))
-               if(llout)then
+               if(llw)then
                   call winset(.false.)
-                  call legendline(-0.5,(.01+inm*.05),0,
+                  call legendline(xlmin,(ylmin+.01+inm*.05),0,
      $                 string(1:lentrim(string)))
                   call winset(.true.)
-               else
-                  call legendline(.5,(.01+inm*.05),0,
-     $                 string(1:lentrim(string)))
                endif
             else
                string=' !Af!@!dp!d='
@@ -322,11 +332,12 @@ c the logic will break if it is changed by -l in the middle.
       integer nf,ild,ilinechoice(ndims_mesh,nf)
       integer idj(ndims_mesh)
 
-      logical lrange,lwrite,lvd,ldiff,lbva,llout
+      logical lrange,lwrite,lvd,ldiff,lbva,llout,llw
       integer iover
       character*(100) overfile
       common /linecom/xmin,xmax,ymin,ymax,lrange,lwrite
-     $     ,iover,overfile,lvd,ldiff,lbva,llout
+     $     ,iover,overfile,lvd,ldiff,lbva,llout,llw,diffval
+     $     ,xlmin,ylmin
 
       ifull(1)=na_i
       ifull(2)=na_j
@@ -347,7 +358,12 @@ c Defaults and silence warnings.
       rread=1.
       iover=0
       phiread=0.
+      diffval=0.
       llout=.false.
+      ldiff=.false.
+      llw=.true.
+      xlmin=0.5
+      ylmin=0.
 
 c Deal with arguments
       if(iargc().eq.0) goto 201
@@ -373,15 +389,22 @@ c Deal with arguments
                iover=1
  14            continue
             endif
+            if(argument(1:2).eq.'-g')then
+               read(argument(3:),*,end=15)xlmin,ylmin
+ 15            continue
+               write(*,*)'xlmin,ylmin',xlmin,ylmin
+            endif
             if(argument(1:2).eq.'-b')lbva=.not.lbva
             if(argument(1:2).eq.'-v')lvd=.true.
-            if(argument(1:2).eq.'-m')llout=.not.llout
+            if(argument(1:2).eq.'-m')xlmin=-xlmin
+            if(argument(1:2).eq.'-a')llw=.not.llw
             if(argument(1:2).eq.'-w')lwrite=.true.
             if(argument(1:2).eq.'-d')ldiff=.true.
-
+            if(argument(1:3).eq.'-dv')
+     $           read(argument(4:),*,err=201)diffval
             if(argument(1:13).eq.'--objfilename')
-     $           read(argument(14:),'(a)',err=201)objfilename
-            if(argument(1:2).eq.'-r')
+     $           read(argument(14:),'(a)',err=201)objfilename 
+           if(argument(1:2).eq.'-r')
      $           read(argument(3:),*,err=201)rread
             if(argument(1:2).eq.'-p')then
                read(argument(3:),*,err=201)phiread
@@ -439,8 +462,12 @@ c     $     //' [ccpicgeom.dat'
       write(*,*)'-w  write out the line data'
       write(*,301)' -v sort/mark by vd, not radius.'
       write(*,301)' -d plot the derivative of potential as well'
+      write(*,*)'-dv specify coord-value at which to print'
+     $     ,' derivative.' 
       write(*,301)' -b subtract boundary value of phi'
-      write(*,301)' -m move legend outside box'
+      write(*,*)'-m move legend outside box  [',llout
+      write(*,*)'-g<xl,yl> set box position of legend start.'
+      write(*,*)'-a toggle legend on/off     [',llw
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue

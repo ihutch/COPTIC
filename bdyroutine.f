@@ -21,13 +21,14 @@ c else  use Mach slope condition (higher bits relevant).
       integer ifirst
       data ifirst/1/
       ipoint=0
-c      islp=0
+c      write(*,*)'islp=',islp
       if(ibits(islp,0,1).eq.0)then
 c Normal log phi-derivative=-1 :
 c         slpD=-1.
 c Adaptive boundary condition. Only approximate for non-spheres. 
 c Direct logarithmic gradient setting.
          slpD=-(1.+rs*sqrt(1.+1./Ti)/debyelen)
+c         write(*,*)'slpD=',slpD,Ti,debyelen
          call mditerate(bdyslopeDh,ndims,ifull,iuds,ipoint,u)
 c Explicit screening uses buggy bdyslopescreen. Obsolete.
 c         slpD=debyelen/sqrt(1.+1./Ti)

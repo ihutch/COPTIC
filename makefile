@@ -97,15 +97,15 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 # Problem when using geometry that can't do smt check. 
 smt.out : $(COPTIC) copticgeom.dat
 	@if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
-	@if [ -f T1e0v000P020L1e0z005x05.phi ] ; then mv T1e0v000P020L1e0z005x05.phi prior.phi ; echo "Created prior.phi" ; fi
+	@if [ -f T1e0v000P200L1e0z005x05.phi ] ; then mv T1e0v000P200L1e0z005x05.phi prior.phi ; echo "Created prior.phi" ; fi
 	./$(COPTIC)
 	@if [ -f smt.prev ] ;then if [ -f smt.out ] ;then diff smt.prev smt.out ;else touch smt.out ;fi ;fi
-	@if [ -f prior.phi ] && [ -f T1e0v000P020L1e0z005x05.phi ] ; then if ! diff T1e0v000P020L1e0z005x05.phi prior.phi ; then echo "**** RESULT CHANGED" ; fi; rm prior.phi; else echo "File[s] lacking to compare result."; fi 
+	@if [ -f prior.phi ] && [ -f T1e0v000P200L1e0z005x05.phi ] ; then if ! diff T1e0v000P200L1e0z005x05.phi prior.phi ; then echo "**** RESULT CHANGED" ; fi; rm prior.phi; else echo "File[s] lacking to compare result."; fi 
 
 # For now we are using a big hammer to ensure libcoptic is clean.
 libcoptic.a : makefile $(OBJECTS) $(UTILITIES)
 	rm -f libcoptic.a
-	ar -rs libcoptic.a $(OBJECTS) $(UTILITIES)
+	@ar -rs libcoptic.a $(OBJECTS) $(UTILITIES)
 
 libcopsol.a : makefile $(SOLOBJECTS) $(UTILITIES) $(SOLHEADERS)
 	rm -f libcopsol.a
@@ -156,7 +156,7 @@ bdyroutine.o : bdyroutine.f makefile $(HEADERS)
 #####################################################
 # Main program explicit to avoid make bugs:
 $(COPTIC) : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
-	echo G77=$G77
+#	echo G77=$(G77)
 	@echo "      rjscheme="\'$(REINJECT)\'" " > REINJECT.f
 	$(G77)  -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f  libcoptic.a $(LIBRARIES)
 
@@ -173,13 +173,13 @@ $(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h
 testing : testing/mpibbdytest testing/fieldtest testing/stresstest
 	@echo Made tests in directory testing. Run them to test.
 
-testing/mpibbdytest : testing/mpibbdytest.o udisplay.o mpibbdy.o mditerate.o reduce.o makefile
+testing/mpibbdytest : udisplay.o mpibbdy.o mditerate.o reduce.o makefile
 	$(G77) -o testing/mpibbdytest  testing/mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o reduce.o
 
 testing/fieldtest : testing/fieldtest.f makefile libcoptic.a
 	$(G77)  -o testing/fieldtest $(COMPILE-SWITCHES) $(PROFILING) testing/fieldtest.f libcoptic.a $(LIBRARIES)
 
-testing/stresstest : testing/stresstest.f stress.o $(ACCISLIB)
+testing/stresstest : testing/stresstest.f $(ACCISLIB) libcoptic.a
 	$(G77) -o testing/stresstest testing/stresstest.f stress.o $(LIBRARIES)
 
 vecx :

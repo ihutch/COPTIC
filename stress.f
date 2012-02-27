@@ -306,8 +306,8 @@ c Local storage
       totarea=0.
       do k=1,km
          koff=2*ndims*(k-1)
-c         call fieldatpoint(surfobj(koff+1),u,cij,iLs,field)
-         call fieldsimple3atpoint(surfobj(koff+1),u,iLs,field)
+         call fieldatpoint(surfobj(koff+1),u,cij,iLs,field)
+c         call fieldsimple3atpoint(surfobj(koff+1),u,iLs,field)
          area=0
          do j=1,ndims
             area=area+surfobj(koff+ndims+j)**2
