@@ -4,7 +4,9 @@ c**************************************************************
       include '../plascom.f'
       include '../sectcom.f'
 
-      real plotdata(10000,6),stepdata(10000)
+      parameter (ntr=10000)
+      real plotdata(ntr,6),stepdata(ntr)
+      real traceave(ntr)
       character*100 filename,argument
       integer iplot,iprint,ifmask,idimf,iomask
       real avefield(ns_ndims),avepress(ns_ndims),avepart(ns_ndims)
@@ -21,6 +23,7 @@ c**************************************************************
       rview=1.
       iosw=1
       yrange=0.
+      nbox=0
 
       filename='T1e0v000r05P02L1e0.flx'
       do i=1,iargc()
@@ -31,6 +34,8 @@ c**************************************************************
      $        read(argument(4:),'(f10.4)')fn2
          if(argument(1:2).eq.'-f')
      $        read(argument(3:),'(i5)')idimf
+         if(argument(1:2).eq.'-b')
+     $        read(argument(3:),'(i5)')nbox
 c iplot is the quantity number to plot and average.
          if(argument(1:2).eq.'-p')
      $        read(argument(3:),'(i5)')iplot
@@ -172,7 +177,7 @@ c         write(*,*)'ifmask=',ifmask,' k=',k,' imk=',imk
          avecharge=avecharge/float(iavenum)
          if(iplot.ne.0)then
             if(k.eq.1)then
-               if(yrange.eq.0.)yrange=avesq(idimf)
+               if(yrange.eq.0.)yrange=2.*avesq(idimf)
                call pltinit(1.,float(nf_step)
      $              ,-yrange,1.5*yrange)
                call axis()
@@ -185,25 +190,35 @@ c         write(*,*)'ifmask=',ifmask,' k=',k,' imk=',imk
             call color(k)
             call dashset(4)
             call iwrite(k,iwd,argument)
-            call polyline(stepdata,plotdata(1,3),nf_step)
+            call boxcarave(nf_step,nbox,plotdata(1,3),traceave)
+            call polyline(stepdata,traceave,nf_step)
+c            call polyline(stepdata,plotdata(1,3),nf_step)
             call legendline(.1+.4*(nplot-1),.2,0,
      $        'partforce '//argument(1:iwd))
             call dashset(1)
-            call polyline(stepdata,plotdata(1,1),nf_step)
+            call boxcarave(nf_step,nbox,plotdata(1,1),traceave)
+            call polyline(stepdata,traceave,nf_step)
+c            call polyline(stepdata,plotdata(1,1),nf_step)
             call legendline(.1+.4*(nplot-1),.15,0,
      $        'fieldforce '//argument(1:iwd))
             call dashset(2)
-            call polyline(stepdata,plotdata(1,2),nf_step)
+            call boxcarave(nf_step,nbox,plotdata(1,2),traceave)
+            call polyline(stepdata,traceave,nf_step)
+c            call polyline(stepdata,plotdata(1,2),nf_step)
             call legendline(.1+.4*(nplot-1),.1,0,
      $           'pressforce '//argument(1:iwd))
             if(avecoln(1).ne.0)then
                call dashset(3)
-               call polyline(stepdata,plotdata(1,6),nf_step)
+               call boxcarave(nf_step,nbox,plotdata(1,6),traceave)
+               call polyline(stepdata,traceave,nf_step)
+c               call polyline(stepdata,plotdata(1,6),nf_step)
                call legendline(.1+.4*(nplot-1),.05,0,
      $              'collisions '//argument(1:iwd))
             endif
             call dashset(0)
-            call polyline(stepdata,plotdata(1,4),nf_step)
+            call boxcarave(nf_step,nbox,plotdata(1,4),traceave)
+            call polyline(stepdata,traceave,nf_step)
+c            call polyline(stepdata,plotdata(1,4),nf_step)
             call legendline(.1+.4*(nplot-1),.25,0,
      $           'total '//argument(1:iwd))
          endif
@@ -243,8 +258,29 @@ c         if(iplot.eq.1)
      $     ,' (first time masking all others).'
       write(*,*)'-omiii set full mask of 3D objects not to plot.'
       write(*,*)'-f<id> set dimension whose force to plot'
+      write(*,*)'-b<nb> set boxcar average range +-nb.'
       write(*,*)'-yfff set range of force plot'
 
       end
 c******************************************************************
+c Boxcar average a trace.
+c Make the traceave(i) equal to the average from i-nb to i+nb of trace.
+c If nb=0, just transfer
+      subroutine boxcarave(nt,nb,trace,traceave)
+      integer nt,nb
+      real trace(nt),traceave(nt)
 
+      if(nb.lt.0)return
+      do i=1,nt
+         accum=0.
+         nac=0
+         do j=max(1,i-nb),min(nt,i+nb)
+            accum=accum+trace(j)
+            nac=nac+1
+         enddo
+         traceave(i)=accum/nac
+c         write(*,*)nt,nb,i,j,nac,accum,trace(i),traceave(i)
+      enddo
+
+      end
+c********************************************************************
