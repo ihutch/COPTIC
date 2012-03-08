@@ -7979,3 +7979,101 @@ gives
 Showing good z-force agreement for radii bigger than 1, the point charge
 radius. That seems to indicate that we can in fact measure the force
 for collisional cases.
+
+27 Feb 2012
+If colntime .ne. 0 then append an extra section to nameconstruct to tell
+the colntime. 
+
+7 Mar 2012
+
+In force calculations, especially with collisions we seem to be
+getting single steps with enormously large force contribution. So
+large that it biasses the average over 100s of steps. How can this be?
+
+My idea is that it arises from the point charge treatment. If a step
+takes a particle to a position extremely close to a point charge, then
+it will experience a massive acceleration equivalent to a hit (in a
+practically random direction) out of the park. It will leave the
+entire region (and domain) in the next step with a monstrous
+contribution to momentum in some quasi random direction.
+
+If this is in fact the cause, then it arises because the leap-frog
+finite steps are too big near the point charge to correctly conserve
+momentum and energy. The point charge really ought not to be allowed
+to do these big hits.  Close collisions, well inside the shielding
+radius and b_{90}, ought basically to be 180 degree scatterings.
+Those give rise to the maximum possible momentum transfer. Twice the 
+prior momentum. 
+
+These problems were observed with time steps -dt.025. and point charges
+-1. at .2 in a domain -4to8x-4to4, quite severe at low drift velocities
+0.1, 0.2. At velocity of 1, a step of .025 is a length of .025, which is
+1/10th of the point charge extent. Therefore, if out of the park hits is
+the problem, they are occuring deep inside the point charge extent. Thus,
+the ion will have stepped inside the extent, and acquired a velocity 
+mostly from the potential drop: 
+
+1/2 v^2 = r_p\phi_p/r
+
+at that point it steps to the charge:  dr = dt v = r so that
+
+1/2 r^2/dt^2 = r_p\phi_p/r
+
+r^3 =2 dt^2 r_p\phi_p = 2 dt^2 P   where P is the particle charge strength.
+
+This defines the volume for which hitting occurs. Solution is
+
+r = (2 0.025^2 .2)^{1/3} = 0.06.
+
+rhoinfty is 128k, so the number of particles in this region is. 
+4\pi r^3  /3 rhoinfty= 134 There are about 100 particles in the hitting 
+region (of a total of about 100M) one particle in a million. 
+Their velocity is approximately r/dt = 2.5.
+
+An integral of the momentum discrepancy will be of the form
+
+\int dv n 4\pi r^2 dr = \int  dt (P/r^2) 4\pi r^2 dr
+
+which converges fine at the origin. So it's not obvious that there's 
+anything other than a noise problem associated with hitting. 
+
+b_{90} = r_p\phi_p/(v^2/2) is kind of self-defining when the major
+part of the energy comes from potential. 
+
+What will constitute a hit out of the potential well? A step where the 
+impulse is such as to produce escape velocity in one step. I.e.
+
+	dv = dt P/r^2;   (1/2)dv^2 = P/r. 
+So
+ dt^2 P^2/r^4 = 2 P/r   =>   r^3 = dt^2 P/2.
+
+This is essentially the same criterion as above for stepping to the charge
+in one step, except with a different (smaller) coefficient.
+
+Solution of this is r = (.025^2 x .2 /2)^{1/3} = 0.040
+There are about 25 particles in this region.
+
+What constitutes a ridiculous velocity? Perhaps one that leaves the
+region in one step. I.e. roughly v = 1/dt = 40. To produce that velocity
+requires impulse dt P/r^2 = 1/dt. I.e.
+
+	 r^2 = P dt^2    =>    r= P^{1/2} dt  = 0.01
+
+We certainly ought not to use accelerations as great as arise from this 
+distance. 
+
+Alternatively, one might limit the impulse to of order unity: r^2 = Pdt.
+For which r = 0.07
+
+Options to prevent. 
+1. Limit the maximum acceleration somehow.
+2. Subcycle if we are close to a point charge.
+
+Actually I have some code for 2 in padvnc but commented out at
+present.  Activate this code to subcycle for particles with very large
+accelerations.  Subcycle is the maximum permitted ion impulse per
+step. If it is exceeded, then the subcycle's time step is set short
+enough to limit the impulse accordingly. A reasonable value for
+subcycle is 1, which would force subcycling within about r=0.07. One
+probably should not go less than 1.  Bigger might be sensible. One
+needs to worry about the possibility of self-force arising.

@@ -224,7 +224,7 @@ c         call helpusage()
      $     ,crelax
       write(*,302)' -dt   set Timestep.              [',dt
       write(*,302)' -da   set Initial dt accel-factor[',bdt
-      write(*,302)' -ds   set subcycle frac. Bad!    [',subcycle
+      write(*,302)' -ds   set Max ion impulse/step   [',subcycle
       write(*,301)' -s    set No of steps.           [',nsteps
       write(*,302)' -v    set Drift (z-)velocity.    [',vd
       write(*,302)' -t    set Ion Temperature.       [',Ti

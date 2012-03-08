@@ -169,10 +169,11 @@ c---------- Subcycling ----------------
          if(subcycle.ne.0)then            
 c One might have a conditional test to set subcycling for this particle
 c such as this automatic one based on avoiding excessive acceleration.
-c            dtc=dt/max(1.,anint(f1*dt/subcycle))
-c            dtc=.1000
+c It drops the timestep such that f1.dtc < subcycle. So subcycle becomes
+c the maximum impulse per step.
+            dtc=dt/max(1.,anint(f1*dt/subcycle))
 c For testing we just set directly.
-            dtc=subcycle
+c            dtc=subcycle
             if(dtc.lt.dtpos)then
 c Take sub-step.
                nsubc=nsubc+1

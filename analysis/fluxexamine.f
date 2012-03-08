@@ -93,24 +93,24 @@ c For all the objects being flux tracked.
             endif
             do kk=max(nf_step/5,1),nf_step,max(nf_step/5,1)
                if(mf_quant(k).ge.1)then
-                  write(*,'(a,i4,a,f10.4,a)')'Step(',kk,') rho='
+                  write(*,'(a,i4,a,f10.2,a)')'Step(',kk,') rho='
      $                 ,ff_rho(kk),'  Flux data'
                   write(*,'(10f8.2)')(ff_data(nf_address(nf_flux,k,kk)+i
      $                 -1),i=1,nf_posno(nf_flux,k))
                endif
                if(mf_quant(k).ge.2)then
                   write(*,'(''x-momentum'',i4)')nf_posno(nf_gx,k)
-                  write(*,'(10f8.3)')(ff_data(nf_address(nf_gx,k,kk)+i
+                  write(*,'(10f8.1)')(ff_data(nf_address(nf_gx,k,kk)+i
      $                 -1),i=1,nf_posno(nf_gx,k))
                endif
                if(mf_quant(k).ge.3)then
                   write(*,'(''y-momentum'',i4)')nf_posno(nf_gy,k)
-                  write(*,'(10f8.3)')(ff_data(nf_address(nf_gy,k,kk)+i
+                  write(*,'(10f8.1)')(ff_data(nf_address(nf_gy,k,kk)+i
      $                 -1),i=1,nf_posno(nf_gy,k))
                endif
                if(mf_quant(k).ge.4)then
                   write(*,'(''z-momentum'',i4)')nf_posno(nf_gz,k)
-                  write(*,'(10f8.3)')(ff_data(nf_address(nf_gz,k,kk)+i
+                  write(*,'(10f8.1)')(ff_data(nf_address(nf_gz,k,kk)+i
      $                 -1),i=1,nf_posno(nf_gz,k))
                endif
             enddo
@@ -148,6 +148,15 @@ c         write(*,*)'ifmask=',ifmask,' k=',k,' imk=',imk
          do i=1,nf_step
             plotdata(i,1)=fieldforce(idimf,k,i)*debyelen**2
             plotdata(i,2)=pressforce(idimf,k,i)
+            if(.not.abs(partforce(idimf,k,i)).lt.4.e2)then
+               write(*,*)i-3,partforce(idimf,k,i-3)
+               write(*,*)i-2,partforce(idimf,k,i-2)
+               write(*,*)i-1,partforce(idimf,k,i-1)
+               write(*,*)'***Giant partforce',idimf,k,i
+     $              ,partforce(idimf,k,i)
+               write(*,*)i+1,partforce(idimf,k,i+1)
+               stop
+            endif
             plotdata(i,3)=partforce(idimf,k,i)               
             plotdata(i,4)=plotdata(i,1)+plotdata(i,2)+plotdata(i,3)
             plotdata(i,5)=charge_ns(k,i)
@@ -284,3 +293,8 @@ c         write(*,*)nt,nb,i,j,nac,accum,trace(i),traceave(i)
 
       end
 c********************************************************************
+      subroutine fluxcheck()
+      include '../3dcom.f'
+      include '../plascom.f'
+      include '../sectcom.f'
+      end
