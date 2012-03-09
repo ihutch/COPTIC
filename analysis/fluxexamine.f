@@ -158,9 +158,10 @@ c         write(*,*)'ifmask=',ifmask,' k=',k,' imk=',imk
                stop
             endif
             plotdata(i,3)=partforce(idimf,k,i)               
-            plotdata(i,4)=plotdata(i,1)+plotdata(i,2)+plotdata(i,3)
             plotdata(i,5)=charge_ns(k,i)
             plotdata(i,6)=colnforce(idimf,k,i)               
+            plotdata(i,4)=plotdata(i,1)+plotdata(i,2)+plotdata(i,3)
+     $           + plotdata(i,6)
             stepdata(i)=i
             if(i.ge.n1 .and. i.le.n2)then
                iavenum=iavenum+1

@@ -424,10 +424,10 @@ c This bit set. Add analytic field. Unequal radii not allowed.
                p2=p2+xc**2
                xd(id)=xc
             enddo
-            if(.not.p2.ge.1.e-6)then
-c Avoid overflows:
+            if(.not.p2.ge.1.e-12)then
+c Avoid overflows. Ought to happen only v rarely:
                write(*,*)'Correcting ptch field overflow rp^2=',p2
-               p2=1.e-6
+               p2=1.e-12
                ierr=1
             endif
             rp=sqrt(p2)
