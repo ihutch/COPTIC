@@ -8068,6 +8068,7 @@ For which r = 0.07
 Options to prevent. 
 1. Limit the maximum acceleration somehow.
 2. Subcycle if we are close to a point charge.
+3. Remove a particle if it comes too close to point. 
 
 Actually I have some code for 2 in padvnc but commented out at
 present.  Activate this code to subcycle for particles with very large
@@ -8077,3 +8078,35 @@ enough to limit the impulse accordingly. A reasonable value for
 subcycle is 1, which would force subcycling within about r=0.07. One
 probably should not go less than 1.  Bigger might be sensible. One
 needs to worry about the possibility of self-force arising.
+
+The runs don't look like completing on loki. I suspect there needs to be
+a limit to the degree of subcycling that is done. Did some trials on
+tp400 with subcycling and printing the numbers nsubc. Limiting to 10
+the degree of subcycling reduces the nsubc. 
+
+The loki runs give zillions of ptch field overflow corrected errors when
+subcycling was turned on. This indicates that an ion is within about
+1.e-12 of the point charge. Therefore it looks as if the subcycling is
+causing some particle(s) to spiral in to the point charge. No other runs
+show these errors. This would presumably be less likely if the degree
+of subcycling were limited.
+
+The one run that got far enough to print it says Subcycled: 16721.
+So there are obviously a lot of subcycling steps. 
+
+In any case, if advancing steps are taken that are too large for
+energy conservation or momentum conservation, then an error will occur
+in the force calculation if that ion subsequently crosses the
+momentum-measuring surface.
+
+Probably I need at least to remove ions that come too close to the
+point particle. This could be done in response to a return from 
+getadfield, and bypass the flux collection stage. That would be arguably
+better than an arbitrary ptch overflow correction, and might be worth
+doing even at smaller accelerations. 
+
+9 Mar 2012
+
+Implemented particle dropping if impulse exceeds 5. [Probably ought to make
+that parameter adjustable, but not yet.] Also report out the number of 
+drops by master node periodically. 

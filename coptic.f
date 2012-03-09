@@ -116,7 +116,7 @@ c Otherwise could have been hidden in sormpi and pass back numprocs.
       numprocs=nprocs
 c--------------------------------------------------------------
 c Deal with command-line arguments
-         call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
+      call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,rmtoz,Bfield,ninjcomp,nsteps
@@ -124,9 +124,9 @@ c Deal with command-line arguments
      $     ,idistp,lrestart,restartpath,extfield,objfilename,lextfield
      $     ,vpar,vperp,ndims,islp,slpD)
 c
-c This is where the big section was removed to arguments.f
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
+      ndropped=0
 c Geometry and boundary information. Read in.
       call readgeom(objfilename,myid,ifull)
 c---------------------------------------------------------------
@@ -400,9 +400,19 @@ c write out flux to object 1.
             if(mod(nf_step,5).eq.0)write(*,*)
             if(mod(nf_step,(nsteps/25+1)*5).eq.0)then
                write(*,
-     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i5,i9,i9,2f10.3)')
+     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i4,i9,i9,2f10.3)')
      $              nrein,n_part,ioc_part,rhoinf,dt
-               if(nsubc.ne.0)write(*,'(''Subcycled:'',i6)')nsubc
+               if(nsubc.ne.0)write(*,'(''Subcycled:'',i5,$)')nsubc
+               if(ndropped.ne.0)then
+c Report dropped ions because of excessive acceleration.
+                  write(*,'(a,i5,a,f8.3)'
+     $             )' ptch dropped-ion period-total:',ndropped
+     $                 ,'  per step average:'
+     $                 ,ndropped/((nsteps/25+1)*5.)
+                  ndropped=0
+               else
+                  write(*,*)
+               endif
             endif
          endif
 

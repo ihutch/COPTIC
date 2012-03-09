@@ -112,7 +112,7 @@ c call getptchfield.
 c adfield must always be zero arriving here. But we don't set it
 c always because that would be expensive.
 c We are in a point-charge region. Get analytic part of force.
-            call getadfield(ndims,irptch,adfield,x_part(1,i),2)
+            call getadfield(ndims,irptch,adfield,x_part(1,i),2,ierr)
 c            if(i.eq.1)write(*,'(i7,'' in ptch region'',i8,6f8.3)')
 c     $           i,irptch,(x_part(k,i),k=1,3)
 c     $           ,(adfield(k),k=1,3)
@@ -170,8 +170,10 @@ c---------- Subcycling ----------------
 c One might have a conditional test to set subcycling for this particle
 c such as this automatic one based on avoiding excessive acceleration.
 c It drops the timestep such that f1.dtc < subcycle. So subcycle becomes
-c the maximum impulse per step.
-            dtc=dt/max(1.,anint(f1*dt/subcycle))
+c the maximum impulse per step. But we need to limit the maximum number
+c of subcycles, e.g. to 10.
+            dtc=dt/max(1.,min(10.,anint(f1*dt/subcycle)))
+c            dtc=dt/max(1.,anint(f1*dt/subcycle))
 c For testing we just set directly.
 c            dtc=subcycle
             if(dtc.lt.dtpos)then
@@ -200,6 +202,16 @@ c---------------- Particle Moving ----------------
 c Use dtaccel for acceleration. May be different from dtpos if there was
 c a subcycle, reinjection or collision last step.
          dtaccel=0.5*(dtpos+dtprec(i))
+c----- Excessive Acceleration test. Drop particle without any tally. ---
+         if(f1*dtaccel.gt.5.)then
+            ndropped=ndropped+1
+c            write(*,*)'Excessive acceleration. Dropping particle',i
+c Reinject if we haven't exhausted complement:
+            if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)goto 200
+c Else empty slot and move to next particle.
+            if_part(i)=0
+            goto 300            
+         endif
          ptot=ptot+dtpos
          atot=atot+dtaccel
 c Accelerate ----------
@@ -383,16 +395,17 @@ c            if(myid.eq.0)write(*,*)'PROBLEM: phirein>0:',phirein
          fcollided=float(ncollided)/n_part
       endif
 
-c      if(nsubc.ne.0) write(*,*)'Subcycled:',nsubc
+c      if(nsubc.ne.0) write(*,'(a,i6,$,'' '')')' Subcycled:',nsubc
 c      write(*,*)'Padvnc',n_part,nrein,ilaunch,ninjcomp,n_partmax
       end
 
 c***********************************************************************
-      subroutine getadfield(ndims,irptch,adfield,xp,isw)
+      subroutine getadfield(ndims,irptch,adfield,xp,isw,ierr)
 c Cycle through the nonzero bits of irptch and add up the extra
 c potential (isw=1), field (isw=2) or charge (isw=3) contributions.
 c adfield should be zero on entry, because it ain't set,
 c just incremented.
+c ierr returns zero for no error, 1 for too close to particle.
 
       integer ndims,irptch,isw
       real adfield(ndims)
@@ -411,10 +424,11 @@ c This bit set. Add analytic field. Unequal radii not allowed.
                p2=p2+xc**2
                xd(id)=xc
             enddo
-            if(p2.lt.1.e-12)then
+            if(.not.p2.ge.1.e-6)then
 c Avoid overflows:
-               p2=1.e-12
-               write(*,*)'ptch field overflow corrected'
+               write(*,*)'Correcting ptch field overflow rp^2=',p2
+               p2=1.e-6
+               ierr=1
             endif
             rp=sqrt(p2)
             p1=rp/xr
@@ -502,12 +516,12 @@ c Get grid point position, and irptch.
 c Get uc
          isw=1
          adfield(1)=0.
-         call getadfield(ndims,irptch,adfield,xp,isw)
+         call getadfield(ndims,irptch,adfield,xp,isw,ierr)
          uci(ipoint+1)=adfield(1)
 c Get charge
          isw=3
          adfield(1)=0.
-         call getadfield(ndims,irptch,adfield,xp,isw)
+         call getadfield(ndims,irptch,adfield,xp,isw,ierr)
          rhoci(ipoint+1)=debyelen**2*adfield(1)
       else
          uci(ipoint+1)=0.
