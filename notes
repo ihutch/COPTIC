@@ -8110,3 +8110,8 @@ doing even at smaller accelerations.
 Implemented particle dropping if impulse exceeds 5. [Probably ought to make
 that parameter adjustable, but not yet.] Also report out the number of 
 drops by master node periodically. 
+
+11 Mar 2012
+
+Modify fluxexamine to allow printing out of vd and a component of the force 
+from a masked set of objects. This is to ease developing plots versus vd.

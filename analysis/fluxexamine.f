@@ -8,12 +8,12 @@ c**************************************************************
       real plotdata(ntr,6),stepdata(ntr)
       real traceave(ntr)
       character*100 filename,argument
-      integer iplot,iprint,ifmask,idimf,iomask
+      integer iplot,iprint,ifmask,idimf,iomask,ivprn
       real avefield(ns_ndims),avepress(ns_ndims),avepart(ns_ndims)
       real avetotal(ns_ndims),avecoln(ns_ndims),avesq(ns_ndims)
       real rp,yrange
-      intrinsic ibclr
-      data iplot/1/iprint/1/
+      intrinsic ibclr,btest
+      data iplot/1/iprint/1/ivprn/0/
       data ifmask/1023/iomask/0/
       data idimf/3/
       data rp/0./
@@ -24,10 +24,13 @@ c**************************************************************
       iosw=1
       yrange=0.
       nbox=0
+      iarg1=1
 
       filename='T1e0v000r05P02L1e0.flx'
-      do i=1,iargc()
-         call getarg(i,argument)
+ 11   continue
+      do iarg=iarg1,iargc()
+c         write(*,*)'iarg',iarg
+         call getarg(iarg,argument)
          if(argument(1:3).eq.'-n1')
      $        read(argument(4:),'(f10.4)')fn1
          if(argument(1:3).eq.'-n2')
@@ -43,6 +46,8 @@ c iplot is the quantity number to plot and average.
      $        read(argument(3:),'(i5)')iprint
          if(argument(1:2).eq.'-m')
      $        read(argument(3:),'(i5)')ifmask
+         if(argument(1:2).eq.'-v')
+     $        read(argument(3:),'(i5)')ivprn
          if(argument(1:3).eq.'-rp')then
             read(argument(4:),*)rp
          elseif(argument(1:2).eq.'-r')then
@@ -63,23 +68,31 @@ c            if(iomask.eq.0)iomask=2*(2**30-1)+1
          endif
          if(argument(1:2).eq.'-h')goto 201
          if(argument(1:2).eq.'-?')goto 201
-         if(argument(1:1).ne.'-') read(argument(1:),'(a)')filename
+         if(argument(1:1).ne.'-')then
+            read(argument(1:),'(a)')filename
+            iarg1=iarg+1
+            goto 10
+         endif
       enddo
-
+      iarg1=iargc()+1
+ 10   continue
+c Give no informational messages.
+      if(ivprn.ne.0)ierr=0
       call readfluxfile(filename,ierr)
 
 c      write(*,*)'found',ff_data(nf_address(nf_flux,1,-1)+1-1)
 c     $     ,nf_address(nf_flux,1,-1)
 
+      if(ivprn.eq.0)then
       write(*,*)'   No. objects,   No. steps, dt,   No. quantities(obj)'
-      write(*,'(i12,i12,f10.4,20i3)')mf_obj,nf_step,ff_dt(nf_step),
+         write(*,'(i12,i12,f10.4,20i3)')mf_obj,nf_step,ff_dt(nf_step),
      $     (mf_quant(j),j=1,mf_obj)
 c      write(*,*) 'Posn and first 2 step addresses ',
 c     $     (((nf_address(i,j,k),i=1,mf_quant(j)),' ,'
 c     $     ,j=1,mf_obj),k=1-nf_posdim,2),'...'
 
 c      write(*,*)'geommap for objects',mf_obj,(nf_geommap(k),k=1,mf_obj)
-
+      endif
 
 c For all the objects being flux tracked.
       do k=1,mf_obj
@@ -115,7 +128,6 @@ c For all the objects being flux tracked.
                endif
             enddo
          endif
-         plotdata(i,j)=pressforce(j,k,i)
       
          n1=fn1*nf_step
          n2=fn2*nf_step
@@ -128,7 +140,7 @@ c         endif
 c Plots if 
       if(rp.ne.0.)write(*,'(a,f10.4,a,f10.4)')
      $     'Radius',rp,' Potential',phip
-      write(*,*)'   Field,       part,       press,'
+      if(ivprn.eq.0)write(*,*)'   Field,       part,       press,'
      $     ,'     collision,    total,  steps ave',n1,n2
       nplot=0
       do k=1,mf_obj
@@ -233,25 +245,37 @@ c            call polyline(stepdata,plotdata(1,4),nf_step)
      $           'total '//argument(1:iwd))
          endif
          endif
-         write(*,101)k,nf_geommap(k),obj_geom(oradius,nf_geommap(k))
+         if(ivprn.eq.0)then
+            write(*,101)k,nf_geommap(k),obj_geom(oradius,nf_geommap(k))
      $        ,obj_geom(ocenter+2,nf_geommap(k)),avecharge
- 101     format('===== Object',i2,' ->'
+ 101        format('===== Object',i2,' ->'
      $        ,i3,' radius=',f7.3,' zcenter=',f7.3,' Charge='
      $        ,f10.4,' =====')
-         do j=1,ns_ndims            
-            write(*,'(5f12.5  )')
-     $           avefield(j),avepart(j),avepress(j),avecoln(j),
-     $           avefield(j)+avepart(j)+avepress(j)+avecoln(j)
-         enddo
+            do j=1,ns_ndims            
+               write(*,'(5f12.5  )')
+     $              avefield(j),avepart(j),avepress(j),avecoln(j),
+     $              avefield(j)+avepart(j)+avepress(j)+avecoln(j)
+            enddo
+         endif
+         if(btest(ivprn,k-1))then
+c v printing this object
+            write(*,*)vd,avefield(idimf)+avepart(idimf)+avepress(idimf)
+     $           +avecoln(idimf)
+         endif
+
       enddo
 
-      write(*,*)'iomask=',iomask,' iosw=',iosw,' iplot=',iplot
+c      write(*,*)'iomask=',iomask,' iosw=',iosw,' iplot=',iplot
+
       if(iplot.ne.0)then
          call pltend()
 c         if(iplot.eq.1)
          call objplot(abs(iplot),rview,iosw,iomask)
       endif
 
+c Read more arguments if there are any.
+      if(iarg1.le.iargc())goto 11
+      
       call exit(1)
  201  write(*,*)'Usage: fluxexamine [filename '//
      $     '-n1fff -n2fff -piii -wiii -rfff -iiii ...]'
@@ -261,6 +285,8 @@ c         if(iplot.eq.1)
      $     ,' Default -p1. Non-positive no plot'
       write(*,*)'-w set object whose data is to be written, or none.'
       write(*,*)'-m mask objects whose force is to be plotted'
+      write(*,*)'-v mask objects whose force vs v is to be printed.'
+     $     ,' No other printing.'
       write(*,*)'-r set size of plot window'
       write(*,*)'-i set iosw for objplot:'
      $     ,' Coloring 0 position, 1 flux, 2 flux-density.'

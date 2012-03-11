@@ -1337,7 +1337,7 @@ c Figure out the version:
       iend=lentrim(charout)
       if(charout(iend-9:iend-3).eq.'Version')then
          read(charout(iend-1:iend),*)iversion
-         write(*,*)'Flux file version',iversion
+         if(ierr.ne.0)write(*,*)'Flux file version',iversion
       else
          iversion=0
       endif
