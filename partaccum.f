@@ -17,7 +17,8 @@ c Indicated by zero cellvolume.
          if(cellvol.eq.0.)then
 c This ought to be determined based on the number of samples.
 c But xlimits mean that's problematic.
-            nvlist=100
+c            nvlist=100
+            nvlist=10
             call vlimitdeterm(npdim,x_part,if_part,ioc_part
      $           ,vlimit,nvlist)
 c            write(*,'('' Velocity limits:'',6f7.3)') vlimit
@@ -275,19 +276,18 @@ c
          do k=1,nptdiag
             cumfv(k,id)=cumfv(k-1,id)+fv(k,id)/float(nfvaccum)
 c            write(*,*)id,k,fv(k,id),cumfv(k,id),ib
-            if(.false.)then
 c This linear mapping does not work well.
-               ib=1+ int(cumfv(k,id)*(nsbins)*(.99999))
-            else
-               bx=float(ib)/nsbins
+c            ib=1+ int(cumfv(k,id)*(nsbins)*(.99999))
+            bx=float(ib)/nsbins
 c cubic progression.
-               cfn=1.0001*(3.*bx**2-2.*bx**3)
+c               cfn=1.0001*(3.*bx**2-2.*bx**3)
+c quintic progression puts more bins further out.
+            cfn=1.0002*bx**3*(10.-15.*bx+6*bx**2) -.0001
 c            write(*,*)'cfn',cfn,cumfv(k,id)
-               if(cumfv(k,id).gt.cfn)then
+            if(cumfv(k,id).gt.cfn)then
 c find the histogram bin-boundary.
-                  vhbin(ib,id)=vhbin(0,id)+(k-1)*dv
-                  ib=ib+1
-               endif
+               vhbin(ib,id)=vhbin(0,id)+(k-1)*dv
+               ib=ib+1
             endif
             ibinmap(k,id)=ib
             if(ib.lt.1 .or. ib.gt.nsbins)then

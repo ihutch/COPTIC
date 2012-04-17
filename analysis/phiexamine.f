@@ -18,17 +18,18 @@ c Cylindrical vector distribution:
       real oneoverr(100),huckel(100),ro(100),cl(100)
       real xl(2),yl(2)
 c
-      logical lsd
+      logical lsd,lhalf
       integer ifix(3)
       parameter (ndiagmax=7)
       real diagsum(na_i,na_j,na_k,ndiagmax)
       real phimax
       data phimax/0./
-      data lsd/.false./
+      data lsd/.false./lhalf/.false./
 c 
+
       diagfilename=''
       isw=1
-      call examargs(rp,phimax,isw,lsd)
+      call examargs(rp,phimax,isw,lsd,lhalf)
          
 c      write(*,*)(u(16,16,k),k=1,36) 
       ied=1
@@ -224,12 +225,17 @@ c         write(*,*)ipow,fac10,delta,first,xlast
 c         write(*,*)' Phimax', phimax,' fac10',fac10
 c         write(*,*)' Contours',nc,(cl(k),k=1,nc)
          iconsw=1+64
-         call pltinaspect(-rval(nr),rval(nr),
+         if(lhalf)then
+            call pltinaspect(0.,rval(nr),
      $        xn(ixnp(3)+1),xn(ixnp(3)+iuds(3)))
+         else
+            call pltinaspect(-rval(nr),rval(nr),
+     $        xn(ixnp(3)+1),xn(ixnp(3)+iuds(3)))
+         endif
          call color(15)
          call contourl(rzdist,ppath,nr+1,nr+1,iuds(3),
      $        cl,nc,rval,xn(ixnp(3)+1),iconsw)
-         call contourl(rzdist,ppath,nr+1,nr+1,iuds(3),
+         if(.not.lhalf)call contourl(rzdist,ppath,nr+1,nr+1,iuds(3),
      $        cl,nc,rvalneg,xn(ixnp(3)+1),iconsw)
 c         write(*,*)'ipow',ipow
          call fwrite(delta,iwd,max(-ipow,0)+1,string)
@@ -246,9 +252,11 @@ c Indicate rectangle limits.
          call dashset(2)
          xl(1)=rx
          xl(2)=rx
+         if(.not.lhalf)then
          call polyline(xl,yl,2)
          xl(1)=-rx
          xl(2)=-rx
+         endif
          call polyline(xl,yl,2)
          if(ry.ne.rx)then
             xl(1)=ry
@@ -278,7 +286,11 @@ c         call jdrwstr(.02,.28,'!Af!@!dp!d='//string(1:iwd),1.)
             call axbox()
             call axis2()
          else
-            call axlabels('r','z')
+            if(lhalf)then
+               call axlabels('r','')
+            else
+               call axlabels('r','z')
+            endif
             call axis()
          endif
 
@@ -353,9 +365,9 @@ c         write(22,*)rzmpos(iz0+i),xn(ixnp(3)+iz0+i)
       end
 
 c*************************************************************
-      subroutine examargs(rp,phimax,isw,lsd)
+      subroutine examargs(rp,phimax,isw,lsd,lhalf)
       include 'examdecl.f'
-      logical lsd
+      logical lsd,lhalf
 
       ifull(1)=na_i
       ifull(2)=na_j
@@ -381,6 +393,7 @@ c Deal with arguments
          if(argument(1:2).eq.'-p')
      $        read(argument(3:),'(f8.4)',err=201)phimax
          if(argument(1:2).eq.'-s')lsd=.not.lsd
+         if(argument(1:2).eq.'-m')lhalf=.not.lhalf
          if(argument(1:2).eq.'-l')
      $        read(argument(3:),*,err=201)isw
          if(argument(1:2).eq.'-h')goto 203
@@ -403,6 +416,7 @@ c     $     //' [copticgeom.dat'
       write(*,301)' -d<diagfilename>  -r<rp> -p<phimax> -l<isw>'
       write(*,301)' isw: Byte 1: gradlegend(1) 2: SliceCont(0) ...'
       write(*,301)' -s scale size to debyelen'
+      write(*,301)' -m toggle mirror image'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue

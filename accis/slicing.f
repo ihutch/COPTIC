@@ -1,6 +1,7 @@
 c*******************************************************************
 c General slicing routine with web projection.
-      subroutine sliceGweb(ifull,iuds,u,nw,zp,ixnp,xn,idfix,utitle)
+      subroutine sliceGweb(ifull,iuds,u,nw,zp,ixnp,xn,idfix,utitle
+     $     ,svec,vp)
 c Plot web-projected and/or projected contour representations 
 c of quantity u on slices with
 c fixed values of dimension idfix.
@@ -11,7 +12,8 @@ c The full dimensions of arrays u are
 c The used dimensions of each are
       integer iuds(ndims)
 c The dimensions of square working array, zp, (nw) must be larger
-c than the greatest of iuds. If zp(1,1)=0 on entry, give control help.
+c than the greatest of iuds. 
+c If zp(1,1)=0 on entry, give control help.
       integer nw
       real zp(nw,nw)
 c The node positions are given by vectors laminated into xn, whose
@@ -25,7 +27,11 @@ c The fixed dimension which is chosen to start, and returned after, is:
 c If idfix<0, then don't maintain aspect ratio.
 c The plotted quantity title is
       character*(*) utitle
-c Needed for perspective plot
+c If abs(idfix) has bit 3 set (by adding 4), then use svec, which is an
+c optional vector argument on the same array of positions as u. 
+      real svec(ifull(1),ifull(2),ifull(3),3)
+      real vp(nw,nw,2)
+c Do arrow plots of this field over contours Needed for perspective plot
       include 'world3.h'
 c Workspace size is problematic.
       parameter (nwksp=40000)
@@ -36,11 +42,12 @@ c Local variables:
       integer icontour,iweb,iback
       integer isw,jsw
       integer iclipping
+      integer idpa(2)
       character*(10) cxlab,cylab
       character*(30) form1
       save nf1,nf2,nff,if1,if2,iff
-      logical lfirst,laspect
-      data lfirst/.true./laspect/.true./
+      logical lfirst,laspect,larrow
+      data lfirst/.true./laspect/.true./larrow/.false./
       data iclipping/0/jsw/0/
 c Tell that we are looking from the top by default.
       data ze1/1./icontour/1/iweb/1/iback/0/
@@ -51,7 +58,14 @@ c Tell that we are looking from the top by default.
          laspect=.false.
          idfix=abs(idfix)
       endif
-      if(idfix.lt.1 .or. idfix.gt.ndims)idfix=ndims
+      if(idfix.gt.256)idfix=ndims
+      if(idfix/4-2*(idfix/8).ne.0)then 
+         larrow=.not.larrow
+c         write(*,*)'idfix=',idfix,'  larrow=',larrow
+         idfix=idfix-4*(idfix/4)
+      endif
+      if(idfix.lt.1)idfix=ndims
+c Then we are using the svec argument.
       ips=0
       irotating=0
 c Initial slice number
@@ -81,6 +95,8 @@ c Start of controlled plotting loop.
 c Set the plotting arrays for fixed dimension idfix.
       idp1=mod(idfix,3)+1
       idp2=mod(idfix+1,3)+1
+      idpa(1)=idp1
+      idpa(2)=idp2
       if(iclipping.eq.0)then
 c Plot the full used array.
          nf1=iuds(idp1)
@@ -92,7 +108,7 @@ c Plot the full used array.
          if(nf2*nf1.gt.nwksp)then
             write(*,101)nwksp,nf1,nf2
  101        format('sliceGweb error: need bigger nwksp',i6,
-     $           ' smaller than',i4,' x',i4)
+     $           ' compiled smaller than',i4,' x',i4)
             return
          endif
       endif
@@ -100,9 +116,8 @@ c Plot the full used array.
       xdp2=xn(ixnp(idp2)+nf2)-xn(ixnp(idp2)+if2)
 c      write(*,*)'nf2,if2,xdp2',nf2,if2,xdp2
 c Only works for 3-D in present implementation.
-c Could be fixed to be general, I suppose.
-      do i=if1,nf1
-         do j=if2,nf2
+      do j=if2,nf2
+         do i=if1,nf1
             if(idfix.eq.1)then
                zp(i,j)=u(n1,i,j)
             elseif(idfix.eq.2)then
@@ -112,6 +127,22 @@ c Could be fixed to be general, I suppose.
             endif
          enddo
       enddo
+      if(larrow)then
+c Set up the vector arrow plot arrays. 
+         do k=1,2
+            do j=if2,nf2
+               do i=if1,nf1
+                  if(idfix.eq.1)then
+                     vp(i,j,k)=svec(n1,i,j,idpa(k))
+                  elseif(idfix.eq.2)then
+                     vp(i,j,k)=svec(j,n1,i,idpa(k))
+                  elseif(idfix.eq.3)then
+                     vp(i,j,k)=svec(i,j,n1,idpa(k))
+                  endif
+               enddo
+            enddo
+         enddo
+      endif
 
 c 3D plot ranges.
       xmin=xn(ixnp(idp1)+if1)
@@ -186,6 +217,12 @@ c Contour without labels, with coloring, using vector axes
          call contourl(zp(if1,if2),pp,nw,
      $        nf1+1-if1,nf2+1-if2,cl,icl,
      $        xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),17)
+         Erange=0.
+         iasw=9
+         call color(igray())
+         if(larrow)call arrowplot(vp(if1,if2,1),vp(if1,if2,2),Erange,nw
+     $        ,nf1+1-if1,nf2+1-if2,xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2)
+     $        ,iasw,idum,idum) 
          call ticlabtog()
          call axis()
          call ticlabtog()
@@ -320,7 +357,8 @@ c End of user interface.
 
 c*******************************************************************
 c Three-way slice contours.
-      subroutine sliceGcont(ifull,iuds,u,nw,zp,ixnp,xn,ifixpt,utitle)
+      subroutine sliceGcont(ifull,iuds,u,nw,zp,ixnp,xn,ifixpt,utitle
+     $     ,svec,vp)
 c Plot projected contour representations on cuts in three dimensions 
 c of quantity u on fixed values of dimensions.
 c The initial intersection of the fixed planes is at ifixpt(ndims).
@@ -328,12 +366,14 @@ c The full dimensions of arrays u are ifull, used iuds.
       parameter(ndims=3,nd2=2*ndims)
       integer ifull(ndims)
       real u(ifull(1),ifull(2),ifull(3))
+      real svec(ifull(1),ifull(2),ifull(3),ndims)
 c The used dimensions of each are
       integer iuds(ndims)
 c The dimensions of square working array, zp, (nw) must be larger
 c than the greatest of iuds. If zp(1,1,1)=0 on entry, give control help.
       integer nw
       real zp(nw,nw,ndims)
+      real vp(nw,nw,ndims,ndims)
 c The node positions are given by vectors laminated into xn, whose
 c starts for dimensions id are at ixnp(id)+1. 
 c So the vector of positions for dimension id is 
@@ -342,6 +382,7 @@ c   ixnp(id)+1 to ixnp(id)+iuds(id) [and ixnp(id+1)-ixnp(id)>=iuds(id)]
       real xn(*)
 c The plane intersection, chosen to start, and returned after, is:
       integer ifixpt(ndims)
+c If ifixpt(1) is negative, then do arrowplots.
 c The plotted quantity title is
       character*(*) utitle
 c Needed for perspective plot
@@ -357,6 +398,8 @@ c Make pfsw visible:
 c Local variables:
       integer np
       parameter (np=100)
+      integer narrow
+      parameter (narrow=15)
       real tp(np),up(np)
       integer idire(3),idir(3)
       real cbsize(3),cmin(3),cmax(3)
@@ -367,8 +410,8 @@ c Local variables:
       integer isw,jsw,imode,itype,ifileno
       character*(10) cxlab,cylab
       character*(30) form1
-      logical lfirst,lsideplot
-      data lfirst/.true./lsideplot/.false./
+      logical lfirst,lsideplot,larrow
+      data lfirst/.true./lsideplot/.false./larrow/.false./
 c Tell that we are looking from the top by default.
       data ze1/1./icontour/1/iweb/1/iback/0/
       data cs/.707/sn/.707/imode/0/itype/0/
@@ -378,6 +421,10 @@ c Tell that we are looking from the top by default.
       imv=1
       itri=0
       icl=0
+      if(ifixpt(1).lt.0)then
+         larrow=.not.larrow
+         ifixpt(1)=-ifixpt(1)
+      endif
       if(ifixpt(1).eq.0)ifixpt(1)=iuds(1)/2
       if(ifixpt(2).eq.0)ifixpt(2)=iuds(2)/2
       if(ifixpt(3).eq.0)ifixpt(3)=iuds(3)/2
@@ -420,6 +467,7 @@ c Get back current eye position xe1 etc.
       cbsize(2)=scby3
       cbsize(3)=scbz3
 
+c Store the slices in the plot arrays.      
       do i=1,iuds(2)
          do j=1,iuds(3)
             zp(i,j,1)=u(ifixpt(1),i,j)
@@ -435,6 +483,33 @@ c Get back current eye position xe1 etc.
             zp(i,j,3)=u(i,j,ifixpt(3))
          enddo
       enddo
+      if(larrow)then
+         vmax=0.
+         do k=1,ndims
+            do j=1,iuds(3)
+               do i=1,iuds(2)
+                  vh=svec(ifixpt(1),i,j,k)
+                  if(abs(vh).gt.vmax)vmax=vh
+                  vp(i,j,1,k)=vh
+               enddo
+            enddo
+            do i=1,iuds(3)
+               do j=1,iuds(1)
+                  vh=svec(j,ifixpt(2),i,k)
+                  if(abs(vh).gt.vmax)vmax=vh
+                  vp(i,j,2,k)=vh
+               enddo
+            enddo
+            do i=1,iuds(1)
+               do j=1,iuds(2)
+                  vh=svec(i,j,ifixpt(3),k)
+                  if(abs(vh).gt.vmax)vmax=vh
+                  vp(i,j,3,k)=vh
+               enddo
+            enddo
+         enddo
+      endif
+
 
 c---------------------------
       if(ierr.eq.0)then
@@ -565,11 +640,24 @@ c Poor man's top lighting:
             ib2=ifixpt(id2)*(idir(id2)+1)/2 - (idir(id2)-1)/2
 c Contour without labels, with coloring, using vector axes
 c            write(*,*)it1,ib1,it2,ib2,ifix
-            if(it1-ib1.gt.0 .and. it2-ib2.gt.0)
-     $           call contourl(zp(ib1,ib2,ifix),
+            if(it1-ib1.gt.0 .and. it2-ib2.gt.0)then
+               call contourl(zp(ib1,ib2,ifix),
      $           pp,nw,it1-ib1+1,it2-ib2+1,
      $           cl,icl,
      $           xn(ixnp(id1)+ib1),xn(ixnp(id2)+ib2),17+itri*64)
+               if(larrow)then
+c We need a sensible arrow scale. Can't make individual plots different. 
+                  Erange=narrow*1.33*vmax
+                  iasw=5
+c                  write(*,*)ifix,ib1,ib2,it1,it2,id1,id2
+                  call color(igray())
+                  call arrowplot(vp(ib1,ib2,ifix,id1)
+     $                 ,vp(ib1,ib2,ifix,id2),Erange,nw
+     $                 ,it1+1-ib1,it2+1-ib2
+     $                 ,xn(ixnp(id1)+ib1),xn(ixnp(id2)+ib2)
+     $                 ,iasw,iuds(id1)/narrow,iuds(id2)/narrow) 
+               endif
+            endif
             if(ilev.eq.2)idir(id1)=-idir(id1)
             if(ilev.eq.3)idir(id2)=-idir(id2)
          enddo

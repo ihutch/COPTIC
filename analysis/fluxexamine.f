@@ -76,8 +76,12 @@ c            if(iomask.eq.0)iomask=2*(2**30-1)+1
       enddo
       iarg1=iargc()+1
  10   continue
-c Give no informational messages.
-      if(ivprn.ne.0)ierr=0
+      if(ivprn.eq.0)then
+c Give informational messages.
+         ierr=1
+      else
+         ierr=0
+      endif
       call readfluxfile(filename,ierr)
 
 c      write(*,*)'found',ff_data(nf_address(nf_flux,1,-1)+1-1)

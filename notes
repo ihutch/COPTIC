@@ -8115,3 +8115,103 @@ drops by master node periodically.
 
 Modify fluxexamine to allow printing out of vd and a component of the force 
 from a masked set of objects. This is to ease developing plots versus vd.
+Committed.
+
+5 Apr 2012
+
+Modify diagexamine to do an overplot of velocity arrows on a final plot
+of the density. Seems to work. Discovered one needs the right number of
+arguments if there's a character array to be passed, else the character
+array is not handled correctly, and the called routine looks for its
+length in an incorrect storage location.
+
+13 Apr 2012
+
+Revisiting subcycling because there seems evidence that with collisions
+the effects of proximity to point particles are in fact impacting the
+results with slow flow. It might be possible to alleviate these by getting
+subcycling to work better. 
+
+The basic problem with current subcycling is that it does not
+substantially reduce the acceleration duration at the first reduction
+of movement duration.  That's because the kick has duration
+(dtprec+dtc)/2. And if we've been moving fast so that dtprec is big,
+then reducing dtc doesn't reduce the acceleration duration (kick) by
+more than a factor of 2. What that says is that if we obtain an
+acceleration that is too large, it is already too late to reduce much
+the kick-duration because the that duration has been set by the prior
+dtprec. We should not have allowed the ion to step into so high an
+acceleration region with the previous timestep. 
+However, we have the information to back-up the move. It is in the form
+of dtprec and the current position and velocity. 
+
+What we are really saying is that for subcycling we want to interrupt 
+and reduce the standard KICK-timestep. This is different from collisions
+where we want to interrupt the MOVE-timestep. So simply adopting the same
+approach for subcycle and collisions is insufficient.
+
+Now when backing-up, the prior kick has already assumed a step dtprec
+and made its kick-duration equal to half of it plus half of the
+previous step.  We need to change dtprec. But we can (I think) adopt
+an alternate view of where the step starts and stops. Instead of
+defining that through the move-step, we can define it through the
+kick-step. So if we back up by half of dtprec, we are at the end of
+the prior kick-step, and we can then change the current kick-step to
+something new and smaller. That means the prior move step was half of the 
+dtprec plus half of the new kick-step. This is illustrated by the following
+diagram for a step-size-reduction occurring at *.
+
+Kick Steps ----|-------|-------|---|---|--|
+Move Steps |-------|-------|---*-|---|---|-|
+                               a b c d e f g
+Unchanged Moves ---|-------|-------|-------| 
+                            dtprec
+
+That can be contrasted with the step reduction occuring at a move-step
+end (which is what is used for collisions) illustrated below:
+
+Kick Steps ----|-------|-------|---*-|---|
+Move Steps |-------|-------|-------|---|---|
+                            dtprec c
+
+Either one of these approaches has some error associated with the
+transition in step-size. I don't think there's reason to suppose that
+one error is worse than the other. We represent the values of position
+at move-step ends (|). The velocities that are stored are those
+corresponding to the middle of the prior move-step. I.e. at the prior
+kick-step end. 
+
+Backing up (the first of the above diagrams) corresponds to returning
+to that prior kick-step end. The position is then half the dtprec
+times the velocity back (*, a). We then want to take a smaller
+half-move step forward to the adjusted move-step end (b), and make the
+kick step based upon the acceleration at that position (b) and the new
+duration.  We want to store as dtprec, the new kick-step duration,
+half of which is the half-kick-step to the current position (b). Then
+when we attempt to take the new step, the kick will be correctly
+calculated using (dtprec+dtc)/2. 
+
+If we then find the new kick is still too large and we want to reduce
+the step-duration further, we can simply repeat the backing-up process.
+We need to keep track of where we eventually have to get to,
+using dtremain.
+
+In neither case do we adjust the potential. So the field calculation
+is done for a charge density that corresponds to the end of the prior
+move step. In the prior approach to subcycling, that meant we use
+advanced particle positions to obtain the acceleration, leading to
+accelerating self-force. In the case of backing up, the field is
+instead evaluated at a position (b) behind that (c) at which potential was
+solved.  It should then give decelerating self-force at kick b, but
+accelerating at d and f. The time g is where the subcycling catches up
+with the rest of the simulation, and we move to the next time-step.
+
+To implement backing up we need to package up particle moving into
+a subroutine and then just do it backwards for specified negative dt.
+Did the encapsulation.
+
+14 Apr 2012
+
+Seem to have subcycling working as planned. When a sub-step has been taken
+the length tries to double or go the full length. That way if we substep
+out of a high acceleration region, then we'll lengthen the step again.

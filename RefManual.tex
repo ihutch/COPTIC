@@ -392,7 +392,7 @@ Set distribution diagnostics. Bit1: write, Bit2: plot. Default 0.
 This controls whether particle distribution diagnostics will be
 written and/or plotted at the end of each \verb!iavesteps! steps. 
 
-\paragraph{-m....}  Set number of diagnostic moments to save (max 7). Default 0.
+\paragraph{-md....}  Set number of diagnostic moments to save (max 7). Default 0.
 This controls which diagnostic files and messages will be written
 every istepsave steps. If zero, no files or messages.
 
@@ -989,7 +989,7 @@ contributions to the different velocity-moments. They are calculated
       real diagsum(na_i,na_j,na_k,ndiagmax)
 \end{verbatim}
 When diagnostics are being accumulated, because the command line
-switch \verb!-mX! has set a non-zero number of moments \verb!X!, then
+switch \verb!-mdX! has set a non-zero number of moments \verb!X!, then
 \verb!chargetomesh! updates this sum as well as the charge. Every
 \verb!iavesteps! (set by \verb!-a!) the sums are reduced from all
 processors and written to a file whose name indicates the step-number

@@ -4,6 +4,7 @@
       integer Li
       parameter (Li=60)
       real u(Li,Li,Li),zp(Li,Li,3)
+      real gradu(Li,Li,Li,3),vp(Li,Li,3,3)
       real xn(3*Li)
       integer ixnp(4)
       integer ifixpt(3)
@@ -41,12 +42,65 @@ c               write(*,*)x,y,z,u(i,j,k)
          enddo
       enddo
 
+c Calculate the gradient of u as a vector field to do arrow plotting.
+      do k=1,iuds(3)
+         do j=1,iuds(2)
+            do i=1,iuds(1)
+               if(i.eq.1)then
+                  gradu(i,j,k,1)=(u(i+1,j,k)-u(i,j,k))/
+     $                 (xn(ixnp(1)+i+1)-xn(ixnp(1)+i))
+               elseif(i.eq.iuds(1))then
+                  gradu(i,j,k,1)=(u(i,j,k)-u(i-1,j,k))/
+     $                 (xn(ixnp(1)+i)-xn(ixnp(1)+i-1))
+               else
+                  gradu(i,j,k,1)=(u(i+1,j,k)-u(i-1,j,k))/
+     $                 (xn(ixnp(1)+i+1)-xn(ixnp(1)+i-1))
+               endif
+               if(j.eq.1)then
+                  gradu(i,j,k,2)=(u(i,j+1,k)-u(i,j,k))/
+     $                 (xn(ixnp(2)+j+1)-xn(ixnp(2)+j))
+               elseif(j.eq.iuds(2))then
+                  gradu(i,j,k,2)=(u(i,j,k)-u(i,j-1,k))/
+     $                 (xn(ixnp(2)+j)-xn(ixnp(2)+j-1))
+               else
+                  gradu(i,j,k,2)=(u(i,j+1,k)-u(i,j-1,k))/
+     $                 (xn(ixnp(2)+j+1)-xn(ixnp(2)+j-1))
+               endif
+               if(k.eq.1)then
+                  gradu(i,j,k,3)=(u(i,j,k+1)-u(i,j,k))/
+     $                 (xn(ixnp(3)+k+1)-xn(ixnp(3)+k))
+               elseif(k.eq.iuds(3))then
+                  gradu(i,j,k,3)=(u(i,j,k)-u(i,j,k-1))/
+     $                 (xn(ixnp(3)+k)-xn(ixnp(3)+k-1))
+               else
+                  gradu(i,j,k,3)=(u(i,j,k+1)-u(i,j,k-1))/
+     $                 (xn(ixnp(3)+k+1)-xn(ixnp(3)+k-1))
+               endif
+            enddo
+         enddo
+      enddo
+      
+
 c      iuds(3)=iuds(3)-1
 
       ifixpt(3)=10
+      ifix=0
+c      call sliceGweb(ifull,iuds,u,Li,zp,
+c     $     ixnp,xn,ifix,'potential:'//'!Ay!@',dum,dum)
+
+c Arrowplot call.
+      ifix=4
       call sliceGweb(ifull,iuds,u,Li,zp,
-     $        ixnp,xn,ifix,'potential:'//'!Ay!@')
+     $     ixnp,xn,ifix,'potential:'//'!Ay!@'
+     $     ,gradu,vp)
+
+
+c      call sliceGcont(ifull,iuds,u,Li,zp,
+c     $        ixnp,xn,ifixpt,'potential:'//'!Ay!@')
+
+      ifixpt(1)=-iuds(1)/2
       call sliceGcont(ifull,iuds,u,Li,zp,
-     $        ixnp,xn,ifixpt,'potential:'//'!Ay!@')
+     $        ixnp,xn,ifixpt,'potential:'//'!Ay!@'
+     $     ,gradu,vp)
 
       end

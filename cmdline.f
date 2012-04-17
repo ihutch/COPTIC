@@ -130,7 +130,7 @@ c For Mach bdy, set slpD equal to M.
 c By default put the vneutral the same
             vneutral=vd
          endif
-         if(argument(1:2).eq.'-md')then 
+         if(argument(1:3).eq.'-md')then 
             read(argument(4:),*,err=201)ndiags
             if(ndiags.gt.ndiagmax)then
                write(*,*)'Error: Too many diag-moments',ndiags

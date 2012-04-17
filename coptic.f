@@ -430,7 +430,7 @@ c Do any other processing? Here or later?
 c               call diagstep(iLs,diagsum,ndiags)
                if(lmyidhead)then
 c If I'm the head, write it.
-                  write(*,'(a,i3,a,$)')'Diags',ndiags,' '
+                  write(*,'(a,i3,a)')'Diags',ndiags,' '
                   write(argument,'(''.dia'',i4.4)')j
                   call namewrite(diagfilename,ifull,iuds,ndiags,diagsum
      $                 ,argument)

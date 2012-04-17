@@ -122,7 +122,7 @@ POLYERR(xv,yv,errv,ilength) Draw error bars yv to yv+errv.
 \iftth \special{html:<a href="filltest.f"><img align="right" src="filltest.png"></a>}\fi
 COLOR(icol) Set current color of 0-15. Default 15 black (on white).
 
-GRADCOLOR(icol) Set current color from a 0-239 color gradient range.
+GRADCOLOR(icol) Set current color from a 1-240 color gradient range.
 
 ACCISGRADINIT(ir1,ig1,ib1,ir2,ig2,ib2) Set the gradient linear color
 range start and end, rgb amplitudes 0-65535.
@@ -203,7 +203,7 @@ TICNUMSET(itics) Set the number of tics of axis (approximately).
 
 \iftth \special{html:<img align="right" src="fontshow.png">} \fi
 
-Special text is accessed via [``$\backslash$'' or] ``!'' followed by one of 
+Special text is accessed via ``$\backslash$'' or ``!'' followed by one of 
 the following:
 {\parindent 5 pc
 \item{@}       to normal font 0.
@@ -214,10 +214,6 @@ the following:
 \item{G}       to font 5 (german gothic)
 \item{D}       Toggle subscript mode
 \item{U}       Toggle superscript mode
-\item{P}       Save current position
-\item{Q}       Return to saved position (and save current)
-\item{O}       Toggle overbar mode (write high, full size)
-\item{N}       Toggle underbar mode
 }
 
 JDRWSTR(xn,yn,cstring,just) Draw cstring at (xn,yn)(normal), justified
@@ -340,8 +336,7 @@ position of cube center. Defaults .25,.25,.2,.5,.4.
 
 TRN32(x,y,z,xt,yt,zt,ifl) If ifl=1, set 3-D transform; (x,y,z) is
 point looked at, (xt,yt,zt) is eye. If ifl=2, set axonometric, offset
-xt,zt.  If ifl=0 transform (x,y,z) to (xt,yt). If ifl=-1 return the 
-current point in (x,y,z) and eye position in (xt,yt,zt).
+xt,zt.  If ifl=0 transform (x,y,z) to (xt,yt).
 
 CUBEPROJ() Draw the cube outline faces closest to eye.
 
@@ -381,7 +376,7 @@ code gives interactive examination of the object:
 \item{51}Continue
 \item{}Drawing commands ...
 \item{}call eye3d(isw)
-\item{}if(isw.ne.ichar('q') .and. isw.ne.0)goto 51\par
+\item{}if(isw.eq.1)goto 51\par
 } Key presses with focus in the plot window, return isw= keysym of key
 pressed. For example in X, left, up, right, down cursor arrows are
 ff51-4 respectively (65361-4 decimal). Letters are their lower case
@@ -391,39 +386,45 @@ purposes. But the codes for cursors are different under Windows
  
 IEYE3D() Integer function of convenience to return switch value of eye3d.
 
-ROTATEZOOM(isw) Respond to return of interactive keypress from eye3d, by
-rotating the viewpoint by small angles right (r) or left (e), or by
-moving eye in (i) or out (o), or by magnifying (z) or shrinking (x) the
-unit cube (effectively changing the field of view).
 
+\iftth \special{html:<a href="slicetest.f"><img align="right"
+src="sgweb.jpg" width="400"></a>}\fi
 
 \beginsection{Plotting volumetric 3-D Data}
 
-SLICEGWEB(ifullv,iudsv,u,nw,zp,ixnpv,xnv,ifix,cutitle) Plot as 3-D webs
-slices through 3-D array u. ifullv(3) and iudsv(3) are the full and used
-dimensions of u. zp(nw,nw) is a work array; nw should be
-$>$max(iudsv). ixnpv(3) are the pointers within xnv to the node position
-array starts. That is, the positions of the nodes in dimension id are
-stored in xnv(ixnpv(id))+1 to xnv(ixnpv(id))+ iudsv(id). ifix is the
-initial fixed dimension (1,2 or 3). cutitle is the character array
-title of u. Keyboard control of the slice is provided, together with
-perspective view controlled by mouse.
+SLICEGWEB(ifullv,iudsv,u,nw,zp,ixnpv,xnv,ifix,cutitle[,svec,vp]) Plot
+as 3-D webs slices through 3-D array u. ifullv(3) and iudsv(3) are the
+full and used dimensions of u. zp(nw,nw) is a work array; nw should be
+$>$max(iudsv). ixnpv(3) are the pointers within xnv to the node
+position array starts. That is, the positions of the nodes in
+dimension id are stored in xnv(ixnpv(id))+1 to xnv(ixnpv(id))+
+iudsv(id). ifix is the initial fixed dimension (1,2 or 3). cutitle is
+the character array title of u. Keyboard control of the slice is
+provided, together with perspective view controlled by mouse. If the
+third bit of abs(ifix) is set (by adding 4 to it), then overplot
+on the contour plot arrows representing the projection of the vector
+field svec(ifullv,3), which has the same indexing and positions as u,
+and three vector components. The work array vp(nw,nw,2) must be provided.
+The last two arguments may be omitted if unused.
 
-SLICEGCONT(ifullv,iudsv,u,nw,zp,ixnpv,xnv,ifixptv,cutitle) Plot perspective
-view of slices on which are contours of 3-D array
-u(ifullv(1),ifullv(2),ifullv(3)). ifullv(3), iudsv(3), zp(nw,nw), ixnpv(3),
-cutitle are as above. The initial intersection of the 3 fixed planes
-is at ifixptv(3). Slightly different keyboard/mouse control is
-provided.
+\iftth \special{html:<a href="slicetest.f"><img align="left"
+src="sgcont.jpg" width="300"></a>}\fi
+
+SLICEGCONT(ifullv,iudsv,u,nw,zp,ixnpv,xnv,ifixptv,cutitle[,svec,vp]) Plot
+perspective view of slices on which are contours of 3-D array
+u(ifullv(1),ifullv(2),ifullv(3)). ifullv(3), iudsv(3), zp(nw,nw),
+ixnpv(3), cutitle are as above in slicegweb. The initial intersection
+of the 3 fixed planes is at ifixptv(3). Slightly different
+keyboard/mouse control is provided. Overplotting arrows is indicated
+by the third bit of ifix being set. The work array must vp(nw,nw,3,3)
+must be provided.
 
 
 \beginsection{Primitives}
 
 VECW(x,y,ipen) Draw world-unit vector to (x,y) with pen up (ipen=0) or down (1).
-If ipen=-1, then just draw a single point (pixel) at (x,y). 
 
-VECN(x,y,ipen) Draw norm-unit vector to (x,y) with pen up (0), down
-(1), point (-1).
+VECN(x,y,ipen) Draw norm-unit vector to (x,y) with pen up (0) or down (1).
 
 WX2NX(wx), WY2NY(wy) Real functions convert world to normal units.
 
@@ -446,8 +447,7 @@ FITRANGE(min,max,itics,ipow,fac10,delta,first,xlast) Fit a maximum of
 itics ticks to range (min, max). Decide a scaling factor 10$^{\rm
 ipow}$=fac10 and a sensible (scaled) delta between tics. First (xlast)
 is integer multiple of delta lying closest to min (max) outside the
-range (min,max). Then (first+i*delta) are the tick values, but one
-might label them with (first+i*delta)/fac10 multiplied by 10$^{ipow}$.
+range (min,max). So fac10*(first+i*delta) are the tick values.
 
 MINMAX(xv,isize,min,max) Find min and max of vector of size isize.
 

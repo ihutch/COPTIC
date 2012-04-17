@@ -35,7 +35,7 @@ c Local storage
       integer ixp(ndims_mesh)
       real field(ndims_mesh),adfield(ndims_mesh)
       real xfrac(ndims_mesh)
-      real xg(ndims_mesh),xc(ndims_mesh)
+c      real xg(ndims_mesh),xc(ndims_mesh)
       logical linmesh
       logical lcollided,ltlyerr
       save adfield
@@ -74,6 +74,7 @@ c      write(*,*)'Setting averein in padvnc.',phirein
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 c At most do over all particle slots. But generally we break earlier.
       do i=1,n_partmax
+         dtdone=0.
          dtremain=0.
          dtpos=dt
 c=================================
@@ -164,24 +165,37 @@ c                  if(fieldp(2).ne.field(2))then
 c                     write(*,'(i5,a,6f10.6)')i,' Point-field:',
 c     $                    fieldp,((fieldp(j)-field(j)),j=1,ndims)
 c--------------------------------------
+         dtc=0.
 c Subcycle restart.
 c---------- Subcycling ----------------
-         if(subcycle.ne.0)then            
-c One might have a conditional test to set subcycling for this particle
-c such as this automatic one based on avoiding excessive acceleration.
-c It drops the timestep such that f1.dtc < subcycle. So subcycle becomes
-c the maximum impulse per step. But we need to limit the maximum number
-c of subcycles, e.g. to 10.
-            dtc=dt/max(1.,min(10.,anint(f1*dt/subcycle)))
-c            dtc=dt/max(1.,anint(f1*dt/subcycle))
-c For testing we just set directly.
-c            dtc=subcycle
-            if(dtc.lt.dtpos)then
-c Take sub-step.
+         if(subcycle.ne.0)then
+c Conditional test to set subcycling for this particle. 
+c Don't go smaller than dt/8
+            if(f1*dtpos.gt.subcycle .and. 8*dtpos.gt.dt)then
+c               if(i.lt.norbits)then
+c                  write(*,*)
+c                  write(*,'(a,i3,4f10.5,$)')'Subcycling  ',i,dtpos
+c     $                 ,dtprec(i),dtremain,dtdone+dtpos+dtremain
+c               endif
+c Reduce the position-step size.
+               dtpos=dtpos/2.
+c Subcycling backs up to the start of the current kick-step, and then 
+c takes a position corresponding to a kick-step smaller by a factor of 2.
+c That means the backed-up position is dtprec/4 earlier.
+               dtback=-dtprec(i)/4.
+               call moveparticle(x_part(1,i),ndims,Bt,Btinf,Bfield,vperp
+     $              ,dtback)
+               dtdone=dtdone+dtback
+c The remaining time in step is increased by back up and by step loss.
+               dtremain=dtremain-dtback+dtpos
+c And the new dtprec is half as large:
+               dtprec(i)=dtprec(i)/2.
                nsubc=nsubc+1
-c               write(*,*)dtpos,dtremain,dtc
-               dtremain=dtpos+dtremain-dtc
-               dtpos=dtc
+               if(i.lt.norbits)then
+                  write(*,'(/,a,i3,4f10.5,$)')'Subcycle Set',i,dtpos
+     $                 ,dtprec(i),dtremain,dtdone+dtpos+dtremain
+               endif
+               goto 100
             endif
          endif
 c---------- Collisions ----------------
@@ -193,12 +207,14 @@ c            dtc=ran1(myid)*colntime
 c               write(*,*)'Collision',dtpos,dtc,colntime
 c We collided during this step. Do the partial step.  
                lcollided=.true.
+c Set dtremain to how much time will be left after this step.
                dtremain=dtpos+dtremain-dtc
                dtpos=dtc
                ncollided=ncollided+1
             endif
          endif 
-c---------------- Particle Moving ----------------
+c         if(i.lt.norbits)write(*,*)dtprec(i),dtremain,dtdone
+c---------------- Particle Advance ----------------
 c Use dtaccel for acceleration. May be different from dtpos if there was
 c a subcycle, reinjection or collision last step.
          dtaccel=0.5*(dtpos+dtprec(i))
@@ -219,73 +235,10 @@ c Accelerate ----------
             x_part(j,i)=x_part(j,i)+field(j-ndims)*dtaccel
          enddo
 c Move ----------------
-         if(Bt.eq.0.)then
-            do j=1,ndims
-               x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos
-            enddo          
-         elseif(Bt.lt.Btinf)then
-c Magnetic field non-zero but finite
-            theta=Bt*dtpos
-c Rotation is counterclockwise for ions. We only want to call the 
-c trig functions once, otherwise they dominate the cost.
-            stheta=sin(-theta)
-            ctheta=cos(theta)
-c            if(i.eq.1)write(*,*)'theta=',theta,fieldtoosmall
-            if(theta.lt.fieldtoosmall)then
-c Weak B-field. Advance using summed accelerations. First half-move
-               do j=1,ndims
-                  x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
-               enddo          
-c Rotate the velocity to add the magnetic field acceleration.
-c This amounts to a presumption that the magnetic field acceleration
-c acts at the mid-point of the translation (drift) rather than at
-c the kick between translations.
-               call rotate3(x_part(4,i),stheta,ctheta,Bfield)
-c Second half-move.
-               do j=1,ndims
-                  x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
-               enddo          
-            else
-c Strong but finite B-field case:
-c Subtract off the perpendicular drift velocity.
-               do j=ndims+1,2*ndims
-                  x_part(j,i)=x_part(j,i)-vperp(j-ndims)
-               enddo
-c Find the gyro radius and gyrocenter.
-               call gyro3(Bt,Bfield,x_part(1,i),x_part(4,i),xg,xc)
-c Rotate the velocity and gyro radius.
-               call rotate3(x_part(4,i),stheta,ctheta,Bfield)
-               call rotate3(xg,stheta,ctheta,Bfield)
-c Move xc along the B-direction.
-               call translate3(xc,x_part(4,i),dtpos,Bfield,xc)
-c Add the new gyro center and gyro radius
-c And add back the drift velocity.
-               do j=1,ndims
-c Move the gyro-center perpendicular and add gyro-radius:
-                  x_part(j,i)=xc(j)+vperp(j)*dtpos+xg(j)
-                  x_part(j+ndims,i)=x_part(j+ndims,i)+vperp(j)
-               enddo
-            endif
- 801        format(a,6f10.6)
-            if(i.le.npr)write(*,801)'x_part2',(x_part(k,i),k=1,6)
-         else
-c Infinite magnetic field; i.e. one-dimensional motion plus a
-c perpendicular steady drift velocity. Set non-drift perp particle
-c velocity to zero.
-c Bfield is normalized: i.e. a direction cosine.
-            vp=0.
-            do j=1,ndims
-               vp=vp+Bfield(j)*x_part(j+ndims,i)
-            enddo
-            do j=1,ndims
-c Parallel particle and perpendicular drift move:
-               x_part(j,i)=x_part(j,i)+(vp*Bfield(j)+vperp(j))*dtpos
-c Zero perp velocity.
-               x_part(j+ndims,i)=vp*Bfield(j)
-            enddo
-         endif
-c End of Move ---------
-
+         call moveparticle(x_part(1,i),ndims,Bt,Btinf,Bfield,vperp
+     $           ,dtpos)
+         dtdone=dtdone+dtpos
+c -----------------------------
          if(lcollided)then
 c Treat collided particle at (partial) step end
             call postcollide(i,tisq)
@@ -315,8 +268,17 @@ c--------------------------------------------
          dtprec(i)=dtpos
 c If we haven't completed this full step, do so.
          if(dtremain.gt.0.)then
-            dtpos=dtremain
-            dtremain=0.
+            if(dtc.ne.dtpos)then
+c We did not have a collision, we are purely subcycling, just double the
+c timestep for next subcycle. So as not to be over-optimistic.
+               dtpos=min(2.*dtpos,dtremain)
+c               if(i.lt.norbits)write(*,'(a,f10.5,$)')' Double',dtpos
+            else
+c If collision, default next step size to a full remaining step.
+               dtpos=dtremain
+            endif
+c dtremain is the time remaining after the next dtpos step.
+            dtremain=dtremain-dtpos
             iregion=inewregion
             goto 100
          endif
@@ -341,6 +303,7 @@ c            stop
          dtpos=(dtpos+dtremain)*ran1(myid)
          dtprec(i)=0.
          dtremain=0.
+         dtdone=dt-dtpos
          nlost=nlost+1
          nrein=nrein+ilaunch
          phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i)
@@ -359,6 +322,9 @@ c Non-injection completion.
          call bulkforce(x_part(1,i),iregion,colntime,vd)
 c Special diagnostic orbit tracking:
          if(i.le.norbits.and. if_part(i).ne.0)then
+            if(dtdone-dt.gt.1.e-4)then
+               write(*,*)' Step error? i,dtdone,dt=',i,dtdone,dt
+            endif
             iorbitlen(i)=iorbitlen(i)+1
             xorbit(iorbitlen(i),i)=x_part(1,i)
             yorbit(iorbitlen(i),i)=x_part(2,i)
@@ -708,4 +674,89 @@ c Normalize the bulkforce, multiplying by factor fac
          enddo
 c         write(*,*)'bulknorm',nf_step,i,fac,colnforce(3,i,nf_step)
       enddo
+      end
+c *******************************************************************
+      subroutine moveparticle(x_part,ndims,Bt,Btinf,Bfield,vperp,dtpos)
+      implicit none
+      integer ndims
+      real Bt,Btinf,dtpos
+      real x_part(2*ndims,1),Bfield(ndims),vperp(ndims)
+      integer j
+c Local      
+      real theta,stheta,ctheta,vp
+      real xg(3),xc(3)
+      real fieldtoosmall
+      parameter (fieldtoosmall=1.e-3)
+      integer i
+
+      i=1
+c The below is literally the section of code removed from padvnc.
+c Move ----------------
+         if(Bt.eq.0.)then
+            do j=1,ndims
+               x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos
+            enddo          
+         elseif(Bt.lt.Btinf)then
+c Magnetic field non-zero but finite
+            theta=Bt*dtpos
+c Rotation is counterclockwise for ions. We only want to call the 
+c trig functions once, otherwise they dominate the cost.
+            stheta=sin(-theta)
+            ctheta=cos(theta)
+c            if(i.eq.1)write(*,*)'theta=',theta,fieldtoosmall
+            if(theta.lt.fieldtoosmall)then
+c Weak B-field. Advance using summed accelerations. First half-move
+               do j=1,ndims
+                  x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
+               enddo          
+c Rotate the velocity to add the magnetic field acceleration.
+c This amounts to a presumption that the magnetic field acceleration
+c acts at the mid-point of the translation (drift) rather than at
+c the kick between translations.
+               call rotate3(x_part(4,i),stheta,ctheta,Bfield)
+c Second half-move.
+               do j=1,ndims
+                  x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
+               enddo          
+            else
+c Strong but finite B-field case:
+c Subtract off the perpendicular drift velocity.
+               do j=ndims+1,2*ndims
+                  x_part(j,i)=x_part(j,i)-vperp(j-ndims)
+               enddo
+c Find the gyro radius and gyrocenter.
+               call gyro3(Bt,Bfield,x_part(1,i),x_part(4,i),xg,xc)
+c Rotate the velocity and gyro radius.
+               call rotate3(x_part(4,i),stheta,ctheta,Bfield)
+               call rotate3(xg,stheta,ctheta,Bfield)
+c Move xc along the B-direction.
+               call translate3(xc,x_part(4,i),dtpos,Bfield,xc)
+c Add the new gyro center and gyro radius
+c And add back the drift velocity.
+               do j=1,ndims
+c Move the gyro-center perpendicular and add gyro-radius:
+                  x_part(j,i)=xc(j)+vperp(j)*dtpos+xg(j)
+                  x_part(j+ndims,i)=x_part(j+ndims,i)+vperp(j)
+               enddo
+            endif
+ 801        format(a,6f10.6)
+c            if(i.le.npr)write(*,801)'x_part2',(x_part(k,i),k=1,6)
+         else
+c Infinite magnetic field; i.e. one-dimensional motion plus a
+c perpendicular steady drift velocity. Set non-drift perp particle
+c velocity to zero.
+c Bfield is normalized: i.e. a direction cosine.
+            vp=0.
+            do j=1,ndims
+               vp=vp+Bfield(j)*x_part(j+ndims,i)
+            enddo
+            do j=1,ndims
+c Parallel particle and perpendicular drift move:
+               x_part(j,i)=x_part(j,i)+(vp*Bfield(j)+vperp(j))*dtpos
+c Zero perp velocity.
+               x_part(j+ndims,i)=vp*Bfield(j)
+            enddo
+         endif
+c End of Move ---------
+
       end
