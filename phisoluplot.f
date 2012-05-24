@@ -3,6 +3,7 @@
       include '3dcom.f'
 c Silence warning:
       r=rs
+c      write(*,*)r,obj_geom(otype,2),ltestplot
 c Do some analytic checking of the case with a fixed potential sphere
 c inside an object 2 sphere with its radius and BC.
       if(obj_geom(otype,2).ne.257)return
@@ -78,9 +79,11 @@ c                     error(i,j,k)=e
             enddo
          enddo
       enddo
+c      write(*,*)errvar,count,errmax,iuds,u(3,3,3)
       errvar=errvar/count
       write(*,'(a,f8.5,a,f10.6)')' Maximum nodal vacuum phi error='
      $     ,errmax,'   Standard Deviation=',sqrt(errvar)
+c      stop
       if(sqrt(errvar).gt.0.4)then
          write(*,*)
      $     '********** Standard Deviation too large *************'

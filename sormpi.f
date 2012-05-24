@@ -50,6 +50,7 @@ c     ictl  integer control switches
 c           bit 1: user-defined iteration parameters (default no)
 c           bit 2: use faddu (default no)
 c           bit 3: just initialize bbdy (return mpiid).
+c           bits ib=4 on: if 1 then dimension ib-3 is periodic.
 c     ierr  Returns Positive: number of iterations to convergence.
 c           Negative: Not-converged maximum iterations.
 c           Zero: something bad.
@@ -82,8 +83,18 @@ c-------------------------------------------------------------------
       endif
       if(ldebugs)write(*,*)'In sormpi',ictl,ndims,ifull,iuds,idims,ierr
 c      return
+c--------------------------------------------------------------------
+c Decide if any of the dimensions is periodic
+      ictlh=ictl
+      ictlh=ictlh/8
       do nd=1,ndims
-         lperiod(nd)=.false.
+         if(mod(ictlh,2).eq.0)then
+            lperiod(nd)=.false.
+         else
+c            write(*,*)'Dimension',nd,'  periodic.'
+            lperiod(nd)=.true.
+         endif
+         ictlh=ictlh/2
       enddo
 c--------------------------------------------------------------------
 c Control Functions:

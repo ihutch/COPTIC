@@ -112,7 +112,7 @@ c Deal with arguments
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
 c Geometry and boundary information. Read in.
-      call readgeom(objfilename,myid,ifull)
+      call readgeom(objfilename,myid,ifull,CFin,iCFcount)
 c---------------------------------------------------------------
 c Construct the mesh vector(s) from the geometry info.
       call meshconstruct(ndims,iuds,ifull)
@@ -193,7 +193,11 @@ c------------------------------------------------------------
       if(lmyidhead)write(*,*)'=====Error reading command line argument '
      $     ,argument(:20)
  203  continue
-      write(*,*)'Not all switches apply to sortest'
-      if(lmyidhead)call helpusage2()
+      if(lmyidhead)then
+         write(*,*)'Do ./coptic -h to get help on switches'
+         write(*,*)'Not all switches apply to sortest'
+c      if(lmyidhead)call helpusage2()
+      endif
+      
       end
 c**********************************************************************

@@ -32,6 +32,7 @@ c      write(*,*)ifull
       if(lentrim(phifilename).gt.1)then
 c Read in a potential as well.
          ied=1
+         ierr=1
          call array3read(phifilename,ifull,iuphi,ied,u,ierr)
          do j=1,3
             if(iuphi(j).ne.iuds(j))then 
@@ -76,16 +77,25 @@ c Subtract v^2 from the second moment to give temperature.
 c      write(*,*)rs,debyelen,vd,Ti
 
 c      write(*,*)'Normalized diagnostics.'
-      do k=1,ndiags
-         zp(1,1,1)=99
-         ifix=2
-c         write(fluxfilename,'(''diagnorm('',i1,'')'')')k
-         fluxfilename=mname(k)
-c         write(*,*)mname(k),fluxfilename,lentrim(fluxfilename)
-         call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
+      if(phifilename(1:1).ne.' ')then
+c Arrow plotting of velocity:
+         fluxfilename=denfilename
+         ifix=2+4
+         call sliceGweb(ifull,iuds,u,na_m,zp,
      $        ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
-     $        ,dum,dum)
-      enddo
+     $        ,diagsum(1,1,1,2),vp)
+      else
+         do k=1,ndiags
+            zp(1,1,1)=99
+            ifix=2
+c         write(fluxfilename,'(''diagnorm('',i1,'')'')')k
+            fluxfilename=mname(k)
+c         write(*,*)mname(k),fluxfilename,lentrim(fluxfilename)
+            call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
+     $           ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
+     $           ,dum,dum)
+         enddo
+      endif
 c Arrow plotting of velocity:
       fluxfilename=mname(1)
       ifix=2+4
@@ -109,6 +119,7 @@ c silence warnings:
 c Defaults
       diagfilename=' '
       phifilename=' '
+      denfilename=' '
 
 c Deal with arguments
       if(iargc().eq.0) goto 201
@@ -119,6 +130,8 @@ c Deal with arguments
      $           read(argument(14:),'(a)',err=201)objfilename
             if(argument(1:2).eq.'-p')
      $           read(argument(3:),'(a)',err=201)phifilename
+            if(argument(1:2).eq.'-l')
+     $           read(argument(3:),'(a)',err=201)denfilename
             if(argument(1:2).eq.'-u')iunp=1
             if(argument(1:2).eq.'-h')goto 203
             if(argument(1:2).eq.'-?')goto 203
@@ -136,9 +149,13 @@ c Help text
  301  format(a,i5)
  302  format(a,f8.3)
       write(*,301)'Usage: diagexamine [switches] <diagfile>'
+      write(*,*)' Plot diagnostics from file'
+      write(*,*)' If additional parameter file is set,'
+     $     ,' do arrow plot of velocity on it.'
+      write(*,301)' -p   set name of additional parameter file.'
+      write(*,301)' -l   set label of parameter.'
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [copticgeom.dat'
-      write(*,301)' -p   set name of potential file.'
       write(*,301)' -u   plot un-normalized diagnostics.'
       write(*,301)' -h -?   Print usage.'
       call exit(0)

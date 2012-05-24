@@ -3,8 +3,18 @@ c This file gives examples of boundary setting for sormpi.
 c The bdyset routine can be called anything, and name passed.
 c Its arguments must of course be correct.
       subroutine bdyset(ndims,ifull,iuds,cij,u,q)
+      include 'facebcom.f'
+c Specify external the boundary setting routine.
+      external bdyface 
+      if(LF)then
+c Rectangular face setting
+c         write(*,*)'Calling bdyface setting'
+         ipoint=0
+         call mditerate(bdyface,ndims,ifull,iuds,ipoint,u)
+      else
+         call bdysetfree(ndims,ifull,iuds,cij,u,q)
 c      call bdysetnull
-      call bdysetfree(ndims,ifull,iuds,cij,u,q)
+      endif
       end
 c**********************************************************************
       subroutine bdysetfree(ndims,ifull,iuds,cij,u,q)
@@ -319,6 +329,155 @@ c using information in meshcom.
       enddo
       end
 c********************************************************************
+      subroutine bdyface(inc,ipoint,indi,ndims,iused,u)
+c Boundary routine for general setting in terms of face.
+c Coefficients (2ndims) in facebcom. AF phi + BF dphi/dn + CF =0
+c CF may vary linearly with position with coefs CxyzF(3,6)
+c If B=0, A is assumed =1. Otherwise precalculated coeffs are used
+c AmBF= (A/2-B/dn), ApBF= (A/2+B/dn) where dn is the outward mesh step. 
+      integer ipoint,inc
+      integer indi(ndims),iused(ndims)
+      real u(*)
+      include 'meshcom.f'
+      include 'facebcom.f'
+c Structure vector needed for finding adjacent u values.
+c Can't be passed here because of mditerate argument conventions.
+      parameter (mdims=10)
+      integer iLs(mdims+1)
+      common /iLscom/iLs
+
+      integer iupper,idn,id
+c Algorithm: take steps of 1 in all cases except
+c when on a lower boundary face of dimension 1. 
+c There the step is iused(1)-1.
+      inc=1
+      do n=ndims,1,-1
+c------------------------------------------------------------------
+c Between here and ^^^ is boundary setting. Adjust upper and lower.
+         if(indi(n).eq.0)then
+c The exception in step. Do not change!:
+            if(n.eq.1)inc=iused(1)-1
+c On lower boundary face 1,2,3
+            iupper=-1
+            idn=n
+         elseif(indi(n).eq.iused(n)-1)then
+c On upper boundary face 4,5,6
+            iupper=1
+            idn=n+ndims
+         else
+c Not on face in this dimension.
+            goto 102
+         endif
+         if(LPF(n))then
+c Here we set the boundary because otherwise the final array won't have
+c it set. But we ought not to during iterations because it's unnecessary.
+c That inefficiency is not yet fixed.
+            u(ipoint+1)=u(ipoint+1-iupper*(iused(n)-2)*iLs(n))
+         else
+c Only if we are not on a periodic face:
+            if(LCF(idn))then
+c Variable C. Calculate:
+               C=C0F(idn)
+               do id=1,ndims
+                  C=C+CxyzF(id,idn)*xn(ixnp(id)+indi(id)+1)
+               enddo
+            else
+c Simple short cut.
+               C=C0F(idn)
+            endif
+            if(BF(idn).eq.0)then
+c Assume A=1.
+               u(ipoint+1)=-C
+            else
+               u(ipoint+1)=-(C+AmBF(idn)*u(ipoint+1-iupper*iLs(n)))
+     $              /ApBF(idn)
+            endif
+         endif
+         goto 101
+ 102     continue
+c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      enddo
+      write(*,*)'BDYface Error. We should not be here',n,ipoint,indi
+      stop
+ 101  continue
+c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
+      end
+c********************************************************************
+      subroutine bdyfaceinit(idn,CFpin)
+c Initialize (if idn<1). Turn off this type of BC if idn=0.
+c Or update the face boundary conditions if 0<idn<=ndims.
+c For index idn = 1,2,3 (lower) 4,5,6 (upper) face.
+c You can't literally equivalence them but 
+c      real Ain,Bin,C0in,Cxyzin(ndims_mesh) == CFpin(6)
+      integer idn
+      include 'meshcom.f'
+      real CFpin(3+ndims_mesh)
+      include 'facebcom.f'
+      integer id
+
+      if(idn.le.-2)then
+c Print out settings:
+         write(*,*)' AF      BF       C0F     CxyzF'
+     $        ,'                  AmBF     ApBF  LF LCF'
+         do id=1,2*ndims_mesh
+            write(*,'(8f8.4,7L3)')AF(id),BF(id),C0F(id)
+     $           ,(CxyzF(ii,id),ii=1,3),AmBF(id),ApBf(id),LF,LCF(id)
+         enddo
+      elseif(idn.le.0)then
+c Initialize A=-1, B=0, C=0
+         do id=1,2*ndims_mesh
+            AF(id)=1.
+            BF(id)=0.
+            C0F(id)=0.
+c Uniform C:
+            LCF(id)=.false.
+c And switch off this type of BC:
+            if(idn.eq.0)LF=.false.
+         enddo
+      elseif(idn.le.2*ndims_mesh)then
+         LF=.true.
+         AF(idn)=CFpin(1)
+         BF(idn)=CFpin(2)
+         if(BF(idn).eq.0.and.AF(idn).eq.0)AF(idn)=1.
+         C0F(idn)=CFpin(3)
+         do id=1,ndims_mesh
+            CxyzF(id,idn)=CFpin(3+id)
+            if(CxyzF(id,idn).ne.0)LCF(idn)=.true.
+         enddo
+         if(BF(idn).ne.0.)then
+c Calculate the extra coefficients.
+            if(idn.gt.ndims_mesh)then
+               id=idn-ndims_mesh
+               dn=xn(ixnp(id+1))-xn(ixnp(id+1)-1)
+c               write(*,*)'FACEPOS Upper',dn,xn(ixnp(id+1)),xn(ixnp(id+1)
+c     $              -1)
+            else
+               id=idn
+               dn=xn(ixnp(id)+1)-xn(ixnp(id)+2)
+c               write(*,*)'FACEPOS Lower',dn,xn(ixnp(id)+1),xn(ixnp(id)
+c     $              +2)
+            endif
+c Outward facing normal differential: dn is obtained by taking abs()
+            dn=abs(dn)
+            if(dn.eq.0)stop 'bdyface init ERROR. dn=0'
+c phi_b = -[C+(A/2-B/dn)phi_i]/[A/2+B/dn]
+            AmBF(idn)=AF(idn)/2.-BF(idn)/dn
+            ApBF(idn)=AF(idn)/2.+BF(idn)/dn
+            if(ApBF(idn).eq.0.)then
+               write(*,*)'bdyface coefficient singularity.'
+     $              ,idn,Ain,Bin,dn
+               write(*,*)'There''s a problem with those values.'
+     $              ,' They must be changed.'
+               stop
+            endif
+         endif
+      else
+         write(*,*)'bdyfaceinit ERROR. Incorrect index',idn
+      endif
+c      write(*,*)'BDYFACEINIT',idn,CFpin
+      end
+
+c********************************************************************
 c********************************************************************
 c Obsolete or Currently unused routines:
 c**********************************************************************
@@ -378,6 +537,7 @@ c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
       end
 c**********************************************************************
       subroutine bdyslope0(ndims,ifull,iuds,cij,u,q)
+c Set the boundary normal slope to zero.
       integer ndims,ifull(ndims),iuds(ndims)
       real cij(*),u(*),q(*)
 c Specify external the boundary setting routine.

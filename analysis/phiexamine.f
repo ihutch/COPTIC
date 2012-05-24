@@ -18,18 +18,18 @@ c Cylindrical vector distribution:
       real oneoverr(100),huckel(100),ro(100),cl(100)
       real xl(2),yl(2)
 c
-      logical lsd,lhalf
+      logical lsd,lhalf,lvtk
       integer ifix(3)
       parameter (ndiagmax=7)
       real diagsum(na_i,na_j,na_k,ndiagmax)
       real phimax
       data phimax/0./
-      data lsd/.false./lhalf/.false./
+      data lsd/.false./lhalf/.false./lvtk/.false./
 c 
 
       diagfilename=''
       isw=1
-      call examargs(rp,phimax,isw,lsd,lhalf)
+      call examargs(rp,phimax,isw,lsd,lhalf,lvtk)
          
 c      write(*,*)(u(16,16,k),k=1,36) 
       ied=1
@@ -47,6 +47,28 @@ c Scale the size to debyelen
          do i=1,ixnp(4)
             xn(i)=xn(i)/debyelen
          enddo
+      endif
+
+      if(lvtk)then
+c Write Visit-readable vtk file of potential. And stop.
+         argument=phifilename
+         call termchar(argument)
+         if(fluxfilename(1:1).eq.' ')then
+            fluxfilename='Potential'//char(0)
+         else
+            write(*,*)'Variable name: '
+     $           ,fluxfilename(1:lentrim(fluxfilename))
+c Spaces are not allowed in visit data names. Fix:
+            do i=1,lentrim(fluxfilename)
+               if(fluxfilename(i:i).eq.' ')fluxfilename(i:i)='_'
+            enddo
+            call termchar(fluxfilename)
+         endif
+         ibinary=1
+         call vtkwritewrap(ifull,iuds,u,xn,ibinary
+     $        ,argument,fluxfilename)
+         write(*,*)'Finished vtkwrite',ifull,iuds,u(1,1,1)
+         stop
       endif
 
       isw2=isw/2
@@ -365,9 +387,9 @@ c         write(22,*)rzmpos(iz0+i),xn(ixnp(3)+iz0+i)
       end
 
 c*************************************************************
-      subroutine examargs(rp,phimax,isw,lsd,lhalf)
+      subroutine examargs(rp,phimax,isw,lsd,lhalf,lvtk)
       include 'examdecl.f'
-      logical lsd,lhalf
+      logical lsd,lhalf,lvtk
 
       ifull(1)=na_i
       ifull(2)=na_j
@@ -375,6 +397,7 @@ c*************************************************************
 
 c Defaults and silence warnings.
       phifilename=' '
+      fluxfilename=' '
       zp(1,1,1)=0.
 
 c Deal with arguments
@@ -394,6 +417,10 @@ c Deal with arguments
      $        read(argument(3:),'(f8.4)',err=201)phimax
          if(argument(1:2).eq.'-s')lsd=.not.lsd
          if(argument(1:2).eq.'-m')lhalf=.not.lhalf
+         if(argument(1:2).eq.'-w')then
+            lvtk=.not.lvtk
+            read(argument(3:),'(a)',err=201)fluxfilename
+         endif
          if(argument(1:2).eq.'-l')
      $        read(argument(3:),*,err=201)isw
          if(argument(1:2).eq.'-h')goto 203
@@ -413,10 +440,14 @@ c Help text
       write(*,301)'Usage: phiexamine [switches] <phifile>'
 c      write(*,301)' --objfile<filename>  set name of object data file.'
 c     $     //' [copticgeom.dat'
-      write(*,301)' -d<diagfilename>  -r<rp> -p<phimax> -l<isw>'
+      write(*,301)' -r<rp> -p<phimax> -l<isw>'
       write(*,301)' isw: Byte 1: gradlegend(1) 2: SliceCont(0) ...'
+      write(*,*)'-d<diagfilename> '
+     $     ,' specify diagnostic file for velocity overplot'
       write(*,301)' -s scale size to debyelen'
-      write(*,301)' -m toggle mirror image'
+      write(*,301)' -m toggle mirror image plotting'
+      write(*,'(2a)')' -w[name] toggle VisIt vtk file writing,'
+     $     ,' optionally specifying variable name.'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue

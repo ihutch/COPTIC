@@ -166,7 +166,7 @@ synccoptic : libaccisX.a accissum.html
 
 mproper : clean
 	rm -f *.a
-	rm -f makefile
+	rm -f makefile vecglx vecx
 
 clean :
 	rm -f *.o

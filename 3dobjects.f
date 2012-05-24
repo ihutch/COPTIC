@@ -107,7 +107,7 @@ c**********************************************************************
       end
 
 c**********************************************************************
-      subroutine readgeom(filename,myid,ifull)
+      subroutine readgeom(filename,myid,ifull,CFin,iCFcount)
 c Read the geometric data about objects from the file filename
       character*(*) filename
       integer myid
@@ -115,6 +115,7 @@ c Read the geometric data about objects from the file filename
       character*128 cline
       include '3dcom.f'
       include 'meshcom.f'
+      real CFin(3+ndims_mesh,2*ndims_mesh)
 c Common data containing the object geometric information. 
 c Each object, i < 64 has: type, data(odata).
 c      integer ngeomobjmax,odata,ngeomobj
@@ -268,6 +269,25 @@ c            write(*,*)id,j,xmeshpos(id,j)
 c Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1
+      elseif(type.ge.100.and.type.lt.100+2*ndims_mesh+1)then
+c Face boundary conditions.
+         id=type-100
+         if(iCFcount.eq.0)then
+c Reset all.
+            do ii=1,2*ndims_mesh
+               do idc=1,3+ndims_mesh
+                  CFin(idc,ii)=0.
+               enddo
+            enddo
+         endif
+         read(cline,*,err=901,end=882)idumtype,(CFin(ii,id),ii=1,3
+     $        +ndims_mesh)
+ 882     continue
+         iCFcount=iCFcount+1
+c         write(*,*)id,iCFcount,(CFin(ii,id),ii=1,3+ndims_mesh)
+c Don't count this as an object.
+         ngeomobj=ngeomobj-1
+         goto 1         
       endif
 c If this is a null boundary condition clear the relevant bit.
       if(obj_geom(oabc,ngeomobj).eq.0.

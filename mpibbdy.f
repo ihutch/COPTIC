@@ -44,7 +44,7 @@ c---------------------------------------------------------------
 c Start of local variables.
 c      logical lalltoall
 c      parameter (idebug=1,lalltoall=.false.)
-      parameter (idebug=0)
+c      parameter (idebug=0)
 c      parameter (lalltoall=.true.)
 c Local storage:
       logical lreorder
@@ -95,7 +95,7 @@ c The top of uppermost, with iblock=idims(n)) is indicated
 c by a value pointing to 1 minus the length of u in that dimension.
 c We declare it as a 1-d array for generality. This is the first time here:
 c It must be of dimension greater than the number of processes (blocks)
-      parameter (norigmax=1000)
+      parameter (norigmax=1500)
       integer iorig(norigmax)
       common /iorigcom/iorig
       
@@ -107,7 +107,7 @@ c instances in one program. No way to reset this. Might include as
 c an argument to allow us to reset. Not done yet.
       logical lflag
       data lflag/.false./
-c Initialize iobindex to quite initialization warnings.
+c Initialize iobindex to quiet initialization warnings.
       data iobindex/1/
 c This general save statement is necessary. But gives gfortran warnings.
       save
@@ -129,30 +129,22 @@ c         write(*,*)'Setting up topology'
             write(*,*)'MPI too many dimensions error',ndims
             goto 999
          endif
-c Test if we fit in the number of processors in block storage.
-         if((idims(1)+1)*(idims(2)+1).gt.norigmax)then
-         write(*,*)'bbdy: Too many processes',idims(1),'x',idims(2),
-     $        ' for norigmax=',norigmax
-            goto 999
-         endif
          nproc=1
          do n=1,ndims
 c Count the processes needed for this topology
             nproc=nproc*idims(n)
          enddo
-c Check the asked-for nproc
-         if(nproc.gt.maxprocs) then
-            write(*,*)'Too many processes',nproc,' Increase maxprocs.'
-            goto 999
-         endif
-c End of safety checks
-c------
 c Initialize 
          call MPI_INITIALIZED(lflag,ierr)
          if(.not.lflag) call MPI_INIT( ierr )
          lflag=.true.
          call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
          call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
+         if(numprocs.gt.maxprocs) then
+            write(*,*)'Too many processes',numprocs,' Increase maxprocs'
+            goto 999
+         endif
+c Check the asked-for nproc and if not equal to numprocs, reapportion.
          if(nproc.ne.numprocs)then
             if(myid.eq.0)write(*,201)numprocs,
      $           nproc,(idims(n),n=1,ndims)
@@ -160,7 +152,11 @@ c Initialize
      $           ': don''t match this topology ',i4,':',6i3)
 c Use MPI function to redimension block structure
             do ii=1,ndims
-               idims(ii)=0
+               if(iuds(ii).lt.8)then
+                  idims(ii)=1
+               else
+                  idims(ii)=0
+               endif
             enddo
             call MPI_DIMS_CREATE(numprocs,ndims,idims,ierr)
             if(ierr.eq.0)then
@@ -355,23 +351,27 @@ c iorm is for receiving -1 shift, iolm is for sending -1 shift.
      $        iddr(n),isdr(n),iddl(n),isdl(n)
          endif
 c Send odd/even data to right, receive odd/even data from left
-         if(iddr(n).ne.-1) call MPI_SEND(u(iorp),1,iface(n,ko,ibt(n)),
-     $        iddr(n),itag,icommcart,ierr)
-         if(isdr(n).ne.-1) call MPI_RECV(u(iolp),1,iface(n,ko,ibt(n)),
-     $        isdr(n),itag,icommcart,status,ierr) 
-c         call MPI_SENDRECV(
-c     $        u(ior),1,iface(n,ko),iddr(n),itag,
-c     $        u(iol),1,iface(n,ko),isdr(n),itag,
-c     $        icommcart,status,ierr)
-c         write(*,*)'Second n,ko,ke,iol,ior,isdl,isdr',
-c     $        n,ko,ke,iol,ior,iddl(n),isdl(n)
+c         if(iddr(n).ne.-1) call MPI_SEND(u(iorp),1,iface(n,ko,ibt(n)),
+c     $        iddr(n),itag,icommcart,ierr)
+c         if(isdr(n).ne.-1) call MPI_RECV(u(iolp),1,iface(n,ko,ibt(n)),
+c     $        isdr(n),itag,icommcart,status,ierr) 
+c This type of call is necessary for periodic passes, e.g. to oneself.
+         call MPI_SENDRECV(
+     $        u(iorp),1,iface(n,ko,ibt(n)),iddr(n),itag,
+     $        u(iolp),1,iface(n,ko,ibt(n)),isdr(n),itag,
+     $        icommcart,status,ierr)
+c         if(idebug.ge.2)write(*,*)'Second n,ko,ke,iol,ior,isdl,isdr',
+c             n,ko,ke,iol,ior,iddl(n),isdl(n)
 c Send even/odd data to left, receive even/odd data from right
 c shift in the direction left (-1).
-         if(iddl(n).ne.-1) call MPI_SEND(u(iolm),1,iface(n,ke,ibt(n)),
-     $        iddl(n),itag,icommcart,ierr)
-         if(isdl(n).ne.-1) call MPI_RECV(u(iorm),1,iface(n,ke,ibt(n)),
-     $        isdl(n),itag,icommcart,status,ierr)
-
+c         if(iddl(n).ne.-1) call MPI_SEND(u(iolm),1,iface(n,ke,ibt(n)),
+c     $        iddl(n),itag,icommcart,ierr)
+c         if(isdl(n).ne.-1) call MPI_RECV(u(iorm),1,iface(n,ke,ibt(n)),
+c     $        isdl(n),itag,icommcart,status,ierr)
+         call MPI_SENDRECV(
+     $        u(iolm),1,iface(n,ke,ibt(n)),iddl(n),itag,
+     $        u(iorm),1,iface(n,ke,ibt(n)),isdl(n),itag,
+     $        icommcart,status,ierr)
       enddo
 c Synchronize the processes. Did not help with segfaults.
 c      call MPI_BARRIER(icommcart,ierr)
@@ -692,7 +692,7 @@ c dimensions idims, iLcoords, ioffset, idebug.
       integer isdispls(nproc),istypes(nproc),iscounts(nproc)
       integer irdispls(nproc),irtypes(nproc),ircounts(nproc)
 
-      parameter (norigmax=1000)
+      parameter (norigmax=1500)
       integer iorig(norigmax)
       common /iorigcom/iorig
 

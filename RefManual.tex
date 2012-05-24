@@ -243,6 +243,24 @@ file acquires the default specification which is equivalent to
 \end{verbatim}
 a uniformly spaced mesh of 32 nodes from $-5$ to $5$.
 
+\subsection{Face Boundary Conditions}
+
+Lines in the geometry file can be used to specify the potential
+boundary conditions on faces. If \emph{any} are used, here or on the
+command line, then \emph{all} faces use the rectangular conditions.
+Robin boundary conditions, referring to the outward normal ${\bf n}$
+are used in the form
+$$A\phi + B \hat{\bf n}.\nabla\phi + C =0$$
+The line consists of a type equal to 100 plus the face number,
+followed by (up to) 6 reals specifying $A,B,C0,Cx,Cy,Cz$.
+The line to set face 2, which is the lower face in the 2-direction, to
+have $A=3$, $B=4$, $C=5+6x+7y+8z$ is
+\begin{verbatim}
+102,3.,4.,5.,6.,7.,8.
+\end{verbatim}
+Any face that is not somewhere explicitly set defaults to the
+condition $\phi=0$ if Face Boundary conditions are active.
+
 \subsection{Boolean Region}
 
 An object line of type 99 defines the particle region, the region
@@ -402,6 +420,28 @@ every istepsave steps. If zero, no files or messages.
 
 \paragraph{-Bx.. -By.. -Bz..} Set the respective components of the
 magnetic field. 
+
+\paragraph{-BC....} Set the type of boundary conditions. (This is
+superceded and disabled by the -BF type below if present.) The single
+integer parameter's bits are interpreted as follows.  Bit 1 Mach
+cylinder (if set) else spherical logarithmic gradient.  Bits 2-7 set
+face to zero (only 3 implemented). Bits 8-13 set corresponding face to
+have ``second derivative'' boundary condition (only 13 implemented).
+
+\paragraph{-BF....} Set the face boundary conditions. (Superceded by
+-BP type below if present.) This command
+requires multiple additional arguments separated by commas but no
+spaces. Its form is -BFid,AF,BF,C0F[,CxF,CyF,CzF]. Here id is the face
+number (1-3 lower, 4-6 upper, 7 set all faces, 0 reset all), AF, BF,
+C0F, are the Robin condition coefficients referring to the outward
+normal potential gradient. But if present then CxF, CyF, CzF are the
+gradients of the C-coefficient of the Robin condition, so that
+C=C0F+CxF.x+CyF.y+CzF.z . If the Robin B-value, BF, is equal to zero,
+then assume AF is equal to 1; so -C is the set value of $\phi$.
+
+\paragraph{-BP....} Choose the dimension indicated by the single
+integer parameter. Toggle on (or off) periodic boundary conditions on
+potential for that dimension. Overrides others if on.
 
 \paragraph{-ofFilename} Set the name of the object file. Default ccpicgeom.dat
 

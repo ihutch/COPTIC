@@ -1,4 +1,4 @@
-c**********************************************************************
+*********************************************************************
 c Encapsulation of parameter setting.
       subroutine copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
@@ -6,23 +6,24 @@ c Encapsulation of parameter setting.
      $     ,colntime,dt,bdt,subcycle,rmtoz,Bfield,ninjcomp,nsteps
      $     ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti,iwstep
      $     ,idistp,lrestart,restartpath,extfield,objfilename,lextfield
-     $     ,vpar,vperp,ndims,islp,slpD)
+     $     ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
      $     ,numprocs,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
      $     ,iwstep,idistp,ndims,islp
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
-     $     ,lrestart,lextfield
+     $     ,lrestart,lextfield,LPF(ndims)
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle,rmtoz
      $     ,vneutral,vd,debyelen,Ti,extfield,vpar,slpD
-      real Bfield(ndims),vperp(ndims)
+      real Bfield(ndims),vperp(ndims),CFin(3+ndims,6)
+      integer iCFcount
       character*100 restartpath,objfilename
 
 c Local variables:
       integer lentrim,iargc
       external lentrim
-      integer i
+      integer i,id,idn,idcn,i0,i1
       real Bt
       character*100 argument
 
@@ -60,6 +61,15 @@ c Default edge-potential (chi) relaxation rate.
 c Boundary condition switch and value. 0=> logarithmic.
       islp=0
       slpD=0.
+      iCFcount=0
+      do idn=1,2*ndims
+         do id=1,3+ndims
+            CFin(id,idn)=0.
+         enddo
+      enddo
+      do id=1,ndims
+         LPF(id)=.false.
+      enddo
 
 
 c Deal with arguments
@@ -101,7 +111,51 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-da')read(argument(4:),*,err=201)bdt
          if(argument(1:3).eq.'-ds')read(argument(4:),*,err=201)subcycle
          if(argument(1:3).eq.'-mz')read(argument(4:),*,err=201)rmtoz
-         if(argument(1:3).eq.'-BC')read(argument(4:),*,err=201)islp
+         if(argument(1:3).eq.'-bc')read(argument(4:),*,err=201)islp
+         if(argument(1:3).eq.'-bp')then
+            read(argument(4:),*,err=201)idn
+            if(0.lt.idn.and.idn.lt.4)LPF(idn)=.not.LPF(idn)
+            iCFcount=iCFcount+1
+         endif
+         if(argument(1:3).eq.'-bf')then
+            idn=-1
+c Make sure at least the first parameter is readable and sensible
+            read(argument(4:),*,err=201)idn
+            if(idn.eq.0)then
+c Reset all.
+               do idn=1,2*ndims
+                  do id=1,6
+                     CFin(id,idn)=0.
+                  enddo
+               enddo
+               iCFcount=0
+            elseif(0.lt.idn .and. idn.le.2*ndims+1)then
+c Read coefficients
+               if(idn.eq.2*ndims+1)then
+                  i0=1
+                  i1=2*ndims
+               else
+                  i0=idn
+                  i1=idn
+               endif
+               do idcn=i0,i1
+c Initialize first, in case we are given a short read line.
+                  do id=1,6
+                     CFin(id,idcn)=0.
+                  enddo
+                  read(argument(4:),*,err=201,end=212)idn
+     $                 ,(CFin(id,idcn),id=1,6)
+ 212              continue
+c Diagnostics:
+                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
+                  iCFcount=iCFcount+1
+               enddo
+            else
+               write(*,*)'Error in bdyface cmdline switch:'
+     $              ,argument(1:lentrim(argument))
+               stop
+            endif
+         endif
          if(argument(1:3).eq.'-Bx')then
             read(argument(4:),*,err=201)Bfield(1)
          elseif(argument(1:3).eq.'-By')then
@@ -211,6 +265,7 @@ c Help text
 c         call helpusage()
  301  format(a,i5,a,i5)
  302  format(a,3f8.3)
+ 303  format(a,3L3,a)
       write(*,301)'Usage: coptic [objectfile] [-switches]'
       write(*,301)'Parameter switches.'
      $     //' Leave no gap before value. Defaults or set values [ddd'
@@ -240,11 +295,17 @@ c         call helpusage()
       write(*,301)' -pd   set distribution diags     [',idistp
      $     ,'     Bits:1 write, 2 plot.'
       write(*,301)' -md   set No of diag-moments(7). [',ndiags
-      write(*,301)' -BC   set boundary condition type[',islp
+      write(*,301)' -bc   set boundary condition type[',islp
      $     ,'     E.g. 8201=1(1)+4(8)+13(8192)'
       write(*,301)
      $     '     Bits:1 Mach/Log[=0]  2-7:Face1-6=0  8-13:u''''=k2u'
 c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
+      write(*,*)'-bf   set face bndry conditions  [ off'
+     $     ,'    Values: idn,Ain,Bin,C0in[,Cx,Cy,Cz]'
+      write(*,*)'    idn face-number (7=>all).'
+     $     ,' ABC Robin coefs. Cxyz gradients.'
+      write(*,303)' -bp<i>  toggle periodicity       [',LPF
+     $     ,'    in dimension <i>.'
       write(*,301)' [-of]<filename>  set name of object data file.'
      $     //'   ['//objfilename(1:lentrim(objfilename))
       write(*,301)

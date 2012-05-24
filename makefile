@@ -1,7 +1,7 @@
 COPTIC=coptic
 #########################################################################
 ACCISLIB=./accis/libaccisX.a
-LIBRARIES = -L/usr/X11R6/lib/ -L./accis/ -laccisX -lXt -lX11 $(GLULIBS)
+LIBRARIES = -L/usr/X11R6/lib/ -L/usr/lib/mesa -L./accis/ -laccisX -lXt -lX11 $(GLULIBS)
 #Default accis driver choice
 #Alternatives are vecx or vecglx, can be overriden by commandline option
 ifeq ("$(VECX)","")
@@ -43,6 +43,7 @@ endif
 export G77
 ##########################################################################
 GFINAL=gcc-4.1 -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
+GCURR=gcc -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
 #OPTIMIZE=-O3 -funroll-loops -finline-functions
 OPTIMIZE=-O3
 COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I. 
@@ -65,7 +66,7 @@ UTILITIES=udisplay.o
 SOLOBJECTS= cijroutine.o mditerate.o mpibbdy.o sormpi.o sorrelaxgen.o meshconstruct.o getfield.o interpolations.o cijplot.o phisoluplot.o slicesect.o 3dobjects.o bdysetsol.o faddu.o
 REGULAROBJECTS= $(FIXEDOBJECTS) ${REINJECT}
 OBJECTS=$(SPECIALOBJECTS) $(REGULAROBJECTS)
-HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f griddecl.f ptchcom.f mditcom.f sectcom.f plascom.f slpcom.f myidcom.f
+HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f examdecl.f griddecl.f ptchcom.f mditcom.f sectcom.f plascom.f slpcom.f myidcom.f facebcom.f
 SOLHEADERS= bbdydecl.f meshcom.f objcom.f 3dcom.f accis/world3.h 
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 ##########################################################################
@@ -211,4 +212,4 @@ coptic.prof : makefile $(OBJECTS)
 	make clean
 	make PROFILING=-pg coptic
 	make PROFILING=-pg coptic.o
-	$(GFINAL)
+	$(GCURR)

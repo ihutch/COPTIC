@@ -47,6 +47,8 @@ c Point charge common data
       include 'ptchcom.f'
 c Boundary setting common data
       include 'slpcom.f'
+c Face boundary data
+      include 'facebcom.f'
       external bdyset,faddu,cijroutine,cijedge,psumtoq,quasineutral
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
@@ -56,10 +58,11 @@ c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
       logical lrestart,lmyidhead,lphiplot,ldenplot
       integer ipstep,iwstep,idistp,idcount,icijcount
-c Diagnostics
+c Diagnostics etc
       real zp(na_m,na_m,ndims_mesh)
       real xlimit(2,ndims_mesh),vlimit(2,ndims_mesh)
       real xnewlim(2,ndims_mesh)
+      real CFin(3+ndims_mesh,2*ndims_mesh)
 
 c Set up the structure vector.
       data iLs/1,Li1,Li2,Li3/
@@ -101,7 +104,7 @@ c Use very big xlimits by default to include whole domain
 c Default zero field
          Bfield(id)=0.
       enddo
-      averein=0.
+      averein=0
       cellvol=0.
       rs=5.0
       rsmesh=rs
@@ -122,13 +125,14 @@ c Deal with command-line arguments
      $     ,colntime,dt,bdt,subcycle,rmtoz,Bfield,ninjcomp,nsteps
      $     ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti,iwstep
      $     ,idistp,lrestart,restartpath,extfield,objfilename,lextfield
-     $     ,vpar,vperp,ndims,islp,slpD)
+     $     ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF)
 c
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
       ndropped=0
 c Geometry and boundary information. Read in.
-      call readgeom(objfilename,myid,ifull)
+      call readgeom(objfilename,myid,ifull,CFin,iCFcount)
+c      write(*,*)'readgeom return',iCFcount,(CFin(ii,1),ii=1,6)
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
  250  call meshconstruct(ndims,iuds,ifull)
@@ -145,8 +149,18 @@ c Localizing use of rs as the size of domain.
       enddo
       if(rs.gt.rs1 .and. islp.eq.0)write(*,*)'UNUSUAL choice islp=',islp
      $     ,' when non-square domain in use.'
-c Initialize geometry if needed for particular case.
+c Initialize reinjection geometry if needed for particular case.
       call geominit(myid)
+c-----------------------------------------------------------------
+c Initialize the face phi boundary conditions if we are using them.
+c      write(*,*)'ICFCOUNT',iCFcount
+      if(iCFcount.ne.0)then
+         do idn=1,2*ndims
+            call bdyfaceinit(idn,CFin(1,idn))
+         enddo
+c Now print out the result of the initialization.
+         if(lmyidhead)call bdyfaceinit(-2,CFin(1,1))
+      endif
 c-----------------------------------------------------------------
       do id=1,ndims
          ium2(id)=iuds(id)-2
@@ -248,13 +262,20 @@ c     $              ixnp,xn,ifix,'rhoci')
 c---------------------------------------------------------------     
 c An inital solution with zero density. 
 c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
+c Bit 4-6 periodicity.
       ictl=0
+c Make dimensions periodic:
+      do id=1,ndims
+         if(LPF(id))ictl=ictl+4*2**id
+      enddo
 c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
 c An initial solver call.
       if(debyelen.ne.0.)call sormpi(ndims,ifull,iuds,cij,u,q,bdyset
      $     ,faddu,ictl,ierrsor,myid,idims)
-      ictl=2
+      ictl=2+ictl
 c      write(*,*)'Return from initial sormpi call.'
+      if(ltestplot)call sliceGweb(ifull,iuds,u,na_m,zp,
+     $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0))
 c
 c-------------------------------------------------------------------
       if(lmyidhead)then
@@ -372,9 +393,9 @@ c Convert psums to charge density, q. Remember external psumtoq!
          if(lsliceplot)then
             if(ipstep.eq.0.or.mod(j,ipstep).eq.0)then
                if(ldenplot)call sliceGweb(ifull,iuds,q,na_m,zp,
-     $              ixnp,xn,ifix,'density: n')
+     $              ixnp,xn,ifix,'density: n'//char(0))
                if(lphiplot)call sliceGweb(ifull,iuds,u,na_m,zp,
-     $              ixnp,xn,ifix,'potential:'//'!Ay!@')
+     $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0))
             endif
          endif
 
@@ -400,7 +421,7 @@ c write out flux to object 1.
             if(mod(nf_step,5).eq.0)write(*,*)
             if(mod(nf_step,(nsteps/25+1)*5).eq.0)then
                write(*,
-     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i4,i9,i9,2f10.3)')
+     $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i6,i9,i9,2f10.3)')
      $              nrein,n_part,ioc_part,rhoinf,dt
                if(nsubc.ne.0)write(*,'(''Subcycled:'',i5,$)')nsubc
                if(ndropped.ne.0)then

@@ -8215,3 +8215,193 @@ Did the encapsulation.
 Seem to have subcycling working as planned. When a sub-step has been taken
 the length tries to double or go the full length. That way if we substep
 out of a high acceleration region, then we'll lengthen the step again.
+
+22 May 2012
+
+Trying to run some moon-relevant cases. Can do 3-d but then one gets a
+(physical) peak on axis with no B-field.
+
+2-d equivalent case is the "thin" 4-mesh in the x-direction. But this is
+found to have boundary points that have stupid potential values. This is 
+probably not affecting the result much, since we have taken the length
+to be very large in the x-direction. But it reminds me that we really need
+to develop better boundary condition control. In fact the old stuff is 
+so ad-hoc that it probably can't be properly cleaned up. May be better to
+develop a whole new system in parallel. 
+
+There are 3 main categories: Spherical symmetry, Cylindrical Symmetry,
+and Rectangular symmetry. The ad-hocs are mostly applying spherical and
+cylindrical BCs to the rectangle. What we now need is rectangular control.
+This means we can apply a different BC to each of the 6 box faces.
+
+Proposed 1st-order scheme is that we allow ourselves to apply a Robin type
+condition in the form:
+	  A phi + B dphi/dn + C = 0
+at each face: A(6), B(6). Probably the normal derivative ought to be 
+OUTWARD, so dn is opposite in sign for opposite faces.
+
+But we would also like to enable C to vary with space. In first order it 
+might be 
+      c = c_0 + c_x x + c_y y + c_z z.
+However, we wish to be able to bypass expensive x,y,z calculations 
+if their respective coefficients are zero. That might be done by making
+c a function, but in any case, we need to save the c_coefficients, and
+possibly a few other logicals for bypassing. If the boundary potential
+is going to be continuous, then we require the c's to match along edges.
+One way to ensure this is for all 6 faces to have the same c's. But that's
+not the only way.
+
+The degree of evaluation of the Robin condition would call for a third
+phi value if we made phi and dphi/dn centered on the boundary, so one
+might make it centered on the half-lattice position: 
+
+phi = (phi_i+phi_b)/2              dphi/dn = (phi_b-phi_i)/|dn| 
+
+But if B=0, it makes more sense to simply set phi_b. 
+
+Then c ought perhaps to be evaluated at the same place (if it varies).
+It's better to do the adjustment of c externally for spatial position
+internally. Not in routine.
+
+So:
+	 if B=0 phi_b=-C(b)[/A]
+	 else phi_b = - [C+(A/2-B/|dn|)phi_i]/[A/2+B/|dn|]
+
+If A/2+B/dn=0 there's a singularity. One could verify initially that 
+that's not the case. One ought also for speed to save the values of
+A/2+B/dn A/2-B/dn for each face. 
+
+	 logical LF,LCF(6)
+	 real AF(6),BF(6),C0F(6),CxF(6),CyF(6),CzF(6)
+	 real ApBF(6),AmBF(6)
+	 common /FaceBC/LF,AF,BF,LCF,C0F,CxF,CyF,CzF,ApBF,AmBF
+
+Programmed the mditerate routine. bdyface
+Programmed the initialize routine. bdyfaceinit.
+Added CFpack to the cmdline argument list. 
+But in all honesty its going to be verbose to do this through
+cmdline flags like this 
+-BFidn,Ain,Bin,C0in,Cx,Cy,Cz
+
+Implemented anyway. One can omit the Cx... if unused. Seems to be setting
+the arrays correctly, but the BCs are not tested under solution conditions.
+The way to do that is with -gs -gd -l1000 and the small cube.
+
+As soon as one of these switches are set, we are using the new BC 
+setup. But not yet implemented as actually calling the bdy routine.
+
+23 May 2012
+
+Now got a version of the bdyset routine working that uses the new 
+conditions. After debugging a bit they seem to work.
+
+Implemented setting in geometry file. Currently lines in copticgeom.dat
+will override cmdline switches. It's a judgement call which prioity is
+the most useful. This is the easiest to program. 
+
+Periodic Potential Boundary conditions would be interesting. 
+
+Within the present scheme, they are equivalent to setting the boundary
+value equal to the first non-boundary value at the opposite face. 
+I.e. phi(n) = phi(2), and phi(1) = phi(n-1). 
+
+However, it would be much more elegant, and possibly faster, to implement
+a truly periodic difference scheme in mpibbdy. At present the face
+information is passed from adjacent mpi blocks. If the end block information
+was passed in a similar way, one then would not have to call a separate
+bdyset routine. This actually looks pretty easy, since all the infrastructure
+for this is built into the mpibbdy. All one needs is to specify the 
+cartesian comm world as having periodicity in the interesting direction(s)
+
+As far as I can see, all we need to do is change the value(s) of lperiod(nd)
+(that are set in sormpi) to true rather than false. I could pass information
+in ictl to control that. Tried to get sortest going. It gives nans in u.
+Drat! However, coptic appears to be working with the geomsphere and the
+test routines. So ignore sortest which has not been used for at least a year 
+and just work with coptic.
+
+Implemented ictl switches to make periodic. Does not work. Just seems to 
+hang. Seems to be a problem with the separate mpi_send and mpi_recv. 
+How can one send to oneself like that? But actually, I'm running a 
+serial process here. So maybe that's the problem. Under mpiexec it
+still hangs. So that's not really it.
+
+Replacing the separate sends and receives gets one through to the second
+step. And replacing the second with a sendrecv fixes the hang.
+Result looks plausible, but I've still go the separate bbdy setting the 
+final result to something different, which is not what I want, of course.
+Still I now have a working periodic BC version of coptic working with
+only the need to turn off the separate bdyset. Done that. 
+
+Now we can use periodic BCs on potential. (Don't yet have particle
+reinjection periodicity). There seems to be a problem with multiple
+processes and periodic BCs. They don't seem to be working correctly,
+at least on the thin domain. I don't see the problem with the test
+cases. 
+
+24 May 2012
+
+The symptom is that in the x-y plane, with z in the lower half, only
+the bottommost y-block has anything other than zero on the boundary.
+While with z in the upper half, none do anything except zeros.
+This can be seen in dimension 1 plane 1 very clearly. Actually its the
+lowest block of y and z that has non-zero. 
+
+Changing the default face bc to a different value, one finds that the 
+erroneous faces stay equal to zero. So presumably they are never being
+set. Perhaps this makes sense. I only pass the values from the other
+blocks that correspond to non-ghost cells. Therefore the ghost-cells 
+that belong to the other blocks, around the edge, never get set in the 
+master node's version of the potential. That's the problem. 
+
+Each process in sormpi is looping on [bdyset, bbdy, sorrelaxgen.
+Each has an array for the whole potential, but updates only part of it.
+The information for the boundaries of each block is passed, so the 
+inner solution is correct. The only problem is that the boundaries of
+the master node's arrays belonging to other blocks never get set. 
+
+For some reason, bdyset is called twice at the end of the iteration.
+Why did I do that? But anyway that is when the boundary is supposed
+to be set to be correct for the final result. With periodicity that
+does not work for blocks not already set. Probably the correct way to
+do this is to do reverse communications after the mpialltoall, to 
+send the information back to the ghost (edge) cells. But this needs
+some careful thought. I don't see how to do it.
+
+Instead I just fixed bdyset to explicitly set the boundary values in
+accordance with periodicity with a periodic direction. This is
+unnecessary for iterations, and so is a possibly important
+inefficiency.  Profiled to check. bdyface is using about 12% of time
+in a solution-dominated case with a thin 4-element
+x-direction. Compared with sorrelaxgen 35%.  So it is an inefficiency
+but only roughly a 20% maximum hit, in a bad situation like the thin
+geometry. However, this inefficiency will become very bad once we
+have lots of processors and the sorrelaxgen costs are shared. It 
+does not scale at all. In the end, for a periodic system the boundary
+points are irrelevant: they correspond to the adjacent point of the
+opposite face. So it isn't really necessary to set them for anything
+other than final aesthetics.
+
+This is pretty much a universal problem with the way that sormpi is 
+written. The bdysetting costs don't scale because every processor sets
+all the bdy points, regardless of their relevance. If all boundaries
+were periodic, though, it would be unnecessary to set any of them. 
+One approach to solving this issue (which would not solve the prior 
+problem of sharing the boundary with the master node) would be for 
+each process to detect when it is not required to receive information
+about one of its faces. When this happens, it is because the face 
+has been set by the bdyset routine. So the _process_ ought to set that
+face according to the boundary condition, and do so for any face that
+it does not receive from neighbour. In that case the bdset routine becomes
+redundant. 
+
+The challenge for this is that the bdysetting routine is currently global
+and defined in terms of a mditerate process. The bbdy routine setting 
+would be different and more local. It would be a subface-filling
+procedure. But it would be local to the process's block. The hard part
+is probably how one tells how to do the setting without entanglement
+into the sormpi mpibbdy code. The information would have to be gained
+other than through sormpi. We'd need an api.
+
+It looks pretty tricky given the density of the mpibbdy code to figure
+out how to do this. I think it's time to commit what we have. 

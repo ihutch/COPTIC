@@ -1,7 +1,7 @@
 COPTIC=coptic
 #########################################################################
 ACCISLIB=../accis/libaccisX.a
-LIBRARIES = -L/usr/X11R6/lib/ -L../accis/ -laccisX -lXt -lX11 $(GLULIBS)
+LIBRARIES = -L/usr/X11R6/lib/ -L/usr/lib/mesa -L../accis/ -laccisX -lXt -lX11 $(GLULIBS) -L. -lvtkwrite
 #Default accis driver choice
 #Alternatives are vecx or vecglx, can be overriden by commandline option
 VECX=vecglx
@@ -36,7 +36,7 @@ all: $(TARGETS)
 dummyreduce.o : ../dummyreduce.f
 	$(G77) -c ../dummyreduce.f
 
-% : %.f  makefile $(ACCISLIB) dummyreduce.o ../libcoptic.a $(HEADERS)
+% : %.f  makefile $(ACCISLIB) dummyreduce.o ../libcoptic.a $(HEADERS) libvtkwrite.a
 # I don't remember why this explicit form was preferred to a dependency below.
 #	make -C ../ libcoptic.a
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f dummyreduce.o ../libcoptic.a $(LIBRARIES)
@@ -50,10 +50,13 @@ dummyreduce.o : ../dummyreduce.f
 	$(G77)  -c $(COMPILE-SWITCHES) $(PROFILING) $*.f
 
 %.o : %.c makefile
-	cc -c $(PROFILING) $*.c
+	cc -c $(PROFILING) $*.c -I.
 
 ../libcoptic.a : 
 	make -C ../ libcoptic.a
+
+libvtkwrite.a : vtkwritewrap.o visit_writer.o
+	@ar -rs libvtkwrite.a vtkwritewrap.o visit_writer.o
 
 ########################################################
 $(ACCISLIB) : ../accis/*.f ../accis/*.c ../accis/*.h
@@ -67,5 +70,5 @@ vecx :
 
 #####################################################
 clean :
-	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.0?? *.ps *.dat
+	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.0?? *.ps *.dat *.a
 
