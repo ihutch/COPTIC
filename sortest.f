@@ -1,6 +1,5 @@
       program sortest
 c Main program of cartesian coordinate solver 
-
       include 'objcom.f'
 c Storage array spatial count size
       include 'griddecl.f'
@@ -19,12 +18,18 @@ c mpi process information.
       include 'myidcom.f'
 c Structure vector needed for finding adjacent u values.
       integer iLs(ndims_sor+1)
-      external bdyset,faddu,cijroutine,cijedge
+      external bdyset,bdysetnull,faddu,cijroutine,cijedge
       character*100 objfilename
       character*100 argument
       logical ltestplot,lsliceplot,linjplot
       logical lmyidhead,lphiplot,lpgraph
-      integer ipstep
+      integer ipstep,idebug
+      real CFin(3+ndims_mesh,2*ndims_mesh)
+      include 'facebcom.f'
+c Either include plascom or define vperp and Bfield.
+      include 'plascom.f'
+c      real vperp(ndims_mesh),Bfield(ndims_mesh)
+      real zp(na_m,na_m,ndims_mesh)
 c sor control values
       common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
 c Set up the structure vector.
@@ -34,7 +39,7 @@ c Mesh and mpi parameter defaults:
       data idims/nblksi,nblksj,nblksk/
       data ifull/na_i,na_j,na_k/
 c Data for plotting etc.
-      data iobpl/0/
+      data iobpl/0/idebug/0/
       data ltestplot,lsliceplot,linjplot/
      $     .true.,.false.,.false./
       data lphiplot,lpgraph/.true.,.false./
@@ -46,79 +51,47 @@ c Consistency checks
          stop
       endif
 c-------------------------------------------------------------
-c Defaults:
-c Default edge-potential (chi) relaxation rate.     
-      objfilename='copticgeom.dat'
-      debyelen=1.
-      Ti=1.
-      crelax=1.*Ti/(1.+Ti)
-      vd=0.
       rs=5.0
       rsmesh=rs
-      numprocs=1
-      thetain=.1
-      nth=1
-      norbits=0
-      ickst=0
       lmyidhead=.true.
-      ndiags=0
-      ifplot=-1
-      rcij=0
 c---------------------------------------------------------------------
 c This necessary here so one knows early the mpi structure.
 c Otherwise could have been hidden in sormpi and pass back numprocs.
       call mpigetmyid(myid,nprocs,ierr)
       if(myid.ne.0) lmyidhead=.false.
       numprocs=nprocs
+      if(idebug.gt.0)write(*,*)'numprocs,myid',numprocs,myid
 c--------------------------------------------------------------
-c Deal with arguments
-      do i=1,iargc()
-         call getarg(i,argument)
-         if(argument(1:3).eq.'-gt')ltestplot=.true.
-         if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
-         if(argument(1:3).eq.'-gr')read(argument(4:),*,end=201)rcij
-         if(argument(1:3).eq.'-gs')then
-            lsliceplot=.true.
-            read(argument(4:),*,err=210,end=210)ipstep
-            goto 211
- 210        ipstep=1
- 211        continue
-            write(*,*)'ipstep=',ipstep
-         endif
-         if(argument(1:3).eq.'-gw')lpgraph=.true.
-         if(argument(1:3).eq.'-gp')lphiplot=.false.
-         if(argument(1:3).eq.'-gi')linjplot=.true.
-         if(argument(1:3).eq.'-gf')read(argument(4:),*,err=201)ifplot
-         if(argument(1:3).eq.'-go')read(argument(4:),*,err=201)norbits
-         if(argument(1:3).eq.'-at')then
-            read(argument(4:),*,err=201)thetain
-         elseif(argument(1:3).eq.'-an')then
-            read(argument(4:),*,err=201)nth
-         elseif(argument(1:2).eq.'-a')then 
-            read(argument(3:),*,err=201)iavesteps
-         endif
-         if(argument(1:3).eq.'-pn')read(argument(4:),*,err=201)numprocs
-         if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
-         if(argument(1:2).eq.'-t')read(argument(3:),*,err=201)Ti
-         if(argument(1:3).eq.'-of')
-     $        read(argument(4:),'(a)',err=201)objfilename
-         if(argument(1:3).eq.'-ho')then
-            call geomdocument()
-            call exit(0)
-         endif
-         if(argument(1:2).eq.'-h')goto 203
-         if(argument(1:2).eq.'-?')goto 203
-      enddo
+c Deal with command-line arguments; not all valid here.
+      call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
+     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
+     $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
+     $     ,colntime,dt,bdt,subcycle,rmtoz,Bfield,ninjcomp,nsteps
+     $     ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti,iwstep
+     $     ,idistp,lrestart,restartpath,extfield,objfilename,lextfield
+     $     ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF)
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
 c Geometry and boundary information. Read in.
+      if(idebug.gt.0)write(*,*)'Calling readgeom',myid,ifull,lmyidhead
       call readgeom(objfilename,myid,ifull,CFin,iCFcount)
+      if(idebug.gt.0)write(*,*)'Finished readgeom'
 c---------------------------------------------------------------
 c Construct the mesh vector(s) from the geometry info.
       call meshconstruct(ndims,iuds,ifull)
       if(lmyidhead)write(*,'(a,3i4,6f8.3)')
      $     ' Constructed mesh',iuds
      $     ,(xmeshstart(k),xmeshend(k),k=1,ndims)
+c-----------------------------------------------------------------
+c Initialize the face phi boundary conditions if we are using them.
+c      write(*,*)'ICFCOUNT',iCFcount
+      if(iCFcount.ne.0)then
+         do idn=1,2*ndims
+            call bdyfaceinit(idn,CFin(1,idn))
+         enddo
+c Now print out the result of the initialization.
+         if(lmyidhead)call bdyfaceinit(-2,CFin(1,1))
+      endif
 c----------------------------------------------------------------
 c Initializations
       if(lmyidhead)write(*,*)'Initializing the stencil data cij'
@@ -165,16 +138,22 @@ c Initialize charge (set q to zero over entire array).
 c Initialize potential (set u to zero over entire array).
       call mditerset(u,ndims,ifull,iuds,0,0.)
 c---------------------------------------------------------------     
-c An inital vacuum solution with zero density. 
 c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
+c Bit 4-6 periodicity.
       ictl=0
+c Make dimensions periodic; necessary for mpi:
+      do id=1,ndims
+         if(LPF(id))ictl=ictl+4*2**id
+      enddo
 c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
 c Solver call.
       do k=1,2
          if(k.gt.1)ictl=1
          call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
      $        ,myid,idims)
-         write(*,*)'Completed sormpi',ierr,del_sor
+c         call sormpi(ndims,ifull,iuds,cij,u,q,bdysetnull,faddu,ictl,ierr
+c     $        ,myid,idims)
+         if(idebug.gt.0)write(*,*)'Completed sormpi',ierr,del_sor
          if(ierr.gt.0)goto 2
          eps_sor=2.e-6
       enddo
@@ -184,6 +163,11 @@ c Putting the finalize here prevents end mpi-crashes.
 c
 c-------------------------------------------------------------------
       if(lmyidhead)then
+         if(ltestplot)call sliceGweb(ifull,iuds,u,na_m,zp,
+     $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0))
+
+c This only does anything if object 2 is an outer sphere.
+         if(idebug.gt.0)write(*,*)'Calling vaccheck',rs,ltestplot
          call vaccheck(ifull,iuds,cij,u,thetain,nth,rs,ltestplot)
       endif
 c End of plotting.

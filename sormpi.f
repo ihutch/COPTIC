@@ -71,9 +71,13 @@ c k_sor is the sor iteration index, for diagnostics.
 c bbdydecl declares most things for bbdy, using parameter ndimsdecl.
       include 'bbdydecl.f'
 
+c Scratch arrays for lying to bdyshare.
+      integer zeros(ndims)
+      integer ones(ndims)
+
       real delta,umin,umax
-c This saves data between calls so we can use separate initialization
       data ldebugs/.false./
+c This saves data between calls so we can use separate initialization
       save
 c-------------------------------------------------------------------
       if(ndims.ne.ndimsdecl)then
@@ -88,6 +92,8 @@ c Decide if any of the dimensions is periodic
       ictlh=ictl
       ictlh=ictlh/8
       do nd=1,ndims
+         zeros(nd)=0
+         ones(nd)=1
          if(mod(ictlh,2).eq.0)then
             lperiod(nd)=.false.
          else
@@ -131,7 +137,7 @@ c (Re)Initialize the block communications:
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid)
          mpiid=myid
-c         if(mpiid.eq.0)write(*,*)'bbdy (re)initialized'
+         if(mpiid.eq.0)write(*,*)'bbdy (re)initialized'
          return
       endif
 c End of control functions.
@@ -143,26 +149,34 @@ c------------------------------------------------------------------
       oaddu=0.
 c This makes cases with strong faddu effects converge better.
       underrelax=1.2
+c------------------------------------------------------------------
 c Main iteration      
-c Experiments:
-c      xjac_sor=1.-.6*(1.-xjac_sor)
-c      write(*,*)'xjac_sor=',xjac_sor
-c      do k_sor=1,mi_sor*2
       do k_sor=1,mi_sor
          delta=0.
          umin=1.e30
          umax=0.
          relax=(omega+oaddu)/(1.+underrelax*oaddu) 
          oaddu=0.
-c Set boundary conditions (and conceivably update cij).
-c Only needed every other step, and gives identical results.
-         if(mod(k_sor,2).eq.1)call bdyset(ndims,ifull,iuds,cij,u,q)
+c------------------------------------------------------------------
 c Do block boundary communications, returns block info icoords...myid.
          call bbdy(iLs,ifull,iuds,u,k_sor,ndims,idims,lperiod,
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid)
 c If this is found to be an unused node, jump to barrier.
          if(mycartid.eq.-1)goto 999
+c------------------------------------------------------------------
+c Set boundary conditions (and conceivably update cij).
+c Only needed every other step, and gives identical results.
+         if(mod(k_sor,2).eq.1)then
+c The parallelized boundary setting routine
+            idone=0
+            call bdyshare(ndims,ifull,iuds,cij,u,q
+     $           ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
+     $           ,icommcart,mycartid,myid,idone)
+c If this did not succeed. Fall back to global setting.
+            if(idone.eq.0)call bdyset(ndims,ifull,iuds,cij,u,q)
+         endif
+c-------------------------------------------------------------------
 c Do a relaxation.
 c         write(*,*)'At sorrelax',myside,myorig,icoords,iLs
 c            if(k_sor.le.2)
@@ -197,6 +211,7 @@ c            omega=1./(1.-0.45*xjac_sor**2)
             omega=omega2
          endif
       enddo
+c------------------------------------------------------------------
 c We finished the loop, implies we did not converge.
       k_sor=-mi_sor
       ierr=-1
@@ -211,8 +226,21 @@ c the result].
      $        icommcart,mycartid,myid)
 c Boundary conditions need to be reset based on the gathered result.
 c But that's not sufficient when there's a relaxation so be careful!
-      call bdyset(ndims,ifull,iuds,cij,u,q)
-      call bdyset(ndims,ifull,iuds,cij,u,q)
+c Call the parallelized boundary setting routine but lie to it that 
+c it is the only process. This is implemented correctly but does not
+c work.
+c      idone=0
+c      if(.false..and.myid.eq.0)then
+c      write(*,*)'Final bdyshare call'
+c      call bdyshare(ndims,ifull,iuds,cij,u,q
+cc     $    ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
+c     $     ,iLs,ones ,lperiod,zeros  ,iLcoords,iuds  , ones
+c     $     ,icommcart,mycartid,myid,idone)
+c      endif
+c Instead, rely on the old global setting, which has periodicity 
+c explicitly included, even though it is inefficient.
+         call bdyset(ndims,ifull,iuds,cij,u,q)
+c         call bdyset(ndims,ifull,iuds,cij,u,q)
       del_sor=delta
       ierr=k_sor
  999  continue

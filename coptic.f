@@ -62,6 +62,7 @@ c Diagnostics etc
       real zp(na_m,na_m,ndims_mesh)
       real xlimit(2,ndims_mesh),vlimit(2,ndims_mesh)
       real xnewlim(2,ndims_mesh)
+c Input for face boundary data:
       real CFin(3+ndims_mesh,2*ndims_mesh)
 
 c Set up the structure vector.
@@ -260,7 +261,6 @@ c      if(myid.eq.0)call sliceGweb(ifull,iuds,rhoci,na_m,zp,
 c     $              ixnp,xn,ifix,'rhoci')
 
 c---------------------------------------------------------------     
-c An inital solution with zero density. 
 c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
 c Bit 4-6 periodicity.
       ictl=0
@@ -269,7 +269,7 @@ c Make dimensions periodic:
          if(LPF(id))ictl=ictl+4*2**id
       enddo
 c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
-c An initial solver call.
+c An initial solver call with zero density. 
       if(debyelen.ne.0.)call sormpi(ndims,ifull,iuds,cij,u,q,bdyset
      $     ,faddu,ictl,ierrsor,myid,idims)
       ictl=2+ictl

@@ -44,7 +44,7 @@ c---------------------------------------------------------------
 c Start of local variables.
 c      logical lalltoall
 c      parameter (idebug=1,lalltoall=.false.)
-c      parameter (idebug=0)
+      parameter (idebug=0)
 c      parameter (lalltoall=.true.)
 c Local storage:
       logical lreorder
@@ -90,9 +90,21 @@ c      integer isc(ndebug),isd(ndebug),ist(ndebug)
 c      integer irc(ndebug),ird(ndebug),irt(ndebug)
 c
 c The iorig(idims(1)+1,idims(2)+1,...) provides origin of block(i,j,..) 
-c within u. Blocks must be of equal size except for the uppermost
+c within u. That is, the bottom of the boundary cells in each dimension.
+c Three blocks in the x-direction, one in y-direction on 16x4 grid:
+c 1  ^----^
+c 2      ^----^
+c 3          ^------^ 1
+c    ................ ^
+c    X...X...X.....X. |
+c    ................ |
+c    X...X...X.....X. ^
+c    1234567890123456
+c X-Side-lengths 6[,6],8
+c Blocks must be of equal size except for the uppermost
 c The top of uppermost, with iblock=idims(n)) is indicated
-c by a value pointing to 1 minus the length of u in that dimension.
+c by a value pointing to the length of u in that dimension minus 1.
+c Each side runs from e.g. iorig(i,j,...)+1 to iorig(i+1,j,...)
 c We declare it as a 1-d array for generality. This is the first time here:
 c It must be of dimension greater than the number of processes (blocks)
       parameter (norigmax=1500)

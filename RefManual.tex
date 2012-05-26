@@ -421,17 +421,17 @@ every istepsave steps. If zero, no files or messages.
 \paragraph{-Bx.. -By.. -Bz..} Set the respective components of the
 magnetic field. 
 
-\paragraph{-BC....} Set the type of boundary conditions. (This is
-superceded and disabled by the -BF type below if present.) The single
+\paragraph{-bc....} Set the type of boundary conditions. (This is
+superceded and disabled by the -bf/-bp type below if present.) The single
 integer parameter's bits are interpreted as follows.  Bit 1 Mach
 cylinder (if set) else spherical logarithmic gradient.  Bits 2-7 set
 face to zero (only 3 implemented). Bits 8-13 set corresponding face to
 have ``second derivative'' boundary condition (only 13 implemented).
 
-\paragraph{-BF....} Set the face boundary conditions. (Superceded by
+\paragraph{-bf....} Set the face boundary conditions. (Superceded by
 -BP type below if present.) This command
 requires multiple additional arguments separated by commas but no
-spaces. Its form is -BFid,AF,BF,C0F[,CxF,CyF,CzF]. Here id is the face
+spaces. Its form is -bfid,AF,BF,C0F[,CxF,CyF,CzF]. Here id is the face
 number (1-3 lower, 4-6 upper, 7 set all faces, 0 reset all), AF, BF,
 C0F, are the Robin condition coefficients referring to the outward
 normal potential gradient. But if present then CxF, CyF, CzF are the
@@ -439,9 +439,10 @@ gradients of the C-coefficient of the Robin condition, so that
 C=C0F+CxF.x+CyF.y+CzF.z . If the Robin B-value, BF, is equal to zero,
 then assume AF is equal to 1; so -C is the set value of $\phi$.
 
-\paragraph{-BP....} Choose the dimension indicated by the single
+\paragraph{-bp....} Choose the dimension indicated by the single
 integer parameter. Toggle on (or off) periodic boundary conditions on
-potential for that dimension. Overrides others if on.
+potential for that dimension. Implies using the rectangular -bf
+overall scheme if on, but overrides the behavior in the chosen dimension.
 
 \paragraph{-ofFilename} Set the name of the object file. Default ccpicgeom.dat
 

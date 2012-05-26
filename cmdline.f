@@ -147,12 +147,12 @@ c Initialize first, in case we are given a short read line.
      $                 ,(CFin(id,idcn),id=1,6)
  212              continue
 c Diagnostics:
-                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
+c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
                   iCFcount=iCFcount+1
                enddo
             else
                write(*,*)'Error in bdyface cmdline switch:'
-     $              ,argument(1:lentrim(argument))
+     $              ,argument(1:30)
                stop
             endif
          endif
@@ -307,7 +307,7 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,303)' -bp<i>  toggle periodicity       [',LPF
      $     ,'    in dimension <i>.'
       write(*,301)' [-of]<filename>  set name of object data file.'
-     $     //'   ['//objfilename(1:lentrim(objfilename))
+     $     //'   ['//objfilename(1:20)
       write(*,301)
      $     ' -fs[path]  Attempt to restart from state saved [in path].'
       write(*,301)' -ea --  end argument parsing. Skip succeeding.'

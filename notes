@@ -8405,3 +8405,45 @@ other than through sormpi. We'd need an api.
 
 It looks pretty tricky given the density of the mpibbdy code to figure
 out how to do this. I think it's time to commit what we have. 
+
+I think that in sormpi the information returned from bbdy is sufficient
+to figure out the location of the block and which boundary points to
+be responsible for. So it would be possible to parallelize the boundary
+setting. That would overcome the non-scalable bdy effects.
+
+25 May 2012
+
+Trying to parallelize the bc setting. 
+First try to get sortest working.
+Actually, I find that sorserial works, while sortest doesn't. 
+Update sortest.f to use the new cmdline setting code.
+Found that the sortest error arises because plascom is not in 
+sortest. Put a trap in bdyset to prevent divide by zero debyelen.
+Why do I not put plascom.f into sortest? Just for independence, I suppose.
+If it is included then sortest works like coptic. If not then 
+there's more independence, I suppose.
+
+sorserial replaces the bdyroutine with a null so it gives a different
+solution.
+
+OK sorserial and sortest are working.
+
+Implemented an mditerate over the boundary of a block of thickness 1. 
+bdyshare.
+
+Got it to work with explicit setting of u to a hard coded value. 
+With mpi processes, the boundary value is not actually set in the
+master frame, as expected. If needed, this can probably be fixed 
+afterwards by one call to the bdyshare routine which tells it that
+there's only one process. [No that does not work because bdyshare 
+never actually sets boundary values for periodic dimensions, it just
+relies on the mpi communication. That means that sorserial won't work
+properly with periodic BCs. 
+
+Now working with -bf face boundary condition setting and -bp periodic.
+For the old -bc settings the global code is still used. This is also 
+called last thing in sormpi so that the boundary is set for the whole
+of the master node's mesh. This is purely for aesthetics with periodicity.
+It might be worth considering implementing explicit boundary setting
+in periodic directions so that it would work with sorserial. Then the 
+final call could be to bdyshare routine telling it one block. 

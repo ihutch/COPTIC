@@ -8,7 +8,7 @@ c Specify external the boundary setting routine.
       external bdyface 
       if(LF)then
 c Rectangular face setting
-c         write(*,*)'Calling bdyface setting'
+c         write(*,*)'Calling bdyface setting',LF
          ipoint=0
          call mditerate(bdyface,ndims,ifull,iuds,ipoint,u)
       else
@@ -37,7 +37,11 @@ c Normal log phi-derivative=-1 :
 c         slpD=-1.
 c Adaptive boundary condition. Only approximate for non-spheres. 
 c Direct logarithmic gradient setting.
-         slpD=-(1.+rs*sqrt(1.+1./Ti)/debyelen)
+         if(debyelen.eq.0)then
+            slpD=-1.
+         else
+            slpD=-(1.+rs*sqrt(1.+1./Ti)/debyelen)
+         endif
 c         write(*,*)'slpD=',slpD,Ti,debyelen
          call mditerate(bdyslopeDh,ndims,ifull,iuds,ipoint,u)
 c Explicit screening uses buggy bdyslopescreen. Obsolete.
@@ -371,7 +375,7 @@ c Not on face in this dimension.
          if(LPF(n))then
 c Here we set the boundary because otherwise the final array won't have
 c it set. But we ought not to during iterations because it's unnecessary.
-c That inefficiency is not yet fixed.
+c During iterations we use the new bdyshare routine.
             u(ipoint+1)=u(ipoint+1-iupper*(iused(n)-2)*iLs(n))
          else
 c Only if we are not on a periodic face:
