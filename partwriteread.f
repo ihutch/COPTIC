@@ -30,7 +30,6 @@ c File name:
       character*(*) name
 c My mpi id
       integer myid
-
       include 'partcom.f'
       include 'plascom.f'
       include 'ran1com.f'

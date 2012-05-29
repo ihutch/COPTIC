@@ -34,7 +34,7 @@ c optional vector argument on the same array of positions as u.
 c Do arrow plots of this field over contours Needed for perspective plot
       include 'world3.h'
 c Workspace size is problematic.
-      parameter (nwksp=40000)
+      parameter (nwksp=100000)
       character*1 pp(nwksp)
 c Contour levels
       real cl(30)

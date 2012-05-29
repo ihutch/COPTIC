@@ -18,15 +18,8 @@ c Velocity limits
       real vlimit(2,mdims)
       character*1 axnames(3)
       real vmean(mdims)
+      integer iuin(mdims)
       data axnames/'x','y','z'/ 
-
-c      write(*,*)'na_i',na_i
-      write(*,*)'nsub_i,nsub_j,nsub_k',nsub_i,nsub_j,nsub_k
-      write(*,*)'nptdiag,nsbins',nptdiag,nsbins
-      if(nptdiag.lt.nsbins)then
-         write(*,*)'WARNING nptdiags=',nptdiag,' smaller than nsbins='
-     $        ,nsbins,' Incorrect array size choice.'
-      endif
 
       nfmax=nfilemax
 c silence warnings:
@@ -47,12 +40,25 @@ c Overlapping vlimits make limitdeterm the usual setting method.
 c Use cellvol=0. to indicate the first call. Nonzero subsequent.
       cellvol=0.
 
-      call partexamargs(xlimit,vlimit)
+      call partexamargs(xlimit,vlimit,iuin)
       do id=1,mdims
 c Needed initialization removed from partacinit.
          xmeshstart(id)=min(-5.,xlimit(1,id))
          xmeshend(id)=max(5.,xlimit(2,id))
+         isuds(id)=iuin(id)
       enddo
+c      write(*,*)'na_i',na_i
+      write(*,*)'nsub_i,nsub_j,nsub_k',nsub_i,nsub_j,nsub_k,' isuds:'
+     $     ,isuds
+      if(isuds(1)*isuds(2)*isuds(3).gt.nsub_tot)then
+         write(*,*)'Too many blocks requested. Reduce or recompile.'
+         stop
+      endif
+      write(*,*)'nptdiag,nsbins',nptdiag,nsbins
+      if(nptdiag.lt.nsbins)then
+         write(*,*)'WARNING nptdiags=',nptdiag,' smaller than nsbins='
+     $        ,nsbins,' Incorrect array size choice.'
+      endif
 c Now the base filename is in partfilename.
       ip=lentrim(partfilename)-3
       if(partfilename(ip:ip).eq.'.')then
@@ -82,7 +88,7 @@ c Possible multiple files.
          call partread(name,ierr)
          if(ierr.ne.0)goto 11
 
-         call partdistup(xlimit,vlimit,xnewlim,cellvol,0)
+         call partdistup(xlimit,vlimit,xnewlim,cellvol,0,isuds)
 c If we wish to accumulate to the uniform mesh for other than the first
 c occasion (when cellvol is zero) we need to do:
 c         call partsaccum
@@ -179,20 +185,26 @@ c            write(25,'(a,i1,a)')'legend: f(v!d',id,'!d)'
       write(*,'(''Mean velocity:'',3f10.4)')(vmean(i),i=1,mdims)
 
 c Plot the subdistributions at a particular cell.
-      icell=nsub_i/2+1
-      jcell=nsub_j/2+1
-      kcell=nsub_k/2+1
+      icell=isuds(1)/2+1
+      jcell=isuds(2)/2+1
+      kcell=isuds(3)/2+1
       call pltsubdist(icell,jcell,kcell,vlimit,xnewlim,cellvol)
 
       end
 c*************************************************************
-      subroutine partexamargs(xlimit,vlimit)
+      subroutine partexamargs(xlimit,vlimit,iuin)
       include 'examdecl.f'
       real xlimit(2,3),vlimit(2,3)
+      integer iuin(3)
 
+c I think unused here 26 May 12. But I'm not sure.
       ifull(1)=na_i
       ifull(2)=na_j
       ifull(3)=na_k
+
+      do i=1,3
+         iuin(i)=9
+      enddo
 
 c silence warnings:
       fluxfilename=' '
@@ -217,6 +229,8 @@ c Deal with arguments
                read(argument(3:),*,err=201) vlimit(1,2),vlimit(2,2)
             elseif(argument(1:2).eq.'-w')then
                read(argument(3:),*,err=201) vlimit(1,3),vlimit(2,3)
+            elseif(argument(1:2).eq.'-b')then
+               read(argument(3:),*,err=201)iuin
             endif
             if(argument(1:13).eq.'--objfilename')
      $        read(argument(14:),'(a)',err=201)objfilename
@@ -243,6 +257,7 @@ c 302  format(a,f8.3)
      $     //' [ccpicgeom.dat'
       write(*,301)' -x -y -z<fff,fff>  set position range. [ -5,5'
       write(*,301)' -u -v -w<fff,fff>  set velocity range. [ -5,5'
+      write(*,301)' -b<nx,ny,nz>  set spatial block range. [',iuin(1)
       write(*,301)' -f   set name of partfile.'
       write(*,301)' -h -?   Print usage.'
       call exit(0)

@@ -80,7 +80,7 @@ c
       common/lablnc/width,str1
       external followdata
 c Maximum length of a single contour. Increase if necessary.
-      parameter (ici=1000)
+      parameter (ici=4000)
       real xc(ici),yc(ici)
       real cw,ch
       logical labels

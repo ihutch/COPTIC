@@ -202,6 +202,40 @@ If flux entering or leaving any region of the domain is required to be
 monitored, then an object which represents the boundary of that region
 should be defined with null boundary conditions. 
 
+\subsection{Special Object Qualifications}
+
+The second byte of the object type indicates special qualities of the
+object as follows. 
+
+\paragraph{1($\times256$) Special Boundary} for the outside region of this
+object set the potential to zero at the boundary rather than the
+normal continuity condition when a Robin form is used.
+
+\paragraph{2($\times256$) Point-Charge} This spherical object is a point charge,
+which is treated by the PPPM technique. Its potential is represented
+by an analytic part that is non-zero out to a radius specified as
+usual. Outside that (isotropic) radius, the analytic part is zero. The
+magnitude of the point charge is specified by the input value in the
+position of \verb!ofn1! (12th position in the object line; the 11th
+position requires a number (0) but is ignored.) This value equals
+the Coulomb potential that would exist at the object's radius if the
+charge were isolated.
+
+\paragraph{3($\times256$) Variable Boundary Conditions} The
+coefficients $A,B,C$ of the Robin boundary condition in this object vary
+linearly in space. Their values at the object center are specified as
+usual. Their gradients are specified by three vectors which follow the
+flux accumulation specification (which must be present).
+
+\paragraph{4($\times256$) Insulating Object} The boundary condition is
+the specification of the potential ($A,C\ne 0$). But the value of $C$
+is determined by requiring the value of the ion flux density to the
+local facet to equal the electron flux density there. 
+
+\paragraph{5($\times256$) Floating Object} The potential is constant
+on the object, but takes a value determined by requiring the total ion
+flux to the object to equal the electron flux.
+
 \subsection{Mesh Geometry}
 
 The setting of the mesh spacing in each dimension is specified by
@@ -246,10 +280,11 @@ a uniformly spaced mesh of 32 nodes from $-5$ to $5$.
 \subsection{Face Boundary Conditions}
 
 Lines in the geometry file can be used to specify the potential
-boundary conditions on faces. If \emph{any} are used, here or on the
-command line, then \emph{all} faces use the rectangular conditions.
-Robin boundary conditions, referring to the outward normal ${\bf n}$
-are used in the form
+boundary conditions on the rectangular faces of the computational
+domain (not specific objects). If \emph{any} face conditions are used,
+here or on the command line, then \emph{all} faces use the rectangular
+conditions.  Robin boundary conditions, referring to the outward
+normal ${\bf n}$ are used in the form
 $$A\phi + B \hat{\bf n}.\nabla\phi + C =0$$
 The line consists of a type equal to 100 plus the face number,
 followed by (up to) 6 reals specifying $A,B,C0,Cx,Cy,Cz$.
@@ -258,6 +293,17 @@ have $A=3$, $B=4$, $C=5+6x+7y+8z$ is
 \begin{verbatim}
 102,3.,4.,5.,6.,7.,8.
 \end{verbatim}
+
+A line in the geometry file can also specify \emph{periodic} face
+boundary conditions in a particular dimension. Such lines consist of a
+single type value lying between \verb!111! and \verb!110+ndims!. For example
+\begin{verbatim}
+113
+\end{verbatim}
+toggles on or off periodicity in the dimension
+\verb!type-110=3!. Naturally this sets the boundary conditions
+for both lower and upper boundaries.
+
 Any face that is not somewhere explicitly set defaults to the
 condition $\phi=0$ if Face Boundary conditions are active.
 
@@ -293,40 +339,6 @@ inside 2, and the particles exist between them, is
 objects can be implemented by intersection of the complement.  The
 default boolean (if no boolean line is in the object file) is that the
 particle region is everywhere within the mesh.
-
-\subsection{Special Object Qualifications}
-
-The second byte of the object type indicates special qualities of the
-object as follows. 
-
-\paragraph{1($\times256$) Special Boundary} for the outside region of this
-object set the potential to zero at the boundary rather than the
-normal continuity condition when a Robin form is used.
-
-\paragraph{2($\times256$) Point-Charge} This spherical object is a point charge,
-which is treated by the PPPM technique. Its potential is represented
-by an analytic part that is non-zero out to a radius specified as
-usual. Outside that (isotropic) radius, the analytic part is zero. The
-magnitude of the point charge is specified by the input value in the
-position of \verb!ofn1! (12th position in the object line; the 11th
-position requires a number (0) but is ignored.) This value equals
-the Coulomb potential that would exist at the object's radius if the
-charge were isolated.
-
-\paragraph{3($\times256$) Variable Boundary Conditions} The
-coefficients $A,B,C$ of the Robin boundary condition in this object vary
-linearly in space. Their values at the object center are specified as
-usual. Their gradients are specified by three vectors which follow the
-flux accumulation specification (which must be present).
-
-\paragraph{4($\times256$) Insulating Object} The boundary condition is
-the specification of the potential ($A,C\ne 0$). But the value of $C$
-is determined by requiring the value of the ion flux density to the
-local facet to equal the electron flux density there. 
-
-\paragraph{5($\times256$) Floating Object} The potential is constant
-on the object, but takes a value determined by requiring the total ion
-flux to the object to equal the electron flux.
 
 \section{Command Line Parameters}\label{cmdline}
 
@@ -403,7 +415,9 @@ This says how often (in steps) the total data is written out to
 disk. It is independent of the diagnostic averaging or moment writing.
 The data overwrites the files of prior steps, giving the running
 values. In any case, the particle flux data for all steps is contained in
-the files. 
+the files. If the write step period is set to a negative number, then 
+at the end of the run only the particles from node 0 (the master) are
+written to disk. 
 
 \paragraph{-pd...}
 Set distribution diagnostics. Bit1: write, Bit2: plot. Default 0.
@@ -429,7 +443,7 @@ face to zero (only 3 implemented). Bits 8-13 set corresponding face to
 have ``second derivative'' boundary condition (only 13 implemented).
 
 \paragraph{-bf....} Set the face boundary conditions. (Superceded by
--BP type below if present.) This command
+-bp type below if present.) This command
 requires multiple additional arguments separated by commas but no
 spaces. Its form is -bfid,AF,BF,C0F[,CxF,CyF,CzF]. Here id is the face
 number (1-3 lower, 4-6 upper, 7 set all faces, 0 reset all), AF, BF,
@@ -483,6 +497,7 @@ Debugging switches for testing
  -at   set test angle. -an   set No of angles. 
  -ck   set checking timestep No. [    0
  -h -?   Print usage.
+ -hg     Print debugging/plotting switch usage.
  -ho     Print geomobj file format description
 \end{verbatim}
 These are required only for rather sophisticated use of COPTIC, and
@@ -892,11 +907,16 @@ $f(u)$ (possibly dependent upon its position in the array indicated by
 \verb!fprime!. In COPTIC, \verb!faddu! is the exponential function to
 represent the electron Boltzmann distribution. The additional access
 to the array index is necessary to compensate for point charges by
-adding their effective density \verb!rhoci!; that density is
-obtained through inclusion of commons. The
-subroutine \verb!bdyset! evaluates the boundary conditions and
-deposits into the edge values of the potential, after each (full)
-iteration.
+adding their effective density \verb!rhoci!; that density is obtained
+through inclusion of commons. 
+
+After each full iteration, boundary conditions are applied by calling
+the parallelized boundary setting routine \verb!bdyshare!. If it
+returns its first argument \verb!idone!  equal to zero then it is
+considered to have failed and the passed subroutine \verb!bdyset! is
+called. It evaluates the boundary conditions for the whole domain (in
+contrast to \verb!byshare! which sets just those for the local domain
+block) and deposits into the edge values of the potential.
 
 Considerable care is taken to optimize the relaxation parameter in
 accordance with Chebychev acceleration principles, with the result
@@ -939,8 +959,16 @@ region, reinjecting them and possibly new particles if necessary, and
 performing various flux and diagnostic accumulations.
 
 \paragraph{The advancing scheme} without magnetic field, is a simple
-leap-frog combination of kick and drift. With non-zero magnetic field,
-the Cyclotronic mover is used.  The
+leap-frog combination of kick equal to $\nabla\phi\;dt$ and drift
+${\bf v} dt$. With non-zero magnetic field, the Cyclotronic mover is
+used. The instantaneous magnetic acceleration is ${\bf v}\times{\bf
+  B}$ but the gyro motion is explicitly represented by a rotation at
+cyclotron frequency $\Omega$ equal to $B$. If $B> 1.e3$ then it is
+take to be infinity; so then the ion motion consists purely of two
+terms: (1) parallel (to $B$) acceleration and drift (2) perpendicular
+drift equal to the perpendicular component of the specified drift velocity.
+
+The
 acceleration (kick) step is taken to have a duration equal to the mean
 of the prior and current step durations. The drift is taken to have a
 duration equal to the current step. Thus one should interpret the
@@ -1058,24 +1086,32 @@ resetting \verb!cellvol! to zero.)
 
 Distributions are written (bit 1) and/or displayed (bit 2) as
 determined by switch \verb!-pd!, at the same time as other diagnostic
-writes, i.e.\ every \verb!iavesteps! steps.
+writes, i.e.\ every \verb!iavesteps! steps. 
+
+The distributions are spatially resolved into blocks of nodes. The
+number of blocks in each dimension is \verb!nsub_i, nsub_j, nsub_k!. 
+Those parameters are defined in the file \verb!ptaccom.f!, usually all
+equal to 8. They may be changed only by editing that file and
+recompiling. Subsequent reading of the output requires the analysis
+routines to have been compiled with the same parameter settings.
 
 
 \subsection{Final Output}
 
-Always at the end of the run, and optionally at every \verb!iwstep!
-  steps (set by switch \verb!-w!), the state of the code is written to
-  disk and is available for postprocessing. The writing routine
-  \verb!datawrite! in file \verb!partwriteread.f! writes for each
-  processor the particles that belong to it into a file whose
-  extension is the cpu-node number. In addition, the master node
-  writes the grid quantities density (\verb!.den!), potential
-  (\verb!.phi!), and time-averaged potential (\verb!.pha!) in a simple
-  array write. It also writes the fluxes (\verb!.flx! via
-  \verb!writefluxfile! in file \verb!fluxdata.f!). These writes are to
-  fortran unformatted (binary) files. Each write routine is
-  accompanied by a read routine to read the data back into the same
-  structures from which it was written.
+Always at the end of the run, and optionally at every \verb!|iwstep|!
+steps (set by switch \verb!-w!), the state of the code is written to
+disk and is available for postprocessing. The writing routine
+\verb!datawrite! in file \verb!partwriteread.f! writes for each
+processor the particles that belong to it into a file whose extension
+is the cpu-node number. However, if \verb!iwstep! has been set
+to a negative number, only processor 0, the master
+node, writes its particle data. In addition, the master node writes
+the grid quantities density (\verb!.den!), potential (\verb!.phi!),
+and time-averaged potential (\verb!.pha!) in a simple array write. It
+also writes the fluxes (\verb!.flx! via \verb!writefluxfile! in file
+\verb!fluxdata.f!). These writes are to fortran unformatted (binary)
+files. Each write routine is accompanied by a read routine to read the
+data back into the same structures from which it was written.
 
 \subsection{Postprocessing and data examination}
 
@@ -1083,6 +1119,10 @@ The subdirectory \verb!analysis! contains routines that read back the
 data files written and display them in various ways. They are in the
 form of main programs with names like \verb!diagexamine!,
 \verb!fluxexamine!, \verb!denexamine!, \verb!phiexamine!. 
+The routine \verb!phiexamine! can optionally write out the data it
+reads in (which might equally well be other mesh-defined quantities
+such as density) in vtk-format suitable for reading by the 3-D
+visualization software VisIt. 
 Obviously the possible sorts of postprocessing are unlimited, but
 these routines provide both general purpose inspection routines and
 examples that can serve as templates for other analyses.

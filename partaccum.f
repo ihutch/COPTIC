@@ -1,5 +1,5 @@
 c********************************************************************
-      subroutine partdistup(xlimit,vlimit,xnewlim,cellvol,myid)
+      subroutine partdistup(xlimit,vlimit,xnewlim,cellvol,myid,ibset)
 c Routine to update the particle distribution diagnostics for using the
 c current particle information. If this is called for the first time,
 c then calculate the bins for accumulating the distribution. Otherwise
@@ -10,8 +10,9 @@ c just accumulate to them.
       include 'ptaccom.f'
       real xlimit(2,mdims),vlimit(2,mdims),xnewlim(2,mdims)
       real cellvol
-      integer myid
+      integer myid,ibset
       integer nvlist
+c      integer i,j
 c Use the first occasion to establish the accumulation range.
 c Indicated by zero cellvolume.
          if(cellvol.eq.0.)then
@@ -21,7 +22,8 @@ c            nvlist=100
             nvlist=10
             call vlimitdeterm(npdim,x_part,if_part,ioc_part
      $           ,vlimit,nvlist)
-c            write(*,'('' Velocity limits:'',6f7.3)') vlimit
+            if(myid.eq.0)write(*,'('' Velocity limits:'',66f7.3)')
+     $           vlimit
             call minmaxreduce(mdims,vlimit)
 c            write(*,'('' Velocity reduced:'',6f7.3)') vlimit
 c Indicate csbin not initialized and start initialization
@@ -32,16 +34,16 @@ c Do the accumulation for this file up to maximum relevant slot.
             nfvaccum=0
             call partsaccum(npdim,x_part,if_part,ioc_part,xlimit
      $        ,vlimit,xnewlim,nfvaccum)
-            write(*,*)'Accumulated',nfvaccum,' of',ioc_part,' total'
-     $        ,' in',xlimit
+            if(myid.eq.0)write(*,*)'Accumulated',nfvaccum,' of',ioc_part
+     $           ,' total',' in',xlimit
 c Reduce back the data for MPI cases.
             call ptdiagreduce()
             call minmaxreduce(mdims,xnewlim)
-            if(myid.eq.0)write(*,'(a,i8,a,6f8.4)')'Reduced',nfvaccum
+            if(myid.eq.0)write(*,'(a,i8,a,6f8.3)')'Reduced',nfvaccum
      $           ,' Xnewlim=',xnewlim
 c Should do this only the first time.
             call bincalc()
-            call fvxinit(xnewlim,cellvol)
+            call fvxinit(xnewlim,cellvol,ibset)
          else
             call partsaccum(npdim,x_part,if_part,ioc_part,xlimit
      $        ,vlimit,xnewlim,nfvaccum)
@@ -49,7 +51,7 @@ c Should do this only the first time.
 c         write(*,*)'isfull',isfull,cellvol
 c         write(*,*)'calling subaccum'
          call subaccum(mdims,x_part,if_part,ioc_part,
-     $     isfull,vlimit,xnewlim)
+     $     isfull,isuds,vlimit,xnewlim)
          end
 c****************************************************************
       subroutine partacinit(vlimit)
@@ -93,8 +95,10 @@ c Assign velocities to bins.
          if(v.gt.vlimit(2,id))v=vlimit(2,id)
          ibin=nint(nptdiag*(.000005+0.99999*
      $        (v-vlimit(1,id))/(vlimit(2,id)-vlimit(1,id)))+0.5)
-         if(ibin.lt.1.or.ibin.gt.nptdiag)
-     $        write(*,*)k,nin,id,' ibin',ibin,v
+         if(ibin.lt.1.or.ibin.gt.nptdiag)then
+            write(*,*)'For id ',id,' erroneous ibin',ibin,v
+            write(*,*)nptdiag,vlimit(1,id),vlimit(2,id)
+         endif
          fv(ibin,id)=fv(ibin,id)+1.
          if(csbin(1,1).ne.-1.)then
 c Doing summed bin accumulation
@@ -155,6 +159,7 @@ c      if(limadj.eq.1)write(*,'(a,6f10.5)')' xnewlim=',xnewlim
 c**********************************************************************
       subroutine vlimitdeterm(mdims,xpart,ifpart,iocpart,vlimit
      $     ,nvlist)
+c Determine the required vlimits for this particle distribution.
       real xpart(3*mdims,iocpart)
       integer ifpart(iocpart)
 c Velocity limits
@@ -179,10 +184,17 @@ c Only for filled slots
          enddo
 c         write(*,*)vblist
 c         write(*,*)vtlist
-         vlimit(1,id)=vblist(nvlist)
-         vlimit(2,id)=vtlist(nvlist)
+         if(vblist(nvlist).lt.vtlist(nvlist))then
+            vlimit(1,id)=vblist(nvlist)
+            vlimit(2,id)=vtlist(nvlist)
+         else
+            write(*,*)'All velocities equal',vblist(nvlist),' for id',id
+            vlimit(1,id)=-4.
+            vlimit(2,id)=4.
+            write(*,*)'vlimits',vlimit
+         endif
       enddo
-c      write(*,*)'vlimits',vlimit
+
       end
 c========================================================================
       subroutine sortbottomlimit(v,vlist,nvlist)
@@ -331,11 +343,11 @@ c      write(*,*)' ibinmap',ibinmap
       end
 c**********************************************************************
       subroutine subaccum(mdims,xpart,ifpart,iocpart,
-     $     isfull,vlimit,xnewlim)
+     $     isfull,isuds,vlimit,xnewlim)
 c Over the whole particle population accumulate to space-resolved bins
       real xpart(3*mdims,iocpart)
       integer ifpart(iocpart)
-      integer isfull(mdims)
+      integer isfull(mdims),isuds(mdims)
 c Spatial limits bottom-top, dimensions
       real xnewlim(2,mdims)
 c Velocity limits
@@ -344,7 +356,7 @@ c Subbin addressing.
       integer isind(mdims)
 c Local storage with adequate dimensional length:
       real xsf(10)
-c The equal bins fill the ranges xnewlim with index lengths isfull.
+c The equal bins fill the ranges xnewlim with index lengths isuds.
       do id=1,mdims
          xsf(id)=.999999/(xnewlim(2,id)-xnewlim(1,id))
       enddo
@@ -353,13 +365,13 @@ c Only for filled slots
          if(ifpart(j).eq.1)then
             do id=1,mdims
 c Calculate the spatial sub-bin pointer.
-               isind(id)=1+int(isfull(id)*
+               isind(id)=1+int(isuds(id)*
      $              (xpart(id,j)-xnewlim(1,id))*xsf(id))
 c If we are outside the range skip this particle.
-               if(isind(id).gt.isfull(id).or.isind(id).le.0)goto 1
+               if(isind(id).gt.isuds(id).or.isind(id).le.0)goto 1
             enddo
-            ip=ipfindex(mdims,isfull,isind)
-c            if(ip.gt.1000)write(*,*)isfull,isind,ip
+            ip=ipfindex(mdims,isuds,isind)
+c            if(ip.gt.1000)write(*,*)isuds,isind,ip
             if(ip.lt.0)write(*,*)isind,ip
             call subvaccum(xpart(1,j),vlimit,ip+1)
          endif
@@ -400,7 +412,7 @@ c Test for corruption ought not eventually to be necessary.
       denfvx(ip)=denfvx(ip)+1
       end
 c*******************************************************************
-      subroutine fvxinit(xnewlim,cellvol)
+      subroutine fvxinit(xnewlim,cellvol,ibset)
       include 'meshcom.f'
       include 'ptaccom.f'
       real xnewlim(2,mdims)
@@ -408,6 +420,11 @@ c*******************************************************************
       isfull(1)=nsub_i
       isfull(2)=nsub_j
       isfull(3)=nsub_k
+      if(ibset.eq.0)then
+         do i=1,mdims
+            isuds(i)=isfull(i)
+         enddo
+      endif
       do ip=1,nsub_tot
          denfvx(ip)=0.
          do id=1,mdims
@@ -439,10 +456,12 @@ c**********************************************************************
       read(25)((vdiag(i,j),fv(i,j),i=1,nptdiag),j=1,mdims)
       read(25)(xnewlim(1,j),xnewlim(2,j),j=1,mdims)
       read(25)nsbf,(isfull(i),i=1,mdims),cellvol
+      read(25)(isuds(i),i=1,mdims)
       if(nsbf.ne.nsbins .or. isfull(1).ne.nsub_i .or.
      $     isfull(2).ne.nsub_j .or. isfull(3).ne.nsub_k) goto 103
-      read(25)(((fvx(i,j,k),i=1,nsbins),j=1,mdims),k=1,nsub_tot)
-      read(25)(denfvx(k),k=1,nsub_tot)
+      read(25)(((fvx(i,j,k),i=1,nsbins),j=1,mdims),k=1,isfull(1)
+     $     *isfull(2)*isfull(3))
+      read(25)(denfvx(k),k=1,isfull(1)*isfull(2)*isfull(3))
       read(25)((vsbin(i,j),csbin(i,j),fsv(i,j),i=1,nsbins),
      $     (vhbin(i,j),i=0,nsbins),j=1,mdims)
       read(25)((ibinmap(i,j),i=1,nptdiag),j=1,mdims)
@@ -477,8 +496,10 @@ c**********************************************************************
 c      write(*,'(2f10.4)')((vdiag(i,j),fv(i,j),i=1,5),j=1,mdims)
       write(25)(xnewlim(1,j),xnewlim(2,j),j=1,mdims)
       write(25)nsbins,(isfull(i),i=1,mdims),cellvol
-      write(25)(((fvx(i,j,k),i=1,nsbins),j=1,mdims),k=1,nsub_tot)
-      write(25)(denfvx(k),k=1,nsub_tot)
+      write(25)(isuds(i),i=1,mdims)
+      write(25)(((fvx(i,j,k),i=1,nsbins),j=1,mdims),k=1,isfull(1)
+     $     *isfull(2)*isfull(3))
+      write(25)(denfvx(k),k=1,isfull(1)*isfull(2)*isfull(3))
       write(25)((vsbin(i,j),csbin(i,j),fsv(i,j),i=1,nsbins),
      $     (vhbin(i,j),i=0,nsbins),j=1,mdims)
       write(25)((ibinmap(i,j),i=1,nptdiag),j=1,mdims)
@@ -509,16 +530,19 @@ c Distributions in ptaccom.f
       character*100 string
       integer icell,jcell,kcell
       real wicell,wjcell,wkcell
+      integer iup
+      data iup/1/
 c------------------------------------------
       icell=icellin
       jcell=jcellin
       kcell=kcellin
       write(*,*)'Adjust cell position with arrow keys.'
- 1    ip=ip3index(isfull,icell,jcell,kcell)+1
+ 1    ip=ip3index(isuds,icell,jcell,kcell)+1
       call multiframe(3,1,2)
-      wicell=(xnewlim(2,1)-xnewlim(1,1))/nsub_i
-      wjcell=(xnewlim(2,2)-xnewlim(1,2))/nsub_j
-      wkcell=(xnewlim(2,3)-xnewlim(1,3))/nsub_k
+      wicell=(xnewlim(2,1)-xnewlim(1,1))/isuds(1)
+      wjcell=(xnewlim(2,2)-xnewlim(1,2))/isuds(2)
+      wkcell=(xnewlim(2,3)-xnewlim(1,3))/isuds(3)
+c      write(*,*)icell,jcell,kcell,isuds
       write(string,'(''Cell'',3i3,''  x=('',f6.2,'','',f6.2,'')'//
      $     ' y=('',f6.2,'','',f6.2,'') z=('',f6.2,'','',f6.2,'')'')')
      $     icell,jcell,kcell
@@ -561,14 +585,18 @@ c         call polybox(vhbin(0,id),fvx(1,id,ip),nsbins)
 c      write(*,*)'ip',ip
 c Increment one of the dimensions using arrow keys.
       if(ip.eq.65361)then
-         icell=mod(icell,nsub_i)+1
+         icell=mod(icell-1+isuds(1)+iup,isuds(1))+1
       elseif(ip.eq.65362)then
-         kcell=mod(kcell,nsub_k)+1
+         kcell=mod(kcell,isuds(3))+1
       elseif(ip.eq.65364)then
-         kcell=max(1,kcell-1)
+         kcell=mod(kcell-2+isuds(3),isuds(3))+1
       elseif(ip.eq.65363)then
-         jcell=mod(jcell,nsub_j)+1
+         jcell=mod(jcell-1+isuds(2)+iup,isuds(2))+1
+      elseif(ip.eq.65505)then
+c ffe1 shift_L=2^16-31=65505
+         iup=-iup
       else
+c         write(*,*)ip
          return
       endif
       goto 1

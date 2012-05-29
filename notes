@@ -8447,3 +8447,27 @@ of the master node's mesh. This is purely for aesthetics with periodicity.
 It might be worth considering implementing explicit boundary setting
 in periodic directions so that it would work with sorserial. Then the 
 final call could be to bdyshare routine telling it one block. 
+
+26 May 12
+
+Fiddled with partaccum and related codes to allow one to choose a 
+block configuration in the postprocessing of particle data. 
+That way we can specify e.g. 1 in the x-direction and more in the 
+other directions.
+
+Found a bug in the binfinity ninjcalc and fixed. 
+But there are other bugs. One seems to return particles which have
+purely z-velocity at least when reading back from the partfile.
+
+B-field is not working properly yet.
+
+28 May 12
+
+Fixed partaccum to do sensible things if all the particles have the same
+velocity. They do in infinite-B cases in a coordinate direction perp to
+the field.
+
+Fixed the particle moving to make the perp velocity just the drift. 
+(For some reason I'd had it set to zero.) Now infinite B seems to be
+working.
+

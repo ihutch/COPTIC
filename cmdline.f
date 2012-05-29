@@ -3,10 +3,10 @@ c Encapsulation of parameter setting.
       subroutine copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
-     $     ,colntime,dt,bdt,subcycle,rmtoz,Bfield,ninjcomp,nsteps
-     $     ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti,iwstep
-     $     ,idistp,lrestart,restartpath,extfield,objfilename,lextfield
-     $     ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF)
+     $     ,colntime,dt,bdt,subcycle,dropaccel,rmtoz,Bfield,Bt,ninjcomp
+     $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
+     $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
+     $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
@@ -14,9 +14,9 @@ c Encapsulation of parameter setting.
      $     ,iwstep,idistp,ndims,islp
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
      $     ,lrestart,lextfield,LPF(ndims)
-      real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle,rmtoz
-     $     ,vneutral,vd,debyelen,Ti,extfield,vpar,slpD
-      real Bfield(ndims),vperp(ndims),CFin(3+ndims,6)
+      real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
+     $     ,dropaccel,rmtoz,vneutral,vd,debyelen,Ti,extfield,vpar,slpD
+      real Bfield(ndims),Bt,vperp(ndims),CFin(3+ndims,6)
       integer iCFcount
       character*100 restartpath,objfilename
 
@@ -24,7 +24,6 @@ c Local variables:
       integer lentrim,iargc
       external lentrim
       integer i,id,idn,idcn,i0,i1
-      real Bt
       character*100 argument
 
 c Set defaults first.
@@ -43,6 +42,7 @@ c Default edge-potential (chi) relaxation rate.
       objfilename='copticgeom.dat'
       nsteps=5
       subcycle=0.
+      dropaccel=10
       colntime=0.
       vneutral=0.
       numprocs=1
@@ -110,6 +110,7 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-dt')read(argument(4:),*,err=201)dt
          if(argument(1:3).eq.'-da')read(argument(4:),*,err=201)bdt
          if(argument(1:3).eq.'-ds')read(argument(4:),*,err=201)subcycle
+         if(argument(1:3).eq.'-dd')read(argument(4:),*,err=201)dropaccel
          if(argument(1:3).eq.'-mz')read(argument(4:),*,err=201)rmtoz
          if(argument(1:3).eq.'-bc')read(argument(4:),*,err=201)islp
          if(argument(1:3).eq.'-bp')then
@@ -216,6 +217,7 @@ c            write(*,*)'||||||||||||||extfield',extfield
             call geomdocument()
             call exit(0)
          endif
+         if(argument(1:3).eq.'-hg')goto 402
 c Help text options
          if(argument(1:2).eq.'-h')goto 203
          if(argument(1:3).eq.'--h')goto 203
@@ -227,6 +229,9 @@ c Indicator that coptic arguments are ended.
          endif
  240     continue
       enddo
+c End of command line parameter parsing.
+c-------------------------------------------------------
+
  202  continue
       Bt=0.
       do i=1,ndims
@@ -238,13 +243,19 @@ c Normalize magnetic field.
          do i=1,ndims
             Bfield(i)=Bfield(i)/Bt
          enddo
+         if(Bt.lt.1.e3 .and. Bt*dt.gt.1.)then
+c Flag an inappropriate field and dt combination
+            if(lmyidhead)write(*,'(a,f8.2,a,f8.5,a,a)')
+     $           'UNWISE field',Bt,' and dt',dt
+     $           ,' Use B.dt less than 1; else inaccurate.'
+         endif
 c Assume that vd is in the z-direction
          vpar=vd*Bfield(ndims)
          do i=1,ndims
             vperp(i)=-Bfield(i)*vpar
          enddo
          vperp(ndims)=vperp(ndims)+vd
-         write(*,*)'vpar,vperp',vpar,vperp
+         if(lmyidhead)write(*,*)'vpar,vperp',vpar,',',vperp
       else
 c Zero the vparallel and vperp. Probably not necessary; but tidy.
          vpar=0.
@@ -261,25 +272,31 @@ c Help text
       if(lmyidhead)write(*,*)'=====Error reading command line argument '
      $     ,argument(:20)
  203  continue
-      if(lmyidhead)then
-c         call helpusage()
+      if(.not.lmyidhead)return
  301  format(a,i5,a,i5)
  302  format(a,3f8.3)
  303  format(a,3L3,a)
+ 304  format(a,f8.3,a)
       write(*,301)'Usage: coptic [objectfile] [-switches]'
       write(*,301)'Parameter switches.'
      $     //' Leave no gap before value. Defaults or set values [ddd'
-      write(*,301)' -ni   set No of particles/node; zero => unset.    ['
-     $     ,n_part
-      write(*,301)' -rn   set reinjection number at each step.        ['
-     $     ,ninjcomp
-      write(*,302)' -ri   set rhoinfinity/node => reinjection number. ['
-     $     ,ripernode
-      write(*,302)' -rx   set Edge-potl relax rate: 0=>off, 1=>immed. ['
-     $     ,crelax
+      write(*,301)'[-of]<filename>  set name of object data file.'
+     $     //'   ['//objfilename(1:30)
+      write(*,301)' -ni   set No of particles/node   [',n_part
+     $     ,'     zero => unset.'
+      write(*,301)' -rn   set reinjection number     [',ninjcomp
+     $     ,'     fixed/step => parts/node unset.'
+      write(*,304)' -ri   set rhoinfinity/node       [',ripernode
+     $     ,'  => reinjection number.'
+      write(*,304)' -rx   set Edge-potl relax rate   [',crelax
+     $     ,'  0=>off, 1=>immed.'
       write(*,302)' -dt   set Timestep.              [',dt
-      write(*,302)' -da   set Initial dt accel-factor[',bdt
-      write(*,302)' -ds   set Max ion impulse/step   [',subcycle
+      write(*,304)' -da   set Initial dt accel-factor[',bdt
+     $     ,'  first 33% of timesteps larger.'
+      write(*,304)' -ds   set Subcycle impulse/step  [',subcycle
+     $     ,'  subcycling invoked above nonzero.'
+      write(*,304)' -dd   set Drop-ion impulse/step  [',dropaccel
+     $     ,'  greater impulse => drop this ion.'
       write(*,301)' -s    set No of steps.           [',nsteps
       write(*,302)' -v    set Drift (z-)velocity.    [',vd
       write(*,302)' -t    set Ion Temperature.       [',Ti
@@ -298,19 +315,19 @@ c         call helpusage()
       write(*,301)' -bc   set boundary condition type[',islp
      $     ,'     E.g. 8201=1(1)+4(8)+13(8192)'
       write(*,301)
-     $     '     Bits:1 Mach/Log[=0]  2-7:Face1-6=0  8-13:u''''=k2u'
+     $     '         Bits:1 Mach/Log[=0]  2-7:Face1-6=0  8-13:u''''=k2u'
 c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,*)'-bf   set face bndry conditions  [ off'
-     $     ,'    Values: idn,Ain,Bin,C0in[,Cx,Cy,Cz]'
-      write(*,*)'    idn face-number (7=>all).'
+     $     ,'   Values: idn,Ain,Bin,C0in[,Cx,Cy,Cz]'
+      write(*,*)'        idn face-number (7=>all).'
      $     ,' ABC Robin coefs. Cxyz gradients.'
-      write(*,303)' -bp<i>  toggle periodicity       [',LPF
+      write(*,303)' -bp<i>  toggle bndry periodicity [',LPF
      $     ,'    in dimension <i>.'
-      write(*,301)' [-of]<filename>  set name of object data file.'
-     $     //'   ['//objfilename(1:20)
       write(*,301)
      $     ' -fs[path]  Attempt to restart from state saved [in path].'
       write(*,301)' -ea --  end argument parsing. Skip succeeding.'
+      goto 401
+ 402  continue
       write(*,301)'Debugging switches for testing'
       write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
@@ -330,8 +347,8 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' -at   set test angle.'
      $     //' -an   set No of angles. '
       write(*,301)' -ck   set checking timestep No. [',ickst
-      write(*,301)' -h -?   Print usage.'
+ 401  write(*,301)' -h -?   Print usage.'
+      write(*,301)' -hg     Print debugging/plotting switch usage.'
       write(*,301)' -ho     Print geomobj file format description'
       call exit(0)
-      endif
       end

@@ -515,7 +515,9 @@ c Calculate ninjcomp from ripernode
             area(i)=area(i)*(xmeshend(id)-xmeshstart(id))
          enddo
          a=area(i)*sqrt(2.*Ti/3.1415926)
-         a=a*fonefac(i)
+         ff=fonefac(i)
+c         write(*,*)i,a,ff
+         a=a*ff
          flux=flux+a
          volume=volume*(xmeshend(i)-xmeshstart(i))
       enddo
@@ -523,6 +525,8 @@ c Correct approximately for edge potential depression (OML).
       chi=crelax*min(-phirein/Ti,0.5)
       cfactor=smaxflux(vd/sqrt(2.*Ti),chi)/smaxflux(vd/sqrt(2.*Ti),0.)
       ninjcomp=nint(ripernode*dtin*cfactor*flux)
+      write(*,*)'ripernode,dtin,cfactor,flux,ninjcomp',ripernode,dtin
+     $     ,cfactor,flux,ninjcomp
       nrein=ninjcomp*numprocs
       if(ninjcomp.le.0)ninjcomp=1
       n_part=ripernode*volume
@@ -545,6 +549,7 @@ c one-dimensionalizes the problem, for the parameters of this plasma
 c given in
       include 'plascom.f'
 c
+c      write(*,*)'fonefac',Bt,Btinf,vd,Bfield
       if(Bt.lt.Btinf)then
          a=1.
 c Assume vd is in the last dimension
@@ -558,7 +563,8 @@ c Infinite Bt. Projected total drift velocity normalized:
          td=(Bfield(i)*vpar+vperp(i))/sqrt(2.*Ti)
 c One-way flux consists of the part of the parallel distribution whose
 c projected parallel velocity exceeds -vs.
-         if(abs(Bfield(i)).gt.max(abs(td)*0.1,1.e-10))then
+c         if(abs(Bfield(i)).gt.max(abs(td)*0.1,1.e-10))then
+         if(abs(Bfield(i)).gt.(1.e-6))then
             td=td/Bfield(i)
             a=Bfield(i)*(exp(-td**2)+
      $           0.5*sqrt(3.1415926)*td*(erfcc(-td)-erfcc(td)))

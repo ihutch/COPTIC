@@ -1,7 +1,7 @@
 c***********************************************************************
-      subroutine bdyshare(ndimsdecl,ifull,iuds,cij,u,q
+      subroutine bdyshare(idone,ndimsdecl,ifull,iuds,cij,u,q
      $           ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
-     $           ,icommcart,mycartid,myid,idone)
+     $           ,icommcart,mycartid,myid)
 c Parallelized boundary setting routine.
 c Set the boundary conditions for my faces which are true boundaries.
 c A face is a boundary if my block's icoords position is 
@@ -30,6 +30,7 @@ c      write(*,*)'Entered bdyshare   myorig,ifull,iuds'
 c     $     ,',idims,icoords,lperiod,iLcoords'
 c      write(*,*)myorig,ifull,myside,idims,icoords,lperiod,iLcoords,iLs
 
+      idone=1
       do id=1,ndims
 c Tell mditerarg to iterate over steps 1. I.e. every point in the block.
 c But tell it the block has only length 1 in the id dimension.
@@ -91,9 +92,6 @@ c Assume A=1.
      $              /ApBF(idn)
             endif
          endif
-
-c         u(1+ipoint)=1.
-         idone=1
       else
 c Non-face BCs, just say we failed, so the fallback bdyroutine is called.
          idone=0

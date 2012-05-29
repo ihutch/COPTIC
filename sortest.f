@@ -1,4 +1,4 @@
-      program sortest
+    program sortest
 c Main program of cartesian coordinate solver 
       include 'objcom.f'
 c Storage array spatial count size
@@ -25,6 +25,7 @@ c Structure vector needed for finding adjacent u values.
       logical lmyidhead,lphiplot,lpgraph
       integer ipstep,idebug
       real CFin(3+ndims_mesh,2*ndims_mesh)
+      logical LPF(ndims_mesh)
       include 'facebcom.f'
 c Either include plascom or define vperp and Bfield.
       include 'plascom.f'
@@ -66,15 +67,15 @@ c Deal with command-line arguments; not all valid here.
       call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
-     $     ,colntime,dt,bdt,subcycle,rmtoz,Bfield,ninjcomp,nsteps
-     $     ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti,iwstep
-     $     ,idistp,lrestart,restartpath,extfield,objfilename,lextfield
-     $     ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF)
+     $     ,colntime,dt,bdt,subcycle,dropaccel,rmtoz,Bfield,Bt,ninjcomp
+     $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
+     $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
+     $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF)
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
 c Geometry and boundary information. Read in.
       if(idebug.gt.0)write(*,*)'Calling readgeom',myid,ifull,lmyidhead
-      call readgeom(objfilename,myid,ifull,CFin,iCFcount)
+      call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF)
       if(idebug.gt.0)write(*,*)'Finished readgeom'
 c---------------------------------------------------------------
 c Construct the mesh vector(s) from the geometry info.

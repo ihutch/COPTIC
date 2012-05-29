@@ -93,7 +93,7 @@ c for solutions of volumes etc. Each node then does the same.
 c Defaults:
 c Determine what reinjection scheme we use. Sets rjscheme.
       include 'REINJECT.f'
-c Here is where the defaults now set in copticcmdline used to be.
+
       do id=1,ndims_mesh
 c Use very big xlimits by default to include whole domain
          xlimit(1,id)=-500.
@@ -123,16 +123,16 @@ c Deal with command-line arguments
       call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
-     $     ,colntime,dt,bdt,subcycle,rmtoz,Bfield,ninjcomp,nsteps
-     $     ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti,iwstep
-     $     ,idistp,lrestart,restartpath,extfield,objfilename,lextfield
-     $     ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF)
+     $     ,colntime,dt,bdt,subcycle,dropaccel,rmtoz,Bfield,Bt,ninjcomp
+     $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
+     $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
+     $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF)
 c
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
       ndropped=0
 c Geometry and boundary information. Read in.
-      call readgeom(objfilename,myid,ifull,CFin,iCFcount)
+      call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF)
 c      write(*,*)'readgeom return',iCFcount,(CFin(ii,1),ii=1,6)
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
@@ -427,7 +427,7 @@ c write out flux to object 1.
                if(ndropped.ne.0)then
 c Report dropped ions because of excessive acceleration.
                   write(*,'(a,i5,a,f8.3)'
-     $             )' ptch dropped-ion period-total:',ndropped
+     $             )' dropped-ion period-total:',ndropped
      $                 ,'  per step average:'
      $                 ,ndropped/((nsteps/25+1)*5.)
                   ndropped=0
@@ -491,9 +491,10 @@ c ought to be reinitialized here. (partexamine expects this.)
 c Particle distribution diagnostics.
 c The serial cost for this call with 1M particles is about 1s in 17s.
 c Or less than 2s if both partaccum and vaccum are called. Thus the
-c total cost is roughly 10% of particle costs.
+c total cost is roughly 10% of particle costs. Tell it that it must
+c set dimensions the first time by appending 0.
          if(idcount.gt.0)call partdistup(xlimit,vlimit,xnewlim,
-     $        cellvol,myid)
+     $        cellvol,myid,0)
          if(iwstep.gt.0)then
             if(mod(nf_step,iwstep).eq.0)call datawrite(myid
      $           ,partfilename,phifilename,ifull,iuds,u,uave,qave)

@@ -170,9 +170,9 @@ c Only needed every other step, and gives identical results.
          if(mod(k_sor,2).eq.1)then
 c The parallelized boundary setting routine
             idone=0
-            call bdyshare(ndims,ifull,iuds,cij,u,q
+            call bdyshare(idone,ndims,ifull,iuds,cij,u,q
      $           ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
-     $           ,icommcart,mycartid,myid,idone)
+     $           ,icommcart,mycartid,myid)
 c If this did not succeed. Fall back to global setting.
             if(idone.eq.0)call bdyset(ndims,ifull,iuds,cij,u,q)
          endif
@@ -232,10 +232,10 @@ c work.
 c      idone=0
 c      if(.false..and.myid.eq.0)then
 c      write(*,*)'Final bdyshare call'
-c      call bdyshare(ndims,ifull,iuds,cij,u,q
+c      call bdyshare(idone,ndims,ifull,iuds,cij,u,q
 cc     $    ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
 c     $     ,iLs,ones ,lperiod,zeros  ,iLcoords,iuds  , ones
-c     $     ,icommcart,mycartid,myid,idone)
+c     $     ,icommcart,mycartid,myid)
 c      endif
 c Instead, rely on the old global setting, which has periodicity 
 c explicitly included, even though it is inefficient.

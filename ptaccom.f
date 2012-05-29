@@ -14,10 +14,13 @@ c diagnostics are to be accumulated.
 
 c In this section there is an assumption that we are in 3 dimensions.
       integer nsub_i,nsub_j,nsub_k
-      parameter (nsub_i=8,nsub_j=8,nsub_k=8)
+c These determine the number of sub-divisions of the three directions
+c into which the mesh is divided for the purpose of particle diagnostics.
+c Edit and recompile if different resolution is required.
+      parameter (nsub_i=9,nsub_j=9,nsub_k=9)
       integer Lsi,Lsj,nsub_tot
       parameter (Lsi=nsub_i,Lsj=Lsi*nsub_j,nsub_tot=Lsj*nsub_k)
-      integer isfull(mdims)
+      integer isfull(mdims),isuds(mdims)
 
       integer nsbins
       parameter (nsbins=32)
@@ -34,4 +37,5 @@ c fsv is the sum of fv in each combined bin during the initial
 c     accumulation and bin calculation.
 c vhbin is the histogram boundaries of the combined bins
 c All of these must be common to all processes.
-      common /subdiag/ibinmap,isfull,vsbin,csbin,vhbin,fsv,fvx,denfvx
+      common /subdiag/ibinmap,isfull,isuds,vsbin,csbin,vhbin,fsv,fvx
+     $     ,denfvx

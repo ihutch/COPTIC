@@ -107,7 +107,7 @@ c**********************************************************************
       end
 
 c**********************************************************************
-      subroutine readgeom(filename,myid,ifull,CFin,iCFcount)
+      subroutine readgeom(filename,myid,ifull,CFin,iCFcount,LPF)
 c Read the geometric data about objects from the file filename
       character*(*) filename
       integer myid
@@ -116,6 +116,7 @@ c Read the geometric data about objects from the file filename
       include '3dcom.f'
       include 'meshcom.f'
       real CFin(3+ndims_mesh,2*ndims_mesh)
+      logical LPF(ndims_mesh)
 c Common data containing the object geometric information. 
 c Each object, i < 64 has: type, data(odata).
 c      integer ngeomobjmax,odata,ngeomobj
@@ -284,10 +285,24 @@ c Reset all.
      $        +ndims_mesh)
  882     continue
          iCFcount=iCFcount+1
-c         write(*,*)id,iCFcount,(CFin(ii,id),ii=1,3+ndims_mesh)
 c Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1         
+      elseif(type.gt.110.and.type.lt.100+ndims_mesh)then
+c Periodic boundary condition on this dimension
+         if(iCFcount.eq.0)then
+c Reset all if this is the first face call.
+            do ii=1,2*ndims_mesh
+               do idc=1,3+ndims_mesh
+                  CFin(idc,ii)=0.
+               enddo
+            enddo
+         endif
+         id=type-110
+         LPF(id)=.not.LPF(id)
+         iCFcount=iCFcount+1
+c Don't count this as an object.
+         ngeomobj=ngeomobj-1         
       endif
 c If this is a null boundary condition clear the relevant bit.
       if(obj_geom(oabc,ngeomobj).eq.0.

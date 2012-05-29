@@ -219,7 +219,7 @@ c Use dtaccel for acceleration. May be different from dtpos if there was
 c a subcycle, reinjection or collision last step.
          dtaccel=0.5*(dtpos+dtprec(i))
 c----- Excessive Acceleration test. Drop particle without any tally. ---
-         if(f1*dtaccel.gt.5.)then
+         if(f1*dtaccel.gt.dropaccel)then
             ndropped=ndropped+1
 c            write(*,*)'Excessive acceleration. Dropping particle',i
 c Reinject if we haven't exhausted complement:
@@ -689,6 +689,7 @@ c Local
       parameter (fieldtoosmall=1.e-3)
       integer i
 
+c            write(*,*)Bt,Btinf,Bfield
       i=1
 c The below is literally the section of code removed from padvnc.
 c Move ----------------
@@ -736,6 +737,7 @@ c And add back the drift velocity.
                do j=1,ndims
 c Move the gyro-center perpendicular and add gyro-radius:
                   x_part(j,i)=xc(j)+vperp(j)*dtpos+xg(j)
+c Add back vperp.
                   x_part(j+ndims,i)=x_part(j+ndims,i)+vperp(j)
                enddo
             endif
@@ -753,8 +755,10 @@ c Bfield is normalized: i.e. a direction cosine.
             do j=1,ndims
 c Parallel particle and perpendicular drift move:
                x_part(j,i)=x_part(j,i)+(vp*Bfield(j)+vperp(j))*dtpos
-c Zero perp velocity.
-               x_part(j+ndims,i)=vp*Bfield(j)
+c Zero perp velocity. Why? Just to display consistent with vz?
+c               x_part(j+ndims,i)=vp*Bfield(j)
+c Reset perp velocity to just the drift.
+               x_part(j+ndims,i)=vp*Bfield(j)+vperp(j)
             enddo
          endif
 c End of Move ---------
