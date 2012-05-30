@@ -148,7 +148,8 @@ c Localizing use of rs as the size of domain.
             rs=rsi
          endif
       enddo
-      if(rs.gt.rs1 .and. islp.eq.0)write(*,*)'UNUSUAL choice islp=',islp
+      if(lmyidhead.and.rs.gt.rs1 .and. islp.eq.0.and.iCFcount.le.0)
+     $     write(*,*)'UNUSUAL choice islp=',islp
      $     ,' when non-square domain in use.'
 c Initialize reinjection geometry if needed for particular case.
       call geominit(myid)
@@ -479,7 +480,8 @@ c Reduce the data from nodes.
      $                    diagfilename,cellvol)
                   endif
 c (Re)initialize the accumulation
-                  call fvxinit(xnewlim,cellvol)
+                  ibset=1
+                  call fvxinit(xnewlim,cellvol,ibset)
                   call partacinit(vlimit)
 c Unless we want fsv to accumulate all the particle counts, it also
 c ought to be reinitialized here. (partexamine expects this.)

@@ -1044,6 +1044,11 @@ c Pull the flux for this timestep and this facet.
                      flux=ff_data(ijbin
      $                    +nf_address(nf_flux,ifobj,nf_step))
 c Calculate new potential
+                     if(flux.lt.0.)then
+                        write(*,*)'phiofcount flux negative',flux,ijbin
+     $                       ,area,ifobj
+                        flux=0.
+                     endif
                      cnew=-a*phiofcount(flux,area)
                   elseif(i2type.eq.5)then
 c Floating. Use totals
