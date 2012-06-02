@@ -221,7 +221,7 @@ position requires a number (0) but is ignored.) This value equals
 the Coulomb potential that would exist at the object's radius if the
 charge were isolated.
 
-\paragraph{3($\times256$) Variable Boundary Conditions} The
+\paragraph{3($\times256$) Nonuniform Boundary Conditions} The
 coefficients $A,B,C$ of the Robin boundary condition in this object vary
 linearly in space. Their values at the object center are specified as
 usual. Their gradients are specified by three vectors which follow the
@@ -468,20 +468,10 @@ state. Optionally define the path to the saved state files.
 Although COPTIC gives no graphic output unless explicit switches are
 set, it can give a variety of diagnostic information during its
 operation, including sophisticated multidimensional plots of current
-mesh parameters. It includes a full-scale graphics library for this
-purpose, distributed in the directory \verb!accis!. The graphics
-drivers require the code to be linked either with the X11 libraries
-\verb!libX11! and \verb!libXt! or with the OpenGL libraries
-\verb!libGL! and \verb!libGLU!. The default is to use OpenGL. In
-many modern linux distributions, the required libraries for linking are not
-found unless the \emph{development} package of OpenGL is
-installed. For example, in UBUNTU the package \verb!libgl1-mesa-dev!
-is required. If the GL libraries are not found, it may still be
-possible to link using the X11 libraries by the command
-\verb!make vecx!. However, often those libraries are also unavailable
-unless development packages are installed such as \verb!libxt-dev!.
-(There is also a MSWindows driver, but
-no support is provided for running COPTIC under MSWindows.)
+mesh parameters.  The graphics output will generally work only on
+builds that include X libraries (see section \ref{building}). One
+ought not otherwise to use these display switches.
+
 
 \begin{verbatim}
 Debugging switches for testing
@@ -1143,6 +1133,54 @@ execution. The parameters are checked and if any discrepancies are
 found, the restart is considered to have failed, and COPTIC simply
 initializes and runs as normal without the restart switch.
 
+\section{Building COPTIC}\label{building}
+
+COPTIC will compile and run on virtually any Linux or Unix-like
+operating system that has fortran and C compilers. It is built by
+issuing the command \verb!$ make! in the directory \verb!coptic!. The
+code is written in FORTRAN 77 (plus standard extensions such as long
+variable names). It can therefore be built by older compilers such as
+\verb!g77!, as well as more modern FORTRAN 95 compilers. In fact it
+often runs faster by factors of up to 3 when compiled with \verb!g77!
+than with \verb!gfortran! for example, which is the reason why the
+default compiler is \verb!mpif77 -f77=g77!.
+
+The fortran compiler can be specified on the make command line or in
+the environment by setting the value of \verb!G77!: for example,
+\verb!$ make G77=gfortran!.  If it is not specified, the make file
+will attempt to find a compiler called \verb!mpif77! with MPI
+capability.  If it succeeds, or actually if the compiler's name
+contains the string \verb!mpi!, then it will build a parallel
+executable. If it not, then it will build a fully functional serial
+executable without MPI dependencies. The first time make is run, it
+will write a new default compiler command based upon its system tests
+into the file \verb!compiler!. If errors arise, then the
+command \verb!$ make clean; make! will clean up and retry with the 
+new default compiler, which will likely work.
+
+COPTIC includes a full-scale graphics library for the purpose of
+providing debugging displays and other real-time graphics that are
+helpful to understand its progress. The library is distributed in the
+directory \verb!accis!. The graphics drivers require the code to be
+linked either with the X11 libraries \verb!libX11! and \verb!libXt! or
+with the OpenGL libraries \verb!libGL! and \verb!libGLU!. The default
+is to use OpenGL if available. In many modern linux distributions, the
+required libraries for linking are not found unless the
+\emph{development} package of OpenGL is installed. For example, in
+UBUNTU the package \verb!libgl1-mesa-dev!  is required. If the GL
+libraries are not found, it may still be possible to link using the
+X11 libraries. However, often those libraries are also unavailable
+unless development packages are installed such as
+\verb!libxt-dev!. (There is also a MSWindows driver, but no support is
+provided for running COPTIC under MSWindows and the make file assumes
+the system to be Linux.) A final option is to link with a driver that
+gives (for a long time obsolete) 4014 output. This driver uses no additional
+libraries, and so allows COPTIC to compile on systems without
+them. Linking to optimal available drivers is attempted automatically
+when COPTIC is built using the command \verb!$ make!.  Drivers can
+also be specified by \verb!$ make VECX=vecglx!, \verb!$ make VECX=vecx!, or
+\verb!$ make VECX=vec4014!. Don't call COPTIC with graphics switches
+if it is made with \verb!vec4014!.
 
 
 

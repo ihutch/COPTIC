@@ -86,7 +86,11 @@ makefile : Makefile configure
 	@echo Configuring the Makefile for this platform. 
 	export COMPILER="$(COMPILER)"; export VECX=$(VECX); ./configure
 	@echo Now running make again using the new Makefile.
-	make -f $(MAKEFILE) $(MAKECMDGOALS)
+# The problem with this recursion is that it does not override any command
+# argument such as G77= Thus G77 might be forced blank inside the submake
+# because by default command arguments override internal settings.
+# It is not enough to give MAKEFILE= in the make arguments. You must do this:
+	export MAKEFLAGS=; $(MAKE) -f $(MAKEFILE) $(MAKECMDGOALS)
 	@echo =================================================================
 	@echo Completed make with new makefile. [Ignore any following error.]
 	@touch $(VECX)

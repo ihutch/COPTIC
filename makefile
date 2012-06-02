@@ -67,19 +67,21 @@ ACCISLIB=./accis/lib$(ACCISDRV).a
 export VECX
 ##########################################################################
 # Decide which compiler to use.
+ifeq ("$(G77)","")
+# I don't know why this has to be overridden. Perhaps because of export below.
+	override G77=$(shell cat compiler 2>/dev/null)
+	ifeq ("$(G77)","")
+# Default compiler. Ought to be used if a strange make target is used 
+# on the very first call.
+# After that, compiler ought to be set on disk and used.
+		G77=mpif77 -f77=g77
+	endif
+endif
 # In g77 -Wno-globals silences spurious type messages on reduce.f
 # This is unrecognized by gfortan. For which no-unused is better.
 NGW=-Wno-unused
-ifeq ("$(G77)","")
-	G77=$(shell cat compiler 2>/dev/null)
-	ifeq ("$(G77)","")
-# Default compiler. Ought to be used only the first time. 
-# After that, compiler ought to be set on disk.
-		G77=mpif77 -f77=g77
-	endif
-	ifeq ("$(G77)","mpif77 -f77=g77")	
-		NGW=-Wno-globals
-	endif
+ifeq ("$(G77)","mpif77 -f77=g77")	
+  NGW=-Wno-globals
 endif
 # If non MPI compiler (e.g. gfortran) is used, replace MPIOBJECTS here:
 ifeq ("$(findstring mpi,$(G77))","")
@@ -130,11 +132,11 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 #	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
 
 % : %.f  makefile libcoptic.a $(ACCISLIB)
-	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f libcoptic.a $(LIBRARIES)
+	$(G77)  -o $* $(NOGLOBALS) $(PROFILING) $*.f libcoptic.a $(LIBRARIES)
 
 # Just putting the specials first ensures that the compile works.
 %.o : %.f makefile $(HEADERS)
-	$(G77)  -c $(COMPILE-SWITCHES) $(PROFILING) $*.f
+	$(G77)  -c $(NOGLOBALS) $(PROFILING) $*.f
 
 %.o : %.c makefile
 	cc -c $(PROFILING) $*.c
@@ -173,14 +175,17 @@ compiler :
 	@if which mpif77 >/dev/null;\
  then echo -n "MPI system. ";\
   if which g77 >/dev/null ;\
-  then  echo -n "Force g77 next make. ";GHERE="mpif77 -f77=g77";\
+  then  echo -n "Force g77. ";GHERE="mpif77 -f77=g77";\
   else GHERE=mpif77 ; fi\
  else echo -n "Not MPI System. ";\
-  if which g77 >/dev/null ; then GHERE="g77";fi\
+  if which g77 >/dev/null ;\
+  then GHERE="g77";\
+  else GHERE="f77";fi\
  fi;\
- echo "G77="$${GHERE}; G77=$${GHERE}; echo $${G77} > compiler
+ echo "G77="$${GHERE}; G77=$${GHERE}; echo $${G77} > compiler;
 # To obtain this information, one has to make a second time.
-# make compiler;make.
+	@echo "*********** Remaking COPTIC with chosen G77 ****************"
+	@export MAKEFLAGS=; make
 
 #####################################################
 # Things to compile with non-standard switches
@@ -200,7 +205,7 @@ bdyroutine.o : bdyroutine.f compiler makefile $(HEADERS)
 
 #####################################################
 # Main program explicit to avoid make bugs:
-$(COPTIC) : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
+$(COPTIC) : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
 	@echo "      rjscheme="\'$(REINJECT)\'" " > REINJECT.f
 	$(G77) -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f libcoptic.a $(LIBRARIES)
 	@echo "TestGL:$(TESTGL), TestX11:$(TESTX11), vecx=$(VECX), G77=$(G77)"

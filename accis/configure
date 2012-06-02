@@ -2,7 +2,7 @@
 # Configure script for accis.
 
 # By default assume GNU compatible compiler and set no-backslash
-NOBACKSLASH=-fno-backslash
+NOBACKSLASH="-w -fno-backslash"
 # Compiler choice.
 if [ "$COMPILER" == "" ] ; then
 if [ -x "`which mpif77`" ] ; then
