@@ -553,7 +553,7 @@ int noeye3d_(value)
      int *value;
 {
   if(*value>1000)accis_eye3d=9999;
-  accis_eye3d=*value;
+  else accis_eye3d=*value;
 }
 /* ******************************************************************** */
 int eye3d_(value)

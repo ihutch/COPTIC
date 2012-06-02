@@ -554,13 +554,13 @@ purposes. But the codes for cursors are different under Windows
 IEYE3D() Integer function of convenience to return switch value of eye3d.
 
 <div class="p"><!----></div>
-<a href="slicetest.f"><img align="right"
-src="sgweb.jpg" width="400"></a>
-
-<div class="p"><!----></div>
 
 <h2> Plotting volumetric 3-D Data
 </h2>
+<a href="slicetest.f"><img align="left"
+src="sgweb.jpg" width="400"></a>
+
+<div class="p"><!----></div>
 SLICEGWEB(ifullv,iudsv,u,nw,zp,ixnpv,xnv,ifix,cutitle[,svec,vp]) Plot
 as 3-D webs slices through 3-D array u. ifullv(3) and iudsv(3) are the
 full and used dimensions of u. zp(nw,nw) is a work array; nw should be
@@ -570,14 +570,15 @@ dimension id are stored in xnv(ixnpv(id))+1 to xnv(ixnpv(id))+
 iudsv(id). ifix is the initial fixed dimension (1,2 or 3). cutitle is
 the character array title of u. Keyboard control of the slice is
 provided, together with perspective view controlled by mouse. If the
-third bit of abs(ifix) is set (by adding 4 to it), then overplot
-on the contour plot arrows representing the projection of the vector
+third bit of abs(ifix) is set (by adding 4 to it), then overplot on
+the contour plot arrows representing the projection of the vector
 field svec(ifullv,3), which has the same indexing and positions as u,
-and three vector components. The work array vp(nw,nw,2) must be provided.
-The last two arguments may be omitted if unused.
+and three vector components. The work array vp(nw,nw,2) must be
+provided.  The last two arguments may be dummy in the call if
+abs(ifix) &lt; 4.
 
 <div class="p"><!----></div>
-<a href="slicetest.f"><img align="left"
+<a href="slicetest.f"><img align="right"
 src="sgcont.jpg" width="300"></a>
 
 <div class="p"><!----></div>
@@ -587,8 +588,8 @@ u(ifullv(1),ifullv(2),ifullv(3)). ifullv(3), iudsv(3), zp(nw,nw),
 ixnpv(3), cutitle are as above in slicegweb. The initial intersection
 of the 3 fixed planes is at ifixptv(3). Slightly different
 keyboard/mouse control is provided. Overplotting arrows is indicated
-by the third bit of ifix being set. The work array must vp(nw,nw,3,3)
-must be provided.
+by the third bit of ifix being set; the work array vp(nw,nw,3,3)
+must then be provided.
 
 <div class="p"><!----></div>
 
@@ -688,5 +689,5 @@ for compiler/linker arguments such as  -L/usr/X11R6/lib/ -lXt
 T<sub><span class="small">E</span></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><span class="small">T</span></sub>H</a>,
-version 4.03.<br />On  4 Apr 2012, 10:20.</small>
+version 4.03.<br />On 31 May 2012, 22:39.</small>
 </html>

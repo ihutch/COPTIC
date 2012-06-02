@@ -1,5 +1,8 @@
 c Tektronix 4014 driver.
 c Expanded to supply dummy routines for filling and rotating etc 2008.
+c And for usleep, noeye3d. Routines like slicing won't actually work
+c with the 4014 driver, but at least the code will run without the
+c X libraries.
 c********************************************************************
       integer function accis_driver()
       accis_driver=2
@@ -272,4 +275,12 @@ c***********************************************************************
 c Dummy
       integer function igradtri(x,y,z,h,i3d)
       igradtri=0
+      end
+c**********************************************************************
+c Dummy
+      subroutine usleep(usecs)
+      end
+c**********************************************************************
+c Dummy
+      subroutine noeye3d(value)
       end

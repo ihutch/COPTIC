@@ -525,8 +525,8 @@ c Correct approximately for edge potential depression (OML).
       chi=crelax*min(-phirein/Ti,0.5)
       cfactor=smaxflux(vd/sqrt(2.*Ti),chi)/smaxflux(vd/sqrt(2.*Ti),0.)
       ninjcomp=nint(ripernode*dtin*cfactor*flux)
-      write(*,*)'ripernode,dtin,cfactor,flux,ninjcomp',ripernode,dtin
-     $     ,cfactor,flux,ninjcomp
+c      write(*,*)'ripernode,dtin,cfactor,flux,ninjcomp',ripernode,dtin
+c     $     ,cfactor,flux,ninjcomp
       nrein=ninjcomp*numprocs
       if(ninjcomp.le.0)ninjcomp=1
       n_part=ripernode*volume

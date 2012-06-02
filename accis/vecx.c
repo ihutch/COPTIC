@@ -513,12 +513,11 @@ XEvent *event;
 
 /* ******************************************************************** */
 /* Externally callable routine to set noeye3d return value.
-   Set to 9999 to disable. */ 
+   Set to 9999 to disable, i.e. revert to waiting for input. */ 
 int noeye3d_(value)
      int *value;
 {
-  if(*value>1000)accis_eye3d=9999;
-  accis_eye3d=*value;
+  if(*value>1000)accis_eye3d=9999; else accis_eye3d=*value;
 }
 
 /* ******************************************************************** */

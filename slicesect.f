@@ -216,7 +216,7 @@ c We called for a local print of plot. Terminate and switch it off.
 c-----------------------------------
 c Double buffering 
       if(iback.ne.0)then 
-         call glfront()
+c         call glfront()
       endif
 c Limit framing rate to 30fps.
       call usleep(30000)
@@ -266,7 +266,7 @@ c Move it out.
          sn=sin(-.05)
       endif
       if(irotating.gt.0)then
-         call glback()
+c         call glback()
          iback=1
 c Get back current eye position xe1 etc.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)

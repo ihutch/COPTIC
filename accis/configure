@@ -39,20 +39,28 @@ if [ "`uname -m`" == "x86_64" ] ; then
 fi
 
 # VECX choice
-if [ -z "`ld -lGLU -o /dev/null 2>&1 | grep GLU`" ] ; then
-   echo Choosing to use GLX driver
-   VECX=vecglx
-else 
-   VECX=vecx
+if [ "$VECX" == "" ] ; then
+  if [ -z "`ld -lGLU -lGL -o /dev/null 2>&1 | grep GL`" ] ; then
+    echo Choosing to use GLX driver
+    VECX=vecglx
+  else 
+    echo Can\'t find -lGL -lGLU. Trying X11 driver
+    if [ -z "`ld -lX11 -lXt -o /dev/null 2>&1 | grep X`" ] ; then
+        VECX=vecx
+    else
+	echo Can\'t find -lX11 -lXt. Using 4014 driver
+        VECX=vec4014
+    fi
+  fi
 fi
 
 # Threaded version?
-if [ -f /usr/include/pthread.h ] ; then
-    echo Pthreads available, but not used.
+#if [ -f /usr/include/pthread.h ] ; then
+#    echo Pthreads available, but not used.
 # Currently this works on thinkpad but not on (e.g.) horace.
 #    echo Using pthreads.
 #    Threading="-DPTHREADS"
-fi
+#fi
 
 cat > makefile <<EOF
 # This is the configured makefile, which is used for the full make.
@@ -62,7 +70,9 @@ G77=$COMPILER
 NOBACKSLASH=$NOBACKSLASH
 THREADING=$Threading
 XLIB=$Xlib
-VECX=$VECX
+ifeq ("\$(VECX)","")
+  VECX=$VECX
+endif
 # That ends by having the original Makefile tacked on the end.
 ###################################################################
 EOF

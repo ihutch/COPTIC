@@ -8471,3 +8471,9 @@ Fixed the particle moving to make the perp velocity just the drift.
 (For some reason I'd had it set to zero.) Now infinite B seems to be
 working.
 
+Succeeded in getting a magnetized moon case to run. Looks sensible.
+
+1 June 12
+
+Cleaned up the makefile and that of accis so that it is substantially 
+more logical and robust in making decisions about drivers and compilers.
