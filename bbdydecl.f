@@ -1,19 +1,21 @@
 c Declarations of the bbdycomm parameters for the call
-c         call bbdy(iLs,iuds,u,nk,ndims,idims,lperiod,
+c         call bbdy(iLs,ifull,iuds,u,nk,ndims,idims,lperiod,
 c     $        icoords,iLcoords,myside,myorig,
 c     $        icommcart,mycartid,myid)
 c Number of dimensions and the number of blocks per dimension
 c should be declared like this, before include
 c       parameter (ndimsdecl=3,idim1=3,idim2=2,idim3=2)
+c The number of dimensions of the cartesian topology. (2 for 2d)
+c      integer ndimsdecl
 c Declared Dimensional structure of u must be (Li,Lj,Lk,..) passed using
 c iLs, which embodies pointer steps. For 2d iLs=(1,Li,Li*Lj), 
 c 3d (1,Li,Li*Lj,Li*Lj*Lk) etc 
       integer iLs(ndimsdecl+1)
+c ifull full dimensions of u array
+      integer ifull(ndimsdecl)
 c iuds used dimensions of u
       integer iuds(ndimsdecl)
 c nk      is iteration count.
-c The number of dimensions of the cartesian topology. (2 for 2d)
-c      integer ndimsdecl
 c The length of each topology dimension
       integer idims(ndimsdecl)
 c For each topology dimension whether it is periodic or not.

@@ -7,22 +7,27 @@ c Set the boundary conditions for my faces which are true boundaries.
 c A face is a boundary if my block's icoords position is 
 c     0 (lower) or idims-1 (upper)
 c On entry, the used information is
+c    idone(2)        if ==1, set periodic boundaries, else not.
 c    ndimsdecl       the number of dimensions
 c    myside(ndims)   the length of this block's sides
 c    ifull(ndims)    the full array lengths in each direction.
 c    iLs(ndims+1)    the structure vector of u.
 c    myorig          the starting position in the u-array of this block.
+c    lperiod(ndims)  whether we are periodic in this dimension.
 c    icoords(ndims)  the block coordinates of this block.
 c    idims(ndims)    the number of blocks in each dimension.
 c Unused:  iLcoords,icommcart,mycartid,myid
-c On exit, return the value idone [OUT]>0 if successful.
+c On exit, return the value idone(1) [OUT]>0 if successful.
 c Pass to the mditerated setting routine the dimension,u,idone.
 c
 c We pass the dimensions into this routine. This works because all the 
 c variables in bbdydecl.f are passed as arguments. That's why we have
 c some redundant arguments.
       include 'bbdydecl.f'
-      integer ifull(ndimsdecl)
+c Only the first element of idone is actually used to communicate to
+c send information back to the calling routine. But we need more
+c communication to bdyshrroutine.
+      integer idone(2)
       external bdyshrroutine
 
       ndims=ndimsdecl
@@ -30,8 +35,13 @@ c      write(*,*)'Entered bdyshare   myorig,ifull,iuds'
 c     $     ,',idims,icoords,lperiod,iLcoords'
 c      write(*,*)myorig,ifull,myside,idims,icoords,lperiod,iLcoords,iLs
 
-      idone=1
+      idone(1)=1
       do id=1,ndims
+         if(lperiod(id))then
+            ioff=iLs(id)*(myside(id)-2)
+         else
+            ioff=iLs(id)
+         endif
 c Tell mditerarg to iterate over steps 1. I.e. every point in the block.
 c But tell it the block has only length 1 in the id dimension.
          mysave=myside(id)
@@ -39,7 +49,7 @@ c But tell it the block has only length 1 in the id dimension.
          if(icoords(id).eq.0)then
 c set lower face
             ipin=myorig-1
-            ioffset=-iLs(id)
+            ioffset=-ioff
             idn=id
 c            write(*,*)'Entering mditerarg lower',myside,icoords(id),ipin
             call mditerarg(bdyshrroutine,ndims,ifull,myside,ipin
@@ -48,7 +58,7 @@ c            write(*,*)'Entering mditerarg lower',myside,icoords(id),ipin
          if(icoords(id).eq.idims(id)-1)then
 c set upper face
             ipin=myorig-1+(mysave-1)*iLs(id)
-            ioffset=iLs(id)
+            ioffset=ioff
             idn=id+ndims
 c            write(*,*)'Entering mditerarg upper',myside,icoords(id),ipin
             call mditerarg(bdyshrroutine,ndims,ifull,myside,ipin
@@ -63,16 +73,18 @@ c**********************************************************************
 c Set the boundary value of u according to the boundary conditions.
 c The position at which to set it is in indi(ndims) which is u(1+ipoint).
 c idn is the face index. ioffset is the offset to the adjacent point.
-c On exit idone=1 indicates success.
+c On entry idone(2)=1 indicates set periodic boundaries (default not).
       integer inc,ipoint,ndims,indi(ndims),iused(ndims)
       integer idn
+      integer idone(2)
       real u(*)
 
       include 'meshcom.f'
       include 'facebcom.f'
+      idone(1)=1
       if(LF)then
 c Currently this only works for face rectangular boundary conditions.
-         if(.not.LPF(mod(idn-1,ndims)+1))then
+         if(.not.LPF(mod(idn-1,ndims)+1).or.idone(2).eq.1)then
 c Only if we are not on a periodic face:
             if(LCF(idn))then
 c Variable C. Calculate:
@@ -93,8 +105,8 @@ c Assume A=1.
             endif
          endif
       else
-c Non-face BCs, just say we failed, so the fallback bdyroutine is called.
-         idone=0
+c Non-face BCs. Return failure for fallback.
+         idone(1)=0
       endif
 c      write(*,*)ipoint,(indi(k),k=1,ndims),u(1+ipoint)
       end

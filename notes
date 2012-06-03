@@ -8477,3 +8477,58 @@ Succeeded in getting a magnetized moon case to run. Looks sensible.
 
 Cleaned up the makefile and that of accis so that it is substantially 
 more logical and robust in making decisions about drivers and compilers.
+
+2 June 12
+
+Discovered that the serial version of coptic does not communicate the
+periodic boundary conditions properly. I had thought about this but
+came to the conclusion that it did. That was wrong. But I don't know why.
+What bdyshare currently is supposed to do is to set the guard boundary
+values when the block boundary is actually a domain boundary.
+However, it only does that when the boundary is NOT periodic. 
+When it is periodic the bdyshareroutine does nothing, because it is
+assuming that the boundary has been set by the bbdy communication. 
+Thus, when there is no bbdy communication, the boundary is not set 
+properly. That explains my observations. 
+
+Ideally, we would like a call to bdyshare that changes its behavior and
+instead does periodic setting rather than nothing. 
+Currently we pass offset into the bdyshareroutine and this points to the
+adjacent position. For periodic setting, we could perhaps pass a different
+offset that pointed to the corresponding point at the opposite face, and
+have A=0,B=1,C=0 (zero slope) which sets the boundary point equal to the
+adjacent point, and temporarily set LPF off for this id.
+
+Instead simply increased the information passing capability by using 
+more of idone. If idone(2)=1 then the periodic conditions are set 
+explicitly, using the ABC coefficients.
+
+Also fixed the object file setting of periodicity so it works.
+It's possible to get an inconsistent result by setting periodicity 
+then setting _just one_ of those faces back to face conditions. The
+other face then uses zero derivative condition left over from the
+periodicity settings. But it then seems to get the boundary set wrong
+at the end as if it were periodic. Hmm. There's an error in logic.
+Fixed that.
+
+Implemented an option in partaccum. If ivproj=1 then we project the
+accumulated velocities: id=1 parallel, id=2 perp, id=3 z-component.
+Added -p switch to activate in partexamine. 
+Added default Bfield setting in partexamine if not already set. 
+But that needs some better switch to prescribe override.
+Implemented ability to prescribe Bdirs after -p.
+It overrides if it was set with the full three components. Otherwise
+it is used only if Bfield was not read from the partfile.
+Seems as if this option is working: finding projected particle distributions.
+
+Needs some work on the annotation of the plots.
+
+Thinking about rationalization of the ndims argument and parameter mess.
+What are the causes of problems.
+1. Local Scratch arrays can't be created legally unless ndims is a parameter.
+2. Consequently, if ndims is _passed_ which means we are prevented from
+   using it as a parameter, then we do duplication with modified name. 
+
+How do we avoid the crazy multiplication of ndims parameters?
+Perhaps have an include file that does nothing except define the
+ndimsparam which we use for all such dimension definitions.

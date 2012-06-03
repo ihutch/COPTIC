@@ -15,7 +15,7 @@ c parameter used for bbdydecl dimensions.
 c     The number of dimensions declared in bbdydecl.f
       parameter (ndimsdecl=3)
 c     ifull full dimensions, iuds used dimensions
-      integer ifull(ndims)
+c      integer ifull(ndims)
 c     iuds(ndims) declared in bbdydecls
 c     cij coefficients of the finite difference scheme, in the order
 c         east,west,north,south ... [regarding i,j, as x,y].
@@ -71,9 +71,10 @@ c k_sor is the sor iteration index, for diagnostics.
 c bbdydecl declares most things for bbdy, using parameter ndimsdecl.
       include 'bbdydecl.f'
 
-c Scratch arrays for lying to bdyshare.
-      integer zeros(ndims)
-      integer ones(ndims)
+c Scratch arrays for bdyshare communications
+      integer idone(ndimsdecl)
+      integer zeros(ndimsdecl)
+      integer ones(ndimsdecl)
 
       real delta,umin,umax
       data ldebugs/.false./
@@ -91,7 +92,9 @@ c--------------------------------------------------------------------
 c Decide if any of the dimensions is periodic
       ictlh=ictl
       ictlh=ictlh/8
+c Initialize and set accordingly.
       do nd=1,ndims
+         idone(nd)=0
          zeros(nd)=0
          ones(nd)=1
          if(mod(ictlh,2).eq.0)then
@@ -164,17 +167,19 @@ c Do block boundary communications, returns block info icoords...myid.
      $        icommcart,mycartid,myid)
 c If this is found to be an unused node, jump to barrier.
          if(mycartid.eq.-1)goto 999
+c If we are running without MPI then set periodic conditions explicitly.
+         if(icommcart.eq.0)idone(2)=1
 c------------------------------------------------------------------
 c Set boundary conditions (and conceivably update cij).
 c Only needed every other step, and gives identical results.
          if(mod(k_sor,2).eq.1)then
 c The parallelized boundary setting routine
-            idone=0
+            idone(1)=0
             call bdyshare(idone,ndims,ifull,iuds,cij,u,q
      $           ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
      $           ,icommcart,mycartid,myid)
 c If this did not succeed. Fall back to global setting.
-            if(idone.eq.0)call bdyset(ndims,ifull,iuds,cij,u,q)
+            if(idone(1).eq.0)call bdyset(ndims,ifull,iuds,cij,u,q)
          endif
 c-------------------------------------------------------------------
 c Do a relaxation.
@@ -224,22 +229,18 @@ c the result].
       call bbdy(iLs,ifull,iuds,u,nk,ndims,idims,lperiod,
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid)
-c Boundary conditions need to be reset based on the gathered result.
-c But that's not sufficient when there's a relaxation so be careful!
+c Boundary conditions need to be fully set based on the gathered result
+c at least for the master node, for aesthetic plotting reasons.
 c Call the parallelized boundary setting routine but lie to it that 
-c it is the only process. This is implemented correctly but does not
-c work.
-c      idone=0
-c      if(.false..and.myid.eq.0)then
-c      write(*,*)'Final bdyshare call'
-c      call bdyshare(idone,ndims,ifull,iuds,cij,u,q
-cc     $    ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
-c     $     ,iLs,ones ,lperiod,zeros  ,iLcoords,iuds  , ones
-c     $     ,icommcart,mycartid,myid)
-c      endif
-c Instead, rely on the old global setting, which has periodicity 
-c explicitly included, even though it is inefficient.
-         call bdyset(ndims,ifull,iuds,cij,u,q)
+c it is the only process. Also insist on explicit setting.
+      idone(2)=1
+      idone(1)=0
+c Actually it would not hurt if every process did this.
+      if(myid.eq.0)call bdyshare(idone,ndims,ifull,iuds,cij,u,q
+c     $    ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
+     $        ,iLs,ones ,lperiod,zeros  ,iLcoords,iuds  , ones
+     $        ,icommcart,mycartid,myid)
+c Old global setting. Obsolete.
 c         call bdyset(ndims,ifull,iuds,cij,u,q)
       del_sor=delta
       ierr=k_sor

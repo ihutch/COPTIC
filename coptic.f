@@ -331,7 +331,7 @@ c         partfilename=' '
          call readfluxfile(fluxfilename,ierr)
          if(ierr.ne.0)goto 401
          call partread(partfilename,ierr)
-         if(ierr.ne.0)goto 401
+         if(ierr-4*(ierr/4).ne.0)goto 401
          ied=1
          call array3read(phifilename,ifull,iuds,ied,u,ierr)
          if(ierr.ne.0)goto 401

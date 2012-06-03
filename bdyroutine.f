@@ -422,10 +422,11 @@ c      real Ain,Bin,C0in,Cxyzin(ndims_mesh) == CFpin(6)
       if(idn.le.-2)then
 c Print out settings:
          write(*,*)' AF      BF       C0F     CxyzF'
-     $        ,'                  AmBF     ApBF  LF LCF'
+     $        ,'                  AmBF     ApBF  LF LCF LPF'
          do id=1,2*ndims_mesh
-            write(*,'(8f8.4,7L3)')AF(id),BF(id),C0F(id)
-     $           ,(CxyzF(ii,id),ii=1,3),AmBF(id),ApBf(id),LF,LCF(id)
+            write(*,'(8f8.4,7L3)')AF(id),BF(id),C0F(id) ,(CxyzF(ii,id)
+     $           ,ii=1,3),AmBF(id),ApBf(id),LF,LCF(id)
+     $           ,LPF(mod(id-1,3)+1)
          enddo
       elseif(idn.le.0)then
 c Initialize A=-1, B=0, C=0

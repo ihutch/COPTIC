@@ -284,11 +284,12 @@ c Reset all.
          read(cline,*,err=901,end=882)idumtype,(CFin(ii,id),ii=1,3
      $        +ndims_mesh)
  882     continue
+         LPF(mod(id-1,ndims_mesh)+1)=.false.
          iCFcount=iCFcount+1
 c Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1         
-      elseif(type.gt.110.and.type.lt.100+ndims_mesh)then
+      elseif(type.gt.110.and.type.lt.110+ndims_mesh)then
 c Periodic boundary condition on this dimension
          if(iCFcount.eq.0)then
 c Reset all if this is the first face call.
@@ -300,6 +301,10 @@ c Reset all if this is the first face call.
          endif
          id=type-110
          LPF(id)=.not.LPF(id)
+         do ii=id,id+ndims_mesh,ndims_mesh
+            CFin(1,ii)=0.
+            CFin(2,ii)=1.
+         enddo
          iCFcount=iCFcount+1
 c Don't count this as an object.
          ngeomobj=ngeomobj-1         

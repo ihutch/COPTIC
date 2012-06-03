@@ -68,13 +68,14 @@ export VECX
 ##########################################################################
 # Decide which compiler to use.
 ifeq ("$(G77)","")
-# I don't know why this has to be overridden. Perhaps because of export below.
+# I don't know why this has to be overridden. 
+# But within this section of code G77 is not set without an override.
 	override G77=$(shell cat compiler 2>/dev/null)
 	ifeq ("$(G77)","")
 # Default compiler. Ought to be used if a strange make target is used 
 # on the very first call.
 # After that, compiler ought to be set on disk and used.
-		G77=mpif77 -f77=g77
+		override G77=mpif77 -f77=g77
 	endif
 endif
 # In g77 -Wno-globals silences spurious type messages on reduce.f
@@ -83,11 +84,6 @@ NGW=-Wno-unused
 ifeq ("$(G77)","mpif77 -f77=g77")	
   NGW=-Wno-globals
 endif
-# If non MPI compiler (e.g. gfortran) is used, replace MPIOBJECTS here:
-ifeq ("$(findstring mpi,$(G77))","")
-       MPIOBJECTS=dummyreduce.o nonmpibbdy.o
-endif
-#
 # export this so it is inherited by sub-makes.
 export G77
 ##########################################################################
@@ -108,10 +104,12 @@ NOGLOBALS= $(COMPILE-SWITCHES) $(NGW)
 ##########################################################################
 ##########################################################################
 FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate.o padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o cmdline.o fsects.o bdyshare.o randc.o
-# If not already set, set MPIOBJECTS.
-MPIOBJECTS?=reduce.o mpibbdy.o
-# other option is MPIOBJECTS=dummyreduce.o nonmpibbdy.o
-
+ifeq ("$(findstring mpi,$(G77))","")
+# non MPI compiler (e.g. gfortran) is used
+       MPIOBJECTS=dummyreduce.o nonmpibbdy.o
+else
+       MPIOBJECTS=reduce.o mpibbdy.o
+endif
 SPECIALOBJECTS=bdyroutine.o faddu.o getfield.o interpolations.o 
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
@@ -172,8 +170,9 @@ mpicheck : $(COPTIC)
 
 # Configure compiler.
 compiler :
+	@echo -n Compiler tests.
 	@if which mpif77 >/dev/null;\
- then echo -n "MPI system. ";\
+ then echo -n " MPI system. ";\
   if which g77 >/dev/null ;\
   then  echo -n "Force g77. ";GHERE="mpif77 -f77=g77";\
   else GHERE=mpif77 ; fi\
@@ -182,10 +181,10 @@ compiler :
   then GHERE="g77";\
   else GHERE="f77";fi\
  fi;\
- echo "G77="$${GHERE}; G77=$${GHERE}; echo $${G77} > compiler;
+ echo "Chosen G77="$${GHERE}; G77=$${GHERE}; echo $${G77} > compiler;
 # To obtain this information, one has to make a second time.
 	@echo "*********** Remaking COPTIC with chosen G77 ****************"
-	@export MAKEFLAGS=; make
+	@export MAKEFLAGS=; make coptic
 
 #####################################################
 # Things to compile with non-standard switches
@@ -208,7 +207,7 @@ bdyroutine.o : bdyroutine.f compiler makefile $(HEADERS)
 $(COPTIC) : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
 	@echo "      rjscheme="\'$(REINJECT)\'" " > REINJECT.f
 	$(G77) -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f libcoptic.a $(LIBRARIES)
-	@echo "TestGL:$(TESTGL), TestX11:$(TESTX11), vecx=$(VECX), G77=$(G77)"
+#	@echo "TestGL:$(TESTGL), TestX11:$(TESTX11), vecx=$(VECX), G77=$(G77)"
 
 # Sorserial links nonmpibbdy.o explicitly, so that none of those routines
 # are linked from the main libcopsol that need mpi.

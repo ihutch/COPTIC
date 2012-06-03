@@ -115,7 +115,13 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-bc')read(argument(4:),*,err=201)islp
          if(argument(1:3).eq.'-bp')then
             read(argument(4:),*,err=201)idn
-            if(0.lt.idn.and.idn.lt.4)LPF(idn)=.not.LPF(idn)
+            if(0.lt.idn.and.idn.lt.4)then
+               LPF(idn)=.not.LPF(idn)
+               do id=idn,idn+ndims,ndims
+                  CFin(1,id)=0.
+                  CFin(2,id)=1.
+               enddo
+            endif
             iCFcount=iCFcount+1
          endif
          if(argument(1:3).eq.'-bf')then
@@ -149,6 +155,7 @@ c Initialize first, in case we are given a short read line.
  212              continue
 c Diagnostics:
 c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
+                  LPF(mod(idn-1,ndims)+1)=.false.
                   iCFcount=iCFcount+1
                enddo
             else

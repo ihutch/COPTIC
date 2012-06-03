@@ -1,10 +1,16 @@
 c********************************************************************
       subroutine partdistup(xlimit,vlimit,xnewlim,cellvol,myid,ibset)
 c Routine to update the particle distribution diagnostics for using the
-c current particle information. If this is called for the first time,
-c then calculate the bins for accumulating the distribution. Otherwise
-c just accumulate to them.
+c current particle information. 
+c
+c If this is called for the first time, i.e. with cellvol.le.0, then
+c calculate the bins for accumulating the distribution. Also, in this
+c case, if cellvol=-1 project in the direction of Bfield, else cellvol=0
+c just use cartesian components.
+c
+c Otherwise if cellvol.gt.0 just accumulate to bins.
       implicit none
+      include 'plascom.f'
       include 'meshcom.f'
       include 'partcom.f'
       include 'ptaccom.f'
@@ -14,14 +20,20 @@ c just accumulate to them.
       integer nvlist
 c      integer i,j
 c Use the first occasion to establish the accumulation range.
-c Indicated by zero cellvolume.
-         if(cellvol.eq.0.)then
+c Indicated by zero cellvolume le 0.
+         if(cellvol.le.0.)then
+c Decide whether to project velocity in the direction of Bfield.
+            if(cellvol.eq.-1)then
+               ivproj=1
+            else
+               ivproj=0
+            endif
 c This ought to be determined based on the number of samples.
 c But xlimits mean that's problematic.
 c            nvlist=100
             nvlist=10
             call vlimitdeterm(npdim,x_part,if_part,ioc_part
-     $           ,vlimit,nvlist)
+     $           ,vlimit,nvlist,ivproj,Bfield)
             if(myid.eq.0)write(*,'('' Velocity limits:'',66f7.3)')
      $           vlimit
             call minmaxreduce(mdims,vlimit)
@@ -90,7 +102,13 @@ c Accumulate a particle into velocity bins.
 
       do id=1,mdims
 c Assign velocities to bins.
-         v=xr(mdims+id)
+         if(ivproj.eq.0)then
+            v=xr(mdims+id)
+         else
+c Projected.
+            v=vproject(mdims,id,xr,Bfield)
+         endif
+
          if(v.lt.vlimit(1,id))v=vlimit(1,id)
          if(v.gt.vlimit(2,id))v=vlimit(2,id)
          ibin=nint(nptdiag*(.000005+0.99999*
@@ -158,7 +176,7 @@ c      if(limadj.eq.1)write(*,'(a,6f10.5)')' xnewlim=',xnewlim
       end
 c**********************************************************************
       subroutine vlimitdeterm(mdims,xpart,ifpart,iocpart,vlimit
-     $     ,nvlist)
+     $     ,nvlist,ivproj,Bfield)
 c Determine the required vlimits for this particle distribution.
       real xpart(3*mdims,iocpart)
       integer ifpart(iocpart)
@@ -167,6 +185,8 @@ c Velocity limits
 c Velocity Sorting arrays
       parameter (nvlistmax=200)
       real vtlist(nvlistmax),vblist(nvlistmax)
+      integer ivproj
+      real Bfield(mdims)
 
       if(nvlist.gt.nvlistmax)nvlist=nvlistmax
       do id=1,mdims
@@ -177,7 +197,13 @@ c Velocity Sorting arrays
          do j=1,iocpart
 c Only for filled slots
             if(ifpart(j).eq.1)then
-               v=xpart(id+mdims,j)
+               if(ivproj.eq.0)then
+c Straight cartesian.
+                  v=xpart(id+mdims,j)
+               else
+c Projected
+                  v=vproject(mdims,id,xpart(1,j),Bfield)
+               endif
                call sorttoplimit(v,vtlist,nvlist)
                call sortbottomlimit(v,vblist,nvlist)
             endif
@@ -391,7 +417,11 @@ c Accumulate a particle into velocity bin corresponding to position ip
 
       do id=1,mdims
 c Assign velocities to bins.
-         v=xr(mdims+id)
+         if(ivproj.eq.0)then
+            v=xr(mdims+id)
+         else
+            v=vproject(mdims,id,xr,Bfield)
+         endif
          if(v.lt.vlimit(1,id))v=vlimit(1,id)
          if(v.gt.vlimit(2,id))v=vlimit(2,id)
          ibin=nint(nptdiag*(.000005+0.99999*
@@ -613,3 +643,32 @@ c****************************************************************
          enddo
       enddo
       end
+c****************************************************************
+      real function vproject(mdims,id,xr,Bfield)
+c Return the id'th component of the "Projected" velocity xr(mdims+ii)
+c relative to the direction cosines Bfield(mdims). 
+c id=1 Parallel, id=2 Perpendicular, id=3 3rd (=id'th) component.
+      implicit none
+      integer mdims,id
+      real xr(mdims),Bfield(mdims) 
+      real v,v2
+      integer ii
+c Projected. Very clumsy.
+      v=0
+      do ii=1,mdims
+         v=v+xr(ii+mdims)*Bfield(ii)
+      enddo
+      if(id.eq.2)then
+c Perpendicular
+         v2=0
+         do ii=1,mdims
+            v2=v2+(xr(ii+mdims)-v*Bfield(ii))**2
+         enddo
+         v=sqrt(v2)
+      elseif(id.eq.3)then
+c Z-component.
+         v=xr(id+mdims)
+      endif
+      vproject=v
+      end
+

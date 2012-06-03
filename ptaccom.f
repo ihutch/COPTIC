@@ -5,8 +5,8 @@ c The following makes this dependent on having meshcom loaded already.
       real px(nptdiag,mdims)
       real vdiag(nptdiag,mdims)
       real xdiag(nptdiag,mdims)
-      integer nfvaccum
-      common /cartdiag/fv,px,vdiag,xdiag,cumfv,nfvaccum
+      integer nfvaccum,ivproj
+      common /cartdiag/fv,px,vdiag,xdiag,cumfv,nfvaccum,ivproj
 
 c------------Former fvgriddecl.f------------
 c Declarations of the spatial grid on which particle distribution
