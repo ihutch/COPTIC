@@ -668,11 +668,9 @@ c Normalize the bulkforce, multiplying by factor fac
       include '3dcom.f'
       do i=1,mf_obj
          do id=1,ns_ndims
-            if(id.eq.ns_ndims)v=vd
             colnforce(id,i,nf_step)=colnforce(id,i,nf_step)
      $           *fac
          enddo
-c         write(*,*)'bulknorm',nf_step,i,fac,colnforce(3,i,nf_step)
       enddo
       end
 c *******************************************************************
@@ -741,7 +739,7 @@ c Add back vperp.
                   x_part(j+ndims,i)=x_part(j+ndims,i)+vperp(j)
                enddo
             endif
- 801        format(a,6f10.6)
+c 801        format(a,6f10.6)
 c            if(i.le.npr)write(*,801)'x_part2',(x_part(k,i),k=1,6)
          else
 c Infinite magnetic field; i.e. one-dimensional motion plus a
