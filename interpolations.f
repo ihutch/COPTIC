@@ -326,13 +326,13 @@ c Fractions, which give dxp1, must not be exactly zero.
       if(icp.ne.0)then
 c There is object data. Use object boundary interpolations.
 c Addresses of this dimension among objects:
-         icd1=2*(id-1)*ndata_sor+1
-         icd0=icd1+ndata_sor
-         fraction=dob_sor(icd0,icp)
+         icd1=2*(id-1)*ndata_cij+1
+         icd0=icd1+ndata_cij
+         fraction=dob_cij(icd0,icp)
          if(fraction.lt.1. .and. fraction.ge.0.)then
             dxp0=fraction*dx0
-            boa=dob_sor(icd0+1,icp)
-            coa=dob_sor(icd0+2,icp)
+            boa=dob_cij(icd0+1,icp)
+            coa=dob_cij(icd0+2,icp)
             um=-coa
             dxf0=dxp0*(dxp0+2*boa)/(dxp0+boa)
             dxd0=dxp0+boa
@@ -341,11 +341,11 @@ c Addresses of this dimension among objects:
             dxf0=dx0
             dxd0=dx0
          endif
-         fraction=dob_sor(icd1,icp)
+         fraction=dob_cij(icd1,icp)
          if(fraction.lt.1. .and. fraction.ge.0.)then
             dxp1=fraction*dx1
-            boa=dob_sor(icd1+1,icp)
-            coa=dob_sor(icd1+2,icp)
+            boa=dob_cij(icd1+1,icp)
+            coa=dob_cij(icd1+2,icp)
             up=-coa
             dxf1=dxp1*(dxp1+2.*boa)/(dxp1+boa)
             dxd1=dxp1+boa
@@ -461,16 +461,16 @@ c This section is only 10% of routine cost.
 c If we are in wrong region, try to correct by choosing as the 
 c center of interpolation the other node adjacent to point and changing
 c the xfraction accordingly:
-         if(idob_sor(iregion_sor,icp0).ne.iregion)then
-c         write(*,*)'Incorrect region',iregion,idob_sor(iregion_sor,icp0)
+         if(idob_cij(iregion_cij,icp0).ne.iregion)then
+c         write(*,*)'Incorrect region',iregion,idob_cij(iregion_cij,icp0)
 c     $        ,icp0,ix,xm
             jpm=1
             if(xm.lt.0.)jpm=-1
             ix=ix+jpm
             icp1=int(cij(1+(ix-1)*icinc))
 c Old and seemingly incorrect version:
-c            if(icp1.eq.0 .or. idob_sor(iregion_sor,icp1).ne.iregion)then
-            if(icp1.ne.0.and.idob_sor(iregion_sor,icp1).ne.iregion)then
+c            if(icp1.eq.0 .or. idob_cij(iregion_cij,icp1).ne.iregion)then
+            if(icp1.ne.0.and.idob_cij(iregion_cij,icp1).ne.iregion)then
                ix=99
                uprime=0.
                return
@@ -492,18 +492,18 @@ c Values of u at the points to be interpolated.
 c         if(abs(u0+10).lt.0.01 .and. abs(uprime).gt.1.)then
 c Specific problem case test.
             write(*,*)'uprime,u0,up,um,ix,icp0',uprime,u0,up,um,ix,icp0
-     $           ,idob_sor(iregion_sor,icp0)
-            icd1=2*(idf-1)*ndata_sor+1
-            icd0=icd1+ndata_sor
-            fraction=dob_sor(icd0,icp0)
-            boa=dob_sor(icd0+1,icp0)
-            coa=dob_sor(icd0+2,icp0)
+     $           ,idob_cij(iregion_cij,icp0)
+            icd1=2*(idf-1)*ndata_cij+1
+            icd0=icd1+ndata_cij
+            fraction=dob_cij(icd0,icp0)
+            boa=dob_cij(icd0+1,icp0)
+            coa=dob_cij(icd0+2,icp0)
             write(*,*)'icp0,icd0,frac,boa,coa',
      $           icp0,icd0,fraction,boa,coa
 c In case this was not set previously
-            fraction=dob_sor(icd1,icp0)
-            boa=dob_sor(icd1+1,icp0)
-            coa=dob_sor(icd1+2,icp0)
+            fraction=dob_cij(icd1,icp0)
+            boa=dob_cij(icd1+1,icp0)
+            coa=dob_cij(icd1+2,icp0)
             write(*,*)'icp0,icd1,frac,boa,coa',
      $           icp0,icd1,fraction,boa,coa
             ix=98

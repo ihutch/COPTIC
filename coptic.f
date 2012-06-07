@@ -12,7 +12,7 @@ c Running averages.
       real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
 c
       real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k)
-      real cij(2*ndims_sor+1,na_i,na_j,na_k)
+      real cij(2*ndims_cij+1,na_i,na_j,na_k)
 c Diagnostics (moments)
       integer ndiagmax
       parameter (ndiagmax=7)
@@ -23,20 +23,20 @@ c Distribution functions
 c      real fv(ndistmax,na_i,na_j,na_k)
 
 c Used dimensions, Full dimensions. Used dims-2
-      integer iuds(ndims_sor),ifull(ndims_sor),ium2(ndims_sor)
+      integer iuds(ndims_cij),ifull(ndims_cij),ium2(ndims_cij)
 c Mesh spacing description structure
       include 'meshcom.f'
 c Processor cartesian geometry can be set by default.
       integer nblksi,nblksj,nblksk
       parameter (nblksi=1,nblksj=1,nblksk=1)
-      integer idims(ndims_sor)
+      integer idims(ndims_cij)
 c mpi process information.
       include 'myidcom.f'
 c Common data containing the BC-object geometric information
       include '3dcom.f'
 c Structure vector needed for finding adjacent u values.
 c Don't use the mditerate common. It might not be right.
-      integer iLs(ndims_sor+1)
+      integer iLs(ndims_cij+1)
 c Particle common data
       include 'partcom.f'
 c Plasma common data
@@ -49,7 +49,8 @@ c Boundary setting common data
       include 'slpcom.f'
 c Face boundary data
       include 'facebcom.f'
-      external bdyset,faddu,cijroutine,cijedge,psumtoq,quasineutral
+      external bdyshare,bdyset,faddu,cijroutine,cijedge,psumtoq
+     $     ,quasineutral
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
       character*100 diagfilename,restartpath
@@ -82,8 +83,8 @@ c      data thetain,nth/.1,1/
       data ipstep/1/idistp/0/idcount/0/icijcount/0/
 c-------------------------------------------------------------
 c Consistency checks
-      if(ndims.ne.ndims_sor)then
-         write(*,*)'Inconsistent ndims, ndims_sor',ndims,ndims_sor
+      if(ndims.ne.ndims_cij)then
+         write(*,*)'Inconsistent ndims, ndims_cij',ndims,ndims_cij
          stop
       endif
 c-------------------------------------------------------------
@@ -237,7 +238,7 @@ c---------------------------------------------
 c The following requires include objcom.f
 c         if(lmyidhead)write(*,*)'Finished mesh/stencil setup:',iuds
          if(lmyidhead)write(*,*)
-     $      'Used No of pointers:',oi_sor,' of',iuds(1)*iuds(2)*iuds(3)
+     $      'Used No of pointers:',oi_cij,' of',iuds(1)*iuds(2)*iuds(3)
      $        ,' points.'
 c Plot objects 0,1 and 2 (bits)
 c      iobpl=-7
@@ -271,8 +272,8 @@ c Make dimensions periodic:
       enddo
 c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
 c An initial solver call with zero density. 
-      if(debyelen.ne.0.)call sormpi(ndims,ifull,iuds,cij,u,q,bdyset
-     $     ,faddu,ictl,ierrsor,myid,idims)
+      if(debyelen.ne.0.)call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare
+     $     ,bdyset,faddu,ictl,ierrsor,myid,idims)
       ictl=2+ictl
 c      write(*,*)'Return from initial sormpi call.'
       if(ltestplot)call sliceGweb(ifull,iuds,u,na_m,zp,
@@ -385,8 +386,8 @@ c Convert psums to charge density, q. Remember external psumtoq!
      $        0,q(2,2,2),u(2,2,2),volumes(2,2,2),dum4)
             call bdyslope0(ndims,ifull,iuds,cij,u,q)
          else
-            call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
-     $           ,myid,idims)
+            call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset,faddu
+     $           ,ictl,ierr,myid,idims)
          endif
          call calculateforces(ndims,iLs,cij,u)
 

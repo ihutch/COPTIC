@@ -81,12 +81,12 @@ c                  call vec3w(xx(1),xx(2),xx(3),0)
                   do id=1,ndims
                      do ipm=1,2
                         ispm=1-2*(ipm-1)
-                        no=ndata_sor*(2*(id-1)+(ipm-1))+1
-                        frac=dob_sor(no,iobj)
+                        no=ndata_cij*(2*(id-1)+(ipm-1))+1
+                        frac=dob_cij(no,iobj)
                         if(frac.lt.1. .and. frac.gt.0.)then
 c This a true intersection.
                            call vec3w(xx(1),xx(2),xx(3),0)
-                           call color((no+2)/ndata_sor)
+                           call color((no+2)/ndata_cij)
                            xt(1)=xx(1)
                            xt(2)=xx(2)
                            xt(3)=xx(3)
@@ -122,7 +122,7 @@ c      call jdrwstr(.1,.1,mystring,1.)
          do j=1,iuds(2)
             do k=1,iuds(3)
                iobj=int(cij(2*ndims+1,i,j,k))
-               iobjcode=idob_sor(iinter_sor,iobj)
+               iobjcode=idob_cij(iinter_cij,iobj)
                if(iobj.ne.0.and.iobjcode.ge.0)then
                isob=int(mysw/2**iobjcode-(mysw/2**(iobjcode+1))*2)
 c               write(*,*)iobj,iobjcode,isob,mysw
@@ -143,11 +143,11 @@ c in plane normal to id.
                      i2=mod(id+1,3)+1
                      ipen=0
                      do ipm=1,5       
-                        no=ndata_sor*(
+                        no=ndata_cij*(
      $                      2*( (i1-1)*mod(ipm,2)+(i2-1)*mod(ipm+1,2))
      $                       +ipx(ipm)+ipy(ipm))+1
-c                        write(*,*)'iinter',idob_sor(iinter_sor,iobj)
-                        frac=dob_sor(no,iobj)
+c                        write(*,*)'iinter',idob_cij(iinter_cij,iobj)
+                        frac=dob_cij(no,iobj)
                         if(frac.lt.1. .and. frac.ge.0.)then
 c This a true intersection. Draw to it.
                            xt(id)=xx(id)
@@ -175,11 +175,11 @@ c                     id=mod(idd-1,3)+1
                      i2=mod(id+1,3)+1
                      ipen=0
                      do ipm=1,5       
-                        no=ndata_sor*(
+                        no=ndata_cij*(
      $                      2*( (i1-1)*mod(ipm,2)+(i2-1)*mod(ipm+1,2))
      $                       +ipx(ipm)+ipy(ipm))+1
-                        frac=dob_sor(no,iobj)
-                        frac2=dob_sor(no,iobj2)
+                        frac=dob_cij(no,iobj)
+                        frac2=dob_cij(no,iobj2)
                         if(frac.lt.1. .and. frac.ge.0.
      $                       .and. frac2.lt.1. .and. frac2.ge.0.)then
 c Double intersections. Connect them.

@@ -851,26 +851,26 @@ c object data.
       include 'meshcom.f'
       include '3dcom.f'
 
-      integer ix(ndims_sor)
-      real x(ndims_sor)
+      integer ix(ndims_cij)
+      real x(ndims_cij)
 
-      if(ndims.ne.ndims_sor)then 
+      if(ndims.ne.ndims_cij)then 
          write(*,*)'iregioninit error; incorrect dimensions:',
-     $        ndims,ndims_sor
+     $        ndims,ndims_cij
          call exit(0)
       endif
 
-      do i=1,oi_sor
-         ipoint=idob_sor(ipoint_sor,i)
+      do i=1,oi_cij
+         ipoint=idob_cij(ipoint_cij,i)
 c Convert index to multidimensional indices.
          call indexexpand(ndims,ifull,ipoint,ix)
          do k=1,ndims
             x(k)=xn(ixnp(k)+ix(k))
          enddo
 c Store in object-data.
-         idob_sor(iregion_sor,i)=insidemask(ndims,x)
+         idob_cij(iregion_cij,i)=insidemask(ndims,x)
 
-c         write(*,101)i,ipoint,idob_sor(iregion_sor,i),x
+c         write(*,101)i,ipoint,idob_cij(iregion_cij,i),x
 c 101     format(3i8,5f10.4)
       enddo
 
@@ -900,11 +900,11 @@ c*******************************************************************
       integer i,j,k
       include 'objcom.f'
       integer ifull(3)
-      real cij(ndims_sor*2+1,ifull(1),ifull(2),ifull(3))
+      real cij(ndims_cij*2+1,ifull(1),ifull(2),ifull(3))
 
-      ipoint=int(cij(ndims_sor*2+1,i,j,k))
+      ipoint=int(cij(ndims_cij*2+1,i,j,k))
       if(ipoint.ne.0)then
-         ireg3=idob_sor(iregion_sor,ipoint)
+         ireg3=idob_cij(iregion_cij,ipoint)
       else
          ireg3=99
       endif

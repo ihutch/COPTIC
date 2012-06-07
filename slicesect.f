@@ -18,8 +18,8 @@ c -zero, and there is a fraction<1 to the adjoining points.
                do id=1,3
                   idff=mod(id-1+3-ifix,3)+1
                   do jd=1,2
-                     iobj=ndata_sor*(2*(id-1)+(jd-1))+1
-                     fraction=dob_sor(iobj,ipoint)
+                     iobj=ndata_cij*(2*(id-1)+(jd-1))+1
+                     fraction=dob_cij(iobj,ipoint)
                      if(fraction.lt.1. .and. fraction.gt.0.)then
                         call vec3n(xn,yn,zn,0)
 c                        write(*,*)i,j,ipoint,id,jd,fraction
@@ -329,12 +329,12 @@ c The point:
                   enddo
 c The intersection fractions (forward and backward for each dim).
                   do if=1,2*ndims
-                     no=ndata_sor*(if-1)+1
+                     no=ndata_cij*(if-1)+1
 c                     write(*,*)'no=',no,' iobj=',iobj
-                     fracts(if)=dob_sor(no,iobj)
+                     fracts(if)=dob_cij(no,iobj)
                   enddo
 c The flags
-                  iflags=idob_sor(iflag_sor,iobj)
+                  iflags=idob_cij(iflag_cij,iobj)
 c                  write(*,*)'xx=',xx
 c                  write(*,*)' fracts=',fracts
 c Treat each box with the appropriate ipmarray. 2**ndims in all.

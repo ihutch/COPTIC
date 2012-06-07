@@ -1,31 +1,30 @@
-    program sortest
+      program sortest
 c Main program of cartesian coordinate solver 
       include 'objcom.f'
 c Storage array spatial count size
       include 'griddecl.f'
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
-     $     ,cij(2*ndims_sor+1,na_i,na_j,na_k)
+     $     ,cij(2*ndims_cij+1,na_i,na_j,na_k)
       real volumes(na_i,na_j,na_k)
 c Used dimensions, Full dimensions. Used dims-2
-      integer iuds(ndims_sor),ifull(ndims_sor),ium2(ndims_sor)
+      integer iuds(ndims_cij),ifull(ndims_cij),ium2(ndims_cij)
 c Mesh spacing description structure
       include 'meshcom.f'
 c Processor cartesian geometry can be set by default.
       integer nblksi,nblksj,nblksk
       parameter (nblksi=1,nblksj=1,nblksk=1)
-      integer idims(ndims_sor) 
+      integer idims(ndims_cij) 
 c mpi process information.
       include 'myidcom.f'
 c Structure vector needed for finding adjacent u values.
-      integer iLs(ndims_sor+1)
-      external bdyset,bdysetnull,faddu,cijroutine,cijedge
+      integer iLs(ndims_cij+1)
+      external bdyshare,bdyset,bdysetnull,faddu,cijroutine,cijedge
       character*100 objfilename
       character*100 argument
       logical ltestplot,lsliceplot,linjplot
       logical lmyidhead,lphiplot,lpgraph
       integer ipstep,idebug
       real CFin(3+ndims_mesh,2*ndims_mesh)
-      logical LPF(ndims_mesh)
       include 'facebcom.f'
 c Either include plascom or define vperp and Bfield.
       include 'plascom.f'
@@ -47,8 +46,8 @@ c Data for plotting etc.
       data ipstep/1/
 c-------------------------------------------------------------
 c Consistency checks
-      if(ndims.ne.ndims_sor)then
-         write(*,*)'Inconsistent ndims, ndims_sor',ndims,ndims_sor
+      if(ndims.ne.ndims_cij)then
+         write(*,*)'Inconsistent ndims, ndims_cij',ndims,ndims_cij
          stop
       endif
 c-------------------------------------------------------------
@@ -125,7 +124,7 @@ c Some simple graphics of cij
 c---------------------------------------------
 c The following requires include objcom.f
          if(lmyidhead)write(*,*)
-     $      'Used No of pointers:',oi_sor,' of',iuds(1)*iuds(2)*iuds(3)
+     $      'Used No of pointers:',oi_cij,' of',iuds(1)*iuds(2)*iuds(3)
      $        ,' points.'
 c Plot objects
          if(iobpl.ne.0.and.lmyidhead)then
@@ -150,10 +149,8 @@ c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
 c Solver call.
       do k=1,2
          if(k.gt.1)ictl=1
-         call sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
-     $        ,myid,idims)
-c         call sormpi(ndims,ifull,iuds,cij,u,q,bdysetnull,faddu,ictl,ierr
-c     $        ,myid,idims)
+         call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset,faddu,ictl
+     $        ,ierr,myid,idims)
          if(idebug.gt.0)write(*,*)'Completed sormpi',ierr,del_sor
          if(ierr.gt.0)goto 2
          eps_sor=2.e-6

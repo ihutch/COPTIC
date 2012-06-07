@@ -54,10 +54,10 @@ c for external field need 3dcom.f
       include '3dcom.f'
 
 c We DONT include sormesh, because xn is passed
-      parameter (ipwr2nd=2**(ndims_sor-1))
+      parameter (ipwr2nd=2**(ndims_cij-1))
       integer iflags(ipwr2nd)
       real weights(ipwr2nd)
-      real f(ipwr2nd),d(ndims_sor-1)
+      real f(ipwr2nd),d(ndims_cij-1)
       integer ii1,ii2
 
 c Allow the passing of the real position, not just fraction.
@@ -156,7 +156,7 @@ c                  write(*,*)'1st iinc,iincm,iincp',iinc,iincm,iincp
                endif
                icptp=cij(1+ic1*(iinc+2*iuinc(idf)))
                if((iincm.ge.0).and.(icptm.ne.0).and.
-     $              (idob_sor(iregion_sor,icptm).eq.iregion))then
+     $              (idob_cij(iregion_cij,icptm).eq.iregion))then
 c xf positive, node0 (relative to 1) in region, look at node 0.
                   call gradlocalregion(cij(1+ic1*(iinc-iuinc(idf))),
      $                 u(1+iinc-iuinc(idf)) ,idf,ic1*iuinc(idf)
@@ -172,11 +172,11 @@ c                     write(*,*)ii,xfidf,' weights=',weights(ii)
                   endif
 c The alternative is to use only the first if it works by uncommenting
 c the following line and commenting the two after it.
-c               elseif(icptp.ne.0.and.idob_sor(iregion_sor,icptp)
+c               elseif(icptp.ne.0.and.idob_cij(iregion_cij,icptp)
                endif
                if(iincp.le.iuinc(ndims+1)
      $              .and.icptp.ne.0.and.
-     $              idob_sor(iregion_sor,icptp).eq.iregion)then
+     $              idob_cij(iregion_cij,icptp).eq.iregion)then
 c xf positive, node3 (relative to 1) in region, look at node 3.
                   call gradlocalregion(cij(1+ic1*(iinc+2*iuinc(idf))),
      $                 u(1+iinc+2*iuinc(idf)) ,idf,ic1*iuinc(idf)
@@ -207,7 +207,7 @@ c                  write(*,*)'idf, iinc,iincm,iincp',idf,iinc,iincm,iincp
                endif
                icptp=cij(1+ic1*(iinc+iuinc(idf)))
                if((iincp.le.iuinc(ndims+1))
-     $              .and.(icptp.ne.0).and.(idob_sor(iregion_sor,icptp)
+     $              .and.(icptp.ne.0).and.(idob_cij(iregion_cij,icptp)
      $              .eq.iregion))then
 c xf negative, node2 (relative to 1) in region, look at node 2.
                   call gradlocalregion(cij(1+ic1*(iinc+iuinc(idf))),
@@ -223,10 +223,10 @@ c     $           ,idf,ii,f
 c                     write(*,*)ii,xfidf,' weights=',weights(ii)
                   endif
 c See above for explanation of alternatives.
-c               elseif(icptm.ne.0.and.idob_sor(iregion_sor,icptm)
+c               elseif(icptm.ne.0.and.idob_cij(iregion_cij,icptm)
                endif
                if((iincm.ge.0).and.(icptm.ne.0).and.
-     $              (idob_sor(iregion_sor,icptm).eq.iregion))then
+     $              (idob_cij(iregion_cij,icptm).eq.iregion))then
 c xf negative, node-1 (relative to 1) in region, look at node -1.
                   call gradlocalregion(cij(1+ic1*(iinc-2*iuinc(idf))),
      $                 u(1+iinc-2*iuinc(idf)) ,idf,ic1*iuinc(idf)
@@ -277,7 +277,7 @@ c Debugging code:
          if(ix.eq.98)then
             write(*,*)'ic1,iinc,idf,iregion,xfidf'
      $           ,ic1,iinc,idf,iregion,xfidf
-            write(*,*)(dob_sor(k,int(cij(1+ic1*iinc))),k=1,18)
+            write(*,*)(dob_cij(k,int(cij(1+ic1*iinc))),k=1,18)
      $           ,cij(1+ic1*iinc)
          endif
 c         if(abs(f(ii)).gt.1.e20)write(*,*)'Enddo corrupt',f(ii),ii
@@ -408,7 +408,7 @@ c Type of interpolation
 
 c objcom, which is needed, contain ndims_... so we don't pass it.
       include 'objcom.f'
-      parameter (ndims=ndims_sor)
+      parameter (ndims=ndims_cij)
 c Local vector storage
 c      integer idn(ndims)
       real xf(ndims),uval(2**ndims)
@@ -462,9 +462,9 @@ c Get that object pointer.
          ico=int(cij(icp))
          if(ico.ne.0)then
 c This is an interface point
-            if(idob_sor(iregion_sor,ico).ne.iregion)then
+            if(idob_cij(iregion_cij,ico).ne.iregion)then
 c This vertex is outside the region. Flag it missing
-c               write(*,'(i4,$)')idob_sor(iregion_sor,ico)
+c               write(*,'(i4,$)')idob_cij(iregion_cij,ico)
                imissing=imissing+1
                ival(i)=0
 c But store the value anyway
@@ -551,8 +551,8 @@ c Need object data
       include 'objcom.f'
 c Need mesh data for xn.
       include 'meshcom.f'
-      parameter (ndims=ndims_sor)
-c contains ndims_sor
+      parameter (ndims=ndims_cij)
+c contains ndims_cij
       real uval(2**ndims)
       integer ival(2**ndims)
 c Passed derivatives for extrapolation.

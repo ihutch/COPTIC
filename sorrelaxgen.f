@@ -1,15 +1,21 @@
 c********************************************************************
 c Do a single relaxation.
       subroutine sorrelaxgen(k_sor,ndims,iLs,iuds,
+     $     intcij,
      $     cij,u,q,myorig,
      $     laddu,faddu,oaddu,
      $     relax,rdelta,umin,umax)
 c General number of dimensions ndims call.
 c iLs is dimensions structure, cij is really (2*ndims+1,iuds(1),...)
+c intcij is a copy of cij, but referred to as an integer. 
+c Not yet used, because much of cijroutine would have to be changed.
+c But it illustrates how to access a passed variable both as real and
+c as integer if necessary.
 c q charge. All IN
       integer ndims
       integer iLs(ndims+1),iuds(ndims)
       real cij(*),q(*)
+      integer intcij(*)
 c Potential IN/OUT
       real u(*)
 c Origin pointer of this block in the whole arrays, IN.
@@ -77,7 +83,7 @@ c Even start
 c      write(*,*)'starting',ipoint,(indi(j),iused(j),j=1,ndims)
 
  103  continue
-c Attempt to calculate determine if adjustment is needed in 
+c Attempt to determine if adjustment is needed in 
 c the first iteration loop so we don't need the second.
       ica=0
 c Starting dimension
@@ -135,18 +141,17 @@ c     $        u(ipoint+1+iind(ic)),ic=1,2*ndims)
             icind=icind0+ic
             csum=csum+cij(icind)
             dnum=dnum+cij(icind)*u(ipoint+1+iind(ic))
-c            if(.not.dnum.lt.1.e30)then
-c               write(*,*)'dnum error',dnum,csum,icind,cij(icind)
-c     $              ,u(ipoint+1+iind(ic)),ic,ipoint,iind(ic)
-c     $              ,ipoint+1+iind(ic),myorig
-c            endif
          enddo
+c ------------------------------------------------------------------
+c Here is where the extra boundary data is neede/used. For a simple mesh
+c with no embedded objects, it would not be necessary.
 c Pointer to object data (converted to integer)
          io=int(cij(icind0+2*ndims+1))
          if(io.ne.0) then
 c Adjust the denominator and numerator using external call.
-            call ddn_sor(io,csum,dnum)
+            call ddn_cij(io,csum,dnum)
          endif
+c ------------------------------------------------------------------
          if(laddu) then
             addu=faddu(u(ipoint+1),daddu,ipoint+myorig)
             dscl=abs(addu)/max(abs(daddu),1.e-6)
@@ -177,11 +182,6 @@ c            write(*,*)addu,daddu,u(ipoint+1),csum,dnum,dden,delta
 c Inverted tests to catch nans.
          if(.not.uij.ge.umin)umin=uij
          if(.not.uij.le.umax)umax=uij
-c         if(.not.uij.le.1.e20)then
-c            write(*,*)ipoint,q(ipoint+1),uij,dnum,dden
-c     $        ,addu
-c            stop
-c         endif
 c Corresponds to iftrue
          else
 c test 

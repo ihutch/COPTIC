@@ -1,9 +1,9 @@
 c********************************************************************
-c This initialization of oi_sor costs a big size hit on object.
+c This initialization of oi_cij costs a big size hit on object.
 c Now done in objstart.
 c      block data objcomset
 c      include 'objcom.f'
-c      data oi_sor/0/
+c      data oi_cij/0/
 c      end
 c****************************************************************
 c Routine for setting cij, which is used by the general mditerate.
@@ -68,7 +68,7 @@ c coefficients; so we have to loop twice over the opposite directions.
 c not used         icb2=2*icb
 c For each direction in this dimension,
          do i=1,2
-            ioad=ndata_sor*(2*(id-1)+(i-1))+1
+            ioad=ndata_cij*(2*(id-1)+(i-1))+1
             ipm=1-2*(i-1)
 c Determine whether this is a boundary point: adjacent a fraction ne 1.
             call potlsect(id,ipm,ndims,indi,
@@ -81,21 +81,21 @@ c---------------
 c If this object's a,b,c depends on flux, start extra info.
                if(int(obj_geom(otype,iobjno))/256.eq.4 .or.
      $              int(obj_geom(otype,iobjno))/256.eq.5)then
-                  if(idob_sor(iextra_sor,oi_sor).eq.0)then
+                  if(idob_cij(iextra_cij,oi_cij).eq.0)then
 c Start chained extra data.
                      ichain=1
 c                     write(*,*)'Chaining',ipoint,(indi(kw),kw=1,ndims)
 c     $                    ,id,i,iobjno,ijbin,cij(icij)
 c First time, initialize the pointer
-                     idob_sor(iextra_sor,oi_sor)=oi_sor+ichain
+                     idob_cij(iextra_cij,oi_cij)=oi_cij+ichain
 c and initialize the data for all directions
-                     do ie=1,nobj_sor
-                        dob_sor(ie,oi_sor+ichain)=0.
+                     do ie=1,nobj_cij
+                        dob_cij(ie,oi_cij+ichain)=0.
                      enddo
                   endif
 c Set the data for this direction.          
-                  idob_sor(ioad,oi_sor+ichain)=iobjno
-                  idob_sor(ioad+1,oi_sor+ichain)=ijbin
+                  idob_cij(ioad,oi_cij+ichain)=iobjno
+                  idob_cij(ioad+1,oi_cij+ichain)=ijbin
 c ioad+2 is set below from coef/a                 
                endif
 c---------------
@@ -128,11 +128,11 @@ c The object data consists of data enumerated as
 c ndims*(2=forward/backward from point)*(3=fraction,b/a,c/a)
 c + diagonal + potential terms.
 c Prevent subsequent divide by zero danger.
-               dob_sor(ioad,oi_sor)=max(fraction(i),tiny)
+               dob_cij(ioad,oi_cij)=max(fraction(i),tiny)
                if(a.eq.0.) a=tiny
-               dob_sor(ioad+1,oi_sor)=b/a*debyehere
-               dob_sor(ioad+2,oi_sor)=c/a
-               idob_sor(iinter_sor,oi_sor)=iobjno
+               dob_cij(ioad+1,oi_cij)=b/a*debyehere
+               dob_cij(ioad+2,oi_cij)=c/a
+               idob_cij(iinter_cij,oi_cij)=iobjno
             else
 c No intersection.
                dplus(i)=dpm(i)/debyehere
@@ -148,9 +148,9 @@ c coefficient Cd same for all cases
             coef=2./(deff(i)*(dplus(i)+dplus(im)))
             if(ifound.gt.0)then
 c This is a boundary point.
-               ioad=ndata_sor*(2*(id-1)+(i-1))+1
-               if(dob_sor(ioad,oi_sor).lt.1
-     $              .and.dob_sor(ioad,oi_sor).ge.0.)then
+               ioad=ndata_cij*(2*(id-1)+(i-1))+1
+               if(dob_cij(ioad,oi_cij).lt.1
+     $              .and.dob_cij(ioad,oi_cij).ge.0.)then
 c We intersected an object in this direction. Adjust Cij and B_y
                   a=conditions(1,i)
                   b=conditions(2,i)/debyehere
@@ -160,12 +160,12 @@ c We intersected an object in this direction. Adjust Cij and B_y
 c Active side.
                      cij(icb*ipoint+2*(id-1)+i)=0.
 c Diagonal term (denominator) difference Cd-Cij stored
-                     dob_sor(idgs_sor,oi_sor)=dob_sor(idgs_sor,oi_sor)
+                     dob_cij(idgs_cij,oi_cij)=dob_cij(idgs_cij,oi_cij)
      $                 + coef
 c Adjust potential sum (B_y)
-                     dob_sor(ibdy_sor,oi_sor)=dob_sor(ibdy_sor,oi_sor)
+                     dob_cij(ibdy_cij,oi_cij)=dob_cij(ibdy_cij,oi_cij)
      $                    - coef*c/a
-                     if(ichain.gt.0)dob_sor(ioad+2,oi_sor+ichain)=coef/a
+                     if(ichain.gt.0)dob_cij(ioad+2,oi_cij+ichain)=coef/a
                   else
 c Inactive side. Continuity.
                      dxp2=(1.-fraction(i))*dpm(i)/debyehere
@@ -173,12 +173,12 @@ c Inactive side. Continuity.
                      boapb=b/apb
                      cij(icb*ipoint+2*(id-1)+i)=coef*boapb
 c Diagonal term (denominator) difference Cd-Cij stored.
-                     dob_sor(idgs_sor,oi_sor)=dob_sor(idgs_sor,oi_sor)
+                     dob_cij(idgs_cij,oi_cij)=dob_cij(idgs_cij,oi_cij)
      $                 + coef*(1.-boapb)
 c Adjust potential sum (B_y)
-                     dob_sor(ibdy_sor,oi_sor)=dob_sor(ibdy_sor,oi_sor)
+                     dob_cij(ibdy_cij,oi_cij)=dob_cij(ibdy_cij,oi_cij)
      $                    - coef*c*dxp2/apb
-                     if(ichain.gt.0)dob_sor(ioad+2,oi_sor+ichain)=coef
+                     if(ichain.gt.0)dob_cij(ioad+2,oi_cij+ichain)=coef
      $                    *dxp2/apb
                   endif
                else
@@ -231,10 +231,10 @@ c direction(j)=bit(j)of(i). 0->+1, 1->-1.
 c Now ipa is set. Call boxedge, returning the inverse of fractions
 c in fn, and the number of intersections found in npoints.
          idiag=0
-c         if(oi_sor.eq.3276)idiag=5
+c         if(oi_cij.eq.3276)idiag=5
          call boxedge(ndims,ipa,indi,fn,npoints,idiag)
 c         if(idiag.ne.0.and.npoints.ne.0)then
-c            write(*,*)oi_sor,npoints,' fn=',(fn(iw),iw=1,ndims)
+c            write(*,*)oi_cij,npoints,' fn=',(fn(iw),iw=1,ndims)
 c         endif
 c
          if(npoints.ge.ndims)then
@@ -254,13 +254,13 @@ c Conditionally start the object: only if it does not already exist.
                call objstart(cij(icij),istart,ipoint)
 c Set the flag
                ifl=2**(j-1)
-               idob_sor(iflag_sor,oi_sor)=idob_sor(iflag_sor,oi_sor)+ifl
+               idob_cij(iflag_cij,oi_cij)=idob_cij(iflag_cij,oi_cij)+ifl
 c Now use these ndims fractions to update the fractions already inserted,
 c [not] if new ones are "smaller" (closer to zero on the +ve side),
 c or if the fraction is 1, implying not set. 
                do i=1,ndims
-                  ioad=ndata_sor*(2*(i-1)+(1-ipa(i))/2)+1
-                  f0=dob_sor(ioad,oi_sor)
+                  ioad=ndata_cij*(2*(i-1)+(1-ipa(i))/2)+1
+                  f0=dob_cij(ioad,oi_cij)
 c Only if this is the first entry this direction 
                   if(f0.eq.1)then 
                      f1=1./(sign(max(abs(fn(i)),tiny),fn(i)))
@@ -273,21 +273,21 @@ c set of box intersections that represents multiple planes crossing the
 c box. 
 c It might also be a bug or mesh clash.
 c                        write(*,*)'Warning: Box Recut ',npoints
-c     $                       ,i,ipa(i),oi_sor
+c     $                       ,i,ipa(i),oi_cij
 c     $                       ,(indi(kk),kk=1,ndims),f1
 c     $                       ,' Adjust mesh!'
 c     $                       ,(ipa(kk),kk=1,ndims)
 c     $                       ,f0,f1,ftot
 c     $                       ,(1./fn(kk),kk=1,ndims)
-c     $                      ,idob_sor(iflag_sor,oi_sor)
+c     $                      ,idob_cij(iflag_cij,oi_cij)
                         error=error+1
 c Call boxedge with diagnostics
 c                        call boxedge(ndims,ipa,indi,fn,npoints,1)
 c But set it not equal to 1, so we know it was set.
-c                        dob_sor(ioad,oi_sor)=1.001
-c                        dob_sor(ioad,oi_sor)=f1
+c                        dob_cij(ioad,oi_cij)=1.001
+c                        dob_cij(ioad,oi_cij)=f1
                      else
-                        dob_sor(ioad,oi_sor)=f1
+                        dob_cij(ioad,oi_cij)=f1
                      endif
                   endif
                enddo
@@ -301,60 +301,60 @@ c Diagnostics sample -----------------------------------
       if(.false. .and. cij(ipoint*icb+ndims*2+1).ne.0)then
          cnon=0.
          do k=1,2*ndims
-            cnon=cnon+abs(dob_sor(3*k-1,oi_sor))
-     $           +abs(dob_sor(3*k,oi_sor))
+            cnon=cnon+abs(dob_cij(3*k-1,oi_cij))
+     $           +abs(dob_cij(3*k,oi_cij))
          enddo
          if(cnon.eq.0.)then
             write(*,201)(indi(k),k=1,ndims),
      $           (cij(ipoint*icb+k),k=1,ndims*2+1) 
-            write(*,202)(dob_sor(3*k-2,oi_sor),k=1,nobj_sor/3)
-c            write(*,203)(dob_sor(3*k-1,oi_sor),k=1,nobj_sor/3)
-c            write(*,204)(dob_sor(3*k,oi_sor),k=1,nobj_sor/3)
-         elseif(.false. .and. mod(oi_sor,100).eq.0 )then
+            write(*,202)(dob_cij(3*k-2,oi_cij),k=1,nobj_cij/3)
+c            write(*,203)(dob_cij(3*k-1,oi_cij),k=1,nobj_cij/3)
+c            write(*,204)(dob_cij(3*k,oi_cij),k=1,nobj_cij/3)
+         elseif(.false. .and. mod(oi_cij,100).eq.0 )then
             write(*,201)(indi(k),k=1,ndims),
      $           (cij(ipoint*icb+k),k=1,ndims*2+1) 
  201        format('cij(',i2,',',i2,',',i2,')=',12f8.1)
-            write(*,202)(dob_sor(3*k-2,oi_sor),k=1,nobj_sor/3)
+            write(*,202)(dob_cij(3*k-2,oi_cij),k=1,nobj_cij/3)
  202        format('fract  (3k-2)=',14f8.3)
-            write(*,203)(dob_sor(3*k-1,oi_sor),k=1,nobj_sor/3)
+            write(*,203)(dob_cij(3*k-1,oi_cij),k=1,nobj_cij/3)
  203        format('b/a    (3k-1)=',14f8.2)
-            write(*,204)(dob_sor(3*k,oi_sor),k=1,nobj_sor/3)
+            write(*,204)(dob_cij(3*k,oi_cij),k=1,nobj_cij/3)
  204        format('c/a    (3k  )=',14f8.2)
          endif
       endif
 c Skip extra data created above, if any.
-      oi_sor=oi_sor+ichain
+      oi_cij=oi_cij+ichain
 c----------------------------------------
 c     Return increment of 1
       inc=1
       end
 c********************************************************************
 c********************************************************************
-      subroutine ddn_sor(ip,dden,dnum)
+      subroutine ddn_cij(ip,dden,dnum)
 c Routine to do the adjustment to dden and dnum for this point (ip)
       include 'objcom.f'
-      dden=dden+dob_sor(idgs_sor,ip)
-      dnum=dnum+dob_sor(ibdy_sor,ip)
+      dden=dden+dob_cij(idgs_cij,ip)
+      dnum=dnum+dob_cij(ibdy_cij,ip)
       end
 c********************************************************************
 c Initialize a specific object. 1s for frac, 0 for diag,potterm.
 c Reverse pointer.
       subroutine objinit(dob,idob,ipoint)
       include 'objcom.f'
-      real dob(nobj_sor)
-      integer idob(nobj_sor)
-      do j=1,2*ndims_sor
+      real dob(nobj_cij)
+      integer idob(nobj_cij)
+      do j=1,2*ndims_cij
          dob(3*j-2)=1.
          dob(3*j-1)=0.
          dob(3*j)=0.
       enddo
-      dob(idgs_sor)=0.
-      dob(ibdy_sor)=0.
-      idob(iflag_sor)=0
+      dob(idgs_cij)=0.
+      dob(ibdy_cij)=0.
+      idob(iflag_cij)=0
 c Set the reverse pointer to the u/c arrays:
-      idob(ipoint_sor)=ipoint
+      idob(ipoint_cij)=ipoint
 c Zero the chained pointer.
-      idob(iextra_sor)=0
+      idob(iextra_cij)=0
       end
 c******************************************************************
       subroutine objstart(cijp,istart,ipoint)
@@ -364,22 +364,22 @@ c******************************************************************
       save lfirst
 c Initialization to save block-data cost.
       if(lfirst)then
-         oi_sor=0
+         oi_cij=0
          lfirst=.false.
       endif
 
 c Start object data for this point if not already started.
       if(cijp.eq.0)then
-         oi_sor=oi_sor+1
-         if(oi_sor.gt.lobjmax) then
-            write(*,*)'cijobj: oi_sor overflow',oi_sor,
+         oi_cij=oi_cij+1
+         if(oi_cij.gt.lobjmax) then
+            write(*,*)'cijobj: oi_cij overflow',oi_cij,
      $           ' Increase in objcom.'
             stop 
          endif
 c Initialize the object data: 1s for frac, 0 for b/a,c/a,diag,...
-         call objinit(dob_sor(1,oi_sor),idob_sor(1,oi_sor),ipoint)
+         call objinit(dob_cij(1,oi_cij),idob_cij(1,oi_cij),ipoint)
 c Set the pointer
-         cijp=oi_sor
+         cijp=oi_cij
          istart=istart+1
       endif
       end
@@ -569,7 +569,7 @@ c Otherwise steps of iused(1)-1 or 1 on first or last (of dim 1).
       inc=1
 c Start object data for this point if not already started.
       call objstart(cij(icij),ist,ipoint)
-      idob_sor(iregion_sor,int(cij(icij)))=-1
+      idob_cij(iregion_cij,int(cij(icij)))=-1
 c Calculate the increment:
       do n=ndims,2,-1
          if(indi(n).eq.0)then
@@ -996,36 +996,36 @@ c Prevent divide by zero issues with debyelen
       if(debyehere.lt.tiny)debyehere=tiny
 
 c Instead of the above iteration over mesh, we simply iterate over 
-c the auxiliary data. That is, oisor. oi_sor is the maximum number
+c the auxiliary data. That is, oisor. oi_cij is the maximum number
 c we've reached.
       oisor=1
-      do ioi=1,oi_sor
-      if(idob_sor(iextra_sor,oisor).eq.0)then
+      do ioi=1,oi_cij
+      if(idob_cij(iextra_cij,oisor).eq.0)then
 c Do nothing but advance to next.
          oisor=oisor+1
       else
 c         if(oisor.lt.20)write(*,*)'cijupdate',oisor
-c     $     ,idob_sor(iextra_sor,oisor)
+c     $     ,idob_cij(iextra_cij,oisor)
 c Byte 2 of the type: If it's 4 insulating, 5 floating.
-         iobj=idob_sor(iinter_sor,oisor)
+         iobj=idob_cij(iinter_cij,oisor)
          i2type=int(obj_geom(otype,iobj))/256
 c         write(*,*)'i2type=',i2type,iobj
          ichain=1
-         dibdy=dob_sor(ibdy_sor,oisor)
-         dob_sor(ibdy_sor,oisor)=0.
+         dibdy=dob_cij(ibdy_cij,oisor)
+         dob_cij(ibdy_cij,oisor)=0.
 c Iterate over dimensions.
          do id=1,ndims
 c For each direction in this dimension,
             do i=1,2
                ipm=1-2*(i-1)
                im=mod(i,2)+1
-               ioad=ndata_sor*(2*(id-1)+(i-1))+1
-               if(dob_sor(ioad,oisor).lt.1
-     $              .and.dob_sor(ioad,oisor).ge.0.)then
+               ioad=ndata_cij*(2*(id-1)+(i-1))+1
+               if(dob_cij(ioad,oisor).lt.1
+     $              .and.dob_cij(ioad,oisor).ge.0.)then
 c We intersected an object in this direction. Adjust Cij and B_y
 c Get back coef
-                  iobj=idob_sor(ioad,oisor+ichain)
-                  coefoa=dob_sor(ioad+2,oisor+ichain)
+                  iobj=idob_cij(ioad,oisor+ichain)
+                  coefoa=dob_cij(ioad+2,oisor+ichain)
 c These must get the information from somewhere.
 c Assume that a and b are unchanged by the variability:
                   a=obj_geom(oabc,iobj)
@@ -1036,7 +1036,7 @@ c-------------
                   if(i2type.eq.4)then
 c                     write(*,*)'Insulating',ifobj
 c Address the flux data
-                     ijbin=idob_sor(ioad+1,oisor+ichain)
+                     ijbin=idob_cij(ioad+1,oisor+ichain)
 c Pull the area of this facet into here
                      iaddress=ijbin+nf_address(nf_flux,ifobj,nf_pa)
                      area=ff_data(iaddress)
@@ -1060,7 +1060,7 @@ c This should not happen.
                   endif
 c Smooth over nave steps. 
                   nave=min(nf_step,iavemax)
-                  cold=a*dob_sor(ioad+2,oisor)
+                  cold=a*dob_cij(ioad+2,oisor)
                   c=(cold*(nave-1)+cnew)/nave
 c         if(oisor.lt.20)write(*,*)'cijupdate',nf_step,iobj,ijbin
 c     $                 ,cold,cnew,c
@@ -1071,30 +1071,30 @@ c-------------
                   if(a.eq.0.) a=tiny
 c Diagonal term (denominator) difference Cd-Cij stored
 c This does not change
-c                     dob_sor(idgs_sor,oisor)=dob_sor(idgs_sor
+c                     dob_cij(idgs_cij,oisor)=dob_cij(idgs_cij
 c     $                    ,oisor)+ coef
 c Adjust potential sum (B_y or tau in new reference)
-                  dob_sor(ibdy_sor,oisor)=dob_sor(ibdy_sor
+                  dob_cij(ibdy_cij,oisor)=dob_cij(ibdy_cij
      $                    ,oisor)- coefoa*c
 c Now we need to update coa in the top data set. Not boa or fraction 
 c since they haven't changed.                  
-                  if(c .ne. a*dob_sor(ioad+2,oisor))then
-c                     write(*,*)'Updating coa from',dob_sor(ioad+2,oisor)
+                  if(c .ne. a*dob_cij(ioad+2,oisor))then
+c                     write(*,*)'Updating coa from',dob_cij(ioad+2,oisor)
 c     $                    ,' to',c/a
-                     dob_sor(ioad+2,oisor)=c/a
+                     dob_cij(ioad+2,oisor)=c/a
                   endif
                endif
             enddo
 c End of dimension iteration. cij coefficients now set.
          enddo
-c         if(dibdy.ne.dob_sor(ibdy_sor,oisor))then
+c         if(dibdy.ne.dob_cij(ibdy_cij,oisor))then
 c            write(*,*)'Boundary updated from',dibdy,' to'
-c     $           ,dob_sor(ibdy_sor,oisor)
+c     $           ,dob_cij(ibdy_cij,oisor)
 c         endif
          oisor=oisor+ichain+1
          error=0.
       endif
-      if(oisor.gt.oi_sor)return
+      if(oisor.gt.oi_cij)return
       enddo
       
       end

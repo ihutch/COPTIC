@@ -390,36 +390,36 @@ c ipoint here is the offset (zero-based pointer)
 c The cij address is to data 2*ndims+1 long
       icb=2*ndims+1
       icij=icb*(ipoint+1)
-c oi_sor is replaced by the pointer for this extended data.
+c oi_cij is replaced by the pointer for this extended data.
       oisor=cij(icij)
 c Don't do this update unless this object's a,b,c depends on flux
 c as indicated by there being extra data 
-      if(oisor.eq.0 .or. idob_sor(iextra_sor,oisor).eq.0)then
+      if(oisor.eq.0 .or. idob_cij(iextra_cij,oisor).eq.0)then
          return
 
 
       else
 c         if(oisor.lt.20)         write(*,*)'cijupdate',ipoint,oisor
-c     $     ,idob_sor(iextra_sor,oisor),(indi(kw),kw=1,ndims)
+c     $     ,idob_cij(iextra_cij,oisor),(indi(kw),kw=1,ndims)
 c Prevent divide by zero issues with debyelen
          debyehere=debyelen
          if(debyehere.lt.tiny)debyehere=tiny
          ichain=1
-         dibdy=dob_sor(ibdy_sor,oisor)
-         dob_sor(ibdy_sor,oisor)=0.
+         dibdy=dob_cij(ibdy_cij,oisor)
+         dob_cij(ibdy_cij,oisor)=0.
 c Iterate over dimensions.
          do id=1,ndims
 c For each direction in this dimension,
             do i=1,2
                ipm=1-2*(i-1)
                im=mod(i,2)+1
-               ioad=ndata_sor*(2*(id-1)+(i-1))+1
-               if(dob_sor(ioad,oisor).lt.1
-     $              .and.dob_sor(ioad,oisor).ge.0.)then
+               ioad=ndata_cij*(2*(id-1)+(i-1))+1
+               if(dob_cij(ioad,oisor).lt.1
+     $              .and.dob_cij(ioad,oisor).ge.0.)then
 c We intersected an object in this direction. Adjust Cij and B_y
 c Get back coef
-                  iobj=idob_sor(ioad,oisor+ichain)
-                  coefoa=dob_sor(ioad+2,oisor+ichain)
+                  iobj=idob_cij(ioad,oisor+ichain)
+                  coefoa=dob_cij(ioad+2,oisor+ichain)
 c These must get the information from somewhere.
 c Assume that a and b are unchanged by the variability:
                   a=obj_geom(oabc,iobj)
@@ -428,7 +428,7 @@ c c is the thing that depends on flux, so it's going to be different.
 c-------------
 c Address the flux data
                   ifobj=nf_map(iobj)
-                  ijbin=idob_sor(ioad+1,oisor+ichain)
+                  ijbin=idob_cij(ioad+1,oisor+ichain)
 c Pull the area of this facet into here
                   iaddress=ijbin+nf_address(nf_flux,ifobj,-2)
                   area=ff_data(iaddress)
@@ -439,7 +439,7 @@ c Calculate new potential
                   cnew=-a*phiofcount(flux,area)
 c Smooth over nave steps. 
                   nave=min(nf_step,iavemax)
-                  cold=a*dob_sor(ioad+2,oisor)
+                  cold=a*dob_cij(ioad+2,oisor)
                   c=(cold*(nave-1)+cnew)/nave
 c         if(oisor.lt.20)write(*,*)'cijupdate',nf_step,iobj,ijbin
 c    $                 ,flux,cold,cnew,c
@@ -450,25 +450,25 @@ c-------------
                   if(a.eq.0.) a=tiny
 c Diagonal term (denominator) difference Cd-Cij stored
 c This does not change
-c                     dob_sor(idgs_sor,oisor)=dob_sor(idgs_sor
+c                     dob_cij(idgs_cij,oisor)=dob_cij(idgs_cij
 c     $                    ,oisor)+ coef
 c Adjust potential sum (B_y or tau in new reference)
-                  dob_sor(ibdy_sor,oisor)=dob_sor(ibdy_sor
+                  dob_cij(ibdy_cij,oisor)=dob_cij(ibdy_cij
      $                    ,oisor)- coefoa*c
 c Now we need to update coa. Not boa or fraction 
 c since they haven't changed.                  
-                  if(c .ne. a*dob_sor(ioad+2,oisor))then
-c                     write(*,*)'Updating coa from',dob_sor(ioad+2,oisor)
+                  if(c .ne. a*dob_cij(ioad+2,oisor))then
+c                     write(*,*)'Updating coa from',dob_cij(ioad+2,oisor)
 c     $                    ,' to',c/a
-                     dob_sor(ioad+2,oisor)=c/a
+                     dob_cij(ioad+2,oisor)=c/a
                   endif
                endif
             enddo
 c End of dimension iteration. cij coefficients now set.
          enddo
-c         if(dibdy.ne.dob_sor(ibdy_sor,oisor))then
+c         if(dibdy.ne.dob_cij(ibdy_cij,oisor))then
 c            write(*,*)'Boundary updated from',dibdy,' to'
-c     $           ,dob_sor(ibdy_sor,oisor)
+c     $           ,dob_cij(ibdy_cij,oisor)
 c         endif
       endif
 

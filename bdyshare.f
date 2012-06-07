@@ -1,7 +1,11 @@
 c***********************************************************************
-      subroutine bdyshare(idone,ndimsdecl,ifull,iuds,cij,u,q
-     $           ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
-     $           ,icommcart,mycartid,myid)
+c Obsolete argument order.
+c      subroutine bdyshare(idone,ndimsdecl,ifull,iuds,cij,u,q
+c     $           ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
+c     $           ,icommcart,mycartid,myid)
+      subroutine bdyshare(iLs,ifull,iuds,u,idone,ndimsdecl,idims,lperiod,
+     $        icoords,iLcoords,myside,myorig,
+     $        icommcart,mycartid,myid)
 c Parallelized boundary setting routine.
 c Set the boundary conditions for my faces which are true boundaries.
 c A face is a boundary if my block's icoords position is 

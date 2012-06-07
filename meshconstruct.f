@@ -62,6 +62,6 @@ c            write(*,'(f8.4,$)')xmeshpos(id,j)
          enddo
       enddo
 c Reinitialize the intersection counter.
-      oi_sor=0
+      oi_cij=0
       end
 c***************************************************************

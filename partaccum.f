@@ -548,6 +548,7 @@ c******************************************************************
       include 'meshcom.f'
       include 'partcom.f'
       include 'ptaccom.f'
+      include 'plascom.f'
 c Distributions in ptaccom.f
       real vlimit(2,mdims),xnewlim(2,mdims)
       real cellvol,ftot,vtot,v2tot
@@ -572,13 +573,23 @@ c------------------------------------------
       wicell=(xnewlim(2,1)-xnewlim(1,1))/isuds(1)
       wjcell=(xnewlim(2,2)-xnewlim(1,2))/isuds(2)
       wkcell=(xnewlim(2,3)-xnewlim(1,3))/isuds(3)
-c      write(*,*)icell,jcell,kcell,isuds
+      if(ivproj.eq.0)then
       write(string,'(''Cell'',3i3,''  x=('',f6.2,'','',f6.2,'')'//
      $     ' y=('',f6.2,'','',f6.2,'') z=('',f6.2,'','',f6.2,'')'')')
      $     icell,jcell,kcell
      $     ,xnewlim(1,1)+(icell-1)*wicell,xnewlim(1,1)+icell*wicell
      $     ,xnewlim(1,2)+(jcell-1)*wjcell,xnewlim(1,2)+jcell*wjcell
      $     ,xnewlim(1,3)+(kcell-1)*wkcell,xnewlim(1,3)+kcell*wkcell
+      else
+ 51      format('Cell',3i3,'  x=(',f6.2,',',f6.2,') y=(',f6.2,',',f6.2
+     $     ,') z=(',f6.2,',',f6.2,') projected:(',3f6.2,')')
+      write(string,51)
+     $     icell,jcell,kcell
+     $     ,xnewlim(1,1)+(icell-1)*wicell,xnewlim(1,1)+icell*wicell
+     $     ,xnewlim(1,2)+(jcell-1)*wjcell,xnewlim(1,2)+jcell*wjcell
+     $     ,xnewlim(1,3)+(kcell-1)*wkcell,xnewlim(1,3)+kcell*wkcell
+     $     ,Bfield
+      endif
       write(*,'(a,$)')'v, T in bin'
       do id=1,3
 c Do correct scaling:
@@ -588,13 +599,25 @@ c Do correct scaling:
          enddo
 c         call automark(vsbin(1,id),fvx(1,id,ip),nsbins,1)
          call automark(vsbin(1,id),fvplt,nsbins,1)
-         if(id.eq.1)
-     $        call boxtitle(string(1:lentrim(string)))
-         write(string,'(a,i1,a)')'f(v!d',id,'!d)'
-         if(id.eq.3)then
-            call axlabels('Velocity',string(1:lentrim(string)))
+         if(id.eq.1)call boxtitle(string(1:lentrim(string)))
+         if(ivproj.eq.0)then
+            write(string,'(a,i1,a)')'f(v!d',id,'!d)'
          else
+            string=' '
+         endif
+         if(id.eq.1)then
+            if(string(1:1).eq.' ')
+     $           write(string,'(a,i1,a)')'f(v!d!A|!@!d)'
             call axlabels(' ',string(1:lentrim(string)))
+         elseif(id.eq.2)then
+            if(string(1:1).eq.' ')
+     $           write(string,'(a,i1,a)')
+     $           '2!Ap!@v!d!A`!@!df(v!d!A`!@!d)'
+            call axlabels(' ',string(1:lentrim(string)))
+         else
+            if(string(1:1).eq.' ')
+     $           write(string,'(a,i1,a)')'f(v!dz!d)'
+            call axlabels('Velocity',string(1:lentrim(string)))
          endif
          call winset(.true.)
 c         call polybox(vhbin(0,id),fvx(1,id,ip),nsbins)

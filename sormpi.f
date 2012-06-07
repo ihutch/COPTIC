@@ -4,10 +4,10 @@ c     L(u) + f(u) = q(x,y,...),
 c     where L is a second order elliptical differential operator 
 c     represented by a difference stencil of specified coefficients,
 c     f is some additional function, and q is the "charge density".
-c Ian Hutchinson, January 2006, Dec 2006
+c Ian Hutchinson, 2006-2012
 c
-      subroutine sormpi(ndims,ifull,iuds,cij,u,q,bdyset,faddu,ictl,ierr
-     $     ,mpiid,idims)
+      subroutine sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset,faddu
+     $     ,ictl,ierr,mpiid,idims)
 
 c The used number of dimensions. But this must be equal to ndims 
 c parameter used for bbdydecl dimensions.
@@ -37,11 +37,12 @@ c     q  "charge density" input
       real q(*)
 c User supplied functions which should be declared external in the 
 c calling routine.
+c     bdyshare subroutine sets boundary conditions. It has the same
+c              argument list as bbdy, declared in bbdydecl.f. 
+c              If it returns idone(1)=0, fall back to the following.
 c     bdyset subroutine that evaluates the boundary conditions and
 c               deposits into the edge values of the potential.
 c               bdyset(ndims,ifull,iuds,cij,u,q)
-c               If non-constant coefficients are required, then
-c               bdyset could be used to adjust their values.
 c     faddu(u,fprime,index)  
 c               real function that returns the additional component
 c               f, and as parameter fprime=df/du.
@@ -162,8 +163,8 @@ c Main iteration
          oaddu=0.
 c------------------------------------------------------------------
 c Do block boundary communications, returns block info icoords...myid.
-         call bbdy(iLs,ifull,iuds,u,k_sor,ndims,idims,lperiod,
-     $        icoords,iLcoords,myside,myorig,
+         call bbdy(iLs,ifull,iuds,u,k_sor,ndims,idims,lperiod
+     $        ,icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid)
 c If this is found to be an unused node, jump to barrier.
          if(mycartid.eq.-1)goto 999
@@ -175,9 +176,14 @@ c Only needed every other step, and gives identical results.
          if(mod(k_sor,2).eq.1)then
 c The parallelized boundary setting routine
             idone(1)=0
-            call bdyshare(idone,ndims,ifull,iuds,cij,u,q
-     $           ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
-     $           ,icommcart,mycartid,myid)
+            call bdyshare(iLs,ifull,iuds,u,idone,ndims,idims,lperiod,
+     $        icoords,iLcoords,myside,myorig,
+     $        icommcart,mycartid,myid)
+c Obsolete argument order:
+c            call bdyshare(idone,ndims,ifull,iuds,cij,u,q
+c     $           ,iLs,idims,lperiod
+c     $           ,icoords,iLcoords,myside,myorig
+c     $           ,icommcart,mycartid,myid)
 c If this did not succeed. Fall back to global setting.
             if(idone(1).eq.0)call bdyset(ndims,ifull,iuds,cij,u,q)
          endif
@@ -187,6 +193,7 @@ c         write(*,*)'At sorrelax',myside,myorig,icoords,iLs
 c            if(k_sor.le.2)
 c         write(*,*) 'Calling sorrelaxgen',delta,oaddu,relax
          call sorrelaxgen(k_sor,ndims,iLs,myside,
+     $        cij(1+(2*ndims+1)*(myorig-1)),
      $        cij(1+(2*ndims+1)*(myorig-1)),u(myorig),q(myorig),myorig,
      $        laddu,faddu,oaddu,
      $        relax,delta,umin,umax)
@@ -236,10 +243,14 @@ c it is the only process. Also insist on explicit setting.
       idone(2)=1
       idone(1)=0
 c Actually it would not hurt if every process did this.
-      if(myid.eq.0)call bdyshare(idone,ndims,ifull,iuds,cij,u,q
-c     $    ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
-     $        ,iLs,ones ,lperiod,zeros  ,iLcoords,iuds  , ones
-     $        ,icommcart,mycartid,myid)
+      if(myid.eq.0)
+c     $     call bdyshare(idone,ndims,ifull,iuds,cij,u,q
+cc     $    ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
+c     $        ,iLs,ones ,lperiod,zeros  ,iLcoords,iuds  , ones
+c     $        ,icommcart,mycartid,myid)
+     $  call bdyshare(iLs,ifull,iuds,u,idone,ndims,ones,lperiod,
+     $        zeros,iLcoords,iuds,ones,
+     $        icommcart,mycartid,myid)
 c Old global setting. Obsolete.
 c         call bdyset(ndims,ifull,iuds,cij,u,q)
       del_sor=delta

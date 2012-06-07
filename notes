@@ -8532,3 +8532,20 @@ What are the causes of problems.
 How do we avoid the crazy multiplication of ndims parameters?
 Perhaps have an include file that does nothing except define the
 ndimsparam which we use for all such dimension definitions.
+Unfortunately this mess is very bad. Plus, in quite a number of places
+the coding is implicitly assuming 3d. For example in some of the surface
+and flux tracking code. There are literally hundreds of places that ndims
+appears in the code (with various prefixes and postfixes.)
+
+Converted all the objcom.f _sor labels to _cij. 
+Found that there's a call in sorrelaxgen that references ddn_cij.
+So that there's some cross-linking even here. That's a bit of a problem.
+Actually it is unavoidable. It is the place where the adjustment of the
+cij stencil takes place. It uses extra information stored elsewhere.
+Only the cij code knows the structure of that extra information.
+
+But anyway. I seem now to have rationalized one naming convention so
+that _sor really does refer to the sor code. While cij refers to the
+objcom object boundary code.
+
+Made bdyshare an argument passed to sormpi.

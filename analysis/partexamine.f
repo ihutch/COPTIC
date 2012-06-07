@@ -94,8 +94,9 @@ c All directions were set by commandline. Or none were read from file.
             enddo
          endif
          if(cellvol.eq.-1)write(*,*)'Bfield (projection)',Bfield
-
+c The cellvol==-1 call will set ivproj=1 in ptaccom.
          call partdistup(xlimit,vlimit,xnewlim,cellvol,0,isuds)
+
 c If we wish to accumulate to the uniform mesh for other than the first
 c occasion (when cellvol is zero) we need to do:
 c         call partsaccum
@@ -139,7 +140,11 @@ c         write(*,*)nsbins
          call ticnumset(10)
          call autoplot(vdiag(1,id),fv(1,id),nptdiag)
          call boxtitle('Total particles per unit velocity')
-         write(string,'(a,i3)')'Distribution dimension',id
+         if(ivproj.eq.0)then
+            write(string,'(a,i3)')'Distribution dimension',id
+         else
+            write(string,'(a,i3)')'Distribution projection',id
+         endif
          call axlabels('velocity',string(1:lentrim(string)))
          call color(12)
          call polymark(vsbin(1,id),fsv(1,id),nsbins,1)
