@@ -8549,3 +8549,11 @@ that _sor really does refer to the sor code. While cij refers to the
 objcom object boundary code.
 
 Made bdyshare an argument passed to sormpi.
+
+7 June 2012
+
+Constructed github repository COPTIC and successfully exported from cvs
+and imported to github. Clone it via
+
+git clone https://github.com/ihutch/COPTIC
+

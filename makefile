@@ -243,7 +243,7 @@ clean :
 	make -C accis mproper
 
 mproper :
-	rm -f compiler
+	rm -f compiler REINJECT.f coptic copticgeom.dat storedgeom.dat
 	make clean
 
 ftnchek :
