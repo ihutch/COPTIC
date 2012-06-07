@@ -1,0 +1,20 @@
+COPTIC   Cartesian-coordinate Oblique-boundary Particles and Thermals in Cell
+
+This code is for computational simulation of flowing plasma interacting
+with objects of various specifiable geometries. It is extensively documented
+in the Reference Manual.
+
+Quick-start: 
+	     $ cd COPTIC
+	     $ make
+
+
+
+License: 
+	 COPTIC is copyright Ian H Hutchinson 2012. 
+
+Permission is granted freely to use this code for scholarly research
+provided that any scientific publication incorporating results
+from the code cites as reference: I H Hutchinson ``Nonlinear
+collisionless plasma wakes of small particles'' Physics of Plasmas,
+vol 18, article 032111 (2011).
