@@ -8557,3 +8557,80 @@ and imported to github. Clone it via
 
 git clone https://github.com/ihutch/COPTIC
 
+Seems to be ok.
+
+14 June 2012
+
+Getting back to this after week of CAP and physop duties. Next steps to 
+incorporate some instability calculation into the particle analysis.
+For this purpose, we need the projection along (and potentially across)
+the field. That's implemented above.
+
+Then we need to be able to do the stability analysis of the resulting 
+distributions. This presumably involves the chicomplex code that has
+been developed. Probably this can use the pex file?
+
+First trying git out on loki, sceptic get a certificate error problem.
+It is fixed by doing:
+
+export GIT_SSL_NO_VERIFY=true
+
+Apparently 
+git config --global http.sslVerify false
+also does the same thing.
+
+This is a problem with the older operating systems on loki and sceptic.
+Their certificate bundles are out of date. 
+
+15 June
+
+Found a bug preventing convergence in the benchmark runs. If only x
+has multiple processes then iterations don't converge. E.g.
+
+mpiexec -n 3 /home/hutch/src/coptic/coptic -bf7,1,0,0 -ri800 -v.5 -t.01 -dt.025 -rx.0 -l1 -s3 -w-99999 
+# Point charge at origin. Spanning a radius .2. At which its potential is...
+513 , 0.,0.,0., 0.,0.,0.,   .2,.2,.2,   0,-1.,0
+# Measure forces at .3,.5,1.
+1, 0.,0.,0.,   0.,0.,0.,  .3,.3,.3,     4,5,5
+1, 0.,0.,0.,   0.,0.,0.,  .5,.5,.5,     4,5,5
+1, 0.,0.,0.,   0.,0.,0.,  1.,1.,1.,     4,5,5
+#
+91,1,33,68,100,0,-4.,-1.,1.,4.
+92,1,33,68,100,0,-4.,-1.,1.,4.
+93,1,15,82,100,0,-4.,-1.,4.,8.
+
+This is purely a point charge. Also there's a bug with the test solution
+not converging because it is zero everywhere. That's easily fixed.
+
+The other bug is present for pure coptic make runs with mpi, and with -bf
+boundaries, but not without.
+
+bf BCs don't actually seem to be working.
+
+Tracked down this major bug. It seems that if you pass a logical array
+(lperiod) whose dimension is also passed as an argument (ndims) then
+within this routine, the logical array is incorrectly aligned, and also
+other arguments after it in the argument list are misaligned or otherwise
+misinterpreted. If however, the dimension of the logical array is a
+parameter within the routine, then it works correctly. 
+
+This problem exists with gfortran as well as g77.
+
+But here's a major worry. I used this approach with bbdy too. So how 
+come that is not broken?
+
+No the thing is still broken even with the declaration. I don't think I've
+found the real problem yet. Tried a bunch of things without success.
+
+Moved the lperiod to the end of the argument list of bdyshare. Seems to work.
+But there's still a worry about bbdy. 
+Also works reverting to passing the ndimsdecl argument.
+
+Because I am really worried about this problem. I move lperiod to the 
+end of the argument list in bbdy() too. This may have affected some
+routines in testing/
+
+bbddecltest.f tries to reproduce this error in microcosm. but fails to do
+so. Therefore I am still worried, because perhaps there is another 
+problem in bdyshare that was the real cause and I've just bypassed it 
+for now.

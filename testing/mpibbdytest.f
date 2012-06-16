@@ -101,9 +101,9 @@ c      enddo
 c First, set up the boundary data, and get my icoords, myside, etc
 c using the special nk=-2 call.
       nk=-2
-      call bbdy(iLs,ifull,iuds,u,nk,nrd,idims,lperiod,
+      call bbdy(iLs,ifull,iuds,u,nk,nrd,idims,
      $        icoords,iLcoords,myside,myorig,
-     $        icommcart,mycartid,myid)
+     $        icommcart,mycartid,myid,lperiod)
 c Loop over iterations
       do nk=1,2
 c Then do the boundary communication.
@@ -114,9 +114,9 @@ c Set this block value to id
 c         call blockadvance(u123(iorig(icoords(1)+1,icoords(2)+1,1)),
 c     $        iLs(2),myside(1),myside(2),mycartid)
 c Actually communicate:
-         call bbdy(iLs,ifull,iuds,u,nk,nrd,idims,lperiod,
+         call bbdy(iLs,ifull,iuds,u,nk,nrd,idims,
      $        icoords,iLcoords,myside,myorig,
-     $        icommcart,mycartid,myid)
+     $        icommcart,mycartid,myid,lperiod)
 c         call udisplay(nrd,u,ifull,iuds,1,1.)
       enddo
       write(*,*)'End of iterations'
@@ -125,9 +125,9 @@ c      call MPI_BARRIER(icommcart,ierr)
 c      stop
 c Gather back all the data
       nk=-1
-      call bbdy(iLs,ifull,iuds,u,nk,nrd,idims,lperiod,
+      call bbdy(iLs,ifull,iuds,u,nk,nrd,idims,
      $        icoords,iLcoords,myside,myorig,
-     $        icommcart,mycartid,myid)
+     $        icommcart,mycartid,myid,lperiod)
       call MPI_BARRIER(icommcart,ierr)
       if(myid.eq.0)then
          write(*,*) 'Final gather:'

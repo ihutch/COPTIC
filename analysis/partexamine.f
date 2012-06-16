@@ -46,9 +46,7 @@ c Needed initialization removed from partacinit.
          xmeshend(id)=max(5.,xlimit(2,id))
          isuds(id)=iuin(id)
       enddo
-c      write(*,*)'na_i',na_i
-      write(*,*)'nsub_i,nsub_j,nsub_k',nsub_i,nsub_j,nsub_k,' isuds:'
-     $     ,isuds
+      write(*,*)' isuds:',isuds
       if(isuds(1)*isuds(2)*isuds(3).gt.nsub_tot)then
          write(*,*)'Too many blocks requested. Reduce or recompile.'
          stop

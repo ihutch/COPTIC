@@ -1,7 +1,7 @@
 c Declarations of the bbdycomm parameters for the call
-c         call bbdy(iLs,ifull,iuds,u,nk,ndims,idims,lperiod,
+c         call bbdy(iLs,ifull,iuds,u,nk,ndims,idims,
 c     $        icoords,iLcoords,myside,myorig,
-c     $        icommcart,mycartid,myid)
+c     $        icommcart,mycartid,myid,lperiod)
 c Number of dimensions and the number of blocks per dimension
 c should be declared like this, before include
 c       parameter (ndimsdecl=3,idim1=3,idim2=2,idim3=2)
@@ -55,9 +55,9 @@ c       data lperiod/ndimsdecl*.false./
 c       data idims/idim1,idim2,idim3/
 c  ...
 c       do nk=1,3
-c         call bbdy(iLs,ifull,iuds,u,nk,ndimsdecl,idims,lperiod,
+c         call bbdy(iLs,ifull,iuds,u,nk,ndimsdecl,idims,
 c     $        icoords,iLcoords,myside,myorig,
-c     $        icommcart,mycartid,myid)
+c     $        icommcart,mycartid,myid,lperiod)
 c  ...
 c       enddo
 c--------------------------------------------------------------------

@@ -15,11 +15,11 @@ c diagnostics are to be accumulated.
 c In this section there is an assumption that we are in 3 dimensions.
       integer nsub_i,nsub_j,nsub_k
 c These determine the number of sub-divisions of the three directions
-c into which the mesh is divided for the purpose of particle diagnostics.
-c Edit and recompile if different resolution is required.
-      parameter (nsub_i=9,nsub_j=9,nsub_k=9)
-      integer Lsi,Lsj,nsub_tot
-      parameter (Lsi=nsub_i,Lsj=Lsi*nsub_j,nsub_tot=Lsj*nsub_k)
+c into which the mesh is divided for the purpose of particle diagnostics
+c However, they functionally only set defaults and the total nsub_tot.
+      parameter (nsub_i=15,nsub_j=15,nsub_k=15)
+      integer nsub_tot
+      parameter (nsub_tot=nsub_i*nsub_j*nsub_k)
       integer isfull(mdims),isuds(mdims)
 
       integer nsbins

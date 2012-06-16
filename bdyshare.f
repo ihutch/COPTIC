@@ -3,9 +3,10 @@ c Obsolete argument order.
 c      subroutine bdyshare(idone,ndimsdecl,ifull,iuds,cij,u,q
 c     $           ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
 c     $           ,icommcart,mycartid,myid)
-      subroutine bdyshare(iLs,ifull,iuds,u,idone,ndimsdecl,idims,lperiod,
-     $        icoords,iLcoords,myside,myorig,
-     $        icommcart,mycartid,myid)
+      subroutine bdyshare(iLs,ifull,iuds,u,idone,ndimsdecl,idims,
+     $     icoords,iLcoords,myside,myorig,
+     $     icommcart,mycartid,myid,lperiod)
+c      parameter (ndimsdecl=3)
 c Parallelized boundary setting routine.
 c Set the boundary conditions for my faces which are true boundaries.
 c A face is a boundary if my block's icoords position is 
@@ -19,25 +20,36 @@ c    iLs(ndims+1)    the structure vector of u.
 c    myorig          the starting position in the u-array of this block.
 c    lperiod(ndims)  whether we are periodic in this dimension.
 c    icoords(ndims)  the block coordinates of this block.
-c    idims(ndims)    the number of blocks in each dimension.
+c    iLcoords(ndims+1) the structure vector of icoords.
+c    idims(ndims)    the number of blocks  in each dimension.
 c Unused:  iLcoords,icommcart,mycartid,myid
 c On exit, return the value idone(1) [OUT]>0 if successful.
 c Pass to the mditerated setting routine the dimension,u,idone.
 c
-c We pass the dimensions into this routine. This works because all the 
-c variables in bbdydecl.f are passed as arguments. That's why we have
-c some redundant arguments.
+c Passing the dimensions into this routine.  This ought to work because
+c all the variables in bbdydecl.f are passed as arguments. That's why we
+c have some redundant arguments. However, there is a major bug in that
+c the logical array lperiod is then somehow incorrectly interpreted and
+c the following arguments are misaligned or otherwise corrupted. This
+c was found to happen even when it was a parameter. I could not fix this
+c until lperiod was moved to the end of the argument list. Seems like a
+c compiler bug but gfortran was also broken.
       include 'bbdydecl.f'
 c Only the first element of idone is actually used to communicate to
 c send information back to the calling routine. But we need more
 c communication to bdyshrroutine.
-      integer idone(2)
+      integer idone(3)
       external bdyshrroutine
+c      real u(*)
 
       ndims=ndimsdecl
-c      write(*,*)'Entered bdyshare   myorig,ifull,iuds'
+c      write(*,*)'In bdyshare:'
+c             write(*,*)iLs,ifull,iuds,idone,ndimsdecl,idims,lperiod,
+c     $           icoords,iLcoords,myside,myorig,icommcart,mycartid,myid
+c      write(*,*)'Entered bdyshare   ndims,myorig,ifull,iuds'
 c     $     ,',idims,icoords,lperiod,iLcoords'
-c      write(*,*)myorig,ifull,myside,idims,icoords,lperiod,iLcoords,iLs
+c      write(*,*)ndims,myorig,ifull,myside,idims,icoords,lperiod,iLcoords
+c     $     ,iLs
 
       idone(1)=1
       do id=1,ndims

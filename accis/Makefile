@@ -99,7 +99,7 @@ makefile : Makefile configure
 
 accissum.html : accissum.tex
 	tth -e2 accissum
-	purge.tex
+	rm -f *.log *.out *.dvi *.toc *.ilg *.idx *.synctex.gz
 
 #update the libraries.
 libaccis.a : $(object_files)

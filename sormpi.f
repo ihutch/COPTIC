@@ -6,17 +6,16 @@ c     represented by a difference stencil of specified coefficients,
 c     f is some additional function, and q is the "charge density".
 c Ian Hutchinson, 2006-2012
 c
+c      subroutine sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset,faddu
+c     $     ,ictl,ierr,mpiid,idims)
       subroutine sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset,faddu
      $     ,ictl,ierr,mpiid,idims)
-
 c The used number of dimensions. But this must be equal to ndims 
 c parameter used for bbdydecl dimensions.
       integer ndims
 c     The number of dimensions declared in bbdydecl.f
       parameter (ndimsdecl=3)
 c     ifull full dimensions, iuds used dimensions
-c      integer ifull(ndims)
-c     iuds(ndims) declared in bbdydecls
 c     cij coefficients of the finite difference scheme, in the order
 c         east,west,north,south ... [regarding i,j, as x,y].
 c         real cij(nd2+1,ifull(1),ifull(2),...)
@@ -46,7 +45,7 @@ c               bdyset(ndims,ifull,iuds,cij,u,q)
 c     faddu(u,fprime,index)  
 c               real function that returns the additional component
 c               f, and as parameter fprime=df/du.
-      external faddu
+      external faddu,bdyshare
 c     ictl  integer control switches
 c           bit 1: user-defined iteration parameters (default no)
 c           bit 2: use faddu (default no)
@@ -137,9 +136,9 @@ c Third bit of ictlh indicates we are just initializing.
       if(mod(ictlh,2).ne.0)then
 c (Re)Initialize the block communications:
          k_sor=-2
-         call bbdy(iLs,ifull,iuds,u,k_sor,ndims,idims,lperiod,
+         call bbdy(iLs,ifull,iuds,u,k_sor,ndims,idims,
      $        icoords,iLcoords,myside,myorig,
-     $        icommcart,mycartid,myid)
+     $        icommcart,mycartid,myid,lperiod)
          mpiid=myid
          if(mpiid.eq.0)write(*,*)'bbdy (re)initialized'
          return
@@ -163,9 +162,9 @@ c Main iteration
          oaddu=0.
 c------------------------------------------------------------------
 c Do block boundary communications, returns block info icoords...myid.
-         call bbdy(iLs,ifull,iuds,u,k_sor,ndims,idims,lperiod
+         call bbdy(iLs,ifull,iuds,u,k_sor,ndims,idims
      $        ,icoords,iLcoords,myside,myorig,
-     $        icommcart,mycartid,myid)
+     $        icommcart,mycartid,myid,lperiod)
 c If this is found to be an unused node, jump to barrier.
          if(mycartid.eq.-1)goto 999
 c If we are running without MPI then set periodic conditions explicitly.
@@ -176,9 +175,12 @@ c Only needed every other step, and gives identical results.
          if(mod(k_sor,2).eq.1)then
 c The parallelized boundary setting routine
             idone(1)=0
-            call bdyshare(iLs,ifull,iuds,u,idone,ndims,idims,lperiod,
+c             write(*,*)iLs,ifull,iuds,idone,ndimsdecl,idims,lperiod,
+c             write(*,*)ndimsdecl,lperiod,
+c     $           icoords,iLcoords,myside,myorig,icommcart,mycartid,myid
+            call bdyshare(iLs,ifull,iuds,u,idone,ndims,idims,
      $        icoords,iLcoords,myside,myorig,
-     $        icommcart,mycartid,myid)
+     $        icommcart,mycartid,myid,lperiod)
 c Obsolete argument order:
 c            call bdyshare(idone,ndims,ifull,iuds,cij,u,q
 c     $           ,iLs,idims,lperiod
@@ -233,9 +235,9 @@ c-------------------------------------------------------------------
 c Do the final mpi_gather [or allgather if all processes need
 c the result].
       nk=-1
-      call bbdy(iLs,ifull,iuds,u,nk,ndims,idims,lperiod,
+      call bbdy(iLs,ifull,iuds,u,nk,ndims,idims,
      $        icoords,iLcoords,myside,myorig,
-     $        icommcart,mycartid,myid)
+     $        icommcart,mycartid,myid,lperiod)
 c Boundary conditions need to be fully set based on the gathered result
 c at least for the master node, for aesthetic plotting reasons.
 c Call the parallelized boundary setting routine but lie to it that 
@@ -248,9 +250,9 @@ c     $     call bdyshare(idone,ndims,ifull,iuds,cij,u,q
 cc     $    ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
 c     $        ,iLs,ones ,lperiod,zeros  ,iLcoords,iuds  , ones
 c     $        ,icommcart,mycartid,myid)
-     $  call bdyshare(iLs,ifull,iuds,u,idone,ndims,ones,lperiod,
+     $  call bdyshare(iLs,ifull,iuds,u,idone,ndims,ones,
      $        zeros,iLcoords,iuds,ones,
-     $        icommcart,mycartid,myid)
+     $        icommcart,mycartid,myid,lperiod)
 c Old global setting. Obsolete.
 c         call bdyset(ndims,ifull,iuds,cij,u,q)
       del_sor=delta
@@ -279,7 +281,7 @@ c converged, but the total spread depends on multiple blocks.
 c Here we need to allreduce the data, selecting the maximum values,
       call mpiconvgreduce(convgd,icommcart,ierr)
 c........
-      if(convgd(1).lt.eps*(convgd(2)+convgd(3))) then
+      if(convgd(1).le.eps*(convgd(2)+convgd(3))) then
          lconverged=.true.
       else
          lconverged=.false.
@@ -287,3 +289,4 @@ c........
       delta=sign(convgd(1),delta)
       end
 c**********************************************************************
+

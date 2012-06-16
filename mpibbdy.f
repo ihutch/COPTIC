@@ -1,8 +1,8 @@
 c***********************************************************************
 c Block boundary communication.
       subroutine bbdy(iLs,ifull,iuds,u,kc,
-     $     ndims,idims,lperiod,icoords,iLcoords,myside,myorig,
-     $     icommcart,mycartid,myid)
+     $     ndims,idims,icoords,iLcoords,myside,myorig,
+     $     icommcart,mycartid,myid,lperiod)
 c Dimensional structure of u, for 2d should be (1,Li,Lj), 
 c 3d (1,Li,Li*Lj,Li*Lj*Lk) etc (last element may not be used)
       integer iLs(ndims+1)
