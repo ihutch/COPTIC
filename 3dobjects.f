@@ -69,7 +69,7 @@ c**********************************************************************
       write(*,*)' Cuboid (x,y,z) arrays. '
      $     ,'Pllelopiped (1,2,3) arrays.'
       write(*,*)'byte-1: 99 Boolean particle region,  91-3 Set mesh in'
-     $     ,'dimension 1-3. '
+     $     ,' dimension 1-3.'
       write(*,*)'byte-2: 1(x256) Special boundary phi=0 instead of '
      $     ,'continuity.'
       write(*,*)'byte-2: 2(x256) Point-charge (spherical) object.'
@@ -102,7 +102,15 @@ c**********************************************************************
      $     ,'1-12 covers -5. to -1.;',' 12-20 covers -1. to 1.;'
      $     ,'20-32 covers 1. to 5.'
       write(*,*)'Default equivalent to 9d,1,32,0,-5.,5.'
-
+8     format(9a)
+      write(*,*)
+      write(*,8)'Face Boundary Condition Setting: 10d,A,B,C0[,Cx,Cy,Cz'
+     &         ,'] where d is face index,'
+      write(*,8)'  [1-6] equivalent to -bfd,A,B,C0[,Cx,Cy,Cz]'
+      write(*,8)'Periodic Face Potential Condition Setting: 11d toggles'
+     &         ,' periodity dimension d.'
+      write(*,8)'Periodic Particle Region Setting: 98,ix,iy,iz equivale'
+     &         ,'nt to -ppix,iy,iz.'
 
       end
 
@@ -115,6 +123,7 @@ c Read the geometric data about objects from the file filename
       character*128 cline
       include '3dcom.f'
       include 'meshcom.f'
+      include 'partcom.f'
       real CFin(3+ndims_mesh,2*ndims_mesh)
       logical LPF(ndims_mesh)
 c Common data containing the object geometric information. 
@@ -238,6 +247,12 @@ c Specify the particle region.
      $        ngeomobj,idumtype,(ibool_part(i),i=1,16)
  898     format(i2,' Boolean ',17i4)
 c Don't count this as an object.
+         ngeomobj=ngeomobj-1
+         goto 1
+      elseif(type.eq.98)then
+         read(cline,*,err=901,end=897)idumtype,ipartperiod
+ 897     if(myid.eq.0)write(*,'(''PartPeriod'',5i6)')
+     $        ngeomobj,idumtype,ipartperiod
          ngeomobj=ngeomobj-1
          goto 1
       elseif(type.gt.90.and.type.le.90+ndims_mesh)then

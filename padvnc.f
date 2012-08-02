@@ -138,7 +138,7 @@ c the region information.
                write(*,'(''In region'',l2,''  iLs='',4i8)')linregion(i
      $              bool_part,ndims,x_part(1,i)),iLs
                stop
-c               call partlocate(i,ixp,xfrac,inewregion,linmesh)
+c               call partlocate(i,ixp,xfrac,inewregion,linmesh,nrein)
 c               write(*,*)'inewregion,linmesh',inewregion,linmesh
             endif
             if(i.eq.1)then
@@ -244,7 +244,7 @@ c Treat collided particle at (partial) step end
             call postcollide(i,tisq)
             lcollided=.false.
          endif
-         call partlocate(i,ixp,xfrac,inewregion,linmesh)
+         call partlocate(i,ixp,xfrac,inewregion,linmesh,nrein)
 c---------------------------------
 c If we crossed a boundary, do tallying.
          ltlyerr=.false.
@@ -288,7 +288,7 @@ c Reinjection:
  200     continue
          if_part(i)=1
          call reinject(x_part(1,i),ilaunch)
-         call partlocate(i,ixp,xfrac,iregion,linmesh)
+         call partlocate(i,ixp,xfrac,iregion,linmesh,nrein)
          if(.not.linmesh)then
             write(*,*)'Reinject out of mesh',i,xfrac
             stop
@@ -499,7 +499,7 @@ c      write(*,*)'ucrhoset return',irptch
       end
 
 c***********************************************************************
-      subroutine partlocate(i,ixp,xfrac,iregion,linmesh)
+      subroutine partlocate(i,ixp,xfrac,iregion,linmesh,nreloc)
 c Locate the particle numbered i (from common partcom) 
 c in the mesh (from common meshcom).
 c Return the integer cell-base coordinates in ixp(ndims)
@@ -507,6 +507,7 @@ c Return the fractions of cell width at which located in xfrac(ndims)
 c Return the region identifier in iregion.
 c Return whether the particle is in the mesh in linmesh.
 c Store the mesh position into common partcom (x_part).
+c If particle is relocated by periodicity, advance nreloc.
 
       integer i,iregion
       logical linmesh
@@ -515,11 +516,9 @@ c meshcom provides ixnp, xn, the mesh spacings. (+ndims_mesh)
       integer ixp(ndims_mesh)
       real xfrac(ndims_mesh)
       parameter (ndimsx2=ndims_mesh*2)
-
       include 'partcom.f'
 
       linmesh=.true.
-      iregion=insideall(ndims_mesh,x_part(1,i))
       do id=1,ndims_mesh
 c Offset to start of dimension-id-position array.
          ioff=ixnp(id)
@@ -527,21 +526,53 @@ c xn is the position array for each dimension arranged linearly.
 c Find the index of xprime in the array xn:
          isz=ixnp(id+1)-ioff
          ix=interp(xn(ioff+1),isz,x_part(id,i),xm)
+         if(ipartperiod(id).ne.0)then
+c In periodic directions, we do not allow particles to be closer to the
+c mesh boundary than half a cell, so as to use periodicity consistent
+c with the potential periodicity. chargetomesh does additional sums 
+c to communicate the extra particle weight periodically.
+            fisz=float(isz)-0.5
+            if(.not.(ix.ne.0.and.xm.gt.1.5.and.xm.lt.fisz))then
+c               write(*,'(''partperiod'',i7,2i3,f5.1,3f10.5)')i,id,ix,xm
+c     $           ,x_part(id,i),xn(ixnp(id)+1),xn(ixnp(id+1))
+c Move the particle by one grid length, to the periodic position. Use
+c tiny bit less so that if it starts exactly on boundary, it does not
+c end on it. The length is between end mid-cell positions.
+               xgridlen=(xn(ixnp(id+1))+xn(ixnp(id+1)-1)
+     $              -(xn(ixnp(id)+1)+xn(ixnp(id)+2)))*0.499999
+               if(xm.le.1.5)then
+                  x_part(id,i)=x_part(id,i)+xgridlen
+               elseif(xm.ge.isz-0.5)then
+                  x_part(id,i)=x_part(id,i)-xgridlen
+               endif
+               ix=interp(xn(ioff+1),isz,x_part(id,i),xm)
+               if(.not.(xm.gt.1.5.and.xm.lt.fisz))then
+c It's conceivable that a particle might move more than one period,
+c in which case correction won't work. Don't repeat. Instead, just
+c give up and call it lost but flag the problem. 
+                  write(*,*)'Failed partperiod correct',i,id,ix,xm
+     $                 ,xgridlen
+                  linmesh=.false.
+               else
+c If not every dimension is periodic, increment nreloc.
+                  if(ipartperiod(1).eq.0. .or. ipartperiod(2).eq.0. .or.
+     $                 ipartperiod(3).eq.0.)nreloc=nreloc+1
+               endif
+            endif
+         else
+c This rather complete test is necessary and costs perhaps 3% extra time.
+c Because we must not allow exactly on boundaries.
+            if(.not.(ix.ne.0.and.xm.gt.1..and.xm.lt.float(isz)))then
+               linmesh=.false.
+            endif
+         endif
          xfrac(id)=xm-ix
          x_part(ndimsx2+id,i)=xm
          ixp(id)=ix
-c         if(ix.eq.0)then
-c This more complete test is necessary and costs perhaps 3% extra time.
-c It would be cheaper to change interp to be exclusive of limits.
-c         if(ix.eq.0.or.xm.le.1..or.xm.ge.float(isz))then
-c Invert the test so that any NAN also rejects particle, recovering
-c from problems, one might hope.
-         if(.not.(ix.ne.0.and.xm.gt.1..and.xm.lt.float(isz)))then
-            linmesh=.false.
-         endif
 c specific particle test
 c         if(i.eq.2298489) write(*,*)i,isz,ix,xm,linmesh
       enddo
+      iregion=insideall(ndims_mesh,x_part(1,i))
       
       end
 c********************************************************************

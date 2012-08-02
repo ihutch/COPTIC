@@ -1,4 +1,4 @@
-      subroutine chargetomesh(psum,iLs,diagsum,ndiags)
+      subroutine chargetomesh(psum,ndims,iLs,diagsum,ndiags)
 c Assign charge and other moments to the mesh accumulators.
 c Particle weight sum, having structure iLs, and (possible) diagnostics.
 c Which are enumerated up to ndiags in their trailing dimension.
@@ -6,7 +6,7 @@ c Which are enumerated up to ndiags in their trailing dimension.
       real diagsum(*)
 c mesh data, notably ndims_mesh, since we don't pass it:
       include 'meshcom.f'
-      integer iLs(ndims_mesh+1)
+      integer iLs(ndims+1)
 
       include 'partcom.f'
 c On entry, psum ought to have been initialized to zero.
@@ -22,9 +22,6 @@ c Alternative to partlocate:
                ix=int(x_part(ndims_mesh*2+id,i))
                iu=iu+(ix-1)*iLs(id)
             enddo
-c            x2=x_part(ndims_mesh*2+1,i)
-c This test is irrelevant now partlocate is not used.
-c            if(x1.ne.x2)write(*,*)'Mesh pos change',i,x1,x2
 c Cycle through the vertices of the box we are in.
             do ii=0,2**ndims_mesh-1
                ii1=ii
@@ -68,7 +65,85 @@ c Six moments. 3 for v and 3 for v^2.
             enddo
          endif
       enddo
+c End of charge deposition.
+      end
+c********************************************************************
+      subroutine psumperiod(psum,ndims,ifull,iaux,iLs)
+c If there are periodic particles in any dimension, do the periodic
+c exchange sum.
+      integer ndims,ifull(ndims),iaux(ndims)
+c,iuds(ndims)
+      real psum(*)
+      integer iLs(ndims+1)
 
+      include 'meshcom.f'
+      integer iview(3,ndims_mesh),indi(ndims_mesh)
+      integer istart,iend,istride
+      parameter (istart=1,iend=2,istride=3)
+      include 'partcom.f'
+
+      do id=1,ndims_mesh
+         if(ipartperiod(id).ne.0)then
+c Set view to entire array (Offsets indi [0:iaux(id)-1]).
+            icomplete=mditerator(ndims,iview,indi,4,iaux)
+c Use the general iterator to sum periodically.
+c Slice dimension id:
+            iview(iend,id)=0
+ 101        ii=indexcontract(ndims,ifull,indi)
+            ib1=1+iLs(id)+ii
+            it=1+(iaux(id)-1)*iLs(id)+ii
+            it1=1+(iaux(id)-2)*iLs(id)+ii
+            ib=1+ii
+c Face+1=Face+1 + Other
+            psum(ib1)=psum(ib1)+psum(it)
+c Other-1=Other-1 + Face
+            psum(it1)=psum(it1)+psum(ib)
+            if(mditerator(ndims,iview,indi,0,iaux).eq.0)goto 101
+         endif
+      enddo
+      end
+c********************************************************************
+      subroutine diagperiod(diagsum,ndims,ifull,iaux,iLs,ndiags)
+c If there are periodic particles in any dimension, do the periodic
+c exchange sum.
+      integer ndims,ifull(ndims),iaux(ndims)
+      real diagsum(*)
+      integer iLs(ndims+1)
+      include 'meshcom.f'
+      integer iview(3,ndims_mesh),indi(ndims_mesh)
+      integer istart,iend,istride
+      parameter (istart=1,iend=2,istride=3)
+      include 'partcom.f'
+
+      do id=1,ndims_mesh
+         if(ipartperiod(id).ne.0)then
+c Set view to entire array (Offsets indi [0:iaux(id)-1]).
+            icomplete=mditerator(ndims,iview,indi,4,iaux)
+c Use the general iterator to sum periodically.
+c Slice dimension id:
+            iview(iend,id)=0
+ 101        ii=indexcontract(ndims,ifull,indi)
+            ib1=1+iLs(id)+ii
+            it=1+(iaux(id)-1)*iLs(id)+ii
+            it1=1+(iaux(id)-2)*iLs(id)+ii
+            ib=1+ii
+c Face+1=Face+1 + Other
+c            psum(ib1)=psum(ib1)+psum(it)
+c Other-1=Other-1 + Face
+c            psum(it1)=psum(it1)+psum(ib)
+c Diagnostic particles must be transferred, not just added.
+            do k=0,ndiags-1
+               kshift=k*iLs(ndims_mesh+1)
+               diagsum(ib1+kshift)= diagsum(ib1+kshift)+ diagsum(it
+     $              +kshift)
+               diagsum(it+kshift)=0.
+               diagsum(it1+kshift)= diagsum(it1+kshift)+ diagsum(ib
+     $              +kshift)
+               diagsum(ib+kshift)=0.
+            enddo
+            if(mditerator(ndims,iview,indi,0,iaux).eq.0)goto 101
+         endif
+      enddo
       end
 
 c********************************************************************

@@ -1,6 +1,6 @@
 c Testing:
 c******************************************************************
-      program test
+      program mditeratetest
       integer ndims
       parameter (ndims=3)
       integer ifull(ndims)
@@ -23,13 +23,15 @@ c******************************************************************
       iu2(3)=iused(3)
 
       do j=1,if3
-            u(j)=0
+            u(j)=0.
       enddo
 
+
+      write(*,*)'**************** first call ************'
       mdims=3
       do i=1,1
          ipoint=mod(i+1,2)
-         call mditerate(mdims,ifull,iused,rbroutine,u,ipoint)
+         call mditerate(rbroutine,mdims,ifull,iused,ipoint,u)
       enddo
       iform=1
       uscale=1
@@ -37,7 +39,7 @@ c******************************************************************
 
       write(*,*)'******** second call **********'
       ipoint=0
-      call mditerate(mdims,ifull,iused,bdyroutine,u,ipoint)
+      call mditerate(bdyroutine,mdims,ifull,iused,ipoint,u)
       ipoint=0
       uscale=1
       call udisplay(mdims,u,ifull,iused,iform,uscale)
@@ -49,10 +51,8 @@ c******************************************************************
       write(*,*)'******** Third Call Restricted **********'
       
       ipoint=0
-c      call mditerate(mdims,ifull,iu2,rbroutine,
-c     $     u,ipoint)
-      call mditerate(mdims,ifull,iu2,rbroutine,
-     $     u(3+2*ifull(1)),ipoint)
+      call mditerate(rbroutine,mdims,ifull,iu2,
+     $     ipoint,u(3+2*ifull(1)))
       ipoint=0
       uscale=1
       call udisplay(mdims,u,ifull,iused,iform,uscale)

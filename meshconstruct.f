@@ -6,8 +6,8 @@ c values starting imeshstep.
 c Return values of iuds(ndims) per constructed mesh.
 c Also initialize the value of rs in plascom. Put equal to
 c half the largest mesh box side length.
-      subroutine meshconstruct(ndims,iuds,ifull)
-      integer iuds(ndims),ifull(ndims)
+      subroutine meshconstruct(ndims,iuds,ifull,ipartperiod)
+      integer iuds(ndims),ifull(ndims),ipartperiod(ndims)
       include 'meshcom.f'
 
       iof=0
@@ -15,7 +15,6 @@ c half the largest mesh box side length.
       do id=1,ndims
 c Pointer to start of vector.
          ixnp(id)=iof
-         xmeshstart(id)=xmeshpos(id,1)
          xn(iof+1)=xmeshpos(id,1)
          iof=iof+1
          do iblk=1,nspec_mesh-1
@@ -31,7 +30,6 @@ c Mesh data.
          iblk=nspec_mesh-1
  11      continue
          if(iblk.le.1) write(*,*)'Too few mesh steps. Dimension',id
-         xmeshend(id)=xmeshpos(id,iblk)
          if(imeshstep(id,iblk).gt.ifull(id))then
             write(*,*)'Meshconstruct ERROR: Meshpos(',id,')='
      $           ,imeshstep(id,iblk),'  too large for ifull=',(ifull(k)
@@ -42,6 +40,15 @@ c Set iuds according to specified mesh
          iuds(id)=imeshstep(id,iblk)
 c         write(*,'(a,i3,10f8.3)')
 c     $        ' Meshspec',id,(xmeshpos(id,kk),kk=1,iblk)
+         if(ipartperiod(id).gt.0)then
+c Half-cell-position mesh ends (but id+1 mesh is not yet set).
+            xmeshstart(id)=(xn(ixnp(id)+1)+xn(ixnp(id)+2))*.5
+            xmeshend(id)=(xn(ixnp(id)+iuds(id))
+     $           +xn(ixnp(id)+iuds(id)-1))*.5
+         else
+            xmeshstart(id)=xmeshpos(id,1)
+            xmeshend(id)=xmeshpos(id,iblk)
+         endif
       enddo
 c      write(*,*)'Meshconstructed',xmeshstart,xmeshend
       ixnp(ndims+1)=iof

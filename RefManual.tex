@@ -211,7 +211,7 @@ object as follows.
 object set the potential to zero at the boundary rather than the
 normal continuity condition when a Robin form is used.
 
-\paragraph{2($\times256$) Point-Charge} This spherical object is a point charge,
+\paragraph{2($\times256=512$) Point-Charge} This spherical object is a point charge,
 which is treated by the PPPM technique. Its potential is represented
 by an analytic part that is non-zero out to a radius specified as
 usual. Outside that (isotropic) radius, the analytic part is zero. The
@@ -221,18 +221,18 @@ position requires a number (0) but is ignored.) This value equals
 the Coulomb potential that would exist at the object's radius if the
 charge were isolated.
 
-\paragraph{3($\times256$) Nonuniform Boundary Conditions} The
+\paragraph{3($\times256=768$) Nonuniform Boundary Conditions} The
 coefficients $A,B,C$ of the Robin boundary condition in this object vary
 linearly in space. Their values at the object center are specified as
 usual. Their gradients are specified by three vectors which follow the
 flux accumulation specification (which must be present).
 
-\paragraph{4($\times256$) Insulating Object} The boundary condition is
+\paragraph{4($\times256=1024$) Insulating Object} The boundary condition is
 the specification of the potential ($A,C\ne 0$). But the value of $C$
 is determined by requiring the value of the ion flux density to the
 local facet to equal the electron flux density there. 
 
-\paragraph{5($\times256$) Floating Object} The potential is constant
+\paragraph{5($\times256=1280$) Floating Object} The potential is constant
 on the object, but takes a value determined by requiring the total ion
 flux to the object to equal the electron flux.
 
@@ -306,6 +306,16 @@ for both lower and upper boundaries.
 
 Any face that is not somewhere explicitly set defaults to the
 condition $\phi=0$ if Face Boundary conditions are active.
+
+Periodicity of the region for particles can also be set with the
+special object \verb!98!, in the form of a line such as
+\begin{verbatim}
+98,1,0,0
+\end{verbatim} which is equivalent to the switch \verb!-pp1,0,0!
+Each non-zero value sets particle periodicity in that dimension.
+
+Use of boundary-setting lines like these in the object file
+\emph{is over-ridden} by any values set by command-line switches.
 
 \subsection{Boolean Region}
 
@@ -458,6 +468,11 @@ integer parameter. Toggle on (or off) periodic boundary conditions on
 potential for that dimension. Implies using the rectangular -bf
 overall scheme if on, but overrides the behavior in the chosen dimension.
 
+\paragraph{-pp....} Set the values of the particle-periodicity for
+three dimensions. For each non-zero-valued dimension, particles that
+leave the mesh are relocated at the corresponding periodic position
+within the mesh, rather than reinjected.
+
 \paragraph{-ofFilename} Set the name of the object file. Default ccpicgeom.dat
 
 \paragraph{-fs[path]}     Attempt to restart the code from a saved
@@ -509,9 +524,10 @@ common block \verb!particles!.
       real x_part(3*npdim,n_partmax)
       integer if_part(n_partmax)
       real dtprec(n_partmax)
-        common/particles/n_part,x_part,if_part,iregion_part,ioc_part
+      integer ipartperiod(npdim)
+      common/particles/n_part,x_part,if_part,iregion_part,ioc_part
      $     ,dtprec,dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
-     $     ,ripernode,crelax
+     $     ,ripernode,crelax,ipartperiod,fcarea
 \end{verbatim}
 The number of active particles is \verb!n_part!, and the maximum slot
 in the particle array that might have a particle in it is

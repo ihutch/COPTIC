@@ -275,12 +275,13 @@ c maxwellians of width given by Ti
       include 'meshcom.f'
       include 'creincom.f'
       include 'myidcom.f'
+      include 'partcom.f'
       external ffcrein
       external fvcrein
       external ff1crein
       external fv1crein
       parameter (bdys=6.)
-      real area(3)
+c      real fcarea(3)
 
       xc=0.
       xw=sqrt(Ti)
@@ -320,19 +321,28 @@ c     $           ,(hrein(kk,index),kk=ncrein-4,ncrein)
 c
 c      write(*,*)'grein',grein
       gtot=0.
-      do id=1,3
-         i2=mod(id,3)+1
-         i3=mod(id+1,3)+1
-         area(id)=abs((xmeshend(i2)-xmeshstart(i2))
-     $        *(xmeshend(i3)-xmeshstart(i3)))
+c Alternative general-dimension fcarea calculation:
+      do i=1,ndims_mesh
+         fcarea(i)=1.
+         if(ipartperiod(i).eq.1)fcarea(i)=1.e-6
+         do j=1,ndims_mesh-1
+            id=mod(i+j-1,ndims_mesh)+1
+            fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
+         enddo
       enddo
+c      do id=1,3
+c         i2=mod(id,3)+1
+c         i3=mod(id+1,3)+1
+c         fcarea(id)=abs((xmeshend(i2)-xmeshstart(i2))
+c     $        *(xmeshend(i3)-xmeshstart(i3)))
+c      enddo
       do id=1,6
-         gtot=gtot+grein(id)*area((id+1)/2)
+         gtot=gtot+grein(id)*fcarea((id+1)/2)
       enddo
       gintrein(0)=-0.0000005
       do id=1,6
          gintrein(id)=gintrein(id-1) +
-     $        1.000001*grein(id)*area((id+1)/2)/gtot
+     $        1.000001*grein(id)*fcarea((id+1)/2)/gtot
       enddo
       if(.not.gintrein(6).gt.1.)write(*,*)'gintrein problem!'
 c      write(*,*)'gintrein',gintrein
@@ -449,21 +459,29 @@ c No time-averaging for now.
 c Use particle information for initializing.
       include 'partcom.f'
       include 'meshcom.f'
-      real area(ndims_mesh),volume,flux
+c      real fcarea(ndims_mesh)
+      real volume,flux
       real a,cfactor
       real chi
       save chi
+      logical lnotallp
       data chi/0./
 
       volume=1.
       flux=0.
+      lnotallp=.false.
       do i=1,ndims_mesh
-         area(i)=1.
+         lnotallp=lnotallp.or.(ipartperiod(i).eq.0)
+      enddo
+
+      do i=1,ndims_mesh
+         fcarea(i)=1.
+         if(lnotallp.and.ipartperiod(i).eq.1)fcarea(i)=1.e-6
          do j=1,ndims_mesh-1
             id=mod(i+j-1,ndims_mesh)+1
-            area(i)=area(i)*(xmeshend(id)-xmeshstart(id))
+            fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
          enddo
-         a=area(i)*sqrt(2.*Ti/3.1415926)
+         a=fcarea(i)*sqrt(2.*Ti/3.1415926)
          a=a*fonefac(i)
          flux=flux+a
          volume=volume*(xmeshend(i)-xmeshstart(i))
@@ -502,19 +520,29 @@ c No time-averaging for now.
 c Particle information
       include 'partcom.f'
       include 'meshcom.f'
-      real area(ndims_mesh),volume,flux
+c      real fcarea(ndims_mesh)
+      real volume,flux
       real a,cfactor
+      logical lnotallp
 c 
 c Calculate ninjcomp from ripernode
       volume=1.
       flux=0.
+      lnotallp=.false.
       do i=1,ndims_mesh
-         area(i)=1.
+         lnotallp=lnotallp.or.(ipartperiod(i).eq.0)
+      enddo
+      do i=1,ndims_mesh
+         fcarea(i)=1.
+c We don't correct area here, because we now count every relocation as
+c a reinjection.
+         if(lnotallp.and.ipartperiod(i).eq.1)fcarea(i)=1.e-6
+c         if(ipartperiod(i).eq.1)fcarea(i)=1.e-6
          do j=1,ndims_mesh-1
             id=mod(i+j-1,ndims_mesh)+1
-            area(i)=area(i)*(xmeshend(id)-xmeshstart(id))
+            fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
          enddo
-         a=area(i)*sqrt(2.*Ti/3.1415926)
+         a=fcarea(i)*sqrt(2.*Ti/3.1415926)
          ff=fonefac(i)
 c         write(*,*)i,a,ff
          a=a*ff

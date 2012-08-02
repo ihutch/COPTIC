@@ -6,7 +6,14 @@ c
 c If this is called for the first time, i.e. with cellvol.le.0, then
 c calculate the bins for accumulating the distribution. Also, in this
 c case, if cellvol=-1 project in the direction of Bfield, else cellvol=0
-c just use cartesian components.
+c just use cartesian components.  For this first call, in a
+c multiprocessor situation, we all-reduce the accumulated fine
+c distribution fv, nvaccum (and fsv) on which the binning is calculated.
+c Thus the bin calculation is based upon the total particles, not just
+c the particles for the head node.  However, for use with multiple
+c particle files by partexamine, only the first file read is used to
+c determine the bin mapping. [Otherwise we would have to read all files
+c a second time for the subbinning.]
 c
 c Otherwise if cellvol.gt.0 just accumulate to bins.
       implicit none
@@ -20,51 +27,52 @@ c Otherwise if cellvol.gt.0 just accumulate to bins.
       integer nvlist
 c      integer i,j
 c Use the first occasion to establish the accumulation range.
-c Indicated by zero cellvolume le 0.
-         if(cellvol.le.0.)then
+c Indicated by cellvolume le 0.
+      if(cellvol.le.0.)then
 c Decide whether to project velocity in the direction of Bfield.
-            if(cellvol.eq.-1)then
-               ivproj=1
-            else
-               ivproj=0
-            endif
+         if(cellvol.eq.-1)then
+            ivproj=1
+         else
+            ivproj=0
+         endif
 c This ought to be determined based on the number of samples.
 c But xlimits mean that's problematic.
 c            nvlist=100
-            nvlist=10
-            call vlimitdeterm(npdim,x_part,if_part,ioc_part
-     $           ,vlimit,nvlist,ivproj,Bfield)
-            if(myid.eq.0)write(*,'('' Velocity limits:'',66f7.3)')
-     $           vlimit
-            call minmaxreduce(mdims,vlimit)
+c A small nvlist means we go right to the edge of actual particles.
+         nvlist=5
+         call vlimitdeterm(npdim,x_part,if_part,ioc_part
+     $        ,vlimit,nvlist,ivproj,Bfield)
+         if(myid.eq.0)write(*,'('' Velocity limits:'',66f7.3)')
+     $        vlimit
+         call minmaxreduce(mdims,vlimit)
 c            write(*,'('' Velocity reduced:'',6f7.3)') vlimit
 c Indicate csbin not initialized and start initialization
-            csbin(1,1)=-1.
-            call partacinit(vlimit)
+         csbin(1,1)=-1.
+         call partacinit(vlimit)
 
 c Do the accumulation for this file up to maximum relevant slot. 
-            nfvaccum=0
-            call partsaccum(npdim,x_part,if_part,ioc_part,xlimit
+         nfvaccum=0
+         call partsaccum(npdim,x_part,if_part,ioc_part,xlimit
      $        ,vlimit,xnewlim,nfvaccum)
-            if(myid.eq.0)write(*,*)'Accumulated',nfvaccum,' of',ioc_part
-     $           ,' total',' in',xlimit
+         if(myid.eq.0)write(*,*)'Accumulated',nfvaccum,' of',ioc_part
+     $        ,' total',' in',xlimit
 c Reduce back the data for MPI cases.
-            call ptdiagreduce()
-            call minmaxreduce(mdims,xnewlim)
-            if(myid.eq.0)write(*,'(a,i8,a,6f8.3)')'Reduced',nfvaccum
-     $           ,' Xnewlim=',xnewlim
+         call ptdiagreduce()
+         call minmaxreduce(mdims,xnewlim)
+         if(myid.eq.0)write(*,'(a,i8,a,6f8.3)')'Reduced',nfvaccum
+     $        ,' Xnewlim=',xnewlim
 c Should do this only the first time.
-            call bincalc()
-            call fvxinit(xnewlim,cellvol,ibset)
-         else
-            call partsaccum(npdim,x_part,if_part,ioc_part,xlimit
+         call bincalc()
+         call fvxinit(xnewlim,cellvol,ibset)
+      else
+         call partsaccum(npdim,x_part,if_part,ioc_part,xlimit
      $        ,vlimit,xnewlim,nfvaccum)
-         endif
+      endif
 c         write(*,*)'isfull',isfull,cellvol
 c         write(*,*)'calling subaccum'
-         call subaccum(mdims,x_part,if_part,ioc_part,
+      call subaccum(mdims,x_part,if_part,ioc_part,
      $     isfull,isuds,vlimit,xnewlim)
-         end
+      end
 c****************************************************************
       subroutine partacinit(vlimit)
 c Initialize uniform bins for accumulation of the particles.
@@ -178,6 +186,14 @@ c**********************************************************************
       subroutine vlimitdeterm(mdims,xpart,ifpart,iocpart,vlimit
      $     ,nvlist,ivproj,Bfield)
 c Determine the required vlimits for this particle distribution.
+c On entry
+c    xpart contains all the particles.
+c    ifpart indicates filled slots in the particle list
+c    iocpart is the maximum filled slot.
+c    nvlist is the number of particles in the top and bottom bins.
+c On exit
+c    vlimit contains the velocity of the nvlist'th particle from the 
+c           bottom and the top of the list.
       real xpart(3*mdims,iocpart)
       integer ifpart(iocpart)
 c Velocity limits
@@ -204,6 +220,8 @@ c Straight cartesian.
 c Projected
                   v=vproject(mdims,id,xpart(1,j),Bfield)
                endif
+c Insert the value v into its ordered place in vtlist, retaining the top
+c nvlist values, and into vblist retaining the bottom-most nvlist values.
                call sorttoplimit(v,vtlist,nvlist)
                call sortbottomlimit(v,vblist,nvlist)
             endif
@@ -211,6 +229,7 @@ c Projected
 c         write(*,*)vblist
 c         write(*,*)vtlist
          if(vblist(nvlist).lt.vtlist(nvlist))then
+c Take the vlimits to be the position of the nvlist velocity.
             vlimit(1,id)=vblist(nvlist)
             vlimit(2,id)=vtlist(nvlist)
          else
@@ -313,6 +332,8 @@ c
          ib=1
          do k=1,nptdiag
             cumfv(k,id)=cumfv(k-1,id)+fv(k,id)/float(nfvaccum)
+c Prevent rounding overflow here rather than by increments:
+            cumfv(k,id)=min(1.,cumfv(k,id))
 c            write(*,*)id,k,fv(k,id),cumfv(k,id),ib
 c This linear mapping does not work well.
 c            ib=1+ int(cumfv(k,id)*(nsbins)*(.99999))
@@ -320,7 +341,10 @@ c            ib=1+ int(cumfv(k,id)*(nsbins)*(.99999))
 c cubic progression.
 c               cfn=1.0001*(3.*bx**2-2.*bx**3)
 c quintic progression puts more bins further out.
-            cfn=1.0002*bx**3*(10.-15.*bx+6*bx**2) -.0001
+c            cfn=1.00002*bx**3*(10.-15.*bx+6*bx**2) -.00001
+c Does not help to reduce the number of zeroes in 1.0002.
+c septic progression is broadest, but still good.
+            cfn=(((-20.*bx+70.)*bx-84.)*bx+35.)*bx**4
 c            write(*,*)'cfn',cfn,cumfv(k,id)
             if(cumfv(k,id).gt.cfn)then
 c find the histogram bin-boundary.

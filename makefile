@@ -245,6 +245,7 @@ clean :
 mproper :
 	rm -f compiler REINJECT.f coptic copticgeom.dat storedgeom.dat
 	make clean
+	make -C analysis clean
 
 ftnchek :
 	./ftnchekrun "$(COPTIC).f $(OBJECTS)"

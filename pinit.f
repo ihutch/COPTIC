@@ -29,7 +29,7 @@ c Tangential velocity of circular orbit at r=?.
       x_part(5,1)=sqrt(abs(phip/x_part(1,1))-x_part(4,1)**2)
       x_part(6,1)=0.
       if_part(1)=1
-      call partlocate(1,ixp,xfrac,iregion,linmesh)
+      call partlocate(1,ixp,xfrac,iregion,linmesh,nreloc)
       i1=2
       if(.not.linmesh)then
          write(*,*)'WARNING Special particle-1 outside region.'
@@ -45,13 +45,12 @@ c     We initialize the 'true' particles'
       do i=i1,n_part
          if_part(i)=1
  1       continue
+c         write(*,'(i8,$)')i
          ntries=ntries+1
-         x_part(1,i)=xmeshstart(1)+
-     $        ran1(myid)*(xmeshend(1)-xmeshstart(1))
-         x_part(2,i)=xmeshstart(2)+
-     $        ran1(myid)*(xmeshend(2)-xmeshstart(2))
-         x_part(3,i)=xmeshstart(3)+
-     $        ran1(myid)*(xmeshend(3)-xmeshstart(3))
+         do j=1,ndims_mesh
+            x_part(j,i)=xmeshstart(j)+
+     $        ran1(myid)*(xmeshend(j)-xmeshstart(j))
+         enddo
 c     If we are not in the plasma region, try again.
          if(.not.linregion(ibool_part,npdim,x_part(1,i)))then
 c            write(*,*)'Initialization of',i,' wrong region',inewregion
@@ -87,7 +86,7 @@ c fills in positive drifting ions even where they could not be present.
 
          dtprec(i)=0.
 c Initialize the mesh fraction data in x_part.
-         call partlocate(i,ixp,xfrac,iregion,linmesh)
+         call partlocate(i,ixp,xfrac,iregion,linmesh,nreloc)
 c This test rejects particles exactly on mesh boundary:
          if(.not.linmesh)goto 1
       enddo

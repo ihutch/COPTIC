@@ -177,11 +177,13 @@ c between them, interpolate. f00 is always present.
       endif
       end
 c********************************************************************
+      function interp(Q,nq,y,x)
 c Given a monotonic function Q(x)
 c on a 1-D grid x=1..nq, solve Q(x)=y for x with interpolation.
-c If return is 0, then the y is outside Q's range or other error.
-c The function returns the integer part of x.
-      function interp(Q,nq,y,x)
+c If successful, the function returns the integer part of x.
+c If return is 0, then the y is outside Q's range or other error
+c and then x=0 indicates y<>Q(1); x=nq+1 indicates y><Q(nq); x=1 other.
+c We want interp=x=1 if y=Q(1), interp=x=nq if y=Q(nq).
       real Q(nq)
       integer nq
       real y,x
@@ -193,14 +195,20 @@ c      write(*,*)'nq=',nq
       interp=0
       Ql=Q(1)
       Qr=Q(nq)
-      iql=1
-      iqr=nq
-c Circumlocution to catch y=NAN
+c Circumlocution to catch y=NAN. [Why is this le?]
       if(.not.((y-Ql)*(y-Qr).le.0.)) then
 c Value is outside the range.
-         x=0
+         if((y-Ql)*(Qr-Ql).le.0.)then
+            x=0
+         elseif((y-Qr)*(Qr-Ql).ge.0.)then
+            x=nq+1
+         else
+            x=1
+         endif
          return
       endif
+      iql=1
+      iqr=nq
  200  if(iqr-iql.eq.1)goto 210
       iqx=(iqr+iql)/2
       Qx=Q(iqx)

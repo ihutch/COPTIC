@@ -314,6 +314,18 @@ c Use the generalized scalar mult call to set values
       call mditermults(u,ndims,ifull,iused,ipin,0.,v)
       end
 c******************************************************************
+c*****************************************************************
+      integer function indexcontract(ndims,ifull,indi)
+c On entry indi(ndims) contains the (ndims)-dimensional offsets
+c to position in array whose full dimensions are ifull(ndims)
+c Returns the corresponding linear offset index within that array.
+      integer ndims
+      integer ifull(ndims),indi(ndims)
+      indexcontract=indi(ndims)
+      do id=ndims-1,1,-1
+         indexcontract=indi(id)+indexcontract*ifull(id)
+      enddo
+      end
 c******************************************************************
       subroutine offsetexpand(ndims,ifull,index,indi)
 c On entry index is the zero-based pointer to the position in the 
@@ -322,7 +334,6 @@ c On exit indi contains the corresponding (ndims)-dimensional offsets.
       integer ndims
       integer ifull(ndims),indi(ndims)
       integer index
-
       ind=index
       do i=1,ndims-1
          ind2=ind/ifull(i)
@@ -330,7 +341,7 @@ c On exit indi contains the corresponding (ndims)-dimensional offsets.
          ind=ind2
       enddo
       indi(ndims)=ind
-      if(ind.gt.ifull(3)) write(*,*)'indexexpand index too big',index
+      if(ind.gt.ifull(3)) write(*,*)'offsetexpand index too big',index
       end
 c******************************************************************
       subroutine mditeradd(u,ndims,ifull,iused,ipin,v)
@@ -465,4 +476,78 @@ c Do whatever we need to and increment indi(1) and ipoint
 c Reached the end.
       end
 c******************************************************************
-      
+      integer function mditerator(ndims,iview,indi,isw,iaux)
+c Multidimensional iterator for ndims dimensions over an abstract
+c view iview of an array. Zero-based offsets.
+c On entry:
+c    iview(3,ndims) contains the view of the array in the form
+c       istart1,iend1,istride1;istart2,iend2,...,istridendims.
+c    iaux(ndims) maybe contains extra information.
+c    isw =0 iterate, else setup iview
+c         1 set iview(istart,j)=iaux(j)
+c         2 set iview(iend,j)=iaux(j)-1
+c         3 set iview(istride,j)=iaux(j)
+c         4 set iview(*,j) = 0,iaux(j)-1,1
+c    indi(ndims) is the current offset-array (set to 0 if isw=4)
+c On exit: indi is the new index-array. Optionally iview is [re]set.
+c    Return value is 0 if iteration incomplete, else positive.
+c Example of typical usage:
+c      icomplete=mditerator(ndims,iview,indi,4,iused)
+c 1    u(1+indexcontract(ndims,ifull,indi))=mod(1+indi(3),10)
+c      if(mditerator(mdims,iview,indi,0,iused).eq.0)goto 1
+c      
+      integer ndims,iview(3,ndims),indi(ndims),isw,iaux(ndims)
+      integer istart,iend,istride
+      parameter (istart=1,iend=2,istride=3)
+
+      mditerator=isw
+      if(isw.eq.0)then
+c-----------------------------------------------------
+c Iterate
+c Start at dimension 1.
+         n=1
+c Increment:
+         indi(n)=indi(n)+iview(3,n)
+ 101     continue
+c      write(*,'(''('',i1,i4,'') '',$)')n,indi(n)
+         if((indi(n)-iview(iend,n))*iview(istride,n).gt.0)then
+c     Overflow. Subtract off enough (inm) of next dimension
+            inm=0
+ 102        inm=inm+1
+            indi(n)=indi(n)-(iview(iend,n)-iview(istart,n)+1)
+c            write(*,*)inm,indi(n),iview(3,n),iview(2,n)
+            if((indi(n)-iview(iend,n))*iview(istride,n).gt.0)goto 102
+c Move to the next dimension:
+            n=n+1
+c Overflow of ndims dimension completes iteration:
+            if(n.gt.ndims)then 
+               mditerator=1
+               return
+            endif
+c Increment this dimension with carry and restart:
+            indi(n)=indi(n)+inm*iview(istride,n)
+            goto 101
+         elseif(n.gt.1)then
+c We've carried and cleared an increment.
+c Return stepwise to base level
+            n=n-1
+            goto 101
+         endif
+c Here when we have successfully incremented all levels.
+c-------------------------------------------------------
+      elseif(isw.eq.4)then
+c Total setup
+         do i=1,ndims
+            iview(istart,i)=0
+            iview(iend,i)=iaux(i)
+            iview(istride,i)=1
+            indi(i)=0
+         enddo
+      else
+c Individual setup.
+         do i=1,ndims
+            iview(isw,i)=iaux(i)
+         enddo
+      endif
+
+      end

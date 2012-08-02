@@ -75,7 +75,7 @@ MAKEFILE=makefile
 # Start of targets
 #######################################################################
 
-all : $(MAKEFILE) lib$(ACCISDRV).a accissum.html
+all : $(MAKEFILE) lib$(ACCISDRV).a
 
 # A way of making a general makefile. By default the file 
 # makefile is used if present, but if not, Makefile is used. 

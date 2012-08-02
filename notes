@@ -5488,7 +5488,7 @@ routine fvxinit initializes. Then the subsequent call(s) to subaccum
 accumulates particles to the spatially resolved sub-bins. Of these
 processes, the bin and newlimits etc need to be universal, otherwise
 there is no way to reduce the data back consistently if the bins are
-different between progcessors. xnewlimits could presumably be reduced
+different between processors. xnewlimits could presumably be reduced
 as maxs and mins. But bincalc needs to be done centrally, after
 reduction of the original accumulation. Alternatively, the whole of
 the first global step could be done only on the particles of the
@@ -8612,7 +8612,7 @@ Tracked down this major bug. It seems that if you pass a logical array
 within this routine, the logical array is incorrectly aligned, and also
 other arguments after it in the argument list are misaligned or otherwise
 misinterpreted. If however, the dimension of the logical array is a
-parameter within the routine, then it works correctly. 
+parameter within the routine, then it works correctly (actually not). 
 
 This problem exists with gfortran as well as g77.
 
@@ -8634,3 +8634,549 @@ bbddecltest.f tries to reproduce this error in microcosm. but fails to do
 so. Therefore I am still worried, because perhaps there is another 
 problem in bdyshare that was the real cause and I've just bypassed it 
 for now.
+
+23 Jun 2012
+
+Changed the partaccum to a septic profile to get rather more points
+further out on the velocity range. The results are slightly better for
+the moon case. But surprisingly still don't seem to put enough points
+far out. It may be we need a different algorithm for such high speed
+cases with big dynamics.
+
+24 July 2012
+
+I need periodic boundaries for particles as well as for potential. 
+For example, in trying to set up a plasma with 1-D gradients to mock
+up (e.g.) a presheath. This ought not to be too difficult. But it 
+needs changes to padvnc and to the reinjection routine.
+
+I think the natural place to put the periodic particle relocation is 
+in partlocate. There are in that routine, tests for each dimension to
+determine whether the particle is in the mesh (linmesh). Those can be
+readily extended to relocating the particle periodically. 
+
+Create a new set of flags ipartperiod(ndims) in partcom.f that tells
+if particles are to be periodic in a dimensions (!=0 yes). Initialize
+and set in copticcmdline.
+
+Implement in partlocate the relocation in periodic directions. 
+partlocate returns the region of the relocated particle. It seems
+this is sufficient to do everything that padvnc needs. Notably, it seems
+that this will satisfy all the region tallying etc. at least for objects
+in an unbounded mesh region.
+
+However, we now need to fix the reinjection statistics etc. 
+This only really applies to cartreinject. But ought not to be as
+difficult as the strong magnetic field correction.
+
+In the initialization of gintrein, it is constructed by multiplying 
+grein by area(id). It looks as if one can eliminate injections on
+faces in one dimension by simply putting that area to zero, or putting
+grein to zero. Area is also used in ninjcalc. That's another place to 
+correct. It does not use grein. rhoinfcalc too.
+
+Renamed area in cartreinject to fcarea to disambiguate.
+Added fcarea to partcom.
+Removed fcarea local declarations and now rely on partcom declarations.
+Now they should be calculated in common. So once this is initialized
+it ought not to be necessary to recalculate in rhoinfcalc, nijcalc.
+Actually ninjcalc it is necessary because that is called before we do
+any reinjections. That's the place where it is first initialized.
+But that's not called unless ripernode is set. So we still need to do
+initialization in cinjinit. Unfortunately rhoinfcalc is also called
+before the first padvnc. So initializing in cijinit is irrelevant.
+The fact that making this common has not changed the result seems to
+show that the recalculation of it in rhoinfcalc does not change the 
+value. No that's irrelevant. fcarea is only used once in cijinit, 
+and it's calculated there. Bottom line. Attempts to rationalize fcarea
+calculation are not worth it. The uses are effectively disjoint.
+
+Put in 3 places fcarea(i)=1.e-6 (factor) for periodic directions.
+What do we do if all three directions are periodic? In ninjcalc and
+for reinject this ought to be ok without an absorbing particle because
+we ought never to reinject.  For rhoinfcalc, we ought to get the
+fallback for nrein lt 10 to just divide the number of particles by
+volume. 
+
+But what happens when we have an absorbing object present? Then we'll
+get some reinjections, and these might well be more than 10. Comes
+down to the fact that calculating rhoinfinity on the basis of
+reinjections makes no sense with fully periodic particles. Perhaps one
+ought to track the number of relocations as well. That's the thing 
+that includes the same quantity. A relocation is practically equivalent
+to a reinjection. If we treated a relocation exactly as a reinjection,
+then we would not have to do different calculations for ninjcomp or
+rhoinfcalc. The area modification ought to be removed.
+
+Add an extra argument nreloc to partlocate. Increment it when relocated.
+nrein is passed when it is called in padvnc. Remove the adjustments from
+ninjcalc, rhoinfcalc, because now nrein includes all relocations.
+
+
+
+25 July 2012
+
+Ok, I think we should be done. How to test this? One way might be with a 
+uniform plasma and no objects. Set up a geometry file uniform.dat for this.
+But actually on the way implemented extra interpretation of the object
+file that allows to put partperiod information into it. Also did some
+improvement of the -h documentation of values, and adjusted the order
+of things and the use of copticmdline to enable commandline arguments
+to override the values set in the geometry file. 
+
+Running a no-objects geometry with periodic particles and potential in
+the x and y directions and fixed potentials on the z-faces.  If
+potentials are equal to 0. (-l.01) the plasma is simply uniform for
+all (subsonic) velocities. If they are different, then the plasma
+potential floats up a bit and there are sheaths adjacent to each end
+of the box.  This is with nominally fixed injection count. The actual
+nrein exceeds that count giving e.g.  2651 2572 2546 vs 2457. This
+might explain why the potential rises above zero. I'm not crystal clear
+why this excess arises. I guess that it must be made up of periodic particles
+after the reinjections of end particles have stopped. It's dropping only
+very slowly towards the right value (after 300 steps). It can be made closer
+by using acceleration up to -da20. Then the systematically high average 
+goes away. 
+
+Perhaps one ought to discard relocated particles if nrein is already 
+exceeded. That way presumably one will approach the right density 
+more rapidly. May not be necessary with acceleration.
+
+Now, can we implement collisions in such a way as to give a systematic
+gradient? Initially collisions don't do much. This presumably because 
+they are implemented at exactly the drift speed, so they don't actually
+drain any momentum from the ions. This can be fixed by doing -v.5 -vn0.
+
+Find that yes rather consistent results are obtained with velocity profile
+depending on collisionality.
+
+26 July 2012
+
+Implemented periodicity ninjcalc and rhoinfcalc that ignore periodic 
+boundaries unless all are periodic. Also partlocate increments nreloc
+only if all ipartperiod are non-zero. This causes the potential rise
+to be less than with the earlier approach which always increments nreloc.
+However, it also shows instability which drives the potential to large
+negative values under some conditions. So it's not so obvious this is a
+good plan. The velocity profile obtained looks similar to the other
+count case.
+
+27 July 2012
+
+I realise there is an inconsistency in the implementation of particle
+periodicity. The potential is periodic by virtue of the fact that the
+edge potential value corresponds to the nodes _adjacent_ to the edge
+on the opposite face. This is part of the guard-cell approach to block
+decomposition. Consequently, the join between the opposite faces
+really takes place half-way between the adjacent nodes and the edge
+nodes (on both sides). However, particles are currently allowed to
+travel all the way to the edge node location before being considered
+lost. Then in the periodic particle situation, they are moved to a
+periodic position on the opposite face, using the full domain. In
+short, the periodicity length of the potential and the particles are
+different the way I have implemented it so far. This is definitely
+unsatisfactory. The charge on the edge nodes is never used in the
+potential solution (I think). The edge potential nodes are set purely
+by the boundary condition. However, the charge on adjacent nodes IS
+used and in non-periodic cases requires charge to be deposited from
+the full cell out to the edge nodes, so that they have full contributions.
+
+If, therefore, periodic particles were implemented consistently with
+the potential domain, i.e. out to the half-boundary (half way between
+the last two nodes), then one needs additional contributions to the
+adjacent node charge. Presumably this contribution is from the
+opposite edge nodes. So one way to implement this consistently would be
+
+1. Particles occupy only out to the half-boundary. Then they are relocated 
+to the opposite half-boundary. 
+
+2. Charge is deposited between boundary and adjacent nodes in the usual way.
+
+3. The total charge on the adjacent node is the sum of its directly deposited 
+charge PLUS the charge deposited on the opposite edge node. 
+
+[4. This can also be considered the charge on the opposite edge node.]
+
+This requires changes to the charge deposition for periodic faces compared
+with non-periodic (as well as relocation etc). For consistency it also
+requires the last cell to have the same size on both (opposite) faces.
+
+An alternative would be to retain the full particle and potential
+domain but to implement the potential periodicity differently. Namely
+that the periodic boundary is exactly at the edge nodes (on opposite
+faces). AND the potential on those nodes must be determined by a
+difference stencil that includes the adjacent nodes from both faces.
+This is a bit troublesome, but probably not infeasible. It would not
+require changes to domain tracking or charge deposition, but would
+require summing both edge charges. I don't like this option much.
+
+
+28 Jul 2012
+
+To implement the changes to chargetomesh, run up against the need for a
+general iterator over indeterminate dimensions again. Could use the 
+mditerate scheme, but that is really cumbersome. There's got to be 
+a better way. It is much more transparent if the code one wants to 
+iterate is able to be placed in line, surrounded by the equivalent of
+nested do loops. It ought to be possible to create a more general 
+iterator that works like the beginning and end of loops. This is appropriate
+in chargetomesh, because there, the arrays are in abstract form.
+
+I think I need to think harder about the minimal requirement of an iterator.
+It seems that the fundamental requirement is to calculate an array index
+that corresponds to the next position, and to determine when to stop.
+How the next position is determined might be variable, but could perhaps
+be specified in terms of a logical step size that is converted by the 
+iterator into an actual step. 
+
+If the iteration is specified in terms of a step in the lowest dimension,
+things are easy. But if instead there is a fixed value of a higher dimension,
+how do we do that? 
+
+One abstraction that might help think about this is the idea of a "view"
+of a data set. In NumPy, this can be in the form 
+ A(start1:end1:stride1,start2:end2:stride2,...)
+In other words, each dimension can be strided and truncated.
+In a sense I already do truncation by having ifull and iused. iused
+defines the end for each dimension. In a sense I can define the start
+when passing an array like A(2,2,2,...) or the linear equivalent. 
+I lack the striding ability, except by specific incrementation. 
+The NumPy discussion conceives of a general iterator as:
+
+	set up iterator
+	  (including pointing the current value to the first value in the array)
+	while iterator not done:process the current value
+	point the current value to the next value
+
+which is consistent with my conception. 
+
+A general structure for specifying NumPy equivalent striding would be
+  iview(3,ndims) where for each idim we store start:end:stride.
+
+Illustrating
+1. if each iview is 0:n_idim-1:1 we iterate the whole array.
+2. if for dimension id iview is X:X:1, but the others are as in 1, we iterate
+   a slice in dimension id.
+The following is wrong. Using a stride of N-1 gives a diagonal slice.
+3. if for dimension id iview is 1:N-1:N-1, we iterate only the id boundaries.
+Boundaries would have to be done with two iterations 0:N-1:N and N-1:N-1:N.
+
+In current implementation, I am generally passing end (iused) and full (ifull).
+But not start or stride.
+
+The general iterator has to move the pointer and decide if we are finished.
+The conversion from multidimensional to linear pointers is 
+
+    ipointer=indi(ndims)
+    do id=ndims-1,1,-1
+       ipointer=indi(id)+ipointer*ifull(id)
+    enddo
+
+which gives 
+  ipointer=indi(1)+(indi(2)+(..indi(ndims)*ifull(ndims-1)...)*ifull(1))
+
+Implemented as integer function indexcontract. Then the iterator does
+not need to know about ifull, because only indi is used.
+Created an integer function mditerator to be used as a generic 
+iterator.
+
+30 July 2012 
+
+Implemented periodic partlocate that does relocation of particles that
+are outside the outer half of the edge cell.
+
+Implemented chargetomesh periodic summation of psum (not yet diagsum)
+to compensate. 
+
+Got to run, but realize that there are several other problems seemingly
+all associated with xmeshstart/end. 
+
+1. pinit: we don't want to initialize particles outside the periodic domain.
+2. reinject: we don't want to reinject particles ditto.
+3. reinject etc: we want the area of faces to be correct.
+
+These all seem to be dependent on xmeshstart/end. So if we simply change
+meshconstruct to define xmeshstart/end for periodic dimensions to be at
+the half-cell position, then probably these are fixed. 
+
+The only other place that xmeshstart/end are used is in partaccum for
+particle diagnostics. Again that seems to be corrected by using the adjusted
+values. 
+
+Actually, the partlocate could have used this redefinition, except that
+it operates in mesh-space rather than real space.
+
+So modified meshconstruct to make xmeshstart/end different for periodic
+directions. Code runs at least.
+
+Hummm. MPI does not seem to work for multiple processors. Perhaps it does
+not work to put this exchange in the chargetomesh. Each processor only 
+has its own charges until after psumreduce and diagreduce. 
+
+Separate out the psumperiod and diagsumperiod parts into their own 
+routines that are called after the reduces. Still doesn't seem to fix
+the mpiexec -n 2 result. Actually I don't think there's really a problem
+with mpi and particles. Each processor has particles everywhere. So
+the separation wasn't really necessary (but did not hurt). 
+
+Running with high Debye length shows this bug to good effect. The 
+density on the positive z-edge for x<0 progressively increases. But 
+only with two processors. It is the x-direction that is split.
+
+It happens even with no periodic particles! Also without collisions, but
+not so bad. DOESN't happen if -bf6,1,0,0 instead of -bf6,1,0,4 
+(but that seems bizarre.) This is pretty puzzling.
+
+Moving aside my cartreinject.f and doing git checkout -- cartreinject.f
+brings back the old scheme. It shows the same error.
+This seems to show this is not a new error in cartreinject.
+
+The 14Jun version which is mostly from 6 Jun does not show this problem.
+Cloned the current git repo from tp400 which is later than the github
+version to copticcopy. It does not show the problem with
+mpiexec -n 2 ./coptic unif5.dat -s300 -v1.6 -vn0. -t.1 -da5 -l100. -ct20. -gs -gp -bf6,1,0,.5
+
+There are many files that differ. I've shown it isn't cartreinject. 
+Files 3dobjects.f and ../coptic/3dobjects.f differ
+Files cartreinject.f and ../coptic/cartreinject.f differ
+Files chargetomesh.f and ../coptic/chargetomesh.f differ
+Files cmdline.f and ../coptic/cmdline.f differ
+Files coptic.f and ../coptic/coptic.f differ
+Files facebcom.f and ../coptic/facebcom.f differ
+Files interpolations.f and ../coptic/interpolations.f differ
+Files mditerate.f and ../coptic/mditerate.f differ
+Files meshconstruct.f and ../coptic/meshconstruct.f differ
+Files padvnc.f and ../coptic/padvnc.f differ
+Files partaccum.f and ../coptic/partaccum.f differ
+Files partcom.f and ../coptic/partcom.f differ
+Files pinit.f and ../coptic/pinit.f differ
+
+The issue did not arise from the bbdy fixes, therefore. But it is hard to
+guess how to figure out where the problem arose. 
+
+Copied 3dobject.f from ..coptic. No problem.
+Copied cmdline.f segfault. Not tested. 
+Copied partcom.f. No problem
+Copied facebcom.f No problem
+Copied cartreinject.f No problem
+Copied interpolations.f No problem
+Copied mditerate.f No problem
+Copied partaccum.f No problem
+
+So we've narrowed it down to 
+Files chargetomesh.f and ../coptic/chargetomesh.f differ
+Files cmdline.f and ../coptic/cmdline.f differ
+Files coptic.f and ../coptic/coptic.f differ
+Files meshconstruct.f and ../coptic/meshconstruct.f differ
+Files padvnc.f and ../coptic/padvnc.f differ
+Files pinit.f and ../coptic/pinit.f differ
+
+Copy meshconstruct segfault. This is longer argument list. git checkout meshconstruct.f
+
+We need now to change to the new coptic.f calls. First commandline.
+In copticforward directory.
+$ for file in coptic.f ; do diff -u $file ../coptic/$file > patch; done
+Then patch <patch makes both coptic.f the same, but git checkout coptic.f
+does not restore the old one in copticforward. Thatmeans I must have
+patched the ../coptic/ version. This is corrected by  patch -R <patch
+which seems to reverse the patch.
+
+$ diff -u ../coptic/coptic.f coptic.f >patch.forward
+$ patch <patch.forward
+patching file coptic.f
+Reversed (or previously applied) patch detected!  Assume -R? [n] y
+That patches the whole thing. But I just want to do the beginning. 
+
+So just patched the first hunk which should be cmdline and meshconstruct.
+Copied cmdline.f PROBLEM.
+git checkout cmdline.f No problem. 
+
+Thus the problem is definitely involved with the new cmdline.f
+It has a more complicated structure to do with first and second calls.
+Patched the leading part of the old cmdline.f to pass arguments,
+ipartperiod. Then perhaps there is a problem but partly obscured by 
+rounded values. But that problem is there with old cmdline too. 
+Consequently, I am not sure I've really localised the problem. 
+
+I need to quit for now. I am not really to the bottom of this. 
+Save the partly edited coptic.f as coptic.stage1, and cmdline as cmdline.stage1
+Just using cmdline.stage1 does not introduce the problem. It appears
+that coptic.stage1 is where the problem lies. The double call, and
+some repositioning of readgeom. 
+
+1 Aug
+I'm not sure that the conclusion I made is true. Certainly there's some
+combination of coptic.stage1 and cmdline.state1 that seems to produce 
+a problem. But I don't think I can isolate it yet. But now running
+with the patched coptic.f, but old cmdline.f, AND commenting out the
+second call to cmdline, I get ok results, while with the second call I don't.
+Without second call the return from cmd gives:
+
+Two cmdline calls with the fully updated cmdline.f gives:
+0:  T F 0 1  0. T 1 T F F -1 0  0.100000001 1 100 0 1  100.  0.5 0  20.
+0:   0.100000001  5.  0.  10.  1.  0.  0.  0.  0. 0 300 3000  0.  1.60000002 0 7
+0:   100.  0.100000001 99999 0 F
+0:                                                                                                      
+0:   0.  0.  0.
+0:  unif5.dat                                                                                           
+0:  F  0.  0.  0.  0. 3 0  1.60000002  0.  1.  0.  0.  0.  0.  0.  1.  0.  0.  0.
+0:   0.  1.  0.  0.  0.  0.  0.  0.  1.  0.  0.  0.  0.  0.  1.  0.  0.  0.  0.
+0:   1.  0.  0.5  0.  0.  0. 5 T T F 0 0 0
+Gives asymmetry.
+
+1 call with cmdline.stage1, (new coptic.f)
+0:  T F 0 1  0. T 1 T F F -1 0  0.100000001 1 100 0 1  100.  0.5 0  20.
+0:   0.100000001  5.  0.  10.  1.  0.  0.  0.  0. 0 300 3000  0.  1.60000002 0 7
+0:   100.  0.100000001 99999 0 F
+0:                                                                                                      
+0:   0.  0.  0.
+0:  unif5.dat                                                                                           
+0:  F  0.  0.  0.  0. 3 0  1.60000002  0.  1.  0.  0.  0.  0.  0.  1.  0.  0.  0.
+0:   0.  1.  0.  0.  0.  0.  0.  0.  1.  0.  0.  0.  0.  0.  1.  0.  0.  0.  0.
+0:   1.  0.  0.  0.  0.  0. 5 T T F 0 0 0
+No asymmetry problem. 
+
+There's a difference in the last line, item 3: 0.5 That seems to be the last
+CFin. Without it there's no asymmetry problem. 
+
+Is that being reset to zero by readgeom? Seems so. Yes. That's because
+there are lines in unif5.dat that set it. Confusing.
+
+Make all the arguments in the commandline to avoid confusion.
+Then it seems that the original version of copticforward gives the
+asymmetry.
+
+mpiexec -l -n 2 ./coptic unif5.dat -s300 -v1.6 -vn0. -t.1 -da5
+-l100. -ct20. -gs -gp -bf6,1,0,.5 -bf3,1.,0.,0. -bp1 -bp2
+
+coptic14Jun does not give asymmetry. Seems my previous tests were
+incorrect. Have to backtrack.
+
+partaccum.f
+mditerate.f
+interpolations.f
+cartreinject.f
+And all the rest.
+
+It transpires that there IS an asymmetry with the copticforward
+version.
+
+Ok I confirm that checking out the prior commit gives no asymmetry.
+It was that last commit that caused it. One can go back and forth
+between known versions by 
+git checkout bc8df1863f8e0a8faa698e70cb03d52db0fc9dab
+and  
+git checkout 8c25d5581d646f0dec2efde1ffc07edb45f5261d
+
+But don't do this in the coptic directory!!!!
+
+Summary for today. 
+The asymmetry bug arose between the above two versions. They differ
+by the discovery of the argument problems passing lperiod and the 
+reordering of the arguments of bbdy and other places, to try to 
+avoid bugs. Seem to have introduced bugs instead. What is needed next
+is to return to that prior bugged version and find out where the
+asymmetry really turns on. Given that the prior bugged looked like
+a compiler bug. I am in a very sticky spot. Might try a different 
+compiler on Loki???
+
+Return to the backward version 8c25d558. 
+ mpiexec -l -n 2 ./coptic unif5.dat -s300 -v1.6 -vn0. -t.1 -da5 -l100. -ct20. -gs -gd -bf6,1,0,.5 -bf3,1.,0.,0. -bp1 -bp2
+shows incorrect boundary setting. Periodic boundaries are not working.
+But periodic are working with -n 1. However, -bf6 does not show the 
+value -0.5, although the C0F does show 0.5.
+
+Put a write on entry to bdyshare and of arguments just before call.
+They don't agree. Arguments are not being passed correctly into bdyshare.
+
+Constructed a bbdecltest.f that works and calls bdyshare. 
+Made bdyshare implicit none. Found the problem! It was an incorrect
+length first line of argument list that happened to have the final
+comma in column 73. It therefore concatenated that with the first
+argument of the next line and misalinged all the succeeding arguments.
+That was the issue. The passing of logicals etc was irrelevant.
+
+Now how to back-track? I'd like to get the reorganization of the
+argument order out of the picture to eliminate that possible cause 
+of problems. However, the reorganization of the argument order did
+indeed remove the column 73 error. So possibly one could accept 
+that reorganization. 
+
+Actually with the fixed copticbackward. I find that the asymmetry 
+problem is present. Therefore, the asymmetry problem was in the 
+copticbackward version but was masked by the error in the bdyshare
+call.
+
+I need to go further back. Try commit c1301209920104a0df8c3946e3a0aa3b3126f9cd
+doesn't seem to show asymmetry.
+
+Try 08ed85fb4c8e298 May 29th ditto.
+
+Try d829957c4c6c515e9fd Jun 3rd has asymmetry.
+
+Try 4383ebc59c3145 Jun 2 has no asymmetry.
+Call this the new copticbackward 
+
+Call d829957c4c6c515e9fd the new copticforward
+
+Files ../copticbackward/3dobjects.f and 3dobjects.f differ
+Files ../copticbackward/bbdydecl.f and bbdydecl.f differ
+Files ../copticbackward/bdyroutine.f and bdyroutine.f differ
+Files ../copticbackward/bdyshare.f and bdyshare.f differ
+Files ../copticbackward/cmdline.f and cmdline.f differ
+Files ../copticbackward/coptic.f and coptic.f differ
+Files ../copticbackward/partaccum.f and partaccum.f differ
+Files ../copticbackward/partwriteread.f and partwriteread.f differ
+Files ../copticbackward/ptaccom.f and ptaccom.f differ
+Files ../copticbackward/sormpi.f and sormpi.f differ
+
+Copy partaccum ptaccom to backward. No asymmetry.
+Copy partwriteread. No asymmetry.
+Copy cmdline. No asymmetry.
+Copy coptic.f. No asymmetry.
+
+Copy sormpi.f Big changes and strangeness, so put it back.  Now
+
+Files ../copticbackward/3dobjects.f and 3dobjects.f differ
+Files ../copticbackward/bbdydecl.f and bbdydecl.f differ
+Files ../copticbackward/bdyroutine.f and bdyroutine.f differ
+Files ../copticbackward/bdyshare.f and bdyshare.f differ
+Files ../copticbackward/sormpi.f and sormpi.f differ
+
+Copy bbdydecl.f. Have to remove the ifull declaration from sormpi and bdyshare.
+Then no asymmetry.
+Copy bdyshare.f no asymmetry.
+Copy 3dobjects.f no asymmetry.
+Copy bdyroutine.f no asymmetry.
+
+Files ../copticbackward/sormpi.f and sormpi.f differ
+
+Doing ediff. Update idone to an array. No asymmetry.
+
+Current differences:
+232,234c232,243
+< c Boundary conditions need to be reset based on the gathered result.
+< c But that's not sufficient when there's a relaxation so be careful!
+<          call bdyset(ndims,ifull,iuds,cij,u,q)
+---
+> c Boundary conditions need to be fully set based on the gathered result
+> c at least for the master node, for aesthetic plotting reasons.
+> c Call the parallelized boundary setting routine but lie to it that 
+> c it is the only process. Also insist on explicit setting.
+>       idone(2)=1
+>       idone(1)=0
+> c Actually it would not hurt if every process did this.
+>       if(myid.eq.0)call bdyshare(idone,ndims,ifull,iuds,cij,u,q
+> c     $    ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
+>      $        ,iLs,ones ,lperiod,zeros  ,iLcoords,iuds  , ones
+>      $        ,icommcart,mycartid,myid)
+> c Old global setting. Obsolete.
+
+Yes this is the difference that causes asymmetry.
+The offending item is if(myid.eq.0). All processes must call the 
+global boundary setting, otherwise they do not have the full potential
+grid set properly. Since particles use that grid, it is not optional to
+have it fully set. 
+
+I think I ought to be able to fix this whole thing by removing if(myid.eq.0)
+from the current version. Done.

@@ -33,9 +33,14 @@ c Rho at infinity per processor, relevant only in setup.
       real ripernode
 c Factor by which we relax the rhoinf calculation. 1 immediate, 0 never.
       real crelax
+c Flags for which dimensions are periodic for particles.
+      integer ipartperiod(npdim)
+c Effective face area for purposes of reinjection. Small if periodic.
+      real fcarea(npdim)
+c
       common/particles/n_part,x_part,if_part,iregion_part,ioc_part
      $     ,dtprec,dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
-     $     ,ripernode,crelax
+     $     ,ripernode,crelax,ipartperiod,fcarea
 
 c Orbit plotting storage for tracking the first norbits orbits.
       integer nobsmax,norbits,nstepmax

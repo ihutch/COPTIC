@@ -120,24 +120,34 @@ c Otherwise could have been hidden in sormpi and pass back numprocs.
       if(myid.ne.0) lmyidhead=.false.
       numprocs=nprocs
 c--------------------------------------------------------------
-c Deal with command-line arguments
+c Deal with command-line arguments and geometry/object file.
+c First time this routine just sets defaults and the object file name.
       call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,dropaccel,rmtoz,Bfield,Bt,ninjcomp
      $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
-     $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF)
-c
+     $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
+     $     ,ipartperiod)
+c Read in object file information.
+      call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF)
+c Second time: deal with any other command line parameters.
+      call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
+     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
+     $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
+     $     ,colntime,dt,bdt,subcycle,dropaccel,rmtoz,Bfield,Bt,ninjcomp
+     $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
+     $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
+     $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
+     $     ,ipartperiod)
+c The double call enables cmdline switches to override objfile settings.
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
       ndropped=0
-c Geometry and boundary information. Read in.
-      call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF)
-c      write(*,*)'readgeom return',iCFcount,(CFin(ii,1),ii=1,6)
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
- 250  call meshconstruct(ndims,iuds,ifull)
+ 250  call meshconstruct(ndims,iuds,ifull,ipartperiod)
       if(lmyidhead)write(*,'(a,3i4,6f8.3)')
      $     ' Constructed mesh',iuds
      $     ,(xmeshstart(k),xmeshend(k),k=1,ndims)
@@ -369,11 +379,12 @@ c Acceleration code.
 
          call mditerset(psum,ndims,ifull,iuds,0,0.)
 c         write(*,*)'chargetomesh calling, ndiags',ndiags
-         call chargetomesh(psum,iLs,diagsum,ndiags)
+         call chargetomesh(psum,ndims,iLs,diagsum,ndiags)
 c Psumreduce takes care of the reductions that were in rhoinfcalc 
 c and explicit psum. It encapsulates the iaddtype iaddop generation.
 c Because psumtoq internally compensates for faddu, we reduce here
-         call psumreduce(psum,ndims,ifull,iuds,iLs) 
+         call psumreduce(psum,ndims,ifull,iuds,iLs)
+         call psumperiod(psum,ndims,ifull,iuds,iLs)
 c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
 c Convert psums to charge density, q. Remember external psumtoq!
@@ -449,6 +460,7 @@ c out, if we are doing diagnostics.
             if(ndiags.gt.0)then
 c Reduce the data
                call diagreduce(diagsum,ndims,ifull,iuds,iLs,ndiags)
+               call diagperiod(diagsum,ndims,ifull,iuds,iLs,ndiags)
 c Do any other processing? Here or later?
 c               call diagstep(iLs,diagsum,ndiags)
                if(lmyidhead)then

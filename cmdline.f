@@ -6,7 +6,8 @@ c Encapsulation of parameter setting.
      $     ,colntime,dt,bdt,subcycle,dropaccel,rmtoz,Bfield,Bt,ninjcomp
      $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
-     $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF)
+     $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
+     $     ,ipartperiod)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
@@ -17,7 +18,7 @@ c Encapsulation of parameter setting.
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,rmtoz,vneutral,vd,debyelen,Ti,extfield,vpar,slpD
       real Bfield(ndims),Bt,vperp(ndims),CFin(3+ndims,6)
-      integer iCFcount
+      integer iCFcount,ipartperiod(ndims)
       character*100 restartpath,objfilename
 
 c Local variables:
@@ -25,53 +26,68 @@ c Local variables:
       external lentrim
       integer i,id,idn,idcn,i0,i1
       character*100 argument
+      logical lfirst
+      data lfirst/.true./
 
-c Set defaults first.
-
+c Set defaults and objfilename only the first time, subsequently skip.
+      if(lfirst)then
 c Fixed number of particles rather than fixed injections.
-      ninjcomp=0
-      n_part=0
+         ninjcomp=0
+         n_part=0
 c Default to constant ripernode not n_part.
-      ripernode=100.
-      debyelen=1.
-      vd=0.
-      Ti=1.
+         ripernode=100.
+         debyelen=1.
+         vd=0.
+         Ti=1.
 c Default edge-potential (chi) relaxation rate.     
-      crelax=1.*Ti/(1.+Ti)
-      dt=.1
-      objfilename='copticgeom.dat'
-      nsteps=5
-      subcycle=0.
-      dropaccel=10
-      colntime=0.
-      vneutral=0.
-      numprocs=1
-      bdt=1.
-      thetain=.1
-      nth=1
-      norbits=0
-      ickst=0
-      iavesteps=100
-      ndiags=0
-      ifplot=-1
-      iwstep=99999
-      rcij=0
-      rmtoz=1.
-      iobpsw=1
+         crelax=1.*Ti/(1.+Ti)
+         dt=.1
+         restartpath=' '
+         objfilename='copticgeom.dat'
+         nsteps=5
+         subcycle=0.
+         dropaccel=10
+         colntime=0.
+         vneutral=0.
+         numprocs=1
+         bdt=1.
+         thetain=.1
+         nth=1
+         norbits=0
+         ickst=0
+         iavesteps=100
+         ndiags=0
+         ifplot=-1
+         iwstep=99999
+         rcij=0
+         rmtoz=1.
+         iobpsw=1
 c Boundary condition switch and value. 0=> logarithmic.
-      islp=0
-      slpD=0.
-      iCFcount=0
-      do idn=1,2*ndims
-         do id=1,3+ndims
-            CFin(id,idn)=0.
+         islp=0
+         slpD=0.
+         iCFcount=0
+         do idn=1,2*ndims
+            do id=1,3+ndims
+               CFin(id,idn)=0.
+            enddo
          enddo
-      enddo
-      do id=1,ndims
-         LPF(id)=.false.
-      enddo
-
-
+         do id=1,ndims
+            LPF(id)=.false.
+            ipartperiod(id)=0
+         enddo
+         do i=1,iargc()
+            call getarg(i,argument)
+            if(argument(1:3).eq.'-of')
+     $           read(argument(4:),'(a)',err=501)objfilename
+            if(argument(1:1).ne.'-')
+     $           read(argument(1:),'(a)',err=501)objfilename
+ 501        continue
+         enddo
+         lfirst=.false.
+         return
+      endif
+c End of first time through setting
+c ---------------------------------------
 c Deal with arguments
 c      if(iargc().eq.0) goto "help"
       do i=1,iargc()
@@ -163,6 +179,9 @@ c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
      $              ,argument(1:30)
                stop
             endif
+         endif
+         if(argument(1:3).eq.'-pp')then
+            read(argument(4:),*,err=201,end=201)ipartperiod
          endif
          if(argument(1:3).eq.'-Bx')then
             read(argument(4:),*,err=201)Bfield(1)
@@ -284,6 +303,7 @@ c Help text
  302  format(a,3f8.3)
  303  format(a,3L3,a)
  304  format(a,f8.3,a)
+ 305  format(a,3i3,a,3i5)
       write(*,301)'Usage: coptic [objectfile] [-switches]'
       write(*,301)'Parameter switches.'
      $     //' Leave no gap before value. Defaults or set values [ddd'
@@ -325,11 +345,14 @@ c Help text
      $     '         Bits:1 Mach/Log[=0]  2-7:Face1-6=0  8-13:u''''=k2u'
 c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,*)'-bf   set face bndry conditions  [ off'
-     $     ,'   Values: idn,Ain,Bin,C0in[,Cx,Cy,Cz]'
+     $     ,' Values:  idn,Ain,Bin,C0in[,Cx,Cy,Cz]'
+      if(iCFcount.gt.0)write(*,'(10x,l3,i2,6f8.4)')(LPF(1+mod(idn-1,3))
+     $     ,idn,(CFin(id,idn),id=1,6),idn=1,6)
       write(*,*)'        idn face-number (7=>all).'
      $     ,' ABC Robin coefs. Cxyz gradients.'
       write(*,303)' -bp<i>  toggle bndry periodicity [',LPF
      $     ,'    in dimension <i>.'
+      write(*,305)' -pp<i,j,k>  set part periodicity [',ipartperiod 
       write(*,301)
      $     ' -fs[path]  Attempt to restart from state saved [in path].'
       write(*,301)' -ea --  end argument parsing. Skip succeeding.'
@@ -359,3 +382,4 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' -ho     Print geomobj file format description'
       call exit(0)
       end
+c*********************************************************************

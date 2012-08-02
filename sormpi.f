@@ -181,11 +181,6 @@ c     $           icoords,iLcoords,myside,myorig,icommcart,mycartid,myid
             call bdyshare(iLs,ifull,iuds,u,idone,ndims,idims,
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid,lperiod)
-c Obsolete argument order:
-c            call bdyshare(idone,ndims,ifull,iuds,cij,u,q
-c     $           ,iLs,idims,lperiod
-c     $           ,icoords,iLcoords,myside,myorig
-c     $           ,icommcart,mycartid,myid)
 c If this did not succeed. Fall back to global setting.
             if(idone(1).eq.0)call bdyset(ndims,ifull,iuds,cij,u,q)
          endif
@@ -239,18 +234,12 @@ c the result].
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid,lperiod)
 c Boundary conditions need to be fully set based on the gathered result
-c at least for the master node, for aesthetic plotting reasons.
 c Call the parallelized boundary setting routine but lie to it that 
 c it is the only process. Also insist on explicit setting.
       idone(2)=1
       idone(1)=0
-c Actually it would not hurt if every process did this.
-      if(myid.eq.0)
-c     $     call bdyshare(idone,ndims,ifull,iuds,cij,u,q
-cc     $    ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
-c     $        ,iLs,ones ,lperiod,zeros  ,iLcoords,iuds  , ones
-c     $        ,icommcart,mycartid,myid)
-     $  call bdyshare(iLs,ifull,iuds,u,idone,ndims,ones,
+c Every process must do this.
+      call bdyshare(iLs,ifull,iuds,u,idone,ndims,ones,
      $        zeros,iLcoords,iuds,ones,
      $        icommcart,mycartid,myid,lperiod)
 c Old global setting. Obsolete.
