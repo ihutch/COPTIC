@@ -175,13 +175,13 @@ c Only needed every other step, and gives identical results.
          if(mod(k_sor,2).eq.1)then
 c The parallelized boundary setting routine
             idone(1)=0
-c             write(*,*)iLs,ifull,iuds,idone,ndimsdecl,idims,lperiod,
 c             write(*,*)ndimsdecl,lperiod,
 c     $           icoords,iLcoords,myside,myorig,icommcart,mycartid,myid
             call bdyshare(iLs,ifull,iuds,u,idone,ndims,idims,
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid,lperiod)
 c If this did not succeed. Fall back to global setting.
+c            write(*,*)idone(1)
             if(idone(1).eq.0)call bdyset(ndims,ifull,iuds,cij,u,q)
          endif
 c-------------------------------------------------------------------

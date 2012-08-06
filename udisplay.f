@@ -24,6 +24,8 @@ c iform digits printed as integer. u multiplied by uscale.
       enddo
          
 c      write(*,*)'u='
+      if(.not.abs(ildim(1)).lt.1000)write(*,*)'iused(1) too big'
+     $     ,ildim(1)
       write(sform,'(''(i4,1x,'',i3,''i'',i2'',i4)'')')
      $     ildim(1),iform
       do k=1,ildim(3)

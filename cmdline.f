@@ -7,14 +7,14 @@ c Encapsulation of parameter setting.
      $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod)
+     $     ,ipartperiod,lnotallp)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
      $     ,numprocs,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
      $     ,iwstep,idistp,ndims,islp
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
-     $     ,lrestart,lextfield,LPF(ndims)
+     $     ,lrestart,lextfield,LPF(ndims),lnotallp
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,rmtoz,vneutral,vd,debyelen,Ti,extfield,vpar,slpD
       real Bfield(ndims),Bt,vperp(ndims),CFin(3+ndims,6)
@@ -290,6 +290,19 @@ c Zero the vparallel and vperp. Probably not necessary; but tidy.
          enddo
       endif
 c      write(*,*)'Bfield',Bfield
+      lnotallp=.false.
+      do i=1,ndims
+         if(ipartperiod(i).ne.0)then
+            lnotallp=.true.
+            if(crelax.ne.0.)then
+c Don't allow unwise operation with periodic particles.
+               write(*,*)'**** UNWISE operation with periodic particles'
+     $              ,' and non-zero crelax=',crelax
+               write(*,*)' Add switch -rx0.'
+               stop
+            endif
+         endif
+      enddo
 
       return
 c------------------------------------------------------------

@@ -18,7 +18,7 @@ c Specify external the boundary setting routine.
       external bdy3slope 
 c sets the derivative to zero on boundaries 3.
       ipoint=0
-      call mditerate(bdy3slope,ndims,ifull,iuds,ipoint,u)
+      call mditerarg(bdy3slope,ndims,ifull,iuds,ipoint,u)
       end
 c************************************************************************
       subroutine bdy3slope(inc,ipoint,indi,ndims,iused,u)
@@ -28,7 +28,7 @@ c Version of bdyroutine that sets derivative=0 on 3-boundary.
       real u(*)
 
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerate argument conventions.
+c Can't be passed here because of mditerarg argument conventions.
       parameter (mdims=10)
       integer iLs(mdims+1)
       common /iLscom/iLs
@@ -74,7 +74,7 @@ c equal to D
       real u(*)
 
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerate argument conventions.
+c Can't be passed here because of mditerarg argument conventions.
       parameter (mdims=10)
       integer iLs(mdims+1)
       common /iLscom/iLs

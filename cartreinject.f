@@ -324,11 +324,13 @@ c      write(*,*)'grein',grein
 c Alternative general-dimension fcarea calculation:
       do i=1,ndims_mesh
          fcarea(i)=1.
-         if(ipartperiod(i).eq.1)fcarea(i)=1.e-6
+         if(lnotallp.and.ipartperiod(i).eq.1)fcarea(i)=1.e-6
+c         if(ipartperiod(i).eq.1)fcarea(i)=1.e-6
          do j=1,ndims_mesh-1
             id=mod(i+j-1,ndims_mesh)+1
-            fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
+            fcarea(i)=fcarea(i)*abs(xmeshend(id)-xmeshstart(id))
          enddo
+c         write(*,*)'fcarea(',i,')=',fcarea(i)
       enddo
 c      do id=1,3
 c         i2=mod(id,3)+1
@@ -464,15 +466,10 @@ c      real fcarea(ndims_mesh)
       real a,cfactor
       real chi
       save chi
-      logical lnotallp
       data chi/0./
 
       volume=1.
       flux=0.
-      lnotallp=.false.
-      do i=1,ndims_mesh
-         lnotallp=lnotallp.or.(ipartperiod(i).eq.0)
-      enddo
 
       do i=1,ndims_mesh
          fcarea(i)=1.
@@ -481,6 +478,7 @@ c      real fcarea(ndims_mesh)
             id=mod(i+j-1,ndims_mesh)+1
             fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
          enddo
+c         write(*,*)'fcarea(',i,')=',fcarea(i)
          a=fcarea(i)*sqrt(2.*Ti/3.1415926)
          a=a*fonefac(i)
          flux=flux+a
@@ -492,10 +490,11 @@ c Better to use a significant number to avoid bias at low reinjections.
 c Calculate rhoinf from nrein if there are enough.
 c Correct approximately for edge potential depression (OML).
 c         chi=min(-phirein/Ti,0.5)
-         chi=crelax*(-phirein/Ti)+(1.-crelax)*chi
+         chi=max(crelax*(-phirein/Ti)+(1.-crelax)*chi,0.)
          cfactor=smaxflux(vd/sqrt(2.*Ti),chi)
      $        /smaxflux(vd/sqrt(2.*Ti),0.)
          rhoinf=(nrein/(dtin*cfactor*flux))
+c         write(*,*)nrein,dtin,chi,cfactor,flux,rhoinf
       else
          if(rhoinf.lt.1.e-4)then
 c Approximate initialization
@@ -523,21 +522,15 @@ c Particle information
 c      real fcarea(ndims_mesh)
       real volume,flux
       real a,cfactor
-      logical lnotallp
 c 
 c Calculate ninjcomp from ripernode
       volume=1.
       flux=0.
-      lnotallp=.false.
-      do i=1,ndims_mesh
-         lnotallp=lnotallp.or.(ipartperiod(i).eq.0)
-      enddo
       do i=1,ndims_mesh
          fcarea(i)=1.
 c We don't correct area here, because we now count every relocation as
 c a reinjection.
          if(lnotallp.and.ipartperiod(i).eq.1)fcarea(i)=1.e-6
-c         if(ipartperiod(i).eq.1)fcarea(i)=1.e-6
          do j=1,ndims_mesh-1
             id=mod(i+j-1,ndims_mesh)+1
             fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))

@@ -37,10 +37,11 @@ c Flags for which dimensions are periodic for particles.
       integer ipartperiod(npdim)
 c Effective face area for purposes of reinjection. Small if periodic.
       real fcarea(npdim)
-c
+c Whether not all directions of particles are periodic
+      logical lnotallp
       common/particles/n_part,x_part,if_part,iregion_part,ioc_part
      $     ,dtprec,dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
-     $     ,ripernode,crelax,ipartperiod,fcarea
+     $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp
 
 c Orbit plotting storage for tracking the first norbits orbits.
       integer nobsmax,norbits,nstepmax

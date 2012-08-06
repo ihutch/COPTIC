@@ -127,10 +127,6 @@ c Slice dimension id:
             it=1+(iaux(id)-1)*iLs(id)+ii
             it1=1+(iaux(id)-2)*iLs(id)+ii
             ib=1+ii
-c Face+1=Face+1 + Other
-c            psum(ib1)=psum(ib1)+psum(it)
-c Other-1=Other-1 + Face
-c            psum(it1)=psum(it1)+psum(ib)
 c Diagnostic particles must be transferred, not just added.
             do k=0,ndiags-1
                kshift=k*iLs(ndims_mesh+1)

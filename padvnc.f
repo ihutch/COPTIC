@@ -554,9 +554,8 @@ c give up and call it lost but flag the problem.
      $                 ,xgridlen
                   linmesh=.false.
                else
-c If not every dimension is periodic, increment nreloc.
-                  if(ipartperiod(1).eq.0. .or. ipartperiod(2).eq.0. .or.
-     $                 ipartperiod(3).eq.0.)nreloc=nreloc+1
+c If every dimension is periodic, increment nreloc. (Otherwise not)
+                  if(.not.lnotallp)nreloc=nreloc+1
                endif
             endif
          else

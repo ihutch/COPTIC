@@ -9,7 +9,7 @@ c Extra work array for arrowplotting in sliceGweb.
       real vp(na_m,na_m,3,3)
       character*20 mname(7)
       integer iuphi(3)
-      integer iunp
+      integer iunp,isingle,i1
       data iunp/0/
 
       mname(1)='Density'
@@ -21,13 +21,19 @@ c Extra work array for arrowplotting in sliceGweb.
       mname(7)='T!d3!d'
 
 c 
-      call diagexamargs(iunp)
+      call diagexamargs(iunp,isingle)
 
 c      write(*,*)ifull
+      i1=1
       ied=ndiagmax
       call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
       if(ierr.eq.1)stop 'Error reading diag file'
       ndiags=ied
+      if(isingle.ne.0)then
+         isingle=min(isingle,ndiags)
+         ndiags=isingle
+         i1=isingle
+      endif
 
       if(lentrim(phifilename).gt.1)then
 c Read in a potential as well.
@@ -44,7 +50,7 @@ c Read in a potential as well.
       endif
 
       if(iunp.ne.0)then
-         do k=1,ndiags
+         do k=i1,ndiags
 c Suppress help.
             zp(1,1,1)=99
             ifix=2
@@ -85,7 +91,7 @@ c Arrow plotting of velocity:
      $        ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
      $        ,diagsum(1,1,1,2),vp)
       else
-         do k=1,ndiags
+         do k=i1,ndiags
             zp(1,1,1)=99
             ifix=2
 c         write(fluxfilename,'(''diagnorm('',i1,'')'')')k
@@ -99,15 +105,15 @@ c         write(*,*)mname(k),fluxfilename,lentrim(fluxfilename)
 c Arrow plotting of velocity:
       fluxfilename=mname(1)
       ifix=2+4
-      call sliceGweb(ifull,iuds,diagsum(1,1,1,1),na_m,zp,
-     $     ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
+      if(isingle.eq.0)call sliceGweb(ifull,iuds,diagsum(1,1,1,1),na_m,zp
+     $     ,ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
      $     ,diagsum(1,1,1,2),vp)
 
       end
 
 
 c*************************************************************
-      subroutine diagexamargs(iunp)
+      subroutine diagexamargs(iunp,isingle)
       include 'examdecl.f'
 
          ifull(1)=na_i
@@ -116,6 +122,7 @@ c*************************************************************
 
 c silence warnings:
       zp(1,1,1)=0.
+      isingle=0
 c Defaults
       diagfilename=' '
       phifilename=' '
@@ -133,6 +140,8 @@ c Deal with arguments
             if(argument(1:2).eq.'-l')
      $           read(argument(3:),'(a)',err=201)denfilename
             if(argument(1:2).eq.'-u')iunp=1
+            if(argument(1:2).eq.'-d')
+     $           read(argument(3:),*,err=201)isingle
             if(argument(1:2).eq.'-h')goto 203
             if(argument(1:2).eq.'-?')goto 203
          else
@@ -154,6 +163,7 @@ c Help text
      $     ,' do arrow plot of velocity on it.'
       write(*,301)' -p   set name of additional parameter file.'
       write(*,301)' -l   set label of parameter.'
+      write(*,301)' -d   set single diagnostic to be examined.'
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [copticgeom.dat'
       write(*,301)' -u   plot un-normalized diagnostics.'

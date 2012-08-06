@@ -10,7 +10,7 @@ c Specify external the boundary setting routine.
 c Rectangular face setting
 c         write(*,*)'Calling bdyface setting',LF
          ipoint=0
-         call mditerate(bdyface,ndims,ifull,iuds,ipoint,u)
+         call mditerarg(bdyface,ndims,ifull,iuds,ipoint,u)
       else
          call bdysetfree(ndims,ifull,iuds,cij,u,q)
 c      call bdysetnull
@@ -43,10 +43,10 @@ c Direct logarithmic gradient setting.
             slpD=-(1.+rs*sqrt(1.+1./Ti)/debyelen)
          endif
 c         write(*,*)'slpD=',slpD,Ti,debyelen
-         call mditerate(bdyslopeDh,ndims,ifull,iuds,ipoint,u)
+         call mditerarg(bdyslopeDh,ndims,ifull,iuds,ipoint,u)
 c Explicit screening uses buggy bdyslopescreen. Obsolete.
 c         slpD=debyelen/sqrt(1.+1./Ti)
-c         call mditerate(bdyslopescreen,ndims,ifull,iuds,ipoint,u)
+c         call mditerarg(bdyslopescreen,ndims,ifull,iuds,ipoint,u)
       else
 c      write(*,*)'islp=',islp,vd,debyelen
 c Use Mach boundary condition on slope only.
@@ -78,7 +78,7 @@ c Turn off alternative                  islp=islp-8192
                islp=islp-8192
             endif
          endif
-         call mditerate(bdymach,ndims,ifull,iuds,ipoint,u)
+         call mditerarg(bdymach,ndims,ifull,iuds,ipoint,u)
       endif
       end
 c************************************************************************
@@ -93,7 +93,7 @@ c Thus ub=u0(1-f-D.f)/(1-f+D.f) using radii from position (0,0,..)
       real u(*)
 
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerate argument conventions.
+c Can't be passed here because of mditerarg argument conventions.
       parameter (mdims=10)
       integer iLs(mdims+1)
       common /iLscom/iLs
@@ -101,6 +101,7 @@ c Can't be passed here because of mditerate argument conventions.
       include 'meshcom.f'
       include 'slpcom.f'
       D=slpD
+c      write(*,*)'bdyslope',inc,ipoint,indi,iused
 c Algorithm: take steps of 1 in all cases except when on a lower
 c boundary face of dimension 1 (and not other faces).  There the step is
 c iused(1)-1.
@@ -159,7 +160,7 @@ c dxk2 is in slpcom.
       integer indi(ndims),iused(ndims)
       real u(*)
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerate argument conventions.
+c Can't be passed here because of mditerarg argument conventions.
       parameter (mdims=10)
       integer iLs(mdims+1)
       common /iLscom/iLs
@@ -266,7 +267,7 @@ c slpD needs to be set to lamdas prior to call.
       real u(*)
 
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerate argument conventions.
+c Can't be passed here because of mditerarg argument conventions.
       parameter (mdims=10)
       integer iLs(mdims+1)
       common /iLscom/iLs
@@ -345,7 +346,7 @@ c AmBF= (A/2-B/dn), ApBF= (A/2+B/dn) where dn is the outward mesh step.
       include 'meshcom.f'
       include 'facebcom.f'
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerate argument conventions.
+c Can't be passed here because of mditerarg argument conventions.
       parameter (mdims=10)
       integer iLs(mdims+1)
       common /iLscom/iLs
@@ -493,7 +494,7 @@ c Specify external the boundary setting routine.
       external bdy3slope 
 c sets the derivative to zero on boundaries 3.
       ipoint=0
-      call mditerate(bdy3slope,ndims,ifull,iuds,ipoint,u)
+      call mditerarg(bdy3slope,ndims,ifull,iuds,ipoint,u)
       end
 c************************************************************************
       subroutine bdy3slope(inc,ipoint,indi,ndims,iused,u)
@@ -503,7 +504,7 @@ c Version of bdyroutine that sets derivative=0 on 3-boundary.
       real u(*)
 
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerate argument conventions.
+c Can't be passed here because of mditerarg argument conventions.
       parameter (mdims=10)
       integer iLs(mdims+1)
       common /iLscom/iLs
@@ -551,7 +552,7 @@ c Specify external the boundary setting routine.
       ipoint=0
       islp=0
       slpD=0.
-      call mditerate(bdyslopeDh,ndims,ifull,iuds,ipoint,u)
+      call mditerarg(bdyslopeDh,ndims,ifull,iuds,ipoint,u)
       end
 c**********************************************************************
       subroutine bdysetnull()

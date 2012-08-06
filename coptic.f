@@ -35,7 +35,6 @@ c mpi process information.
 c Common data containing the BC-object geometric information
       include '3dcom.f'
 c Structure vector needed for finding adjacent u values.
-c Don't use the mditerate common. It might not be right.
       integer iLs(ndims_cij+1)
 c Particle common data
       include 'partcom.f'
@@ -71,8 +70,6 @@ c Set up the structure vector.
 c Mesh and mpi parameter defaults:
       data idims/nblksi,nblksj,nblksk/
       data ifull/na_i,na_j,na_k/
-c No longer set here. Done by meshconstruct. 
-c      data iuds/ni,nj,nk/
 c Data for plotting etc.
       data iobpl/0/
       data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot/
@@ -129,7 +126,7 @@ c First time this routine just sets defaults and the object file name.
      $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod)
+     $     ,ipartperiod,lnotallp)
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF)
 c Second time: deal with any other command line parameters.
@@ -140,7 +137,7 @@ c Second time: deal with any other command line parameters.
      $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod)
+     $     ,ipartperiod,lnotallp)
 c The double call enables cmdline switches to override objfile settings.
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
@@ -280,12 +277,12 @@ c Make dimensions periodic:
       do id=1,ndims
          if(LPF(id))ictl=ictl+4*2**id
       enddo
-c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
+      write(*,*)'Calling sormpi'
 c An initial solver call with zero density. 
       if(debyelen.ne.0.)call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare
      $     ,bdyset,faddu,ictl,ierrsor,myid,idims)
       ictl=2+ictl
-c      write(*,*)'Return from initial sormpi call.'
+      write(*,*)'Return from initial sormpi call.'
       if(ltestplot)call sliceGweb(ifull,iuds,u,na_m,zp,
      $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0))
 c

@@ -6,7 +6,7 @@ c      include 'objcom.f'
 c      data oi_cij/0/
 c      end
 c****************************************************************
-c Routine for setting cij, which is used by the general mditerate.
+c Routine for setting cij, which is used by the general mditerarg.
 c      subroutine cijroutine(inc,ipoint,indm1,ndims,iused,cij)
       subroutine cijroutine(inc,ipoint,indi,ndims,iused,cij,debyelen
      $     ,error)
@@ -556,9 +556,10 @@ c Edge routine which sets the iregion for all boundary points.
       real cij(*)
       parameter (mdims=10)
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerate argument conventions.
-      integer iLs(mdims+1)
-      common /iLscom/iLs
+c Can't be passed here because of mditerarg argument conventions.
+c Unneeded
+c      integer iLs(mdims+1)
+c      common /iLscom/iLs
 
       include 'objcom.f'
 

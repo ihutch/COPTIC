@@ -24,7 +24,7 @@ c    iLcoords(ndims+1) the structure vector of icoords.
 c    idims(ndims)    the number of blocks  in each dimension.
 c Unused:  iLcoords,icommcart,mycartid,myid
 c On exit, return the value idone(1) [OUT]>0 if successful.
-c Pass to the mditerated setting routine the dimension,u,idone.
+c Pass to the setting routine the dimension,u,idone.
 c
 c Passing the dimensions into this routine.  This ought to work because
 c all the variables in bbdydecl.f are passed as arguments. That's why we
@@ -124,5 +124,5 @@ c Assume A=1.
 c Non-face BCs. Return failure for fallback.
          idone(1)=0
       endif
-c      write(*,*)ipoint,(indi(k),k=1,ndims),u(1+ipoint)
+c      write(*,*)'bdyshrroutine',ipoint,(indi(k),k=1,ndims),u(1+ipoint)
       end

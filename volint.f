@@ -19,7 +19,7 @@ c e.g. point-charge objects.
       real xm(ndims_mesh),xi(ndims_mesh),xp(ndims_mesh)
       parameter (npoints=10000)
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerate argument conventions.
+c Can't be passed here because of mditerarg argument conventions.
       parameter (mdims=10)
       integer iLs(mdims+1)
       common /iLscom/iLs

@@ -8909,6 +8909,8 @@ it operates in mesh-space rather than real space.
 So modified meshconstruct to make xmeshstart/end different for periodic
 directions. Code runs at least.
 
+---------------------------
+
 Hummm. MPI does not seem to work for multiple processors. Perhaps it does
 not work to put this exchange in the chargetomesh. Each processor only 
 has its own charges until after psumreduce and diagreduce. 
@@ -9180,3 +9182,97 @@ have it fully set.
 
 I think I ought to be able to fix this whole thing by removing if(myid.eq.0)
 from the current version. Done.
+
+Commit Push
+------------------------------------------------------------------
+3 Aug 2012.
+
+It would be quite easy to introduce collision time that varied as a
+function of position or of velocity. All that would be required is
+a call to some scaling function at the time of deciding whether a
+collision has occurred. 
+
+One possible use of this would be to make more efficient use of the
+code in application to a collisional presheath. Since the scale length
+of the presheath is the collision mean-free-path, one could scale the
+collision length to be shorter, at positions further from the sheath. 
+That would allow the distant solution to be well converged within a
+shorter length, and mean that one did not spend so much of the PIC
+effort calculating what is effectively the background problem, rather
+than the local problem (e.g.) surrounding a grain in the (pre)sheath. 
+
+It's rather important to have -rx0. for these full domain cases with
+periodic conditions, otherwise instability occurs induced by spurious
+attempts to adjust to the edge potential. Put in an exception to prevent
+such operation.
+
+In particle-free collisional gradients, there appears to be a z-flux
+gradient (diag(4)) that depends upon the drift velocity specified. I
+don't understand that. It is not reduced by smaller mesh spacing.
+Or by wider transverse dimension. Actually it seems to correlate with
+a time derivative of n_part. So perhaps it is simply correct that there
+is a divergence. I'm going to adopt this view for now.
+
+5 Aug 2012
+
+Reimplement mditermults and mditeradd using the new mditerator.
+They are much easier and more transparent.
+
+Plan for rationalization.
+1. Turn all calls to mditerate into mditerarg. Arg just allows more
+   arguments on the end. Consequently straight replacement ought to work.
+   Right now only bdyroutine and bdysetsol call mditerate.
+   Do replacement. Nothing seems to break.
+2. Reimplement mditerarg.
+
+There's a problem reimplementing mditerarg. It is that the routine 
+gets called with essential inconsistent indi sets 
+For example with all lengths 6, the old mditerarg goes
+  4  1  1  20104    1
+  5  1  1  20105    1
+  6  1  1  20106    1
+  1  2  1  20201    1
+  2  2  1  20202    1
+versus what a straight forward reimplementation gives:
+  4  1  1  20104    1
+  5  1  1  20105    1
+  0  2  1  20200    1
+  1  2  1  20201    1
+  2  2  1  20202    1
+where the arguments have wrapped (correctly) at the 1-boundary.
+This appears to be because in mditerarg:
+
+c Wrapping occurs at the _iused_ dimension
+c length relative to the starting indices.  In other words, if the
+c incremented indi(id)-indinp(id)+1 exceeds the used length iused(id),
+c then the next higher dimension is incremented by 1, and indi(id)
+c decremented by iused(id).
+I have not implemented the starting index part of this yet.
+Fixed. 
+Also had to implement iLscom setting. Then finally we get the same
+answer.
+
+Time testing on mditeratetest shows the new mditerarg is slower by 
+perhaps 50%. Profiling shows that the costs are shared between the 
+three routines rbroutine, mditerator, indexcontract; as one might
+have expected. However, the speed is very high. The total time
+for 1000x100^3 rbroutine calls is about 8s. So that's about 8ns per
+point. The only place where that might be important is within the
+sormpi iteration loop. I.e. boundary setting. And even there it is 
+not likely to add up to much.
+
+iLscom is a total hack. Several routines use it but it is set only in
+mditerarg (I think). That's a major problem. Most of the usages arise
+because of mditerarg argument conventions. Therefore the sensible
+approach to getting rid of it would be to moved towards getting rid
+of mditerarg. Alternatively we could change the argument list of 
+the routine called by mditerarg to include it. 
+
+There are ~15 different routines called by mditerarg. All would
+have to be changed. A bit of a pain.
+
+There would be residual problems with reduce because iLs is not included
+in mditcom.f. Still, since it isn't used in those routines it probably
+wouldn't be too bad.
+
+git commit -a
