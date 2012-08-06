@@ -9273,6 +9273,34 @@ have to be changed. A bit of a pain.
 
 There would be residual problems with reduce because iLs is not included
 in mditcom.f. Still, since it isn't used in those routines it probably
-wouldn't be too bad.
+wouldn't be too bad. I don't think there's a problem.
 
 git commit -a
+
+-----------------------------------------------------------------------
+fgrep 'mditerarg(' *.f | sed -e "s/^.*mditerarg(//g" -e "s/,.*$//g"
+
+bdyface
+bdyslopeDh
+bdyslopescreen
+bdymach
+bdy3slope
+bdyslopeDh
+bdy3slope
+bdyshrroutine
+bdyshrroutine
+cijroutine
+volnode
+cijedge
+psumtoq
+quasineutral
+routine
+ucrhoset
+iteradd
+iteradd
+cijroutine
+cijedge
+
+Purged out the iLscom from all files, by adding to argument list.
+Also in phisoluplot.f calculated and passed to needy routines.
+mditerarg still needs to calculate it and that fixes reduce.

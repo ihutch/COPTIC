@@ -114,11 +114,18 @@ c***************************************************************
 c Master plotting routine.
       subroutine solu3plot(ifull,iuds,u,cij,
      $     phi,phiinf,rc,thetain,nth)
+      parameter (ndims=3)
+      integer ifull(ndims),iuds(ndims)
+      integer iLs(ndims+1)
+      iLs(1)=1
+      do i=1,3
+         iLs(i+1)=iLs(i)*ifull(i)
+      enddo
 c      call fixedline(ifull,iuds,u,phi,phiinf,rc)
 c      call slicesolu(ifull,iuds,u,cij)
-      call gradradial(ifull,u,cij,phi,phiinf,rc,thetain,nth)
-c      call phiradial(ifull,cij,phi,phiinf,rc,thetain,nth,rs)
-      call eremesh(ifull,iuds,u,cij,phi,phiinf,rc)
+      call gradradial(ifull,iLs,u,cij,phi,phiinf,rc,thetain,nth)
+c      call phiradial(ifull,iLs,cij,phi,phiinf,rc,thetain,nth,rs)
+      call eremesh(ifull,iLs,iuds,u,cij,phi,phiinf,rc)
       end
 c***************************************************************
 c Packaged version of plotting.
@@ -142,7 +149,7 @@ c Plotting slices.
       end
 c*******************************************************************
 c Packaged version of plotting.
-      subroutine gradradial(ifull,u,cij,phi,phiinf,rc,thetain,nth)
+      subroutine gradradial(ifull,iLs,u,cij,phi,phiinf,rc,thetain,nth)
 c     $     ,rs)
       parameter (ndims=3,nd2=ndims*2)
       integer ifull(ndims)
@@ -158,9 +165,7 @@ c     integer iuds(ndims)
       real upsimple(ndims,ifmax)
       integer itemp(ndims)
       real rsimple(ifmax),region(ifmax)
-      parameter (mdims=10)
-      integer iLs(mdims+1)
-      common /iLscom/iLs
+      integer iLs(ndims+1)
 
       character*40 form1
       include 'meshcom.f'
@@ -330,7 +335,7 @@ c-------------------------------------------------------------------
 c-------------------------------------------------------------------
 c***************************************************************
 c Packaged version of potential plotting.
-      subroutine phiradial(ifull,cij,
+      subroutine phiradial(ifull,iLs,cij,
      $     phi,phiinf,rc,thetain,nth,rs)
       parameter (ndims=3,nd2=ndims*2)
       integer ifull(ndims)
@@ -346,9 +351,7 @@ c      real u(ifull(1),ifull(2),ifull(3))
 c      real upsimple(ndims,ifmax),upnd(ndims,ifmax)
       integer itemp(ndims)
       real rsimple(ifmax),region(ifmax)
-      parameter (mdims=10)
-      integer iLs(mdims+1)
-      common /iLscom/iLs
+      integer iLs(ndims+1)
 
       character*40 form1
       include 'meshcom.f'
@@ -506,7 +509,7 @@ c         write(*,*)i,xr
 c********************************************************************
 c***************************************************************
 c Packaged version of potential error finding and plotting.
-      subroutine eremesh(ifull,iuds,u,cij,phi,phiinf,rc)
+      subroutine eremesh(ifull,iLs,iuds,u,cij,phi,phiinf,rc)
       parameter (ndims=3,nd2=ndims*2)
       integer ifull(ndims),iuds(ndims)
       real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
@@ -519,9 +522,7 @@ c Packaged version of potential error finding and plotting.
       real zclv(30)
       character*6 xtit,ytit
 
-      parameter (mdims=10)
-      integer iLs(mdims+1)
-      common /iLscom/iLs
+      integer iLs(ndims+1)
       include 'meshcom.f'
 c      include '3dcom.f'
 

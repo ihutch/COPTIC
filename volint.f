@@ -5,7 +5,7 @@ c from meshcom for unintersected points or by volintegrate.
 c Can't be called for edge nodes.
 c Does not work for objects that do not set the intersections,
 c e.g. point-charge objects. 
-      subroutine volnode(inc,ipoint,indi,ndims,iused,
+      subroutine volnode(inc,ipoint,indi,ndims,iLs,iused,
      $     volumes,cij)
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
@@ -19,10 +19,7 @@ c e.g. point-charge objects.
       real xm(ndims_mesh),xi(ndims_mesh),xp(ndims_mesh)
       parameter (npoints=10000)
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerarg argument conventions.
-      parameter (mdims=10)
-      integer iLs(mdims+1)
-      common /iLscom/iLs
+      integer iLs(ndims+1)
       include 'myidcom.f'
       integer icall
       save icall

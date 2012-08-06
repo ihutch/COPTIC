@@ -455,7 +455,7 @@ c      write(*,*)'Point charges included. Mask:',iptch_copy
       endif
       end
 c**********************************************************************
-      subroutine ucrhoset(inc,ipoint,indi,ndims,iuds,
+      subroutine ucrhoset(inc,ipoint,indi,ndims,iLs,iuds,
      $     uci,rhoci,iptch_copy)
 c Set uci and rhoci when point charges are present.
       integer inc,ipoint,ndims,indi(ndims)

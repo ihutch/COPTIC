@@ -84,7 +84,7 @@ c            write(*,*)'Entering mditerarg upper',myside,icoords(id),ipin
       enddo
       end
 c**********************************************************************
-      subroutine bdyshrroutine(inc,ipoint,indi,ndims,iused
+      subroutine bdyshrroutine(inc,ipoint,indi,ndims,iLs,iused
      $     ,idn,u,idone,ioffset)
 c Set the boundary value of u according to the boundary conditions.
 c The position at which to set it is in indi(ndims) which is u(1+ipoint).

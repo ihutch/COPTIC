@@ -21,17 +21,14 @@ c sets the derivative to zero on boundaries 3.
       call mditerarg(bdy3slope,ndims,ifull,iuds,ipoint,u)
       end
 c************************************************************************
-      subroutine bdy3slope(inc,ipoint,indi,ndims,iused,u)
+      subroutine bdy3slope(inc,ipoint,indi,ndims,iLs,iused,u)
 c Version of bdyroutine that sets derivative=0 on 3-boundary.
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
       real u(*)
 
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerarg argument conventions.
-      parameter (mdims=10)
-      integer iLs(mdims+1)
-      common /iLscom/iLs
+      integer iLs(ndims+1)
 
 c Algorithm: take steps of 1 in all cases except
 c when on a lower boundary face of dimension 1. 
@@ -66,7 +63,7 @@ c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
       end
 c************************************************************************
-      subroutine bdyslopeDh(inc,ipoint,indi,ndims,iused,u)
+      subroutine bdyslopeDh(inc,ipoint,indi,ndims,iLs,iused,u)
 c Version of bdyroutine that sets logarithmic 'radial' gradient
 c equal to D
       integer ipoint,inc
@@ -74,10 +71,7 @@ c equal to D
       real u(*)
 
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerarg argument conventions.
-      parameter (mdims=10)
-      integer iLs(mdims+1)
-      common /iLscom/iLs
+      integer iLs(ndims+1)
 
       include 'meshcom.f'
       common /slpcom/slpD,islp

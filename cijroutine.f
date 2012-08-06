@@ -7,8 +7,8 @@ c      data oi_cij/0/
 c      end
 c****************************************************************
 c Routine for setting cij, which is used by the general mditerarg.
-c      subroutine cijroutine(inc,ipoint,indm1,ndims,iused,cij)
-      subroutine cijroutine(inc,ipoint,indi,ndims,iused,cij,debyelen
+c      subroutine cijroutine(inc,ipoint,indm1,ndims,iLs,iused,cij)
+      subroutine cijroutine(inc,ipoint,indi,ndims,iLs,iused,cij,debyelen
      $     ,error)
 c This routine sets the object pointer in cij if there is an object
 c crossing next to the the point at indi(ndims) in the 
@@ -549,17 +549,14 @@ c Finished.
       end
 c**********************************************************************
 c************************************************************************
-      subroutine cijedge(inc,ipoint,indi,ndims,iused,cij)
+      subroutine cijedge(inc,ipoint,indi,ndims,iLs,iused,cij)
 c Edge routine which sets the iregion for all boundary points.
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
       real cij(*)
       parameter (mdims=10)
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerarg argument conventions.
-c Unneeded
-c      integer iLs(mdims+1)
-c      common /iLscom/iLs
+      integer iLs(ndims+1)
 
       include 'objcom.f'
 

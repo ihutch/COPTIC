@@ -143,7 +143,7 @@ c Diagnostic particles must be transferred, not just added.
       end
 
 c********************************************************************
-      subroutine psumtoq(inc,ipoint,indi,ndims,iused,
+      subroutine psumtoq(inc,ipoint,indi,ndims,iLs,iused,
      $     psum,rho,volumes,u)
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
@@ -175,7 +175,7 @@ c      endif
       inc=1
       end
 c********************************************************************
-      subroutine quasineutral(inc,ipoint,indi,ndims,iused,
+      subroutine quasineutral(inc,ipoint,indi,ndims,iLs,iused,
      $     q,u,volumes)
 c     ,dum3,dum4)
       integer ipoint,inc

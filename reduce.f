@@ -259,7 +259,7 @@ c operator use or by using mpisubopcreate:
      $        invec,inoutvec,dum3,dum4)
       end
 c********************************************************************
-      subroutine iteradd(inc,ipoint,indi,ndims,iused,
+      subroutine iteradd(inc,ipoint,indi,ndims,iLs,iused,
      $     a,b)
 c ,c,d)
       integer ipoint,inc

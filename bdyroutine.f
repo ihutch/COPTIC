@@ -82,7 +82,7 @@ c Turn off alternative                  islp=islp-8192
       endif
       end
 c************************************************************************
-      subroutine bdyslopeDh(inc,ipoint,indi,ndims,iused,u)
+      subroutine bdyslopeDh(inc,ipoint,indi,ndims,iLs,iused,u)
 c Version of bdyroutine that sets logarithmic 'radial' gradient
 c equal to D=slpD
 c BC is du/dr=D u/r     in the form   (ub-u0)=  D*(ub+u0)*f/(1-f)
@@ -93,10 +93,7 @@ c Thus ub=u0(1-f-D.f)/(1-f+D.f) using radii from position (0,0,..)
       real u(*)
 
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerarg argument conventions.
-      parameter (mdims=10)
-      integer iLs(mdims+1)
-      common /iLscom/iLs
+      integer iLs(ndims+1)
 
       include 'meshcom.f'
       include 'slpcom.f'
@@ -147,7 +144,7 @@ c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
       end
 c************************************************************************
-      subroutine bdymach(inc,ipoint,indi,ndims,iused,u)
+      subroutine bdymach(inc,ipoint,indi,ndims,iLs,iused,u)
 c Version of bdyroutine that sets the BC on the x, y boundaries
 c as being  du/dr + M du/dz =0. (r the cylindrical radius)
 c The z-mach number, M, is the value of slpD in slpcom.
@@ -160,10 +157,7 @@ c dxk2 is in slpcom.
       integer indi(ndims),iused(ndims)
       real u(*)
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerarg argument conventions.
-      parameter (mdims=10)
-      integer iLs(mdims+1)
-      common /iLscom/iLs
+      integer iLs(ndims+1)
 c Value of mach number passed in common.
       include 'meshcom.f'
       include 'slpcom.f'
@@ -258,7 +252,7 @@ c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
 c**********************************************************************
 c The logic of the following might miss some corners.
 c************************************************************************
-      subroutine bdyslopescreen(inc,ipoint,indi,ndims,iused,u)
+      subroutine bdyslopescreen(inc,ipoint,indi,ndims,iLs,iused,u)
 c Version of bdyroutine that sets logarithmic 'radial' gradient
 c equal to that for a Debye screened potential: -(1+r/lambdas)
 c slpD needs to be set to lamdas prior to call.
@@ -267,11 +261,8 @@ c slpD needs to be set to lamdas prior to call.
       real u(*)
 
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerarg argument conventions.
+      integer iLs(ndims+1)
       parameter (mdims=10)
-      integer iLs(mdims+1)
-      common /iLscom/iLs
-
       real x(mdims)
       include 'meshcom.f'
       include 'slpcom.f'
@@ -334,7 +325,7 @@ c using information in meshcom.
       enddo
       end
 c********************************************************************
-      subroutine bdyface(inc,ipoint,indi,ndims,iused,u)
+      subroutine bdyface(inc,ipoint,indi,ndims,iLs,iused,u)
 c Boundary routine for general setting in terms of face.
 c Coefficients (2ndims) in facebcom. AF phi + BF dphi/dn + CF =0
 c CF may vary linearly with position with coefs CxyzF(3,6)
@@ -346,10 +337,7 @@ c AmBF= (A/2-B/dn), ApBF= (A/2+B/dn) where dn is the outward mesh step.
       include 'meshcom.f'
       include 'facebcom.f'
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerarg argument conventions.
-      parameter (mdims=10)
-      integer iLs(mdims+1)
-      common /iLscom/iLs
+      integer iLs(ndims+1)
 
       integer iupper,idn,id
 c Algorithm: take steps of 1 in all cases except
@@ -497,17 +485,14 @@ c sets the derivative to zero on boundaries 3.
       call mditerarg(bdy3slope,ndims,ifull,iuds,ipoint,u)
       end
 c************************************************************************
-      subroutine bdy3slope(inc,ipoint,indi,ndims,iused,u)
+      subroutine bdy3slope(inc,ipoint,indi,ndims,iLs,iused,u)
 c Version of bdyroutine that sets derivative=0 on 3-boundary.
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
       real u(*)
 
 c Structure vector needed for finding adjacent u values.
-c Can't be passed here because of mditerarg argument conventions.
-      parameter (mdims=10)
-      integer iLs(mdims+1)
-      common /iLscom/iLs
+      integer iLs(ndims+1)
 
 c Algorithm: take steps of 1 in all cases except
 c when on a lower boundary face of dimension 1. 
