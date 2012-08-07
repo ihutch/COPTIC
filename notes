@@ -9304,3 +9304,63 @@ cijedge
 Purged out the iLscom from all files, by adding to argument list.
 Also in phisoluplot.f calculated and passed to needy routines.
 mditerarg still needs to calculate it and that fixes reduce.
+
+6 Aug 2012
+Fixed an error in the new mditeradd.
+
+git commit -a
+
+Fixed bulkforce to use vneutral to calculate the momentum loss.
+This should work correctly provided there's no driving Eneutral, which
+is not (yet) implemented in coptic.
+
+ mpiexec -n 2 ./coptic uniform2.dat -s400 -v-.6 -vn0. -t.03 -da10 -ds1. -l1. -ct20. -md4 -gs -gd -rx0.
+produces a bulkforce that is still evolving (getting larger) with time during
+the run. It also does not give agreement between different spheres.
+Not clear what the problem is. 
+
+Compare ./coptic -v1 -ct1. -ofgeomforce.dat -s200 -ri400 with new coptic 
+    Field,       part,       press,     collision,    total,  steps ave 100 200
+===== Object 1 ->  2 radius=  0.500 zcenter=  0.000 Charge=   -2.6908 =====
+     0.00883     0.01075    -0.00072     0.01021     0.02907
+     0.00612     0.00070    -0.00070    -0.00032     0.00580
+     0.19566     1.17729    -0.02441     0.56033     1.90886
+===== Object 2 ->  3 radius=  1.000 zcenter=  0.000 Charge=   -8.5194 =====
+     0.01088     0.04131    -0.00717    -0.01681     0.02821
+     0.00498     0.05935    -0.00304     0.01155     0.07284
+     0.22069     1.23143    -0.15176     1.19035     2.49071
+===== Object 3 ->  4 radius=  1.500 zcenter=  0.000 Charge=   -6.0372 =====
+     0.00744    -0.00210    -0.01884    -0.04048    -0.05398
+     0.00531    -0.03313    -0.01100    -0.02103    -0.05985
+     0.05078     1.07863    -0.32375     1.65627     2.46194
+===== Object 4 ->  5 radius=  2.000 zcenter=  0.000 Charge=   -3.9712 =====
+     0.00473    -0.05140    -0.04172    -0.05803    -0.14642
+     0.00031     0.04795    -0.01667    -0.08757    -0.05599
+     0.00546     1.02033    -0.43453     1.96473     2.55599
+
+and Jun14th version:
+    Field,       part,       press,     collision,    total,  steps ave 100 200
+===== Object 1 ->  2 radius=  0.500 zcenter=  0.000 Charge=   -2.7091 =====
+    -0.01209    -0.01049     0.00118    -0.00415    -0.02555
+     0.01653     0.00276    -0.00164    -0.00548     0.01217
+     0.19764     1.06559    -0.02442     0.55081     1.78963
+===== Object 2 ->  3 radius=  1.000 zcenter=  0.000 Charge=   -8.5595 =====
+    -0.01439    -0.02641     0.00924    -0.02864    -0.06021
+     0.02715     0.00463    -0.01409    -0.04490    -0.02721
+     0.21429     1.16204    -0.14992     1.24086     2.46728
+===== Object 3 ->  4 radius=  1.500 zcenter=  0.000 Charge=   -6.1374 =====
+    -0.00737     0.02001     0.02408    -0.08309    -0.04637
+     0.01199    -0.05386    -0.03684    -0.06926    -0.14796
+     0.05046     1.00457    -0.31815     1.72937     2.46625
+===== Object 4 ->  5 radius=  2.000 zcenter=  0.000 Charge=   -4.0830 =====
+    -0.00037    -0.02474     0.03537    -0.17158    -0.16132
+     0.00638     0.04012    -0.06936    -0.12916    -0.15202
+     0.00812     0.75871    -0.43419     2.02579     2.35844
+Not identical but pretty good agreement.
+
+That is with point charge radius 1. potential -1. which is less than
+what I am running with sheath model: radius .4, potential -1. The
+mesh spacing is ~.25.
+
+Did a new run with sheath model and -ct2 still does not seem to make any
+consistent sense. Still evolving substantially.

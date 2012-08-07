@@ -2,7 +2,9 @@
 
       include 'examdecl.f'
 
-      parameter (ntheta=4,nr=38)
+c nr ought to be adjustable below to the coarseness of the mesh.
+c For decent resolution 38 works.
+      parameter (ntheta=4,nr=24)
       real thetadist(nr,ntheta),thetaval(ntheta),rval(0:nr)
       real rvalneg(0:nr)
       integer ithetacount(nr,ntheta)
@@ -19,17 +21,17 @@ c Cylindrical vector distribution:
       real xl(2),yl(2)
 c
       logical lsd,lhalf,lvtk
-      integer ifix(3)
+      integer ifix(3),isubtract
       parameter (ndiagmax=7)
       real diagsum(na_i,na_j,na_k,ndiagmax)
       real phimax
-      data phimax/0./
+      data phimax/0./isubtract/0/
       data lsd/.false./lhalf/.false./lvtk/.false./
 c 
 
       diagfilename=''
       isw=1
-      call examargs(rp,phimax,isw,lsd,lhalf,lvtk)
+      call examargs(rp,phimax,isw,lsd,lhalf,lvtk,isubtract)
          
 c      write(*,*)(u(16,16,k),k=1,36) 
       ied=1
@@ -46,6 +48,26 @@ c      call noeye3d(0)
 c Scale the size to debyelen
          do i=1,ixnp(4)
             xn(i)=xn(i)/debyelen
+         enddo
+      endif
+
+      if(isubtract.ne.0)then
+         write(*,*)'isubtract=',isubtract
+c Subtract the edge value face No isubtract from the rest.
+         do k=1,iuds(3)
+            do j=1,iuds(2)
+               do i=1,iuds(1)
+                  i1=i
+                  j1=j
+                  k1=k
+                  if(isubtract.eq.1)i1=iuds(1)
+                  if(isubtract.eq.2)j1=iuds(2)
+                  if(isubtract.eq.3)k1=iuds(3)
+                  u(i,j,k)=u(i,j,k)-u(i1,j1,k1)
+c                  write(*,*)i,j,k,i1,j1,k1,u(i,j,k)
+c                  u(i,j,k)=1.
+               enddo
+            enddo
          enddo
       endif
 
@@ -387,7 +409,7 @@ c         write(22,*)rzmpos(iz0+i),xn(ixnp(3)+iz0+i)
       end
 
 c*************************************************************
-      subroutine examargs(rp,phimax,isw,lsd,lhalf,lvtk)
+      subroutine examargs(rp,phimax,isw,lsd,lhalf,lvtk,isubtract)
       include 'examdecl.f'
       logical lsd,lhalf,lvtk
 
@@ -414,7 +436,9 @@ c Deal with arguments
          if(argument(1:2).eq.'-r')
      $        read(argument(3:),'(f8.4)',err=201)rp
          if(argument(1:2).eq.'-p')
-     $        read(argument(3:),'(f8.4)',err=201)phimax
+     $        read(argument(3:),*,err=201)phimax
+         if(argument(1:2).eq.'-b')
+     $        read(argument(3:),*,err=201)isubtract
          if(argument(1:2).eq.'-s')lsd=.not.lsd
          if(argument(1:2).eq.'-m')lhalf=.not.lhalf
          if(argument(1:2).eq.'-w')then
@@ -440,8 +464,10 @@ c Help text
       write(*,301)'Usage: phiexamine [switches] <phifile>'
 c      write(*,301)' --objfile<filename>  set name of object data file.'
 c     $     //' [copticgeom.dat'
-      write(*,301)' -r<rp> -p<phimax> -l<isw>'
+      write(*,301)' -r<rp> -p<phimax> -l<isw> -b<isub>'
       write(*,301)' isw: Byte 1: gradlegend(1) 2: SliceCont(0) ...'
+      write(*,301)' isub: Set dimension whose edge value to subtract'
+     $     ,isubtract
       write(*,*)'-d<diagfilename> '
      $     ,' specify diagnostic file for velocity overplot'
       write(*,301)' -s scale size to debyelen'

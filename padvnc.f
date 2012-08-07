@@ -319,7 +319,7 @@ c Restart the rest of the advance
 c----------------------------------------------
 c Non-injection completion.
  300     continue
-         call bulkforce(x_part(1,i),iregion,colntime,vd)
+         call bulkforce(x_part(1,i),iregion,colntime,vneutral)
 c Special diagnostic orbit tracking:
          if(i.le.norbits.and. if_part(i).ne.0)then
             if(dtdone-dt.gt.1.e-4)then
@@ -664,14 +664,14 @@ c Now xg is the gyroradius.
       xc(3)=xin(3)-xg(3)
       end
 c*****************************************************************
-      subroutine bulkforce(xpart,iregion,colntime,vd)
+      subroutine bulkforce(xpart,iregion,colntime,vneutral)
 c Add on the contribution of this particle to the collision force.
-c colntime is the collision time, vd the drift velocity, dt time step.
-c The total force is the contained momentum difference over the
+c colntime is the collision time, vneutral the drift velocity, dt time
+c step.  The total force is the contained momentum difference over the
 c collision time. Needs subsequently to be properly normalized.
       include 'partcom.f'
       include '3dcom.f'
-      real xpart(3*ns_ndims),colntime,vd
+      real xpart(3*ns_ndims),colntime,vneutral
       integer iregion
       if(colntime.gt.0)then
          do i=1,mf_obj
@@ -679,10 +679,10 @@ c collision time. Needs subsequently to be properly normalized.
 c            if(iregion.ne.0)write(*,*)'iregion',iregion
             if(btest(iregion,igeom-1))then
 c Inside object i->igeom which is a flux measuring object.
-               vid=0.
 c The scalar drift velocity is in the z-direction.
                do id=1,ns_ndims
-                  if(id.eq.ns_ndims)vid=vd
+                  vid=0.
+                  if(id.eq.ns_ndims)vid=vneutral
                   colnforce(id,i,nf_step)=colnforce(id,i,nf_step)+
      $                 (vid-xpart(ns_ndims+id))
                enddo
