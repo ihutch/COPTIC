@@ -3,29 +3,37 @@ c Test the reinjection scheme by forming cartesian distributions.
       include 'plascom.f'
       include 'meshcom.f'
       include 'creincom.f'
+      include 'colncom.f'
 
       parameter (ndiag=100,mdims=3)
       real fv(ndiag,mdims)
+      real fvc(ndiag,mdims)
       real px(ndiag,mdims)
       real diagv(ndiag)
       real diagx(ndiag,mdims)
+      integer ipinj(mdims)
       real xr(3*mdims)
       character*100 string
       logical normal,lwork
 
-c defaults
-      vd=1.2
+c defaults (generally vary for testing)
+      vd=.5
+      vneutral=0.
       Ti=.1
-      vrange=5.
+      Tneutral=.1
+      vrange=3.
       nin=1000000
+c Whether we plot the normal or tangentical velocity distributions.
 c      normal=.false.
       normal=.true.
 
-c Initialize random number generator
-      v=ran1(-6)
+c Initialize random number generator change (negative) value for different
+c random number selections.
+      v=ran1(-100)
 
 c Set up mesh data.
       do id=1,mdims
+         ipinj(id)=0.
          xmeshstart(id)=-1.
          xmeshend(id)=1.
       enddo
@@ -47,8 +55,14 @@ c Set up mesh data.
 c         write(*,*)'Returned from reinject',xr
 c Assign velocities to bins.
          do id=1,mdims
+c idrein is set by reinject as the dimension on which reinjected.
+c            lwork=id.eq.abs(idrein)
             lwork=id.eq.abs(idrein)
             if(.not.normal)lwork=.not.lwork
+c Accumulate reinjection data only in dimensional directions id that
+c either coincide with the face dimension idrein (normal) or do not
+c coincide (.not.normal). 
+c For .not.normal, each particle contributes to two distributions.
             if(lwork)then
                v=xr(mdims+id)
                v=sign(min(vrange,abs(v)),v)
@@ -69,18 +83,47 @@ c Assign positions to bins
                   write(*,*)'Reinject velocity sign wrong',
      $                 (xr(kk),kk=1,2*mdims)
                endif
+               ipinj(id)=ipinj(id)+1
             endif
          enddo
       enddo
 
       write(*,*)'Finished',nin,' injects.'
+c      write(*,*)'grein=',grein
+c normalize the same as the sample.
+         dv=diagv(2)-diagv(1)
+         write(*,*)ipinj,dv
+         do i=1,ndiag
+            u=(diagv(i)-vneutral)/sqrt(2.*Tneutral)
+            ud=(vd-vneutral)/sqrt(2.*Tneutral)
+            do idrein=1,3
+               if(normal)then
+                  fvc(i,idrein)=ffdrein(diagv(i))*ipinj(idrein)*dv
+     $                 /(grein(2*idrein-1)+grein(2*idrein))
+               else
+                  fvc(i,idrein)=fvdrein(diagv(i))*ipinj(idrein)*dv
+               endif
+            enddo
+c These are the direct normalizations for the .not.normal case:
+c            fvc(i,3)=fvcx(u,ud)*ipinj(3)*dv/sqrt(2.*Tneutral)
+c            fvc(i,2)=exp(-diagv(i)**2/(2.*Ti))/sqrt(2.*3.1415926*Ti)
+c     $           *ipinj(2)*dv
+         enddo
+c      write(*,*)(fvc(i,1),i=1,ndiag)
       call ticnumset(10)
       do id=1,mdims
          call autoplot(diagv,fv(1,id),ndiag)
+         call polymark(diagv,fv(1,id),ndiag,3)
+         call color(6)
+         call dashset(2)
+         call polyline(diagv,fvc(1,id),ndiag)
+         call dashset(0)
+         call color(15)
          write(string,'(a,i3)')'Distribution dimension',id
          call axlabels('velocity',string(1:30))
          call pltend()
       enddo
+
       do id=1,mdims
          call autoplot(diagx(1,id),px(1,id),ndiag)
          write(string,'(a,i3)')'Distribution dimension',id
@@ -88,4 +131,10 @@ c Assign positions to bins
          call pltend()
       enddo
 
+      do id=1,mdims
+         call yautoplot(prein(0,id),ncrein+1)
+         write(string,'(a,i3)')'prein, dimension',id
+         call axlabels('',string(1:lentrim(string)))
+         call pltend()
+      enddo
       end

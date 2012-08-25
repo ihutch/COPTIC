@@ -126,7 +126,7 @@ c First time this routine just sets defaults and the object file name.
      $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp)
+     $     ,ipartperiod,lnotallp,Tneutral)
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF)
 c Second time: deal with any other command line parameters.
@@ -137,7 +137,7 @@ c Second time: deal with any other command line parameters.
      $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp)
+     $     ,ipartperiod,lnotallp,Tneutral)
 c The double call enables cmdline switches to override objfile settings.
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.

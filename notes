@@ -9364,3 +9364,94 @@ mesh spacing is ~.25.
 
 Did a new run with sheath model and -ct2 still does not seem to make any
 consistent sense. Still evolving substantially.
+
+3 Aug 12 Non-uniform sheaths. See hand written notes.
+
+22 Aug 2012
+
+Implement separation of Tneutral from Ti, in cmdline setting.
+In padvnc change tisq to be sqrt(Tneutral) instead of sqrt(Ti).
+Thus we can make the temperature of the reinjected ions Ti different
+from that of the collisional ions.
+
+Thinking about giving true drift distribution input to reinjection.
+Functions ffcrein and fvcrein are the crucial ones. They are
+Maxwellians (at present) that are integrated using cumprob to give
+the flux and velocity distributions of various dimensions. The idea
+is that we change these just for the drift direction (z). At the
+moment these are unnormalized. This does not matter because the
+same functions are used for all the faces and so the relative probability
+is all that counts, and the relative unnormalization is the same. 
+If, however, we substitute a different function, the collisional drift
+function, for one dimension, this must be correctly normalized relative
+to the Maxwellian function. Those functions are given in terms of the
+standard dimensionless velocity (i.e. not normalized to the ion or neutral 
+temperature thermal speed; the T_i is explicitly accounted for in the 
+function). And they are equal to unity [times abs(v) for ffcrein] at the
+Maxwellian's peak. It seems that if we normalize them so that the 
+area integral \int f(v) dv = 1, then we can normalize the drift distribution
+the same and we'll be able to use both simultaneously for different
+faces. This means we have to divide by sqrt(2\pi T_i). Multiplying
+each by 2 gives no change to test output. Dividing by  sqrt(2\pi T_i) gives
+a change. I'm assuming this is a rounding problem.
+
+Implemented drifting distribution in the reinjection. In general, this 
+will revert numerically to drifting Maxwellian distribution when vneutral
+is equal to vd. Therefore, the code is left as the default for all cases.
+The code for 1-D distributions with strong magnetic field not fixed
+implemented with the collisional drift effects yet. 
+
+Tested using testing/creintest.f with some development to normalize the 
+routines and compare them. 
+
+It would be helpful also to have an absorbing boundary choice such that
+particles are never injected from some boundary, e.g. because it is a
+wall. The natural way to do this is to set fcarea to zero for this 
+face (as I do with periodic conditions), but this has only 3 dimensions,
+so it does not work when a face is opposite a non-periodic face.
+Therefore I have to set grein(id) equal to zero for this face, prior
+to the calculation of gtot and gtrein. 
+
+How to denote this? Probably use different values for ipartperiod. 
+We could use the first two bits to denote non-injection for the lower
+and upper faces in a specific direction. In that case, 1 would denote
+non-injection lower, 2 non-injection upper, 3 non-injection both.
+Perhaps we therefore make 4 periodic particles. In that case 3 can
+be used for two absorbing faces opposite one another. 0 means nothing
+special, open boundaries. Need then to correct other routines for this
+change of meaning. 4 <-> periodic.
+
+There's still an issue of ninjcalc rhoinfcalc etc. This must be fixed
+in fonefac. 
+
+24 Aug 12
+Implemented new section in fonefac that represents the fluxes in either
+or both faces for possibly different vd and vneutral. This is supposed
+to give the flux from the general drift distribution, which can vary
+from drifting maxwellian (when vd=vneutral) to pure drift when vneutral=0.
+This section gives the same result as the old explicit form for a 
+drifting maxwellian when vd=vneutral (after corrections!). However, 
+it is not fully tested for situations when vd != vneutral and the drift
+distribution is fully in play. 
+
+25 Aug 12
+Seems to be in good shape now. BUT proper treatment of collisions with
+magnetic field has not been implemented. So the drift-collisional 
+distribution is not used with infinite field, and it is not correctly
+field-aligned with a finite B-field. 
+
+Collisional sheath simulations work much better using phi derivative equals
+zero on the upper face. We now can also set the lower face to be absorbing
+so that the physics is much better defined. One can run these without
+collisions too and the potential tends to be much flatter in the presheath.
+The diagnostics don't seem to be what we expect at the z-boundaries. 
+I'm not sure the injection is right. Found the problem. Caused by my
+non-intuitive order of grein chosen long ago. Fixed.
+
+Now one needs rather slow injection speed (relative to zero neutral
+speed) to avoid a non-monotonic phi. About -v-.1 for -ct10. I don't
+understand that. Can make the -ct number high (e.g. 50) without much
+change.  Actually mpiexec -n 2 ./coptic uniform3.dat -v-.5 -rx0. -da10
+-s200 -vn-.0 -t.1 -md4 -ct40.  does not give non-monotonic, except
+just at the end, so maybe the non-monotonicity was a different
+problem. I can't reproduce the non-monotonicity immediately.

@@ -49,7 +49,8 @@ c      common /reinextra/averein,adeficit
 c Make this always last to use the checks.
       include 'partcom.f'
 
-      tisq=sqrt(Ti)
+c      tisq=sqrt(Ti)
+      tisq=sqrt(Tneutral)
       lcollided=.false.
       ncollided=0
 
@@ -526,7 +527,7 @@ c xn is the position array for each dimension arranged linearly.
 c Find the index of xprime in the array xn:
          isz=ixnp(id+1)-ioff
          ix=interp(xn(ioff+1),isz,x_part(id,i),xm)
-         if(ipartperiod(id).ne.0)then
+         if(ipartperiod(id).eq.4)then
 c In periodic directions, we do not allow particles to be closer to the
 c mesh boundary than half a cell, so as to use periodicity consistent
 c with the potential periodicity. chargetomesh does additional sums 

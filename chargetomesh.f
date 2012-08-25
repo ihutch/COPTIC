@@ -83,7 +83,7 @@ c,iuds(ndims)
       include 'partcom.f'
 
       do id=1,ndims_mesh
-         if(ipartperiod(id).ne.0)then
+         if(ipartperiod(id).eq.4)then
 c Set view to entire array (Offsets indi [0:iaux(id)-1]).
             icomplete=mditerator(ndims,iview,indi,4,iaux)
 c Use the general iterator to sum periodically.
@@ -116,7 +116,7 @@ c exchange sum.
       include 'partcom.f'
 
       do id=1,ndims_mesh
-         if(ipartperiod(id).ne.0)then
+         if(ipartperiod(id).eq.4)then
 c Set view to entire array (Offsets indi [0:iaux(id)-1]).
             icomplete=mditerator(ndims,iview,indi,4,iaux)
 c Use the general iterator to sum periodically.

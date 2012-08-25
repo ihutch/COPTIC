@@ -1,4 +1,4 @@
-c**********************************************************************
+**********************************************************************
 c Cartesian reinjection routine.
       subroutine reinject(xr,ilaunch)
       parameter (mdims=3)
@@ -23,6 +23,7 @@ c      write(*,*)'Calling cinjinit'
 c      write(*,*)'Returned from cinjinit'
       endif
 
+c----------------------------------------
 c Pick the face from which to reinject.
       ra=ran1(0)
       call invtfunc(gintrein,7,ra,fc)
@@ -34,10 +35,11 @@ c So + means plane xstart, and - xend relative to a normally ordered mesh.
       idrein=(index+1)/2
 c Just less than +-1.
       sg=-(2*mod(index,2)-1)*0.999999
-c Position on start or end face, sg ensures (just) inside the mesh.
+c Position in this dimension (either end), sg ensures (just) inside the
+c mesh.
       xr(idrein)=0.5*(xmeshstart(idrein)*(1.+sg)+
      $     xmeshend(idrein)*(1.-sg))
-
+c----------------------------------------
 c Pick the velocities and positions parallel to this face:
 c Doing position and velocity simultaneously requires velocity distrib
 c to be independent of position.
@@ -61,8 +63,7 @@ c velocity, cubic/parabolic interpolation:
 c Works very badly. Don't use.
 c         xr(mdims+abs(iother))=yinterp4pt(prein(ir-1,iother),fr)
       enddo
-
-c      write(*,*)'Picking perpendicular velocities'
+c----------------------------------------
 c Pick the velocity perpendicular to this face:
       ra=ran1(0)*ncrein
       ir=int(ra)
@@ -71,6 +72,7 @@ c      write(*,*)ra,ir,index,fr,ncrein
       xr(mdims+idrein)=hrein(ir,index)*(1-fr)+hrein(ir+1,index)*fr
 c In this version of reinject we never try more than one launch
       ilaunch=1
+c----------------------------------------
 c Correct the total energy for averein. 
       x2=0.
       do k=1,mdims
@@ -83,8 +85,6 @@ c Correct the total energy for averein.
       enddo
 
       end
-
-
 c**********************************************************************
 c Given a function f(x), whose integral from x=-\infty to +infty exists,
 c obtain the definite integral g(x) = \int_-\infty^x f(x) dx.
@@ -278,6 +278,8 @@ c maxwellians of width given by Ti
       include 'partcom.f'
       external ffcrein
       external fvcrein
+      external ffdrein
+      external fvdrein
       external ff1crein
       external fv1crein
       parameter (bdys=6.)
@@ -285,13 +287,16 @@ c      real fcarea(3)
 
       xc=0.
       xw=sqrt(Ti)
+c For three coordinate directions
       do id=1,3
+c    For two ends (and hence velocity polarities)
          do i2=1,2
 c idrein determines the sign of velocity. id odd => idrein negative.
             idrein=id*(2*i2-3)
             index=2*(id-1)+i2
             if(Bt.lt.Btinf)then
-               call cumprob(ffcrein,xw,xc,
+c Set the inverse cumulative probability fn hrein, and flux grein
+               call cumprob(ffdrein,xw,xc,
      $           ncrein,hrein(0,index),grein(index),myid)
             else
 c Infinite-Bt case 1-d projection.
@@ -300,6 +305,14 @@ c Infinite-Bt case 1-d projection.
                call cumprob(ff1crein,xw,xc,
      $           ncrein,hrein(0,index),grein(index),myid)
             endif
+c Zero grein on absorbing faces.
+            ip=ipartperiod(id)
+c Ordering in grein etc is (+,-) for each dim. Upper face/Lower face. 
+c That's the opposite of what I adopted for ipartperiod because
+c it corresponds to negative/positive velocity. Pity!
+            ip=ip/2**(2-i2)
+            ip=ip-2*(ip/2)
+            if(ip.eq.1)grein(index)=0.
 c Kludge fix of ends to avoid negative velocity injections.
             if(idrein.gt.0)then
                if(hrein(0,index).lt.0.)hrein(0,index)=0.
@@ -311,7 +324,7 @@ c     $           ,(hrein(kk,index),kk=ncrein-4,ncrein)
          enddo
          idrein=id
          if(Bt.lt.Btinf)then
-            call cumprob(fvcrein,xw,xc,
+            call cumprob(fvdrein,xw,xc,
      $           ncrein,prein(0,id),gdummy,myid)
          else
             call cumprob(fv1crein,xw,xc,
@@ -324,20 +337,13 @@ c      write(*,*)'grein',grein
 c Alternative general-dimension fcarea calculation:
       do i=1,ndims_mesh
          fcarea(i)=1.
-         if(lnotallp.and.ipartperiod(i).eq.1)fcarea(i)=1.e-6
-c         if(ipartperiod(i).eq.1)fcarea(i)=1.e-6
+         if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
          do j=1,ndims_mesh-1
             id=mod(i+j-1,ndims_mesh)+1
             fcarea(i)=fcarea(i)*abs(xmeshend(id)-xmeshstart(id))
          enddo
 c         write(*,*)'fcarea(',i,')=',fcarea(i)
       enddo
-c      do id=1,3
-c         i2=mod(id,3)+1
-c         i3=mod(id+1,3)+1
-c         fcarea(id)=abs((xmeshend(i2)-xmeshstart(i2))
-c     $        *(xmeshend(i3)-xmeshstart(i3)))
-c      enddo
       do id=1,6
          gtot=gtot+grein(id)*fcarea((id+1)/2)
       enddo
@@ -347,12 +353,16 @@ c      enddo
      $        1.000001*grein(id)*fcarea((id+1)/2)/gtot
       enddo
       if(.not.gintrein(6).gt.1.)write(*,*)'gintrein problem!'
+c      write(*,*)'ipartperiod',ipartperiod,' grein',grein
 c      write(*,*)'gintrein',gintrein
 
       end
 c**********************************************************************
+c Obsolete functions for drifting Maxwellian reinjection.
+c**********************************************************************
       real function ffcrein(v)
-c Return the flux from a maxwellian for dimension idrein (in creincom)
+c Return the one-way differential flux distribution as a fn of velocity
+c from a maxwellian for dimension idrein (in creincom)
 c In the positive or negative direction, determined by idrein's sign.
 c If abs(idrein) == 3, then maxwellian is shifted by vd (in plascom).
 c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
@@ -361,7 +371,6 @@ c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
       include 'creincom.f'
 
       if(int(sign(1.,v)).eq.sign(1,idrein))then
-c      if(idrein*v.gt.0)then
          if(abs(idrein).eq.3)then
             ffcrein=abs(v)*exp(-(v-vd)**2/(2.*Ti))
          else
@@ -370,6 +379,8 @@ c      if(idrein*v.gt.0)then
       else
          ffcrein=0.
       endif
+c      ffcrein=2.*ffcrein
+      ffcrein=ffcrein/sqrt(2.*3.1415926*Ti)
       end
 c**********************************************************************
       real function fvcrein(v)
@@ -386,7 +397,112 @@ c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
       else
          fvcrein=exp(-v**2/(2.*Ti))
       endif
+c      fvcrein=2.*fvcrein
+      fvcrein=fvcrein/sqrt(2.*3.1415926*Ti)
       end
+c******************************************************************
+c Routines for reinjection calculations with ions drifting relative
+c to neutrals, driven by external force (e.g. E-field).
+c Direct replacements for the fvcrein, ffcrein functions.
+c*******************************************************************
+      real function fvdrein(v)
+c Return the probability distribution for reinjection. In dimension 3 
+c from a drift-distribution shifted by vd (in plascom) relative to
+c collisions with neutrals of velocity vneutral (in colncom).
+c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
+      implicit none
+      real v,vn,u,ud,fvcx
+      external fvcx
+      include 'plascom.f'
+      include 'creincom.f'
+      include 'colncom.f'
+      if(abs(idrein).eq.3)then
+c In z-direction use appropriate drift distribution.
+         vn=sqrt(2.*Tneutral)
+         ud=(vd-vneutral)/vn
+         u=(v-vneutral)/vn
+         fvdrein=fvcx(u,ud)
+         fvdrein=fvdrein/vn
+      else
+         vn=sqrt(2.*Ti)
+         fvdrein=exp(-(v/vn)**2)/(vn*sqrt(3.1415926))
+      endif
+      end
+c*******************************************************************
+      real function ffdrein(v)
+c Return the one-way differential flux distribution as a fn of velocity
+c from a drift distribution (in dimension 3).
+c In the positive or negative direction, determined by idrein's sign.
+      implicit none
+      real v,vn,u,ud,fvcx
+      external fvcx
+      include 'plascom.f'
+      include 'creincom.f'
+      include 'colncom.f'
+      if(abs(idrein).eq.3)then
+c In z-direction use appropriate drift distribution.
+         vn=sqrt(2.*Tneutral)
+         ud=(vd-vneutral)/vn
+         u=(v-vneutral)/vn
+         ffdrein=fvcx(u,ud)
+         ffdrein=abs(v)*ffdrein/vn
+      else
+         vn=sqrt(2.*Ti)
+         ffdrein=abs(v)*exp(-(v/vn)**2)/(vn*sqrt(3.1415926))
+      endif
+c Don't count particles going the wrong way:
+      if(int(sign(1.,v)).ne.sign(1,idrein))ffdrein=0.
+
+      end
+c****************************************************************
+c FVCX function for 1-d drifting CX distribution.
+      function fvcx(u,ud)
+      real u,ud,v,vd,fvcx
+c Return the normalized distribution function f(u)=v_n f(v) for constant
+c cx collision frequency at a value of normalized velocity u=v/v_n, when
+c the normalized drift velocity is ud= (a/\nu_c) /v_n, with v_n =
+c sqrt(2T_n/m). a is acceleration, nu_c collision freq.  This is the
+c solution of the steady Boltzmann equation.
+      if(ud.lt.0.) then
+         v=-u
+         vd=-ud
+      else
+         v=u
+         vd=ud
+      endif
+      if(vd.eq.0.)then
+         carg=20.
+         earg=100
+      else
+         carg=0.5/vd-v
+         earg=(0.5/vd)**2-v/vd
+      endif
+      if(carg.gt.10)then
+c asymptotic form for large exp argument (small vd):
+c  exp(-v^2)/[sqrt(\pi)(1-2 v_d v)]:
+         fvcx=exp(-v**2)/1.77245385/(1.-2.*vd*v)
+      elseif(carg.gt.-5.)then
+         fvcx=exp(-v**2)*experfcc(carg)*0.5/vd
+      else
+c         fvcx=exp(earg)*erfcc(carg)*0.5/vd
+         fvcx=exp(earg)/vd
+      endif
+c      write(*,*)'fvcx:vd,v,earg,fvcx',vd,v,earg,fvcx
+      if(.not.fvcx.ge.0) then
+         write(*,*)'fvcx error. u=',u,' ud=',ud,' f=',fvcx,carg
+         fvcx=0.
+      endif
+      end
+c****************************************************************
+c This is exp(X^2)*erfc(X)
+      FUNCTION expERFCC(X)
+      Z=ABS(X)      
+      T=1./(1.+0.5*Z)
+      expERFCC=T*EXP(-1.26551223+T*(1.00002368+T*(.37409196+
+     *    T*(.09678418+T*(-.18628806+T*(.27886807+T*(-1.13520398+
+     *    T*(1.48851587+T*(-.82215223+T*.17087277)))))))))
+      IF (X.LT.0.) expERFCC=2.*exp(z**2)-expERFCC
+      END
 c*********************************************************************
 c**********************************************************************
       real function ff1crein(v)
@@ -473,7 +589,7 @@ c      real fcarea(ndims_mesh)
 
       do i=1,ndims_mesh
          fcarea(i)=1.
-         if(lnotallp.and.ipartperiod(i).eq.1)fcarea(i)=1.e-6
+         if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
          do j=1,ndims_mesh-1
             id=mod(i+j-1,ndims_mesh)+1
             fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
@@ -530,7 +646,7 @@ c Calculate ninjcomp from ripernode
          fcarea(i)=1.
 c We don't correct area here, because we now count every relocation as
 c a reinjection.
-         if(lnotallp.and.ipartperiod(i).eq.1)fcarea(i)=1.e-6
+         if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
          do j=1,ndims_mesh-1
             id=mod(i+j-1,ndims_mesh)+1
             fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
@@ -565,22 +681,81 @@ c      write(*,*)'Ending ninjcalc',rhoinf,nrein,n_part
 c********************************************************************
       real function fonefac(i)
 c Return the one-way flux correction factor in coordinate direction i,
-c accounting for the possibility of infinite Bfield which
+c relative to an unshifted maxwellian.
+c Account for the possibility of infinite Bfield which
 c one-dimensionalizes the problem, for the parameters of this plasma
 c given in
       include 'plascom.f'
+      include 'partcom.f'
+      include 'colncom.f'
 c
 c      write(*,*)'fonefac',Bt,Btinf,vd,Bfield
       if(Bt.lt.Btinf)then
-         a=1.
-c Assume vd is in the last dimension
+c Account for absorbing faces.
+         ip=ipartperiod(i)
+         ip=ip-4*(ip/4)
+         if(ip.eq.0)then
+            a=1.
+         elseif(ip.eq.3)then
+            a=0.
+         else
+            a=0.5
+         endif
+c Assume vd is in the last dimension. Choose partial integrals.
          if(i.eq.nplasdims)then
+c Shifted maxwellian flux, relative to unshifted. This is not correct
+c for general distributions like the collisional drift. And does not
+c account for absorbing faces. 
             td=vd/sqrt(2.*Ti)
             a=(exp(-td**2)+
      $           0.5*sqrt(3.1415926)*td*(erfcc(-td)-erfcc(td)))
+c To fix it we need the more general form
+c and we need to add the two faces separately.
+c Gives the same result within rounding for no walls zero vd.
+c But not yet tested for non-zero ud/uc. See hand notes 24 Aug 12.
+            if(.true.)then
+            a=0.
+            ud=(vd-vneutral)/sqrt(2.*Ti)
+            uda=abs(ud)
+            uc=sign(1.,ud)*vneutral/sqrt(2.*Ti)
+c Ought to think a bit more about this trap value
+            if(uda.lt.1.e-2)then
+               earg=100
+            else
+               earg=uc+0.5/uda
+            endif
+c H(-u_c) in the polarity in which ud is positive, which is the unsigned
+c flux in the direction of positive ud.
+            H1=0.5*(exp(-uc**2)*(1./sqrt(3.1415926)
+     $              +uda*expERFCC(earg)
+     $              )+(uc+uda)*erfcc(-uc))
+c The unsigned flux in the other direction.
+            H2=abs(uda+uc-H1)
+            if(ip-2*(ip/2).ne.1)then
+c We are injecting positive flux at the lower boundary.
+               if(ud.ge.0)then
+                  a=a+H1
+               else
+                  a=a+H2
+               endif
+            endif
+            if(ip/2.ne.1)then
+c We are injecting negative flux at the upper boundary.
+               if(ud.ge.0)then
+                  a=a+H2
+               else
+                  a=a+H1
+               endif
+            endif
+c            write(*,*)'vd,vneutral,ud,uc,earg,H1,H2,a'
+c            write(*,*) vd,vneutral,ud,uc,earg,H1,H2,a
+            a=a*sqrt(3.1415926)
+            endif
          endif
       else
 c Infinite Bt. Projected total drift velocity normalized:            
+c Drift-collisional distribution not implemented yet. Only drifting
+c Maxwellian.
          td=(Bfield(i)*vpar+vperp(i))/sqrt(2.*Ti)
 c One-way flux consists of the part of the parallel distribution whose
 c projected parallel velocity exceeds -vs.

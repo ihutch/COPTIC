@@ -4,10 +4,10 @@ c Encapsulation of parameter setting.
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,dropaccel,rmtoz,Bfield,Bt,ninjcomp
-     $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
-     $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
+     $     ,nsteps,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
+     $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp)
+     $     ,ipartperiod,lnotallp,Tneutral)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
@@ -17,6 +17,7 @@ c Encapsulation of parameter setting.
      $     ,lrestart,lextfield,LPF(ndims),lnotallp
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,rmtoz,vneutral,vd,debyelen,Ti,extfield,vpar,slpD
+     $     ,Tneutral
       real Bfield(ndims),Bt,vperp(ndims),CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims)
       character*100 restartpath,objfilename
@@ -39,6 +40,7 @@ c Default to constant ripernode not n_part.
          debyelen=1.
          vd=0.
          Ti=1.
+         Tneutral=1.
 c Default edge-potential (chi) relaxation rate.     
          crelax=1.*Ti/(1.+Ti)
          dt=.1
@@ -219,7 +221,14 @@ c By default put the vneutral the same
             endif
          endif
          if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
-         if(argument(1:2).eq.'-t')read(argument(3:),*,err=201)Ti
+         if(argument(1:3).eq.'-tn')then
+            read(argument(4:),*,err=201)Tneutral
+         elseif(argument(1:2).eq.'-t')then
+            read(argument(3:),*,err=201)Ti
+c Default Tneutral=Ti
+            Tneutral=Ti
+         endif
+         
          if(argument(1:2).eq.'-w')read(argument(3:),*,err=201)iwstep
          if(argument(1:3).eq.'-pd')then
             idistp=1
@@ -292,8 +301,9 @@ c Zero the vparallel and vperp. Probably not necessary; but tidy.
 c      write(*,*)'Bfield',Bfield
       lnotallp=.false.
       do i=1,ndims
-         if(ipartperiod(i).ne.0)then
+         if(ipartperiod(i).ne.4)then
             lnotallp=.true.
+         else
             if(crelax.ne.0.)then
 c Don't allow unwise operation with periodic particles.
                write(*,*)'**** UNWISE operation with periodic particles'
@@ -338,12 +348,13 @@ c Help text
       write(*,304)' -dd   set Drop-ion impulse/step  [',dropaccel
      $     ,'  greater impulse => drop this ion.'
       write(*,301)' -s    set No of steps.           [',nsteps
-      write(*,302)' -v    set Drift (z-)velocity.    [',vd
       write(*,302)' -t    set Ion Temperature.       [',Ti
       write(*,302)' -l    set Debye Length.          [',debyelen
-      write(*,302)' -mz   set mass/Z ratio           [',rmtoz
+      write(*,302)' -v    set Drift (z-)velocity.    [',vd
       write(*,302)' -ct   set collision time.        [',colntime
       write(*,302)' -vn   set neutral drift velocity [',vneutral
+      write(*,302)' -tn   set neutral temperature    [',Tneutral
+      write(*,302)' -mz   set mass/Z ratio           [',rmtoz
       write(*,302)' -Bx -By -Bz set mag field compts [',Bfield
       write(*,301)' -a    set averaging steps.       [',iavesteps
      $     ,'     Also period of diagnostic writes.'
@@ -365,7 +376,9 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
      $     ,' ABC Robin coefs. Cxyz gradients.'
       write(*,303)' -bp<i>  toggle bndry periodicity [',LPF
      $     ,'    in dimension <i>.'
-      write(*,305)' -pp<i,j,k>  set part periodicity [',ipartperiod 
+      write(*,305)' -pp<i,j,k>  partcl bcs/periodcty [',ipartperiod 
+      write(*,*)'     0 open; 1 lower absorbing; 2 upper absorbing;'
+     $     ,' 3 both absorb; 4 periodic'
       write(*,301)
      $     ' -fs[path]  Attempt to restart from state saved [in path].'
       write(*,301)' -ea --  end argument parsing. Skip succeeding.'
