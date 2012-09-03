@@ -8973,7 +8973,8 @@ Files meshconstruct.f and ../coptic/meshconstruct.f differ
 Files padvnc.f and ../coptic/padvnc.f differ
 Files pinit.f and ../coptic/pinit.f differ
 
-Copy meshconstruct segfault. This is longer argument list. git checkout meshconstruct.f
+Copy meshconstruct segfault. This is longer argument list. git
+checkout meshconstruct.f
 
 We need now to change to the new coptic.f calls. First commandline.
 In copticforward directory.
@@ -9092,7 +9093,7 @@ Put a write on entry to bdyshare and of arguments just before call.
 They don't agree. Arguments are not being passed correctly into bdyshare.
 
 Constructed a bbdecltest.f that works and calls bdyshare. 
-Made bdyshare implicit none. Found the problem! It was an incorrect
+Made bdyshare implicit none. FOUND THE PROBLEM! It was an incorrect
 length first line of argument list that happened to have the final
 comma in column 73. It therefore concatenated that with the first
 argument of the next line and misalinged all the succeeding arguments.
@@ -9181,7 +9182,7 @@ grid set properly. Since particles use that grid, it is not optional to
 have it fully set. 
 
 I think I ought to be able to fix this whole thing by removing if(myid.eq.0)
-from the current version. Done.
+from the current version. Done. 
 
 Commit Push
 ------------------------------------------------------------------
@@ -9455,3 +9456,6 @@ change.  Actually mpiexec -n 2 ./coptic uniform3.dat -v-.5 -rx0. -da10
 -s200 -vn-.0 -t.1 -md4 -ct40.  does not give non-monotonic, except
 just at the end, so maybe the non-monotonicity was a different
 problem. I can't reproduce the non-monotonicity immediately.
+
+28 Aug 12
+Changed the -gd -gp switches to be more rational, and removed -gs switch.

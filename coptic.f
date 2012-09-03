@@ -74,7 +74,7 @@ c Data for plotting etc.
       data iobpl/0/
       data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot/
      $     .false.,.false.,.false.,.false.,.false./
-      data lphiplot,ldenplot/.true.,.true./
+      data lphiplot,ldenplot/.false.,.false./
 c      data thetain,nth/.1,1/
       data lrestart/.false./
       data ipstep/1/idistp/0/idcount/0/icijcount/0/

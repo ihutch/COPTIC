@@ -28,12 +28,7 @@ c Pass to the setting routine the dimension,u,idone.
 c
 c Passing the dimensions into this routine.  This ought to work because
 c all the variables in bbdydecl.f are passed as arguments. That's why we
-c have some redundant arguments. However, there is a major bug in that
-c the logical array lperiod is then somehow incorrectly interpreted and
-c the following arguments are misaligned or otherwise corrupted. This
-c was found to happen even when it was a parameter. I could not fix this
-c until lperiod was moved to the end of the argument list. Seems like a
-c compiler bug but gfortran was also broken.
+c have some redundant arguments.
       include 'bbdydecl.f'
 c Only the first element of idone is actually used to communicate to
 c send information back to the calling routine. But we need more

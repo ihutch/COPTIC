@@ -25,6 +25,7 @@ c Structure vector needed for finding adjacent u values.
       logical lmyidhead,lphiplot,lpgraph
       integer ipstep,idebug
       real CFin(3+ndims_mesh,2*ndims_mesh)
+      integer ipartperiod(ndims_mesh)
       include 'facebcom.f'
 c Either include plascom or define vperp and Bfield.
       include 'plascom.f'
@@ -37,9 +38,9 @@ c Set up the structure vector.
       data iLs/1,Li1,Li2,Li3/
 c Mesh and mpi parameter defaults:
       data idims/nblksi,nblksj,nblksk/
-      data ifull/na_i,na_j,na_k/
+      data ifull/na_i,na_j,na_k/ipartperiod/0,0,0/
 c Data for plotting etc.
-      data iobpl/0/idebug/0/
+      data iobpl/0/idebug/1/
       data ltestplot,lsliceplot,linjplot/
      $     .true.,.false.,.false./
       data lphiplot,lpgraph/.true.,.false./
@@ -79,7 +80,7 @@ c Geometry and boundary information. Read in.
       if(idebug.gt.0)write(*,*)'Finished readgeom'
 c---------------------------------------------------------------
 c Construct the mesh vector(s) from the geometry info.
-      call meshconstruct(ndims,iuds,ifull)
+      call meshconstruct(ndims,iuds,ifull,ipartperiod)
       if(lmyidhead)write(*,'(a,3i4,6f8.3)')
      $     ' Constructed mesh',iuds
      $     ,(xmeshstart(k),xmeshend(k),k=1,ndims)

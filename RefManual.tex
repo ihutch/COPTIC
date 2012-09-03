@@ -25,11 +25,14 @@ sections describe the structure of the code and how it works.
 COPTIC acquires its settings from a combination of command line
 arguments and an input file that gives information about geometry,
 which is referred to at the object file.  The purpose of this section
-is to explain the format and meaning of the object file.
+is to explain the format and meaning of the object file. Some
+parameters are set either in the object file or by command line
+arguments. A command line argument always overrides the object file.
 
 
 \paragraph{The default name} of the input file is \verb!copticgeom.dat!, but it
-may be set to any other name by using the command line object file
+may be set to any other name by a non-switch commandline argument
+(something not starting \verb!-!), or using the command line object file
 switch in the form \verb!-ofNewFileName.Ext!.
 
 \subsection{Overall format}
@@ -211,15 +214,24 @@ object as follows.
 object set the potential to zero at the boundary rather than the
 normal continuity condition when a Robin form is used.
 
-\paragraph{2($\times256=512$) Point-Charge} This spherical object is a point charge,
-which is treated by the PPPM technique. Its potential is represented
-by an analytic part that is non-zero out to a radius specified as
-usual. Outside that (isotropic) radius, the analytic part is zero. The
-magnitude of the point charge is specified by the input value in the
-position of \verb!ofn1! (12th position in the object line; the 11th
-position requires a number (0) but is ignored.) This value equals
-the Coulomb potential that would exist at the object's radius if the
-charge were isolated.
+\paragraph{2($\times256=512$) Point-Charge} This spherical object is a
+point charge, which is treated by the PPPM technique. Its potential is
+represented by an analytic part that is non-zero out to a radius
+specified as usual. Outside that (isotropic) radius, the analytic part
+is zero. The magnitude of the point charge is specified by an input
+value in the position of \verb!ofn1! (12th position in the object
+line; the 11th position requires a number (0) but is ignored.) The
+value at position \verb!ofn1! equals the Coulomb potential that would
+exist at the object's radius if the charge were unshielded.
+For example,
+\begin{verbatim}
+513, 0.,0.,0., 0.,1.,10.,  .4,.4,.4,  0,-1.,0
+\end{verbatim}
+denotes a point charge at position \verb!(0.,1.,10.)!, whose
+analytic part extends to radius \verb!0.4!, and whose charge is such
+that a pure Coulomb potential due to it would give rise to a potential
+at \verb!0.4! of value \verb!-1.!\ (in other words its charge is
+$0.4\times(-1.)\times4\pi$ normalized units). 
 
 \paragraph{3($\times256=768$) Nonuniform Boundary Conditions} The
 coefficients $A,B,C$ of the Robin boundary condition in this object vary
@@ -227,10 +239,11 @@ linearly in space. Their values at the object center are specified as
 usual. Their gradients are specified by three vectors which follow the
 flux accumulation specification (which must be present).
 
-\paragraph{4($\times256=1024$) Insulating Object} The boundary condition is
-the specification of the potential ($A,C\ne 0$). But the value of $C$
-is determined by requiring the value of the ion flux density to the
-local facet to equal the electron flux density there. 
+\paragraph{4($\times256=1024$) Insulating Object} The boundary
+condition is the specification of the potential ($A,C\ne 0$). But the
+value of $C$ is determined dynamically within the code by requiring
+the value of the ion flux density to the local facet to equal the
+electron flux density there.
 
 \paragraph{5($\times256=1280$) Floating Object} The potential is constant
 on the object, but takes a value determined by requiring the total ion
@@ -242,19 +255,19 @@ The setting of the mesh spacing in each dimension is specified by
 special object lines that may appear anywhere within the object file,
 for which \verb!otype! is equal to 91, 92, or 93, referring to the
 three directions 1, 2, 3 or x, y, z. The last such line overrules any
-earlier lines. These lines do not constitute actual objects and do not
-contribute to the object count \verb!ngeomobj!.
+earlier lines of the same \verb!otype!. These lines do not constitute
+actual objects and do not contribute to the object count
+\verb!ngeomobj!.
 
-The format of these special mesh lines consists of a monotonic sequence
-of integers starting with 1, a separator 0, and then a monotonic
-sequence of reals of length equal to the sequence of integers. This
-format is thus $9d,im_1,im_2,...,im_N,0,xm_1,xm_2,...,xm_N$, where $d$
-is 1, 2, or 3, and $N$ is the sequence length. The integer sequence
-refers to the mesh index in this dimension, and the real sequence
-specifies the position in calculation space of the corresponding mesh
-node. Between two indices adjacent in the sequence, the mesh positions
-are equally spaced. An
-example might be
+The format of these special mesh lines consists of a monotonic
+sequence of positive integers starting with 1, a separator 0, and then
+an equal-length monotonic sequence of reals. This format is thus
+$9d,im_1,im_2,...,im_N,0,xm_1,xm_2,...,xm_N$, where $d$ is 1, 2, or 3,
+and $N$ is the sequence length. The integer sequence refers to the
+mesh index in this dimension, and the real sequence specifies the
+position in calculation space of the corresponding mesh node. Between
+two indices adjacent in the sequence, the mesh positions are equally
+spaced. An example might be
 \begin{verbatim}
    92,1,12,21,32,0;-5.,-1.,1.,5.
 \end{verbatim}
@@ -294,25 +307,56 @@ have $A=3$, $B=4$, $C=5+6x+7y+8z$ is
 102,3.,4.,5.,6.,7.,8.
 \end{verbatim}
 
-A line in the geometry file can also specify \emph{periodic} face
-boundary conditions in a particular dimension. Such lines consist of a
-single type value lying between \verb!111! and \verb!110+ndims!. For example
+\paragraph{Periodic potential boundary conditions}
+on the faces perpendicular to a particular dimension can be set by a
+line in the geometry file. Such lines consist of a single type value lying
+between \verb!111! and \verb!110+ndims!. For example
 \begin{verbatim}
 113
 \end{verbatim}
 toggles on or off periodicity in the dimension
-\verb!type-110=3!. Naturally this sets the boundary conditions
-for both lower and upper boundaries.
+\verb!type-110=3!. Naturally this sets the boundary conditions for
+both lower and upper boundaries. 
+
+When the potential boundary condition is periodic in a certain
+dimension, the position of the boundary, or periodic join, of the
+computational domain is half way between the boundary node and its
+adjacent node within the mesh. In other words, a face node has the
+same potential as the node adjacent to the opposite face, because they
+are effectively the same place. An adjacent node acquires the charge
+contributions of the opposite face node. Face node potentials are
+never solved for by the Poisson solver. They are set by the boundary
+conditions. Face node charges are never used by the solver, but when
+the potential is periodic, they are passed to the opposite adjacent
+node. Particles leave the mesh for non-periodic-potential boundaries
+when they pass beyond the face node. For a periodic boundary, they
+leave when they pass beyond the periodic join.
 
 Any face that is not somewhere explicitly set defaults to the
 condition $\phi=0$ if Face Boundary conditions are active.
 
-Periodicity of the region for particles can also be set with the
-special object \verb!98!, in the form of a line such as
+\paragraph{Periodicity of the computational domain for
+  particles}\label{partperiod} can
+also be set with the special object \verb!98!, in the form of a line
+such as
 \begin{verbatim}
-98,1,0,0
-\end{verbatim} which is equivalent to the switch \verb!-pp1,0,0!
-Each non-zero value sets particle periodicity in that dimension.
+98,4,0,0
+\end{verbatim} which is equivalent to the switch \verb!-pp4,0,0!.
+Each non-zero value sets particle face behavior in that dimension as follows.
+
+\begin{description}
+\item[0]  indicates open; particles leave the mesh and others may be
+reinjected on the faces. This is the default. 
+\item[1] lower absorbing; the lower face in this dimension permits particles
+to leave the mesh, but none are reinjected there.
+\item[2] upper absorbing; the upper face in this dimension is absorbing;
+lower refers to the first value of a mesh specification, and upper the
+last.
+\item[3] both faces absorb.
+\item[4] periodic; particles leaving through one face reappear immediately in the
+corresponding position adjacent to the opposite face. They have the same
+properties (e.g. velocity) they left with.
+\end{description}
 
 Use of boundary-setting lines like these in the object file
 \emph{is over-ridden} by any values set by command-line switches.
@@ -331,12 +375,12 @@ an integer $n_k$ followed by $n_k$ integer values. So a line is
 schematically
 $99,n1,v_{11},v_{12},...,v_{1,n1},n2,v_{21},v_{22},...,v_{2,n2},...$
 The values $v$ refer to actual objects in the object file in the order
-in which they appear. (Mesh and boolean lines do not count as objects
-but objects of whatever shape, even if their ABC values are all zero,
-do.)  The values $v$ may be positive referring to \emph{inside} or
-negative referring to \emph{outside}. The list of blocks is terminated
-by a zero. All objects in each block are ORed together. Then the
-blocks are ANDed. For example
+in which they appear. (Mesh, boundary setting, and boolean lines do
+not count as objects but objects of whatever shape, even if their ABC
+values are all zero, do.)  The values $v$ may be positive referring to
+\emph{inside} or negative referring to \emph{outside}. The list of
+blocks is terminated by a zero. All objects in each block are ORed
+together. Then the blocks are ANDed. For example
 \begin{verbatim}
 #     n1 v11 v12  v13 n2  v21  termination
   99, 3, 3,   4,  -6,  1, -5,    0
@@ -366,27 +410,30 @@ actual value of the parameter at that stage in processing.
 unset. Default 0.
 If set non-zero, specifies the exact number of particles per processor
 (node) \verb!n_part!. So that the total number of particles is \verb!nproc!$\times$\verb!n_part!. Every time a particle leaves the domain, a new one is
-injected.
+injected. A fixed number of particles is always present.
 
 \paragraph{-rn....} Set the reinjection number for each step, per
-node, ninjcomp. 
-A complement of exactly ninjcomp particles per processor is injected
-at each step.
+node, \verb!ninjcomp!. 
+A complement of exactly \verb!ninjcomp! particles per processor is injected
+at each step. The number of particles in the simulation therefore
+might change.
 
 \paragraph{-ri....} Set the rhoinfinity per node, and hence
 ninjcomp. Default 100. 
 The value of -ri is converted into \verb!ninjcomp! by \verb!ninjcalc! during
 initialization. The total \verb!rhoinfinity! is \verb!nproc! times the value
-specified. This is the equivalent of -rn but more convenient.
+specified. This is the equivalent of -rn but expressed more conveniently.
 
 \paragraph{-rx....} 
-Set the potential relaxation rate per step, \verb!crelax!. Default 0.
+Set the potential relaxation rate per step, \verb!crelax!. Default 0.5.
 The edge potential phirein is used to set the factor chi, which
 adjusts the reinjection rate by the OML factor, and averein which
 increments the injection energy. However, the update of phirein is
 multiplied at each step by \verb!crelax!. So if \verb!crelax!=1, the update is
 immediate, while if \verb!crelax!=0. the update is zero, and chi and averein
-remain zero throughout.
+remain zero throughout. Generally when simulating large domains in
+which the computational boundary is the particle region, one usually
+ought to use \verb!-rx0.!
 
 \paragraph{-dt....}
  Set the timestep during the main part of the iteration. Default .1
@@ -399,21 +446,22 @@ remain zero throughout.
  dt in the first 1/3 of the timesteps.
 
 \paragraph{-ds....}
-Set the timestep subcycle-fraction, subcycle. Default 0.  
-If non-zero, sets the maximum permissible momentum increment per step
-arising from electric field. Divide the timestep by an integer, to
-give a shorter step: dtc = dt/max(1, int(f*dt/subcycle)), where f is
-the local acceleration of this particle.
+Set the timestep subcycle-fraction. Default 0.  If non-zero,
+sets the maximum permissible momentum increment per step arising from
+electric field. If exceeded for any particle, divide the timestep by
+an integer, and take that many shorter steps of duration: $dtc = dt/max(1,
+int(f*dt/subcycle))$, where $f$ is the local acceleration of this
+particle.
 
 \paragraph{-s....}
 Set the total number of steps to take. Default 5. 
 If restarting, this is the number of \emph{additional} steps. 
 
-\paragraph{-v....}  Set the drift velocity, vd . Default 0.
+\paragraph{-v....}  Set the drift velocity, \verb!vd!, of the background ions . Default 0.
 
 \paragraph{-t....}  Set the ion temperature, $T_i$ ($/T_e$). Default 1.
 
-\paragraph{-l....}  Set the electron Debye length, debyelen. Default 1.
+\paragraph{-l....}  Set the electron Debye length, \verb!debyelen!. Default 1.
 
 \paragraph{-a....}  Set the averaging time, \verb!iavesteps!. Default 100.
 This controls the number of steps over which diagnostic and other
@@ -421,12 +469,12 @@ quantities are averaged. Writing or plotting of diagnostic and
 distribution data takes place only every \verb!iavesteps! steps.
 
 \paragraph{-w....}  Set period of write steps. Default 99999=never.
-This says how often (in steps) the total data is written out to
+This says how often (in steps) the total particle data is written out to
 disk. It is independent of the diagnostic averaging or moment writing.
 The data overwrites the files of prior steps, giving the running
 values. In any case, the particle flux data for all steps is contained in
-the files. If the write step period is set to a negative number, then 
-at the end of the run only the particles from node 0 (the master) are
+the files. If the write step period is set to a negative number, then
+only the particles from node 0 (the master) are ever
 written to disk. 
 
 \paragraph{-pd...}
@@ -440,7 +488,7 @@ every istepsave steps. If zero, no files or messages.
 
 \paragraph{-ct....} Set the collision time, colntime. Default 0 [off].
 
-\paragraph{-vn....} Set the neutral drift velocity, vn. Default 0.
+\paragraph{-vn....} Set the neutral drift velocity, \verb!Vneutral!. Default 0.
 
 \paragraph{-Bx.. -By.. -Bz..} Set the respective components of the
 magnetic field. 
@@ -453,9 +501,9 @@ face to zero (only 3 implemented). Bits 8-13 set corresponding face to
 have ``second derivative'' boundary condition (only 13 implemented).
 
 \paragraph{-bf....} Set the face boundary conditions. (Superceded by
--bp type below if present.) This command
-requires multiple additional arguments separated by commas but no
-spaces. Its form is -bfid,AF,BF,C0F[,CxF,CyF,CzF]. Here id is the face
+-bp type below if present.) This command requires multiple additional
+arguments separated by commas but no spaces. Its form is
+\verb!-bfid,AF,BF,C0F[,CxF,CyF,CzF]!. Here \verb!id! is the face
 number (1-3 lower, 4-6 upper, 7 set all faces, 0 reset all), AF, BF,
 C0F, are the Robin condition coefficients referring to the outward
 normal potential gradient. But if present then CxF, CyF, CzF are the
@@ -466,12 +514,13 @@ then assume AF is equal to 1; so -C is the set value of $\phi$.
 \paragraph{-bp....} Choose the dimension indicated by the single
 integer parameter. Toggle on (or off) periodic boundary conditions on
 potential for that dimension. Implies using the rectangular -bf
-overall scheme if on, but overrides the behavior in the chosen dimension.
+overall scheme if periodicity is on, but overrides the behavior in the
+chosen dimension.
 
 \paragraph{-pp....} Set the values of the particle-periodicity for
 three dimensions. For each non-zero-valued dimension, particles that
 leave the mesh are relocated at the corresponding periodic position
-within the mesh, rather than reinjected.
+within the mesh, rather than reinjected. See \ref{partperiod}.
 
 \paragraph{-ofFilename} Set the name of the object file. Default ccpicgeom.dat
 
@@ -492,8 +541,7 @@ ought not otherwise to use these display switches.
 Debugging switches for testing
  -gt   Plot regions and solution tests.
  -gi   Plot injection accumulated diagnostics.
- -gs[] Plot slices of solution potential, density. [At step n]. [    1
- -gd -gp Turn off slicing of density, potential. 
+ -gp -gd[] Plot slices of solution potential, density. [At step n]. [    1
  -gf   set quantity plotted for flux evolution and final distribution. [   -1
  -gw   set objplot sw. [+256:intercepts] Shade by 1:flux 2:flux-density[    1
  -gc   set wireframe [& stencils(-)] mask. objects<->bits. [    0
@@ -508,11 +556,11 @@ Debugging switches for testing
 These are required only for rather sophisticated use of COPTIC, and
 should be understood by reference to the source and comments. In
 brief, \verb!-gt! gives text representations of region and volumes
-slices. \verb!-gi! is for debugging reinjection. \verb!-gs! causes
-plotting slices of potential and density at an optionally specified
-step interval. \verb!-gc! sets the objects to display initially
-through its bits. \verb!-gf! sets the flux quantity to be plotted in
-graphics emitted after the final step. 
+slices. \verb!-gi! is for debugging reinjection. \verb!-gp! and
+\verb!-gd! cause plotting slices of potential and density at an
+optionally specified step interval. \verb!-gc! sets the objects to
+display initially through its bits. \verb!-gf! sets the flux quantity
+to be plotted in graphics emitted after the final step.
 
 \section{Data Structures}
 
@@ -583,13 +631,13 @@ concatenated one after the other. Its allocated length,
 dimensions. It is usually indexed using a mesh pointer
 \verb!ixnp(ndims_mesh+1)! whose integer values are the offsets from
 the start of array \verb!xn! at which each new dimension's mesh
-positions begin. Therefore \verb!ixnp(1)=0!. And \verb!ixnp(id)+1! is
-the position in \verb!xn! of the start of the positions for dimension
-\verb!id!. The final value, \verb!ixnp(ndims_mesh+1)! points to the
-address of the last of the last-dimension's positions. Therefore for
-each dimension \verb!id!, the mesh ranges from \verb!xn(ixnp(id)+1)!
-to \verb!xn(ixnp(id+1))!  and the length of the mesh is
-\verb!ixnp(id+1)-ixnp(id)!.
+positions begin. Therefore \verb!ixnp(1)=0!; and \verb!ixnp(id)+1! is
+the index in \verb!xn! of the start of the coordinate values of mesh nodes
+for dimension \verb!id!. The final value, \verb!ixnp(ndims_mesh+1)!
+points to the address of the last of the last-dimension's
+positions. Therefore for each dimension \verb!id!, the mesh ranges
+from \verb!xn(ixnp(id)+1)!  to \verb!xn(ixnp(id+1))!  and the length
+of the mesh is \verb!ixnp(id+1)-ixnp(id)!.
 
 \paragraph{Non-standard stencils,} which occur at object surfaces,
 are controlled by data structures in file \verb!objcom.f!.
@@ -807,17 +855,22 @@ distribution data is \verb!fvx!.
 
 \subsection{Overview of main program}
 
-\paragraph{Parameter Initialization} of the default scalar parameters occurs
+\paragraph{Parameter Initialization} of a few parameters occurs
 first, generally by assignment (rather than data) statements. The MPI
-system in initialized by calling \verb!mpigetmyid!, from file
+system is initialized by calling \verb!mpigetmyid!, from file
 \verb!mpibbdy.f!, which contains the MPI block boundary communications
-code. 
+code. The communicator mpiid of the process is determined.
 
-\paragraph{Command line arguments} are dealt with in a loop, until
-they exhausted or an error occurs. In the latter case, or when it is
-specifically asked for, a help message is given, which indicates the
-current values of the command-line parameters after which the program
-then terminates.
+\paragraph{Command line arguments} are dealt with by two calls to
+\verb!copticmdline!. The first sets most defaults but returns the name
+of the object file, which is then read so that it sets parameters.
+The second call to \verb!copticmdline! then iterates through all the
+arguments until they are exhausted or an error occurs. In the latter case,
+or when it is specifically asked for, a help message is given, which
+indicates the current values of the command-line parameters after
+which the program then terminates. By this two step process, any
+command line argument that sets a parameter \emph{overrides} any
+values set by the object file.
 
 \paragraph{Initializations} are performed as follows.
 \sentence{The mesh is constructed} \verb!meshconstruct!, and if
@@ -918,7 +971,7 @@ through inclusion of commons.
 
 After each full iteration, boundary conditions are applied by calling
 the parallelized boundary setting routine \verb!bdyshare!. If it
-returns its first argument \verb!idone!  equal to zero then it is
+returns its argument \verb!idone!  equal to zero then it is
 considered to have failed and the passed subroutine \verb!bdyset! is
 called. It evaluates the boundary conditions for the whole domain (in
 contrast to \verb!byshare! which sets just those for the local domain
@@ -1004,8 +1057,11 @@ and energy accumulations).
 
 \paragraph{Subcycling} of particles, by making multiple smaller
 timesteps in between each potential update, is possible regardless of
-collisions. It is of very dubious benefit, since subcycling is known
-to give rise to self-force (actually self-acceleration).
+collisions. It is somewhat problematic, since subcycling is known
+to give rise to self-force (actually self-acceleration). Therefore it
+is mostly used for ions that are passing very close to a
+point-particle object and would otherwise compromise the time-advance
+because of excessive acceleration.
 
 \subsection{Reinjection} 
 Reinjection is required when the particle number is fixed if the
@@ -1037,18 +1093,30 @@ external potential profile that might reject some reinjection orbits
 as unsuccessful, but still track the total number of injections at
 infinity.
 
-Two versions are incorporated into the COPTIC distribution. The first,
+Two versions are incorporated into the COPTIC distribution. 
+
+The first reinjection scheme,
 \verb!cartreinject.f!, reinjects at the outer boundary of the
 cartesian grid, which should be entirely in the particle region, as it
 will be if, for example, one is modelling a set of distinct objects
-embedded in a plasma. The second, \verb!reinject.f!, injects into the
+embedded in a plasma. This scheme uses reinjection distribution
+functions that are correct solutions of the Boltzmann equation for
+given ion drift and neutral drift. If (by default) the neutral
+velocity is equal to the ion drift velocity, then the ion distribution
+is a drifting Maxwellian. If not, then a more general distribution,
+the universal drift distribution in the neutral frame, is used. It is
+the correct solution for constant collision frequency, which gives a
+distribution function separable in the coordinates parallel and
+perpendicular to the drift. The drift direction is always along the
+third coordinate.
+
+The second, \verb!reinject.f!, injects into the
 interior of a sphere centered on the origin, whose radius is
 \verb!rs!, specified in \verb!plascom.f!. By default \verb!rs! is set
 to be half the largest side of the domain. Therefore spherical
 injection works only if the domain is a cube centered on the origin.
-The velocity distributions (and spatial distributions) are those of
-shifted Maxwellians. [So collisional distributions are not yet
-  properly handled.]
+Its velocity distributions (and spatial distributions) are those of
+shifted Maxwellians.
 
 \section{Output and Postprocessing}
 

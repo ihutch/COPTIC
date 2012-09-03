@@ -98,16 +98,14 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
          if(argument(1:3).eq.'-gw')read(argument(4:),*,end=201)iobpsw
          if(argument(1:3).eq.'-gr')read(argument(4:),*,end=201)rcij
-         if(argument(1:3).eq.'-gs')then
+         if(argument(1:3).eq.'-gd'.or.argument(1:3).eq.'-gp')then
             lsliceplot=.true.
-            read(argument(4:),*,err=210,end=210)ipstep
-            goto 211
- 210        ipstep=1
+            read(argument(4:),*,err=211,end=211)ipstep
  211        continue
             if(lmyidhead)write(*,*)'Plotting ipstep=',ipstep
          endif
-         if(argument(1:3).eq.'-gd')ldenplot=.false.
-         if(argument(1:3).eq.'-gp')lphiplot=.false.
+         if(argument(1:3).eq.'-gd')ldenplot=.not.ldenplot
+         if(argument(1:3).eq.'-gp')lphiplot=.not.lphiplot
          if(argument(1:3).eq.'-gi')linjplot=.true.
          if(argument(1:3).eq.'-gf')read(argument(4:),*,err=201)ifplot
          if(argument(1:3).eq.'-go')read(argument(4:),*,err=201)norbits
@@ -387,9 +385,9 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)'Debugging switches for testing'
       write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
-      write(*,301)' -gs[] Plot slices of solution potential, density. '
-     $     //'[At step n]. [',ipstep
-      write(*,301)' -gd -gp Turn off slicing of density, potential. '
+      write(*,301)
+     $      ' -gp -gd[] Plot slices of solution potential, density. '/
+     $     /'[At step n]. [',ipstep
       write(*,301)' -gf   set quantity plotted for flux evolution and'//
      $     ' final distribution. [',ifplot
       write(*,301)' -gw   set objplot sw. [+256:intercepts]'//
