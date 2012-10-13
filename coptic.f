@@ -277,7 +277,7 @@ c Make dimensions periodic:
       do id=1,ndims
          if(LPF(id))ictl=ictl+4*2**id
       enddo
-      write(*,*)'Calling sormpi'
+c      write(*,*)'Calling sormpi'
 c An initial solver call with zero density. 
       if(debyelen.ne.0.)call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare
      $     ,bdyset,faddu,ictl,ierrsor,myid,idims)
