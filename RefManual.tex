@@ -517,15 +517,26 @@ potential for that dimension. Implies using the rectangular -bf
 overall scheme if periodicity is on, but overrides the behavior in the
 chosen dimension.
 
-\paragraph{-pp....} Set the values of the particle-periodicity for
-three dimensions. For each non-zero-valued dimension, particles that
-leave the mesh are relocated at the corresponding periodic position
-within the mesh, rather than reinjected. See \ref{partperiod}.
+\paragraph{-pp....} Set the values of the particle ``periodicity'' at
+the domain boundary for three dimensions, for example \verb!-pp2,4,4!.
+The behaviour for each dimension is 0: open boundary; 1: lower
+boundary absorbing; 2: upper boundary absorbing; 3: both faces absorb;
+4: particles that leave the mesh are relocated at the corresponding
+periodic position within the mesh, rather than reinjected. See
+\ref{partperiod}.
 
-\paragraph{-ofFilename} Set the name of the object file. Default ccpicgeom.dat
+\paragraph{-ofFilename} Set the name [including path] of the object
+file. Default ccpicgeom.dat
 
-\paragraph{-fs[path]}     Attempt to restart the code from a saved
-state. Optionally define the path to the saved state files.
+\paragraph{-fs....}     Attempt to restart the code from a saved
+state. The integer switch indicates 0: no restart; 1: read just the
+particle and potential files so as to initialize, and start the step
+count at 1; 2 [or usually 3]: read the flux file [and particle and
+potential] and start at the next step after the prior run. Normal full
+restart is -fs3.
+
+\paragraph{-fn....} Set the path where files (other than the object
+file) are read from and written to.
 
 \subsection{Display and debugging parameters}
 

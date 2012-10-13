@@ -12,9 +12,9 @@ c Encapsulation of parameter setting.
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
      $     ,numprocs,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
-     $     ,iwstep,idistp,ndims,islp
+     $     ,iwstep,idistp,ndims,islp,lrestart
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
-     $     ,lrestart,lextfield,LPF(ndims),lnotallp
+     $     ,lextfield,LPF(ndims),lnotallp
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,rmtoz,vneutral,vd,debyelen,Ti,extfield,vpar,slpD
      $     ,Tneutral
@@ -233,9 +233,13 @@ c Default Tneutral=Ti
             read(argument(4:),*,err=240)idistp
          endif
          if(argument(1:3).eq.'-fs')then
-            lrestart=.true.
+            read(argument(4:),*,err=201)lrestart
+         endif
+         if(argument(1:3).eq.'-fn')then
             read(argument(4:),'(a)',err=201)restartpath
          endif
+         if(argument(1:3).eq.'-fp')then
+         endif         
          if(argument(1:10).eq.'--extfield')then
             read(argument(11:),*,err=201)extfield
 c            write(*,*)'||||||||||||||extfield',extfield
@@ -377,8 +381,11 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,305)' -pp<i,j,k>  partcl bcs/periodcty [',ipartperiod 
       write(*,*)'     0 open; 1 lower absorbing; 2 upper absorbing;'
      $     ,' 3 both absorb; 4 periodic'
-      write(*,301)
-     $     ' -fs[path]  Attempt to restart from state saved [in path].'
+      write(*,301)' -fs<i>  set restart switch:      [',lrestart
+     $     ,'  0:no, 1:partls+potl, 2:flux, 3:both.'
+
+      write(*,'(a,a)') ' -fn[path]  set particle reading/writing path: '
+     $     ,restartpath(1:lentrim(restartpath))
       write(*,301)' -ea --  end argument parsing. Skip succeeding.'
       goto 401
  402  continue

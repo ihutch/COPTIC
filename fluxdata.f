@@ -737,6 +737,7 @@ c      write(*,*)'Sectcom ipt=',sc_ipt
       end
 c*******************************************************************
       subroutine writefluxfile(name)
+c Initialize the name before entry. Very Important!
 c File name:
       character*(*) name
 c Common data containing the BC-object geometric information
@@ -747,13 +748,10 @@ c Plasma common data
       include 'plascom.f'
 c Intersection data
       include 'sectcom.f'
-
       character*(100) charout
 
-c Zero the name first. Very Important!
 c Construct a filename that contains many parameters
 c Using the routines in strings_names.f
-      name=' '
       call nameconstruct(name)
 c     np=nbcat(name,'.flx')
       call nbcat(name,'.flx')

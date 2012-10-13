@@ -56,8 +56,8 @@ c Face boundary data
       character*100 argument
 c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
-      logical lrestart,lmyidhead,lphiplot,ldenplot
-      integer ipstep,iwstep,idistp,idcount,icijcount
+      logical lmyidhead,lphiplot,ldenplot
+      integer ipstep,iwstep,idistp,idcount,icijcount,lrestart
 c Diagnostics etc
       real zp(na_m,na_m,ndims_mesh)
       real xlimit(2,ndims_mesh),vlimit(2,ndims_mesh)
@@ -76,7 +76,7 @@ c Data for plotting etc.
      $     .false.,.false.,.false.,.false.,.false./
       data lphiplot,ldenplot/.false.,.false./
 c      data thetain,nth/.1,1/
-      data lrestart/.false./
+      data lrestart/0/
       data ipstep/1/idistp/0/idcount/0/icijcount/0/
 c-------------------------------------------------------------
 c Consistency checks
@@ -326,9 +326,7 @@ c---------------------------------------------
       dtf=dt
 c-----------------------------------------------
 c Restart code
-c 400  continue
-      if(lrestart)then
-c         partfilename=' '
+      if(lrestart.ne.0)then
          partfilename=restartpath
          call nameconstruct(partfilename)
          phifilename=partfilename
@@ -336,14 +334,17 @@ c         partfilename=' '
          fluxfilename=partfilename
          nb=nbcat(fluxfilename,'.flx')
          nb=nameappendint(partfilename,'.',myid,3)
-         call readfluxfile(fluxfilename,ierr)
+         if(lrestart/2.ne.0)call readfluxfile(fluxfilename,ierr)
          if(ierr.ne.0)goto 401
-         call partread(partfilename,ierr)
-         if(ierr-4*(ierr/4).ne.0)goto 401
-         ied=1
-         call array3read(phifilename,ifull,iuds,ied,u,ierr)
-         if(ierr.ne.0)goto 401
-         write(*,*)'Node',myid,' Restart files read successfully.'
+         if(lrestart-2*(lrestart/2).ne.0)then
+            call partread(partfilename,ierr)
+            if(ierr-4*(ierr/4).ne.0)goto 401
+            ied=1
+            call array3read(phifilename,ifull,iuds,ied,u,ierr)
+            if(ierr.ne.0)goto 401
+         endif
+         write(*,*)'Node',myid,' Restart files read successfully. '
+     $        ,lrestart
          if(nsteps+nf_step.gt.nf_maxsteps)then
             if(lmyidhead)write(*,*)'Asked for',
      $           nsteps,' in addition to',nf_step,
@@ -357,7 +358,7 @@ c     $        nrein,n_part,ioc_part,rhoinf,dt
  401     continue
          write(*,*)'Failed to read restart files',
      $        fluxfilename(1:lentrim(fluxfilename)-4)
-         lrestart=.false.
+         lrestart=0
  402     continue
       endif
 c-----------------------------------------------
@@ -464,6 +465,7 @@ c               call diagstep(iLs,diagsum,ndiags)
 c If I'm the head, write it.
                   write(*,'(a,i3,a)')'Diags',ndiags,' '
                   write(argument,'(''.dia'',i4.4)')j
+                  diagfilename=' '
                   call namewrite(diagfilename,ifull,iuds,ndiags,diagsum
      $                 ,argument)
                endif
@@ -509,7 +511,7 @@ c set dimensions the first time by appending 0.
      $        cellvol,myid,0)
          if(iwstep.gt.0)then
             if(mod(nf_step,iwstep).eq.0)call datawrite(myid
-     $           ,partfilename,phifilename,ifull,iuds,u,uave,qave)
+     $           ,partfilename,restartpath,ifull,iuds,u,uave,qave)
          endif
 
 c This non-standard fortran call works with gfortran and g77 to flush stdout.
@@ -524,7 +526,7 @@ c      if(lorbitplot)call orbitplot(ifull,iuds,u,phip,rc,rs)
 
 c Everyone writes what they have to.
       if(iwstep.gt.0 .or. myid.eq.0)call datawrite(myid,partfilename
-     $     ,phifilename,ifull,iuds,u,uave,qave)
+     $     ,restartpath,ifull,iuds,u,uave,qave)
       
 c-------------------------------------------------------------------
       call mpifinalize(ierr)

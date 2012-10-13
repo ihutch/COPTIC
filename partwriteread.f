@@ -1,23 +1,31 @@
 c**********************************************************************
-      subroutine datawrite(myid,partfilename,phifilename,ifull
+      subroutine datawrite(myid,partfilename,restartpath,ifull
      $     ,iuds,u,uave,qave)
+c Write data in u,uave,qave to files in path restartpath, with 
+c names constructed from the parameters and suitable extensions.
       integer myid,ifull(*),iuds(*)
       real u(*),uave(*),qave(*)
-      character*(*) partfilename,phifilename
+      character*(*) partfilename,restartpath
       include 'griddecl.f'
       include 'ptchcom.f'
       character*100 localfilename
 
+      partfilename=restartpath
       call partwrite(partfilename,myid)
       if(myid.eq.0)then
          if(iptch_copy.ne.0)then
-            call namewrite(phifilename,ifull,iuds,1,uave,'.ua')
+            localfilename=restartpath
+            call namewrite(localfilename,ifull,iuds,1,uave,'.ua')
             call mditeradd(u,ndims,ifull,iuds,0,uci)
             call mditeradd(uave,ndims,ifull,iuds,0,uci)
          endif
-         call namewrite(phifilename,ifull,iuds,1,uave,'.pha')
-         call namewrite(phifilename,ifull,iuds,1,qave,'.den')
-         call namewrite(phifilename,ifull,iuds,1,u,'.phi')
+         localfilename=restartpath
+         call namewrite(localfilename,ifull,iuds,1,uave,'.pha')
+         localfilename=restartpath
+         call namewrite(localfilename,ifull,iuds,1,qave,'.den')
+         localfilename=restartpath
+         call namewrite(localfilename,ifull,iuds,1,u,'.phi')
+         localfilename=restartpath
          call writefluxfile(localfilename)
       endif
 
@@ -201,6 +209,7 @@ c First version
 c******************************************************************
 c******************************************************************
       subroutine namewrite(name,ifull,iuds,ied,u,extension)
+c Construct name (extending input string name) and write data. 
       character*(*) name,extension
       integer ifull(3),iuds(3),ied
       real u(ifull(1),ifull(2),ifull(3))
@@ -216,7 +225,8 @@ c******************************************************************
       include 'meshcom.f'
 c Construct a filename that contains many parameters
 c Using the routines in strings_names.f
-      name=' '
+c We do not now start by zeroing the string. Has to be done earlier.
+c      name=' '
       call nameappendexp(name,'T',Ti,1)
       if(vd.lt.9.5)then
          call nameappendint(name,'v',nint(100*vd),3)

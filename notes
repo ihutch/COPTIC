@@ -9453,9 +9453,33 @@ Now one needs rather slow injection speed (relative to zero neutral
 speed) to avoid a non-monotonic phi. About -v-.1 for -ct10. I don't
 understand that. Can make the -ct number high (e.g. 50) without much
 change.  Actually mpiexec -n 2 ./coptic uniform3.dat -v-.5 -rx0. -da10
--s200 -vn-.0 -t.1 -md4 -ct40.  does not give non-monotonic, except
+-s200 -vn-.0 -t.1 -md4 -ct40.   does not give non-monotonic, except
 just at the end, so maybe the non-monotonicity was a different
 problem. I can't reproduce the non-monotonicity immediately.
 
 28 Aug 12
 Changed the -gd -gp switches to be more rational, and removed -gs switch.
+
+12 Aug 12
+Problems of data storage and restarts. 
+
+At present on loki the end of the run is bogged down if one writes 
+the particle data to disk because each processor tries to write to the 
+central (head) disk and the NFS has a problem with all the pressure on 
+the ethernet with all trying to write at once. The result is that it can
+take ten minutes to write the data (files of maybe 100MB per node). 
+
+Actually loki has local disk space to which the writing could be done.
+Then after the fact one could go back and grab the written files if
+one wanted, or a script could copy them sequentially to the head node
+(thus avoiding ethernet collisions). 
+
+Rewrote datawrite, namewrite etc to prefix files with the path kept in
+restartpath, which can be set with or without restarting.
+
+Reorganized restarting to use an integer switch. It can then indicate
+whether or not we are reading flux (bit 3: 2). If we are just restarting
+from a saved state in order to initialize the particles and potential, 
+then we normally don't want to read the flux file. For that we would
+use -fs1. A full restart is -fs3, which shows up by the fact that the
+step number adds to the previous steps instead of starting from 1. 
