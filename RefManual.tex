@@ -528,12 +528,13 @@ periodic position within the mesh, rather than reinjected. See
 \paragraph{-ofFilename} Set the name [including path] of the object
 file. Default ccpicgeom.dat
 
-\paragraph{-fs....}     Attempt to restart the code from a saved
-state. The integer switch indicates 0: no restart; 1: read just the
-particle and potential files so as to initialize, and start the step
-count at 1; 2 [or usually 3]: read the flux file [and particle and
-potential] and start at the next step after the prior run. Normal full
-restart is -fs3.
+\paragraph{-fs....}  Attempt to restart the code from a saved
+state. The integer switch indicates 0: no restart; bit-1 set [1]: read
+the particle and potential files so as to initialize, and start
+the step count at 1; bit-2 set [2 or usually 3]: read the flux file and
+particle and potential and start at the next step after the prior
+run. Normal full restart is -fs3. If bit-3 set [4]: then use the
+basename ``restartfile'' for the files from which to restart.
 
 \paragraph{-fn....} Set the path where files (other than the object
 file) are read from and written to.

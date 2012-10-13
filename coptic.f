@@ -282,7 +282,7 @@ c An initial solver call with zero density.
       if(debyelen.ne.0.)call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare
      $     ,bdyset,faddu,ictl,ierrsor,myid,idims)
       ictl=2+ictl
-      write(*,*)'Return from initial sormpi call.'
+c      write(*,*)'Return from initial sormpi call.'
       if(ltestplot)call sliceGweb(ifull,iuds,u,na_m,zp,
      $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0))
 c
@@ -328,23 +328,30 @@ c-----------------------------------------------
 c Restart code
       if(lrestart.ne.0)then
          partfilename=restartpath
-         call nameconstruct(partfilename)
+         if(lrestart/4-2*(lrestart/8).ne.0)then
+            partfilename(lentrim(partfilename)+1:)='restartfile'
+            write(*,*)'partfilename:'
+     $           ,partfilename(1:lentrim(partfilename))
+         else
+            call nameconstruct(partfilename)
+         endif
          phifilename=partfilename
          nb=nbcat(phifilename,'.phi')
          fluxfilename=partfilename
          nb=nbcat(fluxfilename,'.flx')
          nb=nameappendint(partfilename,'.',myid,3)
-         if(lrestart/2.ne.0)call readfluxfile(fluxfilename,ierr)
+         if(lrestart/2-2*(lrestart/4).ne.0)call
+     $        readfluxfile(fluxfilename,ierr)
          if(ierr.ne.0)goto 401
-         if(lrestart-2*(lrestart/2).ne.0)then
+         if(lrestart-4*(lrestart/4).ne.0)then
             call partread(partfilename,ierr)
             if(ierr-4*(ierr/4).ne.0)goto 401
             ied=1
             call array3read(phifilename,ifull,iuds,ied,u,ierr)
             if(ierr.ne.0)goto 401
-         endif
-         write(*,*)'Node',myid,' Restart files read successfully. '
+            write(*,*)'Node',myid,' Restart files read successfully. '
      $        ,lrestart
+         endif
          if(nsteps+nf_step.gt.nf_maxsteps)then
             if(lmyidhead)write(*,*)'Asked for',
      $           nsteps,' in addition to',nf_step,
@@ -356,7 +363,7 @@ c         if(lmyidhead)write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
 c     $        nrein,n_part,ioc_part,rhoinf,dt
          goto 402
  401     continue
-         write(*,*)'Failed to read restart files',
+         write(*,*)'Failed to read restart files:',
      $        fluxfilename(1:lentrim(fluxfilename)-4)
          lrestart=0
  402     continue

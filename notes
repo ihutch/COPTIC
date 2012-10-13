@@ -9460,7 +9460,7 @@ problem. I can't reproduce the non-monotonicity immediately.
 28 Aug 12
 Changed the -gd -gp switches to be more rational, and removed -gs switch.
 
-12 Aug 12
+12 Oct 12
 Problems of data storage and restarts. 
 
 At present on loki the end of the run is bogged down if one writes 
@@ -9483,3 +9483,6 @@ from a saved state in order to initialize the particles and potential,
 then we normally don't want to read the flux file. For that we would
 use -fs1. A full restart is -fs3, which shows up by the fact that the
 step number adds to the previous steps instead of starting from 1. 
+
+13 Oct 12
+Added ability to use the name 'restartfile' for the restartfiles.

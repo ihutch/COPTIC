@@ -382,7 +382,7 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,*)'     0 open; 1 lower absorbing; 2 upper absorbing;'
      $     ,' 3 both absorb; 4 periodic'
       write(*,301)' -fs<i>  set restart switch:      [',lrestart
-     $     ,'  0:no, 1:partls+potl, 2:flux, 3:both.'
+     $     ,' bit1:partls+potl, bit2:flux, bit3:name'
 
       write(*,'(a,a)') ' -fn[path]  set particle reading/writing path: '
      $     ,restartpath(1:lentrim(restartpath))
