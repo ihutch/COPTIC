@@ -330,8 +330,8 @@ c Restart code
          partfilename=restartpath
          if(lrestart/4-2*(lrestart/8).ne.0)then
             partfilename(lentrim(partfilename)+1:)='restartfile'
-            write(*,*)'partfilename:'
-     $           ,partfilename(1:lentrim(partfilename))
+c            write(*,*)'partfilename:'
+c     $           ,partfilename(1:lentrim(partfilename))
          else
             call nameconstruct(partfilename)
          endif
@@ -349,8 +349,8 @@ c Restart code
             ied=1
             call array3read(phifilename,ifull,iuds,ied,u,ierr)
             if(ierr.ne.0)goto 401
-            write(*,*)'Node',myid,' Restart files read successfully. '
-     $        ,lrestart
+            write(*,*)'Node',myid,' Restart files read successfully: '
+     $        ,partfilename(1:lentrim(partfilename)+1),lrestart
          endif
          if(nsteps+nf_step.gt.nf_maxsteps)then
             if(lmyidhead)write(*,*)'Asked for',
