@@ -748,6 +748,7 @@ c Plasma common data
       include 'plascom.f'
 c Intersection data
       include 'sectcom.f'
+      include 'colncom.f'
       character*(100) charout
 
 c Construct a filename that contains many parameters
@@ -757,7 +758,7 @@ c     np=nbcat(name,'.flx')
       call nbcat(name,'.flx')
 c      write(*,*)name
       write(charout,51)debyelen,Ti,vd,rs,phip
- 51   format('debyelen,Ti,vd,rs,phip:',5f10.4,' Version: 1')
+ 51   format('debyelen,Ti,vd,rs,phip:',5f10.4,' Version: 2')
 
 c      write(*,*)'mf_obj=',mf_obj,nf_step,mf_quant(1)
 
@@ -766,7 +767,9 @@ c      write(*,*)'mf_obj=',mf_obj,nf_step,mf_quant(1)
       open(22,file=name,status='new',form='unformatted',err=101)
 c This write sequence must be exactly that read below.
       write(22)charout
+c      write(22)debyelen,Ti,vd,rs,phip
       write(22)debyelen,Ti,vd,rs,phip
+     $        ,colntime,subcycle,vneutral,fcollided,dropaccel,Tneutral
       write(22)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
 c      write(*,*)'geommap',(nf_geommap(j),j=1,mf_obj)
       write(22)(ff_rho(k),k=1,nf_step)
@@ -816,6 +819,7 @@ c On exit  ierr .ne.0 indicates error.
       include '3dcom.f'
       include 'plascom.f'
       include 'sectcom.f'
+      include 'colncom.f'
       character*(100) charout
 
       open(23,file=name,status='old',form='unformatted',err=101)
@@ -828,7 +832,12 @@ c Figure out the version:
       else
          iversion=0
       endif
-      read(23)debyelen,Ti,vd,rs,phip
+      if(iversion.le.1)then
+         read(23)debyelen,Ti,vd,rs,phip
+      else
+         read(23)debyelen,Ti,vd,rs,phip
+     $        ,colntime,subcycle,vneutral,fcollided,dropaccel,Tneutral
+      endif
       read(23)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
 c      write(*,*)'geommap',(nf_geommap(j),j=1,mf_obj)
       read(23)(ff_rho(k),k=1,nf_step)
@@ -849,16 +858,16 @@ c      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+2)-1)
  201  continue
 c      write(*,*)'Datalen',ndatalen
       read(23)(ff_data(i),i=1,ndatalen)
-      if(iversion.gt.0)then
-         read(23,end=102, err=102)(((fieldforce(i,j,k),pressforce(i,j,k)
-     $     ,partforce(i,j,k)
-     $     ,colnforce(i,j,k)
-     $     ,i=1,ns_ndims),charge_ns(j,k),j=1,mf_obj),k=1,nf_step)
-      else
+      if(iversion.eq.0)then
          write(*,*)'Old force data version',iversion
          read(23,end=102, err=102)(((fieldforce(i,j,k),pressforce(i,j,k)
      $     ,partforce(i,j,k)
      $     ,charge_ns(j,k),i=1,ns_ndims),j=1,mf_obj),k=1,nf_step)
+      else
+         read(23,end=102, err=102)(((fieldforce(i,j,k),pressforce(i,j,k)
+     $     ,partforce(i,j,k)
+     $     ,colnforce(i,j,k)
+     $     ,i=1,ns_ndims),charge_ns(j,k),j=1,mf_obj),k=1,nf_step)
       endif
 c Object data:
       read(23)ngeomobj

@@ -14,7 +14,6 @@ c Local dummy variables for partlocate.
       integer ixp(ndims_mesh)
       logical linmesh
 
-
 c-----------------------------------------------------------------
 c A special orbit.
 c Pinit resets x_part. So set it for the special first particle.
@@ -30,12 +29,11 @@ c Tangential velocity of circular orbit at r=?.
       x_part(6,1)=0.
       if_part(1)=1
       call partlocate(1,ixp,xfrac,iregion,linmesh,nreloc)
-      i1=2
-      if(.not.linmesh)then
+      if(.not.linmesh.and.myid.eq.0)then
          write(*,*)'WARNING Special particle-1 outside region.'
          write(*,*)'Coordinates',(x_part(i,1),i=1,9),' Resetting.'
-         i1=1
       endif
+      if(linmesh)i1=2
 c-----------------------------------------------------------------
       ntries=0
 c      ntrapped=0

@@ -9486,3 +9486,7 @@ step number adds to the previous steps instead of starting from 1.
 
 13 Oct 12
 Added ability to use the name 'restartfile' for the restartfiles.
+
+18 Oct 12
+Stop slave nodes warning about special particle error.
+Added collision settings to write/readfluxfile. New version 2. 
