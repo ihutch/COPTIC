@@ -492,6 +492,7 @@ c Reduce the data from nodes.
                   if(lmyidhead)then 
                      if(2*(idistp/2)-4*(idistp/4).ne.0)
      $                    call pltsubdist(5,9,9,vlim it,xnewlim,cellvol)
+                     diagfilename=' '
                      call nameconstruct(diagfilename)
                      write(diagfilename(lentrim(diagfilename)+1:)
      $                    ,'(''.pex'',i4.4)')j

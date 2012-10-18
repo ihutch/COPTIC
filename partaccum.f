@@ -42,7 +42,7 @@ c A small nvlist means we go right to the edge of actual particles.
          nvlist=5
          call vlimitdeterm(npdim,x_part,if_part,ioc_part
      $        ,vlimit,nvlist,ivproj,Bfield)
-         if(myid.eq.0)write(*,'('' Velocity limits:'',66f7.3)')
+         if(myid.eq.0)write(*,'('' Velocity limits:'',6f7.3)')
      $        vlimit
          call minmaxreduce(mdims,vlimit)
 c            write(*,'('' Velocity reduced:'',6f7.3)') vlimit

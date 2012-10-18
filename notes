@@ -9491,3 +9491,5 @@ Added ability to use the name 'restartfile' for the restartfiles.
 Stop slave nodes warning about special particle error.
 Added collision settings to write/readfluxfile. New version 2. 
 Fix coptic -h call when coptigeom.dat file is absent.
+Fix diagnostics ipartperiod(i).gt.0 error in meshconstruct.
+Fix bug in diagfilename generation arisen from name code changes.
