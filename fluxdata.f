@@ -793,7 +793,8 @@ c Intersection data:
       write(22)sc_ipt
       write(22)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),
      $     ibin_sc(k),k=1,sc_ipt)
-
+c n_part data
+      write(22)(nf_npart(k),k=1,nf_step)
       close(22)
 c      write(*,*)'Wrote flux data to ',name(1:lentrim(name))
       do k=1,nf_step
@@ -829,6 +830,7 @@ c Figure out the version:
       if(charout(iend-9:iend-3).eq.'Version')then
          read(charout(iend-1:iend),*)iversion
          if(ierr.ne.0)write(*,*)'Flux file version',iversion
+         ierr=0
       else
          iversion=0
       endif
@@ -880,8 +882,15 @@ c Intersection data:
       read(23)sc_ipt
       read(23)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),
      $     ibin_sc(k),k=1,sc_ipt)
+c n_part data
+      if(iversion.ge.2)read(23,end=104)(nf_npart(k),k=1,nf_step)
+    
       goto 103
  102  write(*,*)'Failed to read back forces. Old format? Version='
+     $     ,iversion
+      ierr=2
+      goto 103
+ 104  write(*,*)'No nf_npart data. Mismatch of versions? Version='
      $     ,iversion
  103  close(23)
 
@@ -905,7 +914,7 @@ c Now one might have to reconstruct nf_faceind from nf_dimlens.
       if(ierr.ne.0)write(*,*)'Read back flux data from '
      $     ,name(1:lentrim(name))
 c      write(*,*)charout(1:lentrim(charout))
-      ierr=0
+c      ierr=0
       return
  101  write(*,*)'Error opening file:',name
       ierr=1

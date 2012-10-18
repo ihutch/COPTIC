@@ -141,6 +141,35 @@ c            write(*,*)'Plotting',k,mf_quant(k),iplot
 c         endif
       enddo
 
+      if(.true.)then
+         write(*,*)'Doing npart plot',nf_step,ff_rho(1),ff_rho(nf_step)
+         do i=1,nf_step
+            stepdata(i)=i
+            plotdata(i,1)=nf_npart(i)
+            plotdata(i,2)=ff_rho(i)
+         enddo
+         if(nf_npart(1).ne.nf_npart(nf_step))then
+            call autoplot(stepdata,plotdata(1,1),nf_step)
+            call axlabels('step','No. of particles')
+            call scalewn(1.,stepdata(nf_step),0,2.*ff_rho(nf_step)
+     $           ,.false.,.false.)
+            call dashset(1)
+            call color(5)
+            call polyline(stepdata,plotdata(1,2),nf_step)
+            call dashset(0)
+            call axptset(1.,1.)
+            call yaxis(first,0.)
+            call axlabels(' ','rhoinf')
+            call axptset(0.,0.)
+            call color(15)
+         else
+            call autoplot(stepdata,plotdata(1,2),nf_step)
+            call axlabels('step','rho-infinity')
+         endif
+         call pltend()
+      endif
+
+
 c Plots if 
       if(rp.ne.0.)write(*,'(a,f10.4,a,f10.4)')
      $     'Radius',rp,' Potential',phip

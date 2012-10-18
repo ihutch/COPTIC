@@ -90,11 +90,13 @@ c The heap where the data actually lies.
       real ff_data(nf_datasize)
 c The rhoinfin for each step 
       real ff_rho(nf_maxsteps)
+c The total number of particles for each step:
+      integer nf_npart(nf_maxsteps)
 c The dt for each step
       real ff_dt(nf_maxsteps)
 
       common /fluxdata/nf_step,ff_rho,ff_dt,mf_quant,mf_obj,nf_posno
-     $     ,nf_dimlens,nf_faceind,nf_geommap,nf_address,ff_data
+     $     ,nf_npart,nf_dimlens,nf_faceind,nf_geommap,nf_address,ff_data
 
 
 c Flux explanation:

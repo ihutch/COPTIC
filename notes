@@ -9493,3 +9493,16 @@ Added collision settings to write/readfluxfile. New version 2.
 Fix coptic -h call when coptigeom.dat file is absent.
 Fix diagnostics ipartperiod(i).gt.0 error in meshconstruct.
 Fix bug in diagfilename generation arisen from name code changes.
+
+I realize that COPTIC does not have an Eneutral. So when -v and -vn 
+are different, we need an actual potential gradient to cause that.
+We can't just take it to be the case and do reinjection accordingly.
+In sceptic Eneutral=colnwt*(vd-vneutral). In COPTIC colntime is the
+inverse of colnwt. So presumably Eneutral=(vd-vneutral)/colntime.
+
+Another issue I find is that in low collisionality sheaths, the density
+evolves very slowly, and is not in equilibrium by the end of the run.
+We ought to have a clear diagnostic that this is happening. Perhaps
+simply the npart (and rhoinf) or their ratio.
+
+Implemented saving of n_part. And fluxexamine gets it back and plots it.

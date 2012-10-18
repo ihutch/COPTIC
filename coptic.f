@@ -431,9 +431,10 @@ c The normal call:
          call fluxreduce()
 c Now do cij update
          call cijdirect(ndims,debyelen,error)
-c Store the step's rhoinf, dt.
+c Store the step's rhoinf, dt, npart.
          ff_rho(nf_step)=rhoinf
          ff_dt(nf_step)=dt
+         nf_npart(nf_step)=n_part
          if(lmyidhead)then
 c write out flux to object 1.
             write(*,'(f6.3,''| '',$)')fluxdiag()
