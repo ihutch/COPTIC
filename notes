@@ -9490,3 +9490,4 @@ Added ability to use the name 'restartfile' for the restartfiles.
 18 Oct 12
 Stop slave nodes warning about special particle error.
 Added collision settings to write/readfluxfile. New version 2. 
+Fix coptic -h call when coptigeom.dat file is absent.

@@ -115,7 +115,7 @@ c**********************************************************************
       end
 
 c**********************************************************************
-      subroutine readgeom(filename,myid,ifull,CFin,iCFcount,LPF)
+      subroutine readgeom(filename,myid,ifull,CFin,iCFcount,LPF,ierr)
 c Read the geometric data about objects from the file filename
       character*(*) filename
       integer myid
@@ -136,6 +136,7 @@ c      real obj_geom(odata,ngeomobjmax)
       logical lbounded
       external lbounded
 
+      ierr=0
 c Zero the obj_geom data.
       do j=1,odata
          do i=1,ngeomobjmax 
@@ -369,8 +370,9 @@ c Set whether particle region has a part inside an object.
       endif
       return
 
- 101  write(*,*) 'Readgeom File ',filename,' could not be opened.'
-      stop
+ 101  write(*,*) 'Readgeom File ',filename(1:lentrim(filename))
+     $     ,' could not be opened.'
+      ierr=1
 
       end
 c****************************************************************

@@ -128,7 +128,7 @@ c First time this routine just sets defaults and the object file name.
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
      $     ,ipartperiod,lnotallp,Tneutral)
 c Read in object file information.
-      call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF)
+      call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr)
 c Second time: deal with any other command line parameters.
       call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
@@ -138,6 +138,7 @@ c Second time: deal with any other command line parameters.
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
      $     ,ipartperiod,lnotallp,Tneutral)
+      if(ierr.ne.0)stop
 c The double call enables cmdline switches to override objfile settings.
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
