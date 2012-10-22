@@ -360,8 +360,8 @@ c     $           ,partfilename(1:lentrim(partfilename))
      $           ' too much; set to',nf_maxsteps-1
             nsteps=nf_maxsteps-nsteps-1
          endif
-c         if(lmyidhead)write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
-c     $        nrein,n_part,ioc_part,rhoinf,dt
+         if(lmyidhead)write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
+     $        nrein,n_part,ioc_part,rhoinf,dt,(dtprec(k),k=1,4)
          goto 402
  401     continue
          write(*,*)'Failed to read restart files:',
@@ -386,11 +386,14 @@ c Acceleration code.
          call mditerset(psum,ndims,ifull,iuds,0,0.)
 c         write(*,*)'chargetomesh calling, ndiags',ndiags
          call chargetomesh(psum,ndims,iLs,diagsum,ndiags)
+         call diagperiod(psum,ndims,ifull,iuds,iLs,1)
+c The following call is marginally more efficient than diagperiod call.
+c         call psumperiod(psum,ndims,ifull,iuds,iLs)
+c But it is not necessary so simplify to one period routine.
 c Psumreduce takes care of the reductions that were in rhoinfcalc 
 c and explicit psum. It encapsulates the iaddtype iaddop generation.
 c Because psumtoq internally compensates for faddu, we reduce here
          call psumreduce(psum,ndims,ifull,iuds,iLs)
-         call psumperiod(psum,ndims,ifull,iuds,iLs)
 c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
 c Convert psums to charge density, q. Remember external psumtoq!
@@ -438,6 +441,8 @@ c Store the step's rhoinf, dt, npart.
          if(lmyidhead)then
 c write out flux to object 1.
             write(*,'(f6.3,''| '',$)')fluxdiag()
+c            write(*,'(f6.3,''| '',$)')n_part/(rhoinf*1000)
+c            write(*,'(i6,''| '',$)')n_part
             if(mod(nf_step,5).eq.0)write(*,*)
             if(mod(nf_step,(nsteps/25+1)*5).eq.0)then
                write(*,

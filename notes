@@ -9506,3 +9506,218 @@ We ought to have a clear diagnostic that this is happening. Perhaps
 simply the npart (and rhoinf) or their ratio.
 
 Implemented saving of n_part. And fluxexamine gets it back and plots it.
+
+19 Oct 12
+Understanding the shark-fin behaviour of n_part on restart. Did an experiment
+multiplying dtprec by bdt on restart. This is to find out if it is something
+to do with dtprec that makes the sudden jump. Shows very little difference
+with or without this multiplication. I conclude it is not just a transient.
+This conclusion is consistent with the fact that the sharkfin looks like
+the timestep, not like its derivative. 
+
+Try running cases with different -dt. .1, .5, .03. These seem to show
+that there is a systematic increase of n_part as dt becomes larger (in
+near steady state). For -dt.03 about .96e5, for -dt.1 about .963, for
+-dt.5 about .97. However, these do not seem to be fully consistent
+with the enhancements associated with acceleration. Those might be
+dominated by the initial transient. So one probably needs to look at
+restarts for real consistency.
+
+20 Oct 12 
+
+Problem with the collisional part of the force for the new
+collisional treatment.  As of now, the bulkforce is taken as given by
+the sum over particles in the measurement sphere of
+(vz-vneutral)/(rhoinf*colntime). Seems to be correct. But in runs it
+is way out of whack, giving values of about 4 for spheres of radius
+1.5, when rhoipernode= 500 for 8 nodes. Total rhoi is about 4000, so
+there are 4\pi 1.5^2/3 ~ 10*4000 in sphere.  If collision time is 2,
+then the normalized would be about 5 (check) but perhaps the problem
+is that dt is not accounted for. It seems correct because the force is
+the momentum difference per unit time. So we should not multiply by
+dt. The particle force is obtained by adding all the particles
+crossing and dividing by dt and rhoinfinity. The collision force is
+the momentum (difference) times dt/colntime normalized by
+dt*rhoinfinity which is what I've got.
+
+I think the issue is the absence of Eneutral, in COPTIC, versus its
+presence in SCEPTIC. If we consider a uniform quasineutral plasma, in
+which the ion drift is driven by Eneutral, then within a measurement
+sphere the loss of momentum to neutrals is made up by Eneutral. In
+sceptic Eneutral is explicitly added to the ion acceleration, and the
+colnforce is collf=-colnwt*(vz-partsum*vd) which is -(vz-vd) per
+particle, while Eneutral=colnwt*(vd-vneutral). Assuming vneutral to be
+zero, this makes force per particle=-colnwt*vz+Eneutral, which cancels
+out when the vz is equal to vd. The remainder of the electric field
+is explicit and acts on both the ions and the electrons. Eneutral does
+not act on electrons (effectively). 
+
+In COPTIC there is (as yet) no Eneutral. All the drift comes from the
+explicit field. The explicit field acts on both ions and electrons.
+There is then no steady uniform state with Boltzmann electrons,
+because the potential is varying, so the electron density is
+non-uniform.  The electron pressure force then balances the electric
+field force on the electrons. If electron and ion densities are equal
+so the charge density is zero, then the field force on the ions is
+equal and opposite to that of the electrons. The ion electric field force
+is balanced by the collisional drag force. Therefore in the absence
+of a grain, the collisional drag force ought to be equal and opposite
+to the electron pressure force. (That's not quite true if there's
+any imbalance of charge density, but it ought to be close.)
+
+This does not seem to be happening. Looks like a bug.
+
+At z=20 the potential gradient is 0.13 in 2 i.e. 0.065.
+Also the value is -0.6. 
+So grad(n)/n_infty is (e/T)grad(\phi) exp(e\phi/Te) = 0.065*exp(-0.6)
+= 0.036
+At z=10 it is ~0.4 gradient and value -2.0. grad(n)/n_infty=0.054
+
+For a volume of 4/3\pi ~4 (radius 1) we expect a pressure force
+roughly .14 or .2. We actually get .17 and .19, I think that's near enough.
+
+The collision force is about 10 times larger. Can't be correct. Is it 
+possible that I am not dividing by the summed rhoinfinity? Doesn't seem
+so. However, I am running with -rx0. which means there's no accounting
+for the potential of reinjection in calculating rhoinf. That might be 
+a significant effect (but not a factor of 10). 
+
+There are at the end about 270000 particles in one process in volume 
+40x5x5=1000. So 270 particles per unit volume, ~1000 in unit sphere.
+For 8 processes there would be 8000. If colntime is 10 which is what I
+am examinining, then there would be 800 collisions per second. Each would
+lose a momentum of about 1 if the flow is roughly v=1. So the momentum
+divided by the rhoinf (~2000) would be about 0.4 whereas I'm getting
+about 1.5. This doesn't quite resolve the problem. We are sort of half
+way between. Actually at z=20 the velocity given by diags is about 0.5.
+And if I took that, I'd get force around 0.2 which is about equal to the
+pressure force. At z=10 v=1.5 but there the density is substantially 
+lower, so probably the collisional force would be substantially reduced.
+Conclusion: it looks as if the value of the collision force is too large
+in the code for what it ought to be. 
+
+Running with 2 process produces a collisional force only < factor of 2 less
+than the 8 process case. There is not an obvious problem with node accounting.
+
+Doing a restart for a second 1000 steps and then averaging over 1400-2000
+produces far smaller collision and residuals. Looks as if it is working.
+Maybe it was working all along but just not converged.
+
+There's another problem with the x/y boundaries causing some sort of density
+rise. With 8 processes the rise is about 8%. With 2 processes, about 6%.
+Not clear that this is significant. But I need to figure out why it's there.
+
+One problem is that the mesh is visibly asymmetric. 
+
+That's a particular problem with periodic domains because the presumption
+is built in that the cell-size is the same on either side. But fixing it
+does not fix the particle excess near the boundary. It does not show up
+on the density, only on the particle distribution. That's peculiar.
+
+22 Oct 12
+
+Tracking down the edge particle excess for the sheath domains.
+First do particle accumulation in restricted z-ranges. There's no
+obvious variation with z. That suggests it cannot be caused by 
+nonuniform injection across the z=40 face, because that would 
+quickly be smoothed out by subsequent transverse travel.
+
+Note, this 6% ion density variation for transverse temperature of .02
+would arise from the ion response to an effective potential such that
+exp(d\phi/T_i)=0.06, i.e. d\phi = 0.06*0.02= 1.2e-3 really small!
+
+Looking harder at phiexamine, I see there really is an edge potential
+drop of order 1.e-3 between the second and first cells from the boundary.
+(The boundary itself is periodic and there's not much difference between
+it and the adjacent cell.) Thus we have a physically consistent result
+in that the ions are responding to the presence of a (very small) 
+attractive well at the boundary. This is for the 8-processor run which
+has uneven cells on either side. Looking at the 2-processor runs with
+symmetrized cells, they still have some potential effect but it's nearer to the 
+noise level. There's a sense that perhaps it is the corners that are
+more systematically low. Running a 8-processor symmetric case does not
+get rid of the particle excess, and confirms the 1.e-3 edge potential drop. 
+
+The lower-potential edge is counter to the higher ion-density there. 
+In other words, the potential value is inconsistent even though the
+particle density is consistent. The problem must lie in the determination
+of potential. 
+
+The question is, where is that well coming from? 
+The objectdata file has
+####################################################################
+# Domain BCs
+# Periodic phi-BC in dimension 1 and 2.
+111
+112
+# Specified phi on face 3 (lower z-face)
+103,1.,0.,10.
+# Specified zero derivative on face 6 (upper z-face)
+106,0.,1.,0.
+# partperiod: particles periodic in directions 1 and 2, absorbing lower 3.
+98,4,4,1
+# It's important to end the last line.
+####################################################################
+This appears to be correct. 
+
+The cell size is 2/10 at the edge, which is 0.2/5 = 0.04 of the full
+width (5). If there were a second order error arising at the edge
+perhaps it would be the square of this which would indeed be 1.6e-3.
+Thus we might need to look very hard at the difference scheme.
+
+Run a case with uniform 48 cells in x and y. Reduces the cell size to
+5/48 ~ 0.1 (vs 0.2). If the problem is second order in cell size,
+this ought to drop the effect by a factor of 4. In fact the particle
+excess at the edge (partexamine) is 0.3 in 5, i.e. still ~6%. It has
+not changed. Similarly, the potential dip at the edge is ~1.e-3.
+This seems to show decisively that it is not a resolution problem. 
+The error is independent of cell size. 
+
+I notice that the potential drop gets smaller as we go lower in the
+sheath, so it is nearer 1.e-4 at the bottom. This is probably consistent
+with there being a perturbation that is a constant fraction of the ions.
+
+What might make the corners more susceptible to this drop?
+
+Try increasing the timestep to .2 to see if that changes the magnitude.
+Makes no difference. 6% particle excess, ~1.e-3 edge potential drop.
+It's not a timestep scaled error.
+
+Checked the volumes at the edge of the mesh. They are
+0.  0.00121212041  0.00121212006  0.00121211959  0.00121212006
+showing that rounding is only at the 10^-7 error level.
+
+Looking at denexamine, we see that the density appears low at the
+edges.  By about 0.04 near the top (much less, ~0.01 near the
+bottom). This contrasts with the particle distribution which gives it
+6% high. Seems to show that there must be errors in translating from
+particles to density at the points adjacent to the boundary.
+This density effect is NOT visible in diagexamine. That's interesting.
+The particle boundary exchange for diagnostics is done by diagperiod.
+Meanwhile the psum boundary exchange is done by psumperiod.
+Perhaps there's a bug in psumperiod. There is a difference, in that
+psum on the boundary is not set to zero, while diagsum is, in the
+process of particle transfer. 
+
+Test whether using diagperiod in place of partperiod gets rid of the
+problem. It's too hard to tell with 2-processor case. In the 8-processor
+case it is clear that the replacement of psumperiod with diagperiod
+has NOT fixed the problem. 
+
+However, I note that psumreduce does not reduce the boundary nodes.
+Moreover it is called prior to psumperiod. Therefore, it appears that
+there's a bug in that not all the boundary values are going to be 
+reduced to the final result. So try exchanging the order of psumperiod
+and psumreduce. 
+
+YES!!! This was the bug. Because of incorrect order of period cross
+sum and psumreduce, the multiprocessor exchange was not being
+correctly evaluated. With them swapped, it is and the particles are
+uniform.
+
+Conclusion for commit:
+---------------------
+The particle non-uniformity for periodic faces was a bug arising from
+incorrect order of psumperiod and psumreduce. Because psumreduce does
+not reduce the boundary values, the periodic sums psumperiod must be
+done BEFORE the psumreduce. Now fixed.

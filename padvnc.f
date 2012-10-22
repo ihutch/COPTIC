@@ -180,8 +180,8 @@ c     $                 ,dtprec(i),dtremain,dtdone+dtpos+dtremain
 c               endif
 c Reduce the position-step size.
                dtpos=dtpos/2.
-c Subcycling backs up to the start of the current kick-step, and then 
-c takes a position corresponding to a kick-step smaller by a factor of 2.
+c Subcycling backs up to the start of the current drift-step, and then 
+c takes a position corresponding to a drift-step smaller by a factor of 2.
 c That means the backed-up position is dtprec/4 earlier.
                dtback=-dtprec(i)/4.
                call moveparticle(x_part(1,i),ndims,Bt,Btinf,Bfield,vperp

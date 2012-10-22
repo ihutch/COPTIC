@@ -146,6 +146,7 @@ c         endif
          do i=1,nf_step
             stepdata(i)=i
             plotdata(i,1)=nf_npart(i)
+c            write(*,*)i,nf_npart(i)
             plotdata(i,2)=ff_rho(i)
          enddo
          if(nf_npart(1).ne.nf_npart(nf_step))then

@@ -636,6 +636,10 @@ c*********************************************************************
       subroutine text3graphs(ndims,iuds,ifull,cij,volumes)
       integer iuds(ndims),ifull(ndims)
       real cij(*),volumes(*)
+      write(*,*)'Edge volumes sample at iuds(2)/2, iuds(3)/2'
+      write(*,*)(((volumes(j-1+(iuds(2)/2-1)*ifull(1)
+     $                +(k-1)*ifull(1)*ifull(2)+1)),
+     $        j=1,10),k=iuds(3)/2,iuds(3)/2)
       call text3vgraph(ndims,iuds,ifull,volumes)
       call text3rgraph(ndims,iuds,ifull,cij)
       end
