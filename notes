@@ -9721,3 +9721,17 @@ The particle non-uniformity for periodic faces was a bug arising from
 incorrect order of psumperiod and psumreduce. Because psumreduce does
 not reduce the boundary values, the periodic sums psumperiod must be
 done BEFORE the psumreduce. Now fixed.
+
+
+Rationalized the restart code so that it does not matter if the potential
+is not correctly set. In any case it is simply calculated from the particle
+data, so it does not matter if one fails to read the potential file.
+
+There's a problem, though, with chargetomesh, the first time it is called
+after a restart, if the mesh spacing has been changed. It is that the
+top 3 components of x_part, which give the mesh position, are inconsistent
+with the position in the context of a changed grid. Chargetomesh uses
+these in preference to partlocate. Fixed this with a new initialization.
+locateinit.
+
+Improved partexamine to allow summing subcells over dimension x,y, or z.

@@ -522,7 +522,7 @@ c**********************************************************************
       close(25)
 
       return
- 101  write(*,*)'Error opening file:',name
+ 101  write(*,*)'Error opening file:',name(1:lentrim(name))
       close(25,status='delete')
       stop
  103  write(*,*)'Mismatch of declared fv-cell dimensions',
@@ -560,7 +560,7 @@ c      write(*,'(2f10.4)')((vdiag(i,j),fv(i,j),i=1,5),j=1,mdims)
       close(25)
 
       return
- 101  write(*,*)'Error opening file:',name
+ 101  write(*,*)'Error opening file:',name(1:lentrim(name))
       close(25,status='delete')
 
       end
@@ -585,13 +585,15 @@ c Distributions in ptaccom.f
       character*100 string
       integer icell,jcell,kcell
       real wicell,wjcell,wkcell
+      integer jicell,jjcell,jkcell,ii,jj,kk,ip3
       integer iup
-      data iup/1/
+      data iup/1/jicell/0/jjcell/0/jkcell/0/
 c------------------------------------------
       icell=icellin
       jcell=jcellin
       kcell=kcellin
       write(*,*)'Adjust cell position with arrow keys.'
+      write(*,*)'Toggle integration over direction with x,y,z.'
  1    ip=ip3index(isuds,icell,jcell,kcell)+1
       call multiframe(3,1,2)
       wicell=(xnewlim(2,1)-xnewlim(1,1))/isuds(1)
@@ -600,10 +602,13 @@ c------------------------------------------
       if(ivproj.eq.0)then
       write(string,'(''Cell'',3i3,''  x=('',f6.2,'','',f6.2,'')'//
      $     ' y=('',f6.2,'','',f6.2,'') z=('',f6.2,'','',f6.2,'')'')')
-     $     icell,jcell,kcell
-     $     ,xnewlim(1,1)+(icell-1)*wicell,xnewlim(1,1)+icell*wicell
-     $     ,xnewlim(1,2)+(jcell-1)*wjcell,xnewlim(1,2)+jcell*wjcell
-     $     ,xnewlim(1,3)+(kcell-1)*wkcell,xnewlim(1,3)+kcell*wkcell
+     $     icell*(1-jicell),jcell*(1-jjcell),kcell*(1-jkcell)
+     $     ,xnewlim(1,1)+(icell-1)*wicell*(1-jicell)
+     $        ,xnewlim(1,1)+wicell*(icell*(1-jicell)+jicell*isuds(1))
+     $     ,xnewlim(1,2)+(jcell-1)*wjcell*(1-jjcell)
+     $        ,xnewlim(1,2)+wjcell*(jcell*(1-jjcell)+jjcell*isuds(2))
+     $     ,xnewlim(1,3)+(kcell-1)*wkcell*(1-jkcell)
+     $        ,xnewlim(1,3)+wkcell*(kcell*(1-jkcell)+jkcell*isuds(3))
       else
  51      format('Cell',3i3,'  x=(',f6.2,',',f6.2,') y=(',f6.2,',',f6.2
      $     ,') z=(',f6.2,',',f6.2,') projected:(',3f6.2,')')
@@ -618,8 +623,20 @@ c------------------------------------------
       do id=1,3
 c Do correct scaling:
          do iv=1,nsbins
-            fvplt(iv)=fvx(iv,id,ip)*csbin(iv,id)
+c Alternatively we combine bins in possibly multiple
+c dimensions, if jicell, jjcell, or jkcell are non-zero.
+            fvplt(iv)=0.
+            do ii=0,(isuds(1)-1)*jicell
+               do jj=0,(isuds(2)-1)*jjcell
+                  do kk=0,(isuds(3)-1)*jkcell
+                     ip3=ip3index(isuds,1+ii+(1-jicell)*(icell-1),
+     $                    1+jj+(1-jjcell)*(jcell-1),
+     $                    1+kk+(1-jkcell)*(kcell-1))+1
+            fvplt(iv)=fvplt(iv)+fvx(iv,id,ip3)*csbin(iv,id)
      $              *nptdiag/(vlimit(2,id)-vlimit(1,id))/cellvol
+                  enddo
+               enddo 
+            enddo
          enddo
 c         call automark(vsbin(1,id),fvx(1,id,ip),nsbins,1)
          call automark(vsbin(1,id),fvplt,nsbins,1)
@@ -672,6 +689,12 @@ c Increment one of the dimensions using arrow keys.
       elseif(ip.eq.65505)then
 c ffe1 shift_L=2^16-31=65505
          iup=-iup
+      elseif(ip.eq.ichar('x'))then
+         jicell=1-jicell
+      elseif(ip.eq.ichar('y'))then
+         jjcell=1-jjcell
+      elseif(ip.eq.ichar('z'))then
+         jkcell=1-jkcell
       else
 c         write(*,*)ip
          return

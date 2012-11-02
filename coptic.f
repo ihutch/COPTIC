@@ -331,8 +331,6 @@ c Restart code
          partfilename=restartpath
          if(lrestart/4-2*(lrestart/8).ne.0)then
             partfilename(lentrim(partfilename)+1:)='restartfile'
-c            write(*,*)'partfilename:'
-c     $           ,partfilename(1:lentrim(partfilename))
          else
             call nameconstruct(partfilename)
          endif
@@ -343,15 +341,16 @@ c     $           ,partfilename(1:lentrim(partfilename))
          nb=nameappendint(partfilename,'.',myid,3)
          if(lrestart/2-2*(lrestart/4).ne.0)call
      $        readfluxfile(fluxfilename,ierr)
-         if(ierr.ne.0)goto 401
          if(lrestart-4*(lrestart/4).ne.0)then
             call partread(partfilename,ierr)
-            if(ierr-4*(ierr/4).ne.0)goto 401
-            ied=1
-            call array3read(phifilename,ifull,iuds,ied,u,ierr)
-            if(ierr.ne.0)goto 401
-            write(*,*)'Node',myid,' Restart files read successfully: '
-     $        ,partfilename(1:lentrim(partfilename)+1),lrestart
+            if(ierr-4*(ierr/4).eq.0)then 
+               write(*,*)'Node',myid
+     $              ,' Restart file read successfully: '
+     $              ,partfilename(1:lentrim(partfilename)+1),lrestart
+               call locateinit()
+               ied=1
+               call array3read(phifilename,ifull,iuds,ied,u,ierr)
+            endif
          endif
          if(nsteps+nf_step.gt.nf_maxsteps)then
             if(lmyidhead)write(*,*)'Asked for',
@@ -360,14 +359,8 @@ c     $           ,partfilename(1:lentrim(partfilename))
      $           ' too much; set to',nf_maxsteps-1
             nsteps=nf_maxsteps-nsteps-1
          endif
-         if(lmyidhead)write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
-     $        nrein,n_part,ioc_part,rhoinf,dt,(dtprec(k),k=1,4)
-         goto 402
- 401     continue
-         write(*,*)'Failed to read restart files:',
-     $        fluxfilename(1:lentrim(fluxfilename)-4)
-         lrestart=0
- 402     continue
+c         if(lmyidhead)write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
+c     $        nrein,n_part,ioc_part,rhoinf,dt,(dtprec(k),k=1,4)
       endif
 c-----------------------------------------------
       if(lmyidhead)then

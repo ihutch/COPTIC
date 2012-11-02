@@ -105,3 +105,21 @@ c Initialize orbit tracking
       enddo
       end
 c***********************************************************************
+      subroutine locateinit()
+c Initialize particles loaded from restart files so that they have the
+c correct mesh-fraction coordinate in their upper values.
+c Common data:
+      include 'partcom.f'
+c      include 'myidcom.f'
+c      include '3dcom.f'
+      include 'meshcom.f'
+c Local dummy variables for partlocate.
+      real xfrac(ndims_mesh)
+      integer ixp(ndims_mesh)
+      logical linmesh
+
+      do i=1,ioc_part
+         call partlocate(i,ixp,xfrac,iregion,linmesh,nreloc)
+      enddo
+      write(*,*)'Redetermined particle mesh locations (locateinit)'
+      end

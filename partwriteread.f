@@ -68,7 +68,7 @@ c      write(*,*)'Wrote particle data to ',name(1:lentrim(name))
       return
 
  101  continue
-      write(*,*)'Error opening file:',name
+      write(*,*)'Error opening file:',name(1:lentrim(name))
       close(22,status='delete')
 
       end
@@ -153,7 +153,7 @@ c     $     name(1:lentrim(name)),iuds
       return
 
  101  continue
-      write(*,*)'Error opening file:',name
+      write(*,*)'Error opening file:',name(1:lentrim(name))
       close(22,status='delete')
 
       end
@@ -203,7 +203,7 @@ c First version
       return
 
  101  continue
-      write(*,*)'Error opening file:',name
+      write(*,*)'Error opening file:',name(1:lentrim(name))
       ierr=1
       end
 c******************************************************************

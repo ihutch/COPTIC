@@ -139,8 +139,6 @@ c the region information.
                write(*,'(''In region'',l2,''  iLs='',4i8)')linregion(i
      $              bool_part,ndims,x_part(1,i)),iLs
                stop
-c               call partlocate(i,ixp,xfrac,inewregion,linmesh,nrein)
-c               write(*,*)'inewregion,linmesh',inewregion,linmesh
             endif
             if(i.eq.1)then
 c               write(*,*)

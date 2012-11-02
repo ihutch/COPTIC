@@ -809,7 +809,7 @@ c      write(*,*)'Wrote flux data to ',name(1:lentrim(name))
 
       return
  101  continue
-      write(*,*)'Error opening file:',name
+      write(*,*)'Error opening file:',name(1:lentrim(name))
       close(22,status='delete')
       end
 c*****************************************************************
@@ -916,7 +916,7 @@ c Now one might have to reconstruct nf_faceind from nf_dimlens.
 c      write(*,*)charout(1:lentrim(charout))
 c      ierr=0
       return
- 101  write(*,*)'Error opening file:',name
+ 101  write(*,*)'Error opening file:',name(1:lentrim(name))
       ierr=1
       end
 c*********************************************************************
