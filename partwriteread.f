@@ -203,7 +203,7 @@ c First version
       return
 
  101  continue
-      write(*,*)'Error opening file:',name(1:lentrim(name))
+      write(*,*)'Failed to open file:',name(1:lentrim(name))
       ierr=1
       end
 c******************************************************************
@@ -243,6 +243,25 @@ c      name=' '
       call nameappendint(name,'x',nint(xmeshend(2)),2)
       if(colntime.ne.0)call nameappendexp(name,'c',colntime,1)
       end
+c*****************************************************************
+      subroutine phipset(myid)
+      include 'plascom.f'
+      include '3dcom.f'
+
+      if(obj_geom(oabc,1).ne.0)then
+         phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
+         if(myid.eq.0)write(*,*)'Object 1 potential=',phip
+      elseif(obj_geom(oradius,1).ne.0.)then
+         phip=obj_geom(omag,1)*obj_geom(oradius,1)
+         if(myid.eq.0)write(*,*)'Potential from point charge'
+     $        ,obj_geom(omag,1),' at radius ',obj_geom(oradius,1)
+     $        ,' Charge:',phip
+      else
+         write(*,*)'Potential phip not set from objects.'
+      endif
+
+      end
+c******************************************************************
 c Below here are the obsolete versions which can be deleted once
 c we are convinced there are no bugs or needs. Done 17 Aug 2010
 c******************************************************************

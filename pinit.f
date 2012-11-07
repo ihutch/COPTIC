@@ -121,5 +121,5 @@ c Local dummy variables for partlocate.
       do i=1,ioc_part
          call partlocate(i,ixp,xfrac,iregion,linmesh,nreloc)
       enddo
-      write(*,*)'Redetermined particle mesh locations (locateinit)'
+c      write(*,*)'Redetermined particle mesh locations (locateinit)'
       end

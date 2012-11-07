@@ -103,6 +103,7 @@ c Use very big xlimits by default to include whole domain
 c Default zero field
          Bfield(id)=0.
       enddo
+      phip=0.
       averein=0
       cellvol=0.
       rs=5.0
@@ -294,18 +295,7 @@ c-------------------------------------------------------------------
 c End of plotting.
 c------------------------------------------------------------------
 c Set phip from the first object if it makes sense.
-      if(obj_geom(oabc,1).ne.0)then
-         phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
-         if(myid.eq.0)write(*,*)'Object 1 potential=',phip
-      elseif(obj_geom(oradius,1).ne.0.)then
-         phip=obj_geom(omag,1)*obj_geom(oradius,1)
-         if(myid.eq.0)write(*,*)'Potential from point charge'
-     $        ,obj_geom(omag,1),' at radius ',obj_geom(oradius,1)
-     $        ,' Charge:',phip
-      else
-         write(*,*)'Potential phip not set from objects.'
-         phip=0.
-      endif
+      call phipset(myid)
 c------------------------------------------------------------------
 c Initialize with a specified number of particles.
 c (Re)Initialize the fortran random number generator.
@@ -339,13 +329,13 @@ c Restart code
          fluxfilename=partfilename
          nb=nbcat(fluxfilename,'.flx')
          nb=nameappendint(partfilename,'.',myid,3)
-         if(lrestart/2-2*(lrestart/4).ne.0)call
-     $        readfluxfile(fluxfilename,ierr)
+         if(lrestart/2-2*(lrestart/4).ne.0)
+     $        call readfluxfile(fluxfilename,ierr)
          if(lrestart-4*(lrestart/4).ne.0)then
             call partread(partfilename,ierr)
             if(ierr-4*(ierr/4).eq.0)then 
-               write(*,*)'Node',myid
-     $              ,' Restart file read successfully: '
+               write(*,*)'Proc',myid
+     $              ,' Restart file read: '
      $              ,partfilename(1:lentrim(partfilename)+1),lrestart
                call locateinit()
                ied=1
@@ -359,6 +349,9 @@ c Restart code
      $           ' too much; set to',nf_maxsteps-1
             nsteps=nf_maxsteps-nsteps-1
          endif
+c In case we have overwritten phip with the value from the restart file,
+c try to set it again from the first object.
+         call phipset(myid)
 c         if(lmyidhead)write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
 c     $        nrein,n_part,ioc_part,rhoinf,dt,(dtprec(k),k=1,4)
       endif
@@ -471,7 +464,8 @@ c               call diagstep(iLs,diagsum,ndiags)
                if(lmyidhead)then
 c If I'm the head, write it.
                   write(*,'(a,i3,a)')'Diags',ndiags,' '
-                  write(argument,'(''.dia'',i4.4)')j
+c                  write(argument,'(''.dia'',i4.4)')j
+                  write(argument,'(''.dia'',i4.4)')nf_step
                   diagfilename=' '
                   call namewrite(diagfilename,ifull,iuds,ndiags,diagsum
      $                 ,argument)
@@ -494,7 +488,7 @@ c Reduce the data from nodes.
                      diagfilename=' '
                      call nameconstruct(diagfilename)
                      write(diagfilename(lentrim(diagfilename)+1:)
-     $                    ,'(''.pex'',i4.4)')j
+     $                    ,'(''.pex'',i4.4)')nf_step
                      if(idistp-2*(idistp/2).ne.0)
      $                    call distwrite(xlimit,vlimit,xnewlim,
      $                    diagfilename,cellvol)
