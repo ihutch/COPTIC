@@ -9735,3 +9735,27 @@ these in preference to partlocate. Fixed this with a new initialization.
 locateinit.
 
 Improved partexamine to allow summing subcells over dimension x,y, or z.
+
+Fix restart so that it does not read the potential file if it fails to 
+read the flux file. The reason is that the potential file contains 
+ixnp, xn etc, which clobber the mesh setup. So if a potential file
+is read then one can't restart with a different mesh spacing. Arguably
+this could be fixed by simply ensuring there's no potential file to
+read. But I think it is probably safer to avoid the read in all situations.
+
+Edit the RefManual to reflect recent changes.
+
+Tracked down the problem with titles in denexamine. It is that there's
+a bug in the extension of slicegweb to have optional array arguments.
+That can't be done because one of the arguments is a character string.
+It's length is invisibly added on to the arguments at the end. If the 
+call has fewer arguments than the definition, then that character 
+length specifier is in the wrong place and the subroutine gets confused.
+Actually it grabs something beyond the argument stack, which might 
+cause a segfault. This needs to be fixed. One way to fix is to give
+all the calls the full argument list with two dummy real arguments
+after the utitle. This is what I've done with all the analysis routines
+for now.
+
+Possibly we should change the subroutine name of the extended version
+and wrap it in the old name with dummy arguments.

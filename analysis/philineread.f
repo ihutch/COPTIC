@@ -77,8 +77,6 @@ c         write(*,*)ifull,iuds
          endif
          tp(inm)=Ti
          vp(inm)=vd
-c      call sliceGweb(ifull,iuds,u,na_m,zp,
-c     $     ixnp,xn,ifix,'potential:'//'!Ay!@')
          write(*,*)'ild=',ild
 c Select the lineout into the plotting arrays.      
 c         if(ild.ne.0)then

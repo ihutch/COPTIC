@@ -97,11 +97,11 @@ c Spaces are not allowed in visit data names. Fix:
       if(isw2-(isw2/2)*2.eq.0)then
          ifix(1)=1
          call sliceGweb(ifull,iuds,u,na_m,zp,
-     $        ixnp,xn,ifix,'potential:'//'!Af!@')
+     $        ixnp,xn,ifix,'potential:'//'!Af!@',dum,dum)
       else
          ifix(3)=iuds(3)/2
          call sliceGcont(ifull,iuds,u,na_m,zp,
-     $        ixnp,xn,ifix,'potential:'//'!Af!@')
+     $        ixnp,xn,ifix,'potential:'//'!Af!@',dum,dum)
       endif
       iplot=2
 c Default spherical r plot.

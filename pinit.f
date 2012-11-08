@@ -108,18 +108,23 @@ c***********************************************************************
       subroutine locateinit()
 c Initialize particles loaded from restart files so that they have the
 c correct mesh-fraction coordinate in their upper values.
+c If they are outside the mesh or particle region, drop them.
 c Common data:
       include 'partcom.f'
 c      include 'myidcom.f'
-c      include '3dcom.f'
+      include '3dcom.f'
       include 'meshcom.f'
 c Local dummy variables for partlocate.
       real xfrac(ndims_mesh)
       integer ixp(ndims_mesh)
-      logical linmesh
+      logical linmesh,linregion
+      external linregion
 
       do i=1,ioc_part
          call partlocate(i,ixp,xfrac,iregion,linmesh,nreloc)
+c         write(*,*)linmesh,linregion(ibool_part,ndims_mesh,x_part(1,i))
+         if(.not.linmesh .or. .not.
+     $        linregion(ibool_part,ndims_mesh,x_part(1,i)))if_part(i)=0
       enddo
 c      write(*,*)'Redetermined particle mesh locations (locateinit)'
       end

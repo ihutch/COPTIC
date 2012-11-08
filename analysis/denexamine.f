@@ -32,8 +32,11 @@ c         write(*,*)j,rval(j)
 c      write(*,*)(q(16,16,k),k=1,ifull(3))
       ifix=2
       call sliceGweb(ifull,iuds,q,na_m,zp,
-     $        ixnp,xn,ifix,'Density:'//'n')
+     $        ixnp,xn,ifix,'Density: n',dum,dum)
 
+
+      write(*,*)argument,'TheEnd'
+      stop
 c plot density versus radius.
 
       write(*,*)rs,debyelen,vd,Ti

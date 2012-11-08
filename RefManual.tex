@@ -530,11 +530,11 @@ file. Default ccpicgeom.dat
 
 \paragraph{-fs....}  Attempt to restart the code from a saved
 state. The integer switch indicates 0: no restart; bit-1 set [1]: read
-the particle and potential files so as to initialize, and start
-the step count at 1; bit-2 set [2 or usually 3]: read the flux file and
-particle and potential and start at the next step after the prior
-run. Normal full restart is -fs3. If bit-3 set [4]: then use the
-basename ``restartfile'' for the files from which to restart.
+the particle files so as to initialize, and start the step count at 1;
+bit-2 set [2 or usually 3]: read the flux file and particle and
+potential and start at the next step after the prior run. Normal full
+restart is -fs3. If bit-3 set [4]: then use the basename
+``restartfile'' for the files from which to restart.
 
 \paragraph{-fn....} Set the path where files (other than the object
 file) are read from and written to.
@@ -1030,12 +1030,12 @@ region, reinjecting them and possibly new particles if necessary, and
 performing various flux and diagnostic accumulations.
 
 \paragraph{The advancing scheme} without magnetic field, is a simple
-leap-frog combination of kick equal to $\nabla\phi\;dt$ and drift
+leap-frog combination of kick equal to $-\nabla\phi\;dt$ and drift
 ${\bf v} dt$. With non-zero magnetic field, the Cyclotronic mover is
 used. The instantaneous magnetic acceleration is ${\bf v}\times{\bf
   B}$ but the gyro motion is explicitly represented by a rotation at
 cyclotron frequency $\Omega$ equal to $B$. If $B> 1.e3$ then it is
-take to be infinity; so then the ion motion consists purely of two
+taken to be infinity; so then the ion motion consists purely of two
 terms: (1) parallel (to $B$) acceleration and drift (2) perpendicular
 drift equal to the perpendicular component of the specified drift velocity.
 
@@ -1216,18 +1216,49 @@ examples that can serve as templates for other analyses.
 \section{Code Restart}
 
 It is possible to restart the code from a state written to disk.
-Specifying the switch \verb!-fs! or \verb!-fspath! and steps
-\verb!-sXXX! will cause the code to attempt such a restart from data
-saved in the current directory or the optionally specified \verb!path!
-and execute an additional \verb!XXX! steps.  The results are then
-exactly what would have been obtained if the prior execution had
-been for \verb!XXX! steps more than it actually was. In other words,
-breaking a run into multiple stages with restarts has no effect on the
-simulation result. The geometry file is still read by
-COPTIC. It must be identical to the one used in the prior
-execution. The parameters are checked and if any discrepancies are
-found, the restart is considered to have failed, and COPTIC simply
-initializes and runs as normal without the restart switch.
+Specifying the switch \verb!-fs3! and steps \verb!-sXXX! will cause
+the code to attempt such a restart from data saved in the current
+directory, or the optionally specified \verb!path!  if the
+\verb!-fnpath! switch is given, and execute an additional \verb!XXX!
+steps.  The results are then exactly what would have been obtained if
+the prior execution had been for \verb!XXX! steps more than it
+actually was. In other words, breaking a run into multiple stages with
+restarts has no effect on the simulation result. The geometry file is
+still read by COPTIC on restart. For a full restart it must be
+identical to the one used in the prior execution.
+
+%The parameters are checked and if any
+%discrepancies are found, the restart is considered to have failed, and
+%COPTIC simply initializes and runs as normal without the restart
+%switch.
+
+If instead the switch \verb!-fs1! is specified (i.e.\ bit 0 is set but
+not bit 1) the particle files but not the flux data file from a previous
+run are read. The particle data are used as the initialization of the
+particles. In this case, the new geometry file can differ from the one
+that governed the prior run. It makes no sense, though, to use a
+geometry file totally inconsistent; for example having a different
+total particle domain will lead to strange results.
+
+If the flux data file is not read, either because the switch is
+\verb!-fs1!, or because there is no flux file present, then the
+potential file will not be read. In any case the potential is solved
+consistent with the particle data before advancing occurs. But if the
+potential is not read then, because of differences of potential
+within the solution tolerance, the restart will not necessarily be exactly
+what would have occurred if the code had been run for more steps in
+the first place. This design allows \verb!-fs1! to be used to
+restart the code with \emph{different} mesh spacing (but the same
+total domain) using prior particle data for initialization.  In all
+cases when the flux data is not read, the subsequent steps will begin
+at 1, rather than at the next step after the previous run. The result
+will be to initialize the particles by the final state of the
+previous run, but to do an otherwise independent run.
+
+If bit 3 of the switch is set via (e.g.) \verb!-fs7!, then the base
+filename of the restart files read will be \verb!restartfile!. This
+facility should be used to avoid overwriting restart files with the
+output files of the new run.
 
 \section{Building COPTIC}\label{building}
 
@@ -1247,7 +1278,7 @@ the environment by setting the value of \verb!G77!: for example,
 will attempt to find a compiler called \verb!mpif77! with MPI
 capability.  If it succeeds, or actually if the compiler's name
 contains the string \verb!mpi!, then it will build a parallel
-executable. If it not, then it will build a fully functional serial
+executable. If not, then it will build a fully functional serial
 executable without MPI dependencies. The first time make is run, it
 will write a new default compiler command based upon its system tests
 into the file \verb!compiler!. If errors arise, then the command

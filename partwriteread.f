@@ -257,11 +257,9 @@ c*****************************************************************
      $        ,obj_geom(omag,1),' at radius ',obj_geom(oradius,1)
      $        ,' Charge:',phip
       else
-         write(*,*)'Potential phip not set from objects.'
+         if(myid.eq.0)write(*,*)'Potential phip not set from objects.'
       endif
 
       end
 c******************************************************************
-c Below here are the obsolete versions which can be deleted once
-c we are convinced there are no bugs or needs. Done 17 Aug 2010
 c******************************************************************

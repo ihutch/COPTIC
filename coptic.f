@@ -329,17 +329,24 @@ c Restart code
          fluxfilename=partfilename
          nb=nbcat(fluxfilename,'.flx')
          nb=nameappendint(partfilename,'.',myid,3)
-         if(lrestart/2-2*(lrestart/4).ne.0)
-     $        call readfluxfile(fluxfilename,ierr)
+         if(lrestart/2-2*(lrestart/4).ne.0)then
+            iferr=0
+            call readfluxfile(fluxfilename,iferr)
+         else
+            iferr=1
+         endif
          if(lrestart-4*(lrestart/4).ne.0)then
             call partread(partfilename,ierr)
             if(ierr-4*(ierr/4).eq.0)then 
-               write(*,*)'Proc',myid
+c We succeeded in reading the part-file. Relocate the particles.
+               write(*,'(a,i4,a,a,i3)')' cpu',myid
      $              ,' Restart file read: '
      $              ,partfilename(1:lentrim(partfilename)+1),lrestart
                call locateinit()
                ied=1
-               call array3read(phifilename,ifull,iuds,ied,u,ierr)
+c Only read the phi-file if the flux file was present. Full restart.
+               if(iferr.eq.0)
+     $              call array3read(phifilename,ifull,iuds,ied,u,ierr)
             endif
          endif
          if(nsteps+nf_step.gt.nf_maxsteps)then
@@ -350,8 +357,9 @@ c Restart code
             nsteps=nf_maxsteps-nsteps-1
          endif
 c In case we have overwritten phip with the value from the restart file,
-c try to set it again from the first object.
-         call phipset(myid)
+c try to set it again from the first object. But tell it we are not
+c the head node, so it does not give out messages.
+         call phipset(1)
 c         if(lmyidhead)write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
 c     $        nrein,n_part,ioc_part,rhoinf,dt,(dtprec(k),k=1,4)
       endif

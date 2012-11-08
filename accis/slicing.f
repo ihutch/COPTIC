@@ -31,6 +31,8 @@ c If abs(idfix) has bit 3 set (by adding 4), then use svec, which is an
 c optional vector argument on the same array of positions as u. 
       real svec(ifull(1),ifull(2),ifull(3),3)
       real vp(nw,nw,2)
+c These arguments ought to be present at least as dummy reals for all
+c calls; otherwise the length of the utitle will not be found correctly.
 c Do arrow plots of this field over contours Needed for perspective plot
       include 'world3.h'
 c Workspace size is problematic.
@@ -181,6 +183,7 @@ c Use this scaling until explicitly reset.
       call drwstr(.1,.02,form1)
       call iwrite(idp1,iwidth,cxlab)
       call iwrite(idp2,iwidth,cylab)
+
       call ax3labels('axis-'//cxlab,'axis-'//cylab,utitle)
 
 c Projected contouring.
