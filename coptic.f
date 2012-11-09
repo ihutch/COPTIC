@@ -269,7 +269,7 @@ c Initialize additional potential and charge if needed.
       if(iptch_mask.ne.0)
      $     call setadfield(ndims,ifull,iuds,iptch_mask,lsliceplot)
 c      if(myid.eq.0)call sliceGweb(ifull,iuds,rhoci,na_m,zp,
-c     $              ixnp,xn,ifix,'rhoci')
+c     $              ixnp,xn,ifix,'rhoci',dum,dum)
 
 c---------------------------------------------------------------     
 c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
@@ -286,7 +286,7 @@ c An initial solver call with zero density.
       ictl=2+ictl
 c      write(*,*)'Return from initial sormpi call.'
       if(ltestplot)call sliceGweb(ifull,iuds,u,na_m,zp,
-     $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0))
+     $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0),dum,dum)
 c
 c-------------------------------------------------------------------
       if(lmyidhead)then
@@ -409,9 +409,9 @@ c Convert psums to charge density, q. Remember external psumtoq!
          if(lsliceplot)then
             if(ipstep.eq.0.or.mod(j,ipstep).eq.0)then
                if(ldenplot)call sliceGweb(ifull,iuds,q,na_m,zp,
-     $              ixnp,xn,ifix,'density: n'//char(0))
+     $              ixnp,xn,ifix,'density: n'//char(0),dum,dum)
                if(lphiplot)call sliceGweb(ifull,iuds,u,na_m,zp,
-     $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0))
+     $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0),dum,dum)
             endif
          endif
 

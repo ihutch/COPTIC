@@ -448,9 +448,9 @@ c      write(*,*)'Point charges included. Mask:',iptch_copy
      $     ,uci,rhoci,iptch_copy,idum)
       if(lsliceplot)then
          call sliceGweb(ifull,iuds,uci,na_m,zp,
-     $        ixnp,xn,ifix,'u!dc!d ptch')
+     $        ixnp,xn,ifix,'u!dc!d ptch',dum,dum)
          call sliceGweb(ifull,iuds,rhoci,na_m,zp,
-     $        ixnp,xn,ifix,'!Ar!@!dc!d ptch')
+     $        ixnp,xn,ifix,'!Ar!@!dc!d ptch',dum,dum)
       endif
       end
 c**********************************************************************

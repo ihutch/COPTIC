@@ -9755,7 +9755,6 @@ Actually it grabs something beyond the argument stack, which might
 cause a segfault. This needs to be fixed. One way to fix is to give
 all the calls the full argument list with two dummy real arguments
 after the utitle. This is what I've done with all the analysis routines
-for now.
-
+and coptic routines for now.
 Possibly we should change the subroutine name of the extended version
-and wrap it in the old name with dummy arguments.
+and wrap it in the old name with dummy arguments. Not done.

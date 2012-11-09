@@ -164,7 +164,7 @@ c
 c-------------------------------------------------------------------
       if(lmyidhead)then
          if(ltestplot)call sliceGweb(ifull,iuds,u,na_m,zp,
-     $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0))
+     $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0),dum,dum)
 
 c This only does anything if object 2 is an outer sphere.
          if(idebug.gt.0)write(*,*)'Calling vaccheck',rs,ltestplot
