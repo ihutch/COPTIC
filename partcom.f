@@ -32,7 +32,7 @@ c Number of reinjections at each step (if non-zero)
 c Rho at infinity per processor, relevant only in setup.
       real ripernode
 c Factor by which we relax the rhoinf calculation. 1 immediate, 0 never.
-      real crelax
+      real crelax,caverein,chi
 c Flags for which dimensions are periodic for particles.
       integer ipartperiod(npdim)
 c Effective face area for purposes of reinjection. Small if periodic.
@@ -42,6 +42,7 @@ c Whether not all directions of particles are periodic
       common/particles/n_part,x_part,if_part,iregion_part,ioc_part
      $     ,dtprec,dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
      $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp
+     $     ,caverein,chi
 
 c Orbit plotting storage for tracking the first norbits orbits.
       integer nobsmax,norbits,nstepmax

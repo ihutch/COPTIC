@@ -29,7 +29,7 @@ c Local duplicates.
      $        form='unformatted',err=101)
          goto 105
  101     write(*,*)
-         write(*,*)'*****Could not open uqcij file.'
+         write(*,*)'=====Could not open uqcij file. Just writing.'
          close(40)
          lend=.true.
  105     continue
@@ -125,7 +125,7 @@ c actual cases. Don't want to use too much, or too little.
          open(50,file='xpart',status='old',
      $        form='unformatted',err=101)
          goto 105
- 101     write(*,*)'*****Could not open xpart file.'
+ 101     write(*,*)'=====Could not open xpart file. Just writing.'
          close(50)
          lend=.true.
  105     continue

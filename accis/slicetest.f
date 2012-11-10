@@ -96,7 +96,7 @@ c Arrowplot call.
 
 
 c      call sliceGcont(ifull,iuds,u,Li,zp,
-c     $        ixnp,xn,ifixpt,'potential:'//'!Ay!@')
+c     $        ixnp,xn,ifixpt,'potential:'//'!Ay!@',dum,dum)
 
       ifixpt(1)=-iuds(1)/2
       call sliceGcont(ifull,iuds,u,Li,zp,

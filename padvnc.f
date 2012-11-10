@@ -44,8 +44,6 @@ c Testing storage
       data ptot/0./atot/0./
 
 c      real fieldp(ndims_mesh)
-c Needed only to print out averein:
-c      common /reinextra/averein,adeficit
 c Make this always last to use the checks.
       include 'partcom.f'
 
@@ -60,8 +58,7 @@ c-----------------------------------------------------------------
       ic1=2*ndims+1
       ndimsx2=2*ndims
 c Initialize. Set reinjection potential. We start with zero reinjections.
-c      write(*,*)'Setting averein in padvnc.',phirein
-      call avereinset(phirein)
+      call cavereinset(phirein)
       phirein=0
       nrein=0
       nlost=0

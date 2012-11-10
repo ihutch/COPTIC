@@ -63,6 +63,7 @@ c      write(*,*)name
      $     ((x_part(j,i),j=1,3*npdim),if_part(i),i=1,ioc_part)
       write(22)(dtprec(i),i=1,ioc_part)
       write(22)rmtoz,Bt,Bfield,vpar,vperp
+      write(22)caverein,chi
       close(22)
 c      write(*,*)'Wrote particle data to ',name(1:lentrim(name))
       return
@@ -92,13 +93,16 @@ c Return ierr bit(0) no file. bit(1) no dtprec. bit(2) no Bfield etc.
      $     phirein,numprocs,
      $     ((x_part(j,i),j=1,3*npdim),if_part(i),i=1,ioc_part)
 c Extra particle data written since 30 July 2010.
-      read(23,end=102)(dtprec(i),i=1,ioc_part)
-      read(23,end=104)rmtoz,Bt,Bfield,vpar,vperp
+      read(23,err=102,end=102)(dtprec(i),i=1,ioc_part)
+      read(23,err=104,end=104)rmtoz,Bt,Bfield,vpar,vperp
+      read(23,err=105,end=105)caverein,chi
       goto 103
  102  write(*,*)'=========== No dtprec data in partfile.========='
       ierr=2
  104  write(*,*)'=========== No Bfield etc. in partfile.========='
       ierr=ierr+4
+ 105  write(*,*)'=========== No caverein  . in partfile.========='
+      ierr=ierr+8
  103  close(23)
 c      write(*,*)'Finished reading back particle data from '
 c     $     ,name(1:lentrim(name))

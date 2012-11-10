@@ -393,7 +393,7 @@ IEYE3D() Integer function of convenience to return switch value of eye3d.
 src="sgweb.jpg" width="400"></a>}\fi
 
 
-SLICEGWEB(ifullv,iudsv,u,nw,zp,ixnpv,xnv,ifix,cutitle[,svec,vp]) Plot
+SLICEGWEB(ifullv,iudsv,u,nw,zp,ixnpv,xnv,ifix,cutitle,svec,vp) Plot
 as 3-D webs slices through 3-D array u. ifullv(3) and iudsv(3) are the
 full and used dimensions of u. zp(nw,nw) is a work array; nw should be
 $>$max(iudsv). ixnpv(3) are the pointers within xnv to the node
@@ -412,7 +412,7 @@ abs(ifix)$<$4.
 \iftth \special{html:<a href="slicetest.f"><img align="right"
 src="sgcont.jpg" width="300"></a>}\fi
 
-SLICEGCONT(ifullv,iudsv,u,nw,zp,ixnpv,xnv,ifixptv,cutitle[,svec,vp]) Plot
+SLICEGCONT(ifullv,iudsv,u,nw,zp,ixnpv,xnv,ifixptv,cutitle,svec,vp) Plot
 perspective view of slices on which are contours of 3-D array
 u(ifullv(1),ifullv(2),ifullv(3)). ifullv(3), iudsv(3), zp(nw,nw),
 ixnpv(3), cutitle are as above in slicegweb. The initial intersection

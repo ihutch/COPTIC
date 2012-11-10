@@ -9,7 +9,8 @@ c Random choice data for these routines:
       include 'creincom.f'
 c Plasma common data
       include 'plascom.f'
-      include 'reincom.f'
+c Particle data includes caverein but is not directly accessed otherwise.
+      include 'partcom.f'
 c Mesh data
       include 'meshcom.f'
       logical lfirst
@@ -73,12 +74,12 @@ c      write(*,*)ra,ir,index,fr,ncrein
 c In this version of reinject we never try more than one launch
       ilaunch=1
 c----------------------------------------
-c Correct the total energy for averein. 
+c Correct the total energy for caverein. 
       x2=0.
       do k=1,mdims
          x2=x2+xr(mdims+k)**2
       enddo
-      x1=(x2+2.*max(0.,-averein))/x2
+      x1=(x2+2.*max(0.,-caverein))/x2
       x1=sqrt(x1)
       do k=1,mdims
          xr(mdims+k)=xr(mdims+k)*x1
@@ -580,9 +581,6 @@ c Use particle information for initializing.
 c      real fcarea(ndims_mesh)
       real volume,flux
       real a,cfactor
-      real chi
-      save chi
-      data chi/0./
 
       volume=1.
       flux=0.
@@ -606,7 +604,7 @@ c Better to use a significant number to avoid bias at low reinjections.
 c Calculate rhoinf from nrein if there are enough.
 c Correct approximately for edge potential depression (OML).
 c         chi=min(-phirein/Ti,0.5)
-         chi=max(crelax*(-phirein/Ti)+(1.-crelax)*chi,0.)
+         chi=max(crelax*(-phirein/Ti)+(1.-crelax)*chi,0)
          cfactor=smaxflux(vd/sqrt(2.*Ti),chi)
      $        /smaxflux(vd/sqrt(2.*Ti),0.)
          rhoinf=(nrein/(dtin*cfactor*flux))
@@ -797,12 +795,12 @@ c Silence warnings
       i=myid
       end
 c********************************************************************
-      subroutine avereinset(phi)
+      subroutine cavereinset(phi)
 c Null
       include 'reincom.f'
       include 'partcom.f'
-c      averein=phi
-      averein=crelax*phi+(1.-crelax)*averein
+       caverein=crelax*phi+(1.-crelax)*caverein
+c      write(*,*)'CAvereinset',caverein
       end
 c********************************************************************
 c Cubic interpolation. Not used.

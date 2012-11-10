@@ -8861,8 +8861,8 @@ The following is wrong. Using a stride of N-1 gives a diagonal slice.
 3. if for dimension id iview is 1:N-1:N-1, we iterate only the id boundaries.
 Boundaries would have to be done with two iterations 0:N-1:N and N-1:N-1:N.
 
-In current implementation, I am generally passing end (iused) and full (ifull).
-But not start or stride.
+In current implementation, I am generally passing end (iused) and full (ifull).B
+ut not start or stride.
 
 The general iterator has to move the pointer and decide if we are finished.
 The conversion from multidimensional to linear pointers is 
@@ -9758,3 +9758,103 @@ after the utitle. This is what I've done with all the analysis routines
 and coptic routines for now.
 Possibly we should change the subroutine name of the extended version
 and wrap it in the old name with dummy arguments. Not done.
+
+9 Nov 2012.
+
+Running check shows that restarts are not now correct. That's a problem.
+Commenting locateinit does not fix. Bad. It's not clear how long this
+problem has existed. Things do not look so bad on loki. But there are
+in fact differences with that version. I need to track back.
+Coptic 14June has same differences. So this has not been introduced 
+by the recent changes. Looks as if it might even predate the git
+repository move. Even so, I ought to be able to get a version out
+of the repository if the cvs import kept track of all versions.
+
+Using copticforward to bisect to where the error occured.
+2012-01-04 ok.
+2012-04-17 broken.
+2012-02-09 broken.
+2012-01-15 broken.
+2012-01-05 ok.
+d4661836cc2e035fbd83aece5b6b0bdaa25cf1d4 09 broken.
+8d8b068bd920ffdeea22f6508a286f590ba1a811 04 ok.
+c22bbfa3aa8ae99c9cf0528267bb8f85802c405c 05 ok. 
+627bf5af9ea6b1ea5858c65cacef01f6f734dee1 05 ok.
+--This is where the problem arises.
+d4661836cc2e035fbd83aece5b6b0bdaa25cf1d4 09 broken.
+
+This is the place where the command line argument setting was encapsulated
+into cmdline. That gave me big strife before too. Also boundary setting
+was changed.
+
+10 Nov 2012
+
+Went into copticbackward. Deleted some files so that 
+git checkout 627bf5af9ea6b1ea5858c65cacef01f6f734dee1
+would work.
+Then ./check is broken. This seems to contradict the above results.
+That's very puzzling.
+Cloned the home COPTIC to copticfix. 
+If finds 627bf5af9ea6b1ea5858c65cacef01f6f734dee1 checks ok. 
+copticbackward is somehow broken. Delete. 
+
+copticforward is the broken version
+copticfix is the unbroken version.
+
+In copticforward, put aside coptic.f copy coptic.f from copticfix.
+./check is unbroken. Hence the problem is in the changes to coptic.f.
+These are almost entirely the encapsulation of the arguments.
+Things become confused again in copticforward.
+Do the same cloning process to get copticbreak version. It is broken.
+
+copticbreak and copticfix give different solutions on make regardless
+of the restart. break:0.875556827 fix:0.875226319. Must be some
+effect of the reorganization.
+
+Tried doing the initializations. Did not help.
+Tried redoing the commandline interpretation in line. No improvement.
+Put in initialization and inline cmdline. Comment cmdline call.
+Fixes! Uncomment call. Unfixes. Moved the call till after the
+initialization. Still broken. 
+Ah! The difference is in crelax. With old version it is 0. With new
+it is 0.5. Putting back to 0. gives old result. 
+Taking the broken version, setting crelax to zero after the cmdline
+call fixes both the difference in value and the restart check.
+However, setting it explicitly to 0.5 causes the restart to break.
+Non-zero crelax, which only happens by default in the new version is
+the cause of restart errors. crelax multiplies phirein and averein in
+cartreinject.
+
+The following statements in cartreinject are both causes of check
+errors when crelax is not zero.:
+
+in avereinset
+      averein=crelax*phi+(1.-crelax)*averein
+
+in rhoinfcalc
+         chi=max(crelax*(-phirein/Ti)+(1.-crelax)*chi,0.)
+
+Currently averein is not stored. So avereinset is definitely going to
+fail to set averein correctly, since it depends upon the prior value.
+Averein is used in only one place in cartreinject: 
+	x1=(x2+2.*max(0.,-averein))/x2
+which is where the reinjection energy is scaled up by averein. It's
+of dubious value. That checks out as the place where the averein 
+error enters. Also chi is a saved variable not read back. So 
+both of these averaging problems arise from non-writing of needed
+information if crelax.ne.0.
+
+Fixing this is awkward. averein is hardly used, but lives in reincom.
+Really reincom ought not to be used by cartreinject because it is
+some extra stuff in reincom.f left over for orbitinject. reincom.f
+cannot be widely used because it has spurious stuff in it. The other
+variable in reinextra is adeficit, also not used except in orbitinjnew.
+
+Probably all cartreinject usage should be divorced from reincom.f and
+hence from averein. Get rid of averein from cartreinject and use
+a variable caverein instead. Also get rid from coptic.f. Put caverein
+into partcom and write/read it. Then we solve the restart check for
+the caverein. 
+
+Do the same for chi: put in partcom, read and write. That fixes the
+phirein problem. Done. Checks without error. 

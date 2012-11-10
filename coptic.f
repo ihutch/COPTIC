@@ -48,6 +48,7 @@ c Boundary setting common data
       include 'slpcom.f'
 c Face boundary data
       include 'facebcom.f'
+
       external bdyshare,bdyset,faddu,cijroutine,cijedge,psumtoq
      $     ,quasineutral
       external volnode,linregion
@@ -104,10 +105,11 @@ c Default zero field
          Bfield(id)=0.
       enddo
       phip=0.
-      averein=0
       cellvol=0.
       rs=5.0
       rsmesh=rs
+      caverein=0.
+      chi=0.
       ierr=0
 c---------------------------------------------------------------------
 c This necessary here so one knows early the mpi structure.
@@ -141,6 +143,7 @@ c Second time: deal with any other command line parameters.
      $     ,ipartperiod,lnotallp,Tneutral)
       if(ierr.ne.0)stop
 c The double call enables cmdline switches to override objfile settings.
+c      crelax=0.
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
       ndropped=0
@@ -331,10 +334,12 @@ c Restart code
          nb=nameappendint(partfilename,'.',myid,3)
          if(lrestart/2-2*(lrestart/4).ne.0)then
             iferr=0
+c            write(*,*)'Reading flux file:',fluxfilename
             call readfluxfile(fluxfilename,iferr)
          else
             iferr=1
          endif
+c         write(*,*)'iferr=',iferr
          if(lrestart-4*(lrestart/4).ne.0)then
             call partread(partfilename,ierr)
             if(ierr-4*(ierr/4).eq.0)then 
@@ -345,8 +350,10 @@ c We succeeded in reading the part-file. Relocate the particles.
                call locateinit()
                ied=1
 c Only read the phi-file if the flux file was present. Full restart.
-               if(iferr.eq.0)
-     $              call array3read(phifilename,ifull,iuds,ied,u,ierr)
+               if(iferr.eq.0)then
+c                  write(*,*)'Reading phifile',ierr,phifilename
+                  call array3read(phifilename,ifull,iuds,ied,u,ierr)
+               endif
             endif
          endif
          if(nsteps+nf_step.gt.nf_maxsteps)then
