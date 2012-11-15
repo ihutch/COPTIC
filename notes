@@ -9858,3 +9858,10 @@ the caverein.
 
 Do the same for chi: put in partcom, read and write. That fixes the
 phirein problem. Done. Checks without error. 
+
+15 Nov 2012
+
+Upgrade diagexamine to enable averaging over transverse directions and
+plotting the profile of the result in a particular axis direction.
+Also upgrade reading of additional potential and density files, 
+with the simultanous profiling of them.

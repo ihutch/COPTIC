@@ -21,7 +21,7 @@ c	CONFOL - Follows the contour.
 c       MESH2W(xc,yc,ic,x,y,l,consw)
 c         - Transform xc,yc(ic) to the mesh x,y, depending on switch consw.
 c
-c External calls: minmax2,PLTINIT, LABELINE, POLYLINE... in PLOTIH.LIB
+c External calls: minmax2,PLTINIT, LABELINE, POLYLINE... 
 c************************************************************************
       subroutine contrec(z,ppath,imax,jmax,cl,nc)
 c Basic call: Contour a whole array on a rectangular equally spaced mesh.
@@ -186,7 +186,8 @@ c Triangle gradients.
                   zd(4)=z(i,j+1)
 c                  write(*,*)c1st,clast,ngradcol
                   call gradquad(xd,yd,zd,zd,
-     $                 c1st,clast,0,ngradcol-1,256*istep)
+     $                 c1st,clast,0,ngradcol,256*istep)
+c Error:     $                 c1st,clast,0,ngradcol-1,256*istep)
                endif
             endif
          enddo
@@ -394,7 +395,6 @@ c initd=[1,2,3,4] => direction of motion [E,N,W,S]
 c Outputs:
       integer i,imax
       real xc(i),yc(i),z1,z2,di
-c      real xint,yint
 c The interpolated contour and its length. i is equal to max length
 c on input, and relevant length on output.
 c
@@ -432,17 +432,26 @@ c      write(*,'('' new ix,iy,id,i'',4i4)')ix,iy,id,i
      $	   ix,iy,idx(id-1),idy(id-1),di)
       xc(i)=ix+idx(id-1)*di
       yc(i)=iy+idy(id-1)*di
-c      ppath(id,ix,iy)=char(1)
+c This is presumably the place to put the function call to document the
+c track followed. At the moment, all we are doing is storing the point
+c in xc,yc. 
+c Path documentation:
+      call acpathdoc(z,cv,l,imax,xc,yc,i)
+
       itest=ichar(ppath(ix,iy))/2**(id-1)
       if(itest - (itest/2)*2 .eq. 0)
      $	    ppath(ix,iy)=char(ichar(ppath(ix,iy))+2**(id-1))
       if(i.eq.imax)then
 	 write(*,*)'CONFOL: Contour length exhausted',imax
+c Path document end
+         call acpathdoc(z,cv,l,imax,0.,0.,1)
 	 return
       endif
       if((i.gt.1).and.(ix.eq.initx).and.(iy.eq.inity).and.
      $	      (id.eq.initd))then
 c	 write(*,*)'Returned to initial point.',ix,iy
+c Path document end
+         call acpathdoc(z,cv,l,imax,0.,0.,1)
 	 return
       endif
 c Decide which way to turn
@@ -451,6 +460,8 @@ c Decide which way to turn
       if((ixn.lt.1).or.(ixn.gt.ixmax).or.(iyn.lt.1).or.(iyn.gt.iymax))
      $	   then
 c	 write(*,*)'Moved to edge.'
+c Path document end
+         call acpathdoc(z,cv,l,imax,0.,0.,1)
 	 return
       endif
       if(z(ixn,iyn)-cv .lt. 0)then
@@ -473,6 +484,11 @@ c Turn Right
 	 endif
       endif
       goto 1
+      end
+c**************************************************************************
+c Dummy acpathdoc must be replaced by explicitly linked version if
+c path documentation is actually desired.
+      subroutine acpathdoc(z,cv,l,imax,xc,yc,i)
       end
 c**************************************************************************
       subroutine  nextpt(z,l,ixm,iym,cv,ix,iy,idx,idy,di)
@@ -613,7 +629,6 @@ c         write(*,*)xb,yb
       delta=0.
       xgmax=wx2nx(xb)
       ygmax=wy2ny(yb)
-c      write(*,*)'gradlegend fit',c1,c2 
       call gaxis(c1,c2,ngpow,first,delta,
      $	   xgmin,xgmax,ygmin,ygmax,lpara,laxlog)
 
