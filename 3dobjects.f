@@ -662,12 +662,17 @@ c Reading objects for group ending at n1-1
          ib=ibool(i)
 c Trap subtle object error.
          if(ibits(ifmask,abs(ib)-1,1).eq.0)then
-            write(*,*)'Particle region boolean error.'
-     $           ,(ibool(k),k=1,6),' ...'
-            write(*,*)'Specified non-field-boundary object',ib
-            call reportfieldmask()
-            write(*,*)'You must fix the object file. Aborting ...'
-            stop
+            if(ib.gt.0)then
+               write(*,*)'Particle region boolean error.'
+     $              ,(ibool(k),k=1,6),' ...'
+               write(*,*)'Specified non-field-boundary object',ib
+               call reportfieldmask()
+               write(*,*)'You must fix the object file. Aborting ...'
+               stop
+            else
+               write(*,*)'WARNING: particle region excluding a '
+     $              ,'non-field-object',ib
+            endif
          endif
          if(ib.gt.0)then
 c A positive ib value defines inside object.

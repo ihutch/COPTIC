@@ -88,3 +88,10 @@ c Toggle tic labels on and off.
          ticnum=numtics
       endif
       end
+c***********************************************************************
+      subroutine ticnumget(numtics)
+c Toggle tic labels on and off.
+      include 'plotcom.h'
+      integer numtics
+      numtics=ticnum
+      end

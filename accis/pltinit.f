@@ -83,6 +83,15 @@ c Instead this new approach truncates outside window.
       return
       end
 c*********************************************************************
+      subroutine prtend()
+c Version of pltend that does not call txtmode or wait. Just flushes
+c the print buffers etc.
+      include 'plotcom.h'
+      call vecn(crsrx,crxry,0)
+      if(pfsw.ne.0)call flushb(12)
+      updown=99
+      end
+c*********************************************************************
       subroutine color(li)
 c Set line color. li=15 resets. Plotting translates to dashed etc.
       integer li

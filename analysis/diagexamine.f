@@ -127,7 +127,12 @@ c Calculate average profiles in direction i1d.
             enddo
          enddo
          znorm=(iuds(1)-2)*(iuds(2)-2)*(iuds(3)-2)/(iuds(i1d)-2)
+         if(phifilename(1:1).ne.' ')write(*,*)'   z           v       '
+     $        ,'    phi         n_i        z_E     4pi grad(phi)'
          if(iwr.ne.0)write(*,*)iuds(i1d)-2
+c Fix up first and last value for gradient calculation
+         u1d(1)=(2.*u1d(2)-u1d(3))/znorm
+         u1d(iuds(i1d))=(2.*u1d(iuds(i1d)-1)-u1d(iuds(i1d)-2))/znorm
          do i=2,iuds(i1d)-1
             z1d(i)=z1d(i)/znorm
             u1d(i)=u1d(i)/znorm
@@ -136,7 +141,11 @@ c Calculate average profiles in direction i1d.
 c            write(*,*)i,u1d(i),dene1d(i),deni1d(i)
             if(iwr.ne.0)then
                if(phifilename(1:1).ne.' ')then
-                  write(*,*)xn(ixnp(i1d)+i),z1d(i),u1d(i),deni1d(i)
+                  write(*,'(6f12.5)')xn(ixnp(i1d)+i),z1d(i),u1d(i)
+     $                 ,deni1d(i)
+     $                 ,(xn(ixnp(i1d)+i)+xn(ixnp(i1d)+i-1))/2.
+     $                 ,(u1d(i)-u1d(i-1))*4.*3.14159
+     $                 /(xn(ixnp(i1d)+i)-xn(ixnp(i1d)+i-1))
                else
                   write(*,*)xn(ixnp(i1d)+i),z1d(i)
                endif
@@ -291,6 +300,7 @@ c Help text
       write(*,301)' -ly   set label of parameter. -lx label of xaxis'
       write(*,301)' -d   set single diagnostic to be examined.',isingle
       write(*,301)' -a   set dimension number for average profile',i1d
+      write(*,301)' -w   write out the profiles',iwr
       write(*,301)' -f   plot potential profile (if -p given)',ipp
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [copticgeom.dat'

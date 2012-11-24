@@ -52,6 +52,7 @@ c         write(*,'(i8,$)')i
          enddo
 c     If we are not in the plasma region, try again.
          if(.not.linregion(ibool_part,npdim,x_part(1,i)))then
+c            call partlocate(1,ixp,xfrac,inewregion,linmesh,nreloc)
 c            write(*,*)'Initialization of',i,' wrong region',inewregion
 c     $           ,(x_part(kk,i),kk=1,3)
             goto 1

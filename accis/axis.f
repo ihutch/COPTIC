@@ -78,13 +78,14 @@ c laxlog	      :  log axis (true).
       real ain,aax,x10,xm
       real xgnlog,ygnlog
 c      real xgnlin,ygnlin
-      integer nxfac,indx
+      integer nxfac,indx,iticnum
 c Statement functions for scaling.
       xgnlog(gw)=xgmin+dx*log10(gw/ain)
       ygnlog(gw)=ygmin+dy*log10(gw/ain)
 c      xgnlin(gw)=xgmin+dx*(gw-ain)
 c      ygnlin(gw)=ygmin+dy*(gw-ain)
 c
+      iticnum=ticnum
       axcos=xgmax-xgmin
       axsin=ygmax-ygmin
       dl=sqrt(axcos*axcos+axsin*axsin)
@@ -96,7 +97,7 @@ c
 	write(*,*)' xgmin=',xgmin,' xgmax',xgmax,' wxmin',wxmin,
      $	     ' wxmax',wxmax
 	stop ' '
-	endif
+      endif
       axcos=axcos/dl
       axsin=axsin/dl
       if(lpara)then
@@ -165,7 +166,12 @@ c	    do 2 xm=xdelta,9.9999,xdelta
 c Linear
 	 if(xdelta.eq.0)then
 C Autoscale
-	    call fitrange(ain,aax,ticnum,
+            if(dl.lt.chrswdth*3*ticnum)then
+c Axis is too short for comfort. Change ticnum
+               iticnum=max(1,dl/(chrswdth*3))
+c               write(*,*)'Resetting ticnum',iticnum
+            endif
+	    call fitrange(ain,aax,iticnum,
      $	         nxfac,xpow,xdelta,x1st,xlast)
 c Changed to -1 May 2002 for more satisfactory labeling.
 	    if(.not.(nxfac.gt.2.or.nxfac.lt.-1)) then

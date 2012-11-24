@@ -48,8 +48,9 @@ c Local variables:
       character*(10) cxlab,cylab
       character*(30) form1
       save nf1,nf2,nff,if1,if2,iff
-      logical lfirst,laspect,larrow
+      logical lfirst,laspect,larrow,ltellslice
       data lfirst/.true./laspect/.true./larrow/.false./
+      data ltellslice/.true./
       data iclipping/0/jsw/0/
 c Tell that we are looking from the top by default.
       data ze1/1./icontour/1/iweb/1/iback/0/
@@ -180,7 +181,7 @@ c         if(iclipping.ne.0)
 c Use this scaling until explicitly reset.
       jsw=0 + 256*6 + 256*256*7
       write(form1,'(''Dimension '',i1,'' Plane'',i4)')idfix,n1
-      call drwstr(.1,.02,form1)
+      if(ltellslice)call drwstr(.1,.02,form1)
       call iwrite(idp1,iwidth,cxlab)
       call iwrite(idp2,iwidth,cylab)
 
@@ -249,14 +250,14 @@ c We called for a local print of plot. Terminate and switch it off.
 
 c User interface
       call ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping
-     $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb)
+     $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice)
       if(iquit.eq.0)goto 21
 
       call hdprset(0,0.)
       end
 c******************************************************************
       subroutine ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping
-     $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb)
+     $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice)
 c Encapsulated routine for controlling a 3-D plot.
 c But many things have to be passed at present. A proper API needs
 c to be designed but here's the approximate description.
@@ -271,7 +272,7 @@ c iquit is returned as non-zero to command an end to the display.
 
       integer iuds(3)
 
-      logical laspect
+      logical laspect,ltellslice
 c 3d display user interface.
 c-----------------------------------
       iquit=0
@@ -326,6 +327,8 @@ c m
 c l
          iclipping=1
          nf1=max(nf1-1,if1+1)
+      elseif(isw.eq.ichar('u'))then
+         ltellslice=.not.ltellslice
       elseif(isw.eq.59)then
 c ;
          iclipping=1
@@ -350,6 +353,7 @@ c ;
      $        ' c: contour plane position. w: toggle web.'
      $        ,' a: aspect'
      $        ,' t: truncation.'
+         write(*,*)' u: slice-telling'
          write(*,*)
      $        ' d: disable interface; run continuously.',
      $        ' depress f: to interrupt running.'

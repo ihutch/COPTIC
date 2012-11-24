@@ -585,8 +585,12 @@ c Distributions in ptaccom.f
       character*100 string
       integer icell,jcell,kcell
       real wicell,wjcell,wkcell
-      integer jicell,jjcell,jkcell,ii,jj,kk,ip3
+      integer jicell,jjcell,jkcell,ii,jj,kk,ip3,idw
       integer iup
+      integer ndfirst,ndlast,ips,itrace
+      logical loverplot
+      data ndfirst/3/ndlast/3/ips/0/itrace/0/loverplot/.false./
+      data idw/4/
       data iup/1/jicell/0/jjcell/0/jkcell/0/
 c------------------------------------------
       icell=icellin
@@ -595,7 +599,7 @@ c------------------------------------------
       write(*,*)'Adjust cell position with arrow keys.'
       write(*,*)'Toggle integration over direction with x,y,z.'
  1    ip=ip3index(isuds,icell,jcell,kcell)+1
-      call multiframe(3,1,2)
+      call multiframe(ndlast-ndfirst+1,1,2)
       wicell=(xnewlim(2,1)-xnewlim(1,1))/isuds(1)
       wjcell=(xnewlim(2,2)-xnewlim(1,2))/isuds(2)
       wkcell=(xnewlim(2,3)-xnewlim(1,3))/isuds(3)
@@ -619,8 +623,8 @@ c------------------------------------------
      $     ,xnewlim(1,3)+(kcell-1)*wkcell,xnewlim(1,3)+kcell*wkcell
      $     ,Bfield
       endif
-      write(*,'(a,$)')'v, T in bin'
-      do id=1,3
+c      write(*,'(a,$)')'v, T in bin'
+      do id=ndfirst,ndlast
 c Do correct scaling:
          do iv=1,nsbins
 c Alternatively we combine bins in possibly multiple
@@ -638,31 +642,6 @@ c dimensions, if jicell, jjcell, or jkcell are non-zero.
                enddo 
             enddo
          enddo
-c         call automark(vsbin(1,id),fvx(1,id,ip),nsbins,1)
-         call automark(vsbin(1,id),fvplt,nsbins,1)
-         if(id.eq.1)call boxtitle(string(1:lentrim(string)))
-         if(ivproj.eq.0)then
-            write(string,'(a,i1,a)')'f(v!d',id,'!d)'
-         else
-            string=' '
-         endif
-         if(id.eq.1)then
-            if(string(1:1).eq.' ')
-     $           write(string,'(a,i1,a)')'f(v!d!A|!@!d)'
-            call axlabels(' ',string(1:lentrim(string)))
-         elseif(id.eq.2)then
-            if(string(1:1).eq.' ')
-     $           write(string,'(a,i1,a)')
-     $           '2!Ap!@v!d!A`!@!df(v!d!A`!@!d)'
-            call axlabels(' ',string(1:lentrim(string)))
-         else
-            if(string(1:1).eq.' ')
-     $           write(string,'(a,i1,a)')'f(v!dz!d)'
-            call axlabels('Velocity',string(1:lentrim(string)))
-         endif
-         call winset(.true.)
-c         call polybox(vhbin(0,id),fvx(1,id,ip),nsbins)
-         call polybox(vhbin(0,id),fvplt,nsbins)
          ftot=0.
          vtot=0.
          v2tot=0.
@@ -671,9 +650,46 @@ c         call polybox(vhbin(0,id),fvx(1,id,ip),nsbins)
             v2tot=v2tot+vsbin(iv,id)**2*fvx(iv,id,ip)
             ftot=ftot+fvx(iv,id,ip)
          enddo
-         write(*,'('','',2f10.5,$)')vtot/ftot,sqrt(v2tot/ftot-(vtot/ftot
-     $        )**2)
+c         write(*,'('','',2f10.5,$)')vtot/ftot,sqrt(v2tot/ftot-(vtot/ftot
+c     $        )**2)
+         if(loverplot.and.ndlast-ndfirst.eq.0)then
+            itrace=itrace+1
+            call color(itrace)
+            call polymark(vsbin(1,id),fvplt,nsbins,1)
+         else
+            call automark(vsbin(1,id),fvplt,nsbins,1)
+         endif
+         if(btest(idw,id-1))then
+c         if(id.eq.3)then
+            write(*,*)'#',icell*(1-jicell),jcell*(1-jjcell),kcell*(1
+     $        -jkcell),' dimension',id
+            write(*,*)nsbins
+            write(*,'(2g14.6)')(vsbin(kk,id),fvplt(kk),kk=1,nsbins)
+         endif
+
+         if(id.eq.ndfirst)call boxtitle(string(1:lentrim(string)))
+         if(ivproj.eq.0)then
+            write(string,'(a,i1,a)')'f(v!d',id,'!d)'
+         else
+            string=' '
+         endif
+         if(id.eq.1)then
+            if(string(1:1).eq.' ')
+     $           write(string,'(a)')'f(v!d!A|!@!d)'
+         elseif(id.eq.2)then
+            if(string(1:1).eq.' ')
+     $           write(string,'(a)')'2!Ap!@v!d!A`!@!df(v!d!A`!@!d)'
+         else
+            if(string(1:1).eq.' ')
+     $           write(string,'(a,i1,a)')'f(v!dz!d)'
+         endif
+         call axlabels(' ',string(1:lentrim(string)))
+         call winset(.true.)
+c         call polybox(vhbin(0,id),fvx(1,id,ip),nsbins)
+         call polybox(vhbin(0,id),fvplt,nsbins)
       enddo
+      call winset(.false.)
+      call axlabels('Velocity',' ')
       write(*,*)
       call eye3d(ip)
 c      write(*,*)'ip',ip
@@ -689,12 +705,28 @@ c Increment one of the dimensions using arrow keys.
       elseif(ip.eq.65505)then
 c ffe1 shift_L=2^16-31=65505
          iup=-iup
+c Control averaging over dimensions
       elseif(ip.eq.ichar('x'))then
          jicell=1-jicell
       elseif(ip.eq.ichar('y'))then
          jjcell=1-jjcell
       elseif(ip.eq.ichar('z'))then
          jkcell=1-jkcell
+c Control overplotting
+      elseif(ip.eq.ichar('o'))then
+         if(loverplot)itrace=0
+         loverplot=.not.loverplot
+      elseif(ip.eq.ichar('p'))then
+         if(ips.eq.0)then
+            write(*,*)'Postscript output on'
+            call pfset(3)
+            ips=3
+         else
+            write(*,*)'Postscript output off'
+            ips=0
+            call prtend()
+            call pfset(0)
+         endif
       else
 c         write(*,*)ip
          return

@@ -9865,3 +9865,11 @@ Upgrade diagexamine to enable averaging over transverse directions and
 plotting the profile of the result in a particular axis direction.
 Also upgrade reading of additional potential and density files, 
 with the simultanous profiling of them.
+
+23 Nov 2012
+Allow a region to be _ex_cluded by a non-field-object in the object file.
+This is to allow a point charge to be specified with a finite-radius 
+region around it that does not specify potential boundaries but just
+ensures that it acts as an absorber. This ought to enable us to have
+finite sized small objects too small to be resolved by the mesh, but
+with a specified charge, using the PPPM technique.

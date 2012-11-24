@@ -302,6 +302,7 @@ c Draw projected axes using the current projection according to ic.
       data ixc/-1,-1,1,1,-1,-1/iyc/1,-1,-1,1,1,-1/
 c
       
+      call ticnumget(inticnum)
       yhoriz=(ic/64 - (ic/128)*2) .eq.0
       xhoriz=(ic/32 - (ic/64)*2) .eq.0
       flip=(ic/16 - (ic/32)*2) .ne.0
