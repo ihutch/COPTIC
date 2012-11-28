@@ -159,14 +159,22 @@ c But we iterate only over the inner mesh (not edges).
 c Here, u=psum, v=rho, w=volumes. 
 c Set the density
       ind=1+ipoint
-      if(volumes(ind).gt.1.e20)then
-c This is outside the region. Compensate the electron density.
-         if(.not.u(ind).lt.1.e20)then
-            write(*,*)'psumtoq error',indi,rho(ind),u(ind),ind
+      if(volumes(ind).ge.1.e20)then
+c This is outside the region. 
+         if(volumes(ind).ge.1.e30)then
+c And all point-charge regions.
+c Compensate the electron density.
+            if(.not.u(ind).lt.1.e20)then
+               write(*,*)'psumtoq error',indi,rho(ind),u(ind),ind
+            endif
+            rho(ind)=faddu(u(ind),fprime,ind)
+         else
+c Outside the particle region, but inside a point-charge region.
+c Don't compensate for electron density. Just set rhoi=0.
+            rho(ind)=0.
          endif
-         rho(ind)=faddu(u(ind),fprime,ind)
-c         rho(ind)=0.
       else
+c Standard case.
          rho(ind)=psum(ind)/(rhoinf*volumes(ind))
       endif
 c      if(.not.rho(ind).lt.1.e20)then

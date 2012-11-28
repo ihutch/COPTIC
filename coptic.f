@@ -246,6 +246,9 @@ c Don't do plotting from any node except the master.
 c---------------------------------------------
 c Some simple graphics of cij, and volumes.
          if(ltestplot)call text3graphs(ndims,iuds,ifull,cij,volumes)
+c More elaborate graphics of volumes
+         if(ltestplot)call sliceGweb(ifull,iuds,volumes,na_m,zp,
+     $              ixnp,xn,ifix,'volumes:'//'!Ay!@'//char(0),dum,dum)
 c---------------------------------------------
 c The following requires include objcom.f
 c         if(lmyidhead)write(*,*)'Finished mesh/stencil setup:',iuds

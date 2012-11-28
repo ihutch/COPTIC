@@ -22,6 +22,7 @@ c Structure vector needed for finding adjacent u values.
       integer iLs(ndims+1)
       include 'myidcom.f'
       integer icall
+      external insideall
       save icall
       data icall/0/
 
@@ -70,8 +71,17 @@ c Use volintegrate function.
       inc=1
       return
 
-c Outside region. Set a large volume
- 3    volumes(ipoint+1)=1.e30
+c Outside region. Set a large volume. 10^30 if we are outside
+c everything.  10^20 if we are inside a pointcharge region, in which
+c case we (later) set the density to 0 rather than faddu alone.
+ 3    continue
+      iregion=insideall(ndims_mesh,xi)
+      if(IAND(iregion,iptch_mask).ne.0)then
+c We are inside a point-charge region.
+         volumes(ipoint+1)=1.e20
+      else
+         volumes(ipoint+1)=1.e30
+      endif
 
       end
 c********************************************************************

@@ -20,18 +20,18 @@ c Cylindrical vector distribution:
       real oneoverr(100),huckel(100),ro(100),cl(100)
       real xl(2),yl(2)
 c
-      logical lsd,lhalf,lvtk
+      logical lsd,lhalf,lvtk,lmeshwrite
       integer ifix(3),isubtract
       parameter (ndiagmax=7)
       real diagsum(na_i,na_j,na_k,ndiagmax)
       real phimax
       data phimax/0./isubtract/0/
-      data lsd/.false./lhalf/.false./lvtk/.false./
+      data lsd/.false./lhalf/.false./lvtk/.false./lmeshwrite/.false./
 c 
 
       diagfilename=''
       isw=1
-      call examargs(rp,phimax,isw,lsd,lhalf,lvtk,isubtract)
+      call examargs(rp,phimax,isw,lsd,lhalf,lvtk,isubtract,lmeshwrite)
          
 c      write(*,*)(u(16,16,k),k=1,36) 
       ied=1
@@ -41,6 +41,10 @@ c      write(*,*)(u(16,16,k),k=1,36)
       write(*,'(a,3i4,$)')'On grid',iuds
       write(*,'(a,2f7.2,a,2f7.2,a,2f7.2)')
      $     (',',xn(ixnp(kk)+1),xn(ixnp(kk+1)),kk=1,3)
+      if(lmeshwrite)then
+         write(*,*)('     Grid in direction',kk,(xn(k),k=ixnp(kk)+1
+     $        ,ixnp(kk+1)),kk=1,3)
+      endif
 
 c      write(*,*)(u(16,16,k),k=1,36) 
 c      call noeye3d(0)
@@ -93,6 +97,7 @@ c Spaces are not allowed in visit data names. Fix:
          stop
       endif
 
+c 3-D examination of the array.
       isw2=isw/2
       if(isw2-(isw2/2)*2.eq.0)then
          ifix(1)=1
@@ -409,9 +414,10 @@ c         write(22,*)rzmpos(iz0+i),xn(ixnp(3)+iz0+i)
       end
 
 c*************************************************************
-      subroutine examargs(rp,phimax,isw,lsd,lhalf,lvtk,isubtract)
+      subroutine examargs(rp,phimax,isw,lsd,lhalf,lvtk,isubtract
+     $     ,lmeshwrite)
       include 'examdecl.f'
-      logical lsd,lhalf,lvtk
+      logical lsd,lhalf,lvtk,lmeshwrite
 
       ifull(1)=na_i
       ifull(2)=na_j
@@ -441,6 +447,7 @@ c Deal with arguments
      $        read(argument(3:),*,err=201)isubtract
          if(argument(1:2).eq.'-s')lsd=.not.lsd
          if(argument(1:2).eq.'-m')lhalf=.not.lhalf
+         if(argument(1:2).eq.'-g')lmeshwrite=.not.lmeshwrite
          if(argument(1:2).eq.'-w')then
             lvtk=.not.lvtk
             read(argument(3:),'(a)',err=201)fluxfilename
@@ -474,6 +481,7 @@ c     $     //' [copticgeom.dat'
       write(*,301)' -m toggle mirror image plotting'
       write(*,'(2a)')' -w[name] toggle VisIt vtk file writing,'
      $     ,' optionally specifying variable name.'
+      write(*,301)' -g toggle grid detail writing.'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue

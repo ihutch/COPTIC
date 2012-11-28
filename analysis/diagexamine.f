@@ -40,7 +40,7 @@ c      write(*,*)'ifull',ifull
          ndiags=isingle
          i1=isingle
       endif
-      call pfset(3)
+c      call pfset(3)
 
 c-------------------------------------
       if(lentrim(phifilename).gt.1)then

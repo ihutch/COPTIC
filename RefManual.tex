@@ -24,7 +24,7 @@ sections describe the structure of the code and how it works.
 
 COPTIC acquires its settings from a combination of command line
 arguments and an input file that gives information about geometry,
-which is referred to at the object file.  The purpose of this section
+which is referred to as the object file.  The purpose of this section
 is to explain the format and meaning of the object file. Some
 parameters are set either in the object file or by command line
 arguments. A command line argument always overrides the object file.
@@ -185,7 +185,22 @@ so forth. Spheroids therefore require two face-counts, which
 correspond to the number of equal divisions of $\cos\theta$ and
 $\psi$, while cylinders and parallelopipeds require three face-counts
 specifying the number of facets in $r,\theta,z$ or $c_1,c_2,c_3$
-respectively.
+respectively. For example.
+
+\begin{verbatim}
+# Spheroid that sets no potential BC but tracks flux across it.
+#type=1  A, B, C ,    Center,      Radii  4 fluxes,8x8 angles
+1,       0.,0.,0.,   0.,0.,7.5,  .5,.5,.5,     4,8,
+# Axis-aligned cylinder.
+#type  A, B, C ,    Center,    Radii  Axis-3  1 flux r,th,z
+3,     1.,0.,1.,   0.,0.,0.,  1.,1.,1., 3,    1,     2,3,5
+# Parallelopiped
+#  A, B, C,   Center       Vector2   Vector2   Vector3   Fluxes divisions
+4, 1.,0.,.5,  -2.,2.,-2.,  1.,0,.1,  -1.,0.,1., 0.,.7,0.,    1,  2,2,2
+# Non-aligned cylinder.
+#  A, B, C,   Center      Axis      Ref-vec  radius  Fluxes  r,th,z
+5, 1.,0.,1., 2.,-2.,-2., 1.,0.,1.,  1.,0.,0.,  1. ,    4,     2,3,4
+\end{verbatim}
 
 The three or four numbers specifying the surface facets are appended
 immediately after the geometry specification, on the same line of the
@@ -446,12 +461,18 @@ ought to use \verb!-rx0.!
  dt in the first 1/3 of the timesteps.
 
 \paragraph{-ds....}
-Set the timestep subcycle-fraction. Default 0.  If non-zero,
-sets the maximum permissible momentum increment per step arising from
-electric field. If exceeded for any particle, divide the timestep by
-an integer, and take that many shorter steps of duration: $dtc = dt/max(1,
-int(f*dt/subcycle))$, where $f$ is the local acceleration of this
-particle.
+Set the particle-advance subcycling. Default 0.  If non-zero, sets the
+maximum permissible momentum increment per step ($f*dt$) arising from
+electric field. If exceeded, divide the timestep $dtc$ for that
+particle by two until either $f*dtc<subcycle$ or the total factor is
+$2^3$. Take the corresponding number of shorter steps. A charge of
+magnitude $\phi_pr_p$ gives rise to $f=\phi_pr_p/r^2$ at distance $r$,
+so subcycling occurs for $r^2<\phi_pr_pdt/subcycle$.
+
+\paragraph{-dd....}
+Set the momentum increment, $f*dtc$, value (default 10) above which a
+particle is deemed to have encountered a charge singularity and is
+dropped from the simulation.
 
 \paragraph{-s....}
 Set the total number of steps to take. Default 5. 
@@ -587,7 +608,8 @@ common block \verb!particles!.
       integer ipartperiod(npdim)
       common/particles/n_part,x_part,if_part,iregion_part,ioc_part
      $     ,dtprec,dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
-     $     ,ripernode,crelax,ipartperiod,fcarea
+     $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp
+     $     ,caverein,chi
 \end{verbatim}
 The number of active particles is \verb!n_part!, and the maximum slot
 in the particle array that might have a particle in it is
@@ -815,10 +837,12 @@ spheres at present).
       real fieldforce(ns_ndims,nf_obj,nf_maxsteps)
       real pressforce(ns_ndims,nf_obj,nf_maxsteps)
       real partforce(ns_ndims,nf_obj,nf_maxsteps)
+      real colnforce(ns_ndims,nf_obj,nf_maxsteps)
       real charge_ns(nf_obj,nf_maxsteps)
       real surfobj(2*ns_ndims,ns_nt,ns_np,nf_obj)
       common /stress/ns_flags,surfobj,fieldforce,pressforce
-     $     ,partforce,charge_ns
+     $     ,partforce,colnforce,charge_ns
+
 \end{verbatim}
 
 \subsection{Diagnostics}
@@ -834,16 +858,16 @@ following structures are used.
       real px(nptdiag,mdims)
       real vdiag(nptdiag,mdims)
       real xdiag(nptdiag,mdims)
-      integer nfvaccum
-      common /cartdiag/fv,px,vdiag,xdiag,cumfv,nfvaccum
+      integer nfvaccum,ivproj
+      common /cartdiag/fv,px,vdiag,xdiag,cumfv,nfvaccum,ivproj
 \end{verbatim}
 There are \verb!nptdiag! points in each direction for position and velocity.
 
 Spatially resolved velocity distributions are collected over blocks of
 cells. The sizes of the blocks are given by 
 \begin{verbatim}
-      parameter (nsub_i=8,nsub_j=8,nsub_k=8)
-      parameter (Lsi=nsub_i,Lsj=Lsi*nsub_j,nsub_tot=Lsj*nsub_k)
+      parameter (nsub_i=15,nsub_j=15,nsub_k=15)
+      parameter (nsub_tot=nsub_i*nsub_j*nsub_k)
 \end{verbatim}
 The velocity bins are unevenly spaced so as to allow representation
 of the velocity distribution with a limited number of bins that are
@@ -861,7 +885,8 @@ the combination of bins defined over \verb!nptdiag! velocities:
 Here \verb!ibinmap! is the map from uniform bins to combined bins;
 \verb!vsbin! is the central velocity of the combined bin; \verb!csbin!
 is the number of fine bins in the combined bin. The spatially resolved
-distribution data is \verb!fvx!.
+distribution data is \verb!fvx!. Finer velocity resolution may be
+obtained by using \verb!nsbins! up to 128.
 
 \section{Code Execution Flow}
 

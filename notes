@@ -9873,3 +9873,12 @@ region around it that does not specify potential boundaries but just
 ensures that it acts as an absorber. This ought to enable us to have
 finite sized small objects too small to be resolved by the mesh, but
 with a specified charge, using the PPPM technique.
+
+28 Nov 2012
+Changed the handling of excluded finite grains represented by point charges.
+If a node is outside the particle region, but inside a point-charge region
+(which is the case if we have concentric point charge and finite sized
+grain) then do not set its charge to compensate the electron density by
+setting rho=faddu. That is problematic in such a situation because the
+rhoci of the point charge gets included in faddu. Instead simply set the
+(ion) charge to zero. 
