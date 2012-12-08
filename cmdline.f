@@ -7,7 +7,7 @@ c Encapsulation of parameter setting.
      $     ,nsteps,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral)
+     $     ,ipartperiod,lnotallp,Tneutral,idims)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
@@ -19,7 +19,7 @@ c Encapsulation of parameter setting.
      $     ,dropaccel,rmtoz,vneutral,vd,debyelen,Ti,extfield,vpar,slpD
      $     ,Tneutral
       real Bfield(ndims),Bt,vperp(ndims),CFin(3+ndims,6)
-      integer iCFcount,ipartperiod(ndims)
+      integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
 
 c Local variables:
@@ -182,6 +182,9 @@ c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
          endif
          if(argument(1:3).eq.'-pp')then
             read(argument(4:),*,err=201,end=201)ipartperiod
+         endif
+         if(argument(1:3).eq.'-id')then
+            read(argument(4:),*,err=201,end=201)idims
          endif
          if(argument(1:3).eq.'-Bx')then
             read(argument(4:),*,err=201)Bfield(1)
@@ -381,6 +384,7 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,305)' -pp<i,j,k>  partcl bcs/periodcty [',ipartperiod 
       write(*,*)'     0 open; 1 lower absorbing; 2 upper absorbing;'
      $     ,' 3 both absorb; 4 periodic'
+      write(*,305)' -id<i,j,k> Set MPI block dims    [',idims
       write(*,301)' -fs<i>  set restart switch:      [',lrestart
      $     ,' bit1:partls+potl, bit2:flux, bit3:name'
 

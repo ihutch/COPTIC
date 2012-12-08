@@ -180,7 +180,7 @@ c Use MPI function to redimension block structure
      $           nproc,idims
          else
             if(myid.eq.0 .and. numprocs.gt.1)
-     $           write(*,'('' numprocs,idims()'',i4,10i4)')
+     $           write(*,'('' MPI processes,idims()'',i4,'':'',10i4)')
      $           numprocs,(idims(n),n=1,ndims)
          endif
 c End of topology idims resetting.

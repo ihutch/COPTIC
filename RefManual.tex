@@ -546,6 +546,14 @@ boundary absorbing; 2: upper boundary absorbing; 3: both faces absorb;
 periodic position within the mesh, rather than reinjected. See
 \ref{partperiod}.
 
+\paragraph{-id....} Set the number of MPI blocks in each
+dimension. For example, \verb!-id2,2,8! would prescribe an MPI
+cartesian block array of $2\times2\times8$ (in the dimensions $xyz$).
+The total number of blocks (32 in this case) must be equal to the
+number of MPI processes on which coptic is running. If it is not, then
+the switch has no effect, and the MPI cartesian topology is decided
+automatically, as it is normally by default.
+
 \paragraph{-ofFilename} Set the name [including path] of the object
 file. Default ccpicgeom.dat
 

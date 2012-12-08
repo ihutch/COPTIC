@@ -9882,3 +9882,33 @@ grain) then do not set its charge to compensate the electron density by
 setting rho=faddu. That is problematic in such a situation because the
 rhoci of the point charge gets included in faddu. Instead simply set the
 (ion) charge to zero. 
+
+6 Dec 2012
+Idea about drift distribution reinjection for collisional cases with 
+different velocity dependence of cross section. Riemann shows, that 
+for (stone) cold neutrals, one can obtain a closed form solution of the
+Boltzmann equation for constant cross-section, when the potential gradient
+can be approximated as uniform. This is a good approximation for large
+distances from the wall in a sheath, because we are into a regime where
+there is only logarithmic dependence on distance. 
+
+This works only because the transverse velocity dependence of the solution
+disappears, because the transverse velocity is zero. In other words the
+cold neutral approximation turns the problem into a perfectly 1-d problem.
+Finite transverse temperature cannot be accommodated in that way because
+any collisionality other than \nu=constant couples the transverse and 
+longitudinal dependencies of f(v). However, if the neutrals are fairly
+cold, T_n << v_d^2, then it will still be quite a good approximation to
+take the longitudinal distribution to be the 1-d solution and just
+add on the transverse Gaussian. This approximation ignores the coupling,
+but that is justified if the T_n is small enough. [It's not clear whether
+one can improve the approximation by getting a 1-d solution whose 
+collision rate accounts for the transverse velocity at low longitudinal
+velocity.] 
+
+At any rate, it seems not unreasonable that such an approximation would
+work rather well for low neutral temperature reinjection with more 
+general collision cross-section form.
+
+8 Dec 2012
+Implement command line argument to specify the cartesian topology.

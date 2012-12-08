@@ -28,7 +28,6 @@ c 1-d plotting arrays.
 c      pscale=3.
 c 
       call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle)
-
 c      write(*,*)'ifull',ifull
       i1=1
       ied=ndiagmax
@@ -40,7 +39,7 @@ c      write(*,*)'ifull',ifull
          ndiags=isingle
          i1=isingle
       endif
-c      call pfset(3)
+      call pfset(3)
 
 c-------------------------------------
       if(lentrim(phifilename).gt.1)then
@@ -103,7 +102,7 @@ c Subtract v^2 from the second moment to give temperature.
             enddo
          enddo
       enddo
-c      write(*,*)rs,debyelen,vd,Ti
+      write(*,*)'rs,debyelen,vd,Ti',rs,debyelen,vd,Ti
 
 c      write(*,*)'Normalized diagnostics.'
       if(i1d.ne.0)then
@@ -113,7 +112,7 @@ c Calculate average profiles in direction i1d.
             u1d(i)=0.
             deni1d(i)=0.
          enddo
-         write(*,*)i1d,iuds
+         write(*,*)'i1d,iuds',i1d,iuds
          do k=2,iuds(3)-1
             do j=2,iuds(2)-1
                do i=2,iuds(1)-1
@@ -127,6 +126,7 @@ c Calculate average profiles in direction i1d.
             enddo
          enddo
          znorm=(iuds(1)-2)*(iuds(2)-2)*(iuds(3)-2)/(iuds(i1d)-2)
+c         write(*,*)phifilename
          if(phifilename(1:1).ne.' ')write(*,*)'   z           v       '
      $        ,'    phi         n_i        z_E     4pi grad(phi)'
          if(iwr.ne.0)write(*,*)iuds(i1d)-2
@@ -151,31 +151,41 @@ c            write(*,*)i,u1d(i),dene1d(i),deni1d(i)
                endif
             endif
          enddo
+c Line-out plot.
          call fitinit(xn(ixnp(i1d)+1),xn(ixnp(i1d+1)),z1d(2)
-     $        ,z1d(iuds(i1d)-1))
+     $        ,max(z1d(iuds(i1d)-1),0.))
          call polyline(xn(ixnp(i1d)+2),z1d(2),ixnp(i1d+1)-ixnp(i1d)-2)
-         call axis()
+         call axptset(1.,0.)
+c xticoff reverses the tics.
+         call xaxis(0.,0.)
+         call ticset(-.015,.015,-.03,.007,0,0,0,0)
+         call yaxis(0.,0.)
          call axlabels(xtitle(1:lentrim(xtitle))
      $        ,ytitle(1:lentrim(ytitle)))
+         call axlabels('','v!di!d')
+         call ticset(-.015,.015,-.03,.007,-1,0,0,0)
          call axptset(0.,1.)
-c         call ticrev()
-c         call altxaxis(1.,1.)
-c         call ticrev()
+         call altxaxis(1.,1.)
+         call axptset(0.,1.)
+         call ticset(0.,0.,0.,0.,0,0,0,0)
+
+
          if(phifilename(1:1).ne.' ')then
             call legendline(xleg,.15,0,'v!di!d')
             if(ipp.eq.1)then
                call fitscale(xn(ixnp(i1d)+1),xn(ixnp(i1d+1)),u1d(2)
      $              ,u1d(iuds(i1d)-1),.false.,.false.)
-               call axptset(-.3,0.)
+               call axptset(-.2,0.)
                call color(4)
                call dashset(1)
                call altyaxis(1.,1.)
                call polyline(xn(ixnp(i1d)+2),u1d(2),ixnp(i1d+1)
      $              -ixnp(i1d)-2)
-               call axlabels('','potential')
+               call ticset(.015,.015,-.03,-.007,0,0,0,0)
+               call axlabels('','!Af!@')
                call legendline(xleg,.2,0,'!Af!@')
             endif
-            call axptset(1.,0.)
+            call axptset(0.,0.)
             call color(5)
             call dashset(2)
             write(*,*)i1d,iuds(i1d)-1,u1d(2),dene1d(2),u1d(iuds(i1d)-1)
@@ -184,12 +194,13 @@ c         call ticrev()
      $           ,dene1d(iuds(i1d)-1),.false.,.false.)
             call polyline(xn(ixnp(i1d)+2),dene1d(2),ixnp(i1d+1)
      $           -ixnp(i1d)-2)
-            call ticrev()
+c            call ticrev()
             call altyaxis(1.,1.)
             call ticset(.015,.015,-.03,-.007,0,0,0,0)
+c            call ticset(0.,0.,0.,0.,0,0,0,0)
             call axlabels('','Density')
-            call ticset(0.,0.,0.,0.,0,0,0,0)
             call legendline(xleg,.05,0,'n!de!d')
+            call ticset(0.,0.,0.,0.,0,0,0,0)
          endif
          if(denfilename(1:1).ne.' ')then
             call color(6)
