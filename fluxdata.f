@@ -643,7 +643,7 @@ c which is ff_data(iav+i)
       real fluxofstep(nf_maxsteps),step(nf_maxsteps)
       character*30 string
 
-      n1=n2in
+      n1=n1in
       n2=n2in
       iq=abs(iquant)
 c If quantity asked for is not available, do nothing.

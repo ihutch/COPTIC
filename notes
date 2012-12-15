@@ -9933,3 +9933,16 @@ routine.
 
 Working on this in objplot.f Fixed pllelplot. Had to change fluxdata.f
 too. Fixed cubeplot. That fixes objplot.
+
+Unfortunately we now have an error in the rhoinf on make. Which was
+introduced just before
+79fcaa3b74dd2580326d5c465e6086e9c5e08ff5
+which was a lot of the rationalization of testing directories etc.
+33dd358882930a31799b5e2debaef4069e241490
+was the one before it.
+The differences are enormous.
+Our current version is a7e4ac405bf95938940c97e91e267f60ac7d92bc
+
+Error appears when fluxdata.f is updated.
+
+Found the error and corrected.
