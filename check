@@ -15,3 +15,7 @@ echo RUNNING coptic -s8 -ck6
 ./coptic -s8 -ck6
 echo If the last ====== Finished uqcijckeck and ====== Finished xpartcheck
 echo show no warnings or diagnostics. Everything is OK for restarting.
+rm xpartnew
+rm uqcijnew
+rm xpart
+rm uqcij

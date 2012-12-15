@@ -133,8 +133,8 @@ c the region information.
      $              ,iregion ,IAND(iregion,ifield_mask),field(idf)
                write(*,'(''xp:'',9f8.4)')(x_part(kk,i),kk=1,3
      $              *ndims)
-               write(*,'(''In region'',l2,''  iLs='',4i8)')linregion(i
-     $              bool_part,ndims,x_part(1,i)),iLs
+               write(*,'(''In region'',l2,''  iLs=''
+     $,4i8)')linregion(ibool_part,ndims,x_part(1,i)),iLs
                stop
             endif
             if(i.eq.1)then
@@ -227,6 +227,8 @@ c Else empty slot and move to next particle.
          ptot=ptot+dtpos
          atot=atot+dtaccel
 c Accelerate ----------
+c Here we only include the electric field force. 
+c B-field force is accommodated within moveparticle routine.
          do j=ndims+1,2*ndims
             x_part(j,i)=x_part(j,i)+field(j-ndims)*dtaccel
          enddo
@@ -465,6 +467,7 @@ c Local storage:
       integer isw,iregion,irptch
       real xp(ndims_mesh),adfield(ndims_mesh)
 c Silence warnings
+      irptch=iLs
       irptch=iuds(1)
 c      write(*,*)'ucrhoset',ipoint,indi,iuds,ndims
 c      if(ipoint.gt.100)stop
@@ -716,75 +719,76 @@ c Local
 c            write(*,*)Bt,Btinf,Bfield
       i=1
 c The below is literally the section of code removed from padvnc.
-c Move ----------------
-         if(Bt.eq.0.)then
-            do j=1,ndims
-               x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos
-            enddo          
-         elseif(Bt.lt.Btinf)then
-c Magnetic field non-zero but finite
-            theta=Bt*dtpos
+      if(Bt.eq.0.)then
+c B-field-less Move -----------------------------
+         do j=1,ndims
+            x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos
+         enddo          
+      elseif(Bt.lt.Btinf)then
+c Magnetic field non-zero but finite -------------
+         theta=Bt*dtpos
 c Rotation is counterclockwise for ions. We only want to call the 
 c trig functions once, otherwise they dominate the cost.
-            stheta=sin(-theta)
-            ctheta=cos(theta)
+         stheta=sin(-theta)
+         ctheta=cos(theta)
 c            if(i.eq.1)write(*,*)'theta=',theta,fieldtoosmall
-            if(theta.lt.fieldtoosmall)then
+         if(theta.lt.fieldtoosmall)then
 c Weak B-field. Advance using summed accelerations. First half-move
-               do j=1,ndims
-                  x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
-               enddo          
+            do j=1,ndims
+               x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
+            enddo          
 c Rotate the velocity to add the magnetic field acceleration.
 c This amounts to a presumption that the magnetic field acceleration
 c acts at the mid-point of the translation (drift) rather than at
 c the kick between translations.
-               call rotate3(x_part(4,i),stheta,ctheta,Bfield)
+            call rotate3(x_part(4,i),stheta,ctheta,Bfield)
 c Second half-move.
-               do j=1,ndims
-                  x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
-               enddo          
-            else
+            do j=1,ndims
+               x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
+            enddo          
+         else
 c Strong but finite B-field case:
 c Subtract off the perpendicular drift velocity.
-               do j=ndims+1,2*ndims
-                  x_part(j,i)=x_part(j,i)-vperp(j-ndims)
-               enddo
+            do j=ndims+1,2*ndims
+               x_part(j,i)=x_part(j,i)-vperp(j-ndims)
+            enddo
 c Find the gyro radius and gyrocenter.
-               call gyro3(Bt,Bfield,x_part(1,i),x_part(4,i),xg,xc)
+            call gyro3(Bt,Bfield,x_part(1,i),x_part(4,i),xg,xc)
 c Rotate the velocity and gyro radius.
-               call rotate3(x_part(4,i),stheta,ctheta,Bfield)
-               call rotate3(xg,stheta,ctheta,Bfield)
+            call rotate3(x_part(4,i),stheta,ctheta,Bfield)
+            call rotate3(xg,stheta,ctheta,Bfield)
 c Move xc along the B-direction.
-               call translate3(xc,x_part(4,i),dtpos,Bfield,xc)
+            call translate3(xc,x_part(4,i),dtpos,Bfield,xc)
 c Add the new gyro center and gyro radius
 c And add back the drift velocity.
-               do j=1,ndims
+            do j=1,ndims
 c Move the gyro-center perpendicular and add gyro-radius:
-                  x_part(j,i)=xc(j)+vperp(j)*dtpos+xg(j)
+               x_part(j,i)=xc(j)+vperp(j)*dtpos+xg(j)
 c Add back vperp.
-                  x_part(j+ndims,i)=x_part(j+ndims,i)+vperp(j)
-               enddo
-            endif
+               x_part(j+ndims,i)=x_part(j+ndims,i)+vperp(j)
+            enddo
+         endif
 c 801        format(a,6f10.6)
 c            if(i.le.npr)write(*,801)'x_part2',(x_part(k,i),k=1,6)
-         else
-c Infinite magnetic field; i.e. one-dimensional motion plus a
+      else
+c Infinite magnetic field; -------------------------
+c i.e. one-dimensional motion plus a
 c perpendicular steady drift velocity. Set non-drift perp particle
 c velocity to zero.
 c Bfield is normalized: i.e. a direction cosine.
-            vp=0.
-            do j=1,ndims
-               vp=vp+Bfield(j)*x_part(j+ndims,i)
-            enddo
-            do j=1,ndims
+         vp=0.
+         do j=1,ndims
+            vp=vp+Bfield(j)*x_part(j+ndims,i)
+         enddo
+         do j=1,ndims
 c Parallel particle and perpendicular drift move:
-               x_part(j,i)=x_part(j,i)+(vp*Bfield(j)+vperp(j))*dtpos
+            x_part(j,i)=x_part(j,i)+(vp*Bfield(j)+vperp(j))*dtpos
 c Zero perp velocity. Why? Just to display consistent with vz?
 c               x_part(j+ndims,i)=vp*Bfield(j)
 c Reset perp velocity to just the drift.
-               x_part(j+ndims,i)=vp*Bfield(j)+vperp(j)
-            enddo
-         endif
-c End of Move ---------
-
+            x_part(j+ndims,i)=vp*Bfield(j)+vperp(j)
+         enddo
+      endif
+c End of Move -----------------------------------------------------
       end
+c********************************************************************

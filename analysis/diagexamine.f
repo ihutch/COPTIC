@@ -31,6 +31,7 @@ c
 c      write(*,*)'ifull',ifull
       i1=1
       ied=ndiagmax
+      call pfset(3)
       call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
       if(ierr.eq.1)stop 'Error reading diag file'
       ndiags=ied
@@ -39,7 +40,6 @@ c      write(*,*)'ifull',ifull
          ndiags=isingle
          i1=isingle
       endif
-      call pfset(3)
 
 c-------------------------------------
       if(lentrim(phifilename).gt.1)then
@@ -154,6 +154,7 @@ c            write(*,*)i,u1d(i),dene1d(i),deni1d(i)
 c Line-out plot.
          call fitinit(xn(ixnp(i1d)+1),xn(ixnp(i1d+1)),z1d(2)
      $        ,max(z1d(iuds(i1d)-1),0.))
+         call pfset(3)
          call polyline(xn(ixnp(i1d)+2),z1d(2),ixnp(i1d+1)-ixnp(i1d)-2)
          call axptset(1.,0.)
 c xticoff reverses the tics.

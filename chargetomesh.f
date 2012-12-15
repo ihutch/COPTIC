@@ -152,6 +152,7 @@ c Partcom gives us rhoinf:
       include 'partcom.f'
 
 c Silence warnings with spurious access.
+      ind=iLs
       ind=iused(1)
       ind=indi(1)
 c This routine for use in mditerarg.
@@ -194,6 +195,7 @@ c      real dum3,dum4
 
 c Silence warnings with spurious accesses. 
 c (Which ought to be optimized away.)
+      ind=iLs
       ind=iused(1)
       ind=indi(1)
 c This routine for use in mditerarg.

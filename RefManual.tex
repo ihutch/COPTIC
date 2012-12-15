@@ -685,40 +685,40 @@ of the mesh is \verb!ixnp(id+1)-ixnp(id)!.
 are controlled by data structures in file \verb!objcom.f!.
 
 \begin{verbatim}
-      parameter (ndims_sor=3,ndata_sor=ndims_sor)
-      parameter (nobj_sor=2*ndims_sor*ndata_sor+7)
+      parameter (ndims_cij=3,ndata_cij=ndims_cij)
+      parameter (nobj_cij=2*ndims_cij*ndata_cij+7)
       parameter (Lobjmax=1000000)
-      real dob_sor(nobj_sor,Lobjmax)
-      integer oi_sor
-      common /objcom/oi_sor,dob_sor
-      integer idob_sor(nobj_sor,Lobjmax)
-      equivalence (idob_sor,dob_sor)
+      real dob_cij(nobj_cij,Lobjmax)
+      integer oi_cij
+      common /objcom/oi_cij,dob_cij
+      integer idob_cij(nobj_cij,Lobjmax)
+      equivalence (idob_cij,dob_cij)
 \end{verbatim}
-The array \verb!dob_sor! which is equivalenced to \verb!idob_sor!
+The array \verb!dob_cij! which is equivalenced to \verb!idob_cij!
 contains the information accessed by a pointer into its second index.
 For any node of the mesh, there is a pointer which if non-zero refers
 to the corresponding column of this array. The integer
-\verb!oi_sor! is the column last filled with data. 
+\verb!oi_cij! is the column last filled with data. 
 
-Each column of \verb!dob_sor! contains data describing the stencil
+Each column of \verb!dob_cij! contains data describing the stencil
 surrounding this boundary node. The fractional nodal distance to the
 adjacent node (equal to 1 if there's no interface in this direction), and the
 values of $B/A$ and $C/A$ are stored for the forward and backward
 directions of each coordinate. 
 \begin{verbatim}
-      parameter (idgs_sor=2*ndims_sor*ndata_sor+1)
-      parameter (ibdy_sor=2*ndims_sor*ndata_sor+2)
-      parameter (iflag_sor=2*ndims_sor*ndata_sor+3)
-      parameter (iregion_sor=2*ndims_sor*ndata_sor+4)
-      parameter (ipoint_sor=2*ndims_sor*ndata_sor+5)
-      parameter (iinter_sor=2*ndims_sor*ndata_sor+6)
-      parameter (iextra_sor=2*ndims_sor*ndata_sor+7)
+      parameter (idgs_cij=2*ndims_cij*ndata_cij+1)
+      parameter (ibdy_cij=2*ndims_cij*ndata_cij+2)
+      parameter (iflag_cij=2*ndims_cij*ndata_cij+3)
+      parameter (iregion_cij=2*ndims_cij*ndata_cij+4)
+      parameter (ipoint_cij=2*ndims_cij*ndata_cij+5)
+      parameter (iinter_cij=2*ndims_cij*ndata_cij+6)
+      parameter (iextra_cij=2*ndims_cij*ndata_cij+7)
 \end{verbatim}
 Then come the diagonal coefficient, boundary potential contributors,
 and the following integers: the flags, the region-code of this point,
 the inverse pointer back to the node within \verb!cij(2,2,2)!, the
 intersection object code, and finally an extra pointer which if non
-zero points to a different column of \verb!dob_sor! used to chain
+zero points to a different column of \verb!dob_cij! used to chain
 extra data specifically for a boundary whose potential varies with
 time (because it is floating or insulating). The extra data consists
 for each stencil direction of the triple: \verb!iobj! which references a
@@ -733,7 +733,7 @@ not in common, using length parameters defined in file \verb!griddecl.f!.
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
       real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
       real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k)
-      real cij(2*ndims_sor+1,na_i,na_j,na_k)
+      real cij(2*ndims_cij+1,na_i,na_j,na_k)
 \end{verbatim}
 The potential and charge are \verb!u, q!. The volumes of the cells
 whose centers are at the nodes are calculated once using routines from
@@ -742,7 +742,7 @@ whose centers are at the nodes are calculated once using routines from
 The stencil information is calculated by \verb!cijroutine! and stored
 in \verb!cij!. Its first index references the stencil coefficients in
 the directions $\pm x, \pm y, \pm z$, followed by a single value
-which, if non-zero, is a pointer to the second index of \verb!dob_sor!
+which, if non-zero, is a pointer to the second index of \verb!dob_cij!
 and indicates that this is a non-standard stencil needing special
 interpretation. The maximum length \verb!Lobjmax! is therefore limited
 to the largest integer that can be correctly represented by a
@@ -1265,8 +1265,8 @@ identical to the one used in the prior execution.
 %COPTIC simply initializes and runs as normal without the restart
 %switch.
 
-If instead the switch \verb!-fs1! is specified (i.e.\ bit 0 is set but
-not bit 1) the particle files but not the flux data file from a previous
+If instead the switch \verb!-fs1! is specified (i.e.\ bit 1 is set but
+not bit 2) the particle files but not the flux data file from a previous
 run are read. The particle data are used as the initialization of the
 particles. In this case, the new geometry file can differ from the one
 that governed the prior run. It makes no sense, though, to use a

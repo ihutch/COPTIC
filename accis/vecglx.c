@@ -147,10 +147,10 @@ int accis_errorhandler(Display *display, XErrorEvent *theEvent) {
 	  Hence the above errorcount trap. */
        usleep(10000);
        XSetInputFocus(accis_display, accis_window, RevertToParent,CurrentTime);
-     }else{
+     }else{/*
        fprintf(stderr, "Intercepted Xlib error: error code %d request code %d",
 		theEvent->error_code, theEvent->request_code) ;
-       fprintf(stderr,"  BadMatch. Doing nothing.\n");
+		fprintf(stderr,"  BadMatch. Doing nothing.\n");*/
      }
      return 0;
    }else{

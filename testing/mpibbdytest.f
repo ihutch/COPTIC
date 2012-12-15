@@ -64,7 +64,7 @@ c      real v(ifd1,ifd2,ifd3)
       real u123(ifd123)
       equivalence (u,u123)
 c ifull full dimensions of u
-      integer ifull(ndimsdecl)
+C      integer ifull(ndimsdecl)
 c      integer ktype(2**(ndimsdecl+1))
 c      integer iside(2,ndimsdecl)
 

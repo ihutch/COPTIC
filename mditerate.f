@@ -1,45 +1,3 @@
-c******************************************************************
-      subroutine rbroutine(inc,ipoint,indi,ndims,iused,u)
-c Red/black routine, process squares alternately.
-      integer ipoint,inc
-      integer indi(ndims),iused(ndims)
-      real u(*)
-
-      parameter (mdims=10)
-      integer ind1(mdims)
-      data icount/0/
-      data ind1/mdims*1000/
-
-c iused is not used. To silence warnings spuriously use it:
-      ic=iused(1)
-c      write(*,'(a,11i8)')'ipoint,indi',ipoint,(indi(i),i=1,ndims)
-c      write(*,*)'myipoint=',ipoint
-c We build in correction of the increment here for red-black
-c to change the parity. We have to remember the previous indis.
-      ic=0
-      do i=ndims,2,-1
-         if(indi(i).gt.ind1(i))then
-c we've carried
-            ic=ic+(i-1)
-c            write(*,*)'increment',ic
-         endif
-c Remember prior.
-         ind1(i)=indi(i)
-      enddo
-      if(mod(ic,2).ne.0) then
-         iaj=(1-2*mod(indi(1),2))
-         indi(1)=indi(1)+iaj
-         ipoint=ipoint+iaj
-      endif
-
-c Here is where we process the square chosen. Examples:
-c sequence
-c      u(ipoint+1)=mod(icount,9)+1
-c height
-      u(ipoint+1)=indi(3)+1
-      icount=icount+1
-      inc=2
-      end
 c************************************************************************
 c Shell for skipping over the boundary of ndims-dimensional volume.
       subroutine bdyroutine(inc,ipoint,indi,ndims,iused,u)
@@ -353,7 +311,7 @@ c Iterate
 c Start at dimension 1.
          n=1
 c Increment:
-         indi(n)=indi(n)+iview(3,n)
+         indi(n)=indi(n)+iview(istride,n)
  101     continue
 c      write(*,'(''('',i1,i4,'') '',$)')n,indi(n)
          if((indi(n)-iview(iend,n))*iview(istride,n).gt.0)then

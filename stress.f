@@ -167,7 +167,7 @@ c Must be called after fluxdatainit.
          nfmap=nf_map(i)
          if(nfmap.ne.0)then
 c we are tracking this object
-            itype=obj_geom(otype,i)
+            itype=int(obj_geom(otype,i))
             it=int(itype - 256*(itype/256))
 c            write(*,*)'Forceinit:'
 c     $           ,i,nfmap,'  type',it

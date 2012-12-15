@@ -19,7 +19,8 @@ c      call bdysetnull
 c**********************************************************************
       subroutine bdysetfree(ndims,ifull,iuds,cij,u,q)
       integer ndims,ifull(ndims),iuds(ndims)
-      real cij(*),u(*),q(*)
+      real u(*)
+      real cij(*),q(*)
 c Specify external the boundary setting routine.
 c If    Bit-0 of islp is not set, then use logarithmic derivative.
 c else  use Mach slope condition (higher bits relevant).
@@ -30,6 +31,9 @@ c else  use Mach slope condition (higher bits relevant).
       include 'myidcom.f'
       integer ifirst
       data ifirst/1/
+c Silence warnings about unused arguments
+      use=cij(1)
+      use=q(1)
       ipoint=0
 c      write(*,*)'islp=',islp
       if(ibits(islp,0,1).eq.0)then
@@ -459,7 +463,7 @@ c phi_b = -[C+(A/2-B/dn)phi_i]/[A/2+B/dn]
             ApBF(idn)=AF(idn)/2.+BF(idn)/dn
             if(ApBF(idn).eq.0.)then
                write(*,*)'bdyface coefficient singularity.'
-     $              ,idn,Ain,Bin,dn
+     $              ,idn,dn
                write(*,*)'There''s a problem with those values.'
      $              ,' They must be changed.'
                stop
@@ -481,6 +485,9 @@ c**********************************************************************
 c Specify external the boundary setting routine.
       external bdy3slope 
 c sets the derivative to zero on boundaries 3.
+c Silence warnings about unused arguments
+      use=cij(1)
+      use=q(1)
       ipoint=0
       call mditerarg(bdy3slope,ndims,ifull,iuds,ipoint,u)
       end
@@ -534,6 +541,9 @@ c Set the boundary normal slope to zero.
 c Specify external the boundary setting routine.
       external bdyslopeDh,bdyslopescreen,bdymach
       include 'slpcom.f'
+c Silence warnings about unused arguments
+      use=cij(1)
+      use=q(1)
       ipoint=0
       islp=0
       slpD=0.

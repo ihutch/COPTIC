@@ -127,15 +127,6 @@ return.
 POLYLINE(xv,yv,ilength) Draw a polyline on an already setup graph.
 
 <div class="p"><!----></div>
-DASHSET(idash) Set dashed line character for polyline. 
-(0:solid, 1:long, 2:short, 3:long/short, 4:dots)
-
-<div class="p"><!----></div>
-LABELINE(xv,yv,ilength,clabel,ilablen) Draw polyline with embedded label
-of length ilablen. If ilablen.eq.-99 then set the normalized interval
-between labels to xv(1); if xv(1).eq.0 set it to default 0.3.
-
-<div class="p"><!----></div>
 YPOLYLINE(yv,ilength) Draw a polyline on an already setup yautoplot.
 
 <div class="p"><!----></div>
@@ -145,6 +136,15 @@ triangle, 6 hollow star, 7 solid star, 8 hollow diamond, 9 flag, 10 +,
 11 x, 12 diamond, 13 -, 14 inverted triangle, 15 circle. Else
 char(isym), so ichar('c') gives 'c', ichar('c')+128 gives the font-2
 symbol corresponding to 'c' (xi).
+
+<div class="p"><!----></div>
+DASHSET(idash) Set dashed line character for polyline. 
+(0:solid, 1:long, 2:short, 3:long/short, 4:dots)
+
+<div class="p"><!----></div>
+LABELINE(xv,yv,ilength,clabel,ilablen) Draw polyline with embedded label
+of length ilablen. If ilablen.eq.-99 then set the normalized interval
+between labels to xv(1); if xv(1).eq.0 set it to default 0.3.
 
 <div class="p"><!----></div>
 POLYDRAW(xv,yv,ilength,DRAWFN) Draw data marked by symbol defined by
@@ -165,6 +165,15 @@ using charsize().
 
 <div class="p"><!----></div>
 POLYERR(xv,yv,errv,ilength) Draw error bars yv to yv+errv.
+
+<div class="p"><!----></div>
+STPOLYLINE(xa,ya,ilength,ixstride,iystride),
+STPOLYMARK(xa,ya,ilength,ixstride,iystride,isym) Strided versions of
+polyline/mark, in which a total of ilength data points are sampled
+from the arrays xa and ya at strides of ixstride and iystride. These
+allow one to plot data from rows (rather than columns) of a matrix by
+passing the leading dimension of the matrix as the stride. Passing
+strides of 1 gives equivalent sampling to the unstrided versions.
 
 <div class="p"><!----></div>
 
@@ -228,7 +237,7 @@ AXIS2() Put tics on the opposite side of the axis box.
 
 <div class="p"><!----></div>
 XAXIS(first,delta) Draw an axis; labels starting at first, spaced by delta.
-If delta=0, autofit labels.
+If delta=0, autofit labels, which is what AXIS() does for both axes.
 
 <div class="p"><!----></div>
 YAXIS(first,delta) If axis is log, first indicates major subtic.
@@ -706,5 +715,5 @@ for compiler/linker arguments such as  -L/usr/X11R6/lib/ -lXt
 T<sub><span class="small">E</span></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><span class="small">T</span></sub>H</a>,
-version 4.03.<br />On 14 Nov 2012, 11:30.</small>
+version 4.03.<br />On 13 Dec 2012, 11:31.</small>
 </html>

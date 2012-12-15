@@ -41,8 +41,9 @@ c-----------------------------------------------------
       integer istart
       data istart/0/
 
-c Silence unused warning :
+c Silence unused warnings :
       ichain=iused
+      ichain=iLs
 c Default no chain.
       ichain=0
 c ipoint here is the offset (zero-based pointer)
@@ -555,10 +556,9 @@ c Edge routine which sets the iregion for all boundary points.
       integer indi(ndims),iused(ndims)
       real cij(*)
       parameter (mdims=10)
-c Structure vector needed for finding adjacent u values.
-      integer iLs(ndims+1)
-
       include 'objcom.f'
+c Silence unused warnings
+      icb=iLs
 
       icb=2*ndims+1
       icij=icb*ipoint+icb

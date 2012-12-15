@@ -556,14 +556,14 @@ c      y1=16.8
          f3=(k-0.999)/(ifmax-0.998)
          xff(idf)=(1.-f3)*z0 + f3*z1
 c         write(*,*)'f3,xff(idf)',f3,xff(idf),z0,z1,errmax
-         ixff=xff(idf)
+         ixff=int(xff(idf))
          ff=xff(idf)-ixff
          xprime(idf)=xn(ixnp(idf)+ixff)*(1.-ff)
      $        +xn(ixnp(idf)+ixff+1)*ff
       do j=1,ifmax
          f2=(j-0.999)/(ifmax-0.998)
          xff(id2)=(1.-f2)*y0 + f2*y1
-         ixff=xff(id2)
+         ixff=int(xff(id2))
          ff=xff(id2)-ixff
          xprime(id2)=xn(ixnp(id2)+ixff)*(1.-ff)
      $        +xn(ixnp(id2)+ixff+1)*ff
@@ -571,7 +571,7 @@ c         write(*,*)'f3,xff(idf)',f3,xff(idf),z0,z1,errmax
          do i=1,ifmax
             f1=(i-0.999)/(ifmax-0.998)
             xff(id1)=(1.-f1)*x0 + f1*x1
-            ixff=xff(id1)
+            ixff=int(xff(id1))
             ff=xff(id1)-ixff
             xprime(id1)=xn(ixnp(id1)+ixff)*(1.-ff)
      $           +xn(ixnp(id1)+ixff+1)*ff
@@ -622,7 +622,7 @@ c Assuming sphere is centered on origin.
       icsw=1
 c      write(*,*)errmtot,delta,first,delta
       do i=1,icl
-         zclv(i)=(i-icl/2)*delta
+         zclv(i)=float(i-icl/2)*delta
       enddo
       write(*,'(a,f8.4)')'Contour spacing=',delta
       call pltinit(xcont(1),xcont(ifmax),ycont(1),ycont(ifmax))
@@ -638,10 +638,10 @@ c      write(*,*)errmtot,delta,first,delta
             call polymark(xp,yp,1,1)
          enddo
       enddo
-      write(*,'(2f8.4,a,f8.4,a,i1,a,2f8.4)')xff(idf),xprime(idf)
-c     $     ,' Contours',zclv(2)-zclv(1)
+      write(*,'(2f8.4,a,i1,a,2f8.4,a,f8.4)')xff(idf),xprime(idf)
      $     ,' Max Field Error=',errs,' dir ',ide
      $     ,', sd=',sqrt(errvar),sqrt(errvtot)
+c     $     ,' Contours',zclv(2)-zclv(1)
       icode=ieye3d()
       if(icode.eq.ichar('u'))then
          k1=k1+1

@@ -84,13 +84,6 @@ return.
 
 POLYLINE(xv,yv,ilength) Draw a polyline on an already setup graph.
 
-DASHSET(idash) Set dashed line character for polyline. 
-(0:solid, 1:long, 2:short, 3:long/short, 4:dots)
-
-LABELINE(xv,yv,ilength,clabel,ilablen) Draw polyline with embedded label
-of length ilablen. If ilablen.eq.-99 then set the normalized interval
-between labels to xv(1); if xv(1).eq.0 set it to default 0.3.
-
 YPOLYLINE(yv,ilength) Draw a polyline on an already setup yautoplot.
 
 POLYMARK(xv,yv,ilength,isym) Draw data marked by symbols isym:
@@ -99,6 +92,13 @@ triangle, 6 hollow star, 7 solid star, 8 hollow diamond, 9 flag, 10 +,
 11 x, 12 diamond, 13 -, 14 inverted triangle, 15 circle. Else
 char(isym), so ichar('c') gives 'c', ichar('c')+128 gives the font-2
 symbol corresponding to 'c' (xi).
+
+DASHSET(idash) Set dashed line character for polyline. 
+(0:solid, 1:long, 2:short, 3:long/short, 4:dots)
+
+LABELINE(xv,yv,ilength,clabel,ilablen) Draw polyline with embedded label
+of length ilablen. If ilablen.eq.-99 then set the normalized interval
+between labels to xv(1); if xv(1).eq.0 set it to default 0.3.
 
 POLYDRAW(xv,yv,ilength,DRAWFN) Draw data marked by symbol defined by
 the routine DRAWFN, a subroutine with 2 real arguments, being the
@@ -116,6 +116,14 @@ height are scaled by chrswdth and chrshght, aspect-ratio can be scaled
 using charsize().
 
 POLYERR(xv,yv,errv,ilength) Draw error bars yv to yv+errv.
+
+STPOLYLINE(xa,ya,ilength,ixstride,iystride),
+STPOLYMARK(xa,ya,ilength,ixstride,iystride,isym) Strided versions of
+polyline/mark, in which a total of ilength data points are sampled
+from the arrays xa and ya at strides of ixstride and iystride. These
+allow one to plot data from rows (rather than columns) of a matrix by
+passing the leading dimension of the matrix as the stride. Passing
+strides of 1 gives equivalent sampling to the unstrided versions.
 
 \beginsection{Color}
 
@@ -165,7 +173,7 @@ AXIS() Automatic x and y axis.
 AXIS2() Put tics on the opposite side of the axis box.
 
 XAXIS(first,delta) Draw an axis; labels starting at first, spaced by delta.
-If delta=0, autofit labels.
+If delta=0, autofit labels, which is what AXIS() does for both axes.
 
 YAXIS(first,delta) If axis is log, first indicates major subtic.
 

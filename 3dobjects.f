@@ -288,7 +288,7 @@ c Don't count this as an object.
          goto 1
       elseif(type.ge.100.and.type.lt.100+2*ndims_mesh+1)then
 c Face boundary conditions.
-         id=type-100
+         id=int(type)-100
          if(iCFcount.eq.0)then
 c Reset all.
             do ii=1,2*ndims_mesh
@@ -315,7 +315,7 @@ c Reset all if this is the first face call.
                enddo
             enddo
          endif
-         id=type-110
+         id=int(type)-110
          LPF(id)=.not.LPF(id)
          do ii=id,id+ndims_mesh,ndims_mesh
             CFin(1,ii)=0.
@@ -766,9 +766,9 @@ c Process data stored in obj_geom.
 c Only for non-null BCs
 c Find the fractional intersection point if any.
 c            if(debug.gt.0)fraction=101
-            itype=obj_geom(otype,i)
+            itype=int(obj_geom(otype,i))
             istype=itype/256
-            itype=itype-256*(istype)
+            itype=itype-256*istype
             if(itype.eq.1)then
 c First implemented just for spheres.
                call spherefsect(ndims,xp1,xp2,i,ijbin,sd,fraction)

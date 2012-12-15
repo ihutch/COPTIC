@@ -1,6 +1,6 @@
       program fieldtest
 c
-      include 'objcom.f'
+      include '../objcom.f'
       integer Li,ni,nj
 c      parameter (Li=100,ni=40,nj=40,nk=16)
 c      parameter (Li=100,ni=16,nj=16,nk=20)
@@ -9,13 +9,13 @@ c      parameter (Li=100,ni=64,nj=64,nk=64)
       integer nblks
       parameter (nblks=1)
       integer nd
-      parameter (nd=ndims_sor,nd2=nd*2)
+      parameter (nd=ndims_cij,nd2=nd*2)
       real u(Li,Li,Li),q(Li,Li,Li),cij(nd2+1,Li,Li,Li)
       real psum(Li,Li,Li)
       real error(Li,Li,Li)
 c      real fieldarray(2,Li,Li)
       real zp(Li,Li),cijp(nd2+1,Li,Li)
-      include 'meshcom.f'
+      include '../meshcom.f'
 c
       external bdysetnull,faddu,cijroutine,psumtoq,bdyset
 c      external bdysetfree
@@ -39,7 +39,7 @@ c      real xcenter(nd),upregion(Li),uprime(Li),xnd(nd)
 
       common /myidcom/myid,nprocs
 
-      include '3dcom.f'
+      include '../3dcom.f'
 c Common data containing the object geometric information. 
 c Each object, i < 64 has: type, data(odata).
 c      integer ngeomobjmax,odata,ngeomobj
@@ -53,13 +53,13 @@ c Set by mditerate.
       integer iLs(mdims+1)
       common /iLscom/iLs
 
-      include 'partcom.f'
+      include '../partcom.f'
 c Initialize ids to silence spurious warnings.
       data id1,id2,idf/0,0,0/
 c For rs:
-      include 'plascom.f' 
+      include '../plascom.f' 
 c For islp
-      include 'slpcom.f'
+      include '../slpcom.f'
 
 c These things have to be set for the adaptive boundary condition:
       islp=0
@@ -146,7 +146,7 @@ c     $           k=1,iuds(3))
 
 
 c The following requires include objcom.f
-      write(*,*)'Finished mesh setup. Used No of pointers:',oi_sor
+      write(*,*)'Finished mesh setup. Used No of pointers:',oi_cij
 c      write(*,*)'Finished mesh setup.'
 c      write(*,'(a,8f8.1)')'cij(*,3,3,3)=',(cij(i,3,3,3),i=1,nd2+1)
 

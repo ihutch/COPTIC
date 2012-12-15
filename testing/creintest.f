@@ -1,9 +1,9 @@
       program creintest
 c Test the reinjection scheme by forming cartesian distributions.
-      include 'plascom.f'
-      include 'meshcom.f'
-      include 'creincom.f'
-      include 'colncom.f'
+      include '../plascom.f'
+      include '../meshcom.f'
+      include '../creincom.f'
+      include '../colncom.f'
 
       parameter (ndiag=100,mdims=3)
       real fv(ndiag,mdims)

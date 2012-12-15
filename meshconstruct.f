@@ -23,7 +23,7 @@ c Pointer to start of vector.
 c Mesh data.
             do i=1,msteps
                xn(i+iof)=((msteps-i)*xmeshpos(id,iblk)+
-     $              (i)*xmeshpos(id,iblk+1))/(msteps)
+     $              i*xmeshpos(id,iblk+1))/msteps
             enddo
             iof=iof+msteps
          enddo

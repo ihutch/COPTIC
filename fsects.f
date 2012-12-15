@@ -316,7 +316,7 @@ c xp1 must be always inside the cube.
       do i=1,2*npdim
          im=mod(i-1,npdim)+1
 c First half of the i's are negative. Second half positive.
-         xc1=(((i-1)/npdim)*2-1)
+         xc1=float(((i-1)/npdim)*2-1)
          xd1=(xp1(im)-xc1)
          xd2=(xp2(im)-xc1)
          if(xd1.lt.0. .neqv. xd2.lt.0)then
@@ -425,9 +425,9 @@ c Find the axial intersection fractions with the end planes.
          do k=1,npdim
             if(k.ne.ida)then
                xkg1=(1.-fn(3))*xp1(k)+fn(3)*xp2(k)
-               zrf(3)=zrf(3)+(xkg1)**2
+               zrf(3)=zrf(3)+xkg1**2
                xkg2=(1.-fn(4))*xp1(k)+fn(4)*xp2(k)
-               zrf(4)=zrf(4)+(xkg2)**2
+               zrf(4)=zrf(4)+xkg2**2
             endif
          enddo
       else
@@ -456,12 +456,12 @@ c No crossing
          sdmin=sdf(kmin)
          if(kmin.le.2)then
 c radial crossing
-            imin=0.
+            imin=0
          else
 c axial crossing
-            imin=-1.
+            imin=-1
             zida=(1.-fmin)*z1+fmin*z2
-            if(zida.gt.0.)imin=1.
+            if(zida.gt.0.)imin=1
          endif
       endif
 
@@ -484,7 +484,7 @@ c     $     ,r2,theta,z,x12,fmin,imin
 c End blocks are of size nr x nt, and the curved is nt x nz.
 c 3-D only here. 
       infobj=nf_map(iobj)
-      ijbin=0.
+      ijbin=0
       if(imin.ne.0)then
 c Ends
          if(imin.eq.1)then

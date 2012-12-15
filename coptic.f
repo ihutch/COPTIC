@@ -51,6 +51,7 @@ c Face boundary data
 
       external bdyshare,bdyset,faddu,cijroutine,cijedge,psumtoq
      $     ,quasineutral
+      real faddu
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
       character*100 diagfilename,restartpath
@@ -259,7 +260,8 @@ c Plot objects 0,1 and 2 (bits)
 c      iobpl=-7
          if(iobpl.ne.0.and.lmyidhead)then
             if(rcij.eq.0.)rcij=rs
-            call cijplot(ndims,ifull,iuds,cij,rcij,iobpl,0)
+c            call cijplot(ndims,ifull,iuds,cij,rcij,iobpl,0)
+            call cijplot(ndims,ifull,iuds,cij,rcij,iobpl)
           endif
       endif
 c---------------------------------------------
@@ -458,7 +460,7 @@ c Report dropped ions because of excessive acceleration.
                   write(*,'(a,i5,a,f8.3)'
      $             )' dropped-ion period-total:',ndropped
      $                 ,'  per step average:'
-     $                 ,ndropped/((nsteps/25+1)*5.)
+     $                 ,float(ndropped/((nsteps/25+1)*5))
                   ndropped=0
                else
                   write(*,*)
@@ -502,7 +504,7 @@ c Reduce the data from nodes.
                   call ptdiagreduce()
                   if(lmyidhead)then 
                      if(2*(idistp/2)-4*(idistp/4).ne.0)
-     $                    call pltsubdist(5,9,9,vlim it,xnewlim,cellvol)
+     $                    call pltsubdist(5,9,9,vlimit,xnewlim,cellvol)
                      diagfilename=' '
                      call nameconstruct(diagfilename)
                      write(diagfilename(lentrim(diagfilename)+1:)
@@ -542,7 +544,8 @@ c-------- End of Main Step Iteration -------------------------------
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
 c      if(lorbitplot)call orbitplot(ifull,iuds,u,phip,rc,rs)
       if(norbits.ne.0)
-     $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl,norbits)
+     $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl)
+c     $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl,norbits)
 
 c Everyone writes what they have to.
       if(iwstep.gt.0 .or. myid.eq.0)call datawrite(myid,partfilename

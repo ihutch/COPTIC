@@ -397,8 +397,8 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
       write(*,301)
-     $      ' -gp -gd[] Plot slices of solution potential, density. '/
-     $     /'[At step n]. [',ipstep
+     $      ' -gp -gd[] Plot slices of solution potential, density. '
+     $     //'[At step n]. [',ipstep
       write(*,301)' -gf   set quantity plotted for flux evolution and'//
      $     ' final distribution. [',ifplot
       write(*,301)' -gw   set objplot sw. [+256:intercepts]'//

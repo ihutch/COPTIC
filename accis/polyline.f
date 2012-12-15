@@ -136,7 +136,7 @@ c 'Dot short'.
 	 dashlen(3)=.01
 	 dashlen(4)=.01
       elseif(i.eq.10)then
-c 'Medium dashes Long/Short breaks'.
+c 'Long/Short breaks'.
 	 dashlen(1)=.02
 	 dashlen(2)=.005
 	 dashlen(3)=.02
@@ -490,3 +490,114 @@ c at xb(0:npts) and whose heights are y(npts).
       enddo
 
       end
+C********************************************************************
+c The following are strided versions which probably should become the
+c code base, with polyline and polymark being just wrappers.
+C********************************************************************
+      subroutine stpolyline(x,y,npts,nstx,nsty)
+c Strided polyline. nstx/y are the increments of the x and y data.
+c Dashed line version.
+      real x(npts),y(npts)
+      integer npts
+      integer i
+      include 'plotcom.h'
+c Dashed line code
+      real nx,ny
+      real vlen,dx,dy,cx,cy,plen,flen,dlen
+      real wx2nx, wy2ny
+      integer cud
+
+c dashlen is the arc length in normalized units of the the ith line
+c segment. dashdist is the starting fractional part of the ith arc.
+c Segments alternate pen down, pen up.
+      logical ldash
+      real dashlen,dashdist
+      integer MASKNO,dashmask,jmask
+      parameter (MASKNO=4)
+      dimension dashmask(MASKNO),dashlen(MASKNO)
+      common/dashline/ldash,dashlen,dashdist,dashmask,jmask
+
+      if(npts.le.0) return
+      call vecw(x(1),y(1),0)
+      do 3 i=2,npts
+	 if(.not.ldash) then
+	    call vecw(x(1+nstx*(i-1)),y(1+nsty*(i-1)),1)
+	 else
+c We shall bypass vecw and go straight to normal.
+	    nx=wx2nx(x(1+nstx*(i-1)))
+	    ny=wy2ny(y(1+nsty*(i-1)))
+c Lengths of total vector:
+	    cx=nx
+	    cy=ny
+	    dx=nx- crsrx
+	    dy=ny- crsry
+	    vlen=sqrt(DX*DX+DY*DY)
+c Partial length remaining:
+	    plen=vlen
+	    if(vlen.eq.0)return
+c Distance to end of segment
+    1       dlen=(dashlen(jmask)-dashdist)
+	    if(plen.gt.dlen)then
+c Vector longer than this segment. Draw segment and iterate.
+	       dashdist=0
+	       plen=plen-dlen
+	       flen=dlen/vlen
+	       nx= crsrx+dx*flen
+	       ny= crsry+dy*flen
+	       cud=dashmask(jmask)
+c	       call optvecn(nx,ny,cud)
+	       call vecn(nx,ny,cud)
+	       jmask=mod(jmask,MASKNO)+1
+	       goto 1
+	    else
+c Vector ends before segment. Draw to end of vector and quit.
+	       dashdist=plen+dashdist
+	       nx=cx
+	       ny=cy
+	       cud=dashmask(jmask)
+c	       call optvecn(nx,ny,cud)
+	       call vecn(nx,ny,cud)
+	    endif
+	 endif
+    3 continue
+      end
+C********************************************************************
+C********************************************************************
+      subroutine stpolymark(x,y,nx,nstx,nsty,nmark)
+c Strided polyline. nstx/y are the increments of the x and y data.
+      integer nx,nmark,i,nstx,nsty
+      character*4 mark
+      real x(*),y(*),xp,yp,wx2nx,wy2ny
+      include 'plotcom.h'
+      ipf=pfPS
+c      if(nmark.eq.3)then
+c         mark='!A3'//char(0)
+c  That does not quite align well. Better not to mix thinkgs up.
+      if(nmark.lt.10)then
+         pfPS=0
+	 mark=char(nmark+176)//char(0)
+      elseif(nmark.eq.10)then
+	 mark='+'//char(0)
+      elseif(nmark.eq.11)then
+	 mark='!AX'//char(0)
+      elseif(nmark.eq.12)then
+	 mark='!A*'//char(0)
+      elseif(nmark.eq.13)then
+	 mark='!A-'//char(0)
+      elseif(nmark.eq.15)then
+	 mark='!A'//char(48)//char(0)
+      else
+	 mark=char(nmark)//char(0)
+      endif
+      do 1 i=1,nx
+	 xp=wx2nx(x(1+nstx*(i-1)))
+	 yp=wy2ny(y(1+nsty*(i-1)))
+      if(nmark.eq.14)then
+         call actrid(xp,yp)
+      else
+	 call jdrwstr(xp,yp,mark,0.)
+      endif
+    1 continue
+      pfPS=ipf
+      end
+C********************************************************************

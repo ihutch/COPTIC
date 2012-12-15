@@ -18,8 +18,8 @@ c 2:            according to average flux-density already in nf_step+2
       logical lfw
       data wp/1,0,0,1,1/wc/0,0,1,1,0/
 
-      ish1=objg(ofn1)
-      ish2=objg(ofn2)
+      ish1=int(objg(ofn1))
+      ish2=int(objg(ofn2))
       ism1=1
       ism2=1
       ifobj=nf_map(iobj)
@@ -71,7 +71,7 @@ c This involves jumping from side to side.
          isign=2*mod(ia+ipp,2)-1
          i=mod(isign*(ia/2)+ipo+nangle,nangle)+1
          p1=2.*pi*(i-1)/nangle-pi
-         p2=2.*pi*(i  )/nangle-pi
+         p2=2.*pi* i   /nangle-pi
          itc=int(ish2*(p1/(2.*pi)+0.500001))
          sp1=sin(p1)
          sp2=sin(p2)
@@ -83,7 +83,7 @@ c Cosines are -1.+ 2.*(i-0.5)/ncos, i=1,ncos
 c Maybe also needs to be done in order. But for now just do simply.
             c1=(-1.+2.*(j-1)/ncos)
             s1=sqrt(1.-c1**2)
-            c2=(-1.+2.*(j  )/ncos)
+            c2=(-1.+2.* j   /ncos)
             s2=sqrt(1.-c2**2)
 c z=rcos. x=r sin(t)cos(p), y= rsin(t)sin(p)
 c            write(*,*)c1,c2,ncos
@@ -151,7 +151,7 @@ c The starting fixed point is opposite signs from returned xn.
       do iv=1,ns_ndims
 c Fix zero flux meshes:
          if(objg(ofn1+iv-1).eq.0.)objg(ofn1+iv-1)=1.
-         iov(iv)=-sign(1.,xe(iv)-objg(ocenter+iv-1))
+         iov(iv)=int(-sign(1.,xe(iv)-objg(ocenter+iv-1)))
       enddo
 c Now ordered.
 c      write(*,*)(objg(k),k=1,4*ns_ndims),objg(ocenter),objg(oradius)
@@ -216,21 +216,21 @@ c 2:            according to average flux-density already in nf_step+2
       ism2=0
 c Use position arrays compatible with flux array but not too coarse.
       if(objg(ofn2).gt.nadef)then
-         nangle=objg(ofn2)
+         nangle=int(objg(ofn2))
       elseif(objg(ofn2).gt.0)then
-         nangle=objg(ofn2)*nint(float(nadef)/objg(ofn2))
+         nangle=int(objg(ofn2))*nint(float(nadef)/objg(ofn2))
          ism2=nint(float(nadef)/objg(ofn2))
       else
          nangle=nadef
       endif
       if(objg(ofn3).gt.0.)then 
-         nz=objg(ofn3)
+         nz=int(objg(ofn3))
       else
          nz=nzdef
       endif
       nr=1
-      if(objg(ofn1).gt.0.)nr=objg(ofn1)
-      ia=objg(ocylaxis)
+      if(objg(ofn1).gt.0.)nr=int(objg(ofn1))
+      ia=int(objg(ocylaxis))
 c Discover perspective, eye position in world coords:
       call trn32(x,y,z,xe(1),xe(2),xe(3),-1)
       call nxyz2wxyz(xe(1),xe(2),xe(3),xe(1),xe(2),xe(3))
@@ -242,18 +242,18 @@ c     $     *(0.999999*theta/3.1415926+1.)*0.5)
       fto=(nangle*(thetao/(2.*pi)+0.5))
       ito=int(fto)
       itp=nint(fto)-ito
-      ie=sign(1.,xe(ia))
+      ie=int(sign(1.,xe(ia)))
 c      write(*,*)(objg(k),k=1,odata)
 c Draw curved surface.
       do it=1,nangle
          isign=2*mod(it+itp,2)-1
          i=mod(isign*(it/2)+ito+nangle,nangle)+1
          t1=2.*pi*(i-1)/nangle-pi
-         t2=2.*pi*(i  )/nangle-pi
+         t2=2.*pi* i   /nangle-pi
          itc=int(objg(ofn2)*(t1/(2.*pi)+0.500001))
          do j=1,nz
             z1=(-1.+(j-1)*2./nz)*objg(oradius+ia-1)
-            z2=(-1.+(j  )*2./nz)*objg(oradius+ia-1)
+            z2=(-1.+ j   *2./nz)*objg(oradius+ia-1)
             do k=1,ncorn
                ids=mod(1+ia-2,ns_ndims)+1
                rface(k,ids)=(wc(k)*z1+(1.-wc(k))*z2)+objg(ocenter+ids-1)
@@ -279,7 +279,7 @@ c The eye is at angle running from minus-pi to plus-pi.
       psie=atan2(xe(2),xe(1))
       do i=1,nangle
          t1=2.*pi*(i-1)/nangle-pi
-         t2=2.*pi*(i  )/nangle-pi
+         t2=2.*pi* i   /nangle-pi
          if(abs(mod(2.*pi+t2-psie,2.*pi)-pi).lt.pi/2.)then
             isign=-1
          else
@@ -334,22 +334,21 @@ c 2:            according to average flux-density already in nf_step+2
       ism2=0
 c Use position arrays compatible with flux array but not too coarse.
       if(objg(ofn2).gt.nadef)then
-         nangle=objg(ofn2)
+         nangle=int(objg(ofn2))
       elseif(objg(ofn2).gt.0)then
-         nangle=objg(ofn2)*nint(float(nadef)/objg(ofn2))
+         nangle=int(objg(ofn2))*nint(float(nadef)/objg(ofn2))
          ism2=nint(float(nadef)/objg(ofn2))
       else
          nangle=nadef
       endif
       if(objg(ofn3).gt.0.)then 
-         nz=objg(ofn3)
+         nz=int(objg(ofn3))
       else
          nz=nzdef
       endif
       nr=1
-      if(objg(ofn1).gt.0.)nr=objg(ofn1)
+      if(objg(ofn1).gt.0.)nr=int(objg(ofn1))
 
-c      ia=objg(ocylaxis)
       ia=3
 c Discover perspective, eye position in world coords:
       call trn32(x,y,z,xe(1),xe(2),xe(3),-1)
@@ -362,18 +361,18 @@ c Flux accumulation is (zero based):
       fto=(nangle*(thetao/(2.*pi)+0.5))
       ito=int(fto)
       itp=nint(fto)-ito
-      ie=sign(1.,xe(ia))
+      ie=int(sign(1.,xe(ia)))
 c      write(*,*)(objg(k),k=1,odata)
 c Draw curved surface.
       do it=1,nangle
          isign=2*mod(it+itp,2)-1
          i=mod(isign*(it/2)+ito+nangle,nangle)+1
          t1=2.*pi*(i-1)/nangle-pi
-         t2=2.*pi*(i  )/nangle-pi
+         t2=2.*pi* i   /nangle-pi
          itc=int(objg(ofn2)*(t1/(2.*pi)+0.500001))
          do j=1,nz
             z1=(-1.+(j-1)*2./nz)
-            z2=(-1.+(j  )*2./nz)
+            z2=(-1.+ j   *2./nz)
             do k=1,ncorn
                ids=mod(1+ia-2,ns_ndims)+1
                xcontra(ids)=(wc(k)*z1+(1.-wc(k))*z2)
@@ -397,7 +396,7 @@ c The eye is at angle running from minus-pi to plus-pi.
       psie=atan2(xe(2),xe(1))
       do i=1,nangle
          t1=2.*pi*(i-1)/nangle-pi
-         t2=2.*pi*(i  )/nangle-pi
+         t2=2.*pi* i   /nangle-pi
          if(abs(mod(2.*pi+t2-psie,2.*pi)-pi).lt.pi/2.)then
             isign=-1
          else
@@ -467,7 +466,7 @@ c the sign of xn times the three pp_vectors.
       do iv=1,ns_ndims
 c Fix zero flux meshes:
          if(objg(ofn1+iv-1).eq.0.)objg(ofn1+iv-1)=1.
-         iov(iv)=-sign(1.,xn(iv))
+         iov(iv)=int(-sign(1.,xn(iv)))
 c Now if iov(iv) is negative that refers to the first ns_nbins bins.
       enddo
       
@@ -546,7 +545,8 @@ c Coloring by flux
          call gradcolor(icolor)
       else
 c Coloring just by position
-         itype=obj_geom(otype,iobj)-256*(int(obj_geom(otype,iobj))/256)
+         itype=int(obj_geom(otype,iobj))-256*(int(obj_geom(otype,iobj))
+     $        /256)
          if(itype.eq.1)then
 c Treatment for spheres.
             icolor=mod(k3-1+mod(k2,2),7)+7*mod(k2,2)+1
@@ -588,7 +588,7 @@ c Sort the values zta of length ngeomobj returning sorted index.
       integer index(ngeomobj)
       do j=2,ngeomobj
          a1=zta(j)
-         a2=index(j)
+         ia2=index(j)
          do i=j-1,1,-1
             if(zta(i).ge.a1)goto 10
             zta(i+1)=zta(i)
@@ -596,7 +596,7 @@ c Sort the values zta of length ngeomobj returning sorted index.
          enddo
          i=0
  10      zta(i+1)=a1
-         index(i+1)=a2
+         index(i+1)=ia2
       enddo
       end
 c*******************************************************************
@@ -620,7 +620,7 @@ c rs gives the Window size
       data iprinting/0/
 
       ipint=ioswin/256
-      iosw=ioswin-(ipint)*256
+      iosw=ioswin- ipint*256
 
 c      write(*,*)iosw,ipint
       irotating=0
@@ -660,7 +660,8 @@ c Do drawing in order
       do ik=1,ngeomobj
          iobj=index(ik)
          iobjmask=ibits(iomask,iobj-1,1)
-         itype=obj_geom(otype,iobj)-256*(int(obj_geom(otype,iobj))/256)
+         itype=int(obj_geom(otype,iobj))-256*(int(obj_geom(otype,iobj))
+     $        /256)
 c         write(*,*)'objplotting',ik,iobj,itype,iobjmask
          if(iobjmask.ne.1 .and. 0.lt.iq.and.iq.le.mf_quant(iobj))then
             if(itype.eq.1.)then

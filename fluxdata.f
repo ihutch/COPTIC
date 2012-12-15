@@ -53,7 +53,7 @@ c Might eventually need more interpretation of fluxtype.
      $              ,nf_obj,' Omitting later objects.'
                goto 1
             endif
-            mf_quant(mf_obj)= obj_geom(ofluxtype,i)
+            mf_quant(mf_obj)=int(obj_geom(ofluxtype,i))
             itype=int(obj_geom(otype,i))
             i2type=(itype/256)
             if(i2type.eq.2)then
@@ -78,7 +78,7 @@ c Sphere one face only n3=1
                   nfluxes=1
                   do k=1,2
                      nf_dimlens(j,mf_obj,k)=int(obj_geom(ofn1+k-1,i))
-                     nfluxes=nfluxes*obj_geom(ofn1+k-1,i)
+                     nfluxes=nfluxes*int(obj_geom(ofn1+k-1,i))
                   enddo
                elseif(itype.eq.2 .or. itype.eq.4)then
 c Cuboid or parallelopiped.
@@ -90,8 +90,8 @@ c Six faces, each using two of the three array lengths.
      $                 nf_dimlens(j,mf_obj,k)=int(obj_geom(ofn1+k-1,i))
                      nf_faceind(j,mf_obj,kk)=nfluxes
                      nfluxes=nfluxes+
-     $                    obj_geom(ofn1+mod(k,ns_ndims),i)
-     $                    *obj_geom(ofn1+mod(k+1,ns_ndims),i)
+     $                    int(obj_geom(ofn1+mod(k,ns_ndims),i))
+     $                    *int(obj_geom(ofn1+mod(k+1,ns_ndims),i))
 c                     write(*,*)k,' nfluxes=',nfluxes
 c     $                    ,obj_geom(ofn1+mod(k,ns_ndims),i)
                   enddo
@@ -193,7 +193,7 @@ c Ellipses require elliptic surfaces which are a mess. For equal radii,
 c the area element is just dA=2\pi a^2 dcostheta. 
       do i=1,ngeomobj
          if(obj_geom(ofluxtype,i).gt.0)then
-            itype=obj_geom(otype,i)
+            itype=int(obj_geom(otype,i))
             itype=itype-256*(itype/256)
             io=nf_map(i)
             if(itype.eq.1)then
@@ -290,7 +290,7 @@ c                           write(*,*)j2,j3,xr1,xr2,xr3
             elseif(itype.eq.3 .or. itype.eq.5)then
 c Cylinder and Non-aligned cylinder -------------------------------
                if(itype.eq.3)then
-                  ica=obj_geom(ocylaxis,i)
+                  ica=int(obj_geom(ocylaxis,i))
                   rc=obj_geom(oradius+mod(ica,ns_ndims),i)
                   zr=obj_geom(oradius+ica-1,i)
                   zc=obj_geom(ocenter+ica-1,i)
@@ -630,8 +630,8 @@ c that is irrelevant to the averaging.
 c Plot the quantity iquant if positive (not if negative).
 c Plotting does not attempt to account for the multidimensionality.
 c Rhoinf is returned in rinf.
-      subroutine fluxave(n1,n2,ifobj,iquant,rinf)
-      integer n1,n2
+      subroutine fluxave(n1in,n2in,ifobj,iquant,rinf)
+      integer n1in,n2in
 c      logical lplot
       integer iquant
       include '3dcom.f'
@@ -641,6 +641,8 @@ c which is ff_data(iav+i)
       real fluxofstep(nf_maxsteps),step(nf_maxsteps)
       character*30 string
 
+      n1=n2in
+      n2=n2in
       iq=abs(iquant)
 c If quantity asked for is not available, do nothing.
       if(iq.gt.mf_quant(ifobj).or.iq.eq.0)then
@@ -1027,12 +1029,12 @@ c No crossing
          sdmin=sdf(kmin)
          if(kmin.le.2)then
 c radial crossing
-            imin=0.
+            imin=0
          else
 c axial crossing
-            imin=-1.
+            imin=-1
             zida=(1.-fmin)*xp1(ida)+fmin*xp2(ida)
-            if(zida.gt.xca)imin=1.
+            if(zida.gt.xca)imin=1
          endif
       endif
 
@@ -1057,7 +1059,7 @@ c     $     ,r2,theta,z,x12,fmin,imin
 c End blocks are of size nr x nt, and the curved is nt x nz.
 c 3-D only here. 
       infobj=nf_map(iobj)
-      ijbin=0.
+      ijbin=0
       ir=9
       it=9
       iz=9

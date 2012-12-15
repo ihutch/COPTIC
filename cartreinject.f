@@ -277,12 +277,13 @@ c maxwellians of width given by Ti
       include 'creincom.f'
       include 'myidcom.f'
       include 'partcom.f'
-      external ffcrein
-      external fvcrein
+c      external ffcrein
+c      external fvcrein
       external ffdrein
       external fvdrein
       external ff1crein
       external fv1crein
+      real fv1crein,ff1crein,fvdrein,ffdrein
       parameter (bdys=6.)
 c      real fcarea(3)
 
@@ -357,49 +358,6 @@ c         write(*,*)'fcarea(',i,')=',fcarea(i)
 c      write(*,*)'ipartperiod',ipartperiod,' grein',grein
 c      write(*,*)'gintrein',gintrein
 
-      end
-c**********************************************************************
-c Obsolete functions for drifting Maxwellian reinjection.
-c**********************************************************************
-      real function ffcrein(v)
-c Return the one-way differential flux distribution as a fn of velocity
-c from a maxwellian for dimension idrein (in creincom)
-c In the positive or negative direction, determined by idrein's sign.
-c If abs(idrein) == 3, then maxwellian is shifted by vd (in plascom).
-c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
-
-      include 'plascom.f'
-      include 'creincom.f'
-
-      if(int(sign(1.,v)).eq.sign(1,idrein))then
-         if(abs(idrein).eq.3)then
-            ffcrein=abs(v)*exp(-(v-vd)**2/(2.*Ti))
-         else
-            ffcrein=abs(v)*exp(-v**2/(2.*Ti))
-         endif
-      else
-         ffcrein=0.
-      endif
-c      ffcrein=2.*ffcrein
-      ffcrein=ffcrein/sqrt(2.*3.1415926*Ti)
-      end
-c**********************************************************************
-      real function fvcrein(v)
-c Return the probability distribution 
-c from a maxwellian for dimension idrein (in creincom)
-c If abs(idrein) == 3, then maxwellian is shifted by vd (in plascom).
-c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
-
-      include 'plascom.f'
-      include 'creincom.f'
-
-      if(abs(idrein).eq.3)then
-         fvcrein=exp(-(v-vd)**2/(2.*Ti))
-      else
-         fvcrein=exp(-v**2/(2.*Ti))
-      endif
-c      fvcrein=2.*fvcrein
-      fvcrein=fvcrein/sqrt(2.*3.1415926*Ti)
       end
 c******************************************************************
 c Routines for reinjection calculations with ions drifting relative
@@ -604,7 +562,7 @@ c Better to use a significant number to avoid bias at low reinjections.
 c Calculate rhoinf from nrein if there are enough.
 c Correct approximately for edge potential depression (OML).
 c         chi=min(-phirein/Ti,0.5)
-         chi=max(crelax*(-phirein/Ti)+(1.-crelax)*chi,0)
+         chi=max(crelax*(-phirein/Ti)+(1.-crelax)*chi,0.)
          cfactor=smaxflux(vd/sqrt(2.*Ti),chi)
      $        /smaxflux(vd/sqrt(2.*Ti),0.)
          rhoinf=(nrein/(dtin*cfactor*flux))
@@ -612,7 +570,7 @@ c         write(*,*)nrein,dtin,chi,cfactor,flux,rhoinf
       else
          if(rhoinf.lt.1.e-4)then
 c Approximate initialization
-            rhoinf=numprocs*n_part/(volume)
+            rhoinf=numprocs*n_part/volume
             write(*,*)'Rhoinf in rhoinfcalc approximated as',rhoinf
      $           ,numprocs,n_part
          endif
@@ -664,7 +622,7 @@ c      write(*,*)'ripernode,dtin,cfactor,flux,ninjcomp',ripernode,dtin
 c     $     ,cfactor,flux,ninjcomp
       nrein=ninjcomp*numprocs
       if(ninjcomp.le.0)ninjcomp=1
-      n_part=ripernode*volume
+      n_part=int(ripernode*volume)
       rhoinf=ripernode*numprocs
       if(n_part.gt.n_partmax)then
          write(*,*)'ERROR. Too many particles required.'
@@ -817,3 +775,46 @@ c      a= -et*xi*y(1)+(2.+2.*xi-3.*xi**2)*y(2)
 c      b= -xi*et*y(4)+(2.+2.*et-3.*et**2)*y(3)
 c      yinterp4pt=0.5*(et*a+xi*b)
 c      end
+c**********************************************************************
+c Obsolete functions for drifting Maxwellian reinjection.
+c**********************************************************************
+      real function ffcrein(v)
+c Return the one-way differential flux distribution as a fn of velocity
+c from a maxwellian for dimension idrein (in creincom)
+c In the positive or negative direction, determined by idrein's sign.
+c If abs(idrein) == 3, then maxwellian is shifted by vd (in plascom).
+c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
+
+      include 'plascom.f'
+      include 'creincom.f'
+
+      if(int(sign(1.,v)).eq.sign(1,idrein))then
+         if(abs(idrein).eq.3)then
+            ffcrein=abs(v)*exp(-(v-vd)**2/(2.*Ti))
+         else
+            ffcrein=abs(v)*exp(-v**2/(2.*Ti))
+         endif
+      else
+         ffcrein=0.
+      endif
+c      ffcrein=2.*ffcrein
+      ffcrein=ffcrein/sqrt(2.*3.1415926*Ti)
+      end
+c**********************************************************************
+      real function fvcrein(v)
+c Return the probability distribution 
+c from a maxwellian for dimension idrein (in creincom)
+c If abs(idrein) == 3, then maxwellian is shifted by vd (in plascom).
+c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
+
+      include 'plascom.f'
+      include 'creincom.f'
+
+      if(abs(idrein).eq.3)then
+         fvcrein=exp(-(v-vd)**2/(2.*Ti))
+      else
+         fvcrein=exp(-v**2/(2.*Ti))
+      endif
+c      fvcrein=2.*fvcrein
+      fvcrein=fvcrein/sqrt(2.*3.1415926*Ti)
+      end

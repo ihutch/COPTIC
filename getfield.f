@@ -152,9 +152,9 @@ c            if(.false.)then
 c                  write(*,*)'1st iinc,iincm,iincp',iinc,iincm,iincp
                   icptm=0
                else
-                  icptm=cij(1+ic1*(iinc-iuinc(idf)))
+                  icptm=int(cij(1+ic1*(iinc-iuinc(idf))))
                endif
-               icptp=cij(1+ic1*(iinc+2*iuinc(idf)))
+               icptp=int(cij(1+ic1*(iinc+2*iuinc(idf))))
                if((iincm.ge.0).and.(icptm.ne.0).and.
      $              (idob_cij(iregion_cij,icptm).eq.iregion))then
 c xf positive, node0 (relative to 1) in region, look at node 0.
@@ -192,7 +192,7 @@ c     $           ,idf,ii,f
                         f(ii)=fii
                      endif
                      iw=iw+1
-                     weights(ii)=weights(ii)+(xfidf)
+                     weights(ii)=weights(ii)+ xfidf
 c                     write(*,*)'2nd ',xfidf,' weights=',weights(ii)
                   endif
                endif
@@ -203,9 +203,9 @@ c                     write(*,*)'2nd ',xfidf,' weights=',weights(ii)
 c                  write(*,*)'idf, iinc,iincm,iincp',idf,iinc,iincm,iincp
                   icptm=0
                else
-                  icptm=cij(1+ic1*(iinc-2*iuinc(idf)))
+                  icptm=int(cij(1+ic1*(iinc-2*iuinc(idf))))
                endif
-               icptp=cij(1+ic1*(iinc+iuinc(idf)))
+               icptp=int(cij(1+ic1*(iinc+iuinc(idf))))
                if((iincp.le.iuinc(ndims+1))
      $              .and.(icptp.ne.0).and.(idob_cij(iregion_cij,icptp)
      $              .eq.iregion))then

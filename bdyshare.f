@@ -92,6 +92,10 @@ c On entry idone(2)=1 indicates set periodic boundaries (default not).
 
       include 'meshcom.f'
       include 'facebcom.f'
+c Silence warnings:
+      idone(1)=iLs
+      idone(1)=inc
+      idone(1)=iused(1)
       idone(1)=1
       if(LF)then
 c Currently this only works for face rectangular boundary conditions.

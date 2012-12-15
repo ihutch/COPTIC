@@ -8,10 +8,10 @@ FFILES=`echo $* | sed -e "s/[.]o/[.]f/g"`
 echo ftnchek $FFILES
 ftnchek -nopure\
  -truncation=no-significant-figures\
- -usage=no-com-block-unused,no-var-set-unused\
+ -usage=no-com-block-unused,no-var-set-unused,no-arg-array-alias\
  -noarray -noextern\
  -calltree=tree,no-prune\
  -nonovice\
  -mkhtml=vars-and-consts-lowercase,keywords-lowercase\
  -quiet\
- $FFILES
+ $FFILES >ftnchek.output

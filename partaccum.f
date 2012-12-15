@@ -71,7 +71,8 @@ c Should do this only the first time.
 c         write(*,*)'isfull',isfull,cellvol
 c         write(*,*)'calling subaccum'
       call subaccum(mdims,x_part,if_part,ioc_part,
-     $     isfull,isuds,vlimit,xnewlim)
+     $     isuds,vlimit,xnewlim)
+c     $     isfull,isuds,vlimit,xnewlim)
       end
 c****************************************************************
       subroutine partacinit(vlimit)
@@ -393,11 +394,13 @@ c      write(*,*)' ibinmap',ibinmap
       end
 c**********************************************************************
       subroutine subaccum(mdims,xpart,ifpart,iocpart,
-     $     isfull,isuds,vlimit,xnewlim)
+     $     isuds,vlimit,xnewlim)
+c     $     isfull,isuds,vlimit,xnewlim)
 c Over the whole particle population accumulate to space-resolved bins
       real xpart(3*mdims,iocpart)
       integer ifpart(iocpart)
-      integer isfull(mdims),isuds(mdims)
+c      integer isfull(mdims)
+      integer isuds(mdims)
 c Spatial limits bottom-top, dimensions
       real xnewlim(2,mdims)
 c Velocity limits
@@ -586,18 +589,21 @@ c Distributions in ptaccom.f
       integer icell,jcell,kcell
       real wicell,wjcell,wkcell
       integer jicell,jjcell,jkcell,ii,jj,kk,ip3,idw
-      integer iup
+      integer iup,isw
+      real xylim(4)
       integer ndfirst,ndlast,ips,itrace
       logical loverplot
       data ndfirst/3/ndlast/3/ips/0/itrace/0/loverplot/.false./
-      data idw/4/
+      data idw/0/
       data iup/1/jicell/0/jjcell/0/jkcell/0/
 c------------------------------------------
+      isw=0
       icell=icellin
       jcell=jcellin
       kcell=kcellin
       write(*,*)'Adjust cell position with arrow keys.'
       write(*,*)'Toggle integration over direction with x,y,z.'
+      write(*,*)'Adjust axis ends with a'
  1    ip=ip3index(isuds,icell,jcell,kcell)+1
       call multiframe(ndlast-ndfirst+1,1,2)
       wicell=(xnewlim(2,1)-xnewlim(1,1))/isuds(1)
@@ -657,7 +663,12 @@ c     $        )**2)
             call color(itrace)
             call polymark(vsbin(1,id),fvplt,nsbins,1)
          else
-            call automark(vsbin(1,id),fvplt,nsbins,1)
+c            call automark(vsbin(1,id),fvplt,nsbins,1)
+c            call autoinit(vsbin(1,id),fvplt,nsbins)
+c            write(*,*)'manautoinit',isw,xylim
+            call manautoinit(vsbin(1,id),fvplt,nsbins,isw,xylim(1)
+     $           ,xylim(2),xylim(3),xylim(4))
+            call axis()
          endif
          if(btest(idw,id-1))then
 c         if(id.eq.3)then
@@ -665,6 +676,7 @@ c         if(id.eq.3)then
      $        -jkcell),' dimension',id
             write(*,*)nsbins
             write(*,'(2g14.6)')(vsbin(kk,id),fvplt(kk),kk=1,nsbins)
+c            write(*,*)
          endif
 
          if(id.eq.ndfirst)call boxtitle(string(1:lentrim(string)))
@@ -685,12 +697,12 @@ c         if(id.eq.3)then
          endif
          call axlabels(' ',string(1:lentrim(string)))
          call winset(.true.)
+            call polymark(vsbin(1,id),fvplt,nsbins,1)
 c         call polybox(vhbin(0,id),fvx(1,id,ip),nsbins)
          call polybox(vhbin(0,id),fvplt,nsbins)
       enddo
       call winset(.false.)
       call axlabels('Velocity',' ')
-      write(*,*)
       call eye3d(ip)
 c      write(*,*)'ip',ip
 c Increment one of the dimensions using arrow keys.
@@ -727,12 +739,71 @@ c Control overplotting
             call prtend()
             call pfset(0)
          endif
+      elseif(ip.eq.ichar('a'))then
+c------------------------------
+c Control axis settings.
+c Get another key input
+         write(*,*)'Axis control.'
+     $        ,' Type axis-end switch 1-4, value, return.'
+ 200     call eye3d(ip)
+c         write(*,*)ip
+         if((ip.ge.49 .and. ip.le.52))then
+c            write(*,*)char(ip)
+c Set the isw accordingly.
+            isw=ieor(isw,2**(ip-49))
+c            isw=ibset(isw,ip-49)
+            write(*,*)'isw set to',isw,'  enter end value:'
+c Get the real number
+            call eyereadreal(xylim(ip-48))
+c            write(*,*)'eyeread return',ip-48,xylim(ip-48)
+         else
+            write(*,*)'Not a number in [1,4]:', char(ip)
+            goto 200
+         endif
+c------------------------------
       else
 c         write(*,*)ip
          return
       endif
       goto 1
 c--------------------------------------
+      end
+c****************************************************************
+      subroutine eyereadreal(x)
+      real x
+      logical ldec
+
+ 2    ldec=.false.
+      x=0
+      sign=1.
+      decfac=1
+ 1    call eye3d(i)
+      if((i.ge.48 .and. i.le.57))then
+         if(ldec)then
+            x=x+sign*(i-48.)/10**decfac
+            decfac=decfac+1
+         else
+            x=x*10.+sign*(i-48)
+         endif
+         write(*,*)x
+c,'  decfac=',decfac
+         goto 1
+      else
+         if(i.eq.46)then
+            ldec=.not.ldec
+            goto 1
+         elseif(i.eq.45)then
+            x=-x
+            sign=-sign
+c            write(*,*)x
+            goto 1
+         elseif(i.ne.65293)then
+c Return indicates end. Anything else starts over.           
+c Backspace is 65288
+            write(*,*)'Starting Read Real Over:',i,char(i)
+            goto 2
+         endif
+      endif
       end
 c****************************************************************
       subroutine fsvzero()

@@ -221,17 +221,9 @@ $(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h
 	@if [ -f ./accis/$(VECX) ] ; then echo ; else echo "Failed making accis with $(VECX). Might need to specify a different driver."; fi
 
 ######################################################
-testing : testing/mpibbdytest testing/fieldtest testing/stresstest
+testing : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a 
+	make -C testing
 	@echo Made tests in directory testing. Run them to test.
-
-testing/mpibbdytest : udisplay.o mpibbdy.o mditerate.o reduce.o compiler makefile
-	$(G77) -o testing/mpibbdytest  testing/mpibbdytest.f mpibbdy.o udisplay.o  mditerate.o reduce.o
-
-testing/fieldtest : testing/fieldtest.f compiler makefile libcoptic.a
-	$(G77)  -o testing/fieldtest $(COMPILE-SWITCHES) $(PROFILING) testing/fieldtest.f libcoptic.a $(LIBRARIES)
-
-testing/stresstest : testing/stresstest.f $(ACCISLIB) libcoptic.a
-	$(G77) -o testing/stresstest testing/stresstest.f stress.o $(LIBRARIES)
 
 vecx :
 	make clean
@@ -248,8 +240,9 @@ mproper :
 	make -C analysis clean
 
 ftnchek :
-	./ftnchekrun "$(COPTIC).f $(OBJECTS)"
+	./ftnchekrun "$(COPTIC).f $(OBJECTS)" >ftnchek.output
 	@echo To view do: google-chrome CallTree.html
+	less ftnchek.output
 
 tree :
 	./ftnchekrun "-nocheck $(COPTIC).f $(OBJECTS)"
