@@ -70,8 +70,8 @@ c ct is cosine of the angle of the velocity -- opposite to the radius.
 c Now we have cosine theta=c and normal velocity normalized to v_ti.
 c Theta and phi velocities are (shifted) Maxwellians but we are working
 c in units of vti.
-      vt=gasdev(idum)- st*vdi
-      vp=gasdev(idum)
+      vt=gasdev(0)- st*vdi
+      vp=gasdev(0)
 c All velocities now.
       p=2.*pi*ran1(idum)
       cp=cos(p)

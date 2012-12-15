@@ -547,23 +547,25 @@ c If the bins were different we would have to recalculate ibin.
 
       end
 c*******************************************************************
-      subroutine pllelfrac(xp,xn,objg)
+      subroutine pllelfrac(xp,xn,iobj)
 c For input point xp(ndims) return the normalized position relative to
 c the parallelogram object objg in output xn(ndims)
       include '3dcom.f'
       real xp(ns_ndims),xn(ns_ndims)
-      real objg(odata)
+      integer iobj
+c      real objg(odata)
       do j=1,pp_ndims
          xn(j)=0.
 c Contravariant projections.
          do i=1,ns_ndims
 c Cartesian coordinates.
             ii=(ocenter+i-1)
-            xc=objg(ii)
+c            xc=objg(ii)
+            xc=obj_geom(ii,iobj)
 c xn1, xn2 are the contravariant coordinates with respect to the center.
             ji=(pp_contra+pp_ndims*(j-1)+i-1)
 c            write(*,*)'ji',ji
-            xn(j)=xn(j)+(xp(i)-xc)*objg(ji)
+            xn(j)=xn(j)+(xp(i)-xc)*obj_geom(ji,iobj)
          enddo
       enddo
       end

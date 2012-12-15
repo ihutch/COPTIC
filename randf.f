@@ -1,6 +1,7 @@
 c***********************************************************************
 c Restartable gasdev based on NR.
       FUNCTION gasdev(ireset)
+      integer ireset
       include 'ran1com.f'
       if(ireset.lt.0) gd_iset=0
       if(gd_iset.ne.1)then
@@ -17,7 +18,6 @@ c Restartable gasdev based on NR.
         gasdev=gd_gset
         gd_iset=0
       endif
-      return
       end
 c**********************************************************************
 c**********************************************************************

@@ -128,7 +128,7 @@ c 2:            according to average flux-density already in nf_step+2
       real objg(odata)
 c      character*20 string
       integer iov(ns_ndims)
-      real xe(ns_ndims)
+      real xe(ns_ndims),objn1(0:ns_ndims-1)
       parameter (ncorn=5)
       real rface(ncorn,ns_ndims),rfc(ns_ndims)
       integer iof(ncorn,ns_ndims-1)
@@ -150,7 +150,8 @@ c Transform eye position into fractional cube position.
 c The starting fixed point is opposite signs from returned xn.
       do iv=1,ns_ndims
 c Fix zero flux meshes:
-         if(objg(ofn1+iv-1).eq.0.)objg(ofn1+iv-1)=1.
+         objn1(iv-1)=objg(ofn1+iv-1)
+         if(objn1(iv-1).eq.0.)objn1(iv-1)=1.
          iov(iv)=int(-sign(1.,xe(iv)-objg(ocenter+iv-1)))
       enddo
 c Now ordered.
@@ -168,18 +169,18 @@ c         write(*,*)'Face center',rfc
          i1=mod(1+is-2,ns_ndims)+1
          i2=mod(2+is-2,ns_ndims)+1
          i3=mod(3+is-2,ns_ndims)+1
-         do k2=1,int(objg(ofn1+i2-1))
+         do k2=1,int(objn1(i2-1))
 c  fs run from 1-N to N-1 as ks run from 1 to N
-            f2=2*k2-1.-objg(ofn1+i2-1)
-            do k3=1,int(objg(ofn1+i3-1))
-               f3=2*k3-1.-objg(ofn1+i3-1)
+            f2=2*k2-1.-objn1(i2-1)
+            do k3=1,int(objn1(i3-1))
+               f3=2*k3-1.-objn1(i3-1)
                do ic=1,ncorn
 c Set the corner offsets for this face, is.
                   rface(ic,i1)=rfc(i1)
                   rface(ic,i2)=rfc(i2)+(f2+iof(ic,1))
-     $                 *objg(oradius+i2-1)/objg(ofn1+i2-1)
+     $                 *objg(oradius+i2-1)/objn1(i2-1)
                   rface(ic,i3)=rfc(i3)+(f3+iof(ic,2))
-     $                 *objg(oradius+i3-1)/objg(ofn1+i3-1)
+     $                 *objg(oradius+i3-1)/objn1(i3-1)
                enddo
                call facecolor(iosw,imin,k2,k3,iobj,iav,rface,fmin,fmax
      $              ,i2,.true.,-1)
@@ -438,7 +439,7 @@ c 2:            according to average flux-density already in nf_step+2
       real objg(odata)
 c      character*20 string
       integer iov(ns_ndims)
-      real xe(ns_ndims),xn(ns_ndims)
+      real xe(ns_ndims),xn(ns_ndims),objn1(0:ns_ndims-1)
       real xi(pp_ndims)
       parameter (ncorn=5)
       real rface(ncorn,pp_ndims),rfc(pp_ndims)
@@ -459,13 +460,14 @@ c Get the point and eye position. Make into world units.
       call trn32(x,y,z,xe(1),xe(2),xe(3),-1)
       call nxyz2wxyz(xe(1),xe(2),xe(3),xe(1),xe(2),xe(3))
 c Transform eye position into fractional cube position.
-      call pllelfrac(xe,xn,objg)
+      call pllelfrac(xe,xn,iobj)
 c The starting fixed point is opposite signs from returned xn.
 c So the first three center vectors have values equal to minus
 c the sign of xn times the three pp_vectors. 
       do iv=1,ns_ndims
 c Fix zero flux meshes:
-         if(objg(ofn1+iv-1).eq.0.)objg(ofn1+iv-1)=1.
+         objn1(iv-1)=objg(ofn1+iv-1)
+         if(objn1(iv-1).eq.0.)objn1(iv-1)=1.
          iov(iv)=int(-sign(1.,xn(iv)))
 c Now if iov(iv) is negative that refers to the first ns_nbins bins.
       enddo
@@ -483,16 +485,16 @@ c Face index:
          i1=mod(1+is-2,pp_ndims)+1
          i2=mod(2+is-2,pp_ndims)+1
          i3=mod(3+is-2,pp_ndims)+1
-         do k2=1,int(objg(ofn1+i2-1))
+         do k2=1,int(objn1(i2-1))
 c  fs run from 1-N to N-1 as ks run from 1 to N
-            f2=2*k2-1.-objg(ofn1+i2-1)
-            do k3=1,int(objg(ofn1+i3-1))
-               f3=2*k3-1.-objg(ofn1+i3-1)
+            f2=2*k2-1.-objn1(i2-1)
+            do k3=1,int(objn1(i3-1))
+               f3=2*k3-1.-objn1(i3-1)
                do ic=1,ncorn
                   xi(i1)=0
 c xi's run from (1-N)+-1 to (N-1)+-1 /N
-                  xi(i2)=(f2+iof(ic,1))/objg(ofn1+i2-1)
-                  xi(i3)=(f3+iof(ic,2))/objg(ofn1+i3-1)
+                  xi(i2)=(f2+iof(ic,1))/objn1(i2-1)
+                  xi(i3)=(f3+iof(ic,2))/objn1(i3-1)
                   do id=1,pp_ndims
                      rface(ic,id)=rfc(id)
                      do ivv=1,pp_ndims

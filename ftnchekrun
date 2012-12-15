@@ -1,6 +1,8 @@
 FFILES=`echo $* | sed -e "s/[.]o/[.]f/g"`
 # Functions are not pure. They can modify arguments
 # Don't complain about overspecified constants
+# Don't complain about aliassing different array elements.
+# Don't complain about unused modules.
 # Control variable reports.
 # Disable array argument size and dimension checking.
 # Don't report undefined routines.
@@ -8,7 +10,8 @@ FFILES=`echo $* | sed -e "s/[.]o/[.]f/g"`
 echo ftnchek $FFILES
 ftnchek -nopure\
  -truncation=no-significant-figures\
- -usage=no-com-block-unused,no-var-set-unused,no-arg-array-alias\
+ -usage=no-com-block-unused,no-var-set-unused,no-arg-array-alias,no-ext-unused\
+ -arguments=no-arrayness\
  -noarray -noextern\
  -calltree=tree,no-prune\
  -nonovice\

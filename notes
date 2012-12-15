@@ -9919,3 +9919,17 @@ of dimensions when all the factors are the same.
 There are required corrections to moveparticle and accelerate particle
 for magnetized cases. It would be better to rationalize that whole
 code region of padvnc.f
+
+15 Dec 2012
+
+Doing a big clean up with help from ftnchek. There is a major issue
+that is a violation of fortran standard but probably does not make any
+problem. It is in places where I pass e.g. objg into pllelplot. objg
+is a particular object element from the array obj_geom, which is defined
+in common objgeomcom. When objg is modified in such a routine, this is
+a violation of aliasing rules in fortran, which state that if two dummy
+arguments are aliased to one another, they may not be changed in the 
+routine.
+
+Working on this in objplot.f Fixed pllelplot. Had to change fluxdata.f
+too. Fixed cubeplot. That fixes objplot.

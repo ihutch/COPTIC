@@ -582,7 +582,7 @@ c Get new velocity; reflects neutral maxwellian shifted by vneutral.
       include 'partcom.f'
       include 'colncom.f'
       do k=1,npdim
-         x_part(npdim+k,i)=tisq*gasdev(idum)
+         x_part(npdim+k,i)=tisq*gasdev(0)
       enddo
 c Vneutral is in z-direction.
       x_part(npdim+npdim,i)=x_part(npdim+npdim,i)+vneutral
