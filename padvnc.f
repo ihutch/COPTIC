@@ -242,7 +242,8 @@ c Treat collided particle at (partial) step end
             call postcollide(i,tisq)
             lcollided=.false.
          endif
-         call partlocate(i,ixp,xfrac,inewregion,linmesh,nrein)
+c         call partlocate(i,ixp,xfrac,inewregion,linmesh,nrein)
+         call partlocate(i,ixp,xfrac,inewregion,linmesh)
 c---------------------------------
 c If we crossed a boundary, do tallying.
          ltlyerr=.false.
@@ -285,8 +286,9 @@ c================= End of Occupied Slot Treatement ================
 c Reinjection:
  200     continue
          if_part(i)=1
-         call reinject(x_part(1,i),ilaunch)
-         call partlocate(i,ixp,xfrac,iregion,linmesh,nrein)
+         call reinject(x_part(1,i),ilaunch,caverein)
+c         call partlocate(i,ixp,xfrac,iregion,linmesh,nrein)
+         call partlocate(i,ixp,xfrac,iregion,linmesh)
          if(.not.linmesh)then
             write(*,*)'Reinject out of mesh',i,xfrac
             stop
@@ -498,7 +500,7 @@ c      write(*,*)'ucrhoset return',irptch
       end
 
 c***********************************************************************
-      subroutine partlocate(i,ixp,xfrac,iregion,linmesh,nreloc)
+      subroutine partlocate(i,ixp,xfrac,iregion,linmesh)
 c Locate the particle numbered i (from common partcom) 
 c in the mesh (from common meshcom).
 c Return the integer cell-base coordinates in ixp(ndims)
@@ -506,7 +508,7 @@ c Return the fractions of cell width at which located in xfrac(ndims)
 c Return the region identifier in iregion.
 c Return whether the particle is in the mesh in linmesh.
 c Store the mesh position into common partcom (x_part).
-c If particle is relocated by periodicity, advance nreloc.
+c If particle is relocated by periodicity, advance nrein.
 
       integer i,iregion
       logical linmesh
@@ -553,8 +555,8 @@ c give up and call it lost but flag the problem.
      $                 ,xgridlen
                   linmesh=.false.
                else
-c If every dimension is periodic, increment nreloc. (Otherwise not)
-                  if(.not.lnotallp)nreloc=nreloc+1
+c If every dimension is periodic, increment nrein. (Otherwise not)
+                  if(.not.lnotallp)nrein=nrein+1
                endif
             endif
          else

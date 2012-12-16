@@ -9946,3 +9946,11 @@ Our current version is a7e4ac405bf95938940c97e91e267f60ac7d92bc
 Error appears when fluxdata.f is updated.
 
 Found the error and corrected.
+
+Commit.
+
+Now remove nreloc from the pinit and padvnc because it is aliased to 
+nrein inconsistently.
+
+Remove partcom from reinject, and instead pass caverein from reinject
+as an argument.

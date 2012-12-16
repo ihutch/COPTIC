@@ -1,16 +1,21 @@
 **********************************************************************
 c Cartesian reinjection routine.
-      subroutine reinject(xr,ilaunch)
+      subroutine reinject(xr,ilaunch,caverein)
+      implicit none
+      integer mdims
       parameter (mdims=3)
       real xr(3*mdims)
+      real caverein
       integer ilaunch
+      real ra,fc,sg,fr,x2,x1
+      integer index,k,iother,ir
+      real ran1
+      external ran1
 
 c Random choice data for these routines:
       include 'creincom.f'
 c Plasma common data
       include 'plascom.f'
-c Particle data includes caverein but is not directly accessed otherwise.
-      include 'partcom.f'
 c Mesh data
       include 'meshcom.f'
       logical lfirst

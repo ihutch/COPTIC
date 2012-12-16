@@ -81,6 +81,10 @@ c,iuds(ndims)
       integer istart,iend,istride
       parameter (istart=1,iend=2,istride=3)
       include 'partcom.f'
+c This data statement serves to silence ftnchek. The first mditerator
+c call actually initializes the iview and indi.
+      data iview/ndims_mesh*0,ndims_mesh*0,ndims_mesh*0/
+      data indi/ndims_mesh*0/
 
       do id=1,ndims_mesh
          if(ipartperiod(id).eq.4)then
@@ -114,6 +118,10 @@ c exchange sum.
       integer istart,iend,istride
       parameter (istart=1,iend=2,istride=3)
       include 'partcom.f'
+c This data statement serves to silence ftnchek. The first mditerator
+c call actually initializes the iview and indi.
+      data iview/ndims_mesh*0,ndims_mesh*0,ndims_mesh*0/
+      data indi/ndims_mesh*0/
 
       do id=1,ndims_mesh
          if(ipartperiod(id).eq.4)then

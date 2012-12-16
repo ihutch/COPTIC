@@ -103,6 +103,10 @@ c for the whole _used_ array at nodes spaced by inc in the 1st dimension.
 c Effective index in dimension, c-style (zero based)
       integer indi(mdims),iview(3,mdims)
       integer ipoint,inc,icomplete,indexcontract,mditerator
+c This data statement serves to silence ftnchek. The first mditerator
+c call actually initializes the iview and indi.
+      data iview/mdims*0,mdims*0,mdims*0/
+      data indi/mdims*0/
 
 c Structure vector
       integer iLs(mdims+1)
@@ -367,6 +371,10 @@ c Normally, the starting pointer is ipin=0 for the full array.
       parameter (mdims=5)
 c Effective index in dimension, c-style (zero based)
       integer indi(mdims),iview(3,mdims)
+c This data statement serves to silence ftnchek. The first mditerator
+c call actually initializes the iview and indi.
+      data iview/mdims*0,mdims*0,mdims*0/
+      data indi/mdims*0/
       
 c Set to iterate the whole used array:
       icomplete=mditerator(ndims,iview,indi,4,iused)
@@ -388,6 +396,10 @@ c Normally, the starting pointer is ipin=0 for the full array.
       parameter (mdims=5)
 c Effective index in dimension, c-style (zero based)
       integer indi(mdims),iview(3,mdims)
+c This data statement serves to silence ftnchek. The first mditerator
+c call actually initializes the iview and indi.
+      data iview/mdims*0,mdims*0,mdims*0/
+      data indi/mdims*0/
       
 c Set to iterate the whole used array:
       icomplete=mditerator(ndims,iview,indi,4,iused)

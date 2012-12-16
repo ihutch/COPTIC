@@ -1,7 +1,7 @@
 c This file contains the reinjection code which is specific to a
 c particular (type of) boundary. 
 c It must provide the routines:
-c    reinject(xr,nrein) 
+c    reinject(xr,nrein,caverein) 
 c       which reinijects a particle in position/velocity slot xr(2*ndims)
 c       and returns the number of launches. (Pass xp(1,i)).
 c       This routine should initialize itself appropriately.
@@ -12,7 +12,7 @@ c The majority of the needed data is passed in partcom.f
 c 
 c This case is a spherical boundary.
 c***********************************************************************
-      subroutine reinject(xr,ilaunch)
+      subroutine reinject(xr,ilaunch,caverein)
       parameter (mdims=3)
       real xr(3*mdims)
 c      integer i

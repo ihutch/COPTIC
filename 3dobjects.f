@@ -223,7 +223,8 @@ c     $        (obj_geom(k,ngeomobj),k=1,odata)
  804     if(myid.eq.0)write(*,820)ngeomobj,
      $        ' Pllelopiped '
          obj_geom(offc,ngeomobj)=2*nd
-         call plleloinit(obj_geom(1,ngeomobj))
+c         call plleloinit(obj_geom(1,ngeomobj))
+         call plleloinit(ngeomobj)
          if(myid.eq.0)write(*,822)(obj_geom(k,ngeomobj),
      $        k=1,1+nd*(1+nd)+3)
       elseif(type.eq.5)then
@@ -439,11 +440,10 @@ c      stop
 
       end
 c****************************************************************
-      subroutine plleloinit(objg)
-c Initialize this pp_structure by calculating the contravariant 
+      subroutine plleloinit(iobj)
+c Initialize the iobj pp_structure by calculating the contravariant 
 c vectors from the covariant vectors.
       include '3dcom.f'
-      real objg(pp_total)
 
       triple=0.
       do j=1,pp_ndims
@@ -452,28 +452,30 @@ c Other vectors:
          jpv2=pp_vec+mod(j,pp_ndims)*pp_ndims-1
          jpv3=pp_vec+mod(j+1,pp_ndims)*pp_ndims-1
          jpc=pp_contra+(j-1)*pp_ndims-1
-c Set objg(jpc..) equal to the cross product between the other vectors.
+c Set obj_geom(jpc..,iobj) equal to the cross product between the other
+c vectors.
          do i=1,pp_ndims
             i2=mod(i,pp_ndims)+1
             i3=mod(i+1,pp_ndims)+1
-            objg(jpc+i)=(objg(jpv2+i3)*objg(jpv3+i2)-objg(jpv2+i2)
-     $           *objg(jpv3+i3))
+            obj_geom(jpc+i,iobj)=(obj_geom(jpv2+i3,iobj)*obj_geom(jpv3
+     $           +i2,iobj)-obj_geom(jpv2+i2,iobj)*obj_geom(jpv3+i3
+     $           ,iobj))
          enddo
 c calculate the scalar triple product the first time:
          if(j.eq.1)then
             do i=1,pp_ndims
-               triple=triple+objg(jpc+i)*objg(jpv+i)
+               triple=triple+obj_geom(jpc+i,iobj)*obj_geom(jpv+i,iobj)
             enddo
          endif
          if(triple.eq.0.)then
             write(*,*)'Parallelopiped of zero volume ERROR.'
-            write(*,*)(objg(k),k=1,21)
+            write(*,*)(obj_geom(k,iobj),k=1,21)
             write(*,*)jpv,jpc
             stop
          endif
 c normalize
          do i=1,pp_ndims
-            objg(jpc+i)=objg(jpc+i)/triple
+            obj_geom(jpc+i,iobj)=obj_geom(jpc+i,iobj)/triple
          enddo
       enddo
 
