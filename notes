@@ -9954,3 +9954,44 @@ nrein inconsistently.
 
 Remove partcom from reinject, and instead pass caverein from reinject
 as an argument.
+
+19 Dec 2012
+
+Trying to understand forces in the collisional sheath case, I go back to
+uniform plasma calculations. I have forces when the neutrals are drifting.
+However, I am not in a position to do proper force calculations the same
+as with sceptic when -vn0 in a uniform plasma, because that requires an
+Eneutral. In coptic there is no automatic eneutral. I need to implement one.
+In sceptic, Eneutral is added to accel(3). There's also something in fvinject.
+And there's an issue with collisional force calculation. 
+
+In sceptic collf=-colnwt*(vz-partsum*vd) which gives the collision force.
+In coptic currently we have the following contribution in padvnc.f
+c Inside object i->igeom which is a flux measuring object.
+c The scalar drift velocity is in the z-direction.
+               do id=1,ns_ndims
+                  vid=0.
+                  if(id.eq.ns_ndims)vid=vneutral
+                  colnforce(id,i,nf_step)=colnforce(id,i,nf_step)+
+     $                 (vid-xpart(ns_ndims+id))
+               enddo
+When neutrals drift, vneutral=vd, but when not, if there were an additional
+Eneutral force, then it would have to be added on here. The normalization
+takes place by calling bulknorm from coptic for all objects.
+
+I need a way to specify to what extent the drift difference vd-vneutral
+is driven by external E-field Eneutral, and to what extent it is driven
+by internal Efield grad(phi). In the sheath calculations it is all internal.
+
+If it were all driven by Eneutral, then the force calculation ought to
+be vid=vd, not vid=vneutral. So if Eneutral=f*(vd-vneutral)/colntime,
+then vid=(1-f)*vneutral+f*vd = vneutral -f*(vneutral-vd) = vneutral-
+Eneutral*colntime. 
+
+However, this is incomplete for obliquely magnetized cases. At the
+moment vperp, the component of vd perpendicular to B, is interpreted
+as being entirely due to external ExB (or equivalently to a Galilean
+transformation).  If there's a difference between vd and vneutral with
+collisions, then this has to be rethought. However, with B and perp
+drift, the distribution function is much more complicated and requires
+the full solver which is not yet implemented.

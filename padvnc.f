@@ -232,6 +232,9 @@ c B-field force is accommodated within moveparticle routine.
          do j=ndims+1,2*ndims
             x_part(j,i)=x_part(j,i)+field(j-ndims)*dtaccel
          enddo
+c Including the extra Eneutral field, which is in the ndims direction.
+         if(Eneutral.ne.0.)x_part(2*ndims,i)=x_part(2*ndims,i) +Eneutral
+     $        *dtaccel
 c Move ----------------
          call moveparticle(x_part(1,i),ndims,Bt,Btinf,Bfield,vperp
      $           ,dtpos)
@@ -665,7 +668,7 @@ c Now xg is the gyroradius.
       xc(3)=xin(3)-xg(3)
       end
 c*****************************************************************
-      subroutine bulkforce(xpart,iregion,colntime,vneutral)
+      subroutine bulkforce(xpart,iregion,colntime,vneutral,Eneutral)
 c Add on the contribution of this particle to the collision force.
 c colntime is the collision time, vneutral the drift velocity, dt time
 c step.  The total force is the contained momentum difference over the
@@ -683,7 +686,7 @@ c Inside object i->igeom which is a flux measuring object.
 c The scalar drift velocity is in the z-direction.
                do id=1,ns_ndims
                   vid=0.
-                  if(id.eq.ns_ndims)vid=vneutral
+                  if(id.eq.ns_ndims)vid=vneutral-Eneutral*colntime
                   colnforce(id,i,nf_step)=colnforce(id,i,nf_step)+
      $                 (vid-xpart(ns_ndims+id))
                enddo

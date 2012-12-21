@@ -7,7 +7,7 @@ c Encapsulation of parameter setting.
      $     ,nsteps,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,idims)
+     $     ,ipartperiod,lnotallp,Tneutral,Eneutral,idims)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
@@ -17,7 +17,7 @@ c Encapsulation of parameter setting.
      $     ,lextfield,LPF(ndims),lnotallp
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,rmtoz,vneutral,vd,debyelen,Ti,extfield,vpar,slpD
-     $     ,Tneutral
+     $     ,Tneutral,Eneutral
       real Bfield(ndims),Bt,vperp(ndims),CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
@@ -51,6 +51,7 @@ c Default edge-potential (chi) relaxation rate.
          dropaccel=10
          colntime=0.
          vneutral=0.
+         Eneutral=0.
          numprocs=1
          bdt=1.
          thetain=.1
@@ -122,6 +123,7 @@ c      if(iargc().eq.0) goto "help"
          if(argument(1:3).eq.'-rx')read(argument(4:),*,err=201)crelax
          if(argument(1:3).eq.'-ck')read(argument(4:),*,err=201)ickst
          if(argument(1:3).eq.'-ct')read(argument(4:),*,err=201)colntime
+         if(argument(1:3).eq.'-En')read(argument(4:),*,err=201)Eneutral
 
          if(argument(1:3).eq.'-dt')read(argument(4:),*,err=201)dt
          if(argument(1:3).eq.'-da')read(argument(4:),*,err=201)bdt
@@ -318,6 +320,12 @@ c Don't allow unwise operation with periodic particles.
             endif
          endif
       enddo
+c Convert the Eneutral fraction into actual Eneutral
+      if(colntime.ne.0.)then
+         Eneutral=Eneutral*(vd-vneutral)/colntime
+      else
+         Eneutral=0.
+      endif
 
       return
 c------------------------------------------------------------
@@ -359,6 +367,7 @@ c Help text
       write(*,302)' -ct   set collision time.        [',colntime
       write(*,302)' -vn   set neutral drift velocity [',vneutral
       write(*,302)' -tn   set neutral temperature    [',Tneutral
+      write(*,302)' -En   set fractional Eneutral    [',Eneutral
       write(*,302)' -mz   set mass/Z ratio           [',rmtoz
       write(*,302)' -Bx -By -Bz set mag field compts [',Bfield
       write(*,301)' -w    set write-step period.     [',iwstep

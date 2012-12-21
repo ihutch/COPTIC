@@ -11,6 +11,7 @@ c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       character*100 name
       character*100 string
 
+      logical ldoc
       real extra(nptdiag,mdims),diff(nptdiag,mdims)
 c Spatial limits bottom-top, dimensions
       real xlimit(2,mdims),xnewlim(2,mdims)
@@ -39,7 +40,7 @@ c Overlapping vlimits make limitdeterm the usual setting method.
          vlimit(2,id)=-5.
       enddo
 
-      call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs)
+      call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc)
       do id=1,mdims
 c Needed initialization removed from partacinit.
          xmeshstart(id)=min(-5.,xlimit(1,id))
@@ -84,6 +85,16 @@ c Possible multiple files.
          endif
          Bt=0.
          call partread(name,ierr)
+         if(ldoc)then
+            write(*,*)'debyelen,Ti,vd,rs,phip=',debyelen,Ti,vd,rs,phip
+            write(*,*)'iregion_part,n_part,dt,ldiags,rhoinf,nrein,',
+     $           'phirein,numprocs='
+            write(*,*)iregion_part,n_part,dt,ldiags,rhoinf,nrein,phirein
+     $           ,numprocs
+            write(*,*)'rmtoz,Bt,Bfield,vpar,vperp=',rmtoz,Bt,Bfield,vpar
+     $           ,vperp
+            stop
+         endif
          if(ierr-4*(ierr/4).ne.0)goto 11
          if(Bdirs(4).gt.0. .or. Bt.eq.0)then
 c All directions were set by commandline. Or none were read from file.
@@ -202,10 +213,11 @@ c Plot the subdistributions at a particular cell.
 
       end
 c*************************************************************
-      subroutine partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs)
+      subroutine partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc)
       include 'examdecl.f'
       real xlimit(2,3),vlimit(2,3),Bdirs(4)
       integer iuin(3)
+      logical ldoc
 
 c I think unused here 26 May 12. But I'm not sure.
       ifull(1)=na_i
@@ -219,6 +231,7 @@ c convenient default field:
       enddo
 c Use cellvol=0. by default.
       cellvol=0.
+      ldoc=.false.
 
 c silence warnings:
       fluxfilename=' '
@@ -262,6 +275,8 @@ c Deal with arguments
                Bdirs(4)=Bdirs(4)*bread
             elseif(argument(1:2).eq.'-b')then
                read(argument(3:),*,err=201)iuin
+            elseif(argument(1:2).eq.'-q')then
+               ldoc=.true.
             endif
             if(argument(1:13).eq.'--objfilename')
      $        read(argument(14:),'(a)',err=201)objfilename

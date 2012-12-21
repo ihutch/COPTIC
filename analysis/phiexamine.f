@@ -38,6 +38,9 @@ c      write(*,*)(u(16,16,k),k=1,36)
       call array3read(phifilename,ifull,iuds,ied,u,ierr)
       if(ierr.eq.1)stop
 
+
+      write(*,'(a,f7.3,a,f7.3,a,f7.3,a,f7.3,a,f7.3)')
+     $        ' Debyelen=',debyelen,' Ti=',Ti,' vd=',vd,' phip=',phip
       write(*,'(a,3i4,$)')'On grid',iuds
       write(*,'(a,2f7.2,a,2f7.2,a,2f7.2)')
      $     (',',xn(ixnp(kk)+1),xn(ixnp(kk+1)),kk=1,3)
@@ -342,9 +345,6 @@ c         call jdrwstr(.02,.28,'!Af!@!dp!d='//string(1:iwd),1.)
             endif
             call axis()
          endif
-
-         write(*,'(''vd='',f7.3,'' debyelen='',f7.3,''  phip='',f7.3)')
-     $        vd,debyelen,phip
 
 c Overplotting arrows.
 

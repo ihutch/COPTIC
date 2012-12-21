@@ -97,7 +97,6 @@ c (1-|f|)(x_{i+1}-x_{i-1}). Then if it is in the region we add it on. If
 c not we throw away. Eventually we divide by the total number of points
 c examined.
 
-c      real function volintegrate(ndims,xm,xi,xp,iregion,npoints)
       real function volintegrate(ndims,xm,xi,xp,npoints)
 
       real xm(ndims),xi(ndims),xp(ndims)
@@ -117,6 +116,9 @@ c Using the improved random number generator seems a significant hit on
 c time here. So use the direct C rand which is perhaps quicker.
             p=rand()
             x(id)=xp(id)*p+xm(id)*(1-p)
+c This more efficient expression gives a ~3% faster result but it is
+c different from the above, presumably by rounding errors.
+c            x(id)=(xp(id)-xm(id))*p+xm(id)
             f=x(id)-xi(id)
             if(f.lt.0)then
                f=f/(xm(id)-xi(id))
@@ -125,7 +127,6 @@ c time here. So use the direct C rand which is perhaps quicker.
             endif
             w=w*(1.-f)*(xp(id)-xm(id))
          enddo
-c         irg=insideall(ndims,x)
          if(linregion(ibool_part,ndims,x))wtot=wtot+w
       enddo
       volintegrate=wtot/npoints

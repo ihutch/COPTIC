@@ -1,5 +1,6 @@
 c Collision settings
       real colntime,subcycle,vneutral,fcollided,dropaccel,Tneutral
+      real Eneutral
       integer nsubc,ncollided,ndropped
       common /colncom/colntime,subcycle,nsubc,vneutral,Tneutral
-     $     ,ncollided,fcollided,ndropped,dropaccel
+     $     ,ncollided,fcollided,ndropped,dropaccel,Eneutral
