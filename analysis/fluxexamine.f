@@ -3,6 +3,7 @@ c**************************************************************
       include '../3dcom.f'
       include '../plascom.f'
       include '../sectcom.f'
+      include '../colncom.f'
 
       parameter (ntr=10000)
       real plotdata(ntr,6),stepdata(ntr)
@@ -83,6 +84,12 @@ c Give informational messages.
          ierr=0
       endif
       call readfluxfile(filename,ierr)
+
+      write(*,*)'File:',filename(1:lentrim(filename)) 
+      write(*,*)'debyelen,Ti,vd,rs,phip,colntime,subcycle,vneut',
+     $     ',fcold,dropac,Tneut,Eneut'
+      write(*,*)debyelen,Ti,vd,rs,phip ,colntime,subcycle,vneutral
+     $     ,fcollided,dropaccel,Tneutral,Eneutral
 
 c      write(*,*)'found',ff_data(nf_address(nf_flux,1,-1)+1-1)
 c     $     ,nf_address(nf_flux,1,-1)

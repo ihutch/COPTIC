@@ -762,7 +762,7 @@ c     np=nbcat(name,'.flx')
       call nbcat(name,'.flx')
 c      write(*,*)name
       write(charout,51)debyelen,Ti,vd,rs,phip
- 51   format('debyelen,Ti,vd,rs,phip:',5f10.4,' Version: 2')
+ 51   format('debyelen,Ti,vd,rs,phip:',5f10.4,' Version: 3')
 
 c      write(*,*)'mf_obj=',mf_obj,nf_step,mf_quant(1)
 
@@ -772,8 +772,8 @@ c      write(*,*)'mf_obj=',mf_obj,nf_step,mf_quant(1)
 c This write sequence must be exactly that read below.
       write(22)charout
 c      write(22)debyelen,Ti,vd,rs,phip
-      write(22)debyelen,Ti,vd,rs,phip
-     $        ,colntime,subcycle,vneutral,fcollided,dropaccel,Tneutral
+      write(22)debyelen,Ti,vd,rs,phip ,colntime,subcycle,vneutral
+     $     ,fcollided,dropaccel,Tneutral,Eneutral
       write(22)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
 c      write(*,*)'geommap',(nf_geommap(j),j=1,mf_obj)
       write(22)(ff_rho(k),k=1,nf_step)
@@ -840,9 +840,12 @@ c Figure out the version:
       endif
       if(iversion.le.1)then
          read(23)debyelen,Ti,vd,rs,phip
-      else
+      elseif(iversion.le.2)then
          read(23)debyelen,Ti,vd,rs,phip
      $        ,colntime,subcycle,vneutral,fcollided,dropaccel,Tneutral
+      elseif(iversion.le.3)then
+         read(23)debyelen,Ti,vd,rs,phip ,colntime,subcycle,vneutral
+     $        ,fcollided,dropaccel,Tneutral,Eneutral
       endif
       read(23)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
 c      write(*,*)'geommap',(nf_geommap(j),j=1,mf_obj)
