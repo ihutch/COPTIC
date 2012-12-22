@@ -1,3 +1,5 @@
+# This makefile assumes the shell is Bash.
+########################################################################
 # The eventual target:
 COPTIC=coptic
 #########################################################################
@@ -135,7 +137,7 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 	cc -c $(PROFILING) $*.c
 
 ##########################################
-#default target
+# Default target
 # Problem when using geometry that can't do smt check. 
 smt.out : $(COPTIC) copticgeom.dat
 	@if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
@@ -226,7 +228,7 @@ vecx :
 
 #####################################################
 clean :
-	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.* *.ps *.aux *.log *.out *.toc *.prev ftnchek.output libcoptic.a
+	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.* *.ps *.aux *.log *.out *.toc *.prev *.tlg *.synctex.gz ftnchek.output libcoptic.a
 	make -C accis mproper
 
 mproper :

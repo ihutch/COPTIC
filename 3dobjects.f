@@ -42,6 +42,8 @@ c**********************************************************************
      $     ,' default [ copticgeom.dat'
       write(*,*)'First line number of dimensions: 3'
       write(*,*)'Thereafter ignored comment lines start with #'
+      write(*,*)'Arguments: -v1. -l3.5 (e.g.) adds additional command'
+     $     ,' line arguments'
       write(*,*)'######################################################'
       write(*,'(2a)')'Object lines have the format: otype, a,b,c,'
      $     ,' center(3), radii(3), [extra data]'
@@ -111,21 +113,22 @@ c**********************************************************************
      &         ,' periodity dimension d.'
       write(*,8)'Periodic Particle Region Setting: 98,ix,iy,iz equivale'
      &         ,'nt to -ppix,iy,iz.'
-
       end
 
 c**********************************************************************
-      subroutine readgeom(filename,myid,ifull,CFin,iCFcount,LPF,ierr)
+      subroutine readgeom(filename,myid,ifull,CFin,iCFcount,LPF,ierr
+     $     ,argline)
 c Read the geometric data about objects from the file filename
       character*(*) filename
       integer myid
       integer ifull(*)
-      character*128 cline
+      character*256 cline
       include '3dcom.f'
       include 'meshcom.f'
       include 'partcom.f'
       real CFin(3+ndims_mesh,2*ndims_mesh)
       logical LPF(ndims_mesh)
+      character*256 argline
 c Common data containing the object geometric information. 
 c Each object, i < 64 has: type, data(odata).
 c      integer ngeomobjmax,odata,ngeomobj
@@ -159,6 +162,10 @@ c Loop over lines of the input file.
       read(1,'(a)',end=902)cline
       if(cline(1:1).eq.'#') goto 1
       if(cline(1:6).eq.'      ') goto 1
+      if(cline(1:10).eq.'Arguments:')then
+         argline=cline(11:)
+         goto 1
+      endif
 
       read(cline,*,err=901)type
 c Use only lower byte.

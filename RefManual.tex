@@ -53,6 +53,15 @@ It is better for most object lines to avoid trailing comments.
 \paragraph{The first line} of the file must start with the number of
 dimensions: 3. Nothing else on this line is read.
 
+\paragraph{Argument lines.} Any line that begins \verb!Arguments:! is
+regarded as an argument line, and is stored, over-writing any earlier
+such argument lines (so only the last such line is used). The text
+following the colon is parsed for additional command line switches
+before starting on the actual command line arguments. This makes it
+possible, if desired, to put all of the settings that control a run
+into a single object file, and require no switches explicitly on the
+command line.
+
 \subsection{Object Lines}
 
 \paragraph{The format} of an object line is a sequence of numbers
@@ -417,7 +426,15 @@ in COPTIC, must always immediately follow the switch that invokes them
 value must be embedded into the switch argument itself, not regarded
 as the next argument on the command line.  The default values of
 parameters can be checked by \verb!coptic -h! which prints out the
-actual value of the parameter at that stage in processing.
+actual value of the parameter at that stage in processing the command
+line. 
+
+The last line of the object file that starts \verb!Arguments:! (if
+any) may be used to add additional command line switches that are
+parsed \emph{before} those that actually appear on the command line.
+These switches, like those that actually appear on the command line,
+override other settings in the object file (even settings that appear
+after the line \verb!Arguments: ...!).
 
 \subsection{Code control parameters}
 
@@ -1132,15 +1149,15 @@ Reinjection must be appropriate to the specific outer boundary shape
 chosen as well as to the external ion distribution function. Different
 routines are linked in for different geometries by using different
 versions of the file \verb!reinject.f! which must provide two
-self-initializing routines \verb!reinject(xr,ilaunch)! and
+self-initializing routines \verb!reinject(xr,ilaunch,caverein)! and
 \verb!rhoinfcalc!. The first argument to \verb!reinject! is the
 particle slot into which to reinject, and the second, \verb!ilaunch!,
-returns the number of launches required to fill it. The use of
-\verb!ilaunch! enables reinjection in some schemes to be calculated
-from beyond the outer boundary, e.g.\ at infinity in an assumed
-external potential profile that might reject some reinjection orbits
-as unsuccessful, but still track the total number of injections at
-infinity.
+returns the number of launches required to fill it, the third is the
+average reinjection potential. The use of \verb!ilaunch! enables
+reinjection in some schemes to be calculated from beyond the outer
+boundary, e.g.\ at infinity in an assumed external potential profile
+that might reject some reinjection orbits as unsuccessful, but still
+track the total number of injections at infinity.
 
 Two versions are incorporated into the COPTIC distribution. 
 

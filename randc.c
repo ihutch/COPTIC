@@ -11,7 +11,7 @@ float rand_()
     il=(long)RAND_MAX;
     xfac=1./( ((double) il) + (((double) il)/1000000.));
   }
-  i = rand(); 
+  i = random(); 
   x = ((double) i)*xfac ;
   if(x >= 1. || x < 0.) {
     printf("RAND Error: x=%f, i=%ld, il=%ld\n",x,i,il);
@@ -21,7 +21,7 @@ float rand_()
 
 void srand_(long *iseed)
 {
-  srand( (unsigned int) *iseed); 
+  srandom( (unsigned int) *iseed); 
 }
 
 /*******************************************************************/
@@ -55,9 +55,3 @@ int initrand_(int *seed, char *state, int *statelen)
 int setrand_(char *state){
   setstate(state);
 }
-
-/******************* Calling this from fortran does not work 
-void fflush_(){
-  fflush(stdout);
-}
-********/

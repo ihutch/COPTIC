@@ -56,6 +56,7 @@ c Face boundary data
       character*100 partfilename,phifilename,fluxfilename,objfilename
       character*100 diagfilename,restartpath
       character*100 argument
+      character*256 argline
 c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
       logical lmyidhead,lphiplot,ldenplot
@@ -130,9 +131,10 @@ c First time this routine just sets defaults and the object file name.
      $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,Eneutral,idims)
+     $     ,ipartperiod,lnotallp,Tneutral,Eneutral,idims,argline)
 c Read in object file information.
-      call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr)
+      call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
+     $     ,argline)
 c Second time: deal with any other command line parameters.
       call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
@@ -141,7 +143,7 @@ c Second time: deal with any other command line parameters.
      $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,Eneutral,idims)
+     $     ,ipartperiod,lnotallp,Tneutral,Eneutral,idims,argline)
       if(ierr.ne.0)stop
 c      write(*,*)'Eneutral=',Eneutral
 c The double call enables cmdline switches to override objfile settings.

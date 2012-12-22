@@ -7,7 +7,7 @@ c Encapsulation of parameter setting.
      $     ,nsteps,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,Eneutral,idims)
+     $     ,ipartperiod,lnotallp,Tneutral,Eneutral,idims,argline)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
@@ -21,11 +21,12 @@ c Encapsulation of parameter setting.
       real Bfield(ndims),Bt,vperp(ndims),CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
+      character*256 argline
 
 c Local variables:
       integer lentrim,iargc
       external lentrim
-      integer i,id,idn,idcn,i0,i1
+      integer i,id,idn,idcn,i0,i1,iargcount,iargpos
       character*100 argument
       logical lfirst
       data lfirst/.true./
@@ -86,15 +87,25 @@ c Boundary condition switch and value. 0=> logarithmic.
      $           read(argument(1:),'(a)',err=501)objfilename
  501        continue
          enddo
+         argline=' '
          lfirst=.false.
          return
       endif
 c End of first time through setting
 c ---------------------------------------
 c Deal with arguments
-c      if(iargc().eq.0) goto "help"
-      do i=1,iargc()
-         call getarg(i,argument)
+      iargcount=iargc()
+      iargpos=1
+      do i=1,iargcount
+c First time through, deal with argline arguments. Afterwards getarg.
+ 502     continue
+         if(lentrim(argline(iargpos:)).ne.0)then
+            write(*,*)'File arguments remaining, position',iargpos,':'
+     $           ,argline(iargpos:iargpos+30)
+            call argextract(argline,iargpos,argument)
+         else
+            call getarg(i,argument)
+         endif
          if(argument(1:3).eq.'-gt')ltestplot=.true.
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
          if(argument(1:3).eq.'-gw')read(argument(4:),*,end=201)iobpsw
@@ -270,6 +281,7 @@ c Indicator that coptic arguments are ended.
             goto 202
          endif
  240     continue
+         if(lentrim(argline(iargpos:)).ne.0)goto 502
       enddo
 c End of command line parameter parsing.
 c-------------------------------------------------------
@@ -427,3 +439,24 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       call exit(0)
       end
 c*********************************************************************
+      subroutine argextract(argline,ipos,argstring)
+c Extract an argument from the string starting at ipos and return it in
+c argstring, leaving ipos pointed at the terminating blank.
+      character*(*) argline,argstring
+
+      ias=0
+ 2    continue
+c Skip blanks
+      if(argline(ipos:ipos).eq.' ')then
+         ipos=ipos+1
+         goto 2
+      endif
+ 3    continue
+c Read until we reach a blank.
+      ias=ias+1
+      argstring(ias:)=argline(ipos:ipos)
+      if(argline(ipos:ipos).ne.' ')then
+         ipos=ipos+1
+         goto 3
+      endif
+      end
