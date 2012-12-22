@@ -12,14 +12,13 @@ LIBPATH= -L./accis/ -L/usr/lib/mesa
 #######################
 # This does not work with vaccheck because of outer boundary alteration.
 #REINJECT=orbitinjnew.o extint.o
-#GEOMFILE=geomsphere.dat
+#GEOMFILE=geometry/geomsphere.dat
 ##################
 #REINJECT=reinject.o
-#GEOMFILE=geomsphere.dat
+#GEOMFILE=geometry/geomsphere.dat
 ###################
 REINJECT=cartreinject.o
-GEOMFILE=geomcubic.dat
-#GEOMFILE=geomz200x25.dat
+GEOMFILE=geometry/geomcubic.dat
 ########################################################################
 # Decide accis driver choice. Alternatives are vec4014 vecx or vecglx. 
 # Automatic choice can be overriden by commandline option e.g. 
@@ -124,15 +123,11 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 # then run 'make' to completion first. It is something to do with the
 # match-anything rules and prerequisites. I think that the rule is being
 # interpreted as "terminal" which means it does not apply unless its
-# prerequisites exist. By my interpretation of the info, this ought not
-# to be happening (requires a double colon), but on horace, it is. 
-#% : %.f  makefile $(OBJECTS) $(UTILITIES) $(ACCISLIB)
-#	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f $(OBJECTS) $(UTILITIES) $(LIBRARIES)
+# prerequisites exist.
 
 % : %.f  makefile libcoptic.a $(ACCISLIB)
 	$(G77)  -o $* $(NOGLOBALS) $(PROFILING) $*.f libcoptic.a $(LIBRARIES)
 
-# Just putting the specials first ensures that the compile works.
 %.o : %.f makefile $(HEADERS)
 	$(G77)  -c $(NOGLOBALS) $(PROFILING) $*.f
 
@@ -231,7 +226,7 @@ vecx :
 
 #####################################################
 clean :
-	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.* *.ps *.aux *.log *.out *.toc libcoptic.a
+	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.* *.ps *.aux *.log *.out *.toc *.prev ftnchek.output libcoptic.a
 	make -C accis mproper
 
 mproper :

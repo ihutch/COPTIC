@@ -1,0 +1,39 @@
+3  ; Number of dimensions must be the first line.
+
+####################################################################
+# Point charge of given center, radius, and magnitude.
+#513,0.,0.,0., 0.,0.,10.,  .4,.4,.4,  0,-.25,0
+
+####################################################################
+# Measure forces over spheres of different radii A=B=C=0 means no BC.
+#  A,B,C       xc,yc,zc    rx,ry,rz,  nflux,ntheta,nphi
+1, 0.,0.,0.,   0.,0.,10.,  .5,.5,.5,     4,8,8
+1, 0.,0.,0.,   0.,0.,10.,  .8,.8,.8,     4,8,8
+1, 0.,0.,0.,   0.,0.,10.,  1.,1.,1.,     4,8,8
+1, 0.,0.,0.,   0.,0.,10.,  1.5,1.5,1.5,     4,8,8
+1, 0.,0.,0.,   0.,0.,20.,  1.,1.,1.,     4,8,8
+1, 0.,0.,0.,   0.,0.,20.,  1.5,1.5,1.5,     4,8,8
+1, 0.,0.,0.,   0.,0.,15.,  1.,1.,1.,     4,8,8
+1, 0.,0.,0.,   0.,0.,15.,  1.5,1.5,1.5,     4,8,8
+
+####################################################################
+# Region and Mesh
+# Region boolean not required here. Particles can be anywhere.
+#99, 1, -1, 0 # This example would say outside object 1.
+# Non-uniform mesh:
+91,1,11,22,32,0,-2.5,-.5,.5,2.5
+92,1,11,22,32,0,-2.5,-.5,.5,2.5
+93,1,128,0,0.,40.
+####################################################################
+# Domain BCs
+# Periodic phi-BC in dimension 1 and 2.
+111
+112
+# Specified phi on face 3 (lower z-face)
+103,1.,0.,10.
+# Specified derivative on face 6 (upper z-face) ought to be equal to -vd/ct
+106,0.,10.,-.23
+# partperiod: particles periodic in directions 1 and 2, absorbing lower 3.
+98,4,4,1
+# It's important to end the last line.
+####################################################################

@@ -27,7 +27,7 @@ NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 HEADERS=../ptaccom.f
 ##########################################################################
-TARGETS=creintest fieldtest mditeratetest mpibbdytest mditeratortest stresstest sortest
+TARGETS=creintest fieldtest mditeratetest mpibbdytest mditeratortest stresstest sortest 
 
 all: $(TARGETS)
 

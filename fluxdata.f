@@ -771,7 +771,6 @@ c      write(*,*)'mf_obj=',mf_obj,nf_step,mf_quant(1)
       open(22,file=name,status='new',form='unformatted',err=101)
 c This write sequence must be exactly that read below.
       write(22)charout
-c      write(22)debyelen,Ti,vd,rs,phip
       write(22)debyelen,Ti,vd,rs,phip ,colntime,subcycle,vneutral
      $     ,fcollided,dropaccel,Tneutral,Eneutral
       write(22)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
@@ -827,6 +826,7 @@ c On exit  ierr .ne.0 indicates error.
       include 'colncom.f'
       character*(100) charout
 
+      Eneutral=0.
       open(23,file=name,status='old',form='unformatted',err=101)
       read(23)charout
 c Figure out the version:

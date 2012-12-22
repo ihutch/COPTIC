@@ -1,0 +1,44 @@
+3  ; Number of dimensions must be the first line.
+# After that we can have comment lines with # in column 1.
+# We can short-list the data, but only if we don't put a comment
+# on the end. In that case we'd get an error.
+# ; Sphere type: Data values A,B,C, center, axes, flux accumulation. 
+#
+# Radius 1 sphere centered on axis with potential set
+# Specify flux accumulation for 5 quantities in 50 bins of cos\theta, 1 of psi.
+#1 , 1.,0.,2., .0,.0,.0,  1.,1.,1.,  5, 50, 1  
+
+
+# Point Charge at z=20.
+#513 , 0.,0.,0., 0.,0.,20.,   5.,5.,5.,   0,-.4,0  
+# Measure the force round this point charge
+#1, 0.,0.,0., 0.,0.,20.,   3.,3.,3.,   5,  20, 1
+
+
+# Point Charge at origin with Coulomb potential -1. at 1.
+513 , 0.,0.,0., 0.,0.,0.,   1.,1.,1.,   0,-1.,0  
+# Point charge whose force is to be measured:
+#513 , 0.,0.,0., 0.,0.,0.,   1.,1.,1.,   1,-1.,0  
+
+# Measure the force round the centered point charge at radius .5
+1, 0.,0.,0., 0.,0.,0.,   .5,.5,.5,   5,  20, 1
+
+# Measure the force round the centered point charge at radius 1.
+1, 0.,0.,0., 0.,0.,0.,   1.,1.,1.,   5,  20, 1
+
+
+# Measure the force round the centered point charge at radius 1.5, 2.
+1, 0.,0.,0., 0.,0.,0.,   1.5,1.5,1.5,   5,  20, 1
+1, 0.,0.,0., 0.,0.,0.,   2.,2.,2.,   5,  20, 1
+
+
+# Boolean. In this case -1: outside object 1, and outside object 2.
+#99, 1, -1, 1, -2, 0
+# With point charges no exclusion region.
+99,0
+#
+91,1,12,21,32,0,-5.,-1.,1.,5.
+92,1,12,21,32,0,-5.,-1.,1.,5.
+93,1,12,21,32,0,-5.,-1.,1.,5.
+#93,1,12,25,96,0,-25.,-2.5,4.,110.
+# It's important to end the last line.
