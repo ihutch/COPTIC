@@ -34,11 +34,13 @@
 # Periodic phi-BC in dimension 1 and 2.
 111
 112
-# Specified phi on faces 3(z-faces)
+# Specified phi on face 3(z-faces)
 103,1.,0.,5.
 # Zero slope on face 6
 106,0.,1.,0.
 # partperiod. Particles periodic in directions 1 and 2
 # Absorbing wall at the lower 3-face
 98,4,4,1
+
+Arguments: -rx0. -v-.8
 # It's important to end the last line.

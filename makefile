@@ -136,6 +136,14 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 %.o : %.c makefile
 	cc -c $(PROFILING) $*.c
 
+%.phi : %.dat $(COPTIC)
+	rm -f *.phi
+	./${COPTIC} $*.dat
+	@if [ -f *.phi ] ; then cd .; else echo NO .phi FILE GENERATED; fi ; ls *.phi 2>/dev/null
+	@if diff *.phi $*.phi >diffout 2>&1; then echo $*.phi: OK. No differences; touch $*.phi;else cat diffout; echo '******** Failed geometry test *********';fi; rm -f diffout
+	@if [ -f $*.phi ] ; then echo ; else echo "******** $*.phi not present. Creating it."; mv -f *.phi $*.phi; fi
+	@echo -----------------------------------------------------------------
+
 ##########################################
 # Default target
 # Problem when using geometry that can't do smt check. 
@@ -225,6 +233,9 @@ testing : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libc
 vecx :
 	make clean
 	make VECX=vecx
+
+#####################################################
+geometry : geometry/*.phi
 
 #####################################################
 clean :

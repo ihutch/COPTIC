@@ -36,4 +36,5 @@
 # partperiod: particles periodic in directions 1 and 2, absorbing lower 3.
 98,4,4,1
 # It's important to end the last line.
+Arguments: -rx0. -ri20
 ####################################################################

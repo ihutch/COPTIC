@@ -13,4 +13,6 @@
 91,1,4,0,-100.,100.
 92,1,64,0,-5.,5.
 93,1,64,0,-3.,17.
+
+Arguments: -ri20 
 # It's important to end the last line.

@@ -9999,3 +9999,9 @@ the full solver which is not yet implemented.
 22 Dec 2012
 
 Add facility to put command line arguments line into the object file.
+
+Add an automatic target geometry/*.phi which runs tests to see if the
+phi output is the same as expected. Added target geometry, which tests
+all the geometry .phi targets.
+
+Git Added the geometry/*.phi files. They then serve as the test cases.
