@@ -40,7 +40,7 @@ c**********************************************************************
       write(*,*)'######################################################'
       write(*,*)'Format and meaning of the object geometry file'
      $     ,' default [ copticgeom.dat'
-      write(*,*)'First line number of dimensions: 3'
+      write(*,*)'First line is just a comment. Nothing is used there.'
       write(*,*)'Thereafter ignored comment lines start with #'
       write(*,*)'Arguments: -v1. -l3.5 (e.g.) adds additional command'
      $     ,' line arguments'
@@ -149,9 +149,10 @@ c Zero the obj_geom data.
 c Read
       open(1,file=filename,status='old',err=101)
       iline=1
-c First line must be the number of dimensions.
       read(1,'(a)',end=902)cline
-      read(cline,*,err=901)nd
+c First line must be the number of dimensions. Pointless. Remove.
+c      read(cline,*,err=901)nd
+      nd=3
 
       if(myid.eq.0)write(*,'(a,a50)')'Reading objects from file: '
      $     ,filename

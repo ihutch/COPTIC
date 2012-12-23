@@ -10005,3 +10005,13 @@ phi output is the same as expected. Added target geometry, which tests
 all the geometry .phi targets.
 
 Git Added the geometry/*.phi files. They then serve as the test cases.
+Git push.
+
+Still need to test the Eneutral code.
+
+Testing the Eneutral code finds incorrect argument list with bulkforce.
+Fixed. Then the Eneutral distributions look correct with partexamine.
+
+Removed the necessity to have the number of dimensions on the first line
+of the object file. That was a pointless relic of ambitions to make the
+code variable dimensioned. It can't be sensibly done.

@@ -136,11 +136,12 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 %.o : %.c makefile
 	cc -c $(PROFILING) $*.c
 
+# The testing target pattern used for files in geometry/
 %.phi : %.dat $(COPTIC)
 	rm -f *.phi
 	./${COPTIC} $*.dat
 	@if [ -f *.phi ] ; then cd .; else echo NO .phi FILE GENERATED; fi ; ls *.phi 2>/dev/null
-	@if diff *.phi $*.phi >diffout 2>&1; then echo $*.phi: OK. No differences; touch $*.phi;else cat diffout; echo '******** Failed geometry test *********';fi; rm -f diffout
+	@if diff *.phi $*.phi >diffout 2>&1; then echo $*.phi: OK. No differences; touch $*.phi;else cat diffout; echo '******** Failed geometry test *********'; cat diffout >> GeometryTests; fi; rm -f diffout
 	@if [ -f $*.phi ] ; then echo ; else echo "******** $*.phi not present. Creating it."; mv -f *.phi $*.phi; fi
 	@echo -----------------------------------------------------------------
 
@@ -236,14 +237,16 @@ vecx :
 
 #####################################################
 geometry : geometry/*.phi
-
+	rm T1*
+	date >>GeometryTests
+	cat GeometryTests
 #####################################################
 clean :
 	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.* *.ps *.aux *.log *.out *.toc *.prev *.tlg *.synctex.gz ftnchek.output libcoptic.a
 	make -C accis mproper
 
 mproper :
-	rm -f compiler REINJECT.f coptic copticgeom.dat storedgeom.dat
+	rm -f compiler REINJECT.f coptic copticgeom.dat storedgeom.dat GeometryTests
 	make clean
 	make -C analysis clean
 

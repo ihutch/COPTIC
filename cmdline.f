@@ -97,13 +97,16 @@ c Deal with arguments
       iargcount=iargc()
       iargpos=1
       do i=1,iargcount
-c First time through, deal with argline arguments. Afterwards getarg.
+c Start of argline internal iteration
  502     continue
          if(lentrim(argline(iargpos:)).ne.0)then
-            write(*,*)'File arguments remaining, position',iargpos,':'
+c First time through, deal with argline arguments. Write a few.
+            if(lmyidhead.and.iargpos.lt.10)write(*,*
+     $           )'File arguments remaining, position',iargpos,':'
      $           ,argline(iargpos:iargpos+30)
             call argextract(argline,iargpos,argument)
          else
+c Afterwards getarg.
             call getarg(i,argument)
          endif
          if(argument(1:3).eq.'-gt')ltestplot=.true.
@@ -282,6 +285,7 @@ c Indicator that coptic arguments are ended.
          endif
  240     continue
          if(lentrim(argline(iargpos:)).ne.0)goto 502
+c End of internal argline iteration
       enddo
 c End of command line parameter parsing.
 c-------------------------------------------------------

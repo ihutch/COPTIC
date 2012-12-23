@@ -322,7 +322,7 @@ c Restart the rest of the advance
 c----------------------------------------------
 c Non-injection completion.
  300     continue
-         call bulkforce(x_part(1,i),iregion,colntime,vneutral)
+         call bulkforce(x_part(1,i),iregion,colntime,vneutral,Eneutral)
 c Special diagnostic orbit tracking:
          if(i.le.norbits.and. if_part(i).ne.0)then
             if(dtdone-dt.gt.1.e-4)then
