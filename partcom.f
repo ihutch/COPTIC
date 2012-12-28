@@ -33,7 +33,8 @@ c Rho at infinity per processor, relevant only in setup.
       real ripernode
 c Factor by which we relax the rhoinf calculation. 1 immediate, 0 never.
       real crelax,caverein,chi
-c Flags for which dimensions are periodic for particles.
+c Flags for which dimensions are periodic or absorbing for particles.
+c 0 open, 1 lower absorbs, 2 upper absorbs, 3 both absorb, 4 periodic
       integer ipartperiod(npdim)
 c Effective face area for purposes of reinjection. Small if periodic.
       real fcarea(npdim)

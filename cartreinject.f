@@ -1,6 +1,19 @@
+c*********************************************************************
+c Wrapper:
+      subroutine reinject(xr,ilaunch,cdummy)
+      include 'colncom.f'
+      include 'partcom.f'
+      if(Eneutral.eq.0.)then
+         call cartreinject(xr,ilaunch,caverein)
+      else
+         call colreinject(xr,ipartperiod,caverein)
+         ilaunch=ilaunch+1
+      endif
+      end
+
 **********************************************************************
 c Cartesian reinjection routine.
-      subroutine reinject(xr,ilaunch,caverein)
+      subroutine cartreinject(xr,ilaunch,caverein)
       implicit none
       integer mdims
       parameter (mdims=3)
@@ -766,60 +779,120 @@ c Null
 c      write(*,*)'CAvereinset',caverein
       end
 c********************************************************************
-c Cubic interpolation. Not used.
-c      real function yinterp4pt(y,xi)
-c Given four points on an equally spaced mesh: y(1-4)
-c and a fractional mesh position xi between the middle two,
-c so that xi=x-x(2), [and we form et=1-xi],
-c return the interpolated y value, cubically interpolated.
-c      real y(4)
-c      real xi
-c
-c      et=1.-xi
-c      a= -et*xi*y(1)+(2.+2.*xi-3.*xi**2)*y(2)
-c      b= -xi*et*y(4)+(2.+2.*et-3.*et**2)*y(3)
-c      yinterp4pt=0.5*(et*a+xi*b)
-c      end
-c**********************************************************************
-c Obsolete functions for drifting Maxwellian reinjection.
-c**********************************************************************
-      real function ffcrein(v)
-c Return the one-way differential flux distribution as a fn of velocity
-c from a maxwellian for dimension idrein (in creincom)
-c In the positive or negative direction, determined by idrein's sign.
-c If abs(idrein) == 3, then maxwellian is shifted by vd (in plascom).
-c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
-
-      include 'plascom.f'
+c********************************************************************
+c Reinjection based upon sample distribution for collisional
+c distributions. 
+      subroutine colreinject(xr,ipartperiod,cdummy)
+      implicit none
+c Collisional distribution data.
+      include 'cdistcom.f'
+      real xr(3*nc_ndims)
+      real cdummy
+      integer ipartperiod(nc_ndims)
+c Pass ipartperiod instead of ilaunch so as to avoid having to include
+c partcom to get at the value of ipartperiod.
+c      include 'partcom.f'
+c Reinjection data needed for idrein only, needed for creintest only.
       include 'creincom.f'
+      include 'meshcom.f'
+c Local data
+      real ra,ran1,face,fr,rx
+      integer i,id,k,iother
+      external ran1
 
-      if(int(sign(1.,v)).eq.sign(1,idrein))then
-         if(abs(idrein).eq.3)then
-            ffcrein=abs(v)*exp(-(v-vd)**2/(2.*Ti))
-         else
-            ffcrein=abs(v)*exp(-v**2/(2.*Ti))
-         endif
+c      logical lfirst
+c      data lfirst/.true./
+
+c      if(lfirst)then
+c         call colreinit()
+c         lfirst=.false.
+c      endif
+
+c Choose the normal-dimension for reinjection, from cumulative dist.
+ 2    ra=ran1(1)
+      do i=1,nc_ndims
+         id=i
+         if(ra.lt.cdistcum(i+1))goto 1
+      enddo
+ 1    continue
+      idrein=id
+c Grab a random v-sample. Needs to be changed to reflect not just a 
+c random grab,
+c      call colvget(xr(nc_ndims+1))
+c but a grab weighted by the normal-dimension mod-v:
+      ra=ran1(1)*fxvcol(ncdist+1,id)
+      call invtfunc(fxvcol(1,id),ncdist+1,ra,rx)
+c Now the integer part of rx is the index of the chosen particle.
+      k=int(rx)
+      do i=1,nc_ndims
+         xr(nc_ndims+i)=v_col(i,k)
+      enddo
+
+c Determine face
+      if(ipartperiod(id).ge.3)then
+         write(*,*)'Got erroneous periodic dimension',id
+         face=0.
+         goto 2
+      elseif(xr(nc_ndims+id).ge.0.)then
+         face=-.999999
+         if(ipartperiod(id).eq.1.)goto 1
+c Injecting at a periodic/absorbing face. Get a different particle.
       else
-         ffcrein=0.
+         face=.999999
+         if(ipartperiod(id).eq.2.)goto 1
       endif
-c      ffcrein=2.*ffcrein
-      ffcrein=ffcrein/sqrt(2.*3.1415926*Ti)
+c Got Satisfactory particle. 
+
+c Determine position.
+c Position in this dimension (either end), (just) inside the mesh.
+      xr(id)=0.5*(xmeshstart(id)*(1.-face)+ xmeshend(id)*(1.+face))
+c Pick the velocities and positions parallel to this face:
+      do k=1,2
+         iother=mod(id+k-1,3)+1
+c Position: Ensure we never quite reach the mesh edge:
+         fr=ran1(0)*0.999999+.0000005
+         xr(iother)=xmeshstart(iother)*(1-fr)+xmeshend(iother)*fr
+      enddo
       end
-c**********************************************************************
-      real function fvcrein(v)
-c Return the probability distribution 
-c from a maxwellian for dimension idrein (in creincom)
-c If abs(idrein) == 3, then maxwellian is shifted by vd (in plascom).
-c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
 
-      include 'plascom.f'
-      include 'creincom.f'
-
-      if(abs(idrein).eq.3)then
-         fvcrein=exp(-(v-vd)**2/(2.*Ti))
+c********************************************************************
+      subroutine colreinit()
+c Initialize and normalize the cdistflux factors from the
+c Collisional distribution data, presumed already calculated by pinit.
+c Based upon the ipartperiod settings.
+      include 'cdistcom.f'
+      include 'partcom.f'
+      ctot=0.
+      do i=1,nc_ndims
+         if(ipartperiod(i).ge.3)cdistflux(i)=0.
+         ctot=ctot+cdistflux(i)
+      enddo
+      if(ctot.ne.0.)then
+         cdistcum(1)=0.
+         do i=1,nc_ndims
+            cdistflux(i)=cdistflux(i)/ctot
+            cdistcum(i+1)=cdistcum(i)+cdistflux(i)
+         enddo
+c Avoid rounding problems.
+         cdistcum(nc_ndims+1)=1.
       else
-         fvcrein=exp(-v**2/(2.*Ti))
+         write(*,*)'colreinject: No reinjection faces'
       endif
-c      fvcrein=2.*fvcrein
-      fvcrein=fvcrein/sqrt(2.*3.1415926*Ti)
+
+c Now evaluate the cumulative distribution in 3 normal-directions.
+      do id=1,nc_ndims
+         fxvcol(1,id)=0.
+         do i=1,ncdist
+            fxvcol(i+1,id)=fxvcol(i,id)+abs(v_col(id,i))
+         enddo
+      enddo
+c There's a resolution issue in that a million steps can hardly
+c be resolved by single precision. However, it is unlikely that
+c substantial statistical distortion will occur. If it did we could
+c use double precision.
+
+      write(*,'(a,7f8.4)')' colreinit completed',cdistcum,cdistflux
+      write(*,'(a,3f16.4)')' fxvcol:',(fxvcol(ncdist+1,j),j=1,3)
+
       end
+c********************************************************************

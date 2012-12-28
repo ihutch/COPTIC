@@ -1,4 +1,3 @@
-
 c Object-data storage, for keeping track of boundary conditions 
 c at object surfaces for the potential sor solution. 
 c Guess at needed total data size Lobjmax for each object.

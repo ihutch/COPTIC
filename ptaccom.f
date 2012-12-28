@@ -1,4 +1,4 @@
-c The following makes this dependent on having meshcom loaded already.
+c Dependent on having meshcom loaded already, defining ndims_mesh.
       integer nptdiag,mdims
       parameter (nptdiag=400,mdims=ndims_mesh)
       real fv(nptdiag,mdims),cumfv(0:nptdiag,mdims)
@@ -7,11 +7,6 @@ c The following makes this dependent on having meshcom loaded already.
       real xdiag(nptdiag,mdims)
       integer nfvaccum,ivproj
       common /cartdiag/fv,px,vdiag,xdiag,cumfv,nfvaccum,ivproj
-
-c------------Former fvgriddecl.f------------
-c Declarations of the spatial grid on which particle distribution
-c diagnostics are to be accumulated.
-
 c In this section there is an assumption that we are in 3 dimensions.
       integer nsub_i,nsub_j,nsub_k
 c These determine the number of sub-divisions of the three directions

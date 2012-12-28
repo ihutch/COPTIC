@@ -1,6 +1,7 @@
 \documentclass[12pt]{article}
 \usepackage{fullpage}
 \usepackage{hyperref}
+\usepackage{verbatim}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \def\sentence#1{\par\noindent\textbf{#1}}
@@ -671,21 +672,11 @@ orbits of up to \verb!nobsmax! particles for up to \verb!nstepmax! steps.
 
 Potentials, charges and fields are defined on a cartesian mesh. It is
 described by two commons in \verb!meshcom.f!. The first is the mesh
-specification data that is read in from the object file.
-\begin{verbatim}
-      integer imeshstep(ndims_mesh,nspec_mesh)
-      real xmeshpos(ndims_mesh,nspec_mesh)
-      common /meshspec/imeshstep,xmeshpos  
-\end{verbatim}
+specification data \verb!/meshspec/! that is read in from the object file.
 It is used in the routine \verb!meshconstruct! to construct the mesh,
 but is generally unimportant during running, because the information
-is coded into the second common:
-\begin{verbatim}
-      real xn(ixnlength)
-      real xmeshstart(ndims_mesh),xmeshend(ndims_mesh)
-      integer ixnp(ndims_mesh+1)
-      common /sormesh/ixnp,xn,xmeshstart,xmeshend
-\end{verbatim}
+is coded into the second common \verb!/sormesh/!.
+\verbatiminput{meshcom.f} 
 
 The array \verb!xn! contains the x, y, and z mesh positions
 concatenated one after the other. Its allocated length,
@@ -702,18 +693,8 @@ from \verb!xn(ixnp(id)+1)!  to \verb!xn(ixnp(id+1))!  and the length
 of the mesh is \verb!ixnp(id+1)-ixnp(id)!.
 
 \paragraph{Non-standard stencils,} which occur at object surfaces,
-are controlled by data structures in file \verb!objcom.f!.
-
-\begin{verbatim}
-      parameter (ndims_cij=3,ndata_cij=ndims_cij)
-      parameter (nobj_cij=2*ndims_cij*ndata_cij+7)
-      parameter (Lobjmax=1000000)
-      real dob_cij(nobj_cij,Lobjmax)
-      integer oi_cij
-      common /objcom/oi_cij,dob_cij
-      integer idob_cij(nobj_cij,Lobjmax)
-      equivalence (idob_cij,dob_cij)
-\end{verbatim}
+are controlled by data structures in file \verb!objcom.f!. 
+\verbatiminput{objcom.f}
 The array \verb!dob_cij! which is equivalenced to \verb!idob_cij!
 contains the information accessed by a pointer into its second index.
 For any node of the mesh, there is a pointer which if non-zero refers
@@ -725,15 +706,7 @@ surrounding this boundary node. The fractional nodal distance to the
 adjacent node (equal to 1 if there's no interface in this direction), and the
 values of $B/A$ and $C/A$ are stored for the forward and backward
 directions of each coordinate. 
-\begin{verbatim}
-      parameter (idgs_cij=2*ndims_cij*ndata_cij+1)
-      parameter (ibdy_cij=2*ndims_cij*ndata_cij+2)
-      parameter (iflag_cij=2*ndims_cij*ndata_cij+3)
-      parameter (iregion_cij=2*ndims_cij*ndata_cij+4)
-      parameter (ipoint_cij=2*ndims_cij*ndata_cij+5)
-      parameter (iinter_cij=2*ndims_cij*ndata_cij+6)
-      parameter (iextra_cij=2*ndims_cij*ndata_cij+7)
-\end{verbatim}
+
 Then come the diagonal coefficient, boundary potential contributors,
 and the following integers: the flags, the region-code of this point,
 the inverse pointer back to the node within \verb!cij(2,2,2)!, the
@@ -879,38 +852,17 @@ spheres at present).
 \verb!ptaccom.f!, and used only in routines in \verb!partaccum.f!. 
 
 For accumulation of the distribution averaged over large regions, the
-following structures are used. 
-\begin{verbatim}
-      parameter (nptdiag=400,mdims=ndims_mesh)
-      real fv(nptdiag,mdims),cumfv(0:nptdiag,mdims)
-      real px(nptdiag,mdims)
-      real vdiag(nptdiag,mdims)
-      real xdiag(nptdiag,mdims)
-      integer nfvaccum,ivproj
-      common /cartdiag/fv,px,vdiag,xdiag,cumfv,nfvaccum,ivproj
-\end{verbatim}
+structures in common \verb!/cartdiag/! are used. 
 There are \verb!nptdiag! points in each direction for position and velocity.
-
+\verbatiminput{ptaccom.f}
 Spatially resolved velocity distributions are collected over blocks of
-cells. The sizes of the blocks are given by 
-\begin{verbatim}
-      parameter (nsub_i=15,nsub_j=15,nsub_k=15)
-      parameter (nsub_tot=nsub_i*nsub_j*nsub_k)
-\end{verbatim}
+cells. The number of such blocks is given by 
+\verb!parameter(nsub_i=15,nsub_j=15,nsub_k=15)! 
 The velocity bins are unevenly spaced so as to allow representation
 of the velocity distribution with a limited number of bins that are
-the combination of bins defined over \verb!nptdiag! velocities:
-\begin{verbatim}
-      parameter (nsbins=32)
-      integer ibinmap(nptdiag,mdims)
-      real vsbin(nsbins,mdims),csbin(nsbins,mdims)
-      real fsv(nsbins,mdims)
-      real vhbin(0:nsbins,mdims)
-      real fvx(nsbins,mdims,nsub_tot)
-      real denfvx(nsub_tot)
-      common /subdiag/ibinmap,isfull,vsbin,csbin,vhbin,fsv,fvx,denfvx
-\end{verbatim}
-Here \verb!ibinmap! is the map from uniform bins to combined bins;
+the combination of bins defined over \verb!nptdiag! velocities in the
+common \verb!/subdiag/!.
+There \verb!ibinmap! is the map from uniform bins to combined bins;
 \verb!vsbin! is the central velocity of the combined bin; \verb!csbin!
 is the number of fine bins in the combined bin. The spatially resolved
 distribution data is \verb!fvx!. Finer velocity resolution may be

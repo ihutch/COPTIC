@@ -10027,3 +10027,23 @@ that it represents.
 Probably particle initialization ought to be a part of the implementation of
 a more general collisional reinjection solution based on integration of 
 orbits and storing of representative particles.
+
+Had a problem with git push. It was because I was in detached head state.
+http://stackoverflow.com/questions/5772192/git-how-can-i-reconcile-detached-head-with-master-origin
+explained how to fix that. Create a branch from current; force master to be it;
+checkout master; delete temporary branch; git push.
+
+Eventually got new version on loki. But some of the geometry tests fail.
+(Some pass). Perhaps this is because of different architecture(?)
+
+26 Dec 2012
+Implement a collisional particle distribution calculation that is used
+for pinit.
+
+27 Dec 2012
+Completed the implementation of the particle distribution. 
+The idea is that this would be used for a sample-based reinjection
+scheme too. Only for B-field free cases at present.
+
+Tested using crein and demonstrated excellent quantitative agreement
+with the old version (by turning on and off Eneutral).

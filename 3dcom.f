@@ -37,13 +37,11 @@ c [i-k refers to cartesian components, p-r to pp basis.]
       parameter (pp_vec=pp_orig+pp_ndims)
       parameter (pp_contra=pp_vec+pp_ndims*pp_ndims)
       parameter (pp_total=pp_contra+pp_ndims*pp_ndims-1)
-
       real obj_geom(odata,ngeomobjmax)
 c
 c Mapping from obj_geom object number to nf_flux object (many->fewer)
 c Zero indicates no flux tracking for this object.
       integer nf_map(ngeomobjmax)
-
 c Ibool defining region of particles.
       integer ibtotal_part
       parameter (ibtotal_part=100)
@@ -56,10 +54,9 @@ c Has the particle region got an enclosed region
       logical lboundp
 c What is the reinjection scheme?
       character*50 rjscheme
-
       common /objgeomcom/ngeomobj,obj_geom,nf_map
      $     ,ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
-c
+c-------------------------------------------------------------------
 c Data that describes the flux to positions on the objects:
       integer nf_quant,nf_obj,nf_maxsteps,nf_datasize,nf_posdim,nf_ndims
 c Number of slots needed for position descriptors. Dimensions.
@@ -98,7 +95,6 @@ c The dt for each step
       common /fluxdata/nf_step,ff_rho,ff_dt,mf_quant,mf_obj,nf_posno
      $     ,nf_npart,nf_dimlens,nf_faceind,nf_geommap,nf_address,ff_data
 
-
 c Flux explanation:
 c For
 c   nf_posno positions on the object for each of 
@@ -115,8 +111,7 @@ c ff_data is the heap of data.
 c
 c Steps 1-nf_posdim:0 store the quantitative position information. 
 c where nf_posdim is the number of coefficients in position info.
-
-
+c------------------------------------------------------------------
 c Data for storing integrated field quantities such as forces.
       integer ns_ndims
       parameter (ns_ndims=3)
@@ -132,7 +127,7 @@ c the size of the stress-calculating mesh in theta and psi directions
       real surfobj(2*ns_ndims,ns_nt,ns_np,nf_obj)
       common /stress/ns_flags,surfobj,fieldforce,pressforce
      $     ,partforce,colnforce,charge_ns
-
+c------------------------------------------------------------------
 c External field data (when used)
       logical lextfield
       real extfield(ns_ndims)
