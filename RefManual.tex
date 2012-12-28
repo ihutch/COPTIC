@@ -438,6 +438,8 @@ after the line \verb!Arguments: ...!).
 
 \subsection{Code control parameters}
 
+\subsubsection*{Particle Numbers and Moving}
+
 \paragraph{-ni....} Set number of particles per node. Zero implies
 unset. Default 0.
 If set non-zero, specifies the exact number of particles per processor
@@ -495,16 +497,39 @@ dropped from the simulation.
 Set the total number of steps to take. Default 5. 
 If restarting, this is the number of \emph{additional} steps. 
 
-\paragraph{-v....}  Set the drift velocity, \verb!vd!, of the background ions . Default 0.
+\subsubsection*{Plasma Parameters}
 
 \paragraph{-t....}  Set the ion temperature, $T_i$ ($/T_e$). Default 1.
 
 \paragraph{-l....}  Set the electron Debye length, \verb!debyelen!. Default 1.
 
-\paragraph{-a....}  Set the averaging time, \verb!iavesteps!. Default 100.
-This controls the number of steps over which diagnostic and other
-quantities are averaged. Writing or plotting of diagnostic and
-distribution data takes place only every \verb!iavesteps! steps.
+\paragraph{-v....}  Set the drift velocity, \verb!vd!, of the background ions . Default 0.
+
+\subsubsection*{Neutrals, Collisions, Magnetic Field}
+
+\paragraph{-ct....} Set the collision time, colntime. Default 0 [off].
+
+\paragraph{-vn....} Set the neutral drift velocity, \verb!Vneutral!. Default \verb!vd!.
+
+\paragraph{-tn....} Set neutral temperature. Default \verb!Ti!. 
+
+\paragraph{-En....} Set the fraction of the relative drift between
+background ions and neutrals (vd-vn) that is driven by an external
+electric field Eneutral not expressed as the gradient of phi.
+
+\paragraph{-cp....} Set the power of (total) velocity that the
+collision frequency is proportional to. Thus \verb!-cp0.! is constant
+collision frequency and \verb!-cp1.! is constant cross-section. The
+thermal spread of the neutrals is ignored in using this collision
+setting, which is important only when \verb!En! is non-zero, at
+present, since it is not yet implemented in the padvnc routine.
+
+\paragraph{-mz....} Set the ion mass-to-charge ratio. Default 1.
+
+\paragraph{-Bx.. -By.. -Bz..} Set the respective components of the
+magnetic field. 
+
+\subsubsection*{Diagnostics and Averaging}
 
 \paragraph{-w....}  Set period of write steps. Default 99999=never.
 This says how often (in steps) the total particle data is written out to
@@ -515,6 +540,11 @@ the files. If the write step period is set to a negative number, then
 only the particles from node 0 (the master) are ever
 written to disk. 
 
+\paragraph{-a....}  Set the averaging time, \verb!iavesteps!. Default 100.
+This controls the number of steps over which diagnostic and other
+quantities are averaged. Writing or plotting of diagnostic and
+distribution data takes place only every \verb!iavesteps! steps.
+
 \paragraph{-pd...}
 Set distribution diagnostics. Bit1: write, Bit2: plot. Default 0.
 This controls whether particle distribution diagnostics will be
@@ -524,16 +554,7 @@ written and/or plotted at the end of each \verb!iavesteps! steps.
 This controls which diagnostic files and messages will be written
 every istepsave steps. If zero, no files or messages.
 
-\paragraph{-ct....} Set the collision time, colntime. Default 0 [off].
-
-\paragraph{-vn....} Set the neutral drift velocity, \verb!Vneutral!. Default 0.
-
-\paragraph{-En....} Set the fraction of the relative drift between
-background ions and neutrals (vd-vn) that is driven by an external
-electric field Eneutral not expressed as the gradient of phi.
-
-\paragraph{-Bx.. -By.. -Bz..} Set the respective components of the
-magnetic field. 
+\subsubsection*{Boundary Conditions}
 
 \paragraph{-bc....} Set the type of boundary conditions. (This is
 superceded and disabled by the -bf/-bp type below if present.) The single
@@ -566,6 +587,8 @@ boundary absorbing; 2: upper boundary absorbing; 3: both faces absorb;
 4: particles that leave the mesh are relocated at the corresponding
 periodic position within the mesh, rather than reinjected. See
 \ref{partperiod}.
+
+\subsubsection*{MPI, Restart, and Files}
 
 \paragraph{-id....} Set the number of MPI blocks in each
 dimension. For example, \verb!-id2,2,8! would prescribe an MPI

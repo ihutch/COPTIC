@@ -292,6 +292,14 @@ c End of command line parameter parsing.
 c-------------------------------------------------------
 
  202  continue
+c Convert the Eneutral fraction into actual Eneutral
+      if(colntime.ne.0.)then
+         Eneutral=Eneutral*(vd-vneutral)/colntime
+      else
+         Eneutral=0.
+      endif
+c      write(*,*)'Colntime etc',colntime,vd,vneutral,Eneutral
+c Deal with B-field
       Bt=0.
       do i=1,ndims
          Bt=Bt+Bfield(i)**2
@@ -314,6 +322,10 @@ c Assume that vd is in the z-direction
             vperp(i)=-Bfield(i)*vpar
          enddo
          vperp(ndims)=vperp(ndims)+vd
+c Add on the orthogonal EnxB drift, so as to give the velocity of the
+c frame of reference in which the background E-field is truly zero:
+         vperp(1)=vperp(1)-Bfield(2)*Eneutral/Bt
+         vperp(2)=vperp(2)+Bfield(1)*Eneutral/Bt
          if(lmyidhead)write(*,*)'vpar,vperp',vpar,',',vperp
       else
 c Zero the vparallel and vperp. Probably not necessary; but tidy.
@@ -323,6 +335,7 @@ c Zero the vparallel and vperp. Probably not necessary; but tidy.
          enddo
       endif
 c      write(*,*)'Bfield',Bfield
+c Set and check particle periodicity logical.
       lnotallp=.false.
       do i=1,ndims
          if(ipartperiod(i).ne.4)then
@@ -337,13 +350,6 @@ c Don't allow unwise operation with periodic particles.
             endif
          endif
       enddo
-c Convert the Eneutral fraction into actual Eneutral
-      if(colntime.ne.0.)then
-         Eneutral=Eneutral*(vd-vneutral)/colntime
-      else
-         Eneutral=0.
-      endif
-c      write(*,*)'Colntime etc',colntime,vd,vneutral,Eneutral
 
       return
 c------------------------------------------------------------

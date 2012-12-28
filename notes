@@ -10047,3 +10047,13 @@ scheme too. Only for B-field free cases at present.
 
 Tested using crein and demonstrated excellent quantitative agreement
 with the old version (by turning on and off Eneutral).
+
+28 Dec 2012
+
+Implement collisional particle initialization, reinjection, and moving
+for non-zero Bfield and non-zero Eneutral. This requires a change of 
+meaning for vperp to be the velocity of the frame in which the total
+background electric field is zero (both vdxB and Eneutral are cancelled).
+
+Created analysis/partv2d.f to display the results of initialization etc.
+It seems to show that the distributions are doing what is expected.

@@ -230,11 +230,20 @@ c Accelerate ----------
 c Here we only include the electric field force. 
 c B-field force is accommodated within moveparticle routine.
          do j=ndims+1,2*ndims
-            x_part(j,i)=x_part(j,i)+field(j-ndims)*dtaccel
+            x_part(j,i)=x_part(j,i)+(field(j-ndims))*dtaccel
          enddo
+         if(Eneutral.ne.0.)then
+            if(Bt.ne.0.)then
+c Only the Enparallel is needed for non-zero Bfield.
+               Enpar=Eneutral*Bfield(ndims)
+               do j=ndims+1,2*ndims
+                  x_part(j,i)=x_part(j,i)+Enpar*dtaccel
+               enddo
+            else
 c Including the extra Eneutral field, which is in the ndims direction.
-         if(Eneutral.ne.0.)x_part(2*ndims,i)=x_part(2*ndims,i) +Eneutral
-     $        *dtaccel
+               x_part(2*ndims,i)=x_part(2*ndims,i) +Eneutral*dtaccel
+            endif
+         endif
 c Move ----------------
          call moveparticle(x_part(1,i),ndims,Bt,Btinf,Bfield,vperp
      $           ,dtpos)

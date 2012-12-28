@@ -174,6 +174,7 @@ c Local variables
       integer nclim,i,k
       real tisq,dt0,torb,ttic,v2,vzave,orbtic
       real v(nc_ndims)
+      real theta,stheta,ctheta,dvpar
 c The number of samples.
       if(ncin.eq.0)then
          nclim=ncdistmax
@@ -199,6 +200,10 @@ c So if colpow=0. the collision time is coltime independent of v.
          else
             dt0=0.03*colntime
          endif
+c One might imagine a need to ensure dt does not happen to coincide with
+c a low order rational multiple of the cyclotron period. But there is no 
+c sign in output of this need. Probably the random collision length does
+c enough to randomize even a bad coincidence.
       endif
       do i=1,nc_ndims
          cdistflux(i)=0.
@@ -211,67 +216,88 @@ c drift requested. Based on Ti=0.1.
 
 c Iterate over adjustments to Eneutral.
       do k=1,4
-      ncdist=0
-      vzave=0.
-      ttic=dt0
+         ncdist=0
+         vzave=0.
+         ttic=dt0
 c--------------------------------------------
 c Start of a new orbit
- 2    continue 
+ 2       continue 
 c torb is the orbit time in velocity-scaled units. ttic in unscaled.
-      torb=-alog(ran1(1))*colntime
+         torb=-alog(ran1(1))*colntime
 c Inject from neutral distribution
-      v2=0.
-      do i=1,nc_ndims
-         v(i)=tisq*gasdev(i)
-         if(i.eq.nc_ndims)v(i)=v(i)+vneutral
-         v2=v2+v(i)**2
-      enddo
+         v2=0.
+         do i=1,nc_ndims
+            v(i)=tisq*gasdev(i)
+            if(i.eq.nc_ndims)v(i)=v(i)+vneutral
+            v2=v2+v(i)**2
+         enddo
 c The torb consumption rate depends on velocity.
 c For example, if cross-section is proportional to velocity to the 
 c power -p, then dynamic colnfreq \propto v^{1.-p}. =v^2(1.-p)/2.
 c Constant cross-section pow=colpow*0.5=0.5; constant nu colpow=0.
 c The ratio of orbit consumption rate to tic consumption rate is:
-      orbtic=(v2/Ti)**(colpow/2.)
+         orbtic=(v2/Ti)**(colpow/2.)
 
- 3    if(ttic*orbtic.le.torb)then
+ 3       if(ttic*orbtic.le.torb)then
 c If ttic*orbtic<torb, advance to tic.
 c Subtract the timestep from time to the orbit end in scaled units
-         torb=torb-ttic*orbtic
-         v2=0.
-         if(Bt.eq.0.)then
-c B-field free case
+            torb=torb-ttic*orbtic
+            v2=0.
             ncdist=ncdist+1
-            do i=1,nc_ndims
-               if(i.eq.nc_ndims)v(i)=v(i)+Eneutral*ttic
-               v2=v2+v(i)**2
-               v_col(i,ncdist)=v(i)
-               cdistflux(i)=cdistflux(i)+abs(v(i))
-            enddo
-         endif
-         vzave=vzave+v_col(nc_ndims,ncdist)
-         orbtic=(v2/Ti)**(colpow/2.)
+            if(Bt.eq.0.)then
+c B-field free case
+               do i=1,nc_ndims
+                  if(i.eq.nc_ndims)v(i)=v(i)+Eneutral*ttic
+                  v2=v2+v(i)**2
+                  v_col(i,ncdist)=v(i)
+                  cdistflux(i)=cdistflux(i)+abs(v(i))
+               enddo
+            else
+c Finite B-field case
+               theta=Bt*ttic
+c Rotation is counterclockwise for ions.
+               stheta=sin(-theta)
+               ctheta=cos(theta)
+c Subtract off the perpendicular velocity of frame in which E is zero.
+               do i=1,nc_ndims
+                  v(i)=v(i)-vperp(i)
+               enddo
+c Rotate the velocity
+               call rotate3(v,stheta,ctheta,Bfield)
+c Acceleration along the B-direction:
+               dvpar=Eneutral*ttic*Bfield(nplasdims)            
+c And add back the drift velocity, and the parallel acceleration.
+               do i=1,nc_ndims
+                  v(i)=v(i)+vperp(i)+dvpar*Bfield(i)
+                  v2=v2+v(i)**2
+                  v_col(i,ncdist)=v(i)
+                  cdistflux(i)=cdistflux(i)+abs(v(i))
+               enddo
+c               write(*,*)'ncdist=',ncdist
+c               write(*,*)'theta,v',theta,v
+            endif
+            vzave=vzave+v_col(nc_ndims,ncdist)
+            orbtic=(v2/Ti)**(colpow/2.)
 c Now we are at the end of a tic. Set the next tic length
-         ttic=dt0
+            ttic=dt0
 c If we haven't exhausted the sample number, start next tic
-         if(ncdist.lt.nclim)goto 3
-      else
+            if(ncdist.lt.nclim)goto 3
+         else
 c If ttic*orbtic>torb, advance to next orbit without storing a sample
-         ttic=ttic-torb/orbtic
-         goto 2
-      endif
+            ttic=ttic-torb/orbtic
+            goto 2
+         endif
 c--------------------------------------------
 c      write(*,*)'End of colninit',dt0,colntime,colpow
 c     $     ,vzave/nclim,Eneutral
 
-      write(*,'(f6.4,'', '',$)')vzave/nclim
-      if(colpow.eq.0.)goto 4
-      Eneutral=Eneutral*(1.5*((vd-vneutral)*nclim/vzave-1.)+1.)
+         write(*,'(f6.4,'', '',$)')vzave/nclim
+         if(colpow.eq.0.)goto 4
+         Eneutral=Eneutral*(1.5*((vd-vneutral)*nclim/vzave-1.)+1.)
       enddo
+c End of Eneutral iteration.
  4    continue
       write(*,'(a,f8.4)')' Eneutral=',Eneutral
 
       end
 
-c The Eneutral=(vd-vn)/colntime. This defines what colntime must be
-c for a variable collision frequency. Suppose nu=A v^p, then the mean
-c velocity is given by \int 

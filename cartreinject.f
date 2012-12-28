@@ -789,9 +789,6 @@ c Collisional distribution data.
       real xr(3*nc_ndims)
       real cdummy
       integer ipartperiod(nc_ndims)
-c Pass ipartperiod instead of ilaunch so as to avoid having to include
-c partcom to get at the value of ipartperiod.
-c      include 'partcom.f'
 c Reinjection data needed for idrein only, needed for creintest only.
       include 'creincom.f'
       include 'meshcom.f'
@@ -890,7 +887,6 @@ c There's a resolution issue in that a million steps can hardly
 c be resolved by single precision. However, it is unlikely that
 c substantial statistical distortion will occur. If it did we could
 c use double precision.
-
       write(*,'(a,7f8.4)')' colreinit completed',cdistcum,cdistflux
       write(*,'(a,3f16.4)')' fxvcol:',(fxvcol(ncdist+1,j),j=1,3)
 
