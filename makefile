@@ -272,3 +272,7 @@ coptic.prof : compiler makefile $(OBJECTS)
 	make PROFILING=-pg coptic
 	make PROFILING=-pg coptic.o
 	$(GCURR)
+
+help :
+	@echo Targets: clean mproper ftnchek tree coptic.prof
+	@echo geometry testing 
