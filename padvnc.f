@@ -47,6 +47,10 @@ c      real fieldp(ndims_mesh)
 c Make this always last to use the checks.
       include 'partcom.f'
 
+c-------------------------------------------------------------
+c Choice of collisional force scheme.
+      lbulk=.false.
+
 c      tisq=sqrt(Ti)
       tisq=sqrt(Tneutral)
       lcollided=.false.
@@ -198,7 +202,6 @@ c---------- Collisions ----------------
          if(colntime.ne.0)then
 c Time to the first collision
             dtc=-alog(ran1(myid))*colntime
-c            dtc=ran1(myid)*colntime
             if(dtc.lt.dtpos)then
 c               write(*,*)'Collision',dtpos,dtc,colntime
 c We collided during this step. Do the partial step.  
@@ -237,11 +240,27 @@ c B-field force is accommodated within moveparticle routine.
 c Only the Enparallel is needed for non-zero Bfield.
                Enpar=Eneutral*Bfield(ndims)
                do j=ndims+1,2*ndims
-                  x_part(j,i)=x_part(j,i)+Enpar*dtaccel
+                  Eadd=Enpar*Bfield(j)
+                  x_part(j,i)=x_part(j,i)+Eadd*dtaccel
+                  do iob=1,mf_obj
+                     igeom=nf_geommap(iob)
+                     if(btest(iregion,igeom-1).and..not.lbulk)then
+                        colnforce(j,iob,nf_step) =colnforce(j,iob
+     $                       ,nf_step)+Eadd*dtaccel
+                     endif
+                  enddo
                enddo
             else
 c Including the extra Eneutral field, which is in the ndims direction.
-               x_part(2*ndims,i)=x_part(2*ndims,i) +Eneutral*dtaccel
+c But correcting the collisional force appropriately.
+               x_part(2*ndims,i)=x_part(2*ndims,i)+Eneutral*dtaccel
+               do iob=1,mf_obj
+                  igeom=nf_geommap(iob)
+                  if(btest(iregion,igeom-1).and..not.lbulk)then
+                     colnforce(ns_ndims,iob,nf_step)=colnforce(ns_ndims
+     $                    ,iob,nf_step)+Eneutral*dtaccel
+                  endif
+               enddo
             endif
          endif
 c Move ----------------
@@ -251,10 +270,9 @@ c Move ----------------
 c -----------------------------
          if(lcollided)then
 c Treat collided particle at (partial) step end
-            call postcollide(i,tisq)
+            call postcollide(i,tisq,iregion)
             lcollided=.false.
          endif
-c         call partlocate(i,ixp,xfrac,inewregion,linmesh,nrein)
          call partlocate(i,ixp,xfrac,inewregion,linmesh)
 c---------------------------------
 c If we crossed a boundary, do tallying.
@@ -331,7 +349,10 @@ c Restart the rest of the advance
 c----------------------------------------------
 c Non-injection completion.
  300     continue
-         call bulkforce(x_part(1,i),iregion,colntime,vneutral,Eneutral)
+c Not needed when the Eneutral is subtracted off above and the
+c collisional effect is in postcollide.
+         if(lbulk)call bulkforce(x_part(1,i),iregion,colntime,vneutral
+     $        ,Eneutral)
 c Special diagnostic orbit tracking:
          if(i.le.norbits.and. if_part(i).ne.0)then
             if(dtdone-dt.gt.1.e-4)then
@@ -344,8 +365,16 @@ c Special diagnostic orbit tracking:
          endif
       enddo
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-c End of cycle through particles.
  102  continue
+c End of cycle through particles.
+      if(rhoinf*colntime.ne.0.)then
+c Normalize the collision force appropriately.
+         if(lbulk)then
+            call bulknorm(1./(rhoinf*colntime))
+         else
+            call bulknorm(1./(rhoinf*dt))
+         endif
+      endif
       if(ninjcomp.ne.0 .and. nrein.lt.ninjcomp)then
          write(*,*)'WARNING: Exhausted n_partmax=',n_partmax,
      $        '  before ninjcomp=',ninjcomp,' . Increase n_partmax?'
@@ -588,18 +617,43 @@ c         if(i.eq.2298489) write(*,*)i,isz,ix,xm,linmesh
       
       end
 c********************************************************************
-      subroutine postcollide(i,tisq)
+      subroutine postcollide(i,tisq,iregion)
 c Get new velocity; reflects neutral maxwellian shifted by vneutral.
-
+c Update the collisional force by momentum change.
       integer i
       real tisq
+      integer iregion
       include 'partcom.f'
       include 'colncom.f'
+      include '3dcom.f'
+c Local variables
+      integer icount
+      real dv(npdim)
+      data icount/0/
+
       do k=1,npdim
+         dv(k)=-x_part(npdim+k,i)
          x_part(npdim+k,i)=tisq*gasdev(0)
+         dv(k)=dv(k)+x_part(npdim+k,i)
       enddo
 c Vneutral is in z-direction.
       x_part(npdim+npdim,i)=x_part(npdim+npdim,i)+vneutral
+      dv(npdim)=dv(npdim)+vneutral
+      if(.not.lbulk)then
+c Now contribute the momentum change to the collisional force.
+      do j=1,mf_obj
+         if(btest(iregion,nf_geommap(j)-1))then
+c Inside object nf_geommap(j) which is a flux measuring object.
+c            write(*,*)icount,i,j,'  dv=',dv,dtaccel
+            icount=icount+1
+            do id=1,ns_ndims
+c This force accounting should be subsequently bulknormed by rhoinf
+c and by dt.
+                  colnforce(id,j,nf_step)=colnforce(id,j,nf_step)+dv(id)
+            enddo
+         endif
+      enddo
+      endif
       end
 c*******************************************************************
       subroutine rotate3(xin,s,c,u)
@@ -695,7 +749,7 @@ c Inside object i->igeom which is a flux measuring object.
 c The scalar drift velocity is in the z-direction.
                do id=1,ns_ndims
                   vid=0.
-                  if(id.eq.ns_ndims)vid=vneutral-Eneutral*colntime
+                  if(id.eq.ns_ndims)vid=vneutral+Eneutral*colntime
                   colnforce(id,i,nf_step)=colnforce(id,i,nf_step)+
      $                 (vid-xpart(ns_ndims+id))
                enddo

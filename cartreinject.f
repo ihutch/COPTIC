@@ -7,7 +7,8 @@ c Wrapper:
          call cartreinject(xr,ilaunch,caverein)
       else
          call colreinject(xr,ipartperiod,caverein)
-         ilaunch=ilaunch+1
+c Only one launch allowed here (and actually in the other too).
+         ilaunch=1
       endif
       end
 

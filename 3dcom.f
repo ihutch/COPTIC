@@ -65,8 +65,10 @@ c Maximum (i.e. storage size) of array
       parameter (nf_quant=5,nf_obj=20,nf_maxsteps=3000)
       parameter (nf_datasize=10000000)
 c Mnemonics for quantities:
+      integer nf_flux,nf_gx,nf_gy,nf_gz,nf_heat
       parameter (nf_flux=1,nf_gx=2,nf_gy=3,nf_gz=4,nf_heat=5)
 c Mnemonics for positional variables.
+      integer nf_p1,nf_p2,nf_p3,nf_p4,nf_pr,nf_pt,nf_pz,nf_pa
       parameter (nf_p1=0,nf_p2=-1,nf_p3=-2,nf_p4=-3)
       parameter (nf_pr=nf_p1,nf_pt=nf_p2,nf_pz=nf_p3,nf_pa=nf_p4)
 c Actual numbers of quantities, objects and steps <= maxes.

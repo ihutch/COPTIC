@@ -145,7 +145,7 @@ c Second time: deal with any other command line parameters.
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
      $     ,ipartperiod,lnotallp,Tneutral,Eneutral,colpow,idims,argline)
       if(ierr.ne.0)stop
-      write(*,*)'Eneutral=',Eneutral,vd,vneutral
+      write(*,*)'Eneutral,vd,vneutral=',Eneutral,vd,vneutral
 c The double call enables cmdline switches to override objfile settings.
 c      crelax=0.
 c-----------------------------------------------------------------
@@ -440,7 +440,6 @@ c      write(*,*)'Checking Step',nf_step
 c The normal call:
             call padvnc(ndims,iLs,cij,u)
          endif
-         if(rhoinf*colntime.ne.0.)call bulknorm(1./(rhoinf*colntime))
          call fluxreduce()
 c Now do cij update
          call cijdirect(ndims,debyelen,error)

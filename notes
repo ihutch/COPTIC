@@ -9944,9 +9944,7 @@ The differences are enormous.
 Our current version is a7e4ac405bf95938940c97e91e267f60ac7d92bc
 
 Error appears when fluxdata.f is updated.
-
 Found the error and corrected.
-
 Commit.
 
 Now remove nreloc from the pinit and padvnc because it is aliased to 
@@ -10057,3 +10055,160 @@ background electric field is zero (both vdxB and Eneutral are cancelled).
 
 Created analysis/partv2d.f to display the results of initialization etc.
 It seems to show that the distributions are doing what is expected.
+
+29 Dec 2012
+
+Bulkforce in padvnc.f is not yet correct for magnetized cases.
+I'm not entirely convinced about bulkforce implementation. At present
+it is called for every particle the end of every step. But really
+the bulkforce accounts for collisional loss of momentum from a region
+whose momentum is being tracked. Why don't we literally count the 
+momentum loss only for collided particles?
+
+That could presumably be added to the postcollide routine. It would
+probably be more accurate, and might reduce fluctuations. Might save
+some time too. 
+
+The problem is that the Eneutral effect needs to be subtracted from 
+all particles, not just the ones that collide. If we don't do so,
+then the momentum conservation will be violated. 
+
+The bulknorm approach is problematic in that it is assuming the 
+collision frequency to be the same for all particles. If we simply
+subtracted off the Eneutral for all particles and removed the collision
+effects in postcollide, then we'd solve this problem and not need
+bulknorm. Also we'd need a simpler bulkforce and only when Eneutral!=0.
+How do we conveniently compare two alternatives? Save old version.
+
+Implemented a version in which the Eneutral is subtracted from colnforce
+at the same place it is added to velocity. And postcollide is the place
+where the collisional momentum loss is accounted. Not yet tested.
+
+Done some testing to try to verify the new collisional code. Some
+bugs killed. Others still present. Seems I need to do something with 
+the rhoinfinity calculation. It doesn't seem to be consistent.
+Yes there's substantial code that does not get called for the 
+new collisional scheme that leaves the rhoinfcalc and ninjcalc
+high and dry, I think. However, it's not so clear because the same
+number of injections is called for as for the old code. Also there
+are systematic potential differences. Looks like things are different.
+Result is similar for the bulk case.
+Actually I see there was an error in the Eneutral acceleration. 
+Corrected and that problem goes away.
+
+I think for constant collision frequency, the rhoinfcalc is still ok.
+However, for other cross-sections it might not be. 
+
+lbulk determines whether the old bulkforce implementation is used or the
+new implementation. There's no noticeable difference at -ct100. But that's
+because the collision force is a tiny fraction of the total. At -ct1.
+the lbulk=.false. is still small, but the lbulk=.true. is big and gives
+a dominant error. That means there's either a bug in the bulk treatment
+or else it is far less accurate. 
+
+I tried fixing by importing an older version of bulkforce, from before
+I started modifying it.  Did not fix. Looks instead like a sign error
+of the value of Eneutral added on. That just gets me back to where
+I started but with sign reversed. I don't think I've really solved
+the lbulk=.true. problems. But tiredness is setting in.
+
+31 Dec 2012
+
+lbulk=true means
+In coptic
+               call bulknorm(1./(rhoinf))
+In padvnc
+   Don't add Eadd to colnforce.
+                     if(btest(iregion,igeom-1).and..not.lbulk)then
+                     colnforce(ns_ndims,iob,nf_step)=colnforce(ns_ndims
+     $                    ,iob,nf_step)+Eadd
+   Call bulkforce
+         if(lbulk)call bulkforce(x_part(1,i),iregion,dtaccel,vneutral
+     $        ,Eneutral)
+In postcollide
+   Don't add dv to colnforce:
+               colnforce(id,j,nf_step)=colnforce(id,j,nf_step)+dv(id)
+
+This seems to indicate that I really do need the old version of bulkforce.
+It gives far larger offset of force.
+                  vid=0.
+                  if(id.eq.ns_ndims)vid=vneutral-Eneutral*colntime
+                  colnforce(id,i,nf_step)=colnforce(id,i,nf_step)+
+     $                 (vid-xpart(ns_ndims+id))
+
+Notice the sign difference of Eneutral. 
+The colnforce is added to other things to give the net force on the 
+object. That force is the net influx of momentum. A positive collision
+force gives a positive net influx of momentum. The Eneutral is in the
+direction that net momentum is being added to the ions. Therefore it
+should appear positive in the colnforce. Looks as if the old version
+has a sign error. 
+Reverse the sign. That gives a drastic reduction in the colnforce, 
+but not to quite as low as the non.lbulk. There's some systematic
+growth of the colnforce as the collecting sphere increases.
+
+Artificially enhancing Eneutral by 10% gives a big imbalance (14.2 cf 3)
+reducing it by 2.5% removes the imbalance (but a bit too much).
+Thus the levels we are seeing correspond to roughly 2% imbalance in the
+collisional forces. The non-lbulk does not have such a subtraction issue.
+
+Reducing dt seems to reduce the lbulk Eneutral error (maybe). 
+lbulk looks ok at larger -ct e.g. 5. Worse at 0.5 
+
+I think I see the difference. In the new nonbulk scheme I have multiplie
+Eneutral by dtaccel and added dv. Those are consistent with each other,
+but not with the normalization, which divides only by rhoinfty, not by
+dtaccel. The force is the Eneutral or dv/dtaccel. So I am getting a
+colnforce too small by a factor of dtaccel~0.1
+
+So correct the colnforce to refer properly to force dv divided by dtaccel.
+But that does not seem to be correct, because we are dividing by a lot 
+of different dtaccels. Need to think harder. A collision is decided by
+a random comparison of dtpos. Consequently, the number of momentum exchanges
+by collisions is proportional to dtpos, and therefore the momentum transfer
+by Eneutral ought probably to be obtained multiplying by dtpos. However,
+that does not seem to be consistent. The transfer of momentum from Eneutral
+that is actually obtained, is certainly Eneutral*dtaccel. In any full step,
+we accelerate the particles by (dtpos+dtprec)/2 and advance the particles
+by dtpos. dtprec is twice the acceleration time of the previous step that
+needs to be applied to this step. If it's smaller than dt, that's because
+we're considering the previous step to be shortened, e.g. by collision.
+
+The problem seems to be that the acceleration step is the duration over
+which Eneutral effects are being accounted, whereas the position step
+is the duration over which actual collisional momentum exchange is 
+accounted. I'm not sure whether we should keep the Eneutral*dtaccel
+or change it to Eneutral*dtpos. Try division by dt. This looks extremely
+promising. The variations in total force are less than those in particle
+force. Looks as if this time ambiguity is not affecting things much when
+we take the normalization to be by dt.
+
+Get bulknorm out of coptic.f and into padvnc.
+We now have a situation where the nonbulk gives very consistent-looking
+results but lbulk gives suspicious results with small -ct. I suspect
+but have not proved that the lbulk problem is associated with the 
+smallness of dt compared with ct. 
+
+The difference between the schemes is that lbulk makes the collisional
+force equal to the sum over all particles in the measuring sphere at
+the end of the step of vneutral + Eneutral*colntime - vparticle
+(/colntime); whereas non-lbulk makes it the sum of the actual Eneutral
+accelerations during the step minus the actual collisional momentum
+changes from the postcollide routine (/dt). The latter advances the
+particle self-consistently up to the collision position and velocity.
+
+If we multiply Eneutral by 1.1 in non-bulk, then we get the same force
+as before, more or less, even though the density drops by 10%, because
+of the inconsistency. If, instead, we multiply Eneutral by 1.1 only 
+in the colnforce contribution, not in the actual acceleration, then
+we get up to 22 mismatch in the colnforce. Thus, with the non-bulk
+scheme, it is really mismatch between actual acceleration and Eneutral
+accelerations that causes spurious forces.
+
+When vd=vn the two schemes give highly similar results.
+
+------
+Bottom line: non-lbulk is working very well. lbulk has significant
+errors at low -ct that are probably caused by slight misaccounting for
+the Eneutral momentum when the timestep is not much smaller than the
+collision time. lbulk should not be used.

@@ -41,8 +41,10 @@ c-----------------------------------------------------------------
 c      ntrapped=0
 c The maximum used slot is the same as the number of particles initially
       ioc_part=n_part
-      call colninit(0)
-      call colreinit()
+      if(Eneutral.ne.0.)then
+         call colninit(0)
+         call colreinit()
+      endif
 c     We initialize the 'true' particles'
       tisq=sqrt(Ti)
       do i=i1,n_part

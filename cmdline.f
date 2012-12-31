@@ -297,6 +297,8 @@ c Convert the Eneutral fraction into actual Eneutral
          Eneutral=Eneutral*(vd-vneutral)/colntime
       else
          Eneutral=0.
+c Collisionless, also set vneutral to vd, else things are inconsistent:
+         vneutral=vd
       endif
 c      write(*,*)'Colntime etc',colntime,vd,vneutral,Eneutral
 c Deal with B-field
