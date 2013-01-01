@@ -164,7 +164,7 @@ c Loop over lines of the input file.
       if(cline(1:1).eq.'#') goto 1
       if(cline(1:6).eq.'      ') goto 1
       if(cline(1:10).eq.'Arguments:')then
-         argline=cline(11:)
+         argline(lentrim(argline)+2:)=cline(11:)
          goto 1
       endif
 

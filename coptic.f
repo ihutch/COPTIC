@@ -131,7 +131,7 @@ c First time this routine just sets defaults and the object file name.
      $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,Eneutral,colpow,idims,argline)
+     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline)
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -143,9 +143,8 @@ c Second time: deal with any other command line parameters.
      $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,Eneutral,colpow,idims,argline)
+     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline)
       if(ierr.ne.0)stop
-      write(*,*)'Eneutral,vd,vneutral=',Eneutral,vd,vneutral
 c The double call enables cmdline switches to override objfile settings.
 c      crelax=0.
 c-----------------------------------------------------------------
@@ -309,10 +308,10 @@ c------------------------------------------------------------------
 c Set phip from the first object if it makes sense.
       call phipset(myid)
 c------------------------------------------------------------------
-c Initialize with a specified number of particles.
 c (Re)Initialize the fortran random number generator.
       idum=-myid-1
       rdum=ran1(idum)
+c Initialize with a specified number of particles.
 c      write(*,*)'ibool_part=',ibool_part
 c      if(lmyidhead)write(*,*)'Initializing',n_part,' particles'
       call pinit(subcycle)
@@ -381,7 +380,8 @@ c     $        nrein,n_part,ioc_part,rhoinf,dt,(dtprec(k),k=1,4)
       endif
 c-----------------------------------------------
       if(lmyidhead)then
-         if(colntime.ne.0)write(*,'(a,f8.2)')' Collision time=',colntime
+         if(colntime.ne.0)write(*,'(a,f8.2,a,f8.4)')' Collision time='
+     $        ,colntime,', Eneutral=',Eneutral
          write(*,'(/,a)')'Step Iterations Flux:'
       endif
 c Main step iteration -------------------------------------

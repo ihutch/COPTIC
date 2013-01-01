@@ -3,7 +3,7 @@ c Wrapper:
       subroutine reinject(xr,ilaunch,cdummy)
       include 'colncom.f'
       include 'partcom.f'
-      if(Eneutral.eq.0.)then
+      if(colntime.eq.0. .or. colpow.eq.0.)then
          call cartreinject(xr,ilaunch,caverein)
       else
          call colreinject(xr,ipartperiod,caverein)
@@ -854,14 +854,16 @@ c Position: Ensure we never quite reach the mesh edge:
       end
 
 c********************************************************************
-      subroutine colreinit()
+      subroutine colreinit(myid)
 c Initialize and normalize the cdistflux factors from the
 c Collisional distribution data, presumed already calculated by pinit.
 c Based upon the ipartperiod settings.
       include 'cdistcom.f'
       include 'partcom.f'
+      if(ncdist.eq.0)return
       ctot=0.
       do i=1,nc_ndims
+c         if(myid.eq.0)write(*,*)ipartperiod(i),cdistflux(i)
          if(ipartperiod(i).ge.3)cdistflux(i)=0.
          ctot=ctot+cdistflux(i)
       enddo
@@ -874,7 +876,8 @@ c Based upon the ipartperiod settings.
 c Avoid rounding problems.
          cdistcum(nc_ndims+1)=1.
       else
-         write(*,*)'colreinject: No reinjection faces'
+         if(myid.eq.0)write(*,*
+     $        )'PROBLEM. colreinject: No reinjection faces'
       endif
 
 c Now evaluate the cumulative distribution in 3 normal-directions.
@@ -888,8 +891,9 @@ c There's a resolution issue in that a million steps can hardly
 c be resolved by single precision. However, it is unlikely that
 c substantial statistical distortion will occur. If it did we could
 c use double precision.
-      write(*,'(a,7f8.4)')' colreinit completed',cdistcum,cdistflux
-      write(*,'(a,3f16.4)')' fxvcol:',(fxvcol(ncdist+1,j),j=1,3)
-
+c      if(myid.eq.0)write(*,'(a,7f8.4)')' colreinit completed',cdistcum
+c     $     ,cdistflux
+c      if(myid.eq.0)write(*,'(a,3f16.4)')' fxvcol:',(fxvcol(ncdist+1,j),j
+c     $     =1,3)
       end
 c********************************************************************

@@ -199,9 +199,15 @@ c And the new dtprec is half as large:
             endif
          endif
 c---------- Collisions ----------------
-         if(colntime.ne.0)then
+         if(colntime.ne.0.)then
+            if(colpow.ne.0.)then
+c The collision time scaled by velocity
+               dtc=-alog(ran1(myid))*colntime
+     $              *(Ti/(v2+Tneutral))**(colpow/2.)
+            else
 c Time to the first collision
-            dtc=-alog(ran1(myid))*colntime
+               dtc=-alog(ran1(myid))*colntime
+            endif
             if(dtc.lt.dtpos)then
 c               write(*,*)'Collision',dtpos,dtc,colntime
 c We collided during this step. Do the partial step.  

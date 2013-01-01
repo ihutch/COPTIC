@@ -10212,3 +10212,38 @@ Bottom line: non-lbulk is working very well. lbulk has significant
 errors at low -ct that are probably caused by slight misaccounting for
 the Eneutral momentum when the timestep is not much smaller than the
 collision time. lbulk should not be used.
+
+1 Jan 2012
+
+Issues. Restarting and the new pinit may be broken.
+pinit called before the restart code. Consequently, the initialization
+of the reinjection scheme ought to be the same as the prior run.
+If so, then perhaps this is not broken. I hope not.
+
+Reinjection and En fraction ne 1. If we are running a case where the
+drift distribution is partially driven by explicit phi-gradient and
+partially by Eneutral, which is the case when the En fraction is 
+non-zero but not unity, then there's an inconsistency.
+I want the injection distribution to reflect the entire driving field
+sufficient to give the drift velocity specified. But in the simulation
+region, I want only part of the driving field to be En. 
+During the colninit routine, Eneutral is adjusted to be what is really
+needed to give the drift set if colpow ne 0. 
+So, I haven't quite done the right thing. The right thing is that
+Eneutral is the full driver in the reinjection calculation, but not
+necessarily in the padvnc moving. Consequently, I need to maintain the
+distinction between Eneutral and the fractional En.
+
+The natural thing would be to make pinit the place where the Eneutral
+is finalized. Trouble is that Eneutral is being used as the sign that
+colinit is required. Stop using Eneutral in cartreinject. Instead use
+if(colntime or copow) cartreinject else colreinject.
+
+Removed Eneutral from coptic.f and cmdline.f (Enfrac instead).
+Eneutral is set only in pinit.f. During particle initialization it
+is the entire required Eneutral. Then it is multiplied by Enfrac
+on prior to return. 
+
+Improved file arguments to accept multiple lines and use them all.
+
+Installed velocity scaling of collision time into padvnc.

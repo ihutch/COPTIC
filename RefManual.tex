@@ -54,13 +54,12 @@ It is better for most object lines to avoid trailing comments.
 \paragraph{The first line} Is always a comment. Nothing on this line is used.
 
 \paragraph{Argument lines.} Any line that begins \verb!Arguments:! is
-regarded as an argument line, and is stored, over-writing any earlier
-such argument lines (so only the last such line is used). The text
-following the colon is parsed for additional command line switches
-before starting on the actual command line arguments. This makes it
-possible, if desired, to put all of the settings that control a run
-into a single object file, and require no switches explicitly on the
-command line.
+regarded as an argument line, and is stored, adding to any earlier
+such argument lines. The text following the colon is parsed for
+additional command line switches before starting on the actual command
+line arguments. This makes it possible, if desired, to put all of the
+settings that control a run into a single object file, and require no
+switches explicitly on the command line.
 
 \subsection{Object Lines}
 
@@ -429,12 +428,12 @@ parameters can be checked by \verb!coptic -h! which prints out the
 actual value of the parameter at that stage in processing the command
 line. 
 
-The last line of the object file that starts \verb!Arguments:! (if
-any) may be used to add additional command line switches that are
-parsed \emph{before} those that actually appear on the command line.
-These switches, like those that actually appear on the command line,
-override other settings in the object file (even settings that appear
-after the line \verb!Arguments: ...!).
+Each line of the object file that starts \verb!Arguments:! (if any)
+adds additional command line switches that are parsed \emph{before}
+those that actually appear on the command line.  These switches, like
+those that actually appear on the command line, override other
+settings in the object file (even settings that appear after the line
+\verb!Arguments: ...!).
 
 \subsection{Code control parameters}
 
@@ -513,7 +512,7 @@ If restarting, this is the number of \emph{additional} steps.
 
 \paragraph{-tn....} Set neutral temperature. Default \verb!Ti!. 
 
-\paragraph{-En....} Set the fraction of the relative drift between
+\paragraph{-Ef....} Set the fraction of the relative drift between
 background ions and neutrals (vd-vn) that is driven by an external
 electric field Eneutral not expressed as the gradient of phi.
 
@@ -765,6 +764,29 @@ to the largest integer that can be correctly represented by a
 real. Since only boundary nodes have non-zero pointers, this is not a
 severe limitation, and it could be fixed by equivalencing cij to an
 integer array.
+
+\subsection{Collisions}
+
+Collisions with neutrals are governed by a collision time
+\verb!colntime! which if zero means there are no collisions.
+\verbatiminput{colncom.f}
+
+The collision frequency is by default independent of particle
+velocity. However, if \verb!colpow! is non-zero, then the collision
+frequency is taken to be \verb!((Tneutral+v2)/Ti)**(colpow/2.)! times
+\verb!colntime!, where \verb!v2! is the square of the particle
+velocity. Thus \verb!colpow! is the power of the velocity to which the
+collision frequency is proportional, except that the collision
+frequency does not go to zero at zero ion velocity, because of the
+background velocity of the neutrals. This approximates a cross-section
+that is proportional to velocity to the power \verb!colpow-1!.
+
+When the background neutral velocity, \verb!vneutral!, is not equal to
+the background ion drift velocity, \verb!vd!, then some field must
+drive \verb!vd!. A fraction \verb!Enfrac! is driven by a field
+\verb!Eneutral! which is a background force field not accounted for by
+the gradient of the potential $\phi$. The rest is supposed to be
+driven by $-\nabla\phi$.
 
 \subsection{Objects}
 

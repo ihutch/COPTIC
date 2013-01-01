@@ -7,7 +7,7 @@ c Encapsulation of parameter setting.
      $     ,nsteps,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,Eneutral,colpow,idims,argline)
+     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
@@ -17,7 +17,7 @@ c Encapsulation of parameter setting.
      $     ,lextfield,LPF(ndims),lnotallp
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,rmtoz,vneutral,vd,debyelen,Ti,extfield,vpar,slpD
-     $     ,Tneutral,Eneutral,colpow
+     $     ,Tneutral,Enfrac,colpow
       real Bfield(ndims),Bt,vperp(ndims),CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
@@ -52,7 +52,7 @@ c Default edge-potential (chi) relaxation rate.
          dropaccel=10
          colntime=0.
          vneutral=0.
-         Eneutral=0.
+         Enfrac=0.
          colpow=0.
          numprocs=1
          bdt=1.
@@ -101,10 +101,10 @@ c Deal with arguments
 c Start of argline internal iteration
  502     continue
          if(lentrim(argline(iargpos:)).ne.0)then
-c First time through, deal with argline arguments. Write a few.
-            if(lmyidhead.and.iargpos.lt.10)write(*,*
-     $           )'File arguments remaining, position',iargpos,':'
-     $           ,argline(iargpos:iargpos+30)
+c First time through, deal with argline arguments. Write them.
+            if(lmyidhead.and.iargpos.lt.2)write(*,'(a,i4,a,a)'
+     $           )'File Arguments, position',iargpos,':'
+     $           ,argline(iargpos:lentrim(argline))
             call argextract(argline,iargpos,argument)
          else
 c Afterwards getarg.
@@ -138,7 +138,7 @@ c Afterwards getarg.
          if(argument(1:3).eq.'-rx')read(argument(4:),*,err=201)crelax
          if(argument(1:3).eq.'-ck')read(argument(4:),*,err=201)ickst
          if(argument(1:3).eq.'-ct')read(argument(4:),*,err=201)colntime
-         if(argument(1:3).eq.'-En')read(argument(4:),*,err=201)Eneutral
+         if(argument(1:3).eq.'-Ef')read(argument(4:),*,err=201)Enfrac
          if(argument(1:3).eq.'-cp')read(argument(4:),*,err=201)colpow
          if(argument(1:3).eq.'-dt')read(argument(4:),*,err=201)dt
          if(argument(1:3).eq.'-da')read(argument(4:),*,err=201)bdt
@@ -292,15 +292,10 @@ c End of command line parameter parsing.
 c-------------------------------------------------------
 
  202  continue
-c Convert the Eneutral fraction into actual Eneutral
-      if(colntime.ne.0.)then
-         Eneutral=Eneutral*(vd-vneutral)/colntime
-      else
-         Eneutral=0.
+      if(colntime.eq.0.)then
 c Collisionless, also set vneutral to vd, else things are inconsistent:
          vneutral=vd
       endif
-c      write(*,*)'Colntime etc',colntime,vd,vneutral,Eneutral
 c Deal with B-field
       Bt=0.
       do i=1,ndims
@@ -324,10 +319,6 @@ c Assume that vd is in the z-direction
             vperp(i)=-Bfield(i)*vpar
          enddo
          vperp(ndims)=vperp(ndims)+vd
-c Add on the orthogonal EnxB drift, so as to give the velocity of the
-c frame of reference in which the background E-field is truly zero:
-         vperp(1)=vperp(1)-Bfield(2)*Eneutral/Bt
-         vperp(2)=vperp(2)+Bfield(1)*Eneutral/Bt
          if(lmyidhead)write(*,*)'vpar,vperp',vpar,',',vperp
       else
 c Zero the vparallel and vperp. Probably not necessary; but tidy.
@@ -393,7 +384,7 @@ c Help text
       write(*,302)' -ct   set collision time.        [',colntime
       write(*,302)' -vn   set neutral drift velocity [',vneutral
       write(*,302)' -tn   set neutral temperature    [',Tneutral
-      write(*,302)' -En   set fractional Eneutral    [',Eneutral
+      write(*,302)' -Ef   set Ext v-drive fraction   [',Enfrac
       write(*,302)' -cp   set v-power coln freq      [',colpow
       write(*,302)' -mz   set mass/Z ratio           [',rmtoz
       write(*,302)' -Bx -By -Bz set mag field compts [',Bfield

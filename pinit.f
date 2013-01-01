@@ -41,9 +41,17 @@ c-----------------------------------------------------------------
 c      ntrapped=0
 c The maximum used slot is the same as the number of particles initially
       ioc_part=n_part
-      if(Eneutral.ne.0.)then
-         call colninit(0)
-         call colreinit()
+      Eneutral=0.
+      if(colntime.ne.0.)then
+c Initialize the reinjection particles and discover the full Eneutral.
+         call colninit(0,myid)
+         call colreinit(myid)
+c Finalize the Eneutral fraction and related settings.
+         Eneutral=Enfrac*Eneutral
+c Add on the orthogonal EnxB drift, so as to make vperp the velocity of
+c the frame of reference in which the background E-field is truly zero:
+         vperp(1)=vperp(1)-Bfield(2)*Eneutral/Bt
+         vperp(2)=vperp(2)+Bfield(1)*Eneutral/Bt
       endif
 c     We initialize the 'true' particles'
       tisq=sqrt(Ti)
@@ -63,9 +71,7 @@ c            write(*,*)'Initialization of',i,' wrong region',inewregion
 c     $           ,(x_part(kk,i),kk=1,3)
             goto 1
          endif
-c Here is the section for which we want to fashion an alternative:
          if(Eneutral.eq.0.)then
-c         if(.true.)then
             x_part(4,i)=tisq*gasdev(myid)
             x_part(5,i)=tisq*gasdev(myid)
             x_part(6,i)=tisq*gasdev(myid) + vd
@@ -156,7 +162,7 @@ c Return a random velocity from the (precalculated) distribution heap.
       enddo
       end
 c*********************************************************************
-      subroutine colninit(ncin)
+      subroutine colninit(ncin,myid)
 c Routine for initializing particles when collisions and drifts
 c driven by Eneutral are present. An array of velocities that 
 c represents the background distribution of ions is calculated by
@@ -165,7 +171,7 @@ c distribution. The collision frequency is proportional to velocity
 c to the power colpow.
 
       implicit none
-      integer ncin
+      integer ncin,myid
       include 'cdistcom.f'
       include 'plascom.f'
       include 'colncom.f'
@@ -184,10 +190,12 @@ c The number of samples.
          nclim=ncin
       endif
       tisq=sqrt(Ti)
-      if(Eneutral.eq.0.)then
-c No Eneutral. Initialize just from the neutral distribution.
+      if(Enfrac.eq.0.)then
+c Initialize just from the neutral distribution.
          dt0=0.
-c For now, don't initialize
+         Eneutral=0.
+         if(myid.eq.0)write(*,*)'Enfrac=0. Not initializing cdist.'
+c Don't initialize the rest.
          return
       else
 c Decide the duration of the time tic. Take it to be a smallish fraction
@@ -211,10 +219,10 @@ c enough to randomize even a bad coincidence.
          cdistflux(i)=0.
       enddo
 
-c Initial guess at what Eneutral really needs to be to give the
+c Initial guess at what whole Eneutral really needs to be to give the
 c drift requested. Based on Ti=0.1.
-      Eneutral=Eneutral*(1.+(2.5*colpow+2.)*colpow)
-      write(*,'(a,$)')' Colinit velocity: '
+      Eneutral=(vd-vneutral)/colntime *(1.+(2.5*colpow+2.)*colpow)
+      if(myid.eq.0)write(*,'(a,$)')' Colninit velocity: '
 
 c Iterate over adjustments to Eneutral.
       do k=1,4
@@ -227,7 +235,7 @@ c Start of a new orbit
 c torb is the orbit time in velocity-scaled units. ttic in unscaled.
          torb=-alog(ran1(1))*colntime
 c Inject from neutral distribution
-         v2=0.
+         v2=Tneutral
          do i=1,nc_ndims
             v(i)=tisq*gasdev(i)
             if(i.eq.nc_ndims)v(i)=v(i)+vneutral
@@ -244,7 +252,7 @@ c The ratio of orbit consumption rate to tic consumption rate is:
 c If ttic*orbtic<torb, advance to tic.
 c Subtract the timestep from time to the orbit end in scaled units
             torb=torb-ttic*orbtic
-            v2=0.
+            v2=Tneutral
             ncdist=ncdist+1
             if(Bt.eq.0.)then
 c B-field free case
@@ -293,13 +301,13 @@ c--------------------------------------------
 c      write(*,*)'End of colninit',dt0,colntime,colpow
 c     $     ,vzave/nclim,Eneutral
 
-         write(*,'(f6.4,'', '',$)')vzave/nclim
+         if(myid.eq.0)write(*,'(f6.4,'', '',$)')vzave/nclim
          if(colpow.eq.0.)goto 4
          Eneutral=Eneutral*(1.5*((vd-vneutral)*nclim/vzave-1.)+1.)
       enddo
 c End of Eneutral iteration.
  4    continue
-      write(*,'(a,f8.4)')' Eneutral=',Eneutral
+      if(myid.eq.0)write(*,'(a,f8.4)')' Colninit Eneutral=',Eneutral
 
       end
 
