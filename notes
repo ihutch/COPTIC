@@ -10247,3 +10247,5 @@ on prior to return.
 Improved file arguments to accept multiple lines and use them all.
 
 Installed velocity scaling of collision time into padvnc.
+
+Fix a bug in the cmdline handling of the end of the Arguments parsing.

@@ -26,7 +26,7 @@ c Encapsulation of parameter setting.
 c Local variables:
       integer lentrim,iargc
       external lentrim
-      integer i,id,idn,idcn,i0,i1,iargcount,iargpos
+      integer i,id,idn,idcn,i0,i1,iargcount,iargpos,iterate
       character*100 argument
       logical lfirst
       data lfirst/.true./
@@ -101,14 +101,17 @@ c Deal with arguments
 c Start of argline internal iteration
  502     continue
          if(lentrim(argline(iargpos:)).ne.0)then
+            iterate=1
 c First time through, deal with argline arguments. Write them.
             if(lmyidhead.and.iargpos.lt.2)write(*,'(a,i4,a,a)'
      $           )'File Arguments, position',iargpos,':'
      $           ,argline(iargpos:lentrim(argline))
             call argextract(argline,iargpos,argument)
          else
+            iterate=0
 c Afterwards getarg.
             call getarg(i,argument)
+            write(*,*)i,argument
          endif
          if(argument(1:3).eq.'-gt')ltestplot=.true.
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
@@ -285,7 +288,7 @@ c Indicator that coptic arguments are ended.
             goto 202
          endif
  240     continue
-         if(lentrim(argline(iargpos:)).ne.0)goto 502
+         if(iterate.eq.1)goto 502
 c End of internal argline iteration
       enddo
 c End of command line parameter parsing.

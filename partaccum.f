@@ -314,13 +314,12 @@ c csbin(nsbins,mdims) is the number of fine bins in each combined bin
 c fsv is the sum of fv in each combined bin during the initial
 c     accumulation and bin calculation.
 c vhbin(0:nsbins,mdims) is the histogram boundaries of the combined bins
-
-
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'griddecl.f'
 
 c 
+      ifixed=0
       do id=1,mdims
          cumfv(0,id)=0.
          do j=1,nsbins
@@ -376,8 +375,9 @@ c But we invert csbin so that a multiplication is needed and zeros are
 c corrected for. 
          do k=1,nsbins
             if(csbin(k,id).eq.0)then
-               write(*,*)'Fixing csbin zero',k,id,fv(k,id)
-     $              ,vhbin(k,id)
+               ifixed=ifixed+1
+c               write(*,*)'Fixing csbin zero',k,id,fv(k,id)
+c     $              ,vhbin(k,id)
                vsbin(k,id)=vhbin(k,id)
             else
                vsbin(k,id)=vsbin(k,id)/csbin(k,id)
@@ -385,6 +385,9 @@ c corrected for.
             endif
          enddo
       enddo
+      if(ifixed.gt.0)then
+         write(*,*)'Bincalc had to fix some zero csbins.'
+      endif
 c      write(*,*)'Bincalc has chosen',nsbins,' bin placement.'
 c      write(*,*)' vsbin',vsbin
 c      write(*,*)(vhbin(k,1),k=0,nsbins)
