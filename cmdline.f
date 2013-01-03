@@ -102,7 +102,8 @@ c Start of argline internal iteration
  502     continue
          if(lentrim(argline(iargpos:)).ne.0)then
             iterate=1
-c First time through, deal with argline arguments. Write them.
+c First time through, deal with argline arguments (from the objfile). 
+c Write them.
             if(lmyidhead.and.iargpos.lt.2)write(*,'(a,i4,a,a)'
      $           )'File Arguments, position',iargpos,':'
      $           ,argline(iargpos:lentrim(argline))
@@ -111,7 +112,7 @@ c First time through, deal with argline arguments. Write them.
             iterate=0
 c Afterwards getarg.
             call getarg(i,argument)
-            write(*,*)i,argument
+c            write(*,*)i,argument
          endif
          if(argument(1:3).eq.'-gt')ltestplot=.true.
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
