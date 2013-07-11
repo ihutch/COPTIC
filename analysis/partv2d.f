@@ -14,8 +14,6 @@ c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
 
       integer nx,ny
       parameter (nxbin=50,nybin=50)
-      real fvxvy(nxbin,nybin),vxa(nxbin,nybin),vya(nxbin,nybin)
-      real work(0:nxbin+1,0:nybin+1)
       integer nl
       parameter (nl=10)
       real cl(nl),ht

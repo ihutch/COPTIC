@@ -100,10 +100,10 @@ char *accis_colornames[a_maxPixels]=
    Install our own non-fatal handler during the call, only once.*/
 static XErrorHandler accis_old_handler = (XErrorHandler) 0 ;
 static int accis_errorhandler(Display *display, XErrorEvent *theEvent) {
-   fprintf(stderr, "Intercepted Xlib error: error code %d request code %d",
-		theEvent->error_code, theEvent->request_code) ;
+  /* fprintf(stderr, "Intercepted Xlib error: error code %d request code %d",
+     theEvent->error_code, theEvent->request_code) ;*/
    if(theEvent->error_code == BadMatch){
-     fprintf(stderr,"  BadMatch. Doing nothing.\n");
+     /*fprintf(stderr,"  BadMatch. Doing nothing.\n");*/
      return 0;
    }else{
      fprintf(stderr,"  Unfiltered error passed to Xlib.\n");
@@ -335,12 +335,16 @@ int txtmode_()
   XEvent event; 
   accisrefresh_();
   /*usleep(100000);/* Still struggling with bad match events */
-  /* Try to get the focus into this window for keyboard control.*/
+  /* Try to get the focus into this window for keyboard control. Won't 
+   always work because the window might not actually be mapped yet.*/
   ACCIS_SET_FOCUS;
   do{
     /*    printf("Executing XtNextEvent"); */
-    XtNextEvent(&event);
-    /* XNextEvent(accis_display,&event); is equivalent */
+    /* XtNextEvent(&event); */
+    XNextEvent(accis_display,&event); /* is equivalent */
+    /* For some reason, this focussing of windows must be explicit
+     because the window manager doesn't act on it independently.*/
+    if(event.type == EnterNotify){  ACCIS_SET_FOCUS;}
     XtDispatchEvent(&event);  
     /*    printf("The event type: %d\n",event); */
   }while(event.type != ButtonPress && event.type != KeyPress );
@@ -387,7 +391,7 @@ FORT_INT *px, *py, *ud;
 				 accis_gc,px1,py1,px2,py2);
       XDrawLine(XtDisplay(accis_drawing),accis_pixmap, accis_gc,
 		  px1,py1,px2,py2);
-      if(accis_pathlen<accis_path_max){      /* Add point to path */
+      if(accis_pathlen<accis_path_max-1){      /* Add point to path */
 	accis_pathlen++;
       }
     }else{ 

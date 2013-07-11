@@ -380,8 +380,10 @@ c     $        nrein,n_part,ioc_part,rhoinf,dt,(dtprec(k),k=1,4)
       endif
 c-----------------------------------------------
       if(lmyidhead)then
-         if(colntime.ne.0)write(*,'(a,f8.2,a,f8.4)')' Collision time='
+         if(colntime.ne.0)then
+            write(*,'(a,f8.2,a,f8.4)')' Collision time='
      $        ,colntime,', Eneutral=',Eneutral
+         endif
          write(*,'(/,a)')'Step Iterations Flux:'
       endif
 c Main step iteration -------------------------------------
@@ -540,8 +542,10 @@ c set dimensions the first time by appending 0.
          endif
 
 c This non-standard fortran call works with gfortran and g77 to flush stdout.
-         if(lmyidhead)call flush()
 c Comment it out if it causes problems. (E.g. pathscale gives segfaults.)
+c Pathscale demands an argument number. So give it explicitly. Should fix
+c the segfaults.
+         if(lmyidhead)call flush(6)
       enddo
 c-------- End of Main Step Iteration -------------------------------
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)

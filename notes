@@ -10213,7 +10213,7 @@ errors at low -ct that are probably caused by slight misaccounting for
 the Eneutral momentum when the timestep is not much smaller than the
 collision time. lbulk should not be used.
 
-1 Jan 2012
+1 Jan 2013
 
 Issues. Restarting and the new pinit may be broken.
 pinit called before the restart code. Consequently, the initialization
@@ -10242,10 +10242,22 @@ if(colntime or copow) cartreinject else colreinject.
 Removed Eneutral from coptic.f and cmdline.f (Enfrac instead).
 Eneutral is set only in pinit.f. During particle initialization it
 is the entire required Eneutral. Then it is multiplied by Enfrac
-on prior to return. 
+prior to return. 
 
 Improved file arguments to accept multiple lines and use them all.
 
 Installed velocity scaling of collision time into padvnc.
 
 Fix a bug in the cmdline handling of the end of the Arguments parsing.
+
+14 Feb 2013
+Wrote a new colinit function based upon the above work, but incorporating
+the Null Collision Method to give proper account of neutral velocity 
+distributions.
+
+Some level of testing done to show that things are reasonable, but not
+tested very quantitatively yet.
+
+25 Feb 
+Corrected a bug in the new null-collision code with partially drifting
+neutrals.

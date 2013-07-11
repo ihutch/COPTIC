@@ -39,7 +39,7 @@ c Set color to zero to prevent web drawing.
       call color(0)
 c      goto 10
 c Draw the surface.
-      call surfdr3(x,y,z,ni,ni,nj,work,isw)
+      call surfdr3(x,y,z,ni,ni,nj,work,isw,d)
       call color(15)
       call axproj(igetcorner())
       call ax3labels('x','y','z')

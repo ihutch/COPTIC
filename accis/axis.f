@@ -147,8 +147,6 @@ c      Typical choices: x1st=5,xdelta=1 ; x1st=2,xdelta=2 ; x1st=0,xdelta=2.
 	       call gtic(gw,3,xgnlog(gw),ygnlog(gw)
      $		    ,tcos,tsin,1.,0.,lpara)
 	    endif
-c Remove deprecated real iteration index.
-c	    do 2 xm=xdelta,9.9999,xdelta 
 	    do 2 ixm=1,100
                xm=ixm*xdelta
                if(xm.gt.9.9999)goto 1
@@ -168,7 +166,7 @@ c Linear
 C Autoscale
             if(dl.lt.chrswdth*3*ticnum)then
 c Axis is too short for comfort. Change ticnum
-               iticnum=max(1,dl/(chrswdth*3))
+               iticnum=max(1,int(dl/(chrswdth*3)))
 c               write(*,*)'Resetting ticnum',iticnum
             endif
 	    call fitrange(ain,aax,iticnum,
@@ -196,9 +194,45 @@ c         write(*,*)'ipoint',ipoint,x1st,xdelta
             inlabp=nxlabp
             nxlabp=ipoint
          endif
+         if(lminor)then
+c Choose the spacing of minor tics gwmt.
+            xld=alog10(abs(xdelta))
+            ild=nint(xld-0.4999)
+            idd=nint(10.**(xld-ild))
+            if(idd.le.1)then
+               gwmt=0.2*10.**ild
+            elseif(idd.le.3)then
+               gwmt=0.5*10.**ild
+            else
+               gwmt=10.**ild
+            endif
+            if(.not.(gwmt.lt.abs(xdelta).and.gwmt.gt.0.))then
+               write(*,*)'Minor tic calculation error',gwmt,xld,ild,idd
+               write(*,*)xdelta,x1st
+               stop
+            endif
+c Start earlier so as to fill in minor tics prior to xfirst:
+            gwm=gw-ams*abs(xdelta)
+         endif
+c Iterate over major tics.
 	 do 4 i=1,40
+            if(lminor)then
+c gw is being incremented from amin to amax.
+               gw1=gw+ams*abs(xdelta)
+c Minor tics
+ 6             gwm=gwm+ams*gwmt
+               if(ams*gwm.lt.ams*gw1 .and.
+     $              (gwm-(aax+0.0001*(aax-ain)))*ams.le.0.)then
+                  if((gwm-(ain-0.0001*(aax-ain)))*ams.ge.0.)then
+                     call gtic(gwm,0,xgmin+dx*(gwm-ain),ygmin+dy*(gwm
+     $                    -ain),tcos,tsin,axcos,axsin,lpara)
+                  endif
+                  goto 6
+               endif
+            endif
 	    if((gw-(aax+0.0001*(aax-ain)))*ams.gt.0.)goto 5
-	    if((gw-(ain-0.0001*(aax-ain)))*ams.lt.0.)goto 5
+c This ought not to be necessary, I think
+c	    if((gw-(ain-0.0001*(aax-ain)))*ams.lt.0.)goto 5
 	    if(ngpow.eq.0)then
 	       call gtic(gw,1,xgmin+dx*(gw-ain),ygmin+dy*(gw-ain)
      $		    ,tcos,tsin,axcos,axsin,lpara)
@@ -217,6 +251,7 @@ c         write(*,*)'ipoint',ipoint,x1st,xdelta
 	       endif
 	    endif
 	    gw=gw+ams*abs(xdelta)
+            gwm=gw
     4	 continue
     5	 continue
          if(ipoint.gt.1)then
@@ -294,7 +329,7 @@ c		xticlen  can reverse tics if negative (also length).
 
       call vecn(xg,yg,0)
       if(lab.eq.0)then
-	 call vecn(xg+tcos*.7*xticlen,yg+tsin*.7*xticlen,1)
+	 call vecn(xg+tcos*.6*xticlen,yg+tsin*.6*xticlen,1)
 	 return
       endif
       if(lab.eq.1)then
@@ -363,7 +398,12 @@ c  Arguments are the factors to scale the axis ends.
 	 call gaxis(wymin*yi,wymax*ya,nyfac,first,delta,
      $	   naxpt,naxpt,wy2ny(wymin),wy2ny(wymax),.false.,lylog)
       end
-
+c*********************************************************************
+      subroutine togminor()
+c Toggle drawing minor tics
+      include 'plotcom.h'
+      lminor=.not.lminor
+      end
 
 
 

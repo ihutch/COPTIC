@@ -226,6 +226,9 @@ c a subcycle, reinjection or collision last step.
 c----- Excessive Acceleration test. Drop particle without any tally. ---
          if(f1*dtaccel.gt.dropaccel)then
             ndropped=ndropped+1
+c Why don't we tally this particle? It effectively has been absorbed.
+c It carried in some momentum. That disappears. It is accounted for
+c as being conveyed to any tallying object inside which it disappears.
 c            write(*,*)'Excessive acceleration. Dropping particle',i
 c Reinject if we haven't exhausted complement:
             if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)goto 200

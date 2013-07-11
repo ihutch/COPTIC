@@ -24,9 +24,14 @@ static Display *accis_display=NULL;
 static Window accis_root;
 static Window accis_window;
 static Pixmap accis_pixmap;
-static GLint  accis_att[] = { GLX_RGBA, /* Truecolor and Directcolor */ 
-		       /* GLX_DEPTH_SIZE, 24, /* Depth 24 */
-		       GLX_DOUBLEBUFFER, None };
+/* Attributes to require of the visual chosen:*/
+/* It proves advantageous to _avoid_ doublebuffering for incremental
+   drawing using accisrefresh. Speed seems best this way too. */
+static GLint  accis_att[] = { GLX_RGBA, /* Truecolor and Directcolor */
+			      /*GLX_ACCUM_RED_SIZE,8, /* Require accum */
+			      GLX_DEPTH_SIZE, 24, /* Depth 24 */
+			      GLX_DOUBLEBUFFER, /* */
+			      None };
 static XVisualInfo             *accis_vi;
 static Colormap                accis_cmap;
 static XSetWindowAttributes    accis_swa;
@@ -201,7 +206,7 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
       printf("\n\tno appropriate visual found\n\n");
         exit(0); 
     }else{
-      printf("\tvisual %#x selected\n", (int)accis_vi->visualid); 
+      printf("\tGLX visual %#x selected\n", (int)accis_vi->visualid); 
     }/* %p hexadecimal*/
 
 /* Start of Xlib calls ******************/
@@ -209,6 +214,7 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
     accis_cmap = XCreateColormap(accis_display, accis_root, accis_vi->visual, 
 				 AllocNone);
     accis_swa.colormap = accis_cmap;
+    accis_swa.background_pixel=0;
     accis_swa.event_mask = ExposureMask | KeyPressMask 
       | ButtonPressMask | ButtonReleaseMask | ButtonMotionMask ;
 
@@ -225,25 +231,20 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
  			       x_off, y_off, x_size, y_size, 0,
 			       accis_vi->depth, 
 			       InputOutput, accis_vi->visual, 
-			       CWColormap | CWEventMask, &accis_swa);
+		CWBackPixel | CWColormap | CWEventMask, &accis_swa);
 
     /* Set the hints to respect the position and size I specify
     XSetWMNormalHints(accis_display,accis_window,&hints); */
     XMapWindow(accis_display, accis_window);
+    /* XClearWindow(accis_display,accis_window); */
     XStoreName(accis_display, accis_window, "Accis");
 
 /*Start of OpenGL calls ******************/
     accis_glc = glXCreateContext(accis_display, accis_vi, NULL, GL_TRUE);
     glXMakeCurrent(accis_display, accis_window, accis_glc);
 /*    printf("Finished glXCreateContext\n");  */
-/*     This is a mistake because it turns on blending.
-       glEnable(GL_DEPTH_TEST);  */
-
-    /* This is really strange. 
-       A swap like this is needed for the window to appear
-                    glXSwapBuffers(accis_display, accis_window); */
-    /* All writes into both buffers at once 
-    glDrawBuffer(GL_FRONT_AND_BACK);  */
+    /* All writes into both buffers at once  */
+    glDrawBuffer(GL_FRONT_AND_BACK); 
     /* reads from the back buffer */
     glReadBuffer(GL_BACK);
 
@@ -394,8 +395,6 @@ void txtmode_()
   glEndList(); /* Close the drawing list started in svga.*/
   accis_listing=0;
   ACCIS_SET_FOCUS;
-/*     printf("Entering txtmode event loop\n"); */
-/*       glXSwapBuffers(accis_display, accis_window); */
   EXPOSE_ACTION;
   glFlush();
   do{
@@ -456,7 +455,6 @@ FORT_INT *px, *py, *ud;
       glVertex2f(px1,py1);
       glVertex2f(px2,py2);
       glEnd();
-/*       glXSwapBuffers(accis_display, accis_window); */
       if(accis_pathlen<accis_path_max){      /* Add point to path */
 	accis_pathlen++;
       }
@@ -489,7 +487,22 @@ void vecfill_()
 }
 /* ******************************************************************** */
 void accisrefresh_()
-{glCallList(1);}
+{
+  XEvent event;
+  /*This is an attempt to store the current buffer in the Accum buffer
+    before swapping buffers, then restore it afterwards. Unfortunately
+    it is extremely slow for a visual that has both double buffering
+    and Accum. However, if the visual does not have double buffering,
+    or if writing is set to FRONT_AND_BACK then for mysterious reasons
+    it works with just two calls. In other words one does not have to
+    GL_LOAD first. Also glFlush works as good as glXSwapBuffers*/
+  /*glAccum(GL_LOAD,1.);*/
+  /* glXSwapBuffers(accis_display, accis_window); */
+  glFlush();
+  /* this alternative attempt does not work: 
+     glXWaitGL();XSync(accis_display,False);glXWaitX();*/
+  glAccum(GL_RETURN,1.);
+}
 /* ******************************************************************** */
 /* ******************************************************************** */
 float xeye,yeye,zeye;
@@ -533,8 +546,8 @@ XEvent *event;
   cubeupd_(&xeye,&yeye,&zeye);
   /* This flush is necessary to see the black cube. */
   glFlush();
-  /* This is for the background case working around GL bugs.*/
-  glXSwapBuffers(accis_display, accis_window);
+  /* This is for the background case working around GL bugs.
+  glXSwapBuffers(accis_display, accis_window);*/
 }
 /* ********************************* */
 void accis_keypress(event)

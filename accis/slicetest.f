@@ -11,6 +11,9 @@
       data ifixpt/3*0/
       data ifull/3*Li/
 
+
+c      call setconlog(.true.)
+
       range=10.
       amp=1.
       wave=.5

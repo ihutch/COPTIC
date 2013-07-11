@@ -152,14 +152,3 @@ c Change xt1st the last thing, since it might be xmin, itself.
 c      write(*,*)'xtic,sfac,xt1st,xtlast',xtic,sfac,xt1st,xtlast,ntics
       return
       end
-c********************************************************************
-c      program testfit
-c    1 write(*,'('' Enter xmin,xmax,ntics'')')
-c      read(*,*)xmin,xmax,ntics
-c      call fitrange(xmin,xmax,ntics,nxfac,xfac,xtic,x1st,xlast)
-c      write(*,'('' nxfac='',i5,'' xfac='',e10.1,'' xtic='',f10.4'//
-c     $     ','' x1st='',f10.4,'' xlast='',f10.4)')
-c     $	   nxfac,xfac,xtic,x1st,xlast
-c      goto 1
-c      end
-

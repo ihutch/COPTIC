@@ -10,6 +10,8 @@ c  Test fitrange.
             if(xmin.ne.xmax)then
                call fitrange(xmin,xmax,itics,ipow,fac10,delta,first
      $              ,xlast) 
+               write(*,'(2f6.3,i3,i4,4f7.3)')xmin,xmax,itics,ipow,fac10
+     $              ,delta,first
             endif
          enddo
       enddo

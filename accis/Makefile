@@ -47,7 +47,8 @@ arrowplot.o\
 initiald.o\
 sysfont.o\
 slicing.o\
-fillgrad.o
+fillgrad.o\
+boxcarave.o
 
 noback_object_files = drwstr.o fontdata.o vecnp.o 
 
@@ -75,7 +76,7 @@ MAKEFILE=makefile
 # Start of targets
 #######################################################################
 
-all : $(MAKEFILE) lib$(ACCISDRV).a
+all : $(MAKEFILE) lib$(ACCISDRV).a accissum.html
 
 # A way of making a general makefile. By default the file 
 # makefile is used if present, but if not, Makefile is used. 
@@ -158,10 +159,10 @@ vec4014 : libaccis.a
 	date >vec4014
 
 # Synchronization of versions on other machines.
-sync : syncsource syncsilas
+sync : syncsource synccoptic syncsceptic
 
-synchorace : lib$(ACCISDRV).a accissum.html
-	rsync -u -e ssh --copy-links -v *.h *.f *.c accissum.* configure Makefile tex2html.net:~/accis/
+syncsceptic : lib$(ACCISDRV).a accissum.html
+	rsync -u -e ssh --copy-links -v *.h *.f *.c accissum.* configure Makefile ~/src/sceptic/accis/
 	date > synchorace
 
 syncsilas : lib$(ACCISDRV).a accissum.html

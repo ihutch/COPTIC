@@ -7,15 +7,15 @@ c Worksurface common:
 c Worlds and labels common:
       real xticlen,yticlen,xticoff,yticoff
       integer nxlabw,nxlabp,nylabw,nylabp,ticnum
-      logical lxlog,lylog
+      logical lxlog,lylog,lminor,lclog
       integer nxpow,nypow
       real xpow,ypow,wxmin,wxmax,wymin,wymax,w2nx,w2ny,n2sy
       logical ltlog
       common/worlds/
      $ xticlen,yticlen,xticoff,yticoff,
      $ nxlabw,nxlabp,nylabw,nylabp,ticnum,
-     $ lxlog,lylog,nxpow,nypow,xpow,ypow,
-     $ wxmin,wxmax,wymin,wymax,w2nx,w2ny,n2sy,ltlog
+     $ lxlog,lylog,nxpow,nypow,xpow,ypow,lclog,
+     $ wxmin,wxmax,wymin,wymax,w2nx,w2ny,n2sy,ltlog,lminor
 c
 c  Cursor position
       real crsrx,crsry

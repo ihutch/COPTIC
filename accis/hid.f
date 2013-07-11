@@ -315,20 +315,19 @@ c work(0:iLx+1,0:ny+1) is a work array that is trashed.
 c Switch: isw.lt.0 draw no axes.
 c Second byte of isw gives web color. Third byte gives axis color.
 c Lowest nibble levd (absolute value): 
-c   =0 perform no scaling and use last perspective
+c   =0 perform no scaling and use last perspective 2-D x,y
 c   =1 scale to fit the region, 1-d x,y
 c   =2 scale to fit the region, 2-d x,y
+c   =4 perform no scaling, 1-d x,y.
 c Second nibble (16+): isw for the surfdr3 call. bit0=1 => smooth tri.
+c bit1=1 use the first 5 elements of work for the directional vector.
 c Eye obtained from file eye.dat, or default if none exists.
-c Obsolete:
-c   abs(isw)=0, 1 scale to fit the region, 1-d x,y.
-c   abs(isw)=2 perform no scaling and use last perspective.
-c   abs(isw)=4 scale to fit region 2-d x,y.
       integer iLx, nx,ny,isw
-      real x(iLx,*),y(iLx,*),z(iLx,ny),work(0:iLx+1,0:ny+1)
+      real x(iLx,*),y(iLx,*),z(iLx,ny),work((iLx+2)*(ny+2))
       integer icorner,colw,cola
       real x2,y2,z2
       real zmin,zmax
+      real d(5)
       save
 
       cola=isw/256
@@ -345,9 +344,20 @@ c isw is second nibble (bits 4-7).
       else
          if(colw.gt.0) call color(colw)
       endif
+      if((isw/2-(isw/4)*2).ne.0)then
+c Set the d-vector from work
+         do k=1,5
+            d(k)=work(k)
+         enddo
+         write(*,*)'Set d-vector:',d
+      endif
 c Set the top and bottom horizons.
       call hidinit(0.,1.)
-      if(levd.ne.0)then
+      if(levd.eq.0)then
+         call surfdr3(x,y,z,iLx,nx,ny,work,isw,d)
+      elseif(levd.eq.4)then
+         call surf1dr3(x,y,z,iLx,nx,ny,work,isw,d)
+      else
          call geteye(x2,y2,z2)
 c     Set to non-hiding 3-D calls.
          call hdprset(0,0.)
@@ -362,14 +372,16 @@ c     Set the scaling.
          if(levd.eq.2)then
             call minmax2(x,iLx,nx,ny,xmin,xmax)
             call minmax2(y,iLx,nx,ny,ymin,ymax)
+            call scale3(xmin,xmax,ymin,ymax,zmin,zmax)
+            call surfdr3(x,y,z,iLx,nx,ny,work,isw,d)
          elseif(levd.eq.1)then
             call minmax(x,nx,xmin,xmax)
             call minmax(y,ny,ymin,ymax)            
+            call scale3(xmin,xmax,ymin,ymax,zmin,zmax)
+c            write(*,*)'Calling surf1dr3'
+            call surf1dr3(x,y,z,iLx,nx,ny,work,isw,d)
          endif
-         call scale3(xmin,xmax,ymin,ymax,zmin,zmax)
       endif
-c Draw the surface.
-      call surfdr3(x,y,z,iLx,nx,ny,work,isw,dummy)
       if(cola.ne.0) call color(cola)
       if(isw.ge.0)then
 c Draw cube.
@@ -379,8 +391,9 @@ c         write(*,*)icorner,x2,y2,z2
 c This had a problem with extra vertical line. Ought to be fixed.
 c	 call cubed(icube)
 c Draw axes.
-         call ax3labels('x-axis','y-axis','')
 	 call axproj(icorner)
+c Don't label them here. Do that separately.
+c         call ax3labels('x-axis','y-axis','')
       endif
       end
 c********************************************************************
@@ -490,6 +503,110 @@ c     $        x(imin,jmin),y(imin,jmin)
          do ic=0,4
             xp(1+ic)=x(imin+icx(ic),jmin+icy(ic))
             yp(1+ic)=y(imin+icx(ic),jmin+icy(ic))
+            zp(1+ic)=z(imin+icx(ic),jmin+icy(ic))
+         enddo
+c Calculate height of centroid.
+         if(lchunk)then
+            zcol=0.
+            do ic=0,3
+               zcol=zcol+z(imin+icx(ic),jmin+icy(ic))
+            enddo
+            zcol=zcol/4.
+            icolor=(240*(zcol-zmin))/(zmax-zmin)
+            call gradcolor(icolor)
+            call poly3line(xp,yp,zp,5)
+            call pathfill()
+         else
+            if(ldir)then
+               call gradquad(xp,yp,zp,d,zmin,zmax,0,239,3)
+            else
+               call gradquad(xp,yp,zp,zp,zmin,zmax,0,239,1)
+            endif
+         endif
+c Here there's a problem for the very last quadrilateral. 
+c All the previous ones in postscript inherit the 0 setlinewidth
+c that is called from the gradquad immediately afterwards. But the 
+c last one does not have it, so it has a thicker line. One option
+c would be to do a stroke before 0 setlinewidth, but that makes all the 
+c lines thick (as usual). 
+c I'm not sure if that's what I want. Trying it; seems better.
+         call color(incolor)
+         if(incolor.ne.0)call poly3line(xp,yp,zp,5)
+c Set face as done
+         work(imin,jmin)=ddone
+      enddo
+      
+      end
+c********************************************************************
+      subroutine surf1dr3(x,y,z,iLx,nx,ny,work,isw,d)
+c Draw a 3-d surface of z(x,y), dim(iLx\nx,ny), using current scaling.
+c This version is on a regular mesh x(nx),y(ny),
+c given with 1-d vectors rather than 2D arrays.
+c isw bit 0 set => triangular fills, else chunks. If in addition,
+c isw bit 1 set => directional shading, optional argument d(5)
+c    d(1-3) gives direction d(4-5) gives distance limits.
+      integer nx,ny,iLx
+      real x(nx),y(ny),z(iLx,ny),work(0:iLx+1,0:ny+1)
+      integer isw
+      real d(5)
+
+      integer id1,id2,ud,kx,ky,icorner
+      real d1start,d1end,d1step,z1,x2,y2,z2
+      real dout,ddone
+      parameter (dout=2.e32,ddone=1.e32)
+      real xp(5),yp(5),zp(5)
+      integer icx(0:4), icy(0:4), ic
+      logical lchunk,ldir
+      data icx/0,1,1,0,0/
+      data icy/0,0,1,1,0/
+      save
+c
+c      write(*,*)'isw',isw
+      lchunk=.true.
+      if(isw-isw/2 .ne.0)lchunk=.false.
+      ldir=.false.
+      if(isw/2-isw/4 .ne.0)ldir=.true.
+      incolor=igetcolor()
+c Get eye position x0,y0,z0 are unused here.
+      call trn32(x0,y0,z0,x2,y2,z2,-1)
+c      write(*,*)'Eye=',x2,y2,z2
+c Set up the work array.
+      zmin=ddone
+      zmax=-ddone
+      do j=1,ny-1
+         do i=1,nx-1
+            if(z(i,j).gt.zmax)zmax=z(i,j)
+            if(z(i,j).lt.zmin)zmin=z(i,j)
+            work(i,j)=0.
+            do ic=0,3
+               work(i,j)=work(i,j)
+     $              +x(i+icx(ic))*x2
+     $              +y(j+icy(ic))*y2
+     $              +z(i+icx(ic),j+icy(ic))*z2
+            enddo
+         enddo
+      enddo
+      if(ldir)then
+         zmin=d(4)
+         zmax=d(5)
+         if(.not.abs(zmax-zmin).gt.0)stop 'ERROR: surf3d d-limits'
+      endif
+
+      do k=1,(nx-1)*(ny-1)
+c Search for the face not yet treated, furthest from eye
+         dmin=1.e35
+         do j=1,ny-1
+            do i=1,nx-1
+               if(work(i,j).lt.dmin)then
+                  imin=i
+                  jmin=j
+                  dmin=work(i,j)
+               endif
+            enddo
+         enddo
+         do ic=0,4
+            xp(1+ic)=x(imin+icx(ic))
+            yp(1+ic)=y(jmin+icy(ic))
             zp(1+ic)=z(imin+icx(ic),jmin+icy(ic))
          enddo
 c Calculate height of centroid.

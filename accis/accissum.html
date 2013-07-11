@@ -83,6 +83,21 @@ PLTINASPECT(xmin,xmax,ymin,ymax) Initiate graphics. Resize axis region
 to retain aspect ratio of plot. Set world scaling.
 
 <div class="p"><!----></div>
+AUTOINIT(xv,yv,ilength) Initialization using autoscaling for the
+plotting of xv, yv arrays. AUTOPLOT consists of CALL
+AUTOINIT(xv,yv,ilength) CALL AXIS() CALL POLYLINE(xv,yv,ilength).
+
+<div class="p"><!----></div>
+LAUTOINIT(xv,yv,ilength,lx,ly) same but for (possibly) logarithmic axes.
+
+<div class="p"><!----></div>
+MANAUTOINIT(xv,yv,ilength,isw,sxmin,sxmax,symin,symax) Initialize
+either using the autoscaling, or else override one or more of the
+automatic limits, according to bits 0-3 of isw, which if set indicate
+override and use sxmin[0] ...  symax[3]. E.g. isw=3 sets xmin=sxmin,
+xmax=sxmax, symin=ymin, symax=ymax.
+
+<div class="p"><!----></div>
 AXREGION(xin,xan,yin,yan) Set the axis region in normal units.
 Default: .31,.91,.1,.7
 
@@ -277,10 +292,13 @@ ixw &#8804; 0. Defaults set respectively if reals all =0 or ints all
 TICREV() Reverse the tics and labels to the other side of axis.
 
 <div class="p"><!----></div>
+TICNUMSET(itics) Set the number of tics of axis (approximately).
+
+<div class="p"><!----></div>
 TICLABTOG() Toggle the tic labels on and off.
 
 <div class="p"><!----></div>
-TICNUMSET(itics) Set the number of tics of axis (approximately).
+TOGMINOR() Toggle the minor tics on and off.
 
 <div class="p"><!----></div>
 
@@ -418,6 +436,12 @@ E/Erange. Plot region should be setup up prior to
 call.
 
 <div class="p"><!----></div>
+SETCONLOG(ltf) Set logarithmic color contouring true or false
+according to logical ltf. GETCONLOG() is the logical function
+returning the value to which logarithmic contouring is set. Contour
+lines are not affected by this value.
+
+<div class="p"><!----></div>
 
 <h2> Projected 3-D surface routines
 </h2>
@@ -446,15 +470,18 @@ Lowest byte abs(isw)=
 of axes (if !=0). (Remains set).
 
 <div class="p"><!----></div>
-SURF3D(xa,ya,za,iL,ix,iy,iw,worka) Draw an opaque 3-d surface of za(ix,iy),
-(leading dimension iL) at xa,ya.  View obtained from file eye.dat (3
-reals) or default if nonexistent. Switch iw: .lt.0 no axes; lowest
-nibble =0  use last scale, =1 scale to fit x,y (1-D), =2 scale to fit
-x,y (2-D). Second byte (*256) color of web if non-zero. Third byte
-(*65536) color of axes (if !=0). (Remains set). Second nibble (16+) is
-isw for the SURFDR3 call. Array worka(0:iL+1,0:iy+1) must be provided.
-Surface is normally (isw=0) drawn as quadrilaterals filled with color
-from gradient according to (za) height scaled to the total height.
+SURF3D(xa,ya,za,iL,ix,iy,isw,worka) Draw an opaque 3-d surface of
+za(ix,iy), (leading dimension iL) at xa(ix,iy),ya(ix,iy).  View
+obtained from file eye.dat (3 reals) or default if nonexistent. Switch
+isw: .lt.0 no axes; lowest nibble =0 or 4 use last scale, if =0 xa, ya
+must be 2-D arrays; =1 scale to fit x,y (1-D) and xa,ya are vectors,
+=2 scale to fit xa,ya (2-D arrays). Second byte (*256) color of web if
+non-zero. Third byte (*65536) color of axes (if !=0). (Remains
+set). Second nibble (16+) is isw for the SURFDR3 call. Array
+worka(0:iL+1,0:iy+1) must be provided.  Surface is normally (isw=0)
+drawn as quadrilaterals filled with gradient-color according to (za)
+height scaled to the total height. This is the higher level routine
+with built in scaling etc., similar to hidweb but with shaded surfaces.
 
 <div class="p"><!----></div>
 SURFDR3(xa,ya,za,iL,ix,iy,worka,isw[,dv]) Draw 3-D surface using current
@@ -663,6 +690,16 @@ MINMAX2(xa,iL1,ix,iy,min,max) Find min and max of 2-d array of
 leading dimension iL1, over indices (ix,iy).
 
 <div class="p"><!----></div>
+BOXCARAVE(nt,nb,xv,xavev) Box-car average the vector xv of length nt,
+into xavev over a box extending from i-nb to i+nb. (So if nb=0 no 
+averaging is done.)
+
+<div class="p"><!----></div>
+TRIANGAVE(nt,nb,xv,xavev) Average the vector xv of length nt, into
+xavev using triangular weighting proportional to 1-abs(j)/(nr+1), for
+j from -nr to +nr.
+
+<div class="p"><!----></div>
 FWRITE(x,iwdth,ipoint,cstring) Format write the float x into cstring
 with specified ipoint decimal places. Total width returned as iwdth.
 
@@ -705,9 +742,13 @@ vecfill, scolor, accisgraddef, acgradcolor, getrgbcolor are public,
 for calling by higher level routines, and possibly the user.
 
 <div class="p"><!----></div>
-For X window systems, vecx.c requires the Xlib and Xt libraries, calling
-for compiler/linker arguments such as  -L/usr/X11R6/lib/ -lXt
--lX11. The driver vecglx.c requires GL and GLU, instead of Xt.
+For X window systems, vecx.c requires the X header files such as
+X11/StringDefs.h and the Xlib and Xt libraries, calling for
+compiler/linker arguments such as -L/usr/X11R6/lib/ -lXt -lX11. The
+driver vecglx.c requires GL and GLU, instead of Xt.  Typically these
+requirements are present in current linux distributions only if the
+development packages of X11 etc are installed. These usually go by
+names like libx11-dev, libxt-dev.
 
 <div class="p"><!----></div>
 
@@ -715,5 +756,5 @@ for compiler/linker arguments such as  -L/usr/X11R6/lib/ -lXt
 T<sub><span class="small">E</span></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><span class="small">T</span></sub>H</a>,
-version 4.03.<br />On 13 Dec 2012, 11:31.</small>
+version 4.03.<br />On 25 Apr 2013, 12:31.</small>
 </html>

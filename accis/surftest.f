@@ -4,6 +4,7 @@ c Example of drawing a 3-D web and projected contour plot.
 	parameter (iLx=50,ny=20)
 	real z,x,y,r,yy
 	dimension z(iLx,ny),x(iLx,ny),y(iLx,ny),work(iLx+2,ny+2)
+	real xv(iLx),yv(ny)
 	integer nl
 	parameter (nl=10)
 	real cl(nl),ht
@@ -20,10 +21,12 @@ c Set up data etc.
 	do 1 j=1,ny
 	   yj=(float(j)-ny/3. +0.5)
 	   yy=yj*yj
+	   yv(j)=yj
 c For surf3d routine the order has to be x,y increasing.
 	   do 2 i=1,nx
 	      y(i,j)=yj
 	      x(i,j)=(float(i)-nx/3.+0.5)
+	      xv(i)=x(i,j)
 	      r=sqrt(x(i,j)*x(i,j)+yy)/2.
 c       z(i,j)=ht*sin(x(i))*sin(y(j))/(x(i)*y(j))
 	      z(i,j)=ht*sin(r)/r
@@ -33,10 +36,12 @@ c       z(i,j)=ht*sin(x(i))*sin(y(j))/(x(i)*y(j))
 c Start of actual plotting.
  98	call pltinit(0.,1.,0.,1.)
 c       Plot the surface. With axes (2-D). Web color 10, axis color 7.
-	j=2 + 256*10 + 256*256*7
-	call surf3d(x,y,z,iLx,nx,ny,j,work)
 c	j=2 + 256*10 + 256*256*7
-c	call hidweb(x,y,z,iLx,nx,ny,j)
+c	call surf3d(x,y,z,iLx,nx,ny,j,work)
+cc	call hidweb(x,y,z,iLx,nx,ny,j)
+c Alternative call using regularity of the mesh to allow vectors xv,yv
+	j=1 + 256*10 + 256*256*7
+	call surf3d(xv,yv,z,iLx,nx,ny,j,work)
 c       Draw a contour plot in perspective. Need to reset color anyway.
 	call color(4)
 	call axregion(-scbx3,scbx3,-scby3,scby3)

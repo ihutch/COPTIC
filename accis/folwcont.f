@@ -103,6 +103,7 @@ c Interpret switch.
 c Second byte
       istep=consw/256-256*(consw/(256*256))
       if(nc.eq.0)then
+c Contour level fitting.
 	 call minmax2(z,L,imax,jmax,minz,maxz)
 	 in=inc
 	 if(int(abs(cl(1))).ne.0) in=abs(cl(1))
@@ -134,8 +135,23 @@ c         write(*,*)ctic,c1st,xtic,x1st,cyc,xcyc,in
             cv=abs(cl(1))
          endif
       endif
+      if(lclog)then
+         if(nc.eq.0)then
+c Do logarithmic contour coloring fitting
+            call minmax2(z,L,imax,jmax,minz,maxz)
+            clast=10.**nint(alog10(maxz)+0.5)
+            c1st=10.**nint(alog10(minz)-0.5)
+         endif
+         if(.not.c1st.gt.0.)then
+            write(*,*)'Fixing Log contour fitting error',c1st,clast
+            c1st=clast*1.e-4
+c            stop
+         endif
+      endif
+      c1stlog=log(c1st)
+      cdiflog=1./(log(clast)-c1stlog)
 c Coloring.
-c      write(*,*)'c1st,clast',c1st,clast
+c      write(*,*)'minz,maxz,c1st,clast',minz,maxz,c1st,clast
       if(icfil.ne.0)then
       id=4
       incolor=igetcolor() 
@@ -152,7 +168,12 @@ c Block chunky.
                x2=i+0.500001
                if(i.eq.1)x1=1.001
                if(i.eq.imax)x2=i-.001
-               icolor=nint((z(i,j)-c1st)*(ngradcol-1.)/(clast-c1st))
+               if(lclog)then
+                  icolor=nint((log(max(z(i,j),c1st))-c1stlog)*(ngradcol
+     $                 -1.)*cdiflog)
+               else
+                  icolor=nint((z(i,j)-c1st)*(ngradcol-1.)/(clast-c1st))
+               endif
                if(icolor.gt.ngradcol-1)icolor=ngradcol-1
                if(icolor.lt.0)icolor=0
 c               write(*,*)'icolor=',icolor
@@ -187,7 +208,6 @@ c Triangle gradients.
 c                  write(*,*)c1st,clast,ngradcol
                   call gradquad(xd,yd,zd,zd,
      $                 c1st,clast,0,ngradcol,256*istep)
-c Error:     $                 c1st,clast,0,ngradcol-1,256*istep)
                endif
             endif
          enddo
@@ -559,6 +579,20 @@ c cite the width without the closing 0.
       width=len(str2)-1
       end
 c**************************************************************************
+      logical function getconlog()
+c Return the value of lclog
+      include 'plotcom.h'
+      getconlog=lclog
+      end
+c**************************************************************************
+      subroutine setconlog(logval)
+c Set the value of lclog that determines whether color contouring is done
+c on logarithmic scale (.true.) or linear (.false.).
+      logical logval
+      include 'plotcom.h'
+      lclog=logval
+      end
+c**************************************************************************
 c Create a legend for the gradient color used in a contour plot
       subroutine gradlegend(c1,c2,x1,y1,x2,y2,colwidth,lpara)
       real c1,c2
@@ -574,8 +608,9 @@ c      parameter (ngradcol=256)
       parameter (ngradcol=240)
       real xd(4),yd(4)
       include 'plotcom.h'
-      data laxlog/.false./
+c      data laxlog/.false./
 
+      laxlog=lclog
       if(c1.eq.c2)then
          if(c1.eq.0.)then
             c2=1.
@@ -631,8 +666,6 @@ c         write(*,*)xb,yb
       ygmax=wy2ny(yb)
       call gaxis(c1,c2,ngpow,first,delta,
      $	   xgmin,xgmax,ygmin,ygmax,lpara,laxlog)
-
-
       end
 
 

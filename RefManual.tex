@@ -11,15 +11,26 @@
 \author{I H Hutchinson}
 \begin{document}
 \maketitle
+\begin{abstract}
+  
+  This manual documents the particle-in-cell code COPTIC. COPTIC is a
+  cartesian-mesh, oblique-boundary, particles and thermals in cell
+  code.  It moves ions in three dimensions of space and time (6
+  phase-space dimensions) and simultaneously calculates the
+  self-consistent potential in the presence of neutralizing electrons
+  governed by a thermal Boltzmann factor. Objects of various shapes on
+  which boundary conditions can be specified can be placed in the
+  computational domain, and can be used to define the plasma
+  domain. The code is substantially self-documenting through comments,
+  but the manual ought to assist a newcomer with fuller
+  explanations. To run the code, the material of sections \ref{infile}
+  and \ref{cmdline} are sufficient. Subsequent sections describe the
+  structure of the code and how it works.
+\end{abstract}
+
+
 \tableofcontents
 
-\section{Introduction}
-
-This manual documents the code COPTIC. The code is substantially
-self-documenting through comments, but the manual ought to assist a
-newcomer with fuller explanations. To run the code, the material of
-sections \ref{infile} and \ref{cmdline} are sufficient. Subsequent
-sections describe the structure of the code and how it works.
 
 \section{Object Data and Geometry Input File}\label{infile}
 
@@ -59,7 +70,9 @@ such argument lines. The text following the colon is parsed for
 additional command line switches before starting on the actual command
 line arguments. This makes it possible, if desired, to put all of the
 settings that control a run into a single object file, and require no
-switches explicitly on the command line.
+switches explicitly on the command line. Obviously the exception to
+this ability is that the name of the object file cannot be set in the
+object file!
 
 \subsection{Object Lines}
 
@@ -329,6 +342,8 @@ have $A=3$, $B=4$, $C=5+6x+7y+8z$ is
 \begin{verbatim}
 102,3.,4.,5.,6.,7.,8.
 \end{verbatim}
+The lower faces are 1,2,3; the upper boundary faces are 4,5,6 along
+the directions x,y,z.
 
 \paragraph{Periodic potential boundary conditions}
 on the faces perpendicular to a particular dimension can be set by a
@@ -416,6 +431,21 @@ inside 2, and the particles exist between them, is
 objects can be implemented by intersection of the complement.  The
 default boolean (if no boolean line is in the object file) is that the
 particle region is everywhere within the mesh.
+
+\subsubsection*{Summary of domain and boundary setting lines}
+
+\par
+\begin{tabular}{|l|l|}
+\hline
+Leading Entry & Meaning\\
+\hline
+91-93    & Mesh number and spacing.\\
+98       & Particle Periodicity.\\
+99       & Boolean of particle region.\\
+101-106  & Face potential boundary condition.\\
+111-113  & Potential periodicity setting.\\
+\hline
+\end{tabular}
 
 \section{Command Line Parameters}\label{cmdline}
 
@@ -523,9 +553,8 @@ electric field Eneutral not expressed as the gradient of phi.
 \paragraph{-cp....} Set the power of (total) velocity that the
 collision frequency is proportional to. Thus \verb!-cp0.! is constant
 collision frequency and \verb!-cp1.! is constant cross-section. The
-thermal spread of the neutrals is ignored in using this collision
-setting, which is important only when \verb!En! is non-zero, at
-present, since it is not yet implemented in the padvnc routine.
+thermal spread of the neutrals is only approximately accounted for in
+using this collision setting.
 
 \paragraph{-mz....} Set the ion mass-to-charge ratio. Default 1.
 
@@ -622,8 +651,7 @@ set, it can give a variety of diagnostic information during its
 operation, including sophisticated multidimensional plots of current
 mesh parameters.  The graphics output will generally work only on
 builds that include X libraries (see section \ref{building}). One
-ought not otherwise to use these display switches.
-
+ought not otherwise to use the display switches.
 
 \begin{verbatim}
 Debugging switches for testing
@@ -646,9 +674,12 @@ should be understood by reference to the source and comments. In
 brief, \verb!-gt! gives text representations of region and volumes
 slices. \verb!-gi! is for debugging reinjection. \verb!-gp! and
 \verb!-gd! cause plotting slices of potential and density at an
-optionally specified step interval. \verb!-gc! sets the objects to
-display initially through its bits. \verb!-gf! sets the flux quantity
-to be plotted in graphics emitted after the final step.
+optionally specified step interval, which can be useful to verify both
+the grid and the initial evolution of the parameters. \verb!-gc! sets
+the objects to display initially through its bits, which can be useful
+in combination with \verb!-gr! in visualizing the representation of
+objects near the origin. \verb!-gf! sets the
+flux quantity to be plotted in graphics emitted after the final step.
 
 \section{Data Structures}
 
@@ -918,6 +949,15 @@ distribution data is \verb!fvx!. Finer velocity resolution may be
 obtained by using \verb!nsbins! up to 128.
 
 \section{Code Execution Flow}
+
+COPTIC is capable of massively parallel calculation using the MPI
+libraries for inter-process communication. Each particle is assigned
+to a specific processor. So increasing the total number of particles
+can be done with hardly any execution time degradation simply by
+adding processors. The field-solve work is shared by the processors in
+parallel and the resulting field for the whole mesh is communicated to
+all processors. The code will run perfectly satisfactorily, however,
+on a single processor.
 
 \subsection{Overview of main program}
 

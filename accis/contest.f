@@ -5,6 +5,7 @@ c  Test of contouring routine.
       real z(nx,ny),x(nx,ny),y(nx,ny),cl(nlmax)
       character*1 ppath(nx,ny)
       integer nl,i,j,n,snl
+      common/cont1stlast/c1st,clast
 
       write(*,'('' Enter No of contours, (<50)'')')
       read(*,*)nl
@@ -48,7 +49,12 @@ c x,y matrices used since last arg 2. Coloring since +16.
        write(*,*)'Finished contourl'
        call axis
        call axlabels('x','y')
+
+       write(*,*)c1st,clast
+       call gradlegend(c1st,clast,.0,-.4,1.,-.4,.03,.true.)
+
        call pltend
-      stop
+
+
       end
 

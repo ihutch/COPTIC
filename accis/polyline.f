@@ -601,3 +601,36 @@ c  That does not quite align well. Better not to mix thinkgs up.
       pfPS=ipf
       end
 C********************************************************************
+      subroutine smoothline(x,y,np,nb)
+c Draw a smoothed polyline using nb to determine the range of smoothing.
+c If nb is positive, boxcar average over the points before and after to
+c a total extent nb.
+c If nb is negative then triangular average instead.
+c If nb is zero, then no smoothing is done.
+c np is the number of points in the trace, which must be less than the
+c locally allocated array length nl.
+      integer np,nb
+      real x(np),y(np)
+
+      integer nl
+      parameter (nl=10000)
+      real yave(nl)
+
+      if(np.gt.nl)then
+         write(*,*)'Trace to smooth too long. Not smoothed. Split up.'
+c Here we ought to put code to do repetitive smoothing and plotting
+c to complete the entire trace. However, it's a bit tricky because the
+c internal joins of partial traces ought to use fully smoothed parts
+c of the traces, not the reduced smoothing that is the default at the
+c boundaries.
+         call polyline(x,y,np)
+      else
+         if(nb.lt.0)then
+            call triangave(np,-nb,y,yave)
+         else
+            call boxcarave(np,nb,y,yave)
+         endif
+         call polyline(x,yave,np)
+      endif
+
+      end

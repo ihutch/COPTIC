@@ -385,8 +385,6 @@ c     $        isdl(n),itag,icommcart,status,ierr)
      $        u(iorm),1,iface(n,ke,ibt(n)),isdl(n),itag,
      $        icommcart,status,ierr)
       enddo
-c Synchronize the processes. Did not help with segfaults.
-c      call MPI_BARRIER(icommcart,ierr)
       return
 c------------------------------------------------------------------
 c Special cases determined by the value of kc.

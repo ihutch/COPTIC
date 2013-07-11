@@ -15,9 +15,6 @@ c Make test arrays.
 	 ym(i)=y(i)-0.5*err(i)
     2 continue
 
-c      call glback()
-      call pfset(3)
-c      call pfPSset(1)
 c Plot 1. Simplest one-call plot.
       call autoplot(x,y,length)
 c If needed other calls can overwrite before terminating via:
@@ -32,12 +29,12 @@ c Label them if you like.
       call axlabels('X-axis','Y-axis')
 c And put a title on the box
       call boxtitle('Test Plot')
-c Example of a color set, 0:black, 1-7:dim, 8-15 bright:
+c Example of a color set, 0:invisible, 1-7:dim, 8-15 bright:
       call color(12)
 c Drawing a line exceeding the screen size, is not recommended but
 c is safe because clipped automatically:
       call polyline(x,y,length)
-c Return to default, bright white.
+c Return to default, bright black(!).
       call color(15)
 c Set software truncation to a specified normal-units region;
       call truncf(.5,.85,.3,.5)
@@ -50,9 +47,9 @@ c Switch off truncation.
 c Plot 3.
 c Use the built in response facility by calling with negative switch.
 c This will prompt for plotting to file.
-c      call pfset(3)
+c      call pfset(-3)
 c Set to dashed line plotting, only polylines are dashed:
-      call dashset(10)
+      call dashset(2)
 c Do a log autoplot of the arrays. x logarithmic, y linear.
       call lautoplot(x,y,length,.true.,.false.)
 c Label the axes using different fonts.
@@ -88,6 +85,7 @@ c Draw additional axes in standard position, illustrating first,delta.
       call yaxis(3.,10.)
       call pltend
 c
+      call togminor()
 c Plot 5 Simplest automatic scatter plot
 c Illustrating the use of a general character as the marker.
 	call automark(x,y,length,ichar('m'))

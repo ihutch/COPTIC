@@ -401,6 +401,7 @@ c Contour levels
       real cl(30)
 c Make pfsw visible:
       include 'plotcom.h'
+      common/cont1stlast/c1st,clast
 
 c Local variables:
       integer np
@@ -690,6 +691,7 @@ c Prevent pltend from querying the interface.
          call pfset(0)
          ips=0
       endif
+      call gradlegend(c1st,clast,-.55,0.,-.55,1.,.03,.false.) 
 c-----------------------------------
 c Limit framing rate to 30fps.
       call usleep(10000)

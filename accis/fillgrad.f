@@ -46,27 +46,48 @@ c absolute
          labs=.true.
       endif
       if(zg1-zg0.eq.0.) stop 'ERROR gradtri: zero dzng'
-      hr=(ng1-ng0)/(zg1-zg0)
+      if(lclog)then
+c Logarithmic
+         hr=(ng1-ng0)/(log(zg1)-log(zg0))
+      else
+c Linear
+         hr=(ng1-ng0)/(zg1-zg0)
+      endif
       hmin= 1.e30
       hmax=-1.e30
+      adj=0.
+c Non-zero adj gave errors with level regions because imin=imax
       adj=0.5
       do i=1,3
          if(labs)then
 c absolute normalized to color index
-            h(i)=(d(i)-zg0)*hr+ng0-adj
+            if(lclog)then
+c Logarithmic
+               h(i)=(log(d(i))-log(zg0))*hr+ng0-adj
+            else
+c Linear
+               h(i)=(d(i)-zg0)*hr+ng0-adj
+            endif
          else
+            if(lclog)then
+               h(i)=(log((x(i)*d(1)+y(i)*d(2)+z(i)*d(3))/dn)-log(zg0))
+     $              *hr+ng0
+            else
 c Distance in d-direction normalized to effective color index.
-            h(i)=((x(i)*d(1)+y(i)*d(2)+z(i)*d(3))/dn-zg0)*hr+ng0
+               h(i)=((x(i)*d(1)+y(i)*d(2)+z(i)*d(3))/dn-zg0)*hr+ng0
+            endif
          endif
          if(h(i).gt.hmax)then 
             hmax=h(i)
             imax=i
          endif
-         if(h(i).lt.hmin)then
+         if(h(i).le.hmin)then
             hmin=h(i)
             imin=i
          endif
       enddo
+      if(imin.eq.imax)write(*,*)'gradtri imin=imax error'
+     $     ,hmin,hmax,h,hr,zg0,ng0
 c      write(*,*)hmin,d(imin),hmax,d(imax)
 c At this point we have the levels in h(i). If we are using glx driver,
 c maybe do the gradient with that internal driver igradtri.
@@ -97,7 +118,6 @@ c Index the vertices in the standard order:
       id(2)=imax
 c Arithmetic trick to find the third index:
       id(3)=6-(imin+imax)
-c      write(*,*)id(3),imin,imax
       hmid=h(id(3))
 
       ll=hmin-1
@@ -127,50 +147,52 @@ c Initialize mid point.
       yp(5)=y(id(3))
       zp(5)=z(id(3))
 c Do over the levels:
-      do l=lmin,lmax,istep
-         if(hmid.gt.l)then
-            fp=(l-hmin)/hdn
+      do lc=lmin,lmax,istep
+         if(hmid.gt.lc)then
+            fp=(lc-hmin)/hdn
             if(fp.gt.1.)fp=1.
             if(fp.lt.0.)fp=0.
             xp(1)=x(id(1))*(1.-fp)+x(id(3))*fp
             yp(1)=y(id(1))*(1.-fp)+y(id(3))*fp
             zp(1)=z(id(1))*(1.-fp)+z(id(3))*fp
          else
-            fp=(l-hmid)/hxd
+            fp=(lc-hmid)/hxd
             if(fp.gt.1.)fp=1.
             if(fp.lt.0.)fp=0.
             xp(1)=x(id(3))*(1.-fp)+x(id(2))*fp
             yp(1)=y(id(3))*(1.-fp)+y(id(2))*fp
             zp(1)=z(id(3))*(1.-fp)+z(id(2))*fp
          endif
-         fp=(l-hmin)/hxn
+         fp=(lc-hmin)/hxn
          if(fp.gt.1.)fp=1.
          if(fp.lt.0.)fp=0.
          xp(2)=x(id(1))*(1.-fp)+x(id(2))*fp
          yp(2)=y(id(1))*(1.-fp)+y(id(2))*fp
          zp(2)=z(id(1))*(1.-fp)+z(id(2))*fp
-         if(l.gt.lmin)then
+         if(lc.gt.lmin)then
 c         if(.true.)then
 c Except the first time, fill the polygon.
 c If we crossed the mid point.
-            if((ll-hmid)*(l-hmid).le.0.)then
+            if((ll-hmid)*(lc-hmid).le.0.)then
                np=5
             else
                np=4
             endif
-c            write(*,'(i4,$)')l
-            call gradcolor(l)
+c            write(*,'(i4,$)')lc
+            call gradcolor(lc)
             if((isw-2*(isw/2)).eq.0)then
                call polyline(xp,yp,np)
             else
                call poly3line(xp,yp,zp,np)
             endif
+c            write(*,*)'Gradtri'
+c            write(*,'(3f10.4)')(xp(k),yp(k),zp(k),k=1,np)
             call pathfill()
 c Testing only
 c            call color(15)
 c            call polyline(xp,yp,np)
          endif
-         ll=l
+         ll=lc
          xp(4)=xp(1)
          yp(4)=yp(1)
          zp(4)=zp(1)
@@ -297,31 +319,30 @@ c********************************************************************
       sineon=(1.+sin(3.14159*0.5*max(min(x/w,1.),-1.)))/2.
       end
 c********************************************************************
-      subroutine blueredgreenwhite()
-
+      subroutine brgwscaled(b,t)
+c Install a scaled blueredgreenwhite color gradient
+      real b,t
       parameter (ngcol=240)
       integer red(ngcol),green(ngcol),blue(ngcol)
 
 c This gives both a multicolor gradient and a decent monochrome.
 c Unfortunately because of gs weighting, green has to be above red.
       do i=1,ngcol
-         ramp=float(i-1)/(ngcol-1)
-c         red(i)
+         r=float(i-1)/(ngcol-1)
+         ramp=r*t+(1-r)*b
          green(i)
      $        =sineon(ramp-0.5,.2)*65535
-c         green(i)
          red(i)
      $        =sineon(ramp-.25,.2)
      $        *(sineon(ramp-.5,-.2)+sineon(ramp-.85,.15))
      $        *65535
-c         blue(i)=(cos(3.14159*ramp))
          blue(i)=(sineon(ramp-.15,-.2)+0.7*sineon(ramp-.75,.25)+0.3
      $        *sineon(ramp-.6,.2))*(sineon(ramp-.05,.05))*65535
-c         red(i)=0
-c         green(i)=0
-c         blue(i)=0
       enddo
-c      write(*,*)blue
 
       call accisgradset(red,green,blue,ngcol)
+      end
+c********************************************************************
+      subroutine blueredgreenwhite()
+      call brgwscaled(0.,1.)
       end
