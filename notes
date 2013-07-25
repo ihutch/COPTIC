@@ -10261,3 +10261,22 @@ tested very quantitatively yet.
 25 Feb 
 Corrected a bug in the new null-collision code with partially drifting
 neutrals.
+
+
+
+25 July 2013
+
+Noticed in some sheathparticle runs that n_part seems to exceed ioc_part.
+I don't know how that can be so. Investigate. Can be reproduced with 
+the settings being used, regardless of restarts. Not caused by -da 
+acceleration, or -ds subcycling. It IS caused by collisions.
+
+For -ct1 and -dt.1 the n_part is greater by about 10%. That seems to say
+that every collision is enhancing n_part artificially by 1. 
+
+Found the error. npart was being advanced on partial collision steps.
+Corrected.
+
+Fortunately, n_part is not used for anything significant except
+default initializations, at which time it is not incorrect. Therefore
+there's no impact of this now-fixed error on any prior results.

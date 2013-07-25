@@ -76,6 +76,9 @@ c Initialize. Set reinjection potential. We start with zero reinjections.
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 c At most do over all particle slots. But generally we break earlier.
       do i=1,n_partmax
+c         if(mod(i,10000).eq.0)then
+c            write(*,*)'i,iocthis,n_part=',i,iocthis,n_part,ncollided
+c         endif
          dtdone=0.
          dtremain=0.
          dtpos=dt
@@ -198,7 +201,8 @@ c And the new dtprec is half as large:
                goto 100
             endif
          endif
-c---------- Collisions ----------------
+c---------- End of subcycling ---------
+c---------- Collision Decision ----------------
          if(colntime.ne.0.)then
             if(colpow.ne.0.)then
 c The collision time scaled by velocity
@@ -218,6 +222,7 @@ c Set dtremain to how much time will be left after this step.
                ncollided=ncollided+1
             endif
          endif 
+c---------- End Collision Decision ------------
 c         if(i.lt.norbits)write(*,*)dtprec(i),dtremain,dtdone
 c---------------- Particle Advance ----------------
 c Use dtaccel for acceleration. May be different from dtpos if there was
@@ -276,7 +281,8 @@ c Move ----------------
          call moveparticle(x_part(1,i),ndims,Bt,Btinf,Bfield,vperp
      $           ,dtpos)
          dtdone=dtdone+dtpos
-c -----------------------------
+c ---------------- End Particle Advance -------------
+c ---------------- Special Conditions -------------
          if(lcollided)then
 c Treat collided particle at (partial) step end
             call postcollide(i,tisq,iregion)
@@ -297,10 +303,11 @@ c Reinject because we haven't exhausted complement.
 c Else empty slot and move to next particle.
             if_part(i)=0
             goto 300
-         else
+c This section was incorrect here till 25 July 2013. Moved below remain.
+c         else
 c The standard exit point for a particle that is active
-            iocthis=i
-            n_part=n_part+1
+c            iocthis=i
+c            n_part=n_part+1
          endif
 c--------------------------------------------
          dtprec(i)=dtpos
@@ -320,9 +327,13 @@ c dtremain is the time remaining after the next dtpos step.
             iregion=inewregion
             goto 100
          endif
+c-------------------------------------------
+c The standard exit point for a particle that is active.
+         iocthis=i
+         n_part=n_part+1
          goto 300
 c================= End of Occupied Slot Treatement ================
-c Reinjection:
+c----------- Reinjection treatment -----------
  200     continue
          if_part(i)=1
          call reinject(x_part(1,i),ilaunch,caverein)
@@ -355,8 +366,9 @@ c It's probably better to count the relaunches as average:
          call diaginject(x_part(1,i))
 c Restart the rest of the advance
          goto 100
-c----------------------------------------------
-c Non-injection completion.
+c----------- End Reinjection treatment --------
+c========================================================
+c--------- Completion of particle i treatment ------
  300     continue
 c Not needed when the Eneutral is subtracted off above and the
 c collisional effect is in postcollide.
@@ -375,7 +387,7 @@ c Special diagnostic orbit tracking:
       enddo
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  102  continue
-c End of cycle through particles.
+c -------------- End of cycle through particles ----------
       if(rhoinf*colntime.ne.0.)then
 c Normalize the collision force appropriately.
          if(lbulk)then
@@ -389,7 +401,7 @@ c Normalize the collision force appropriately.
      $        '  before ninjcomp=',ninjcomp,' . Increase n_partmax?'
       endif
       ioc_part=iocthis
-c      write(*,*)'iocthis=',iocthis,i
+c      write(*,*)'i,iocthis,npart=',i,iocthis,n_part
 
 c Finished this particle step. Calculate the average reinjection 
 c potential
