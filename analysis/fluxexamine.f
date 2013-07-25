@@ -14,7 +14,7 @@ c**************************************************************
       real avetotal(ns_ndims),avecoln(ns_ndims),avesq(ns_ndims)
       real rp,yrange
       intrinsic ibclr,btest
-      data iplot/1/iprint/1/ivprn/0/
+      data iplot/1/iprint/1/ivprn/0/iquiet/1/
       data ifmask/1023/iomask/0/
       data idimf/3/
       data rp/0./
@@ -43,6 +43,11 @@ c         write(*,*)'iarg',iarg
 c iplot is the quantity number to plot and average.
          if(argument(1:2).eq.'-p')
      $        read(argument(3:),'(i5)')iplot
+         if(argument(1:2).eq.'-q')then
+            iplot=0
+            iquiet=0
+c            read(argument(3:),'(i5)')iquiet
+         endif
          if(argument(1:2).eq.'-w')
      $        read(argument(3:),'(i5)')iprint
          if(argument(1:2).eq.'-m')
@@ -148,7 +153,7 @@ c            write(*,*)'Plotting',k,mf_quant(k),iplot
 c         endif
       enddo
 
-      if(.true.)then
+      if(iquiet.ne.0)then
          write(*,*)'Doing npart plot',nf_step,ff_rho(1),ff_rho(nf_step)
          do i=1,nf_step
             stepdata(i)=i
@@ -323,7 +328,8 @@ c Read more arguments if there are any.
       write(*,*)'Read back flux data from file and display.'
       write(*,*)'-n1,-n2 fractional step range over which to average.'
       write(*,*)'-p set quantity to average and plot.'
-     $     ,' Default -p1. Non-positive no plot'
+     $     ,' Default -p1. Non-positive no initial plots'
+      write(*,*)'-q suppress all plots.'
       write(*,*)'-w set object whose data is to be written, or none.'
       write(*,*)'-m mask objects whose force is to be plotted'
       write(*,*)'-v mask objects whose force vs v is to be printed.'
