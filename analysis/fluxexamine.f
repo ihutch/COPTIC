@@ -12,12 +12,12 @@ c**************************************************************
       integer iplot,iprint,ifmask,idimf,iomask,ivprn
       real avefield(ns_ndims),avepress(ns_ndims),avepart(ns_ndims)
       real avetotal(ns_ndims),avecoln(ns_ndims),avesq(ns_ndims)
-      real rp,yrange
+      real rp,yrange,cv(ns_ndims)
       intrinsic ibclr,btest
       data iplot/1/iprint/1/ivprn/0/iquiet/1/
       data ifmask/1023/iomask/0/
       data idimf/3/
-      data rp/0./
+      data rp/0./cv/ns_ndims*0./
 
       fn1=0.5
       fn2=1.
@@ -57,7 +57,9 @@ c            read(argument(3:),'(i5)')iquiet
          if(argument(1:3).eq.'-rp')then
             read(argument(4:),*)rp
          elseif(argument(1:2).eq.'-r')then
-            read(argument(3:),'(f10.4)')rview
+            read(argument(3:),*)rview
+         elseif(argument(1:2).eq.'-c')then
+            read(argument(3:),*,err=201,end=201)cv
          elseif(argument(1:2).eq.'-y')then
             read(argument(3:),'(f10.4)')yrange
          endif
@@ -316,7 +318,7 @@ c      write(*,*)'iomask=',iomask,' iosw=',iosw,' iplot=',iplot
       if(iplot.ne.0)then
          call pltend()
 c         if(iplot.eq.1)
-         call objplot(abs(iplot),rview,iosw,iomask)
+         call objplot(abs(iplot),rview,cv,iosw,iomask)
       endif
 
 c Read more arguments if there are any.
@@ -334,7 +336,8 @@ c Read more arguments if there are any.
       write(*,*)'-m mask objects whose force is to be plotted'
       write(*,*)'-v mask objects whose force vs v is to be printed.'
      $     ,' No other printing.'
-      write(*,*)'-r set size of plot window'
+      write(*,*)'-r set 3-D size of plot window'
+      write(*,*)'-cff,ff,ff set 3-D center of plot window'
       write(*,*)'-i set iosw for objplot:'
      $     ,' Coloring 0 position, 1 flux, 2 flux-density.'
       write(*,*)'-oiii add object iii to 3D objects to plot'

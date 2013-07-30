@@ -67,6 +67,8 @@ c Diagnostics etc
       real xnewlim(2,ndims_mesh)
 c Input for face boundary data:
       real CFin(3+ndims_mesh,2*ndims_mesh)
+c Center of objplot final plot.
+      real cv(ndims_mesh)
 
 c Set up the structure vector.
       data iLs/1,Li1,Li2,Li3/
@@ -79,7 +81,7 @@ c Data for plotting etc.
      $     .false.,.false.,.false.,.false.,.false./
       data lphiplot,ldenplot/.false.,.false./
 c      data thetain,nth/.1,1/
-      data lrestart/0/
+      data lrestart/0/cv/0.,0.,0./
       data ipstep/1/idistp/0/idcount/0/icijcount/0/
 c-------------------------------------------------------------
 c Consistency checks
@@ -569,7 +571,7 @@ c Check some flux diagnostics and writing.
 c         write(*,*)'Calling objplot'
          if(ifplot.gt.0)then
             if(rcij.le.0)rcij=rs
-            call objplot(1,rcij,iobpsw,0)
+            call objplot(1,rcij,cv,iobpsw,0)
          endif
       endif
       end

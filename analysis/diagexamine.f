@@ -129,7 +129,13 @@ c Calculate average profiles in direction i1d.
 c         write(*,*)phifilename
          if(phifilename(1:1).ne.' ')write(*,*)'   z           v       '
      $        ,'    phi         n_i        z_E     4pi grad(phi)'
-         if(iwr.ne.0)write(*,*)iuds(i1d)-2
+         if(iwr.ne.0)then
+            if(phifilename(1:1).ne.' ')then
+               write(*,*)iuds(i1d)-2,5
+            else
+               write(*,*)iuds(i1d)-2
+            endif
+         endif
 c Fix up first and last value for gradient calculation
          u1d(1)=(2.*u1d(2)-u1d(3))/znorm
          u1d(iuds(i1d))=(2.*u1d(iuds(i1d)-1)-u1d(iuds(i1d)-2))/znorm
@@ -189,8 +195,8 @@ c xticoff reverses the tics.
             call axptset(0.,0.)
             call color(5)
             call dashset(2)
-            write(*,*)i1d,iuds(i1d)-1,u1d(2),dene1d(2),u1d(iuds(i1d)-1)
-     $           ,dene1d(iuds(i1d)-1)
+c            write(*,*)i1d,iuds(i1d)-1,u1d(2),dene1d(2),u1d(iuds(i1d)-1)
+c     $           ,dene1d(iuds(i1d)-1)
             call fitscale(xn(ixnp(i1d)+1),xn(ixnp(i1d+1)),dene1d(2)
      $           ,dene1d(iuds(i1d)-1),.false.,.false.)
             call polyline(xn(ixnp(i1d)+2),dene1d(2),ixnp(i1d+1)

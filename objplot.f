@@ -580,6 +580,7 @@ c         call drcstr(string)
             call jdrcstr(string,-1.)
          endif
          call color(15)
+         call charsize(.0,.0)
       endif
 
       end
@@ -603,7 +604,7 @@ c Sort the values zta of length ngeomobj returning sorted index.
       end
 c*******************************************************************
 c Plot edges/faces of objects.
-      subroutine objplot(iq,rs,ioswin,iomask)
+      subroutine objplot(iq,rv,cv,ioswin,iomask)
 c iosw determines the nature of the plot
 c 0: Color code according to position.
 c 1:            according to average flux already in nf_step+1
@@ -611,11 +612,12 @@ c 2:            according to average flux density in nf_step+2
 c Byte 2: 256 plot intersections, 0 don't plot intersections.
 c iomask is a mask where non-zero bits mask _out_ objects.
 c iq references the quantity, 1 flux, 2-4 momentum etc, to be plotted.
-c rs gives the Window size
+c rv gives the Window size
       integer iq,iosw,iomask
-      real rs
+      real rv
       include '3dcom.f'
       include 'sectcom.f'
+      real cv(nf_ndims)
       integer index(ngeomobjmax)
       real zta(ngeomobjmax)
       character*10 string
@@ -634,7 +636,7 @@ c Color gradient.
       call blueredgreenwhite()
  51   continue
       call pltinit(0.,1.,0.,1.)
-      call scale3(-rs,rs,-rs,rs,-rs,rs)
+      call scale3(cv(1)-rv,cv(1)+rv,cv(2)-rv,cv(2)+rv,cv(3)-rv,cv(3)+rv)
       if(iprinting.ne.0)call pfset(3)
       if(irotating.eq.0)then
          icorner=igetcorner()
