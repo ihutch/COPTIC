@@ -109,7 +109,7 @@ c            write(*,*)'Calling facecolor',iosw
 c This legend ought really to account for every object. But at the 
 c moment only spheres do it. 
       if(iosw.ne.0)then
-         call gradlegend(fmin,fmax,-.4,0.,-.4,.7,-.1,.false.)
+         call gradlegend(fmin,fmax,-.35,0.,-.35,.7,-.1,.false.)
          string='Flux: iosw='
          call iwrite(iosw,iwd,string(12:))
          call jdrwstr(.05,.6,string,1.)

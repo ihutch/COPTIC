@@ -10280,3 +10280,78 @@ Corrected.
 Fortunately, n_part is not used for anything significant except
 default initializations, at which time it is not incorrect. Therefore
 there's no impact of this now-fixed error on any prior results.
+
+30 July 2013
+
+Another problem appears to be associated with sphere intersections.
+This needs documenting.
+
+When in padvnc we change region (cross a boundary)
+call tallyexit(i,inewregion-iregion,ltlyerr)
+This assigns the "exit" to a particular object and bin on that object
+if it is a mapped object. This is done by objsect for each object
+that has been crossed.
+Objsect:
+For spheres, calls 
+         call spherefsect(npdim,x1,x2,iobj,ijbin,sd,fraction)
+with
+      do i=1,npdim
+         x1(i)=x_part(i,j)-dt*x_part(i+3,j)
+         x2(i)=x_part(i,j)
+      enddo
+so x1 is the previous position, and x2 is the current (approximately).
+fraction is used by objsect only for intersection diagnostics, 
+not for tallying.
+ijbin, and sd are used for tallying only to ijbin. 
+
+Spherefsect:
+Returns ijbin,sd,fraction. It uses only the (fraction=) f1 return from:
+      call sphereinterp(npdim,ida,xp1,xp2,
+     $     obj_geom(ocenter,iobj),obj_geom(oradius,iobj),fraction
+     $     ,f2,sd,C,D)
+and sd refers to that intersection. There are always two such intersections.
+But here there's an implicit assumption, that the second is not actually
+reached. In other words that the second corresponds to a fraction f2>1. or <0.
+That's not always true. If 0.<f2<1. then the particle passes right through
+the object. If it's not absorbing, then two tallies are needed, but are 
+not provided. 
+
+Actions:
+Calculate ijbin2 as the address of the bin of the second intersection
+if >0, <1. or set ijbin2=-1
+Add ijbin2 to the arguments of spherefsect.
+
+This does not actually find any pass-through cases. I realize this is
+because we don't test an object that we don't move from inside to outside,
+which we don't if we pass through.
+
+But we actually DO find some passthrough objects. Why? 
+I think it is because taking the difference to get idiffreg is 
+a logical mistake. I want to detect changes in individual bits of iregion.
+
+This is not accomplished by an arithmetic difference. So I am not 
+actually executing objsect on the right objects. tallyexit expects really
+an integer containing bit flags each of which is set for an object crossed.
+This is the bitwise xor of the two regions, not their difference. 
+This either xor(i,) [Gnu extension] or ieor(i,j) [F95] The latter exists
+in g77 also, so we should use it. 
+
+Correcting makes a big difference.
+Prevents passthroughs, as it should. Removes (most of) the apparent 
+dependence of one object's results on presence or absence of others.
+So this correction ensures that passthroughs are not counted for any
+fluxes. But true transitions are.
+
+Values of forces in the sheathparticle test case are promisingly low 
+for empty spheres. Net forces observed for 50 steps of 2 processors
+are less than 1/20 of the particle force, for -dt.2. Cancellation
+is nearly complete. 
+
+Perhaps we ought to include absorbing objects in the search regardless
+of whether they show difference in region. At the moment we are allowing
+particles to pass through solids in a single step. 
+
+It's hard to tell how important this error was for previous results. 
+Might have to do spot checks to find out. I certainly think that 
+all the sheath cases should be redone. I'm not totally certain that
+I've got rid of all bugs.

@@ -293,7 +293,9 @@ c---------------------------------
 c If we crossed a boundary, do tallying.
          ltlyerr=.false.
          if(inewregion.ne.iregion)
-     $        call tallyexit(i,inewregion-iregion,ltlyerr)
+c     $        call tallyexit(i,inewregion-iregion,ltlyerr)
+c Integer exclusive or ieor bitwise is the correct way.
+     $        call tallyexit(i,ieor(inewregion,iregion),ltlyerr)
 c------------ Possible Reinjection ----------
          if(ltlyerr .or. .not.linmesh .or.
      $        .not.linregion(ibool_part,ndims,x_part(1,i)))then

@@ -781,7 +781,8 @@ c            if(debug.gt.0)fraction=101
             itype=itype-256*istype
             if(itype.eq.1)then
 c First implemented just for spheres.
-               call spherefsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+               call spherefsect(ndims,xp1,xp2,i,ijbin,sd,fraction
+     $              ,ijbin2)
 c                  call sphereinterp(ndims,0,xp1,xp2
 c     $                 ,obj_geom(ocenter,i),obj_geom(oradius,i)
 c     $                 ,fraction,f2,sd,C,D)

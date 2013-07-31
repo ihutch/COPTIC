@@ -386,7 +386,7 @@ c Assign the exit to a specific object, and bin on object.
 c (If it is a mapped object, decided by objsect.)      
 c On entry
 c        i is particle number, 
-c        idiffreg is the difference between its region and active.
+c        idiffreg is the xor between its region and previous.
 c On exit ltlyerr is true if an error occurred else unchanged.
 c Normally, returning an error will cause this particle to be
 c considered to have left the particle region, so it will be discarded.
@@ -404,7 +404,7 @@ c Determine (all) the objects crossed and call objsect for each.
       idiff=idiff/2
       if(idp.ne.idiff*2)then
          call objsect(i,iobj,ierr)
-         if(ierr.ne.0)then
+         if(ierr.gt.0)then
             ireg=insideall(npdim,x_part(1,i))
             r=0.
             r1=0.
@@ -420,6 +420,10 @@ c Determine (all) the objects crossed and call objsect for each.
             write(*,*)'xp1',(x_part(k,i)-dt*x_part(k+3,i),k=1,3),r1
             ltlyerr=.true.
             return
+         elseif(ierr.eq.-1)then
+            write(*,*)'idiffreg,i,iobj=',idiffreg,i,iobj
+            write(*,*)'xpart,r=',(x_part(k,i),k=1,6),r,ireg
+            write(*,*)'xp1',(x_part(k,i)-dt*x_part(k+3,i),k=1,3),r1
          endif
       endif
       idp=idp/2
@@ -442,6 +446,7 @@ c
       data isc/0/
 
       ierr=0
+      ijbin2=-1
 
 c Do nothing for untracked objects and report no error.
       if(nf_map(iobj).eq.0)return
@@ -459,7 +464,7 @@ c Get the positions:
       enddo
       if(itype.eq.1)then
 c Sphere intersection. Return the bin number and direction ijbin,sd.
-         call spherefsect(npdim,x1,x2,iobj,ijbin,sd,fraction)
+         call spherefsect(npdim,x1,x2,iobj,ijbin,sd,fraction,ijbin2)
       elseif(itype.eq.2)then
 c Cube intersection. Return the bin number and direction ijbin,sd.
          call cubefsect(npdim,x1,x2,iobj,ijbin,sd,fraction)
@@ -504,6 +509,29 @@ c      write(*,*)'Saving intersection',isc,iobj,ijbin
          x_sc(i,2,isc)=x1(i)*(1.-fraction)+x2(i)*fraction
       enddo
 c------------------------------
+c Do the bin adding in a subroutine.
+      call binadding(j,infobj,sd,ijbin)
+
+      if(ijbin2.ne.-1)then
+c Currently never triggered if we only count objects whose region
+c boundary we've crossed only once.
+         write(*,*)'Pass-through j,ijbin2,infobj=',j,ijbin2,infobj
+         write(*,*)(x_part(i,j),i=1,6)
+         ierr=-1
+      endif
+      end
+c*******************************************************************
+      subroutine binadding(j,infobj,sd,ijbin)
+c Add particle-j data to infobj bin ijbin with crossing-direction sd.
+      implicit none
+      include '3dcom.f'
+      include 'partcom.f'
+      integer j,infobj,ijbin
+      real sd
+      
+      integer iaddress,k,id
+      real xx
+
 c Adding into bins. At this point all we need is sd, ijbin.
 c Particle Flux.
       iaddress=ijbin+nf_address(nf_flux,infobj,nf_step)
@@ -540,12 +568,9 @@ c Normalized to rhoinf
          partforce(id,infobj,nf_step)=partforce(id,infobj,nf_step)
      $        +sd*x_part(ns_ndims+id,j)/dt/rhoinf
       enddo
-c            write(*,'(a,3f10.4,i4,i4)')'Partforce='
-c     $           ,(partforce(kk,infobj,nf_step),kk=1,3)
-c     $           ,infobj,nf_step
-c If the bins were different we would have to recalculate ibin. 
-
+      
       end
+c*******************************************************************
 c*******************************************************************
       subroutine pllelfrac(xp,xn,iobj)
 c For input point xp(ndims) return the normalized position relative to

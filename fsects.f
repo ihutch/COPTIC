@@ -1,14 +1,15 @@
 c********************************************************************
-      subroutine spherefsect(npdim,xp1,xp2,iobj,ijbin,sd,fraction)
+      subroutine spherefsect(npdim,xp1,xp2,iobj,ijbin,sd,fraction
+     $     ,ijbin2)
 c Given npdimensional sphere, nf_map infobj, find the intersection of
 c the line joining xp1, xp2 with it.  Use the 3dcom.f data to determine
 c the flux bin to which that point corresponds and return the bin index
 c in ijbin (zero-based), and the direction in which the sphere was
 c crossed in sd. If no intersection is found return sd=0. Return
-c the fractional position between xp1 and xp2 in frac
+c the fractional position between xp1 and xp2 in frac.
       integer npdim
       real xp1(npdim),xp2(npdim)
-      integer iobj,ijbin
+      integer iobj,ijbin,ijbin2
       real sd,fraction
       real tiny,onemtiny
       parameter (tiny=1.e-5,onemtiny=1.-2.*tiny)
@@ -32,8 +33,9 @@ c surface. Then we get a sd problem message.
          sd=0.
          return
       endif
+c      write(*,*)'sphereinterp',fraction,f2,sd
 c This code decides which of the nf_posno for this object
-c to update corresponding to this crossing, and then update it. 
+c to update corresponding to this crossing, and then update it.
 c Calculate normalized intersection coordinates.
       do i=1,npdim
          x12(i)=((1.-fraction)*xp1(i)+fraction*xp2(i)
@@ -55,6 +57,33 @@ c jbin runs from 0 to N-1 psi = -pi to pi.
      $        ,x12(3),obj_geom(ocenter+2,iobj),xp1(3),xp2(3)
      $        ,fraction
       endif
+ 
+      if(f2.gt.0. .and. f2.lt.1.)then
+c Step passes right through the sphere. 
+c Calculate normalized intersection coordinates. For f2.
+         do i=1,npdim
+            x12(i)=((1.-f2)*xp1(i)+f2*xp2(i)
+     $           -obj_geom(ocenter+i-1,iobj))
+     $           /obj_geom(oradius+i-1,iobj)
+         enddo
+c Bin by cos(theta)=x12(3) uniform grid in first nf_dimension. 
+c ibin runs from 0 to N-1 cos = -1 to 1.
+         ibin=int(nf_dimlens(nf_flux,infobj,1)*(onemtiny*x12(3)+1.)*0.5)
+         psi=atan2(x12(2),x12(1))
+c jbin runs from 0 to N-1 psi = -pi to pi.
+         jbin=int(nf_dimlens(nf_flux,infobj,2)
+     $        *(0.999999*psi/3.1415926+1.)*0.5)
+         ijbin2=ibin+jbin*nf_dimlens(nf_flux,infobj,1)
+         if(ijbin2.gt.nf_posno(1,infobj))then
+            write(*,*)'ijbin2 error in spherefsect'
+            write(*,*)infobj,ijbin2,nf_posno(1,infobj),ibin,jbin
+     $           ,nf_dimlens(nf_flux,infobj,1),nf_dimlens(nf_flux,infobj
+     $           ,2) ,x12(3),obj_geom(ocenter+2,iobj),xp1(3),xp2(3) ,f2
+         endif
+      else
+         ijbin2=-1
+      endif
+
       end
 c*********************************************************************
       subroutine cubefsect(npdim,xp1,xp2,iobj,ijbin,sd,fraction)
