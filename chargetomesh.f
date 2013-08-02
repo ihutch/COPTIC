@@ -180,7 +180,11 @@ c Compensate the electron density.
          else
 c Outside the particle region, but inside a point-charge region.
 c Don't compensate for electron density. Just set rhoi=0.
-            rho(ind)=0.
+c            rho(ind)=0.
+c That does not seem correct. I still ought to null out the electron
+c density. Do that directly, without the additional rhoci part:
+            fprime=exp(u(ind))
+            rho(ind)=fprime
          endif
       else
 c Standard case.

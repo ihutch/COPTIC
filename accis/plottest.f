@@ -90,7 +90,7 @@ c Plot 5 Simplest automatic scatter plot
 c Illustrating the use of a general character as the marker.
 	call automark(x,y,length,ichar('m'))
 c Overplot some error bars.
-	call polyerr(x,ym,err,length)
+	call polyerrs(x,y,err,length,.5,1.)
 	call pltend
 c
 c Plot 6 Multiple Frame Plot

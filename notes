@@ -10355,3 +10355,11 @@ It's hard to tell how important this error was for previous results.
 Might have to do spot checks to find out. I certainly think that 
 all the sheath cases should be redone. I'm not totally certain that
 I've got rid of all bugs.
+
+2 Aug 2013
+
+Updated psumtoq to cancel _just_ the electron density when outside 
+the particle region but inside a point-charge region. This ought then
+to represent the region inside the grain-sphere that is just the 
+shielded point-charge solution, with rhoci corrections but no electrons
+or ions.

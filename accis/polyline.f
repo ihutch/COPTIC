@@ -188,10 +188,30 @@ C********************************************************************
 c Plot error bars from y to y+err.
       subroutine polyerr(x,y,err,nx)
       integer nx,i
-      real x(*),y(*),err(1)
+      real x(*),y(*),err(*)
       do 1 i=1,nx
 	 call vecw(x(i),y(i),0)
 	 call vecw(x(i),y(i)+err(i),1)
+    1 continue
+      end
+C********************************************************************
+c Plot error bars from y-ym*err to y+yp*err.
+      subroutine polyerrs(x,y,err,nx,yp,ym)
+      integer nx,i
+      real x(*),y(*),err(*)
+      real yp,ym
+      include 'plotcom.h'
+      real xn,yn
+      do 1 i=1,nx
+         xn=wx2nx(x(i))
+         yn=wy2ny(y(i)-ym*err(i))
+         call vecn(xn-.2*chrswdth,yn,0)
+         call vecn(xn+.2*chrswdth,yn,1)
+         yn=wy2ny(y(i)+yp*err(i))
+         call vecn(xn-.2*chrswdth,yn,0)
+         call vecn(xn+.2*chrswdth,yn,1)
+	 call vecw(x(i),y(i)-ym*err(i),0)
+	 call vecw(x(i),y(i)+yp*err(i),1)
     1 continue
       end
 c******************************************************************
