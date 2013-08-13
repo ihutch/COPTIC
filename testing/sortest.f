@@ -21,6 +21,7 @@ c Structure vector needed for finding adjacent u values.
       external bdyshare,bdyset,bdysetnull,faddu,cijroutine,cijedge
       character*100 objfilename
       character*100 argument
+      character*256 argline
       logical ltestplot,lsliceplot,linjplot
       logical lmyidhead,lphiplot,lpgraph
       integer ipstep,idebug
@@ -68,15 +69,16 @@ c Deal with command-line arguments; not all valid here.
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,dropaccel,rmtoz,Bfield,Bt,ninjcomp
-     $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
-     $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
+     $     ,nsteps,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
+     $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral)
+     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline)
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
 c Geometry and boundary information. Read in.
       if(idebug.gt.0)write(*,*)'Calling readgeom',myid,ifull,lmyidhead
-      call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr)
+      call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
+     $     ,argline)
       if(idebug.gt.0)write(*,*)'Finished readgeom'
 c---------------------------------------------------------------
 c Construct the mesh vector(s) from the geometry info.
@@ -147,7 +149,7 @@ c Make dimensions periodic; necessary for mpi:
       do id=1,ndims
          if(LPF(id))ictl=ictl+4*2**id
       enddo
-c      write(*,*)'Calling sormpi, ni,nj=',ni,nj
+      write(*,*)'Calling sormpi, ni,nj=',ni,nj
 c Solver call.
       do k=1,2
          if(k.gt.1)ictl=1

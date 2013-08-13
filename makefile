@@ -229,7 +229,8 @@ $(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h
 ######################################################
 testing : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a 
 	make -C testing
-	@echo Made tests in directory testing. Run them to test.
+	@echo Made tests in directory testing. Now running them to test.
+	make -C testing testing
 
 vecx :
 	make clean

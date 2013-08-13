@@ -27,18 +27,19 @@ NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 HEADERS=../ptaccom.f
 ##########################################################################
-TARGETS=creintest fieldtest mditeratetest mpibbdytest mditeratortest stresstest sortest 
+TARGETS=creintest mditeratetest mpibbdytest mditeratortest stresstest sortest 
 
 all: $(TARGETS)
 
-# We presume that all these routines are serial not parallel.
+# We used to presume that all these routines are serial not parallel.
+# But now we are using the full libcoptic without this replacement.
 dummyreduce.o : ../dummyreduce.f
 	$(G77) -c ../dummyreduce.f
 
-% : %.f  makefile $(ACCISLIB) dummyreduce.o ../libcoptic.a $(HEADERS)
+% : %.f  makefile $(ACCISLIB) ../libcoptic.a $(HEADERS)
 # I don't remember why this explicit form was preferred to a dependency below.
 #	make -C ../ libcoptic.a
-	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f dummyreduce.o ../libcoptic.a $(LIBRARIES)
+	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f ../libcoptic.a $(LIBRARIES)
 
 # Don't recompile accis every time the makefile is changed.
 ../accis/%.o : ../accis/%.f $(HEADERS)
@@ -66,5 +67,9 @@ vecx :
 
 #####################################################
 clean :
-	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.0?? *.ps *.dat *.a
+	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.0?? *.ps *.a
 
+testing :
+#	echo $(TARGETS)
+# Execute each target program with 1 second between each.
+	$(patsubst %,./%;sleep 1;,$(TARGETS))

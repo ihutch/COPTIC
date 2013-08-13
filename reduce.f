@@ -54,6 +54,7 @@ c Create addtype and operator for reduce sum.
          call mpisubopcreate(ndims,ifull,iuds,addsubarray_MPI,
      $        iaddtype,iaddop)
          iporig=1
+c         write(*,*)'iaddtype,iaddop=',iaddtype,iaddop
          do i=1,ndims
             iporig=iporig+iLs(i)
          enddo

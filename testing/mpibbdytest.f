@@ -142,6 +142,8 @@ c test an allreduce for the arrays. EXTERNAL addsubarray...
       call mpisubopcreate(nrd,ifull,iuds,addsubarray_MPI,
      $     iaddtype,iaddop)
 
+      write(*,*)iaddtype,iaddop,iuds,nrd,ifull
+
       call MPI_ALLREDUCE(MPI_IN_PLACE,u(2,2,2),1,iaddtype,
      $     iaddop,icommcart,ierr)
 
