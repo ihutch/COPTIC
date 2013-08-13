@@ -10363,3 +10363,7 @@ the particle region but inside a point-charge region. This ought then
 to represent the region inside the grain-sphere that is just the 
 shielded point-charge solution, with rhoci corrections but no electrons
 or ions.
+
+13 Aug 2013
+Tidying in the testing directory.
+git rm world3.h. Slicesect actually uses the accis/world3.h version.

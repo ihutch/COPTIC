@@ -88,6 +88,7 @@ endif
 # export this so it is inherited by sub-makes.
 export G77
 ##########################################################################
+# A couple of special compile/link cases, not usually used.
 GFINAL=gcc-4.1 -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
 GCURR=gcc -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
 #OPTIMIZE=-O3 -funroll-loops -finline-functions
@@ -153,7 +154,7 @@ smt.out : $(COPTIC) copticgeom.dat
 	@if [ -f T1e0v000P200L1e0z005x05.phi ] ; then mv T1e0v000P200L1e0z005x05.phi prior.phi ; echo "Created prior.phi" ; fi
 	./$(COPTIC)
 	@if [ -f smt.prev ] ;then if [ -f smt.out ] ;then diff smt.prev smt.out ;else touch smt.out ;fi ;fi
-	@if [ -f prior.phi ] && [ -f T1e0v000P200L1e0z005x05.phi ] ; then if ! diff T1e0v000P200L1e0z005x05.phi prior.phi ; then echo "**** RESULT CHANGED" ; fi; rm prior.phi; else echo "File[s] lacking to compare result."; fi 
+	@if [ -f prior.phi ] && [ -f T1e0v000P200L1e0z005x05.phi ] ; then if ! diff T1e0v000P200L1e0z005x05.phi prior.phi ; then echo "**** RESULT CHANGED" ; fi; rm prior.phi; else echo "File[s] lacking to compare result.\nProbably you've just made coptic for the first time."; fi 
 	@if [ "$(G77)" = "gfortran" ] ; then echo "Compiled serial coptic. make clean; make for MPI version if MPI available." ; fi
 
 # For now we are using a big hammer to ensure libcoptic is clean.
@@ -223,7 +224,6 @@ sorserial : libcopsol.a sortest.f compiler makefile $(ACCISLIB) $(SOLOBJECTS) no
 $(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h
 	@echo "******************* Making accis with VECX=${VECX} **********"
 	make -C accis
-#	make -C accis
 	@if [ -f ./accis/$(VECX) ] ; then echo ; else echo "Failed making accis with $(VECX). Might need to specify a different driver."; fi
 
 ######################################################
@@ -238,12 +238,13 @@ vecx :
 
 #####################################################
 geometry : geometry/*.phi
-	rm T1*
+	rm -f T1*
 	date >>GeometryTests
 	cat GeometryTests
 #####################################################
 clean :
 	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.* *.ps *.aux *.log *.out *.toc *.prev *.tlg *.synctex.gz ftnchek.output libcoptic.a
+	make -C testing clean
 	make -C accis mproper
 
 mproper :
@@ -276,4 +277,4 @@ coptic.prof : compiler makefile $(OBJECTS)
 
 help :
 	@echo Targets: clean mproper ftnchek tree coptic.prof
-	@echo geometry testing 
+	@echo Tests: geometry testing 
