@@ -422,8 +422,9 @@ c Determine (all) the objects crossed and call objsect for each.
             return
          elseif(ierr.eq.-1)then
             write(*,*)'idiffreg,i,iobj=',idiffreg,i,iobj
-            write(*,*)'xpart,r=',(x_part(k,i),k=1,6),r,ireg
-            write(*,*)'xp1',(x_part(k,i)-dt*x_part(k+3,i),k=1,3),r1
+            write(*,'(a,6f10.5)')'xp2',(x_part(k,i),k=1,6)
+            write(*,'(a,6f10.5)')'xp1',(x_part(k,i)-dt*x_part(k+3,i),k=1
+     $           ,3)
          endif
       endif
       idp=idp/2
@@ -513,10 +514,8 @@ c Do the bin adding in a subroutine.
       call binadding(j,infobj,sd,ijbin)
 
       if(ijbin2.ne.-1)then
-c Currently never triggered if we only count objects whose region
-c boundary we've crossed only once.
          write(*,*)'Pass-through j,ijbin2,infobj=',j,ijbin2,infobj
-         write(*,*)(x_part(i,j),i=1,6)
+c         write(*,*)(x_part(i,j),i=1,6)
          ierr=-1
       endif
       end

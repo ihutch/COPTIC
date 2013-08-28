@@ -10367,3 +10367,67 @@ or ions.
 13 Aug 2013
 Tidying in the testing directory.
 git rm world3.h. Slicesect actually uses the accis/world3.h version.
+
+-------
+
+24 Aug 2013 
+
+Preparing to make the direction of plasma drift general (like B).
+Add variable vdrift(nplasdims) that is the direction cosines of the
+drift velocity, relative to x,y,z. (Like Bfield).
+Add code in cmdline interpretation to allow setting of vdrift(x,y,z)
+and to default it to 0,0,1.
+Add code to calculate vpar and vperp in cmdline. So that subsequently
+(for nonzero Bt) vd(i)=vpar*Bfield(i)+vperp(i).
+
+Now we need to address mostly pinit.f, cartreinject.f, padvnc.f. 
+The order is not obvious. However, pinit.f is responsible for initializing
+the fxvcol distribution that gives the reinjection statistics for a
+drift case. So probably that's the place to start.
+
+If colntime.ne.0 pinit calls colninit and colreinit, which are responsible
+for calculating Eneutral. It appears that Eneutral is presumed to be in
+the z-direction. That's got to change. But vperp is taken to be the velocity
+of the frame of reference in which Eneutral (perp?) is zero.
+
+Removed colninitoff which was obsolete.
+
+Before we do more, we need a test case that will establish whether we
+broke the prior collisional initialization. One way is with colndistshow.
+Which plots the drift distribution. Add to that a write of the center
+of the distribution so plotted, and run
+./coptic -v1 -vn0. -Ef1. -ct100. Saved original as fvxvydist.init
+
+Editted the unmagnetized parts of colnstats to reflect general flow
+direction. (But those aren't the hard or necessary parts).
+
+run ./coptic -v1 -vn0. -Ef1. -Bx1. -By1. -ct100.
+save as fvxvydist.bxy
+Editted the magnetized parts of colnstats. Still getting consistent results.
+In so far as Eneutral/vpar/vperp is correct, this ought now to be correct.
+The previous version seemed to presume that Eneutral was in the z direction.
+The new version presumes it is in the vdrift direction. That's equivalent
+once we reimplement vzave as the vdrift-component sum.
+
+There is no "infinite"-B version of colnstats. I assume it is unnecessary.
+
+Eneutral is set or iterated so that Eneutral=(vd-vneutral)/colntime,
+before each colnstats call. However, it does not appear that vperp is
+updated as Eneutral is iterated. This seems to be an omission.
+Or maybe I don't quite understand. In cmdline, vperp is set to be the
+drift velocity perpendicular to B. There is some description in Jan 2013
+but I think my calculation is in notebook. 28 Dec 2012 refers to the change
+in meaning of vperp. It is the frame in which both vdxB and Eneutral are
+cancelled. 
+
+So ... during colninit, colnstats, vperp is such as to "cancel only
+vdxB".  That's what cmdline sets it to be. The perpendicular part of
+vd.  After that's finished, but still in pinit, vperp is changed to
+refer to the velocity of the frame that cancels (the perpendicular
+part of) Eneutral as well. There does seem to be an inconsistency
+during iteration of Eneutral, if it has a perp part.
+
+27 Aug 13
+Not quite finished with the magnetized case. I'm thinking that I'll perhaps
+leave it when I've got the BGK case done. The other case seems harder.
+Made some hand notes.

@@ -6,8 +6,6 @@ c     represented by a difference stencil of specified coefficients,
 c     f is some additional function, and q is the "charge density".
 c Ian Hutchinson, 2006-2012
 c
-c      subroutine sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset,faddu
-c     $     ,ictl,ierr,mpiid,idims)
       subroutine sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset,faddu
      $     ,ictl,ierr,mpiid,idims)
 c The used number of dimensions. But this must be equal to ndims 
@@ -134,6 +132,10 @@ c      write(*,*)'laddu=',laddu
 c Third bit of ictlh indicates we are just initializing.
       ictlh=ictlh/2
       if(mod(ictlh,2).ne.0)then
+c bbdy() is the only place the parallel nature of this routine affects
+c A serial version is obtained by linking with nonmpibbdy.f, rather than
+c mpibbdy.f so as to replace the mpi calls with dummies. Those files
+c also contain a few other routines called here.
 c (Re)Initialize the block communications:
          k_sor=-2
          call bbdy(iLs,ifull,iuds,u,k_sor,ndims,idims,

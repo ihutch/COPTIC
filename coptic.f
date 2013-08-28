@@ -133,7 +133,8 @@ c First time this routine just sets defaults and the object file name.
      $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline)
+     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
+     $     ,vdrift)
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -145,10 +146,10 @@ c Second time: deal with any other command line parameters.
      $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline)
+     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
+     $     ,vdrift)
       if(ierr.ne.0)stop
 c The double call enables cmdline switches to override objfile settings.
-c      crelax=0.
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
       ndropped=0
@@ -173,7 +174,6 @@ c Initialize reinjection geometry if needed for particular case.
       call geominit(myid)
 c-----------------------------------------------------------------
 c Initialize the face phi boundary conditions if we are using them.
-c      write(*,*)'ICFCOUNT',iCFcount
       if(iCFcount.ne.0)then
          do idn=1,2*ndims
             call bdyfaceinit(idn,CFin(1,idn))
@@ -256,12 +256,10 @@ c More elaborate graphics of volumes
      $              ixnp,xn,ifix,'volumes:'//'!Ay!@'//char(0),dum,dum)
 c---------------------------------------------
 c The following requires include objcom.f
-c         if(lmyidhead)write(*,*)'Finished mesh/stencil setup:',iuds
          if(lmyidhead)write(*,*)
      $      'Used No of pointers:',oi_cij,' of',iuds(1)*iuds(2)*iuds(3)
      $        ,' points.'
 c Plot objects 0,1 and 2 (bits)
-c      iobpl=-7
          if(iobpl.ne.0.and.lmyidhead)then
             if(rcij.eq.0.)rcij=rs
 c            call cijplot(ndims,ifull,iuds,cij,rcij,iobpl,0)

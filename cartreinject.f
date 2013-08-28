@@ -798,14 +798,6 @@ c Local data
       integer i,id,k,iother
       external ran1
 
-c      logical lfirst
-c      data lfirst/.true./
-
-c      if(lfirst)then
-c         call colreinit()
-c         lfirst=.false.
-c      endif
-
 c Choose the normal-dimension for reinjection, from cumulative dist.
  2    ra=ran1(1)
       do i=1,nc_ndims

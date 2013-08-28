@@ -7,6 +7,7 @@ c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       parameter (nfilemax=999)
       include '../partcom.f'
       include '../ptaccom.f'
+
  
       character*10 chartemp
       character*100 name
@@ -14,6 +15,8 @@ c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
 
       integer nx,ny
       parameter (nxbin=50,nybin=50)
+      real fvxvy(nxbin,nybin),vxa(nxbin,nybin),vya(nxbin,nybin)
+      real work(0:nxbin+1,0:nybin+1)
       integer nl
       parameter (nl=10)
       real cl(nl),ht

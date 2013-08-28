@@ -8,10 +8,14 @@ Quick-start:
 	     $ cd COPTIC
 	     $ make
 
+If that works you are up and running. 
+More comprehensive tests can be run by:
+             $ make geometry
+
 
 
 License: 
-	 COPTIC is copyright Ian H Hutchinson 2012. 
+	 COPTIC is copyright Ian H Hutchinson 2013. 
 
 Permission is granted freely to use this code for scholarly research
 provided that any scientific publication incorporating results

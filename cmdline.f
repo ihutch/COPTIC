@@ -7,7 +7,8 @@ c Encapsulation of parameter setting.
      $     ,nsteps,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline)
+     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
+     $     ,vdrift)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
@@ -18,7 +19,7 @@ c Encapsulation of parameter setting.
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,rmtoz,vneutral,vd,debyelen,Ti,extfield,vpar,slpD
      $     ,Tneutral,Enfrac,colpow
-      real Bfield(ndims),Bt,vperp(ndims),CFin(3+ndims,6)
+      real Bfield(ndims),Bt,vperp(ndims),CFin(3+ndims,6),vdrift(ndims)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
       character*256 argline
@@ -27,6 +28,7 @@ c Local variables:
       integer lentrim,iargc
       external lentrim
       integer i,id,idn,idcn,i0,i1,iargcount,iargpos,iterate
+      real vwork
       character*100 argument
       logical lfirst
       data lfirst/.true./
@@ -79,7 +81,9 @@ c Boundary condition switch and value. 0=> logarithmic.
          do id=1,ndims
             LPF(id)=.false.
             ipartperiod(id)=0
+            vdrift(id)=0.
          enddo
+         vdrift(ndims)=1.
          do i=1,iargc()
             call getarg(i,argument)
             if(argument(1:3).eq.'-of')
@@ -228,6 +232,12 @@ c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
          endif
          if(argument(1:3).eq.'-vn')then
             read(argument(4:),*,err=201)vneutral
+         elseif(argument(1:3).eq.'-vx')then
+            read(argument(4:),*,err=201)vdrift(1)
+         elseif(argument(1:3).eq.'-vy')then
+            read(argument(4:),*,err=201)vdrift(2)
+         elseif(argument(1:3).eq.'-vz')then
+            read(argument(4:),*,err=201)vdrift(3)
          elseif(argument(1:2).eq.'-v')then
             read(argument(3:),*,err=201)vd
 c For Mach bdy, set slpD equal to M.
@@ -296,17 +306,32 @@ c End of command line parameter parsing.
 c-------------------------------------------------------
 
  202  continue
+      if(vdrift(1).ne.0. .or. vdrift(2).ne.0)then
+c --- Drift in direction other than z. Normalize cosines.
+         vwork=0.
+         do i=1,ndims
+c Make all the vdrift components non-zero so that we can use that fact
+c as an indicator of non-z drift.
+            if(vdrift(i).eq.0.)vdrift(i)=1.e-25
+            vwork=vwork+vdrift(i)**2
+         enddo
+         vwork=sqrt(vwork)
+         do i=1,ndims
+            vdrift(i)=vdrift(i)/vwork
+         enddo
+      endif
+c ---
       if(colntime.eq.0.)then
 c Collisionless, also set vneutral to vd, else things are inconsistent:
          vneutral=vd
       endif
-c Deal with B-field
+c --- Deal with B-field
       Bt=0.
       do i=1,ndims
          Bt=Bt+Bfield(i)**2
       enddo
       if(Bt.ne.0)then
-c Normalize magnetic field.
+c Normalize magnetic field cosines.
          Bt=sqrt(Bt)
          do i=1,ndims
             Bfield(i)=Bfield(i)/Bt
@@ -317,13 +342,31 @@ c Flag an inappropriate field and dt combination
      $           'UNWISE field',Bt,' and dt',dt
      $           ,' Use B.dt less than 1; else inaccurate.'
          endif
+c This test is redundant now. Should use the general (else) case.
+         if(vdrift(1).eq.0)then
 c Assume that vd is in the z-direction
-         vpar=vd*Bfield(ndims)
-         do i=1,ndims
-            vperp(i)=-Bfield(i)*vpar
-         enddo
-         vperp(ndims)=vperp(ndims)+vd
-         if(lmyidhead)write(*,*)'vpar,vperp',vpar,',',vperp
+            vpar=vd*Bfield(ndims)
+            do i=1,ndims
+               vperp(i)=-Bfield(i)*vpar
+            enddo
+            vperp(ndims)=vperp(ndims)+vd
+         else
+c vd non-z:
+            vpar=0.
+            do i=1,ndims
+               vpar=vd*vdrift(i)*Bfield(i)
+            enddo
+            do i=1,ndims
+               vperp(i)=-Bfield(i)*vpar
+            enddo
+            vwork=0.
+            do i=1,ndims
+               vperp(i)=vperp(i)+vd*vdrift(i)
+               vwork=vwork+(vperp(i)+vpar*Bfield(i))**2
+            enddo
+         endif
+         vwork=sqrt(vwork)
+         if(lmyidhead)write(*,*)'vpar,vperp,vwork',vpar,',',vperp,vwork
       else
 c Zero the vparallel and vperp. Probably not necessary; but tidy.
          vpar=0.
@@ -331,7 +374,6 @@ c Zero the vparallel and vperp. Probably not necessary; but tidy.
             vperp(i)=0.
          enddo
       endif
-c      write(*,*)'Bfield',Bfield
 c Set and check particle periodicity logical.
       lnotallp=.false.
       do i=1,ndims
@@ -384,7 +426,8 @@ c Help text
       write(*,301)' -s    set No of steps.           [',nsteps
       write(*,302)' -t    set Ion Temperature.       [',Ti
       write(*,302)' -l    set Debye Length.          [',debyelen
-      write(*,302)' -v    set Drift (z-)velocity.    [',vd
+      write(*,302)' -v    set drift speed.           [',vd
+      write(*,302)' -vx -vy -vz set velocity cosines [',vdrift
       write(*,302)' -ct   set collision time.        [',colntime
       write(*,302)' -vn   set neutral drift velocity [',vneutral
       write(*,302)' -tn   set neutral temperature    [',Tneutral

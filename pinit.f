@@ -43,8 +43,10 @@ c The maximum used slot is the same as the number of particles initially
       ioc_part=n_part
       Eneutral=0.
       if(colntime.ne.0.)then
+c At this point vperp refers to the perp part of vd, set by cmdline.
 c Initialize the reinjection particles and discover the full Eneutral.
          call colninit(0,myid)
+         call colndistshow()
          call colreinit(myid)
 c Finalize the Eneutral fraction and related settings.
          Eneutral=Enfrac*Eneutral
@@ -162,155 +164,6 @@ c Return a random velocity from the (precalculated) distribution heap.
       enddo
       end
 c*********************************************************************
-c      subroutine colninit(ncin,myid)
-      subroutine colninitoff(ncin,myid)
-c Routine for initializing particles when collisions and drifts
-c driven by Eneutral are present. An array of velocities that 
-c represents the background distribution of ions is calculated by
-c advancing from random birth velocity representative of the neutral
-c distribution. The collision frequency is proportional to velocity
-c to the power colpow.
-
-      implicit none
-      integer ncin,myid
-      include 'cdistcom.f'
-      include 'plascom.f'
-      include 'colncom.f'
-      real gasdev,ran1
-      external gasdev, ran1
-
-c Local variables
-      integer nclim,i,k
-      real tisq,dt0,torb,ttic,v2,vzave,orbtic
-      real v(nc_ndims)
-      real theta,stheta,ctheta,dvpar
-c The number of samples.
-      if(ncin.eq.0)then
-         nclim=ncdistmax
-      else
-         nclim=ncin
-      endif
-      tisq=sqrt(Ti)
-      if(Enfrac.eq.0.)then
-c Initialize just from the neutral distribution.
-         dt0=0.
-         Eneutral=0.
-         if(myid.eq.0)write(*,*)'Enfrac=0. Not initializing cdist.'
-c Don't initialize the rest.
-         return
-      else
-c Decide the duration of the time tic. Take it to be a smallish fraction
-c of the collision time so that sufficient resolution is present to do a
-c reasonable integral of a variable collision frequency, but not too
-c small otherwise the perpendicular velocity and orbit length
-c representation becomes statistically worse.
-c The actual collision time is coltime*(v^2/Ti)^(colpow/2.)
-c So if colpow=0. the collision time is coltime independent of v.
-         if(colpow.eq.0.)then
-            dt0=.5*colntime
-         else
-            dt0=0.03*colntime
-         endif
-c One might imagine a need to ensure dt does not happen to coincide with
-c a low order rational multiple of the cyclotron period. But there is no 
-c sign in output of this need. Probably the random collision length does
-c enough to randomize even a bad coincidence.
-      endif
-      do i=1,nc_ndims
-         cdistflux(i)=0.
-      enddo
-
-c Initial guess at what whole Eneutral really needs to be to give the
-c drift requested. Based on Ti=0.1.
-      Eneutral=(vd-vneutral)/colntime *(1.+(2.5*colpow+2.)*colpow)
-      if(myid.eq.0)write(*,'(a,$)')' Colninit velocity: '
-
-c Iterate over adjustments to Eneutral.
-      do k=1,4
-         ncdist=0
-         vzave=0.
-         ttic=dt0
-c--------------------------------------------
-c Start of a new orbit
- 2       continue 
-c torb is the orbit time in velocity-scaled units. ttic in unscaled.
-         torb=-alog(ran1(1))*colntime
-c Inject from neutral distribution
-         v2=Tneutral
-         do i=1,nc_ndims
-            v(i)=tisq*gasdev(i)
-            if(i.eq.nc_ndims)v(i)=v(i)+vneutral
-            v2=v2+v(i)**2
-         enddo
-c The torb consumption rate depends on velocity.
-c For example, if cross-section is proportional to velocity to the 
-c power -p, then dynamic colnfreq \propto v^{1.-p}. =v^2(1.-p)/2.
-c Constant cross-section pow=colpow*0.5=0.5; constant nu colpow=0.
-c The ratio of orbit consumption rate to tic consumption rate is:
-         orbtic=(v2/Ti)**(colpow/2.)
-
- 3       if(ttic*orbtic.le.torb)then
-c If ttic*orbtic<torb, advance to tic.
-c Subtract the timestep from time to the orbit end in scaled units
-            torb=torb-ttic*orbtic
-            v2=Tneutral
-            ncdist=ncdist+1
-            if(Bt.eq.0.)then
-c B-field free case
-               do i=1,nc_ndims
-                  if(i.eq.nc_ndims)v(i)=v(i)+Eneutral*ttic
-                  v2=v2+v(i)**2
-                  v_col(i,ncdist)=v(i)
-                  cdistflux(i)=cdistflux(i)+abs(v(i))
-               enddo
-            else
-c Finite B-field case
-               theta=Bt*ttic
-c Rotation is counterclockwise for ions.
-               stheta=sin(-theta)
-               ctheta=cos(theta)
-c Subtract off the perpendicular velocity of frame in which E is zero.
-               do i=1,nc_ndims
-                  v(i)=v(i)-vperp(i)
-               enddo
-c Rotate the velocity
-               call rotate3(v,stheta,ctheta,Bfield)
-c Acceleration along the B-direction:
-               dvpar=Eneutral*ttic*Bfield(nplasdims)            
-c And add back the drift velocity, and the parallel acceleration.
-               do i=1,nc_ndims
-                  v(i)=v(i)+vperp(i)+dvpar*Bfield(i)
-                  v2=v2+v(i)**2
-                  v_col(i,ncdist)=v(i)
-                  cdistflux(i)=cdistflux(i)+abs(v(i))
-               enddo
-c               write(*,*)'ncdist=',ncdist
-c               write(*,*)'theta,v',theta,v
-            endif
-            vzave=vzave+v_col(nc_ndims,ncdist)
-            orbtic=(v2/Ti)**(colpow/2.)
-c Now we are at the end of a tic. Set the next tic length
-            ttic=dt0
-c If we haven't exhausted the sample number, start next tic
-            if(ncdist.lt.nclim)goto 3
-         else
-c If ttic*orbtic>torb, advance to next orbit without storing a sample
-            ttic=ttic-torb/orbtic
-            goto 2
-         endif
-c--------------------------------------------
-c      write(*,*)'End of colninit',dt0,colntime,colpow
-c     $     ,vzave/nclim,Eneutral
-
-         if(myid.eq.0)write(*,'(f6.4,'', '',$)')vzave/nclim
-         if(colpow.eq.0.)goto 4
-         Eneutral=Eneutral*(1.5*((vd-vneutral)*nclim/vzave-1.)+1.)
-      enddo
-c End of Eneutral iteration.
- 4    continue
-      if(myid.eq.0)write(*,'(a,f8.4)')' Colninit Eneutral=',Eneutral
-
-      end
 c*********************************************************************
 c Wrapper of Version to do fullscale neutral statistics.
       subroutine colninit(ncin,myid)
@@ -368,7 +221,7 @@ c is velocity dependent.
 
 c The velocities are deposited in cdistcom variable v_col(i,j) for j=1,nclim.
 c In addition, the sum of all the velocities in cdistflux(i).
-c vzave returns the sum of the last components of the velocities.
+c vzave returns the sum of the vdrift-components of the velocities.
 
       implicit none
       integer nclim
@@ -427,7 +280,8 @@ c Inject from neutral distribution
       v2=delta*Tneutral
       do i=1,nc_ndims
          v(i)=tisq*gasdev(i)
-         if(i.eq.nc_ndims)v(i)=v(i)+vneutral
+c         if(i.eq.nc_ndims)v(i)=v(i)+vneutral
+         v(i)=v(i)+vneutral*vdrift(i)
          v2=v2+v(i)**2
       enddo
 c torb is the orbit time in velocity-scaled units. ttic in unscaled.
@@ -444,7 +298,8 @@ c Subtract the timestep from time to the orbit end in scaled units
          if(Bt.eq.0.)then
 c B-field free case
             do i=1,nc_ndims
-               if(i.eq.nc_ndims)v(i)=v(i)+Eneutral*ttic
+c               if(i.eq.nc_ndims)v(i)=v(i)+Eneutral*ttic
+               v(i)=v(i)+Eneutral*vdrift(i)*ttic
                v2=v2+v(i)**2
                v_col(i,ncdist)=v(i)
                cdistflux(i)=cdistflux(i)+abs(v(i))
@@ -463,7 +318,11 @@ c Subtract off the perpendicular velocity of frame in which E is zero.
 c Rotate the velocity
             call rotate3(v,stheta,ctheta,Bfield)
 c Acceleration along the B-direction:
-            dvpar=Eneutral*ttic*Bfield(nplasdims)            
+c            dvpar=Eneutral*ttic*Bfield(nplasdims)            
+            dvpar=0.
+            do i=1,nc_ndims
+               dvpar=dvpar+Eneutral*vdrift(i)*Bfield(i)*ttic
+            enddo
 c And add back the drift velocity, and the parallel acceleration.
             do i=1,nc_ndims
                v(i)=v(i)+vperp(i)+dvpar*Bfield(i)
@@ -474,7 +333,10 @@ c And add back the drift velocity, and the parallel acceleration.
 c               write(*,*)'ncdist=',ncdist
 c               write(*,*)'theta,v',theta,v
          endif
-         vzave=vzave+v_col(nc_ndims,ncdist)
+c         vzave=vzave+v_col(nc_ndims,ncdist)
+         do i=1,nc_ndims
+            vzave=vzave+v_col(i,ncdist)*vdrift(i)
+         enddo
 c Now we are at the end of a tic. Set the next tic length
          ttic=dt0
 c If we haven't exhausted the sample number, start next tic
@@ -486,7 +348,10 @@ c distribution we need to do the null collision calculation and goto 3
 c not 2. 
 c Advance to a possible collision.
          if(Bt.eq.0.)then
-            v(nc_ndims)=v(nc_ndims)+Eneutral*torb 
+c            v(nc_ndims)=v(nc_ndims)+Eneutral*torb 
+            do i=1,nc_ndims
+               v(i)=v(i)+Eneutral*vdrift(i)*torb
+            enddo
          else
 c Finite B-field case
             theta=Bt*torb
@@ -500,7 +365,11 @@ c Subtract off the perpendicular velocity of frame in which E is zero.
 c Rotate the velocity
             call rotate3(v,stheta,ctheta,Bfield)
 c Acceleration along the B-direction:
-            dvpar=Eneutral*torb*Bfield(nplasdims)            
+c            dvpar=Eneutral*torb*Bfield(nplasdims)            
+            dvpar=0.
+            do i=1,nc_ndims
+               dvpar=dvpar+Eneutral*vdrift(i)*Bfield(i)*torb
+            enddo
 c And add back the drift velocity, and the parallel acceleration.
             do i=1,nc_ndims
                v(i)=v(i)+vperp(i)+dvpar*Bfield(i)
@@ -510,7 +379,8 @@ c Possible collision: Choose a neutral velocity and calculate (v-vd)^2
          v2=0.
          do i=1,nc_ndims
             vn(i)=tisq*gasdev(i)
-            if(i.eq.nc_ndims)vn(i)=vn(i)+vneutral
+c            if(i.eq.nc_ndims)vn(i)=vn(i)+vneutral
+            vn(i)=vn(I)+vneutral*vdrift(i)
             v2=v2+(v(i)-vn(i))**2
          enddo
 c Calculate the ratio of the actual collision time at this relative
@@ -594,6 +464,9 @@ c       Plot the surface. With axes (2-D). Web color 10, axis color 7.
         call color(15)
         if(ieye3d().ne.0) goto 98
 
+        open(2,file='fvxvydist.dat')
+        write(2,*)(fvxvy(nxbin/2,j),j=1,nybin)
+        close(2)
       end
 
 c****************************************************************

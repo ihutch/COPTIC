@@ -72,7 +72,8 @@ c Deal with command-line arguments; not all valid here.
      $     ,nsteps,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
      $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline)
+     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
+     $     ,vdrift)
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
 c Geometry and boundary information. Read in.

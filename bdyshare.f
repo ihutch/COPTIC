@@ -1,8 +1,4 @@
 c***********************************************************************
-c Obsolete argument order.
-c      subroutine bdyshare(idone,ndimsdecl,ifull,iuds,cij,u,q
-c     $           ,iLs,idims,lperiod,icoords,iLcoords,myside,myorig
-c     $           ,icommcart,mycartid,myid)
       subroutine bdyshare(iLs,ifull,iuds,u,idone,ndimsdecl,idims,
      $     icoords,iLcoords,myside,myorig,
      $     icommcart,mycartid,myid,lperiod)
@@ -38,13 +34,6 @@ c communication to bdyshrroutine.
 c      real u(*)
 
       ndims=ndimsdecl
-c      write(*,*)'In bdyshare:'
-c             write(*,*)iLs,ifull,iuds,idone,ndimsdecl,idims,lperiod,
-c     $           icoords,iLcoords,myside,myorig,icommcart,mycartid,myid
-c      write(*,*)'Entered bdyshare   ndims,myorig,ifull,iuds'
-c     $     ,',idims,icoords,lperiod,iLcoords'
-c      write(*,*)ndims,myorig,ifull,myside,idims,icoords,lperiod,iLcoords
-c     $     ,iLs
 
       idone(1)=1
       do id=1,ndims
