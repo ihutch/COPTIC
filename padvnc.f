@@ -48,9 +48,6 @@ c Make this always last to use the checks.
       include 'partcom.f'
 
 c-------------------------------------------------------------
-c Choice of collisional force scheme.
-      lbulk=.false.
-
 c      tisq=sqrt(Ti)
       tisq=sqrt(Tneutral)
       lcollided=.false.
@@ -258,7 +255,7 @@ c Only the Enparallel is needed for non-zero Bfield.
                   x_part(j,i)=x_part(j,i)+Eadd*dtaccel
                   do iob=1,mf_obj
                      igeom=nf_geommap(iob)
-                     if(btest(iregion,igeom-1).and..not.lbulk)then
+                     if(btest(iregion,igeom-1))then
                         colnforce(j,iob,nf_step) =colnforce(j,iob
      $                       ,nf_step)+Eadd*dtaccel
                      endif
@@ -270,7 +267,7 @@ c But correcting the collisional force appropriately.
                x_part(2*ndims,i)=x_part(2*ndims,i)+Eneutral*dtaccel
                do iob=1,mf_obj
                   igeom=nf_geommap(iob)
-                  if(btest(iregion,igeom-1).and..not.lbulk)then
+                  if(btest(iregion,igeom-1))then
                      colnforce(ns_ndims,iob,nf_step)=colnforce(ns_ndims
      $                    ,iob,nf_step)+Eneutral*dtaccel
                   endif
@@ -293,9 +290,8 @@ c---------------------------------
 c If we crossed a boundary, do tallying.
          ltlyerr=.false.
          if(inewregion.ne.iregion)
-c     $        call tallyexit(i,inewregion-iregion,ltlyerr)
 c Integer exclusive or ieor bitwise is the correct way.
-     $        call tallyexit(i,ieor(inewregion,iregion),ltlyerr)
+     $        call tallyexit(i,ieor(inewregion,iregion),ltlyerr,dtpos)
 c------------ Possible Reinjection ----------
          if(ltlyerr .or. .not.linmesh .or.
      $        .not.linregion(ibool_part,ndims,x_part(1,i)))then
@@ -374,8 +370,6 @@ c--------- Completion of particle i treatment ------
  300     continue
 c Not needed when the Eneutral is subtracted off above and the
 c collisional effect is in postcollide.
-         if(lbulk)call bulkforce(x_part(1,i),iregion,colntime,vneutral
-     $        ,Eneutral)
 c Special diagnostic orbit tracking:
          if(i.le.norbits.and. if_part(i).ne.0)then
             if(dtdone-dt.gt.1.e-4)then
@@ -392,11 +386,7 @@ c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 c -------------- End of cycle through particles ----------
       if(rhoinf*colntime.ne.0.)then
 c Normalize the collision force appropriately.
-         if(lbulk)then
-            call bulknorm(1./(rhoinf*colntime))
-         else
-            call bulknorm(1./(rhoinf*dt))
-         endif
+         call bulknorm(1./(rhoinf*dt))
       endif
       if(ninjcomp.ne.0 .and. nrein.lt.ninjcomp)then
          write(*,*)'WARNING: Exhausted n_partmax=',n_partmax,
@@ -662,7 +652,6 @@ c Local variables
 c Vneutral is in z-direction.
       x_part(npdim+npdim,i)=x_part(npdim+npdim,i)+vneutral
       dv(npdim)=dv(npdim)+vneutral
-      if(.not.lbulk)then
 c Now contribute the momentum change to the collisional force.
       do j=1,mf_obj
          if(btest(iregion,nf_geommap(j)-1))then
@@ -676,7 +665,6 @@ c and by dt.
             enddo
          endif
       enddo
-      endif
       end
 c*******************************************************************
       subroutine rotate3(xin,s,c,u)

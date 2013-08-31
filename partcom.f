@@ -46,6 +46,8 @@ c Whether not all directions of particles are periodic
      $     ,caverein,chi
 
 c Orbit plotting storage for tracking the first norbits orbits.
+c This nstepmax does NOT control the maximum number of steps.
+c That is controlled by nf_maxsteps not nstepmax
       integer nobsmax,norbits,nstepmax
       parameter (nobsmax=100)
       parameter (nstepmax=10000)

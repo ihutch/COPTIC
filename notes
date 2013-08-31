@@ -10431,3 +10431,33 @@ during iteration of Eneutral, if it has a perp part.
 Not quite finished with the magnetized case. I'm thinking that I'll perhaps
 leave it when I've got the BGK case done. The other case seems harder.
 Made some hand notes.
+
+31 Aug 13
+
+Rerunning sheathparticles cases. I want to understand the passthrough 
+situation. I seem to be using updated coptic but still getting passthroughs
+despite using ieor in tallyexit. I'm not sure I understand that.
+
+Comment out colndistshow that I was using for the collisional distribution
+stuff.
+
+Get sheathgeom.dat from loki. It is simply one of the sheath cases.
+Add the Arguments into the file. Now I can get passthroughs routinely.
+
+Found the cause of the passthroughs. It was that during acceleration
+dt is not equal to the actual step duration dtpos. Therefore in 
+tallyexit and objsect, the prior position obtained by backing up by
+dt is not correct. One ought to have backed up by dtpos. Therefore
+dtpos needs to be passed to tallyexit and objsect. Fixed and it gets
+rid of the passthroughs. 
+
+Increased nf_maxsteps to 6000 from 3000.
+
+Finalize magnetized case (I think) by changing the pinit section to 
+add generalized EneutralxBt to vperp in the transition to the working
+values (removing assumption that vdrift is in z direction). That means
+it ought to work for constant-nu collisions (but not for colpow nonzero).
+Not thoroughly tested.
+
+Purge lbulk from padvnc and everywhere. 
+Replace it in colncom.f with ldistshow. Add switch to toggle distshow.

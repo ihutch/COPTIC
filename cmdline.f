@@ -8,14 +8,14 @@ c Encapsulation of parameter setting.
      $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
      $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
-     $     ,vdrift)
+     $     ,vdrift,ldistshow)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
      $     ,numprocs,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
      $     ,iwstep,idistp,ndims,islp,lrestart
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
-     $     ,lextfield,LPF(ndims),lnotallp
+     $     ,lextfield,LPF(ndims),lnotallp,ldistshow
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,rmtoz,vneutral,vd,debyelen,Ti,extfield,vpar,slpD
      $     ,Tneutral,Enfrac,colpow
@@ -69,6 +69,7 @@ c Default edge-potential (chi) relaxation rate.
          rcij=0
          rmtoz=1.
          iobpsw=1
+         ldistshow=.false.
 c Boundary condition switch and value. 0=> logarithmic.
          islp=0
          slpD=0.
@@ -119,6 +120,7 @@ c Afterwards getarg.
 c            write(*,*)i,argument
          endif
          if(argument(1:3).eq.'-gt')ltestplot=.true.
+         if(argument(1:3).eq.'-gn')ldistshow=.not.ldistshow
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
          if(argument(1:3).eq.'-gw')read(argument(4:),*,end=201)iobpsw
          if(argument(1:3).eq.'-gr')read(argument(4:),*,end=201)rcij
@@ -470,6 +472,7 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)'Debugging switches for testing'
       write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
+      write(*,301)' -gn   Plot collisional reinjection distribution.'
       write(*,301)
      $      ' -gp -gd[] Plot slices of solution potential, density. '
      $     //'[At step n]. [',ipstep

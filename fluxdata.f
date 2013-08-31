@@ -380,13 +380,14 @@ c     $     ,nf_address(1,1,11)-1)
 
       end
 c******************************************************************
-      subroutine tallyexit(i,idiffreg,ltlyerr)
+      subroutine tallyexit(i,idiffreg,ltlyerr,dtpos)
 c Document the exit of this particle just happened. 
 c Assign the exit to a specific object, and bin on object.
 c (If it is a mapped object, decided by objsect.)      
 c On entry
 c        i is particle number, 
 c        idiffreg is the xor between its region and previous.
+c        dtpos is the time step duration that brought us here.
 c On exit ltlyerr is true if an error occurred else unchanged.
 c Normally, returning an error will cause this particle to be
 c considered to have left the particle region, so it will be discarded.
@@ -403,28 +404,30 @@ c Determine (all) the objects crossed and call objsect for each.
       iobj=iobj+1
       idiff=idiff/2
       if(idp.ne.idiff*2)then
-         call objsect(i,iobj,ierr)
+         call objsect(i,iobj,ierr,dtpos)
          if(ierr.gt.0)then
             ireg=insideall(npdim,x_part(1,i))
             r=0.
             r1=0.
             do id=1,3
                r=r+x_part(id,i)**2
-               r1=r1+(x_part(id,i)-dt*x_part(id+3,i))**2
+               r1=r1+(x_part(id,i)-dtpos*x_part(id+3,i))**2
             enddo
             r=sqrt(r)
             r1=sqrt(r1)
             write(*,*)'Tallyexit error',ierr,i,iobj,idiffreg
             if(ierr.eq.99)write(*,*)'Unknown object type.'
             write(*,*)'xpart,r=',(x_part(k,i),k=1,6),r,ireg
-            write(*,*)'xp1',(x_part(k,i)-dt*x_part(k+3,i),k=1,3),r1
+            write(*,*)'xp1',(x_part(k,i)-dtpos*x_part(k+3,i),k=1,3),r1
             ltlyerr=.true.
             return
          elseif(ierr.eq.-1)then
+c This Pass-through should not happen because tallyexit is not called
+c unless the region is changed. But leave for error detection.
             write(*,*)'idiffreg,i,iobj=',idiffreg,i,iobj
             write(*,'(a,6f10.5)')'xp2',(x_part(k,i),k=1,6)
-            write(*,'(a,6f10.5)')'xp1',(x_part(k,i)-dt*x_part(k+3,i),k=1
-     $           ,3)
+            write(*,'(a,6f10.5)')'xp1',(x_part(k,i)-dtpos*x_part(k+3,i)
+     $           ,k=1,3)
          endif
       endif
       idp=idp/2
@@ -433,10 +436,10 @@ c Determine (all) the objects crossed and call objsect for each.
       end
 c******************************************************************
 c****************************************************************
-      subroutine objsect(j,iobj,ierr)
-c Find the intersection of the last step of particle j with  
-c object iobj, and update the positioned-fluxes accordingly.
-c ierr is returned: 0 good. 1 no intersection. 99 unknown object.
+      subroutine objsect(j,iobj,ierr,dtpos)
+c Find the intersection of the last step of particle j (length dtpos)
+c with object iobj, and update the positioned-fluxes accordingly.  ierr
+c is returned: 0 good. 1 no intersection. 99 unknown object.
 c
       include '3dcom.f'
       include 'partcom.f'
@@ -460,7 +463,7 @@ c Use only bottom 8 bits:
 
 c Get the positions:
       do i=1,npdim
-         x1(i)=x_part(i,j)-dt*x_part(i+3,j)
+         x1(i)=x_part(i,j)-dtpos*x_part(i+3,j)
          x2(i)=x_part(i,j)
       enddo
       if(itype.eq.1)then
@@ -514,8 +517,8 @@ c Do the bin adding in a subroutine.
       call binadding(j,infobj,sd,ijbin)
 
       if(ijbin2.ne.-1)then
+c This should not happen.
          write(*,*)'Pass-through j,ijbin2,infobj=',j,ijbin2,infobj
-c         write(*,*)(x_part(i,j),i=1,6)
          ierr=-1
       endif
       end

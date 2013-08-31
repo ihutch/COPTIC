@@ -59,7 +59,7 @@ c jbin runs from 0 to N-1 psi = -pi to pi.
       endif
  
       if(f2.gt.0. .and. f2.lt.1.)then
-c Step passes right through the sphere. 
+c Step passes right through the sphere.
 c Calculate normalized intersection coordinates. For f2.
          do i=1,npdim
             x12(i)=((1.-f2)*xp1(i)+f2*xp2(i)

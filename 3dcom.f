@@ -62,7 +62,7 @@ c Data that describes the flux to positions on the objects:
 c Number of slots needed for position descriptors. Dimensions.
       parameter (nf_posdim=4,nf_ndims=3)
 c Maximum (i.e. storage size) of array 
-      parameter (nf_quant=5,nf_obj=20,nf_maxsteps=3000)
+      parameter (nf_quant=5,nf_obj=20,nf_maxsteps=6000)
       parameter (nf_datasize=10000000)
 c Mnemonics for quantities:
       integer nf_flux,nf_gx,nf_gy,nf_gz,nf_heat

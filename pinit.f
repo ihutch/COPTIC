@@ -46,14 +46,19 @@ c The maximum used slot is the same as the number of particles initially
 c At this point vperp refers to the perp part of vd, set by cmdline.
 c Initialize the reinjection particles and discover the full Eneutral.
          call colninit(0,myid)
-         call colndistshow()
+         if(myid.eq.0.and.ldistshow)call colndistshow()
          call colreinit(myid)
 c Finalize the Eneutral fraction and related settings.
          Eneutral=Enfrac*Eneutral
 c Add on the orthogonal EnxB drift, so as to make vperp the velocity of
 c the frame of reference in which the background E-field is truly zero:
-         vperp(1)=vperp(1)-Bfield(2)*Eneutral/Bt
-         vperp(2)=vperp(2)+Bfield(1)*Eneutral/Bt
+         do k=1,ndims_mesh
+            k1=mod(k,ndims_mesh)+1
+            k2=mod(k+1,ndims_mesh)+1
+            vperp(k)=vperp(k)+(Eneutral/Bt)
+     $           *(vdrift(k1)*Bfield(k2)-vdrift(k2)*Bfield(k1))
+         enddo
+
       endif
 c     We initialize the 'true' particles'
       tisq=sqrt(Ti)
@@ -113,7 +118,7 @@ c Set flag of unused slots to 0
          if_part(i)=0
       enddo
       if(myid.eq.0)then
-       write(*,'('' Initialized '',i3,''x n='',i7,'' ntries='',i7,$)')
+         write(*,'('' Initialized '',i3,''x n='',i7,'' ntries='',i7,$)')
      $     nprocs,n_part,ntries
       endif
 c Initialize rhoinf:
