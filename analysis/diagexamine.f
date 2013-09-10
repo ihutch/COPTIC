@@ -41,6 +41,9 @@ c      write(*,*)'ifull',ifull
          i1=isingle
       endif
 
+c         write(*,*)'phifilename=',phifilename
+c         write(*,*)'denfilename=',denfilename
+
 c-------------------------------------
       if(lentrim(phifilename).gt.1)then
 c Read in a potential as well.

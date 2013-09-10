@@ -31,7 +31,8 @@ c               write(*,'(10f8.4)')(uplot(i,j),j=1,iuds(id2))
       call dashset(0)
       nf1=iuds(id1)
       nf2=iuds(id2)
-      call pltinit(-rs,rs,-rs,rs)
+c      call pltinit(-rs,rs,-rs,rs)
+      call pltinit(xmeshstart(1),xmeshend(1),xmeshstart(2),xmeshend(2))
 c Contour without labels, with coloring, using vector coordinates.
       zclv=20.
       icl=0
@@ -61,6 +62,7 @@ c      write(*,*)'norbits,length=',norbits,iorbitlen(1)
      $        iorbitlen(kk))
          call poly3mark(xorbit(1,kk),yorbit(1,kk),zorbit(1,kk),
      $        iorbitlen(kk),1)
+         if(iorbitlen(kk).gt.0)call drcstr('End')         
       enddo
 
       end

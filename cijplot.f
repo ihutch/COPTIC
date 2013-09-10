@@ -7,7 +7,7 @@ c Assumed 3-D routine, plots representation of the cij/obj data.
       real cij(ndims*2+1,ifull(1),ifull(2),ifull(3))
       include 'objcom.f'
       include 'meshcom.f'
-      real xx(3),xt(3)
+      real xx(3),xt(3),xsize(3)
       integer irx(5),iry(5),ipx(5),ipy(5),ijk(3)
       integer idelta(3,7)
 c      character*40 mystring
@@ -40,14 +40,22 @@ c      istick=1
 c      iwire=0
       irotating=0
       write(*,'(a,i3)')'Object Mask:',mysw/2
-
+      xsm=0.
+      do id=1,3
+         xsize(id)=xmeshend(id)-xmeshstart(id)
+         if(abs(xsize(id)).gt.xsm)xsm=abs(xsize(id))
+      enddo
+      xs=xsm/.25
       call pltinit(0.,1.,0.,1.)
-      call setcube(.2,.2,.2,.5,.4)
+      call setcube(xsize(1)/xs,xsize(2)/xs,xsize(3)/xs,.5,.4)
+c      call setcube(.2,.2,.2,.5,.4)
  51   continue
       if(iprinting.ne.0)call pfset(3)
       call geteye(x2,y2,z2)
       call pltinit(0.,1.,0.,1.)
-      call scale3(-rs,rs,-rs,rs,-rs,rs)
+      call scale3(xmeshstart(1),xmeshend(1),xmeshstart(2),xmeshend(2),
+     $     xmeshstart(3),xmeshend(3))
+c      call scale3(-rs,rs,-rs,rs,-rs,rs)
       call trn32(0.,0.,0.,x2,y2,z2,1)
       xb=0
       yb=0

@@ -78,7 +78,7 @@ c Mesh and mpi parameter defaults:
 c Data for plotting etc.
       data iobpl/0/
       data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot/
-     $     .false.,.false.,.false.,.false.,.false./
+     $     .false.,.false.,.false.,.true.,.false./
       data lphiplot,ldenplot/.false.,.false./
 c      data thetain,nth/.1,1/
       data lrestart/0/cv/0.,0.,0./
@@ -549,10 +549,12 @@ c the segfaults.
       enddo
 c-------- End of Main Step Iteration -------------------------------
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
-c      if(lorbitplot)call orbitplot(ifull,iuds,u,phip,rc,rs)
       if(norbits.ne.0)
      $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl)
 c     $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl,norbits)
+
+      if(lorbitplot.and.norbits.ne.0)call orbitplot(ifull,iuds,u,phip,rc
+     $     ,rs)
 
 c Everyone writes what they have to.
       if(iwstep.gt.0 .or. myid.eq.0)call datawrite(myid,partfilename

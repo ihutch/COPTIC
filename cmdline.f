@@ -27,7 +27,7 @@ c Encapsulation of parameter setting.
 c Local variables:
       integer lentrim,iargc
       external lentrim
-      integer i,id,idn,idcn,i0,i1,iargcount,iargpos,iterate
+      integer i,id,idn,idcn,i0,i1,iargcount,iargpos
       real vwork
       character*100 argument
       logical lfirst
@@ -102,23 +102,24 @@ c ---------------------------------------
 c Deal with arguments
       iargcount=iargc()
       iargpos=1
-      do i=1,iargcount
+      do i=0,iargcount
 c Start of argline internal iteration
  502     continue
-         if(lentrim(argline(iargpos:)).ne.0)then
-            iterate=1
+         if(i.eq.0)then
 c First time through, deal with argline arguments (from the objfile). 
+            if(lentrim(argline(iargpos:)).ne.0)then
 c Write them.
-            if(lmyidhead.and.iargpos.lt.2)write(*,'(a,i4,a,a)'
-     $           )'File Arguments, position',iargpos,':'
-     $           ,argline(iargpos:lentrim(argline))
-            call argextract(argline,iargpos,argument)
+               if(lmyidhead.and.iargpos.eq.1)write(*,'(a,a)'
+     $              )'File Arguments:',argline(iargpos:lentrim(argline))
+               call argextract(argline,iargpos,argument)
+            else
+               goto 241
+            endif
          else
-            iterate=0
-c Afterwards getarg.
+c Subsequent: i>0 getarg.
             call getarg(i,argument)
-c            write(*,*)i,argument
          endif
+c         write(*,*)i,argument
          if(argument(1:3).eq.'-gt')ltestplot=.true.
          if(argument(1:3).eq.'-gn')ldistshow=.not.ldistshow
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
@@ -301,8 +302,9 @@ c Indicator that coptic arguments are ended.
             goto 202
          endif
  240     continue
-         if(iterate.eq.1)goto 502
+         if(i.eq.0)goto 502
 c End of internal argline iteration
+ 241     continue
       enddo
 c End of command line parameter parsing.
 c-------------------------------------------------------
@@ -366,9 +368,10 @@ c vd non-z:
                vperp(i)=vperp(i)+vd*vdrift(i)
                vwork=vwork+(vperp(i)+vpar*Bfield(i))**2
             enddo
+            vwork=sqrt(vwork)
+            if(lmyidhead)write(*,'(a,f10.6,a,3f10.6,a,f10.6)'
+     $           )'vpar,vperp,vtot',vpar,',',vperp,',',vwork
          endif
-         vwork=sqrt(vwork)
-         if(lmyidhead)write(*,*)'vpar,vperp,vwork',vpar,',',vperp,vwork
       else
 c Zero the vparallel and vperp. Probably not necessary; but tidy.
          vpar=0.

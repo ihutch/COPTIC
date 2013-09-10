@@ -10461,3 +10461,57 @@ Not thoroughly tested.
 
 Purge lbulk from padvnc and everywhere. 
 Replace it in colncom.f with ldistshow. Add switch to toggle distshow.
+
+5 Sep 13
+
+Fix cmdline interpretation loop so that it works for Arguments in the 
+object file even if there are zero arguments on the actual command line.
+
+Change the limits of cijplot plotting to be the mesh limits conserving
+aspect ratio.
+
+9 Sep 13
+Trying to run magnetized presheath cases. I find the vd has to be set to
+a ridiculously low value to get the rhoinfinity to give n=1 at the upper
+computational boundary. I believe this is because rhoinfty is not being
+calculated correctly for magnetized distributions and general vdrift 
+direction. 
+
+In cartreinject, fonefac assumes that the drift velocity is in the
+z-direction.  Now that is incorrect, and it needs to be fixed.
+fonefac also takes no account of magnetic field. Probably it ought to
+do so rather than just using the drift distribution in the z-direction,
+as it does now.
+
+The problem is that this requires a forward-flux calculation in which
+the normal vector is other than the drift direction, which has no
+known analytic solutions. In SCEPTIC and orbitinject it is accumulated
+numerically. 
+
+When there are no collisions the background distribution is a drifting
+Maxwellian which is equivalent to taking vn=vd. Such a distribution
+can be integrated to get forward flux in non-drift direction. See hand
+notes 12 Dec 2001. In effect, it is the same as obtained by just taking
+the normal component of the drift velocity, and putting it into the
+Maxwellian expression. 
+
+However, in current rhoinfcalc the setting of a in response to
+partperiod appears to be completely superceded by the calculations
+done below it that perform the equivalent of this setting. The 
+determination of absorbing or not is done within the H-setting code.
+However, that's currenly only for dimension 3.
+
+The obsolete code setting via maxwellian integral is not correct in 
+fonefac because it does not account for absorbing surfaces. That's true
+also for infinite Bt. But it is needed for the non-z surfaces.
+
+Implemented code corrected for general vdrift direction, but only for
+drifting Maxwellians. Designed to abort with message for cases that
+would have the drift distribution. 
+
+Fixed the cinjinit code, especially fonefac and the routines it passes
+to cumprob so that shifted maxwellian distributions are correctly 
+represented by reinjection. Collisional drift functions are not yet
+implemented because they are not separable except in the direction of
+the drift. Therefore for oblique drift, it is not straightforward
+to obtain the distribution normal to a face. 
