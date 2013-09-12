@@ -76,7 +76,7 @@ MAKEFILE=makefile
 # Start of targets
 #######################################################################
 
-all : $(MAKEFILE) lib$(ACCISDRV).a accissum.html
+all : $(MAKEFILE) lib$(ACCISDRV).a
 
 # A way of making a general makefile. By default the file 
 # makefile is used if present, but if not, Makefile is used. 
@@ -85,7 +85,7 @@ all : $(MAKEFILE) lib$(ACCISDRV).a accissum.html
 # So we make the second call to an explicit file.
 makefile : Makefile configure
 	@echo Configuring the Makefile for this platform. 
-	export COMPILER="$(COMPILER)"; export VECX=$(VECX); export NOBACKSLASH=$(NOBACKSLASH); ./configure
+	@export COMPILER="$(COMPILER)"; export VECX=$(VECX); export NOBACKSLASH="$(NOBACKSLASH)"; ./configure
 	@echo Now running make again using the new Makefile.
 # The problem with this recursion is that it does not override any command
 # argument such as G77= Thus G77 might be forced blank inside the submake
@@ -99,7 +99,7 @@ makefile : Makefile configure
 # For which vecx is standard.
 
 accissum.html : accissum.tex
-	tth -e2 accissum
+	if which tth ; then tth -e2 accissum ; fi
 	rm -f *.log *.out *.dvi *.toc *.ilg *.idx *.synctex.gz
 
 #update the libraries.

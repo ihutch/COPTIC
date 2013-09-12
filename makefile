@@ -93,8 +93,12 @@ export G77
 GFINAL=gcc-4.1 -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
 GCURR=gcc -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
 #OPTIMIZE=-O3 -funroll-loops -finline-functions
-OPTIMIZE=-O3
-COMPILE-SWITCHES = -Wall $(OPTIMIZE) -I.
+OPTIMIZE=
+COMPILE-SWITCHES=-I.
+ifeq ("$(G77)","mpif77 -f77=g77")	
+  COMPILE-SWITCHES = -Wall $(OPTIMIZE) -I.
+  OPTIMIZE=-O3
+endif	
 #COMPILE-SWITCHES = -Wall   $(OPTIMIZE) -I. -g -fbounds-check
 ##COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -g -I.
 # Noboundscheck switches are not compatible with e.g. pathscale compiler:
@@ -180,6 +184,9 @@ mpicheck : $(COPTIC)
 compiler : makefile
 	@echo -n Compiler tests. $${G77}
 	@\
+ if which $${G77} ; then\
+  GHERE="$${G77}";\
+ else\
  if which mpif77 >/dev/null;\
  then echo -n " MPI system. "; GHERE=mpif77;\
   if which g77 >/dev/null ; then\
@@ -190,13 +197,11 @@ compiler : makefile
  else echo -n " Not MPI System. ";\
   if which g77 >/dev/null ; then\
      GHERE="g77";\
-  else if which f77 >/dev/null ; then GHERE="f77";\
-     else if which $${G77} ; then\
-	     GHERE="$${G77}" ;\
-          else echo "$${G77} NO COMPILER! Specify G77= ..." ; exit 1;\
-	  fi\
-     fi\
+  else if which f77 >/dev/null ; then GHERE="f77";else\
+          echo "$${G77} NO COMPILER found! Specify G77= ..." ; exit 1;\
+       fi\
   fi;\
+ fi;\
  fi;\
  echo "Chosen G77="$${GHERE}; G77=$${GHERE}; echo $${G77} > compiler;
 # To obtain this information, one has to make a second time.
