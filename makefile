@@ -82,9 +82,12 @@ ifeq ("$(G77)","")
 endif
 # In g77 -Wno-globals silences spurious type messages on reduce.f
 # This is unrecognized by gfortan. For which no-unused is better.
-NGW=-Wno-unused
 ifeq ("$(G77)","mpif77 -f77=g77")	
   NGW=-Wno-globals
+endif
+ifeq ("$(findstring gfortran,$(G77))","")
+else
+  NGW=-Wno-unused	
 endif
 # export this so it is inherited by sub-makes.
 export G77
