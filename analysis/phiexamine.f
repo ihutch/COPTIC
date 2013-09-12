@@ -94,8 +94,9 @@ c Spaces are not allowed in visit data names. Fix:
             call termchar(fluxfilename)
          endif
          ibinary=1
-         call vtkwritewrap(ifull,iuds,u,xn,ibinary
-     $        ,argument,fluxfilename)
+         call vtkwritescalar(ifull,iuds,u
+     $        ,xn,xn(1+iuds(1)),xn(1+iuds(1)+iuds(2))
+     $        ,ibinary,argument,fluxfilename)
          write(*,*)'Finished vtkwrite',ifull,iuds,u(1,1,1)
          stop
       endif

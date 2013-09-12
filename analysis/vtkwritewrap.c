@@ -10,13 +10,13 @@
       ifull[3] is the full dimensions of the fortran array
       ufortran(ifull(1),ifull(2),ifull(3))=u[ifull[2]][ifull[1]][ifull[0]]
       iuds[3] is the used dimensions of this array. 
-      xn is an array of the positions of nodes in the 3 dimensions ordered
-        so that the start points are at xn [+iuds[0] [+iuds[1]]]  
+      xn, yn, zn are the start addresses of the arrays of positions,
       ibinary=0 indicates write ascii; otherwise binary.
 */
 
-void vtkwritewrap_(int *ifull, int *iuds, float *u, float *xn, int *ibinary, 
-		   char *filename, char *varnames )
+void vtkwritescalar_(int *ifull, int *iuds, float *u, 
+		     float *xn, float *yn, float *zn, 
+		   int *ibinary, char *filename, char *varnames )
 { 
   int binary=1;
   int i,j,k;
@@ -32,7 +32,7 @@ void vtkwritewrap_(int *ifull, int *iuds, float *u, float *xn, int *ibinary,
 
   for (k=0;k<iuds[2];k++){
     for (j=0;j<iuds[1];j++){
-      for (i=0;i<iuds[1];i++){
+      for (i=0;i<iuds[0];i++){
 	/* Just compactify the data */
 	*(udata+i+j*iuds[0]+k*iuds[1]*iuds[0])
 	=*(u+i+j*ifull[0]+k*ifull[1]*ifull[0]);
@@ -45,7 +45,53 @@ void vtkwritewrap_(int *ifull, int *iuds, float *u, float *xn, int *ibinary,
   int centering[] = { 1 }; // node centered
   if(*ibinary==0) binary=0;
   write_rectilinear_mesh( (const char * const)filename , 
-			  binary, iuds, xn, xn+iuds[0], xn+iuds[0]+iuds[1],
+			  binary, iuds, xn, yn, zn,
+			  nvars , vardims, centering,
+			  (const char * const *)&varnames, &udata);
+  free(udata);
+}
+
+/* Version to write a vector variable input as separate variables. */
+
+void vtkwritevector_(int *ifull, int *iuds, float *u, 
+		     float *xn, float *yn, float *zn,
+	    int *ibinary,  int *ndims, char *filename, char *varnames )
+{ // On entry u(ifull[1,2,3], ndims) is the vector (dimension ndims) on the grid
+  int binary=1;
+  int i,j,k,m;
+  int nvars=1;
+  int vardims[nvars];   // nvars vector of length ndims
+  int centering[nvars]; // node centering
+
+  float *udata;
+
+  *vardims=*ndims;
+  *centering=1;   // Centered.
+
+  udata=calloc((*ndims)*iuds[0]*iuds[1]*iuds[2],sizeof(float));
+  /*  Testing diagnostics.
+      fprintf(stderr,
+	  "Allocated udata. ifull %d %d %d; iuds %d %d %d. Pointer = %p\n"
+	  ,ifull[0],ifull[1],ifull[2],
+	  iuds[0],iuds[1],iuds[2],udata);
+  fprintf(stderr,"xn %f %f %f %f %f\n",*xn, *(xn+1), *(xn+2), *(xn+3), *(xn+4));
+  fprintf(stderr,"Calling write. %f  %f  %f \n",*xn,*(xn+iuds[0]),*(xn+iuds[1])); */
+
+  for (k=0;k<iuds[2];k++){
+    for (j=0;j<iuds[1];j++){
+      for (i=0;i<iuds[0];i++){
+	/* Compactify the data, and make the ndims triples the fast arg. */
+	for (m=0;m<ndims[0];m++){
+	  *(udata+m+ndims[0]*(i+iuds[0]*(j+iuds[1]*k)))
+	    =*(u+i+ifull[0]*(j+ifull[1]*(k+ifull[2]*m)));
+	}
+      }
+    }
+  }
+
+  if(*ibinary==0) binary=0;
+  write_rectilinear_mesh( (const char * const)filename , 
+			  binary, iuds, xn, yn, zn,
 			  nvars , vardims, centering,
 			  (const char * const *)&varnames, &udata);
   free(udata);

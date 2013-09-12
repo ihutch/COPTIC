@@ -1,3 +1,4 @@
+
 # This makefile assumes the shell is Bash.
 ########################################################################
 # The eventual target:
@@ -72,12 +73,12 @@ ifeq ("$(G77)","")
 # I don't know why this has to be overridden. 
 # But within this section of code G77 is not set without an override.
 	override G77=$(shell cat compiler 2>/dev/null)
-	ifeq ("$(G77)","")
-# Default compiler. Ought to be used if a strange make target is used 
-# on the very first call.
+#	ifeq ("$(G77)","")
+# Default compiler to be used if a strange make target is used 
+# on the very first call. Not now set. Depend on compiler tests.
 # After that, compiler ought to be set on disk and used.
-		override G77=mpif77 -f77=g77
-	endif
+#		override G77=mpif77
+#	endif
 endif
 # In g77 -Wno-globals silences spurious type messages on reduce.f
 # This is unrecognized by gfortan. For which no-unused is better.
@@ -147,9 +148,9 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 	@echo -----------------------------------------------------------------
 
 ##########################################
-# Default target
+# Default target compiler must always be the first dependency.
 # Problem when using geometry that can't do smt check. 
-smt.out : $(COPTIC) copticgeom.dat
+smt.out : compiler $(COPTIC) copticgeom.dat
 	@if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
 	@if [ -f T1e0v000P200L1e0z005x05.phi ] ; then mv T1e0v000P200L1e0z005x05.phi prior.phi ; echo "Created prior.phi" ; fi
 	./$(COPTIC)
@@ -175,23 +176,32 @@ mpicheck : $(COPTIC)
 	if [ -f mpicheck.prev ] ; then diff mpicheck.prev mpicheck.out ; else mv mpicheck.out mpicheck.prev  ; fi
 	mv mpicheck.out mpicheck.prev
 
-# Configure compiler.
-compiler :
-	@echo -n Compiler tests.
-	@if which mpif77 >/dev/null;\
- then echo -n " MPI system. ";\
-  if which g77 >/dev/null ;\
-  then  echo -n "Force g77. ";GHERE="mpif77 -f77=g77";\
-  else GHERE=mpif77 ; fi\
- else echo -n "Not MPI System. ";\
-  if which g77 >/dev/null ;\
-  then GHERE="g77";\
-  else GHERE="f77";fi\
+# Configure compiler. Mostly one long continued bash script.
+compiler : makefile
+	@echo -n Compiler tests. $${G77}
+	@\
+ if which mpif77 >/dev/null;\
+ then echo -n " MPI system. "; GHERE=mpif77;\
+  if which g77 >/dev/null ; then\
+    if [ -z "`mpif77 --version | grep Portland`" ] ; then\
+	 echo -n " Force g77. "; GHERE="mpif77 -f77=g77";\
+    fi\
+  fi\
+ else echo -n " Not MPI System. ";\
+  if which g77 >/dev/null ; then\
+     GHERE="g77";\
+  else if which f77 >/dev/null ; then GHERE="f77";\
+     else if which $${G77} ; then\
+	     GHERE="$${G77}" ;\
+          else echo "$${G77} NO COMPILER! Specify G77= ..." ; exit 1;\
+	  fi\
+     fi\
+  fi;\
  fi;\
  echo "Chosen G77="$${GHERE}; G77=$${GHERE}; echo $${G77} > compiler;
 # To obtain this information, one has to make a second time.
 	@echo "*********** Remaking COPTIC with chosen G77 ****************"
-	@export MAKEFLAGS=; make coptic
+	@export MAKEFLAGS=; export G77=$${GHERE}; make coptic
 
 #####################################################
 # Things to compile with non-standard switches

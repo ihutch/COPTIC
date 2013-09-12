@@ -10515,3 +10515,6 @@ represented by reinjection. Collisional drift functions are not yet
 implemented because they are not separable except in the direction of
 the drift. Therefore for oblique drift, it is not straightforward
 to obtain the distribution normal to a face. 
+
+Desiderata: An output from diagexamine in vtk format of the velocity
+vector able to be plotted by visit as streamlines etc.

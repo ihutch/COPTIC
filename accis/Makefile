@@ -85,7 +85,7 @@ all : $(MAKEFILE) lib$(ACCISDRV).a accissum.html
 # So we make the second call to an explicit file.
 makefile : Makefile configure
 	@echo Configuring the Makefile for this platform. 
-	export COMPILER="$(COMPILER)"; export VECX=$(VECX); ./configure
+	export COMPILER="$(COMPILER)"; export VECX=$(VECX); export NOBACKSLASH=$(NOBACKSLASH); ./configure
 	@echo Now running make again using the new Makefile.
 # The problem with this recursion is that it does not override any command
 # argument such as G77= Thus G77 might be forced blank inside the submake

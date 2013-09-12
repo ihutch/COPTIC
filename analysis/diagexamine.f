@@ -11,11 +11,14 @@ c 1-d plotting arrays.
       real z1d(na_m),u1d(na_m),dene1d(na_m),deni1d(na_m)
       character*20 mname(7)
 
+      logical lvtk
       character*70 xtitle,ytitle
-      integer iuphi(3)
+      integer iuphi(3),iurs(3),isrs(3)
       integer iunp,i1d,isingle,i1,iwr
       data iunp/0/i1d/0/iwr/0/
 
+      lvtk=.false.
+      fluxfilename=' '
       mname(1)='Density'
       mname(2)='v!d1!d'
       mname(3)='v!d2!d'
@@ -27,7 +30,7 @@ c 1-d plotting arrays.
       ipp=0
 c      pscale=3.
 c 
-      call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle)
+      call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk)
 c      write(*,*)'ifull',ifull
       i1=1
       ied=ndiagmax
@@ -107,7 +110,63 @@ c Subtract v^2 from the second moment to give temperature.
       enddo
       write(*,*)'rs,debyelen,vd,Ti',rs,debyelen,vd,Ti
 
+c Decide the actual ends and beginnings of the relevant data.
+c If the middle of a face has zero density, that is a dummy face.
+c e.g. because of periodicity.
+      isrs(1)=1
+      if(diagsum(1,iuds(2)/2,iuds(3)/2,1).eq.0)isrs(1)=2
+      iurs(1)=iuds(1)+1-isrs(1)
+      if(diagsum(iuds(1),iuds(2)/2,iuds(3)/2,1).eq.0)iurs(1)=iurs(1)-1
+      isrs(2)=1
+      if(diagsum(iuds(1)/2,1,iuds(3)/2,1).eq.0)isrs(2)=2
+      iurs(2)=iuds(2)+1-isrs(2)
+      if(diagsum(iuds(1)/2,iuds(2),iuds(3)/2,1).eq.0)iurs(2)=iurs(2)-1
+      isrs(3)=1
+      if(diagsum(iuds(1)/2,iuds(2)/2,1,1).eq.0)isrs(3)=2
+      iurs(3)=iuds(3)+1-isrs(3)
+      if(diagsum(iuds(1)/2,iuds(2)/2,iuds(3),1).eq.0)iurs(3)=iurs(3)-1
+
+      write(*,*)'isrs,iurs',isrs,iurs
 c      write(*,*)'Normalized diagnostics.'
+
+c      lvtk=.false.
+      if(lvtk)then
+c Write Visit-readable vtk file of potential. And stop.
+         if(fluxfilename(1:1).eq.' ')then
+            fluxfilename='Velocity'//char(0)
+         else
+            write(*,*)'Variable name: '
+     $           ,fluxfilename(1:lentrim(fluxfilename))
+c Spaces are not allowed in visit data names. Fix:
+            do i=1,lentrim(fluxfilename)
+               if(fluxfilename(i:i).eq.' ')fluxfilename(i:i)='_'
+            enddo
+            call termchar(fluxfilename)
+         endif
+         ibinary=0
+         call vtkwritescalar(ifull,iurs
+     $        ,diagsum(isrs(1),isrs(2),isrs(3),1)
+     $        ,xn(isrs(1)),xn(isrs(2)+iuds(1))
+     $        ,xn(isrs(3)+iuds(1)+iuds(2))
+     $        ,ibinary
+     $        ,diagfilename(1:lentrim(diagfilename))//char(0)
+     $        ,'Cell_Particles'//char(0))
+c         write(*,*)'Finished density vtkwrite',ifull,iuds,u(1,1,1)
+         if(ndiags.ge.4)then
+         call vtkwritevector(ifull,iurs
+     $        ,diagsum(isrs(1),isrs(2),isrs(3),2)
+     $        ,xn(isrs(1)),xn(isrs(2)+iuds(1))
+     $        ,xn(isrs(3)+iuds(1)+iuds(2))
+     $        ,ibinary,3
+     $        ,diagfilename(1:lentrim(diagfilename))//'V'//char(0)
+     $        ,fluxfilename)
+         write(*,*)'Finished velocity vtkwrite',ifull,iuds,u(1,1,1)
+         endif
+        stop
+      endif
+
+
+c-------------------------------------------------------------
       if(i1d.ne.0)then
 c Calculate average profiles in direction i1d.
          do i=1,iuds(i1d)
@@ -253,9 +312,11 @@ c     $     ,diagsum(1,1,1,2),vp)
 
 
 c*************************************************************
-      subroutine diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle)
+      subroutine diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle
+     $     ,lvtk)
       integer iunp,isingle,i1d
       character*70 xtitle,ytitle
+      logical lvtk
       include 'examdecl.f'
 
          ifull(1)=na_i
@@ -293,12 +354,16 @@ c Deal with arguments
             if(argument(1:2).eq.'-u')iunp=1
             if(argument(1:2).eq.'-d')
      $           read(argument(3:),*,err=201)isingle
-            if(argument(1:2).eq.'-w')iwr=1
+            if(argument(1:2).eq.'-o')iwr=1
             if(argument(1:2).eq.'-f')ipp=1
             if(argument(1:2).eq.'-a')
      $           read(argument(3:),*,err=201)i1d
             if(argument(1:2).eq.'-h')goto 203
             if(argument(1:2).eq.'-?')goto 203
+            if(argument(1:2).eq.'-w')then
+               lvtk=.not.lvtk
+               read(argument(3:),'(a)',err=201)fluxfilename
+            endif
          else
             read(argument(1:),'(a)',err=201)diagfilename
          endif
@@ -319,13 +384,16 @@ c Help text
       write(*,301)' -p   set name of additional parameter file.'
      $     //' (Given <=twice: phi, den.)'
       write(*,301)' -ly   set label of parameter. -lx label of xaxis'
-      write(*,301)' -d   set single diagnostic to be examined.',isingle
-      write(*,301)' -a   set dimension number for average profile',i1d
-      write(*,301)' -w   write out the profiles',iwr
-      write(*,301)' -f   plot potential profile (if -p given)',ipp
+      write(*,301)' -d   set single diagnostic to be examined.[',isingle
+      write(*,301)' -a   set dimension number for average profile[',i1d
+      write(*,301)' -o   write out the profiles[',iwr
+      write(*,*)'-w<name> toggle vtk file writing,'
+     $     ,' optionally name the vector[',lvtk,' '
+     $     ,fluxfilename(1:lentrim(fluxfilename))
+      write(*,301)' -f   plot potential profile (if -p given)[',ipp
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [copticgeom.dat'
-      write(*,301)' -u   plot un-normalized diagnostics.',iunp
+      write(*,301)' -u   plot un-normalized diagnostics.[',iunp
       write(*,301)' -h -?   Print usage.'
       call exit(0)
  202  continue

@@ -81,7 +81,14 @@ c Fixed for f2c/gcc upper characters.
          if(n2.eq.40.or.n2.eq.41.or.n2.eq.92)then
             call PSchardrw(char(92)//char(n2))
          else
-            call PSchardrw(char(n2))
+            if(char(n2).eq.'-')then
+c Make the PS minus sign the version from symbol font. It's longer.
+               call PSsetfont(1)
+               call PSchardrw(char(n2))
+               call PSsetfont(offset/128)
+            else
+               call PSchardrw(char(n2))
+            endif
          endif
       endif
       n1=n1+offset
@@ -94,10 +101,16 @@ c Fixed for f2c/gcc upper characters.
          if(pfPS.eq.0) then
             call vecn(px,py,0)
          else
+c Use spaces to accommodate width variation between sysfont and Hershey
+c Also if we are approaching a special character, force a space to ensure
+c that the subscript or superscript etc is well aligned wrt its parent.
+            if(n1.eq.ichar(' ').or.str1(j+2:j+2).eq.'!')then
 c This call repositions after each PS character using Hershey width.
-c            call vecn(px,py,0)
+               call vecn(px,py,0)
+            else
 c This call does not. It uses the internal PS width.
-            call vecnnops(px,py,0)
+               call vecnnops(px,py,0)
+            endif
          endif
       endif
 c  Terminate after end of string. 

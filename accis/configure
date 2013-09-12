@@ -1,38 +1,53 @@
 #!/bin/bash
 # Configure script for accis.
 
-# By default assume GNU compatible compiler and set no-backslash
-NOBACKSLASH="-w -fno-backslash"
 # Compiler choice.
 if [ "$COMPILER" == "" ] ; then
 if [ -x "`which mpif77`" ] ; then
-# By default use mpif77 and if it is based on GNU use nobackslash.
-   echo Choosing compiler mpif77
-   COMPILER="mpif77 -f77=g77"
-   if [ -z "`mpif77 -f77=g77 --version | grep GNU`" ] ; then
-       NOBACKSLASH=
+# By default use mpif77
+   COMPILER="mpif77"
+   if [ -x "`which g77`" ] ; then
+       COMPILER="$COMPILER -f77=g77"
    fi
+   echo Choosing compiler $COMPILER.  Overrule by COMPILER="your compiler"
 else
 # Else use gfortran or g77.
    if [ -x "`which gfortran`" ] ; then
-      echo Choosing compiler gfortran
+      echo Choosing compiler gfortran.  Overrule by COMPILER="your compiler"
       COMPILER=gfortran
    else
 	if [ -x "`which g77`" ] ; then
-     	   echo Choosing compiler g77
+     	   echo Choosing compiler g77.  Overrule by COMPILER="your compiler"
      	   COMPILER=g77
 	else
-	   echo Did not find mpif77 g77 or gfortran. Use ${F77}[?]
-	   COMPILER=$F77
-	   NOBACKSLASH=
+	   echo Did not find mpif77 g77 or gfortran.
+	   if [ -x "`which $F77`" ] ; then
+	       echo Using ${F77}
+	       COMPILER=$F77
+	   else
+	       echo Could not find a fortran compiler. Use COMPILER=...
+	       exit
+	   fi
      	fi
    fi   
 fi
-else
-   if [ -z "`$COMPILER --version | grep GNU`" ] ; then
-      NOBACKSLASH=
-   fi
 fi
+
+if [ "$NOBACKSLASH" == "" ] ; then
+    if [ -n "`$COMPILER --version | grep GNU`" ] ; then
+	NOBACKSLASH="-w -fno-backslash"
+    else 
+	if [ -n "`$COMPILER --version | grep PathScale`" ] ; then
+	    NOBACKSLASH=-backslash
+	else 
+	    if [ -n "`$COMPILER --version | grep Portland`" ] ; then
+		NOBACKSLASH=-Mbackslash
+	    fi
+	fi
+    fi
+    echo Set NOBACKSLASH=$NOBACKSLASH . Overrule by NOBACKSLASH= ...
+fi
+
 
 # Xlib choice.
 if [ "`uname -m`" == "x86_64" ] ; then 

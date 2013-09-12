@@ -58,6 +58,7 @@ c Zero width or height resets to default.
       integer ipoint
       parameter (ipoint=2)
       parameter (iunit=12)
+c      data htstnd/.015/wdstnd/.015/
       data htstnd/.015/wdstnd/.015/
       save htstnd,wdstnd
       if(ht.eq.0.)ht=.015
