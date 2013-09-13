@@ -187,7 +187,7 @@ mpicheck : $(COPTIC)
 compiler : makefile
 	@echo -n Compiler tests. $${G77}
 	@\
- if which $${G77} ; then\
+ if which $${G77} 2>/dev/null >/dev/null ; then\
   GHERE="$${G77}";\
  else\
  if which mpif77 >/dev/null;\
