@@ -215,7 +215,7 @@ c      write(*,*)'Finished cijroutine iteration'
 c---------------------------------------------
 c Here we try to read the stored geometry volume data.
       istat=1
-      call stored3geometry(volumes,iuds,ifull,istat)
+      call stored3geometry(volumes,iuds,ifull,istat,.true.)
 c don't calculate volumes testing.      istat=1
       if(istat.eq.0)then
 c Calculate the nodal volumes for all non-edge points.
@@ -226,7 +226,8 @@ c Calculate the nodal volumes for all non-edge points.
      $        volumes,cij,dum3,dum4)
          if(lmyidhead)write(*,*)'Finished volume setting'
 c If head, write the geometry data if we've had to calculate it.
-         if(lmyidhead)call stored3geometry(volumes,iuds,ifull,istat)
+         if(lmyidhead)call stored3geometry(volumes,iuds,ifull,istat
+     $        ,.true.)
       endif
 c---------------------------------------------
 c Set an object pointer for all the edges so their regions get

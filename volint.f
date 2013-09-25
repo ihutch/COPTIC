@@ -146,10 +146,13 @@ c with istat=1, and the second with istat unchanged. That will read in
 c the data if it exists and write it out if it doesn't. Between the 
 c two calls the data should be generated if istat=0 after the first
 c read.
-      subroutine stored3geometry(volumes,iuds,ifull,istat)
+c Normally this is called with lstrict=.true. but if not, then
+c the checks for object identities are skipped.
+      subroutine stored3geometry(volumes,iuds,ifull,istat,lstrict)
       parameter (ndims=3)
       integer iuds(ndims),ifull(ndims)
       real volumes(ifull(1),ifull(2),ifull(3))
+      logical lstrict
       integer iuds1(ndims)
       include '3dcom.f'
       include 'meshcom.f'
@@ -185,14 +188,13 @@ c
  11   open(file='storedgeom.dat',unit=iunit,status='old'
      $     ,form='unformatted',err=101)
       read(iunit,err=101,end=102)ndims1
-      if(ndims1.ne.ndims) goto 101
+      if(lstrict .and. ndims1.ne.ndims) goto 101
       read(iunit,err=101,end=102)ngeomobj1
-      if(ngeomobj1.ne.ngeomobj) goto 101
-c      read(iunit,err=101,end=102)((obj1(i,j),i=1,oabc-1),j=1,ngeomobj)
+      if(lstrict.and. ngeomobj1.ne.ngeomobj) goto 101
       read(iunit,err=101,end=102)((obj1(i,j),i=1,odata),j=1,ngeomobj)
-      do j=1,ngeomobj
+      do j=1,ngeomobj1
          do i=1,odata
-            if(
+            if(  lstrict .and.
      $           (i.le.otype .or. i.ge.ocenter) .and.
      $           (obj1(i,j).ne.obj_geom(i,j))
      $        ) goto 101
@@ -217,7 +219,12 @@ c Successful read.
  102  write(*,*)'End-file error, reading storedgeom.dat data.'
 c No existing file.
  101  istat=0
-      close(iunit,status='delete')
+      if(lstrict)then
+         close(iunit,status='delete')
+      else
+         write(*,*)'Object mismatch ignored.'
+         close(iunit)
+      endif
       return
 
       end

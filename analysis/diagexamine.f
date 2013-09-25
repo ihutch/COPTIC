@@ -3,13 +3,14 @@
       include 'examdecl.f'
 
       parameter (ndiagmax=7)
-      real diagsum(na_i,na_j,na_k,ndiagmax)      
+      real diagsum(na_i,na_j,na_k,ndiagmax+1)      
+c      real volumes(na_i,na_j,na_k)
 
 c Extra work array for arrowplotting in sliceGweb.
       real vp(na_m,na_m,3,3)
 c 1-d plotting arrays.
       real z1d(na_m),u1d(na_m),dene1d(na_m),deni1d(na_m)
-      character*20 mname(7)
+      character*20 mname(ndiagmax+1)
 
       logical lvtk
       character*70 xtitle,ytitle
@@ -19,13 +20,14 @@ c 1-d plotting arrays.
 
       lvtk=.false.
       fluxfilename=' '
-      mname(1)='Density'
+      mname(1)='Cellcount'
       mname(2)='v!d1!d'
       mname(3)='v!d2!d'
       mname(4)='v!d3!d'
       mname(5)='T!d1!d'
       mname(6)='T!d2!d'
       mname(7)='T!d3!d'
+      mname(8)='Density'
       xleg=.75
       ipp=0
 c      pscale=3.
@@ -37,13 +39,23 @@ c      write(*,*)'ifull',ifull
       call pfset(3)
       call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
       if(ierr.eq.1)stop 'Error reading diag file'
+
       ndiags=ied
       if(isingle.ne.0)then
          isingle=min(isingle,ndiags)
          ndiags=isingle
          i1=isingle
       endif
-
+c Attempt to read the volumes data.
+      istat=1
+      call stored3geometry(diagsum(1,1,1,ndiags+1),iuds,ifull,istat
+     $     ,.false.)
+      if(istat.eq.1)then
+         write(*,*)'Read volumes successfully'
+     $     ,diagsum(2,2,2,ndiags+1)
+      else
+         write(*,*)'Storedgeom returned',istat,iuds,ifull
+      endif
 c         write(*,*)'phifilename=',phifilename
 c         write(*,*)'denfilename=',denfilename
 
@@ -110,6 +122,21 @@ c Subtract v^2 from the second moment to give temperature.
       enddo
       write(*,*)'rs,debyelen,vd,Ti',rs,debyelen,vd,Ti
 
+c Normalize the density= diagsum(1)/volumes into the volumes 
+      do k=1,iuds(3)
+         do j=1,iuds(2)
+            do i=1,iuds(1)
+               if(diagsum(i,j,k,ndiags+1).ne.0.)then
+                  diagsum(i,j,k,ndiagmax+1)
+     $                 =diagsum(i,j,k,1)/diagsum(i,j,k,ndiags+1)
+               else
+                  diagsum(i,j,k,ndiagmax+1)=0.
+c                  write(*,*)'Warning zero volumes',i,j,k
+               endif
+            enddo
+         enddo
+      enddo
+
 c Decide the actual ends and beginnings of the relevant data.
 c If the middle of a face has zero density, that is a dummy face.
 c e.g. because of periodicity.
@@ -131,7 +158,7 @@ c      write(*,*)'Normalized diagnostics.'
 
 c      lvtk=.false.
       if(lvtk)then
-c Write Visit-readable vtk file of potential. And stop.
+c Write Visit-readable vtk file of potential and velocity.
          if(fluxfilename(1:1).eq.' ')then
             fluxfilename='Velocity'//char(0)
          else
@@ -289,6 +316,17 @@ c Arrow plotting of velocity:
      $        ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
      $        ,diagsum(1,1,1,2),vp)
       else
+         if(istat.eq.1)then
+            k=ndiagmax+1
+            zp(1,1,1)=99
+            ifix=2
+c         write(fluxfilename,'(''diagnorm('',i1,'')'')')k
+            fluxfilename=mname(k)
+c         write(*,*)mname(k),fluxfilename,lentrim(fluxfilename)
+            call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
+     $           ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
+     $           ,dum,dum)
+         endif
 c Default examination of all diagnostics.
          do k=i1,ndiags
             zp(1,1,1)=99
