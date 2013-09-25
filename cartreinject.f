@@ -105,6 +105,101 @@ c Correct the total energy for caverein.
       enddo
 
       end
+c*********************************************************************
+      subroutine cinjinit()
+c Cartesian reinjection initialization
+c drift velocity, vd, in the z-direction
+c maxwellians of width given by Ti
+
+      include 'plascom.f'
+      include 'meshcom.f'
+      include 'creincom.f'
+      include 'myidcom.f'
+      include 'partcom.f'
+c      external ffcrein
+c      external fvcrein
+      external ffdrein
+      external fvdrein
+      external ff1crein
+      external fv1crein
+      external fvdreinold
+      real fvdreinold
+      real fv1crein,ff1crein,fvdrein,ffdrein
+      parameter (bdys=6.)
+c      real fcarea(3)
+
+      xc=0.
+      xw=sqrt(Ti)
+c For three coordinate directions
+      do id=1,3
+c    For two ends (and hence velocity polarities)
+         do i2=1,2
+c idrein determines the sign of velocity. id odd => idrein negative.
+            idrein=id*(2*i2-3)
+            index=2*(id-1)+i2
+            if(Bt.lt.Btinf)then
+c Set the inverse cumulative probability fn hrein, and flux grein
+               call cumprob(ffdrein,xw,xc,
+     $           ncrein,hrein(0,index),grein(index),myid)
+            else
+c Infinite-Bt case 1-d projection.
+               xc=vpar*Bfield(id)+vperp(id)
+               xw=sqrt(Ti)*Bfield(id)
+               call cumprob(ff1crein,xw,xc,
+     $           ncrein,hrein(0,index),grein(index),myid)
+            endif
+c Zero grein on absorbing faces.
+            ip=ipartperiod(id)
+c Ordering in grein etc is (+,-) for each dim. Upper face/Lower face. 
+c That's the opposite of what I adopted for ipartperiod because
+c it corresponds to negative/positive velocity. Pity!
+            ip=ip/2**(2-i2)
+            ip=ip-2*(ip/2)
+            if(ip.eq.1)grein(index)=0.
+c Kludge fix of ends to avoid negative velocity injections.
+            if(idrein.gt.0)then
+               if(hrein(0,index).lt.0.)hrein(0,index)=0.
+            else
+               if(hrein(ncrein,index).gt.0.)hrein(ncrein,index)=0.
+            endif
+c            write(*,*)index,(hrein(kk,index),kk=0,5)
+c     $           ,(hrein(kk,index),kk=ncrein-4,ncrein)
+         enddo
+         idrein=id
+         if(Bt.lt.Btinf)then
+            call cumprob(fvdrein,xw,xc,
+     $           ncrein,prein(0,id),gdummy,myid)
+         else
+            call cumprob(fv1crein,xw,xc,
+     $           ncrein,prein(0,id),gdummy,myid)
+         endif
+      enddo
+c
+c      write(*,*)'grein',grein
+      gtot=0.
+c Alternative general-dimension fcarea calculation:
+      do i=1,ndims_mesh
+         fcarea(i)=1.
+         if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
+         do j=1,ndims_mesh-1
+            id=mod(i+j-1,ndims_mesh)+1
+            fcarea(i)=fcarea(i)*abs(xmeshend(id)-xmeshstart(id))
+         enddo
+c         write(*,*)'fcarea(',i,')=',fcarea(i)
+      enddo
+      do id=1,6
+         gtot=gtot+grein(id)*fcarea((id+1)/2)
+      enddo
+      gintrein(0)=-0.0000005
+      do id=1,6
+         gintrein(id)=gintrein(id-1) +
+     $        1.000001*grein(id)*fcarea((id+1)/2)/gtot
+      enddo
+      if(.not.gintrein(6).gt.1.)write(*,*)'gintrein problem!'
+c      write(*,*)'ipartperiod',ipartperiod,' grein',grein
+c      write(*,*)'gintrein',gintrein
+
+      end
 c**********************************************************************
 c Given a function f(x), whose integral from x=-\infty to +infty exists,
 c obtain the definite integral g(x) = \int_-\infty^x f(x) dx.
@@ -284,101 +379,6 @@ c      call pltend()
 c      call yautoplot(h(0),K+1)
 c      call pltend()
       ginfty=g(m)
-      end
-c*********************************************************************
-      subroutine cinjinit()
-c Cartesian reinjection initialization
-c drift velocity, vd, in the z-direction
-c maxwellians of width given by Ti
-
-      include 'plascom.f'
-      include 'meshcom.f'
-      include 'creincom.f'
-      include 'myidcom.f'
-      include 'partcom.f'
-c      external ffcrein
-c      external fvcrein
-      external ffdrein
-      external fvdrein
-      external ff1crein
-      external fv1crein
-      external fvdreinold
-      real fvdreinold
-      real fv1crein,ff1crein,fvdrein,ffdrein
-      parameter (bdys=6.)
-c      real fcarea(3)
-
-      xc=0.
-      xw=sqrt(Ti)
-c For three coordinate directions
-      do id=1,3
-c    For two ends (and hence velocity polarities)
-         do i2=1,2
-c idrein determines the sign of velocity. id odd => idrein negative.
-            idrein=id*(2*i2-3)
-            index=2*(id-1)+i2
-            if(Bt.lt.Btinf)then
-c Set the inverse cumulative probability fn hrein, and flux grein
-               call cumprob(ffdrein,xw,xc,
-     $           ncrein,hrein(0,index),grein(index),myid)
-            else
-c Infinite-Bt case 1-d projection.
-               xc=vpar*Bfield(id)+vperp(id)
-               xw=sqrt(Ti)*Bfield(id)
-               call cumprob(ff1crein,xw,xc,
-     $           ncrein,hrein(0,index),grein(index),myid)
-            endif
-c Zero grein on absorbing faces.
-            ip=ipartperiod(id)
-c Ordering in grein etc is (+,-) for each dim. Upper face/Lower face. 
-c That's the opposite of what I adopted for ipartperiod because
-c it corresponds to negative/positive velocity. Pity!
-            ip=ip/2**(2-i2)
-            ip=ip-2*(ip/2)
-            if(ip.eq.1)grein(index)=0.
-c Kludge fix of ends to avoid negative velocity injections.
-            if(idrein.gt.0)then
-               if(hrein(0,index).lt.0.)hrein(0,index)=0.
-            else
-               if(hrein(ncrein,index).gt.0.)hrein(ncrein,index)=0.
-            endif
-c            write(*,*)index,(hrein(kk,index),kk=0,5)
-c     $           ,(hrein(kk,index),kk=ncrein-4,ncrein)
-         enddo
-         idrein=id
-         if(Bt.lt.Btinf)then
-            call cumprob(fvdrein,xw,xc,
-     $           ncrein,prein(0,id),gdummy,myid)
-         else
-            call cumprob(fv1crein,xw,xc,
-     $           ncrein,prein(0,id),gdummy,myid)
-         endif
-      enddo
-c
-c      write(*,*)'grein',grein
-      gtot=0.
-c Alternative general-dimension fcarea calculation:
-      do i=1,ndims_mesh
-         fcarea(i)=1.
-         if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
-         do j=1,ndims_mesh-1
-            id=mod(i+j-1,ndims_mesh)+1
-            fcarea(i)=fcarea(i)*abs(xmeshend(id)-xmeshstart(id))
-         enddo
-c         write(*,*)'fcarea(',i,')=',fcarea(i)
-      enddo
-      do id=1,6
-         gtot=gtot+grein(id)*fcarea((id+1)/2)
-      enddo
-      gintrein(0)=-0.0000005
-      do id=1,6
-         gintrein(id)=gintrein(id-1) +
-     $        1.000001*grein(id)*fcarea((id+1)/2)/gtot
-      enddo
-      if(.not.gintrein(6).gt.1.)write(*,*)'gintrein problem!'
-c      write(*,*)'ipartperiod',ipartperiod,' grein',grein
-c      write(*,*)'gintrein',gintrein
-
       end
 c******************************************************************
 c Routines for reinjection calculations with ions drifting relative

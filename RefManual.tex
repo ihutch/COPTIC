@@ -305,7 +305,7 @@ position in calculation space of the corresponding mesh node. Between
 two indices adjacent in the sequence, the mesh positions are equally
 spaced. An example might be
 \begin{verbatim}
-   92,1,12,21,32,0;-5.,-1.,1.,5.
+   92,1,12,21,32,0, -5.,-1.,1.,5.
 \end{verbatim}
 This line (92) refers to the $y$-direction. It specifies four integers
 and four reals separated by 0. The first mesh node (1) is at position
@@ -537,6 +537,9 @@ If restarting, this is the number of \emph{additional} steps.
 \paragraph{-l....}  Set the electron Debye length, \verb!debyelen!. Default 1.
 
 \paragraph{-v....}  Set the drift velocity, \verb!vd!, of the background ions . Default 0.
+
+\paragraph{-vx -vy -vz...} Set the direction cosines of the drift
+velocity. Default (0,0,1).
 
 \subsubsection*{Neutrals, Collisions, Magnetic Field}
 

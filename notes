@@ -10488,7 +10488,7 @@ the normal vector is other than the drift direction, which has no
 known analytic solutions. In SCEPTIC and orbitinject it is accumulated
 numerically. 
 
-When there are no collisions the background distribution is a drifting
+When there are no collisions, the background distribution is a drifting
 Maxwellian which is equivalent to taking vn=vd. Such a distribution
 can be integrated to get forward flux in non-drift direction. See hand
 notes 12 Dec 2001. In effect, it is the same as obtained by just taking
@@ -10517,4 +10517,12 @@ the drift. Therefore for oblique drift, it is not straightforward
 to obtain the distribution normal to a face. 
 
 Desiderata: An output from diagexamine in vtk format of the velocity
-vector able to be plotted by visit as streamlines etc.
+vector able to be plotted by visit as streamlines etc. Implemented
+14 Sep 2013. 
+
+Some struggles with makefile that arise as a result of trying to
+compile routinely on NERSC. I don't understand why on T400 make
+returns from the initial recursive make, makes dummyreduce.o and then 
+DOES not remake coptic, while on NERSC it DOES remake coptic. 
+
+

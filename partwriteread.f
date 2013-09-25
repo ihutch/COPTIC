@@ -246,6 +246,7 @@ c      name=' '
       call nameappendint(name,'z',nint(xmeshend(3)),3)
       call nameappendint(name,'x',nint(xmeshend(2)),2)
       if(colntime.ne.0)call nameappendexp(name,'c',colntime,1)
+      if(Bt.gt..01)call nameappendexp(name,'B',Bt,1)
       end
 c*****************************************************************
       subroutine phipset(myid)

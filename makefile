@@ -8,8 +8,8 @@ COPTIC=coptic
 LIBPATH= -L./accis/ -L/usr/lib/mesa
 #########################################################################
 # Test whether X libraries are found. Null => yes.
- TESTGL:=$(shell ld  $(LIBPATH) -lGLU -lGL -o /dev/null 2>&1 | grep GL)
- TESTX11:=$(shell ld $(LIBPATH) -lXt -lX11 -o /dev/null 2>&1 | grep X)
+ TESTGL:=$(shell ld  $(LIBPATH) -lGLU -lGL -o /dev/null none.o 2>&1 | grep GL)
+ TESTX11:=$(shell ld $(LIBPATH) -lXt -lX11 -o /dev/null none.o 2>&1 | grep X)
 ##########################################################################
 # The reinjection choice:
 #######################
@@ -105,7 +105,7 @@ endif
 #COMPILE-SWITCHES = -Wall   $(OPTIMIZE) -I. -g -fbounds-check
 ##COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -g -I.
 # Noboundscheck switches are not compatible with e.g. pathscale compiler:
-ifeq ($(findstring g77,$(G77)),g77)
+ifeq ($(findstring g77,"$(G77)"),g77)
 	NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 else
 	NOBOUNDS= $(COMPILE-SWITCHES)
@@ -114,11 +114,11 @@ NOGLOBALS= $(COMPILE-SWITCHES) $(NGW)
 ##########################################################################
 ##########################################################################
 FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate.o padvnc.o chargetomesh.o slicesect.o randf.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o cmdline.o fsects.o bdyshare.o randc.o
-ifeq ("$(findstring mpi,$(G77))","")
+ifeq ("$(findstring mpi,"$(G77)")","")
 # non MPI compiler (e.g. gfortran) is used
-       MPIOBJECTS=dummyreduce.o nonmpibbdy.o
+       MPIOBJECTS:=dummyreduce.o nonmpibbdy.o
 else
-       MPIOBJECTS=reduce.o mpibbdy.o
+       MPIOBJECTS:=reduce.o mpibbdy.o
 endif
 SPECIALOBJECTS=bdyroutine.o faddu.o getfield.o interpolations.o 
 # Things just needed for the test routine:
@@ -167,6 +167,7 @@ smt.out : compiler $(COPTIC) copticgeom.dat
 
 # For now we are using a big hammer to ensure libcoptic is clean.
 libcoptic.a : compiler makefile $(OBJECTS) $(UTILITIES)
+#	@echo $(OBJECTS)
 	rm -f libcoptic.a
 	@ar -rs libcoptic.a $(OBJECTS) $(UTILITIES)
 
@@ -175,7 +176,7 @@ libcopsol.a : compiler makefile $(SOLOBJECTS) $(UTILITIES) $(SOLHEADERS)
 	ar -rs libcopsol.a $(SOLOBJECTS) $(UTILITIES)
 
 copticgeom.dat : $(GEOMFILE)
-	if [ -f "$(GEOMFILE)" ] ; then ln -s -f $(GEOMFILE) copticgeom.dat ; fi
+	@if [ -f "$(GEOMFILE)" ] ; then ln -s -f $(GEOMFILE) copticgeom.dat ; fi
 
 #mpi checking target
 mpicheck : $(COPTIC)
@@ -209,7 +210,9 @@ compiler : makefile
  echo "Chosen G77="$${GHERE}; G77=$${GHERE}; echo $${G77} > compiler;
 # To obtain this information, one has to make a second time.
 	@echo "*********** Remaking COPTIC with chosen G77 ****************"
-	@export MAKEFLAGS=; export G77=$${GHERE}; make coptic
+	@export MAKEFLAGS=; export G77=$${GHERE}; $(MAKE) coptic
+#	@echo "*********** Terminating recursive make. Not an error *******"
+#	exit 1
 
 #####################################################
 # Things to compile with non-standard switches
@@ -296,3 +299,4 @@ coptic.prof : compiler makefile $(OBJECTS)
 help :
 	@echo Targets: clean mproper ftnchek tree coptic.prof
 	@echo Tests: geometry testing 
+
