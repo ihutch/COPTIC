@@ -58,7 +58,6 @@ c the frame of reference in which the background E-field is truly zero:
             vperp(k)=vperp(k)+(Eneutral/Bt)
      $           *(vdrift(k1)*Bfield(k2)-vdrift(k2)*Bfield(k1))
          enddo
-
       endif
 c     We initialize the 'true' particles'
       tisq=sqrt(Ti)
@@ -79,9 +78,9 @@ c     $           ,(x_part(kk,i),kk=1,3)
             goto 1
          endif
          if(Eneutral.eq.0.)then
-            x_part(4,i)=tisq*gasdev(myid)
-            x_part(5,i)=tisq*gasdev(myid)
-            x_part(6,i)=tisq*gasdev(myid) + vd
+            x_part(4,i)=tisq*gasdev(myid) + vd*vdrift(1)
+            x_part(5,i)=tisq*gasdev(myid) + vd*vdrift(2)
+            x_part(6,i)=tisq*gasdev(myid) + vd*vdrift(3)
          else
             call colvget(x_part(4,i))
          endif
