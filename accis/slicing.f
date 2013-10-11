@@ -195,8 +195,6 @@ c       Draw a contour plot in perspective. Need to reset color anyway.
          call scalewn(xmin,xmax,ymin,ymax,.false.,.false.)
 c Calculate place of plane. 
          zplane=scbz3*(-1+(xn(ixnp(idfix)+n1)-zmin)*2./(zmax-zmin))
-c accis perspective corner for axes and cube.
-         icorner=igetcorner()
          if(iweb.eq.0)then
 c Draw axes.
             call hdprset(0,0.)
@@ -204,7 +202,7 @@ c Ought to rescale the z-axis, but that was done in hidweb.
             call scale3(xmin,xmax,ymin,ymax,zmin,zmax)
 c If we do, then we must reset jsw:
             jsw=1 + 256*6 + 256*256*7
-            call axproj(icorner)
+            call axproj(igetcorner())
          else
 c Set contour levels using the scaling of the box.
             icl=6
@@ -231,7 +229,7 @@ c Contour without labels, with coloring, using vector axes
          call axis()
          call ticlabtog()
          call axis2()
-         if(iweb.ne.1)call cubed(icorner-8*(icorner/8))
+         if(iweb.ne.1)call cubed(igetcubecorner())
       endif
 
       if(iweb.eq.1.and.icontour.eq.3)then

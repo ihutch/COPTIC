@@ -36,7 +36,6 @@ c
 c      write(*,*)'ifull',ifull
       i1=1
       ied=ndiagmax
-      call pfset(3)
       call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
       if(ierr.eq.1)stop 'Error reading diag file'
 

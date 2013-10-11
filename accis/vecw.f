@@ -129,8 +129,9 @@ c If ifl.eq.3 return the coordinates relative to center,
 c          rotated to the axes in which the center to eye vector is z.
 c If ifl.eq.-1 return the eye position dx,dy,dz in xt,yt,zt.
       real dx,dy,dz,rz,d,t11,t12,t13,t21,t22,t23,t31,t32,t33,dmz
-      real x0,y0,z0
+      real x0,y0,z0,zsign
       save
+      include 'world3.h'
       data t11,t12,t13,t21,t22,t23,t31,t32,t33
      $	 / .894427, .447214,.000000,-.182574, .365148, .912871
      $  , -.408248, .816497,-.408248/
@@ -164,13 +165,13 @@ c Set up perspective transform.
 c Transformation matrix: | -c1       s1        0 |   cos,sin etc:
 c Rotz  till x' perp d # | +s1c2     c1c2      s2|  c1=dy/rz s1=dx/rz
 c Rotx' till z''para  d  | -s1s2    -c1s2      c2|  c2=-dz/d s2=rz/d
-	 t11=-dy/rz
-	 t12=dx/rz
+	 t11=-dy/rz*z3sign
+	 t12=dx/rz*z3sign
 	 t13=0.
 	 t33=-dz/d
 	 t21=t12*t33
 	 t22=-t11*t33
-	 t23=rz/d
+	 t23=rz/d*z3sign
 	 t31=-dx/d
 	 t32=-dy/d
 c	 write(*,'(3f14.6)')t11,t12,t13,t21,t22,t23,t31,t32,t33

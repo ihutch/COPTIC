@@ -1302,10 +1302,17 @@ The subdirectory \verb!analysis! contains routines that read back the
 data files written and display them in various ways. They are in the
 form of main programs with names like \verb!diagexamine!,
 \verb!fluxexamine!, \verb!denexamine!, \verb!phiexamine!. 
+
 The routine \verb!phiexamine! can optionally write out the data it
 reads in (which might equally well be other mesh-defined quantities
 such as density) in vtk-format suitable for reading by the 3-D
 visualization software VisIt. 
+
+The routine \verb!diagexamine! can optionally write out the velocity
+data from a \verb!.diag! file (as well as another array of scalar
+data) into a vtk vector file. VisIt can then display streamlines of
+the (mean fluid) velocity.
+
 Obviously the possible sorts of postprocessing are unlimited, but
 these routines provide both general purpose inspection routines and
 examples that can serve as templates for other analyses.

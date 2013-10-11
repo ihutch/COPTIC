@@ -69,12 +69,9 @@ c Draw the web
       if(cola.ne.0) call color(cola)
       if(level.ge.0)then
 c Draw cube.
-	 icube=sign(1.,z2)*icorner
-	 call cubed(icube)
-c Get corner with extra switches. (Could pass this to cubed too).
-         icorner=igetcorner()
+         call cubed(igetcubecorner())
 c Draw axes.
-	 call axproj(icorner)
+	 call axproj(igetcorner())
       endif
       end
 c********************************************************************
@@ -426,6 +423,26 @@ c Trying for better results.
       if(z2*z2.lt.xy2i+.2*y2**2) icorner=icorner+32
       if(z2*z2.lt.xy2i+.2*x2**2) icorner=icorner+64
       igetcorner=icorner
+      end
+c********************************************************************
+c Return the nearest corner to eye for use with cubed
+      function igetcubecorner()
+      call trn32(xdum,ydum,zdum,x2,y2,z2,-1)
+      if(y2.le.0.)then 
+         if(x2.le.0.)then
+            icorner=1
+         else
+            icorner=2
+         endif
+      else
+         if(x2.le.0.)then
+            icorner=4
+         else
+            icorner=3
+         endif
+      endif
+      if(z2.lt.0)icorner=-icorner
+      igetcubecorner=icorner
       end
 c********************************************************************
 c Attempt was made to create a webdrw that drew in the order of closest
