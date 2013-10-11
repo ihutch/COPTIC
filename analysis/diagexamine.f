@@ -53,7 +53,8 @@ c Attempt to read the volumes data.
          write(*,*)'Read volumes successfully'
      $     ,diagsum(2,2,2,ndiags+1)
       else
-         write(*,*)'Storedgeom returned',istat,iuds,ifull
+         write(*,*)'Storedgeom failed; returned',istat,iuds,ifull
+         write(*,*)'***** No volume-corrected density is available.'
       endif
 c         write(*,*)'phifilename=',phifilename
 c         write(*,*)'denfilename=',denfilename
@@ -175,8 +176,15 @@ c Spaces are not allowed in visit data names. Fix:
      $        ,xn(isrs(1)),xn(isrs(2)+iuds(1))
      $        ,xn(isrs(3)+iuds(1)+iuds(2))
      $        ,ibinary
-     $        ,diagfilename(1:lentrim(diagfilename))//char(0)
+     $        ,diagfilename(1:lentrim(diagfilename))//'N'//char(0)
      $        ,'Cell_Particles'//char(0))
+         if(istat.eq.1)call vtkwritescalar(ifull,iurs
+     $        ,diagsum(isrs(1),isrs(2),isrs(3),ndiagmax+1)
+     $        ,xn(isrs(1)),xn(isrs(2)+iuds(1))
+     $        ,xn(isrs(3)+iuds(1)+iuds(2))
+     $        ,ibinary
+     $        ,diagfilename(1:lentrim(diagfilename))//'n'//char(0)
+     $        ,'Density'//char(0))
 c         write(*,*)'Finished density vtkwrite',ifull,iuds,u(1,1,1)
          if(ndiags.ge.4)then
          call vtkwritevector(ifull,iurs
