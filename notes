@@ -10525,7 +10525,7 @@ compile routinely on NERSC. I don't understand why on T400 make
 returns from the initial recursive make, makes dummyreduce.o and then 
 DOES not remake coptic, while on NERSC it DOES remake coptic. 
 
-
 25 Sep 13
 Corrected pinit to use the full drift velocity direction, not just
 the z-component.
+
