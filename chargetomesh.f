@@ -156,6 +156,8 @@ c********************************************************************
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
       real psum(*),rho(*),volumes(*),u(*)
+      real faddu
+      external faddu
 c Partcom gives us rhoinf:
       include 'partcom.f'
 

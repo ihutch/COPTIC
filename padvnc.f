@@ -482,6 +482,7 @@ c***********************************************************************
       subroutine setadfield(ndimsp,ifull,iuds,irptch,lsliceplot)
 c Set the values of the potential and charge at the grid
 c points that compensate for the analytic field of getadfield.
+c Also any temperature gradient factors.
 
       integer ndimsp
       integer ifull(ndimsp),iuds(ndimsp),irptch
@@ -489,6 +490,7 @@ c points that compensate for the analytic field of getadfield.
 c Defines iptch_copy uci, rhoc and dimensions.
       include 'griddecl.f'
       include 'ptchcom.f'
+      include 'plascom.f'
 c ndims must be same as ndimsp.
 c To do the slice plot we need:
       include 'meshcom.f'
@@ -496,28 +498,31 @@ c To do the slice plot we need:
       integer ipoint
       external ucrhoset
       iptch_copy=irptch
-c      write(*,*)'Point charges included. Mask:',iptch_copy
+      gtt_copy=gtt
+c      write(*,*)'Point charges included. Mask:',iptch_copy,gtt
       ipoint=0
       ifix=1
       call mditerarg(ucrhoset,ndimsp,ifull,iuds,ipoint
-     $     ,uci,rhoci,iptch_copy,idum)
+     $     ,uci,rhoci,iptch_copy,Teci)
       if(lsliceplot)then
          call sliceGweb(ifull,iuds,uci,na_m,zp,
      $        ixnp,xn,ifix,'u!dc!d ptch',dum,dum)
          call sliceGweb(ifull,iuds,rhoci,na_m,zp,
      $        ixnp,xn,ifix,'!Ar!@!dc!d ptch',dum,dum)
+        call sliceGweb(ifull,iuds,Teci,na_m,zp,
+     $        ixnp,xn,ifix,'T!de!d Profile',dum,dum)
       endif
       end
 c**********************************************************************
       subroutine ucrhoset(inc,ipoint,indi,ndims,iLs,iuds,
-     $     uci,rhoci,iptch_copy)
+     $     uci,rhoci,iptch_copy,Teci)
 c Set uci and rhoci when point charges are present.
       integer inc,ipoint,ndims,indi(ndims)
       integer iuds(ndims)
-      real uci(*),rhoci(*)
+      real uci(*),rhoci(*),Teci(*)
 c Commons: For position.
       include 'meshcom.f'
-c For debyelen
+c For debyelen and Tempr gradient.
       include 'plascom.f'
 c Local storage:
       integer isw,iregion,irptch
@@ -533,6 +538,7 @@ c Get grid point position, and irptch.
       enddo
       iregion=insideall(ndims,xp)
       irptch=IAND(iregion,iptch_copy)
+c Set the uci and rhoci:
       if(irptch.ne.0)then
 c Get uc
          isw=1
@@ -547,6 +553,18 @@ c Get charge
       else
          uci(ipoint+1)=0.
          rhoci(ipoint+1)=0.
+      endif
+c Set the Tec factors.
+      Teci(ipoint+1)=1.
+      if(gtt.ne.0)then
+         do id=1,ndims
+            Teci(ipoint+1)=Teci(ipoint+1)+(xp(id)-gp0(id))*gt(id)
+         enddo
+         if(Teci(ipoint+1).le.0.)then
+            write(*,*)'Te gradient too large.',
+     $           ' Non-positive Te encountered at',xp
+            stop
+         endif
       endif
 c Always just increment by 1
       inc=1

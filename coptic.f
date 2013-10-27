@@ -134,7 +134,8 @@ c First time this routine just sets defaults and the object file name.
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
      $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
-     $     ,vdrift,ldistshow)
+     $     ,vdrift,ldistshow,gp0,gt,gtt
+     $     )
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -147,7 +148,8 @@ c Second time: deal with any other command line parameters.
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
      $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
-     $     ,vdrift,ldistshow)
+     $     ,vdrift,ldistshow,gp0,gt,gtt
+     $     )
       if(ierr.ne.0)stop
 c The double call enables cmdline switches to override objfile settings.
 c-----------------------------------------------------------------
@@ -277,7 +279,7 @@ c Initialize diagsum if necessary.
          call mditerset(diagsum(1,1,1,idiag),ndims,ifull,iuds,0,0.)
       enddo
 c Initialize additional potential and charge if needed.
-      if(iptch_mask.ne.0)
+      if(iptch_mask.ne.0 .or. gtt.ne.0.)
      $     call setadfield(ndims,ifull,iuds,iptch_mask,lsliceplot)
 c      if(myid.eq.0)call sliceGweb(ifull,iuds,rhoci,na_m,zp,
 c     $              ixnp,xn,ifix,'rhoci',dum,dum)

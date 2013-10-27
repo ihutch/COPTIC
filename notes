@@ -10523,9 +10523,34 @@ vector able to be plotted by visit as streamlines etc. Implemented
 Some struggles with makefile that arise as a result of trying to
 compile routinely on NERSC. I don't understand why on T400 make
 returns from the initial recursive make, makes dummyreduce.o and then 
-DOES not remake coptic, while on NERSC it DOES remake coptic. 
+DOES NOT remake coptic, while on NERSC it DOES remake coptic. 
 
 25 Sep 13
 Corrected pinit to use the full drift velocity direction, not just
 the z-component.
 
+23 Oct 13 
+
+Ideas for Te_gradient.
+faddu is the place to change. Although it is passed as an argument to
+sormpi, faddu is also called in psumtoq which is passed to mditerate.
+Therefore it is not really possible to replace faddu as the name of the
+called routine.
+
+Implemented a cmdline argument for giving gp0 and gt the tempr gradient.
+Need a test to warn if this is a sensible direction for gradient. 
+Ought to be perp to Bfield.
+
+Either we precalculate the electron temperature everywhere, the way 
+we do for the point-charge data, or else we have to calculate it 
+for every faddu call. The former sounds more efficient (provided memory
+access does not dominate). It also involves a process that is just
+like ucrhoset. Pretty easy to do. Might as well store the info in the
+same common as rhoci.
+
+Implemented Tec/i added to the ptch common and set via setadfield and
+ucrho setting iteration.
+
+Implemented modification to faddu to use Teci factor.
+
+Seems to be working but not properly tested yet.

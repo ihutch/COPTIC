@@ -8,7 +8,8 @@ c Encapsulation of parameter setting.
      $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
      $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
-     $     ,vdrift,ldistshow)
+     $     ,vdrift,ldistshow,gp0,gt,gtt
+     $     )
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
@@ -23,6 +24,7 @@ c Encapsulation of parameter setting.
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
       character*256 argline
+      real gt(ndims),gp0(ndims),gtt
 
 c Local variables:
       integer lentrim,iargc
@@ -85,6 +87,7 @@ c Boundary condition switch and value. 0=> logarithmic.
             vdrift(id)=0.
          enddo
          vdrift(ndims)=1.
+         gtt=0.
          do i=1,iargc()
             call getarg(i,argument)
             if(argument(1:3).eq.'-of')
@@ -256,7 +259,11 @@ c By default put the vneutral the same
             endif
          endif
          if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
-         if(argument(1:3).eq.'-tn')then
+         if(argument(1:4).eq.'-tge')then
+c Electron temperature gradient parameters
+            read(argument(5:),*,err=201)gp0,gt
+            gtt=gt(1)*2+gt(2)**2+gt(3)**2
+         elseif(argument(1:3).eq.'-tn')then
             read(argument(4:),*,err=201)Tneutral
          elseif(argument(1:2).eq.'-t')then
             read(argument(3:),*,err=201)Ti
@@ -404,10 +411,11 @@ c Help text
  203  continue
       if(.not.lmyidhead)return
  301  format(a,i5,a,i5)
- 302  format(a,3f8.3)
+ 302  format(a,6f8.3)
  303  format(a,3L3,a)
  304  format(a,f8.3,a)
  305  format(a,3i3,a,3i5)
+ 306  format(a,6f7.3)
       write(*,301)'Usage: coptic [objectfile] [-switches]'
       write(*,301)'Parameter switches.'
      $     //' Leave no gap before value. Defaults or set values [ddd'
@@ -430,6 +438,7 @@ c Help text
      $     ,'  greater impulse => drop this ion.'
       write(*,301)' -s    set No of steps.           [',nsteps
       write(*,302)' -t    set Ion Temperature.       [',Ti
+      write(*,306)' -tge  set Elec Temp Center&Grad  [',gp0,gt
       write(*,302)' -l    set Debye Length.          [',debyelen
       write(*,302)' -v    set drift speed.           [',vd
       write(*,302)' -vx -vy -vz set velocity cosines [',vdrift
