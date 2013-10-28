@@ -541,6 +541,14 @@ If restarting, this is the number of \emph{additional} steps.
 \paragraph{-vx -vy -vz...} Set the direction cosines of the drift
 velocity. Default (0,0,1).
 
+\paragraph{-tge...} Set the reference position and gradient of
+$T_e$. Six reals must follow the switch without spaces. The first
+three are the coordinates of the reference point at which $T_e=1$ in
+normalized units. The second three are the components of the gradient
+of $T_e$ (in normalized units). If the gradient is such as to cause
+the local $T_e$ to become non-positive anywhere on the grid, a fatal
+error will terminate the initialization. Default: zero gradient. 
+
 \subsubsection*{Neutrals, Collisions, Magnetic Field}
 
 \paragraph{-ct....} Set the collision time, colntime. Default 0 [off].
@@ -1075,8 +1083,9 @@ $f(u)$ (possibly dependent upon its position in the array indicated by
 \verb!fprime!. In COPTIC, \verb!faddu! is the exponential function to
 represent the electron Boltzmann distribution. The additional access
 to the array index is necessary to compensate for point charges by
-adding their effective density \verb!rhoci!; that density is obtained
-through inclusion of commons. 
+adding their effective density \verb!rhoci!, and to allow for
+spatially varying $T_e$. Such information is obtained
+through inclusion of arrays in common \verb!ptchcom!.
 
 After each full iteration, boundary conditions are applied by calling
 the parallelized boundary setting routine \verb!bdyshare!. If it
