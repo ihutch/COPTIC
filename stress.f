@@ -46,7 +46,7 @@ c         call fieldatpointtest(surfobj(koff+1),u,cij,iLs,field)
 
 c***************************************************************
 c Electron pressure force calculation.
-      subroutine pressureforce(ndims,km,surfobj,force,  u,cij,iLs)
+      subroutine pressureforce(ndims,km,surfobj,force,u,cij,iLs)
 c Calculate the total pressure force on a surface from its surface
 c representation which consists of km facets each of which has 
 c ndims position + ndims surface coefficients. 2.ndims.km.
@@ -70,6 +70,13 @@ c         phi=potentialatpointtest(surfobj(koff+1),u,cij,iLs)
 c 2 Feb 11. The sign was previously +, which was incorrect
 c for an outward directed surface normal. 
             force(i)=force(i)-surfobj(koff+ndims+i)*exp(phi)
+c 5 Nov 13 trap for unphysical forces.
+            if(.not.abs(force(i)).lt.1.e20)then 
+               write(*,*)'k,i,koff,phi,force(i)',k,i,koff,phi,force(i)
+               write(*,*)'x=',(surfobj(koff+kk),kk=1,3)
+               stop
+     $           '**** pressureforce error.'
+            endif
          enddo
          if(phi.eq.9999)then
             r2=0.

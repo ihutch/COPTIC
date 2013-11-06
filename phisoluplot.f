@@ -408,11 +408,6 @@ c     $              i,rprime(i),rfield(i),uanal(i)
 c     $              ,rsimple(i)
 
             rfield(i)=getpotential(u,cij,iLs,xff,iregion,2)
-c Confusing tests.
-c            rfcomp=potentialatpoint(x,u,cij,iLs)
-c            if(rfcomp.ne.rfield(i))write(*,*)
-c     $           'getpotential vs potential at point difference:'
-c     $           ,rfield(i),rfcomp
             rsimple(i)=getpotential(u,cij,iLs,xff,iregion,1)
             tfield(i)=getpotential(u,cij,iLs,xff,iregion,3)
 c Region of point

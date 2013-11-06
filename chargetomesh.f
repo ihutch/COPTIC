@@ -215,7 +215,7 @@ c (Which ought to be optimized away.)
 c This routine for use in mditerarg.
 c But we iterate only over the inner mesh (not edges) by virtue of call.
       ind=1+ipoint
-c This test in ineffective, because q was set by the psumtoq to
+c This test is ineffective, because q was set by the psumtoq to
 c compensate electron density.
 c      if(q(ind).gt.0.)then
 c So instead tell directly from volumes if we are outside:
@@ -226,5 +226,6 @@ c There still might be too small a density, so set a floor for it.
       else
          u(ind)=phip
       endif
+      if(abs(u(ind)).gt.20.)write(*,*)'Large phi',ind,u(ind),phip
       inc=1
       end

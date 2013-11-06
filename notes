@@ -10554,3 +10554,30 @@ ucrho setting iteration.
 Implemented modification to faddu to use Teci factor.
 
 Seems to be working but not properly tested yet.
+
+5 Nov 13
+
+Problems seen with fluxexamine giving ridiculously large forces for the 
+first step. These were run with -l0. Put a trap into pressureforce to
+make it stop if the potential is too large. Is tripped on (some of) the
+cases that give the error. Hence it appears that the problem is not with
+reading back the data, it is with forming it in the first place. 
+It appears that potentialatpoint is returning unphysical values.
+
+Problem seems to be induced by potentialatpoint, which calls
+      potentialatpoint=getpotential(u,cij,iLs,xff,iregion,2)
+The parameter 2 tells getpotential to use fillinlin to fill in the
+interpolation points that are missing from a cell. However, for -l0
+cases, the initial potential is discontinuous at the edge of the 
+object. Therefore doing linear extrapolation, as fillinlin does, is
+very risky, and appears to be giving crazy answers. I don't understand
+exactly why the answers are so crazy, but certainly the big potentials
+are avoided if one instead does
+      potentialatpoint=getpotential(u,cij,iLs,xff,iregion,1)
+which attempts no correction for region, and just does a multilinear
+fit anyway.
+
+This change will alter values of pressure force even for finite lambda.
+However, generally the force values have not previously been found to be
+reliable immediately on the region boundary. So there is probably not much
+loss in making this change universally.

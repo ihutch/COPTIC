@@ -17,6 +17,7 @@ c If nb=0, just transfer
             nac=nac+1
          enddo
          traceave(i)=accum/nac
+c         write(*,*)'Boxcar',i,nr,nac,accum
       enddo
       end
 c**********************************************************************

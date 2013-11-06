@@ -736,7 +736,7 @@ c      write(*,*)'tot,rinf,tdur,n2',tot,rinf,tdur,n1,n2
       rinf=rinf/tdur
 
 c From here on is non-general and is mostly for testing.
-      write(*,'(a,i3,a,i3,a,i4,i4,a,f10.3)')' Average flux quant',iq
+      write(*,'(a,i3,a,i3,a,i5,i5,a,f9.2)')' Average flux quant',iq
      $     ,', object',ifobj,', over steps',n1,n2,', per unit time:',tot
       write(*,*)'rhoinf:',rinf,' Total:',nint(tot*tdur)
      $     ,'  Average collected per step by posn:'

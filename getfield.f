@@ -508,6 +508,10 @@ c No information. We ought to look around further perhaps.
          getpotential=9999
          write(*,*)'getpotential Error. no valid vertex',iregion,imin
       endif
+      if(abs(getpotential).gt.20)then
+         write(*,*)'Getpotential',getpotential,(xff(kk),kk=1,ndims)
+     $        ,itype,imin,imissing
+      endif
       end
 c*******************************************************************
       real function smultilinearinterp(ndims,uval,xf)
@@ -713,7 +717,10 @@ c Find the index of xprime in the array xn:
          ix=interp(xn(ioff+1),ixnp(id+1)-ioff,x(id),xm)
          xff(id)=xm
       enddo
-      potentialatpoint=getpotential(u,cij,iLs,xff,iregion,2)
+c This call using fillinlin gives problems for quasineutral cases.
+c Presumably because there are discontinuities in phi at object edge.
+c      potentialatpoint=getpotential(u,cij,iLs,xff,iregion,2)
+      potentialatpoint=getpotential(u,cij,iLs,xff,iregion,1)
 c      if(potentialatpoint.eq.999)then
 c         xs=sqrt(x(1)**2+x(2)**2+x(3)**2)
 c         write(*,'(7f10.5)')x,xs,xff

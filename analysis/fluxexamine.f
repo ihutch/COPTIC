@@ -194,7 +194,7 @@ c Plots if
       do k=1,mf_obj
          imk=ifmask/2**(k-1)
          imk=imk-2*(imk/2)
-c         write(*,*)'ifmask=',ifmask,' k=',k,' imk=',imk
+         write(*,*)'ifmask=',ifmask,' k=',k,' imk=',imk
 
          do j=1,ns_ndims
             avefield(j)=0.
@@ -205,19 +205,31 @@ c         write(*,*)'ifmask=',ifmask,' k=',k,' imk=',imk
          enddo
          avecharge=0.
          iavenum=0
+c         write(*,'(a,$)')'Step 1 force values part/press/field:'
+c         write(*,*)k,partforce(idimf,k,1),pressforce(idimf,k,1)
+c     $        ,fieldforce(idimf,k,1)
          do i=1,nf_step
             plotdata(i,1)=fieldforce(idimf,k,i)*debyelen**2
-            plotdata(i,2)=pressforce(idimf,k,i)
-            if(.not.abs(partforce(idimf,k,i)).lt.4.e2)then
-               write(*,*)i-3,partforce(idimf,k,i-3)
-               write(*,*)i-2,partforce(idimf,k,i-2)
-               write(*,*)i-1,partforce(idimf,k,i-1)
-               write(*,*)'***Giant partforce',idimf,k,i
-     $              ,partforce(idimf,k,i)
-               write(*,*)i+1,partforce(idimf,k,i+1)
-               stop
+            if(.not.pressforce(idimf,k,i).lt.4.e7)then
+               write(*,*)'***Giant pressforce at step',i
+     $              ,pressforce(idimf,k,i),'  zeroed!'
+               plotdata(i,2)=0.
+            else
+               plotdata(i,2)=pressforce(idimf,k,i)
             endif
-            plotdata(i,3)=partforce(idimf,k,i)               
+
+            if(.not.abs(partforce(idimf,k,i)).lt.4.e2)then
+c               write(*,*)i-3,partforce(idimf,k,i-3)
+c               write(*,*)i-2,partforce(idimf,k,i-2)
+c               write(*,*)i-1,partforce(idimf,k,i-1)
+               write(*,*)'***Giant partforce at step',i
+     $              ,partforce(idimf,k,i),'  zeroed!'               
+c               write(*,*)i+1,partforce(idimf,k,i+1)
+c               stop
+               plotdata(i,3)=0.
+            else
+               plotdata(i,3)=partforce(idimf,k,i)               
+            endif
             plotdata(i,5)=charge_ns(k,i)
             plotdata(i,6)=colnforce(idimf,k,i)               
             plotdata(i,4)=plotdata(i,1)+plotdata(i,2)+plotdata(i,3)

@@ -150,7 +150,7 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 	rm -f *.phi
 	./${COPTIC} $*.dat
 	@if [ -f *.phi ] ; then cd .; else echo NO .phi FILE GENERATED; fi ; ls *.phi 2>/dev/null
-	@if diff *.phi $*.phi >diffout 2>&1; then echo $*.phi: OK. No differences; touch $*.phi;else cat diffout; echo '******** Failed geometry test *********'; cat diffout >> GeometryTests; fi; rm -f diffout
+	@if diff *.phi $*.phi >diffout 2>&1; then echo; echo "        Case $*.phi: OK. No differences"; touch $*.phi;else cat diffout; echo '******** Failed geometry test *********'; cat diffout >> GeometryTests; fi; rm -f diffout
 	@if [ -f $*.phi ] ; then echo ; else echo "******** $*.phi not present. Creating it."; mv -f *.phi $*.phi; fi
 	@echo -----------------------------------------------------------------
 
