@@ -9,6 +9,9 @@ c Bfield directoin,vparallel,vperp,vdrift direction cosines of v.
       real Bfield(nplasdims),vpar,vperp(nplasdims),vdrift(nplasdims)
 c Reference point of Te, Te gradient components, gtt total gradient.
       real gp0(nplasdims),gt(nplasdims),gtt
+c Reference point of ne gradient is same as Te gradient.
+c ne gradient components, total gradient:
+      real gn(nplasdims),gnt
 
       common/plascom/debyelen,Ti,vd,rs,phip,rmtoz,Bt,Bfield,vpar,vperp
-     $     ,vdrift,gp0,gt,gtt
+     $     ,vdrift,gp0,gt,gtt,gn,gnt
