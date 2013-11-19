@@ -7,8 +7,10 @@ c**************************************************************
 
       parameter (ntr=10000)
       real plotdata(ntr,6),stepdata(ntr)
-      real traceave(ntr)
+C      real traceave(ntr)
+      real traceave(ntr),posi(ntr),flx(ntr)
       character*100 filename,argument
+      character*4 charstep
       integer iplot,iprint,ifmask,idimf,iomask,ivprn
       real avefield(ns_ndims),avepress(ns_ndims),avepart(ns_ndims)
       real avetotal(ns_ndims),avecoln(ns_ndims),avesq(ns_ndims)
@@ -120,7 +122,15 @@ c For all the objects being flux tracked.
      $              ,nf_posdim,' flux-indices. nf_dimlens='
      $              ,(nf_dimlens(1,k,kd),kd=1,nf_posdim-1),' Object',k
                write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i
-     $              -1),i=1,nf_posno(1,k)),j=1,nf_posdim)
+     $              -1),i=1,nf_posno(1,k)),j=1,2)
+               do i=1,(nf_posno(1,k))
+                  posi(3*i-2)=sqrt(1.-ff_data(nf_address(nf_flux,k,0)+i-
+     $                1)**2)*cos(ff_data(nf_address(nf_flux,k,-1)+i-1))
+                  posi(3*i-1)=sqrt(1.-ff_data(nf_address(nf_flux,k,0)+i-
+     $                1)**2)*sin(ff_data(nf_address(nf_flux,k,-1)+i-1))
+                  posi(3*i)=ff_data(nf_address(nf_flux,k,0)+i-1)
+               enddo
+               ibinary=0
             endif
             do kk=max(nf_step/5,1),nf_step,max(nf_step/5,1)
                if(mf_quant(k).ge.1)then
@@ -128,6 +138,13 @@ c For all the objects being flux tracked.
      $                 ,ff_rho(kk),'  Flux data'
                   write(*,'(10f8.2)')(ff_data(nf_address(nf_flux,k,kk)+i
      $                 -1),i=1,nf_posno(nf_flux,k))
+                  do i=1,(nf_posno(1,k))
+                     flx(i)=ff_data(nf_address(nf_flux,k,kk)+i-1)
+                  enddo 
+                  write(charstep,'(i4.4)') kk
+                  call vtkwritescalarpoints(nf_posno(1,k),flx,posi,
+     $           ibinary,filename(1:lentrim(filename))//
+     $           charstep//char(0),'flux'//char(0))
                endif
                if(mf_quant(k).ge.2)then
                   write(*,'(''x-momentum'',i4)')nf_posno(nf_gx,k)
@@ -184,7 +201,11 @@ c            write(*,*)i,nf_npart(i)
          call pltend()
       endif
 
-
+       if(iplot.ne.0)then
+         call pltend()
+c         if(iplot.eq.1)
+         call objplot(abs(iplot),rview,cv,iosw,iomask)
+      endif
 c Plots if 
       if(rp.ne.0.)write(*,'(a,f10.4,a,f10.4)')
      $     'Radius',rp,' Potential',phip
