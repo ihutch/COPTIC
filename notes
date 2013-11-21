@@ -10680,3 +10680,49 @@ for file in geometry/*.dat; do make ${file%dat}phi; done
 make geometry
 renews the geometry test files. Then subsequent make geometry tests are
 passed.
+
+Commit.
+
+20 Nov 2013
+
+Now we need to compensate faddu for the density gradient. faddu is the
+effective electron density (and gives its gradient wrt u) as a function
+of u (and position). It is currently n_\infty exp(u). We want it instead
+to return n(x) exp(u). Where n(x) is n_0 exp((x-x0).gn). 
+This can be accomplished using the storage uci, which is added to u before
+it is divided by Te(local)=Teci and the exponential is taken. If we make 
+uci equal to (x-x0).gn.Teci that will do the trick. Actually we need to
+add this amount to uci if there are point charges that also contribute
+to it. Currently, uci and Teci are set in padvnc.f routine ucrhoset ...
+
+Implemented that. And it seems to be being set from the setup diagnostics.
+
+Now there is a question about particle initialization with a density 
+gradient. This ought not to be too difficult because it is similar to
+the choice of reinjection position which was implemented by the following
+change in cartreinject:
+c         fr=ran1(0)*0.999999+.0000005
+c Or Accounting for density gradients:
+         fr=ranlenposition(iother)
+In fact, since ranlenposition automatically initializes itself, it
+seems we just need to replace the pinit position decision with this.
+
+Implemented the change. Unfortunately, since ranlenposition contains
+code to prevent getting exactly equal to 0., or 1., there are tiny 
+changes (again) in the solution for uniform density.
+Recreated the .phi files again.
+
+21 Nov 13
+
+After a detour because of being misled by partperiod, I find that the
+density gradient does not seem to work in an empty box. A potential
+gradient appears which should not. I don't see why.
+The potential is higher on the side where the density is higher.
+
+Ah, faddu is checking gtt_copy to see if we need to apply the
+corrections, but I'm not setting it. Make gnt_copy and check it
+too. That fixes it.  There is some bouncing aroung at the 10^{-2}
+level but no obvious potential bias arises from a density gradient.
+I think density gradients are working.
+
+Renew geometry test files.

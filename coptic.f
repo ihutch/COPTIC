@@ -279,7 +279,7 @@ c Initialize diagsum if necessary.
          call mditerset(diagsum(1,1,1,idiag),ndims,ifull,iuds,0,0.)
       enddo
 c Initialize additional potential and charge if needed.
-      if(iptch_mask.ne.0 .or. gtt.ne.0.)
+      if(iptch_mask.ne.0 .or. gtt.ne.0. .or. gnt.ne.0)
      $     call setadfield(ndims,ifull,iuds,iptch_mask,lsliceplot)
 c      if(myid.eq.0)call sliceGweb(ifull,iuds,rhoci,na_m,zp,
 c     $              ixnp,xn,ifix,'rhoci',dum,dum)

@@ -482,7 +482,7 @@ c***********************************************************************
       subroutine setadfield(ndimsp,ifull,iuds,irptch,lsliceplot)
 c Set the values of the potential and charge at the grid
 c points that compensate for the analytic field of getadfield.
-c Also any temperature gradient factors.
+c Also any temperature-gradient and density-gradient factors.
 
       integer ndimsp
       integer ifull(ndimsp),iuds(ndimsp),irptch
@@ -499,6 +499,7 @@ c To do the slice plot we need:
       external ucrhoset
       iptch_copy=irptch
       gtt_copy=gtt
+      gnt_copy=gnt
 c      write(*,*)'Point charges included. Mask:',iptch_copy,gtt
       ipoint=0
       ifix=1
@@ -516,7 +517,10 @@ c      write(*,*)'Point charges included. Mask:',iptch_copy,gtt
 c**********************************************************************
       subroutine ucrhoset(inc,ipoint,indi,ndims,iLs,iuds,
      $     uci,rhoci,iptch_copy,Teci)
-c Set uci and rhoci when point charges are present.
+c Set uci, rhoci, and Teci arrays to compensate for point charges,
+c electron temperature gradients, or density gradients. 
+c These are then subsequently used in faddu to decide the electron
+c density. [They are not used in getadfield.]
       integer inc,ipoint,ndims,indi(ndims)
       integer iuds(ndims)
       real uci(*),rhoci(*),Teci(*)
@@ -538,23 +542,7 @@ c Get grid point position, and irptch.
       enddo
       iregion=insideall(ndims,xp)
       irptch=IAND(iregion,iptch_copy)
-c Set the uci and rhoci:
-      if(irptch.ne.0)then
-c Get uc
-         isw=1
-         adfield(1)=0.
-         call getadfield(ndims,irptch,adfield,xp,isw,ierr)
-         uci(ipoint+1)=adfield(1)
-c Get charge
-         isw=3
-         adfield(1)=0.
-         call getadfield(ndims,irptch,adfield,xp,isw,ierr)
-         rhoci(ipoint+1)=debyelen**2*adfield(1)
-      else
-         uci(ipoint+1)=0.
-         rhoci(ipoint+1)=0.
-      endif
-c Set the Tec factors.
+c Set the Teci factors.
       Teci(ipoint+1)=1.
       if(gtt.ne.0)then
          do id=1,ndims
@@ -565,6 +553,28 @@ c Set the Tec factors.
      $           ' Non-positive Te encountered at',xp
             stop
          endif
+      endif
+      rhoci(ipoint+1)=0.
+      uci(ipoint+1)=0.
+c Set the density-gradient compensating potential
+      if(gnt.ne.0)then
+         do id=1,ndims
+            uci(ipoint+1)=uci(ipoint+1)+(xp(id)-gp0(id))*gn(id)
+     $           *Teci(ipoint+1)
+         enddo
+      endif
+c Set the uci and rhoci compensation for point charges:
+      if(irptch.ne.0)then
+c Get uc
+         isw=1
+         adfield(1)=0.
+         call getadfield(ndims,irptch,adfield,xp,isw,ierr)
+         uci(ipoint+1)=uci(ipoint+1)+adfield(1)
+c Get charge
+         isw=3
+         adfield(1)=0.
+         call getadfield(ndims,irptch,adfield,xp,isw,ierr)
+         rhoci(ipoint+1)=rhoci(ipoint+1)+debyelen**2*adfield(1)
       endif
 c Always just increment by 1
       inc=1

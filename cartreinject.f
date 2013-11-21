@@ -66,10 +66,10 @@ c to be independent of position.
          iother=mod(idrein+k-1,3)+1
 c Position: Ensure we never quite reach the mesh edge:
 c         fr=ran1(0)*0.999999+.0000005
-c Or Accounting for density gradients:
-         fr=ranlenposition(iother)
 c         if(fr.le.0 .or. fr.ge.1.)write(*,*)'fr=',fr
-         xr(iother)=xmeshstart(iother)*(1-fr)+xmeshend(iother)*fr
+c         xr(iother)=xmeshstart(iother)*(1-fr)+xmeshend(iother)*fr
+c Or Accounting for density gradients:
+         xr(iother)=ranlenposition(iother)
 c Velocity
          ra=ran1(0)*ncrein
          ir=int(ra)
@@ -900,34 +900,9 @@ c      if(myid.eq.0)write(*,'(a,3f16.4)')' fxvcol:',(fxvcol(ncdist+1,j),j
 c     $     =1,3)
       end
 c********************************************************************
-      real function rangradposition(id)
-c Return a random fractional position in dimension id, accounting
-c for any density gradients.
-      include 'meshcom.f'
-      include 'creincom.f'
-      include 'plascom.f'
-      g=gn(id)
-      s0=gp0(id)
-      si=min(xmeshstart(id),xmeshend(id))-s0
-      sa=max(xmeshstart(id),xmeshend(id))-s0
-      if((1.+g*si).lt.0. .or. (1.+g*si).lt.0.)then
-         write(*,*)'rangradposition error. Negative probability'
-         stop
-      endif
-      a=g/2.
-      b=1.
-      P=ran1(0)
-      c=-P*(a*sa**2+sa)-(1-P)*(a*si**2+si)
-      if(abs(a).ne.0)then
-         sp=(-b+sqrt(b**2-4.*a*c))/(2.*a)
-      else
-         sp=P
-      endif
-      rangradposition=sp*0.999999+.0000005
-      end
-c********************************************************************
       real function ranlenposition(id)
-c Pick position on the basis of the density scale length
+c Return a random fractional position in the coordinate direction id,
+c accounting for the density scale length if present
       include 'meshcom.f'
       include 'creincom.f'
       include 'plascom.f'
@@ -938,12 +913,13 @@ c Pick position on the basis of the density scale length
 
       if(lfirst)then
          do i=1,ndims_mesh
-            g=gn(id)
+            g=gn(i)
             s0=gp0(i)
             si=min(xmeshstart(i),xmeshend(i))-s0
             sa=max(xmeshstart(i),xmeshend(i))-s0
             expsa(i)=exp(g*sa)
             expsi(i)=exp(g*si)
+c            write(*,*)i,expsa(i),expsi(i),g
          enddo
          lfirst=.false.
       endif
@@ -952,15 +928,17 @@ c Pick position on the basis of the density scale length
       if(abs(g).ne.0)then
          sp=gp0(id)+alog(P*expsa(id)+(1.-P)*expsi(id))/g
       else
-         sp=P
+         sp=(1.-P)*xmeshstart(id)+P*xmeshend(id)
       endif
       ranlenposition=sp*0.999999+.0000005
-      if(ranlenposition.lt.0. .or. ranlenposition.gt.1.)then
-         write(*,*)'Ranlenpos error',id,P,sp,g,expsi,expsa
+      if(.false.)then
+         write(*,*)' ranlenpos',id,P,sp,g,expsi,expsa
+         write(*,*)'Ranlenpos error',id,P,sp,g,ranlenposition
+         write(*,*)expsi,expsa
       endif
       end
 c********************************************************************
-c Now Obsolete
+c Now Obsolete below here.
 c********************************************************************
 c********************************************************************
 c********************************************************************

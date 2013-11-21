@@ -12,5 +12,5 @@ c Single-index access version:
 c Copy of iptch_mask tells if we need to compensate.
       integer iptch_copy
 c Copy of gtt if we need variable Te. Get from plascom?
-      real gtt_copy
-      common /ptchcom/iptch_copy,gtt_copy,uc,rhoc,Tec
+      real gtt_copy,gnt_copy
+      common /ptchcom/iptch_copy,gtt_copy,gnt_copy,uc,rhoc,Tec
