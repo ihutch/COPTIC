@@ -96,3 +96,19 @@ void vtkwritevector_(int *ifull, int *iuds, float *u,
 			  (const char * const *)&varnames, &udata);
   free(udata);
 }
+
+
+
+
+void vtkwritescalarpoints_(int *npts, float *u, float *pts, 
+		   int *ibinary, char *filename, char *varnames )
+{ 
+  int binary=1;
+  int nvars=1;
+  int vardims[] = { 1 };   // One scalar
+  if(*ibinary==0) binary=0;
+  write_point_mesh( (const char * const)filename , 
+			  binary, *npts, pts,
+			  nvars , vardims,
+			  (const char * const *)&varnames, &u);
+}
