@@ -11,7 +11,7 @@ C      real traceave(ntr)
       real traceave(ntr),posi(ntr),flx(ntr)
       character*100 filename,argument
       character*4 charstep
-      integer iplot,iprint,ifmask,idimf,iomask,ivprn
+      integer iplot,iprint,ifmask,idimf,iomask,ivprn,ivtk,istep
       real avefield(ns_ndims),avepress(ns_ndims),avepart(ns_ndims)
       real avetotal(ns_ndims),avecoln(ns_ndims),avesq(ns_ndims)
       real rp,yrange,cv(ns_ndims)
@@ -28,12 +28,16 @@ C      real traceave(ntr)
       yrange=0.
       nbox=0
       iarg1=1
+      ivtk=0
+      istep=5
 
       filename='T1e0v000r05P02L1e0.flx'
  11   continue
       do iarg=iarg1,iargc()
 c         write(*,*)'iarg',iarg
          call getarg(iarg,argument)
+c         call getarg(iargc(),flag)
+c         write(*,*) argument
          if(argument(1:3).eq.'-n1')
      $        read(argument(4:),'(f10.4)')fn1
          if(argument(1:3).eq.'-n2')
@@ -54,8 +58,13 @@ c            read(argument(3:),'(i5)')iquiet
      $        read(argument(3:),'(i5)')iprint
          if(argument(1:2).eq.'-m')
      $        read(argument(3:),'(i5)')ifmask
-         if(argument(1:2).eq.'-v')
-     $        read(argument(3:),'(i5)')ivprn
+        
+         if(argument(1:4).eq.'-vtk')then
+            ivtk=1
+            read(argument(5:),'(i5)') istep
+         elseif(argument(1:2).eq.'-v') then
+            read(argument(3:),'(i5)')ivprn 
+         endif
          if(argument(1:3).eq.'-rp')then
             read(argument(4:),*)rp
          elseif(argument(1:2).eq.'-r')then
@@ -76,6 +85,7 @@ c            if(iomask.eq.0)iomask=2*(2**30-1)+1
             if(iomask.eq.0)iomask=65535
             iomask=IBCLR(iomask,ims-1)
          endif
+
          if(argument(1:2).eq.'-h')goto 201
          if(argument(1:2).eq.'-?')goto 201
          if(argument(1:1).ne.'-')then
@@ -122,7 +132,7 @@ c For all the objects being flux tracked.
      $              ,nf_posdim,' flux-indices. nf_dimlens='
      $              ,(nf_dimlens(1,k,kd),kd=1,nf_posdim-1),' Object',k
                write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i
-     $              -1),i=1,nf_posno(1,k)),j=1,2)
+     $              -1),i=1,nf_posno(1,k)),j=1,4)
                do i=1,(nf_posno(1,k))
                   posi(3*i-2)=sqrt(1.-ff_data(nf_address(nf_flux,k,0)+i-
      $                1)**2)*cos(ff_data(nf_address(nf_flux,k,-1)+i-1))
@@ -132,7 +142,7 @@ c For all the objects being flux tracked.
                enddo
                ibinary=0
             endif
-            do kk=max(nf_step/5,1),nf_step,max(nf_step/5,1)
+            do kk=max(nf_step/istep,1),nf_step,max(nf_step/istep,1)
                if(mf_quant(k).ge.1)then
                   write(*,'(a,i4,a,f10.2,a)')'Step(',kk,') rho='
      $                 ,ff_rho(kk),'  Flux data'
@@ -142,9 +152,11 @@ c For all the objects being flux tracked.
                      flx(i)=ff_data(nf_address(nf_flux,k,kk)+i-1)
                   enddo 
                   write(charstep,'(i4.4)') kk
-                  call vtkwritescalarpoints(nf_posno(1,k),flx,posi,
+                  if (ivtk.eq.1) then
+                 call vtkwritescalarpoints(nf_posno(1,k),flx,posi,
      $           ibinary,filename(1:lentrim(filename))//
      $           charstep//char(0),'flux'//char(0))
+                  endif
                endif
                if(mf_quant(k).ge.2)then
                   write(*,'(''x-momentum'',i4)')nf_posno(nf_gx,k)
@@ -387,3 +399,6 @@ c********************************************************************
       include '../plascom.f'
       include '../sectcom.f'
       end
+
+      
+      
