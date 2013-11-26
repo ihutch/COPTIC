@@ -7,10 +7,6 @@ c should be declared like this, before include
 c       parameter (ndimsdecl=3,idim1=3,idim2=2,idim3=2)
 c The number of dimensions of the cartesian topology. (2 for 2d)
 c      integer ndimsdecl
-c Declared Dimensional structure of u must be (Li,Lj,Lk,..) passed using
-c iLs, which embodies pointer steps. For 2d iLs=(1,Li,Li*Lj), 
-c 3d (1,Li,Li*Lj,Li*Lj*Lk) etc 
-      integer iLs(ndimsdecl+1)
 c ifull full dimensions of u array
       integer ifull(ndimsdecl)
 c iuds used dimensions of u
@@ -35,20 +31,20 @@ c mycartid returns process id in cartesian topology communicator (OUT).
 c lperiod values must be set in the calling program after
 c the above declarations. For lperiod, e.g.
 c      data lperiod/ndimsdecl*.false./
-c iLs are normally set transparently using declared dimensions
 c      data ifull/ifd1,ifd2,ifd3/
 c in bbdy initialization with the call to bbdydefine.
 c--------------------------------------------------------------------
 c Therefore the total example template for using bbdy is this
 c 
 c       parameter (ndimsdecl=3,idim1=3,idim2=2,idim3=2)
-c ndimsdecl must be a parameter.
+c ndimsdecl must be a parameter or all definitions including ndimsdecl
+c must be arguments of the subroutine. 
 c       parameter (ifd1=100,ifd2=50,ifd3=200)
 c       dimension u(ifd1,ifd2,ifd3)
 c       include 'bbdydecl.f'
 c And the values of ifull and iuds must be set either as data or 
 c by assignment in the routine. For example:
-c       integer ifull(ndimsdecl)
+c       integer ifull(ndimsdecl),iLs(ndimsdecl)
 c       data ifull/ifd1,ifd2,ifd3/
 c       data iuds/20,40,50/
 c       data lperiod/ndimsdecl*.false./

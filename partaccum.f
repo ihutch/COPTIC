@@ -80,7 +80,6 @@ c Initialize uniform bins for accumulation of the particles.
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'plascom.f'
-      include 'griddecl.f'
       real vlimit(2,mdims)
 
 c Initialization.
@@ -105,7 +104,6 @@ c Accumulate a particle into velocity bins.
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'plascom.f'
-      include 'griddecl.f'
       real vlimit(2,mdims)
       real xr(3*mdims)
 
@@ -316,7 +314,6 @@ c     accumulation and bin calculation.
 c vhbin(0:nsbins,mdims) is the histogram boundaries of the combined bins
       include 'meshcom.f'
       include 'ptaccom.f'
-      include 'griddecl.f'
 
 c 
       ifixed=0
@@ -441,7 +438,6 @@ c Accumulate a particle into velocity bin corresponding to position ip
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'plascom.f'
-      include 'griddecl.f'
       real vlimit(2,mdims)
       real xr(3*mdims)
 

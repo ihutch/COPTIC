@@ -1,0 +1,45 @@
+#!/bin/bash
+# Script for setting the coptic allocated mesh dimensions from either
+# Three arguments on the command line or
+# The values set in copticgeom.dat or
+# The defaults 32 32 32
+
+ARG1=$1
+ARG2=$2
+ARG3=$3
+if [ $# -ne 3 ] ; then 
+if [ -f "copticgeom.dat" ] ; then
+    echo Trying to set dimensions from copticgeom.dat
+    ARG1=`sed -n -e "/^91/p"  copticgeom.dat | sed  -e "s/,0,.*//" | sed -e "s/^.*,//" `
+    ARG2=`sed -n -e "/^92/p"  copticgeom.dat | sed  -e "s/,0,.*//" | sed -e "s/^.*,//" `
+    ARG3=`sed -n -e "/^93/p"  copticgeom.dat | sed  -e "s/,0,.*//" | sed -e "s/^.*,//" `
+    echo Dimensions derived: $ARG1 $ARG2 $ARG3
+else 
+    echo $# arguments
+    echo Usage $0 na_i na_j na_k
+    echo Specify the array dimensions in the i,j,k directions.
+    echo The file griddecl.f is created appropriately.
+    echo Then COPTIC is recompiled.
+    exit
+fi
+fi
+if [ "$ARG1" == "" ] ; then ARG1=32; echo Default i=$ARG1 ; fi
+if [ "$ARG2" == "" ] ; then ARG2=32; echo Default j=$ARG2 ; fi
+if [ "$ARG3" == "" ] ; then ARG3=32; echo Default k=$ARG3 ; fi
+if [ $ARG1 -gt $ARG2 ] ; then MAX=$ARG1 ; else MAX=$ARG2; fi
+if [ $ARG3 -gt $MAX ] ; then MAX=$ARG3 ; fi
+echo >griddeclnew.f <<BLAH    "
+c Declarations of grid array parameters.
+      integer ndims,na_m,na_i,na_j,na_k
+      parameter (ndims=3)
+      parameter (na_i=$ARG1,na_j=$ARG2,na_k=$ARG3,na_m=$MAX)
+"
+BLAH
+
+if diff griddeclnew.f griddecl.f ; 
+then echo No grid changes ; cat griddecl.f; exit 0; 
+else mv griddeclnew.f griddecl.f ; fi
+echo "Remaking coptic with new grid $1 $2 $3"
+cat griddecl.f
+make coptic
+make -C analysis

@@ -10726,3 +10726,24 @@ level but no obvious potential bias arises from a density gradient.
 I think density gradients are working.
 
 Renew geometry test files.
+
+23 Nov 13
+
+Remove iLs from bdyshare arguments and from being used.  Then iLs is
+passed to bbdy and set there, but is not passed or used by bdyshare
+routines. It is used internally by bdyset routines. It is also used in
+sorrelaxgen and is the only way that it knows about the structure.
+Therefore it is indeed needed in sormpi, but not now for bdyshare.
+
+Now, therefore, bbdydecl.f which is included only in sormpi and bdyshare
+works sensibly. In sormpi, ndimsdecl is a parameter and causes allocation
+of the variables that are not passed as arguments. It checks to make sure
+the ndims passed is not larger than the internal ndimsdecl parameter. 
+In bdyshare ndimsdecl is an argument, and all the variables whose length
+is defined by it are passed as arguments.
+
+The result is that in principle, sormpi can be called with any dimension
+le 3. But of course, the bdyshare routine must do the right things.
+bdyset is also (possibly) called by sormpi. It's dependence on iLs is
+illusory. It arises in the mditerate calls. No iLs is passed from 
+sormpi to bdyset.
