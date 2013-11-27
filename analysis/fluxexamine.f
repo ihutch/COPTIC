@@ -8,9 +8,8 @@ c**************************************************************
       parameter (ntr=10000)
       real plotdata(ntr,6),stepdata(ntr)
 C      real traceave(ntr)
-      real traceave(ntr),posi(ntr),flx(ntr)
+      real traceave(ntr)
       character*100 filename,argument
-      character*4 charstep
       integer iplot,iprint,ifmask,idimf,iomask,ivprn,ivtk,istep
       real avefield(ns_ndims),avepress(ns_ndims),avepart(ns_ndims)
       real avetotal(ns_ndims),avecoln(ns_ndims),avesq(ns_ndims)
@@ -28,7 +27,7 @@ C      real traceave(ntr)
       yrange=0.
       nbox=0
       iarg1=1
-      ivtk=0
+      ivtk=0 
       istep=5
 
       filename='T1e0v000r05P02L1e0.flx'
@@ -38,7 +37,7 @@ c         write(*,*)'iarg',iarg
          call getarg(iarg,argument)
 c         call getarg(iargc(),flag)
 c         write(*,*) argument
-         if(argument(1:3).eq.'-n1')
+         if(argument(1:3).eq.'-n1') 
      $        read(argument(4:),'(f10.4)')fn1
          if(argument(1:3).eq.'-n2')
      $        read(argument(4:),'(f10.4)')fn2
@@ -58,7 +57,6 @@ c            read(argument(3:),'(i5)')iquiet
      $        read(argument(3:),'(i5)')iprint
          if(argument(1:2).eq.'-m')
      $        read(argument(3:),'(i5)')ifmask
-        
          if(argument(1:4).eq.'-vtk')then
             ivtk=1
             read(argument(5:),'(i5)') istep
@@ -133,14 +131,6 @@ c For all the objects being flux tracked.
      $              ,(nf_dimlens(1,k,kd),kd=1,nf_posdim-1),' Object',k
                write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i
      $              -1),i=1,nf_posno(1,k)),j=1,4)
-               do i=1,(nf_posno(1,k))
-                  posi(3*i-2)=sqrt(1.-ff_data(nf_address(nf_flux,k,0)+i-
-     $                1)**2)*cos(ff_data(nf_address(nf_flux,k,-1)+i-1))
-                  posi(3*i-1)=sqrt(1.-ff_data(nf_address(nf_flux,k,0)+i-
-     $                1)**2)*sin(ff_data(nf_address(nf_flux,k,-1)+i-1))
-                  posi(3*i)=ff_data(nf_address(nf_flux,k,0)+i-1)
-               enddo
-               ibinary=0
             endif
             do kk=max(nf_step/istep,1),nf_step,max(nf_step/istep,1)
                if(mf_quant(k).ge.1)then
@@ -148,14 +138,8 @@ c For all the objects being flux tracked.
      $                 ,ff_rho(kk),'  Flux data'
                   write(*,'(10f8.2)')(ff_data(nf_address(nf_flux,k,kk)+i
      $                 -1),i=1,nf_posno(nf_flux,k))
-                  do i=1,(nf_posno(1,k))
-                     flx(i)=ff_data(nf_address(nf_flux,k,kk)+i-1)
-                  enddo 
-                  write(charstep,'(i4.4)') kk
-                  if (ivtk.eq.1) then
-                 call vtkwritescalarpoints(nf_posno(1,k),flx,posi,
-     $           ibinary,filename(1:lentrim(filename))//
-     $           charstep//char(0),'flux'//char(0))
+                  if (ivtk.eq.1)then    
+                      call sphericalvtkoutput(filename,kk,k)
                   endif
                endif
                if(mf_quant(k).ge.2)then
@@ -391,6 +375,7 @@ c Read more arguments if there are any.
       write(*,*)'-f<id> set dimension whose force to plot'
       write(*,*)'-b<nb> set boxcar average range +-nb.'
       write(*,*)'-yfff set range of force plot'
+      write(*,*)'-vtkiii output a vtk file every nf_step/iii steps'
 
       end
 c********************************************************************
@@ -399,6 +384,28 @@ c********************************************************************
       include '../plascom.f'
       include '../sectcom.f'
       end
-
-      
+c*********************************************************************
+      subroutine sphericalvtkoutput(filename,kk,k)
+      include '../3dcom.f'
+      include '../plascom.f'
+      include '../sectcom.f'
+      include '../colncom.f'
+      parameter (ntr=10000)
+      real posi(ntr), flx(ntr)
+      character*100 filename
+      integer kk, k
+      character*4 charstep
+      do i=1,(nf_posno(1,k))
+         posi(3*i-2)=sqrt(1.-ff_data(nf_address(nf_flux,k,0)+i-
+     $   1)**2)*cos(ff_data(nf_address(nf_flux,k,-1)+i-1))
+         posi(3*i-1)=sqrt(1.-ff_data(nf_address(nf_flux,k,0)+i-
+     $   1)**2)*sin(ff_data(nf_address(nf_flux,k,-1)+i-1))
+         posi(3*i)=ff_data(nf_address(nf_flux,k,0)+i-1)
+         flx(i)=ff_data(nf_address(nf_flux,k,kk)+i-1)
+      enddo
+      write(charstep,'(i4.4)') kk
+      call vtkwritescalarpoints(nf_posno(1,k),flx,posi,
+     $         0,filename(1:lentrim(filename))//
+     $         charstep//char(0),'flux'//char(0))
+      end
       
