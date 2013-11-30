@@ -30,7 +30,7 @@ c rdelta is the maximum change in this step OUT
 c umin, umax are the minimum and maximum values of u OUT
       real relax,rdelta,umin,umax
 
-      parameter (imds=10,imds2=2*imds)
+      parameter (imds=3,imds2=2*imds)
 c Offset to adjacent points in stencil.
       integer iind(imds2)
       integer indi(imds),iused(imds)
@@ -66,6 +66,7 @@ c If this degenerates a dimension to zero, there's nothing to do.
 c Assuming that only the last relevant dimension degenerates.
          if(iused(id).le.0) return
          ipoint=ipoint+iLs(id)
+c indi is the dimensioned address relative to the non-boundary origin.
          indi(id)=0
       enddo
 c Hard-wired red-black relaxation order. k_sor odd => block is odd;
@@ -83,8 +84,7 @@ c Even start
 c      write(*,*)'starting',ipoint,(indi(j),iused(j),j=1,ndims)
 
  103  continue
-c Attempt to determine if adjustment is needed in 
-c the first iteration loop so we don't need the second.
+c Track parity changes.
       ica=0
 c Starting dimension
       n=1
@@ -93,6 +93,8 @@ c Iteration over the multidimensional array.
 c      write(*,'(''('',i1,i4,'') '',$)')n,indi(n)
       if(indi(n).gt.iused(n)-1)then
 c     Overflow. Subtract off enough (inm normally 1) of next dimension.
+c Every carry of an even length: change parity.
+         if(mod(iused(n),2).eq.0)ica=ica+1
          inm=0
  102     inm=inm+1
          ipoint=ipoint+iLs(n+1)-iused(n)*iLs(n)
@@ -102,8 +104,8 @@ c Increment the next level.
          n=n+1
          if(n.gt.ndims)goto 201
          indi(n)=indi(n)+inm
-c Remember the highest level incremented-1
-         ica=n-1
+c Remember the highest level incremented-1. Obsolete.
+c         ica=n-1
          goto 101
       elseif(n.gt.1)then
 c We've carried and cleared an increment.
@@ -114,14 +116,16 @@ c Return stepwise to base level
 c We're at the base level and have succeeded in incrementing.
 c Do whatever we need to and increment indi(1) and ipoint
 
-c We build in correction of the increment here for red-black
-c to change the parity if highest level increment is odd.
+c We build in correction of the increment here for red-black At each
+c carry for an even length we switch (level-1) parity.
          if(mod(ica,2).ne.0) then
             iaj=(1-2*mod(indi(1),2))
             indi(1)=indi(1)+iaj
             ipoint=ipoint+iaj
+c            write(*,'(a,8i8)')'ipoint=',ipoint,(indi(i),i=1,ndims),iaj
+c We must also do any necessary carries first.
+            goto 103
          endif
-c         write(*,'(a,8i8)')'ipoint=',ipoint,(indi(i),i=1,ndims)
 
          if(.true.)then
 c Start of treatment
@@ -143,7 +147,7 @@ c     $        u(ipoint+1+iind(ic)),ic=1,2*ndims)
             dnum=dnum+cij(icind)*u(ipoint+1+iind(ic))
          enddo
 c ------------------------------------------------------------------
-c Here is where the extra boundary data is neede/used. For a simple mesh
+c Here is where the extra boundary data is needed/used. For a simple mesh
 c with no embedded objects, it would not be necessary.
 c Pointer to object data (converted to integer)
          io=int(cij(icind0+2*ndims+1))
@@ -166,8 +170,8 @@ c This seemed to be an error 2 July 09. Also dden was being calculated after.
             dscl=1.
          endif
          if(dden.eq.0)then
-            write(*,*)'sorelax error: i,j,dden,cij',i,j,dden,
-     $           (cij(icind0+ic),ic=1,2*ndims)
+            write(*,*)'sorelax error: ipoint,indi,dden,cij',ipoint,indi
+     $           ,dden,(cij(icind0+ic),ic=1,2*ndims)
             stop
          endif
          delta=relax*(dnum-csum*u(ipoint+1))/dden

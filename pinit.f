@@ -29,13 +29,16 @@ c Tangential velocity of circular orbit at r=?.
       x_part(5,1)=sqrt(abs(phip/x_part(1,1))-x_part(4,1)**2)
       x_part(6,1)=0.
       if_part(1)=1
-      i1=1
+      i1=2
       call partlocate(1,ixp,xfrac,iregion,linmesh)
-      if(.not.linmesh.and.myid.eq.0)then
-         write(*,*)'WARNING Special particle-1 outside region.'
-         write(*,*)'Coordinates',(x_part(i,1),i=1,9),' Resetting.'
+      if(.not.linmesh.or..not.linregion(ibool_part,ndims_mesh,x_part(1
+     $     ,1)))then
+         if(myid.eq.0.)then
+            write(*,*)'WARNING Special particle-1 outside region.'
+            write(*,*)'COORDINATES',(x_part(i,1),i=1,9),' Resetting.'
+         endif
+         i1=1
       endif
-      if(linmesh)i1=2
 c-----------------------------------------------------------------
       ntries=0
 c      ntrapped=0

@@ -10747,3 +10747,21 @@ le 3. But of course, the bdyshare routine must do the right things.
 bdyset is also (possibly) called by sormpi. It's dependence on iLs is
 illusory. It arises in the mditerate calls. No iLs is passed from 
 sormpi to bdyset.
+
+26 Nov 13
+
+    Implement setdimens, a script to set allocated dimensions.
+    
+    Also modify some places where griddecl was not needed.
+    It's not easy to removed griddecl completely because there
+    are places in padvnc and the examine code where it is needed.
+    Therefore setdimens can be run to set it to the defaults or to
+    dimensions obtained from copticgeom.dat or the script command line.
+
+30 Nov 13
+
+Fixed problems with small grids. One was the usual problem of the special
+particle. Fixed the test to ensure that is really in the region.
+The other was the parity changing in sorrelaxgen, which previously 
+assumed the grid was even. Fixed that. Now grids of length 3 which
+are effectively two-dimensional, will run.
