@@ -27,7 +27,7 @@ C      real traceave(ntr)
       yrange=0.
       nbox=0
       iarg1=1
-      ivtk=0 
+      ivtk=0
       istep=5
 
       filename='T1e0v000r05P02L1e0.flx'
@@ -35,9 +35,8 @@ C      real traceave(ntr)
       do iarg=iarg1,iargc()
 c         write(*,*)'iarg',iarg
          call getarg(iarg,argument)
-c         call getarg(iargc(),flag)
 c         write(*,*) argument
-         if(argument(1:3).eq.'-n1') 
+         if(argument(1:3).eq.'-n1')
      $        read(argument(4:),'(f10.4)')fn1
          if(argument(1:3).eq.'-n2')
      $        read(argument(4:),'(f10.4)')fn2
@@ -61,7 +60,7 @@ c            read(argument(3:),'(i5)')iquiet
             ivtk=1
             read(argument(5:),'(i5)') istep
          elseif(argument(1:2).eq.'-v') then
-            read(argument(3:),'(i5)')ivprn 
+            read(argument(3:),'(i5)')ivprn
          endif
          if(argument(1:3).eq.'-rp')then
             read(argument(4:),*)rp
@@ -130,7 +129,7 @@ c For all the objects being flux tracked.
      $              ,nf_posdim,' flux-indices. nf_dimlens='
      $              ,(nf_dimlens(1,k,kd),kd=1,nf_posdim-1),' Object',k
                write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i
-     $              -1),i=1,nf_posno(1,k)),j=1,4)
+     $              -1),i=1,nf_posno(1,k)),j=1,nf_posdim)
             endif
             do kk=max(nf_step/istep,1),nf_step,max(nf_step/istep,1)
                if(mf_quant(k).ge.1)then
@@ -138,7 +137,7 @@ c For all the objects being flux tracked.
      $                 ,ff_rho(kk),'  Flux data'
                   write(*,'(10f8.2)')(ff_data(nf_address(nf_flux,k,kk)+i
      $                 -1),i=1,nf_posno(nf_flux,k))
-                  if (ivtk.eq.1)then    
+                  if (ivtk.eq.1)then
                       call sphericalvtkoutput(filename,kk,k)
                   endif
                endif
