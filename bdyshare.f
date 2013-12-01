@@ -1,7 +1,10 @@
 c***********************************************************************
-      subroutine bdyshare(iLs,ifull,iuds,u,idone,ndimsdecl,idims,
+      subroutine bdyshare(ifull,iuds,u,idone,ndimsdecl,idims,
      $     icoords,iLcoords,myside,myorig,
      $     icommcart,mycartid,myid,lperiod)
+      implicit none
+      integer ndimsdecl
+      real u(*)
 c      parameter (ndimsdecl=3)
 c Parallelized boundary setting routine.
 c Set the boundary conditions for my faces which are true boundaries.
@@ -12,7 +15,6 @@ c    idone(2)        if ==1, set periodic boundaries, else not.
 c    ndimsdecl       the number of dimensions
 c    myside(ndims)   the length of this block's sides
 c    ifull(ndims)    the full array lengths in each direction.
-c    iLs(ndims+1)    the structure vector of u.
 c    myorig          the starting position in the u-array of this block.
 c    lperiod(ndims)  whether we are periodic in this dimension.
 c    icoords(ndims)  the block coordinates of this block.
@@ -22,7 +24,7 @@ c Unused:  iLcoords,icommcart,mycartid,myid
 c On exit, return the value idone(1) [OUT]>0 if successful.
 c Pass to the setting routine the dimension,u,idone.
 c
-c Passing the dimensions into this routine.  This ought to work because
+c Passing the dimensions into this routine.  This works because
 c all the variables in bbdydecl.f are passed as arguments. That's why we
 c have some redundant arguments.
       include 'bbdydecl.f'
@@ -31,16 +33,18 @@ c send information back to the calling routine. But we need more
 c communication to bdyshrroutine.
       integer idone(3)
       external bdyshrroutine
-c      real u(*)
+c Local variables
+      integer ndims,id,ioff,ipin,mysave,ioffset,idn,ilsid
 
       ndims=ndimsdecl
 
       idone(1)=1
+      ilsid=1
       do id=1,ndims
          if(lperiod(id))then
-            ioff=iLs(id)*(myside(id)-2)
+            ioff=ilsid*(myside(id)-2)
          else
-            ioff=iLs(id)
+            ioff=ilsid
          endif
 c Tell mditerarg to iterate over steps 1. I.e. every point in the block.
 c But tell it the block has only length 1 in the id dimension.
@@ -57,7 +61,7 @@ c            write(*,*)'Entering mditerarg lower',myside,icoords(id),ipin
          endif
          if(icoords(id).eq.idims(id)-1)then
 c set upper face
-            ipin=myorig-1+(mysave-1)*iLs(id)
+            ipin=myorig-1+(mysave-1)*ilsid
             ioffset=ioff
             idn=id+ndims
 c            write(*,*)'Entering mditerarg upper',myside,icoords(id),ipin
@@ -65,10 +69,11 @@ c            write(*,*)'Entering mditerarg upper',myside,icoords(id),ipin
      $           ,idn,u,idone,ioffset)
          endif
          myside(id)=mysave
+         ilsid=ilsid*ifull(id)
       enddo
       end
 c**********************************************************************
-      subroutine bdyshrroutine(inc,ipoint,indi,ndims,iLs,iused
+      subroutine bdyshrroutine(inc,ipoint,indi,ndims,ilsunused,iused
      $     ,idn,u,idone,ioffset)
 c Set the boundary value of u according to the boundary conditions.
 c The position at which to set it is in indi(ndims) which is u(1+ipoint).
@@ -82,7 +87,7 @@ c On entry idone(2)=1 indicates set periodic boundaries (default not).
       include 'meshcom.f'
       include 'facebcom.f'
 c Silence warnings:
-      idone(1)=iLs
+      idone(1)=ilsunused
       idone(1)=inc
       idone(1)=iused(1)
       idone(1)=1

@@ -1,5 +1,5 @@
 c Solve an elliptical problem in ndims dimensions
-c by simultaneous overrelaxation
+c by successive overrelaxation
 c     L(u) + f(u) = q(x,y,...), 
 c     where L is a second order elliptical differential operator 
 c     represented by a difference stencil of specified coefficients,
@@ -68,6 +68,8 @@ c k_sor is the sor iteration index, for diagnostics.
 
 c bbdydecl declares most things for bbdy, using parameter ndimsdecl.
       include 'bbdydecl.f'
+c iLs has been removed from bbdydecl.f
+      integer iLs(ndimsdecl+1)
 
 c Scratch arrays for bdyshare communications
       integer idone(ndimsdecl)
@@ -79,8 +81,8 @@ c Scratch arrays for bdyshare communications
 c This saves data between calls so we can use separate initialization
       save
 c-------------------------------------------------------------------
-      if(ndims.ne.ndimsdecl)then
-         write(*,*)'Wrong number of dimensions in sormpi call',
+      if(ndims.gt.ndimsdecl)then
+         write(*,*)'Too many dimensions in sormpi call',
      $        ndims,ndimsdecl
          stop
       endif
@@ -146,8 +148,6 @@ c (Re)Initialize the block communications:
          return
       endif
 c End of control functions.
-c      write(*,*) 'Entering bbdy second',ndims,lperiod,iLs,
-c     $        icoords,iLcoords,myside,myorig,icommcart,mycartid,myid
 c------------------------------------------------------------------
       ierr=0
       omega=1.
@@ -177,9 +177,7 @@ c Only needed every other step, and gives identical results.
          if(mod(k_sor,2).eq.1)then
 c The parallelized boundary setting routine
             idone(1)=0
-c             write(*,*)ndimsdecl,lperiod,
-c     $           icoords,iLcoords,myside,myorig,icommcart,mycartid,myid
-            call bdyshare(iLs,ifull,iuds,u,idone,ndims,idims,
+            call bdyshare(ifull,iuds,u,idone,ndims,idims,
      $        icoords,iLcoords,myside,myorig,
      $        icommcart,mycartid,myid,lperiod)
 c If this did not succeed. Fall back to global setting.
@@ -241,11 +239,9 @@ c it is the only process. Also insist on explicit setting.
       idone(2)=1
       idone(1)=0
 c Every process must do this.
-      call bdyshare(iLs,ifull,iuds,u,idone,ndims,ones,
+      call bdyshare(ifull,iuds,u,idone,ndims,ones,
      $        zeros,iLcoords,iuds,ones,
      $        icommcart,mycartid,myid,lperiod)
-c Old global setting. Obsolete.
-c         call bdyset(ndims,ifull,iuds,cij,u,q)
       del_sor=delta
       ierr=k_sor
  999  continue
