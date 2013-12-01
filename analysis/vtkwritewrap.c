@@ -98,17 +98,32 @@ void vtkwritevector_(int *ifull, int *iuds, float *u,
 }
 
 
-
-
-void vtkwritescalarpoints_(int *npts, float *u, float *pts, 
-		   int *ibinary, char *filename, char *varnames )
-{ 
+// Wrapper for writing vtk point mesh; see visit_writer.c for input spec.
+void vtkwritescalarpoints_(int *npts, float *u, float *pts,
+			   int *ibinary, char *filename, char *varnames)
+{
   int binary=1;
   int nvars=1;
   int vardims[] = { 1 };   // One scalar
   if(*ibinary==0) binary=0;
-  write_point_mesh( (const char * const)filename , 
+  write_point_mesh( (const char * const)filename,
 			  binary, *npts, pts,
 			  nvars , vardims,
+			  (const char * const *)&varnames, &u);
+}
+
+// Wrapper for writing unstruct. vtk mesh; see visit_writer.c for input spec.
+void vtkwritescalarfacets_(int *npts, float *u, float *pts,
+			   int *ncells, int *celltypes, int *conn,
+			   int *centering,
+			   int *ibinary, char *filename, char *varnames)
+{
+  int binary=1;
+  int nvars=1;
+  int vardims[] = { 1 };   // One scalar
+  if(*ibinary==0) binary=0;
+  write_unstructured_mesh((const char * const)filename, binary, *npts,
+			  pts, *ncells, celltypes, conn,
+			  nvars, vardims, centering,
 			  (const char * const *)&varnames, &u);
 }

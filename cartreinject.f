@@ -11,7 +11,12 @@ c Only one launch allowed here (and actually in the other too).
          ilaunch=1
       endif
       end
-
+**********************************************************************
+c Initialize whether we are initialized!
+      block data creinset
+      include 'creincom.f'
+      data lreininit/.false./
+      end
 **********************************************************************
 c Cartesian reinjection routine.
       subroutine cartreinject(xr,ilaunch,caverein)
@@ -25,6 +30,8 @@ c Cartesian reinjection routine.
       integer index,k,iother,ir
       real ran1
       external ran1
+      real ranlenposition
+      external ranlenposition
 
 c Random choice data for these routines:
       include 'creincom.f'
@@ -32,17 +39,9 @@ c Plasma common data
       include 'plascom.f'
 c Mesh data
       include 'meshcom.f'
-      logical lfirst
-      save lfirst
-      data lfirst/.true./
 
-      if(lfirst) then
-c      write(*,*)'Calling cinjinit'      
-         call cinjinit()
-         lfirst=.false.
+      if(.not.lreininit)call cinjinit()
 c      write(*,*)'Returned from cinjinit'
-      endif
-
 c----------------------------------------
 c Pick the face from which to reinject.
       ra=ran1(0)
@@ -66,8 +65,11 @@ c to be independent of position.
       do k=1,2
          iother=mod(idrein+k-1,3)+1
 c Position: Ensure we never quite reach the mesh edge:
-         fr=ran1(0)*0.999999+.0000005
-         xr(iother)=xmeshstart(iother)*(1-fr)+xmeshend(iother)*fr
+c         fr=ran1(0)*0.999999+.0000005
+c         if(fr.le.0 .or. fr.ge.1.)write(*,*)'fr=',fr
+c         xr(iother)=xmeshstart(iother)*(1-fr)+xmeshend(iother)*fr
+c Or Accounting for density gradients:
+         xr(iother)=ranlenposition(iother)
 c Velocity
          ra=ran1(0)*ncrein
          ir=int(ra)
@@ -122,11 +124,8 @@ c      external fvcrein
       external fvdrein
       external ff1crein
       external fv1crein
-      external fvdreinold
-      real fvdreinold
       real fv1crein,ff1crein,fvdrein,ffdrein
       parameter (bdys=6.)
-c      real fcarea(3)
 
       xc=0.
       xw=sqrt(Ti)
@@ -134,7 +133,7 @@ c For three coordinate directions
       do id=1,3
 c    For two ends (and hence velocity polarities)
          do i2=1,2
-c idrein determines the sign of velocity. id odd => idrein negative.
+c idrein determines the sign of velocity. i2 odd => idrein negative.
             idrein=id*(2*i2-3)
             index=2*(id-1)+i2
             if(Bt.lt.Btinf)then
@@ -156,6 +155,29 @@ c it corresponds to negative/positive velocity. Pity!
             ip=ip/2**(2-i2)
             ip=ip-2*(ip/2)
             if(ip.eq.1)grein(index)=0.
+            if(gnt.ne.0)then
+c Correcting for uniform density scale-length.
+               if(idrein.gt.0)then
+                  dengfac=exp((min(xmeshstart(id),xmeshend(id))
+     $                 -gp0(id))*gn(id))
+               else
+                  dengfac=exp((max(xmeshstart(id),xmeshend(id))
+     $                 -gp0(id))*gn(id))
+               endif
+               do k=0,1
+                  ii=mod(abs(id)+k,ndims_mesh)+1
+                  if(gn(ii).ne.0)then
+                     dengfac=dengfac*(
+     $                   exp((max(xmeshstart(ii),xmeshend(ii))-gp0(ii))
+     $                   *gn(ii))-
+     $                   exp((min(xmeshstart(ii),xmeshend(ii))-gp0(ii))
+     $                   *gn(ii)) )/
+     $                   (gn(ii)*abs(xmeshend(ii)-xmeshstart(ii)))
+                  else
+                  endif
+               enddo
+               grein(index)=grein(index)*dengfac
+            endif
 c Kludge fix of ends to avoid negative velocity injections.
             if(idrein.gt.0)then
                if(hrein(0,index).lt.0.)hrein(0,index)=0.
@@ -175,7 +197,7 @@ c     $           ,(hrein(kk,index),kk=ncrein-4,ncrein)
          endif
       enddo
 c
-c      write(*,*)'grein',grein
+      write(*,*)'grein',grein
       gtot=0.
 c Alternative general-dimension fcarea calculation:
       do i=1,ndims_mesh
@@ -198,6 +220,7 @@ c         write(*,*)'fcarea(',i,')=',fcarea(i)
       if(.not.gintrein(6).gt.1.)write(*,*)'gintrein problem!'
 c      write(*,*)'ipartperiod',ipartperiod,' grein',grein
 c      write(*,*)'gintrein',gintrein
+      lreininit=.true.
 
       end
 c**********************************************************************
@@ -395,23 +418,38 @@ c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
 c Because the drift distribution is not separable except in the directions
 c perpendicular and parallel to the drift, only degenerate Maxwellian
 c (vd-vneutral=0) non-z cases are allowed so far.
+c Diamagnetic drift is implemented as a Maxwellian shift.
       implicit none
       real v,vn,u,ud,fvcx
       external fvcx
       include 'plascom.f'
       include 'creincom.f'
       include 'colncom.f'
+      real vdia
+      integer id2,id3
+
+      vdia=0.
+c Are there background diamagnetic drifts? Density gradient. 
+      if(gnt.ne.0.)then
+c Gradient is always perpendicular to B.
+         id2=mod(abs(idrein),3)+1
+         id3=mod(abs(idrein)+1,3)+1
+c v_dia = -(T_i \nabla n \times B / qnB^2)
+         vdia=- (gn(id2)*Bfield(id3)-gn(id3)*Bfield(id2))*Ti/Bt
+c The approximation is to represent the perpendicular distribution by
+c a Maxwellian shifted by the diamagnetic drift.
+      endif
       if(vdrift(1).eq.0)then
 c Z-drift cases. (equiv old)
          if(abs(idrein).eq.3)then
             vn=sqrt(2.*Tneutral)
             ud=(vd-vneutral)/vn
-            u=(v-vneutral)/vn
+            u=(v-vneutral-vdia)/vn
             fvdrein=fvcx(u,ud)
             fvdrein=fvdrein/vn
          else
             vn=sqrt(2.*Ti)
-            fvdrein=exp(-(v/vn)**2)/(vn*sqrt(3.1415926))
+            fvdrein=exp(-((v-vdia)/vn)**2)/(vn*sqrt(3.1415926))
          endif
       else
 c Non-z
@@ -423,33 +461,9 @@ c Non-z
          else
 c Maxwellian non-z drift.
             vn=sqrt(2.*Ti)
-            fvdrein=exp(-((v-vd*vdrift(abs(idrein)))/vn)**2)
+            fvdrein=exp(-((v-vd*vdrift(abs(idrein))-vdia)/vn)**2)
      $           /(vn*sqrt(3.1415926))
          endif
-      endif
-      end
-c*******************************************************************
-      real function fvdreinold(v)
-c Return the probability distribution for reinjection. In dimension 3 
-c from a drift-distribution shifted by vd (in plascom) relative to
-c collisions with neutrals of velocity vneutral (in colncom).
-c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
-      implicit none
-      real v,vn,u,ud,fvcx
-      external fvcx
-      include 'plascom.f'
-      include 'creincom.f'
-      include 'colncom.f'
-      if(abs(idrein).eq.3)then
-c In z-direction use appropriate drift distribution.
-         vn=sqrt(2.*Tneutral)
-         ud=(vd-vneutral)/vn
-         u=(v-vneutral)/vn
-         fvdreinold=fvcx(u,ud)
-         fvdreinold=fvdreinold/vn
-      else
-         vn=sqrt(2.*Ti)
-         fvdreinold=exp(-(v/vn)**2)/(vn*sqrt(3.1415926))
       endif
       end
 c*******************************************************************
@@ -457,24 +471,42 @@ c*******************************************************************
 c Return the one-way differential flux distribution as a fn of velocity
 c from a drift distribution (in dimension 3).
 c In the positive or negative direction, determined by idrein's sign.
+c Diamagnetic drift is implemented as a Maxwellian shift.
       implicit none
       real v,vn,u,ud,fvcx
       external fvcx
       include 'plascom.f'
       include 'creincom.f'
       include 'colncom.f'
-      if(vdrift(1).eq.0)then
+      real vdia
+      integer id2,id3
+
+      vdia=0.
+c Are there background diamagnetic drifts? Density gradient. 
+      if(gnt.ne.0.)then
+c Gradient is always perpendicular to B.
+         id2=mod(abs(idrein),3)+1
+         id3=mod(abs(idrein)+1,3)+1
+c v_dia = -(T_i \nabla n \times B / qnB^2)
+         vdia=- (gn(id2)*Bfield(id3)-gn(id3)*Bfield(id2))*Ti/Bt
+c The approximation is to represent the perpendicular distribution by
+c a Maxwellian shifted by the diamagnetic drift.
+      endif
+c      if(vdia.ne.0..and.abs(v-1.).lt.0.0005)then
+c         write(*,*)'v,ffdrein,idrein,vdia',v,ffdrein,idrein,vdia,id2,id3
+c      endif
+      if(vdrift(1).eq.0.and.vdrift(2).eq.0.)then
 c Z-drift cases. (equiv old)
          if(abs(idrein).eq.3)then
 c In z-direction use appropriate drift distribution.
             vn=sqrt(2.*Tneutral)
             ud=(vd-vneutral)/vn
-            u=(v-vneutral)/vn
+            u=(v-vneutral-vdia)/vn
             ffdrein=fvcx(u,ud)
             ffdrein=abs(v)*ffdrein/vn
          else
             vn=sqrt(2.*Ti)
-            ffdrein=abs(v)*exp(-(v/vn)**2)/(vn*sqrt(3.1415926))
+            ffdrein=abs(v)*exp(-((v-vdia)/vn)**2)/(vn*sqrt(3.1415926))
          endif
       else
 c Non-z
@@ -486,7 +518,7 @@ c Non-z
          else
 c Maxwellian non-z drift.
             vn=sqrt(2.*Ti)
-            ffdrein=exp(-((v-vd*vdrift(abs(idrein)))/vn)**2)
+            ffdrein=exp(-((v-vd*vdrift(abs(idrein))-vdia)/vn)**2)
      $           *abs(v)/(vn*sqrt(3.1415926))
          endif
       endif
@@ -575,7 +607,8 @@ c the coordinate direction idrein.
             ff1crein=0.
          else
 c            if(Bfield(j).eq.0.)write(*,*)'v,vs,arg',v,vs,arg
-            ff1crein=scale*abs(v)*exp(arg)
+c Corrected the scaling to be consistent:
+            ff1crein=scale*abs(v)*exp(arg)/sqrt(2.*Ti*3.1415926)
          endif
       else
          ff1crein=0.
@@ -598,13 +631,15 @@ c Return the probability distribution value.
       vt2=2.*Ti*Bfield(j)**2
       if(vt2.gt.vt2min)then
          arg=-(v-vs)**2/vt2
+         scale=1./Bfield(j)
       else
          arg=-(v-vs)**2/vt2min
+         scale=sqrt(2.*Ti/vt2min)
       endif
       if(abs(arg).gt.argmax)then
          fv1crein=0.
       else
-         fv1crein=exp(arg)
+         fv1crein=scale*exp(arg)/sqrt(2.*Ti*3.1415926)
       endif
 
       end
@@ -617,7 +652,7 @@ c No time-averaging for now.
 c Use particle information for initializing.
       include 'partcom.f'
       include 'meshcom.f'
-c      real fcarea(ndims_mesh)
+      include 'creincom.f'
       real volume,flux
       real cfactor
 
@@ -632,11 +667,18 @@ c      real fcarea(ndims_mesh)
             fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
          enddo
 c         write(*,*)'fcarea(',i,')=',fcarea(i)
-c         a=fcarea(i)*sqrt(2.*Ti/3.1415926)
 c Multiply the face area by the factor relative to unshifted maxwellian
-c that specifies the flux for this face, and add to total.
-c         a=a*fonefac(i)
-         flux=flux+fonefac(i)*fcarea(i)*sqrt(2.*Ti/3.1415926)
+c that specifies the flux for this face, and add to total. 
+c The sum of the grein for this dimension ought to be equal to 
+c fonefac*sqrt(2.*Ti/\pi). And generally it is, unless B=\infty.
+c         ffc=fonefac(i)
+c         ratio=(grein(2*i-1)+grein(2*i))
+c     $    /(ffc+1.e-8)/sqrt(2.*Ti/3.1415926)
+c         write(*,*)'i,fonefac(i),grein',i,ffc ,grein(2*i-1),grein(2*i)
+c     $        ,ratio
+c         flux=flux+fonefac(i)*fcarea(i)*sqrt(2.*Ti/3.1415926)
+c This change to get rid of fonefac produces tiny rounding differences.
+         flux=flux+(grein(2*i-1)+grein(2*i))*fcarea(i)
          volume=volume*(xmeshend(i)-xmeshstart(i))
       enddo
 c      if(nrein.ne.0)then
@@ -674,10 +716,11 @@ c No time-averaging for now.
 c Particle information
       include 'partcom.f'
       include 'meshcom.f'
-c      real fcarea(ndims_mesh)
+      include 'creincom.f'
       real volume,flux
       real cfactor
 c 
+      if(.not.lreininit)call cinjinit()
 c Calculate ninjcomp from ripernode
       volume=1.
       flux=0.
@@ -690,9 +733,8 @@ c a reinjection.
             id=mod(i+j-1,ndims_mesh)+1
             fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
          enddo
-c         a=fcarea(i)*sqrt(2.*Ti/3.1415926)
-c         a=a*fonefac(i)
-         flux=flux+fonefac(i)*fcarea(i)*sqrt(2.*Ti/3.1415926)
+c         flux=flux+fonefac(i)*fcarea(i)*sqrt(2.*Ti/3.1415926)
+         flux=flux+(grein(2*i-1)+grein(2*i))*fcarea(i)
          volume=volume*(xmeshend(i)-xmeshstart(i))
       enddo
 c Correct approximately for edge potential depression (OML).
@@ -714,148 +756,6 @@ c     $     ,cfactor,flux,ninjcomp
       endif
 c      write(*,*)'Ending ninjcalc',rhoinf,nrein,n_part
 
-      end
-c********************************************************************
-      real function fonefac(i)
-c Return the one-way flux correction factor in coordinate direction i,
-c relative to an unshifted maxwellian.
-c Account for the possibility of infinite Bfield which
-c one-dimensionalizes the problem, for the parameters of this plasma
-c given in
-      include 'plascom.f'
-      include 'partcom.f'
-      include 'colncom.f'
-      real foneresult(nplasdims)
-      logical lfirst(nplasdims)
-      save lfirst,foneresult
-      data lfirst/3*.true./
-c
-      if(.not.lfirst(i))then
-c Subsequently just return the saved result.
-         fonefac=foneresult(i)
-         return
-      endif
-c----------
-c      write(*,*)'fonefac',i,Bt,Btinf,Bfield,vd,vdrift
-c Only do the actual calculation the first time.
-c 0 open, 1 lower absorbs, 2 upper absorbs, 3 both absorb, 4 periodic
-      ip=ipartperiod(i)
-c Examine the 2 lowest bits only: 0-3. 
-      ip=ip-4*(ip/4)
-      if(ip.eq.0)then
-         a=1.
-      elseif(ip.eq.3)then
-         a=0.
-      else
-         a=0.5
-      endif
-c Now we have factor accounting for face absorption only. 
-c It applies with zdrift to non-z surfaces.
-      ud=(vd-vneutral)/sqrt(2.*Ti)
-c      write(*,*)'ud=',ud,vd,vneutral
-      if(Bt.lt.Btinf)then
-         if(vdrift(1).eq.0. .and. i.eq.nplasdims)then
-c-----------------------
-c Drift in z-direction and this is z-dimension and collisional.
-c Correct for shift of the distribution. See hand notes 24 Aug 12.
-            a=0.
-            uda=abs(ud)
-            uc=sign(1.,ud)*vneutral/sqrt(2.*Ti)
-c Ought to think a bit more about this trap value
-            if(uda.lt.1.e-2)then
-               earg=100
-            else
-               earg=uc+0.5/uda
-            endif
-c H(-u_c) in the polarity in which ud is positive, which is the unsigned
-c flux in the direction of positive ud.
-            H1=0.5*(exp(-uc**2)*(1./sqrt(3.1415926)
-     $           +uda*expERFCC(earg)
-     $           )+(uc+uda)*erfcc(-uc))
-c The unsigned flux in the other direction.
-            H2=abs(uda+uc-H1)
-            if(ip-2*(ip/2).ne.1)then
-c We are injecting (positive) flux at the lower boundary.
-               if(ud.ge.0)then
-                  a=a+H1
-               else
-                  a=a+H2
-               endif
-            endif
-            if(ip/2.ne.1)then
-c We are injecting (negative) flux at the upper boundary.
-               if(ud.ge.0)then
-                  a=a+H2
-               else
-                  a=a+H1
-               endif
-            endif
-c            write(*,*)'vd,vneutral,ud,uc,earg,H1,H2,a'
-c            write(*,*) vd,vneutral,ud,uc,earg,H1,H2,a
-            a=a*sqrt(3.1415926)
-         elseif(vdrift(1).ne.0.)then
-c-----------------------
-c Drift in general non-z direction. Implemented only for maxwellian.
-            if(ud.ne.0.)then
-               write(*,*)'Drift distribution in non-z direction'
-     $              ,' not implemented. (vneutral!=vd). Aborting.'
-               stop
-            endif
-            td=vdrift(i)*vd/sqrt(2.*Ti)
-            etd=exp(-td**2)
-            a=0
-            if(ip-2*(ip/2).ne.1)then
-c Injecting at lower
-               a=a+0.5*(etd+sqrt(3.1415926)*td*erfcc(-td))
-            endif
-            if(ip/2.ne.1)then
-c Injecting at upper
-               a=a+0.5*(etd-sqrt(3.1415926)*td*erfcc(td))
-            endif
-         endif
-c-----------------------
-c Shifted maxwellian flux, relative to unshifted. Old version not correct
-c for general distributions like the collisional drift. And does not
-c account for absorbing faces. 
-c            td=vd/sqrt(2.*Ti)
-c            a=(exp(-td**2)+
-c     $           0.5*sqrt(3.1415926)*td*(erfcc(-td)-erfcc(td)))
-      else
-c Infinite Bt. Projected total drift velocity normalized:            
-c Drift-collisional distribution not implemented yet. Only drifting
-c Maxwellian.
-         td=(Bfield(i)*vpar+vperp(i))/sqrt(2.*Ti)
-c One-way flux consists of the part of the parallel distribution whose
-c projected parallel velocity exceeds -vs.
-c         if(abs(Bfield(i)).gt.max(abs(td)*0.1,1.e-10))then
-         if(ud.ne.0)then
-            write(*,*)'Drift distribution in non-z direction'
-     $           ,' not implemented. (Infinite Bt). Aborting.'
-            stop
-         elseif(abs(Bfield(i)).gt.(1.e-6))then
-            td=td/Bfield(i)
-            etd=exp(-td**2)
-            a=0
-            if(ip-2*(ip/2).ne.1)then
-c Injecting at lower
-               a=a+Bfield(i)*0.5*(etd+sqrt(3.1415926)*td*erfcc(-td))
-            endif
-            if(ip/2.ne.1)then
-c Injecting at upper
-               a=a+Bfield(i)*0.5*(etd-sqrt(3.1415926)*td*erfcc(td))
-            endif
-c            a=Bfield(i)*(exp(-td**2)+
-c     $           0.5*sqrt(3.1415926)*td*(erfcc(-td)-erfcc(td)))
-         else
-c Vanishing Bfield component. One or other surface has vperp flux.
-            write(*,*)'Infinite B tangential to surface',i
-            a=abs(vperp(i))/sqrt(2.*Ti/3.1415926)
-         endif
-      endif
-c Save for subsequent calls.
-      foneresult(i)=a
-      lfirst(i)=.false.
-      fonefac=a
       end
 c********************************************************************
       real function smaxflux(uc,chi)
@@ -1000,3 +900,188 @@ c      if(myid.eq.0)write(*,'(a,3f16.4)')' fxvcol:',(fxvcol(ncdist+1,j),j
 c     $     =1,3)
       end
 c********************************************************************
+      real function ranlenposition(id)
+c Return a random fractional position in the coordinate direction id,
+c accounting for the density scale length if present
+      include 'meshcom.f'
+      include 'creincom.f'
+      include 'plascom.f'
+      real expsa(ndims_mesh),expsi(ndims_mesh)
+      logical lfirst
+      data lfirst/.true./
+      save lfirst,expsa,expsi
+
+      if(lfirst)then
+         do i=1,ndims_mesh
+            g=gn(i)
+            s0=gp0(i)
+            si=min(xmeshstart(i),xmeshend(i))-s0
+            sa=max(xmeshstart(i),xmeshend(i))-s0
+            expsa(i)=exp(g*sa)
+            expsi(i)=exp(g*si)
+c            write(*,*)i,expsa(i),expsi(i),g
+         enddo
+         lfirst=.false.
+      endif
+      g=gn(id)
+      P=ran1(0)
+      if(abs(g).ne.0)then
+         sp=gp0(id)+alog(P*expsa(id)+(1.-P)*expsi(id))/g
+      else
+         sp=(1.-P)*xmeshstart(id)+P*xmeshend(id)
+      endif
+      ranlenposition=sp*0.999999+.0000005
+      if(.false.)then
+         write(*,*)' ranlenpos',id,P,sp,g,expsi,expsa
+         write(*,*)'Ranlenpos error',id,P,sp,g,ranlenposition
+         write(*,*)expsi,expsa
+      endif
+      end
+c********************************************************************
+c Now Obsolete below here.
+c********************************************************************
+c********************************************************************
+c********************************************************************
+c********************************************************************
+c********************************************************************
+      real function fonefac(i)
+c Return the one-way flux correction factor in coordinate direction i,
+c relative to an unshifted maxwellian.
+c Account for the possibility of infinite Bfield which
+c one-dimensionalizes the problem, for the parameters of this plasma
+c given in
+      include 'plascom.f'
+      include 'partcom.f'
+      include 'colncom.f'
+      real foneresult(nplasdims)
+      logical lfirst(nplasdims)
+      save lfirst,foneresult
+      data lfirst/3*.true./
+c
+      if(.not.lfirst(i))then
+c Subsequently just return the saved result.
+         fonefac=foneresult(i)
+         return
+      endif
+c----------
+c      write(*,*)'fonefac',i,Bt,Btinf,Bfield,vd,vdrift
+c Only do the actual calculation the first time.
+c 0 open, 1 lower absorbs, 2 upper absorbs, 3 both absorb, 4 periodic
+      ip=ipartperiod(i)
+c Examine the 2 lowest bits only: 0-3. 
+      ip=ip-4*(ip/4)
+      if(ip.eq.0)then
+         a=1.
+      elseif(ip.eq.3)then
+         a=0.
+      else
+         a=0.5
+      endif
+c Now we have factor accounting for face absorption only. 
+c It applies with zdrift to non-z surfaces.
+      ud=(vd-vneutral)/sqrt(2.*Ti)
+c      write(*,*)'ud=',ud,vd,vneutral
+      if(Bt.lt.Btinf)then
+         if(vdrift(1).eq.0. .and. i.eq.nplasdims)then
+c-----------------------
+c Drift in z-direction and this is z-dimension and collisional.
+c Correct for shift of the distribution. See hand notes 24 Aug 12.
+            a=0.
+            uda=abs(ud)
+            uc=sign(1.,ud)*vneutral/sqrt(2.*Ti)
+c Ought to think a bit more about this trap value
+            if(uda.lt.1.e-2)then
+               earg=100
+            else
+               earg=uc+0.5/uda
+            endif
+c H(-u_c) in the polarity in which ud is positive, which is the unsigned
+c flux in the direction of positive ud.
+            H1=0.5*(exp(-uc**2)*(1./sqrt(3.1415926)
+     $           +uda*expERFCC(earg)
+     $           )+(uc+uda)*erfcc(-uc))
+c The unsigned flux in the other direction.
+            H2=abs(uda+uc-H1)
+            if(ip-2*(ip/2).ne.1)then
+c We are injecting (positive) flux at the lower boundary.
+               if(ud.ge.0)then
+                  a=a+H1
+               else
+                  a=a+H2
+               endif
+            endif
+            if(ip/2.ne.1)then
+c We are injecting (negative) flux at the upper boundary.
+               if(ud.ge.0)then
+                  a=a+H2
+               else
+                  a=a+H1
+               endif
+            endif
+c            write(*,*)'vd,vneutral,ud,uc,earg,H1,H2,a'
+c            write(*,*) vd,vneutral,ud,uc,earg,H1,H2,a
+            a=a*sqrt(3.1415926)
+         elseif(vdrift(1).ne.0.)then
+c-----------------------
+c Drift in general non-z direction. Implemented only for maxwellian.
+            if(ud.ne.0.)then
+               write(*,*)'Drift distribution in non-z direction'
+     $              ,' not implemented. (vneutral!=vd). Aborting.'
+               stop
+            endif
+            td=vdrift(i)*vd/sqrt(2.*Ti)
+            etd=exp(-td**2)
+            a=0
+            if(ip-2*(ip/2).ne.1)then
+c Injecting at lower
+               a=a+0.5*(etd+sqrt(3.1415926)*td*erfcc(-td))
+            endif
+            if(ip/2.ne.1)then
+c Injecting at upper
+               a=a+0.5*(etd-sqrt(3.1415926)*td*erfcc(td))
+            endif
+         endif
+c-----------------------
+c Shifted maxwellian flux, relative to unshifted. Old version not correct
+c for general distributions like the collisional drift. And does not
+c account for absorbing faces. 
+c            td=vd/sqrt(2.*Ti)
+c            a=(exp(-td**2)+
+c     $           0.5*sqrt(3.1415926)*td*(erfcc(-td)-erfcc(td)))
+      else
+c Infinite Bt. Projected total drift velocity normalized:            
+c Drift-collisional distribution not implemented yet. Only drifting
+c Maxwellian.
+         td=(Bfield(i)*vpar+vperp(i))/sqrt(2.*Ti)
+c One-way flux consists of the part of the parallel distribution whose
+c projected parallel velocity exceeds -vs.
+c         if(abs(Bfield(i)).gt.max(abs(td)*0.1,1.e-10))then
+         if(ud.ne.0)then
+            write(*,*)'Drift distribution in non-z direction'
+     $           ,' not implemented. (Infinite Bt). Aborting.'
+            stop
+         elseif(abs(Bfield(i)).gt.(1.e-6))then
+            td=td/Bfield(i)
+            etd=exp(-td**2)
+            a=0
+            if(ip-2*(ip/2).ne.1)then
+c Injecting at lower
+               a=a+Bfield(i)*0.5*(etd+sqrt(3.1415926)*td*erfcc(-td))
+            endif
+            if(ip/2.ne.1)then
+c Injecting at upper
+               a=a+Bfield(i)*0.5*(etd-sqrt(3.1415926)*td*erfcc(td))
+            endif
+c            a=Bfield(i)*(exp(-td**2)+
+c     $           0.5*sqrt(3.1415926)*td*(erfcc(-td)-erfcc(td)))
+         else
+c Vanishing Bfield component. One or other surface has vperp flux.
+            write(*,*)'Infinite B tangential to surface',i
+            a=abs(vperp(i))/sqrt(2.*Ti/3.1415926)
+         endif
+      endif
+c Save for subsequent calls.
+      foneresult(i)=a
+      lfirst(i)=.false.
+      fonefac=a
+      end

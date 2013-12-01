@@ -10581,3 +10581,148 @@ This change will alter values of pressure force even for finite lambda.
 However, generally the force values have not previously been found to be
 reliable immediately on the region boundary. So there is probably not much
 loss in making this change universally.
+
+8 Nov 13
+
+Planning for implementing nonuniform ion parameters.  The hard part is
+the reinjection scheme. This is controlled by the parameters in
+creincom.f: hrein,grein,prein,gintrein,idrein.
+
+For density gradient, if we ignore any alteration in the distribution function
+arising from the gradient, then it seems that we simply need to weight the
+position choice so as to reflect the density gradient. Assuming the gradient is
+constant, the weighting for a face is determined just by the centroid of the
+face, and position on the face can be simply determined by the displacement
+of the centroid in the gradient direction. 
+
+The change of the distribution function due to density gradient is, to lowest
+order, a shift equal to the diamagnetic drift. We could either (1) consider
+that shift to be already incorporated in the drift velocity, in which case
+we would need to adjust the Edrift for ExB. or (2) Add the diamagnetic 
+drift to the ExB flow velocity specified from the commandline switch during
+the calculation of the probability distributions. If we choose (2) then 
+perhaps an extension to a higher order correction would be easier to 
+incorporate. For that reason it might be a better long term choice.
+
+Thus we need to make changes to ffdrein, the distribution function
+from which the cumprob is found, and fvdrein for the transverse velocity.
+These functions already depend upon creincom, plascom, and colncom.
+Therefore it does not seem very difficult to do this change.
+
+18 Nov 13
+
+Implemented density gradient switch in cmdline.f. Data in plascom.f.
+Also implemented checks to ensure that there is no density gradient
+that is not perpendicular to a magnetic field.
+
+Implemented vdia calculation and correction in ffdrein and fvdrein.
+
+Now to re-weight the faces, all we seem to need to do is adjust ginfty=grein.
+
+Actually there are alternative places to implement the flux correction:
+fcarea, grein, fonefac. 
+Given that the central position of density measurement may not be in the
+center of the domain, there needs to be correction in the vicinity of 
+fonefac, which governs the ninfty calculation. But it could be fcarea. 
+No it couldn't because that refers only to three dimensions not to 6
+faces. It may not be logical to use fonefac itself, because that is dealing
+purely with the velocity distribution effects. It is complicated by the
+magnetic field (especially infinite field) cases. Actually fonefac uses
+0.,.5,1. to specify whether faces have input or not. But it is only 
+3 dimensions, not 6 faces.
+
+fonefac is called only in rhoinftycalc and ninjcalc. 
+It has the Bt dependence, but cinjinit also does.
+grein constructs gintrein and gtot. gintrein is used for deciding face.
+cinjinit accommodates absorbing faces by setting fcarea to small.
+
+There are corrections to be considered for infinite Bt.
+First the values of fonefac and grein are consistent for non-infinite Bt
+while they are inconsistent for infinite. This proves to be an
+improper scaling of ff1crein. Fixed.
+Maybe fv1crein also needs fixing. Applied the same fix.
+fv1 and ff1 do not include vdia. I don't think it makes sense to have
+a diamagnetic drift when B is infinite.
+
+Now for all B we are getting consistency between fonefac and the sum
+of greins for the faces, provided that fonefac is not zero. 
+Particle absorption/periodicity seems still ok. Therefore I think we
+now have all the fonefac information coded into grein. Periodicity 
+is a bit puzzling. Why are the grein values and fonefac non-zero?
+It should not matter in rhoinfcalc because the fcarea is set to small.
+
+Got rid of fonefac calls by using grein. This gives tiny changes to the
+ninfinity calculations because of rounding.
+We therefore fail the geometry tests etc. We can update the stored
+phi files by simply deleting them (I think). But that would be a major
+step in terms of code check evolution. [Did it anyway below.]
+
+Now that we've got everything in grein, we can do the density gradient
+implementation through that. Implemented grein adjustments. 
+That means we now choose faces appropriately. However, we have not
+adjusted the choice of position within the face. Nor have we checked
+whether the corners lead to negative density.
+
+I realize at this point that the constant gradient choice is highly
+inconvenient. Choice within a face is not separable under that condition,
+but it is if we take constant gradient scale-length. Constant scale-length
+is not substantially more difficult for forming the average density across
+a face than is constant gradient. Therefore constant scale-length is 
+clearly the better choice. I change the code to adopt that, and then
+the choice within face implementation is easy.
+
+Now I think I have the implementation completed and working. 
+Fonefac is totally disabled.
+It would be good to do some tests e.g. using injection diagnostics.
+
+rm geometry/*.phi
+for file in geometry/*.dat; do make ${file%dat}phi; done
+make geometry
+renews the geometry test files. Then subsequent make geometry tests are
+passed.
+
+Commit.
+
+20 Nov 2013
+
+Now we need to compensate faddu for the density gradient. faddu is the
+effective electron density (and gives its gradient wrt u) as a function
+of u (and position). It is currently n_\infty exp(u). We want it instead
+to return n(x) exp(u). Where n(x) is n_0 exp((x-x0).gn). 
+This can be accomplished using the storage uci, which is added to u before
+it is divided by Te(local)=Teci and the exponential is taken. If we make 
+uci equal to (x-x0).gn.Teci that will do the trick. Actually we need to
+add this amount to uci if there are point charges that also contribute
+to it. Currently, uci and Teci are set in padvnc.f routine ucrhoset ...
+
+Implemented that. And it seems to be being set from the setup diagnostics.
+
+Now there is a question about particle initialization with a density 
+gradient. This ought not to be too difficult because it is similar to
+the choice of reinjection position which was implemented by the following
+change in cartreinject:
+c         fr=ran1(0)*0.999999+.0000005
+c Or Accounting for density gradients:
+         fr=ranlenposition(iother)
+In fact, since ranlenposition automatically initializes itself, it
+seems we just need to replace the pinit position decision with this.
+
+Implemented the change. Unfortunately, since ranlenposition contains
+code to prevent getting exactly equal to 0., or 1., there are tiny 
+changes (again) in the solution for uniform density.
+Recreated the .phi files again.
+
+21 Nov 13
+
+After a detour because of being misled by partperiod, I find that the
+density gradient does not seem to work in an empty box. A potential
+gradient appears which should not. I don't see why.
+The potential is higher on the side where the density is higher.
+
+Ah, faddu is checking gtt_copy to see if we need to apply the
+corrections, but I'm not setting it. Make gnt_copy and check it
+too. That fixes it.  There is some bouncing aroung at the 10^{-2}
+level but no obvious potential bias arises from a density gradient.
+I think density gradients are working.
+
+Renew geometry test files.

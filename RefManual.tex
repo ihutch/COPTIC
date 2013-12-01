@@ -549,6 +549,17 @@ of $T_e$ (in normalized units). If the gradient is such as to cause
 the local $T_e$ to become non-positive anywhere on the grid, a fatal
 error will terminate the initialization. Default: zero gradient. 
 
+\paragraph{-ng...} Set the external gradient of $n_e$. Three reals
+must follow the switch without spaces. They are the inverse
+scale-lengths (logarithmic gradient), in the three coordinate
+directions, of the density. The scale lengths, that is the
+logarithmic gradients, are uniform throughout the domain. The center,
+where the density is equal to one, is at the reference point defined
+by any -tge call, (or otherwise at 0,0,0). The default density gradient is zero. There can be
+no density gradient parallel to the magnetic field or if there is no
+magnetic field.
+
+
 \subsubsection*{Neutrals, Collisions, Magnetic Field}
 
 \paragraph{-ct....} Set the collision time, colntime. Default 0 [off].

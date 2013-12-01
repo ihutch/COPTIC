@@ -15,7 +15,7 @@ c In order to access point-charge information we need:
       real ubig,um
       parameter (ubig=40.)
 c
-      if(iptch_mask.eq.0 .and. gtt_copy.eq.0.)then
+      if(iptch_mask.eq.0 .and. gtt_copy.eq.0. .and. gnt_copy.eq.0)then
          fprime=exp(u)
          faddu=fprime
       else

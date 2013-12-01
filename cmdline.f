@@ -8,7 +8,7 @@ c Encapsulation of parameter setting.
      $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
      $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
-     $     ,vdrift,ldistshow,gp0,gt,gtt
+     $     ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt
      $     )
       implicit none
 
@@ -24,14 +24,14 @@ c Encapsulation of parameter setting.
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
       character*256 argline
-      real gt(ndims),gp0(ndims),gtt
+      real gt(ndims),gp0(ndims),gtt,gn(ndims),gnt
 
 c Local variables:
       integer lentrim,iargc
       external lentrim
       integer i,id,idn,idcn,i0,i1,iargcount,iargpos
-      real vwork
-      character*100 argument
+      real vwork,bdotgn
+      character*100 argument,message
       logical lfirst
       data lfirst/.true./
 
@@ -88,6 +88,7 @@ c Boundary condition switch and value. 0=> logarithmic.
          enddo
          vdrift(ndims)=1.
          gtt=0.
+         gnt=0.
          do i=1,iargc()
             call getarg(i,argument)
             if(argument(1:3).eq.'-of')
@@ -97,6 +98,7 @@ c Boundary condition switch and value. 0=> logarithmic.
  501        continue
          enddo
          argline=' '
+         message=' '
          lfirst=.false.
          return
       endif
@@ -259,10 +261,14 @@ c By default put the vneutral the same
             endif
          endif
          if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
+         if(argument(1:3).eq.'-ng')then
+            read(argument(4:),*,err=201)gn
+            gnt=sqrt(gn(1)**2+gn(2)**2+gn(3)**2)
+         endif
          if(argument(1:4).eq.'-tge')then
 c Electron temperature gradient parameters
             read(argument(5:),*,err=201)gp0,gt
-            gtt=gt(1)*2+gt(2)**2+gt(3)**2
+            gtt=sqrt(gt(1)**2+gt(2)**2+gt(3)**2)
          elseif(argument(1:3).eq.'-tn')then
             read(argument(4:),*,err=201)Tneutral
          elseif(argument(1:2).eq.'-t')then
@@ -338,18 +344,31 @@ c Collisionless, also set vneutral to vd, else things are inconsistent:
       endif
 c --- Deal with B-field
       Bt=0.
+      Bdotgn=0.
       do i=1,ndims
          Bt=Bt+Bfield(i)**2
+         Bdotgn=Bdotgn+Bfield(i)*gn(i)
       enddo
+      Bt=sqrt(Bt)
+      if(gnt.ne.0.)then
+         if(Bt.ne.0.)then
+            if(Bdotgn.gt.1.e-5*Bt*gnt)then
+               message='**Density gradient parallel to Bt not allowed'
+               goto 203
+            endif
+         else
+            message='**Zero B-field with density gradient not allowed'
+            goto 203
+         endif
+      endif
       if(Bt.ne.0)then
 c Normalize magnetic field cosines.
-         Bt=sqrt(Bt)
          do i=1,ndims
             Bfield(i)=Bfield(i)/Bt
          enddo
          if(Bt.lt.1.e3 .and. Bt*dt.gt.1.)then
 c Flag an inappropriate field and dt combination
-            if(lmyidhead)write(*,'(a,f8.2,a,f8.5,a,a)')
+            if(lmyidhead)write(message,'(a,f8.2,a,f8.5,a,a)')
      $           'UNWISE field',Bt,' and dt',dt
      $           ,' Use B.dt less than 1; else inaccurate.'
          endif
@@ -439,6 +458,7 @@ c Help text
       write(*,301)' -s    set No of steps.           [',nsteps
       write(*,302)' -t    set Ion Temperature.       [',Ti
       write(*,306)' -tge  set Elec Temp Center&Grad  [',gp0,gt
+      write(*,306)' -ng   set Density gradient       [',gn
       write(*,302)' -l    set Debye Length.          [',debyelen
       write(*,302)' -v    set drift speed.           [',vd
       write(*,302)' -vx -vy -vz set velocity cosines [',vdrift
@@ -486,8 +506,8 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
       write(*,301)' -gn   Plot collisional reinjection distribution.'
       write(*,301)
-     $      ' -gp -gd[] Plot slices of solution potential, density. '
-     $     //'[At step n]. [',ipstep
+     $      ' -gp -gd[] Plot slices of setup; plus potential, '
+     $     //'density. [At step n]. [',ipstep
       write(*,301)' -gf   set quantity plotted for flux evolution and'//
      $     ' final distribution. [',ifplot
       write(*,301)' -gw   set objplot sw. [+256:intercepts]'//
@@ -504,6 +524,7 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
  401  write(*,301)' -h -?   Print usage.'
       write(*,301)' -hg     Print debugging/plotting switch usage.'
       write(*,301)' -ho     Print geomobj file format description'
+      if(lentrim(message).gt.1)write(*,'(a)')message(1:lentrim(message))
       call exit(0)
       end
 c*********************************************************************

@@ -16,5 +16,7 @@ c used for orthogonal velocity choices. vchoice(id)=prein(random,id).
 c The cumulative distribution of flux among the six faces. 
       real gintrein(0:6)
       integer idrein
+c Whether reinjection is initialized or not
+      logical lreininit
 
-      common /crein/hrein,grein,prein,gintrein,idrein
+      common /crein/hrein,grein,prein,gintrein,idrein,lreininit

@@ -8,7 +8,7 @@ c Common data:
       include '3dcom.f'
       include 'meshcom.f'
       include 'colncom.f'
-      external linregion
+      external linregion,ranlenposition
       logical linregion
 c Local dummy variables for partlocate.
       real xfrac(ndims_mesh)
@@ -66,9 +66,14 @@ c     We initialize the 'true' particles'
  1       continue
 c         write(*,'(i8,$)')i
          ntries=ntries+1
+c Old uniform choice:
+c         do j=1,ndims_mesh
+c            x_part(j,i)=xmeshstart(j)+
+c     $        ran1(myid)*(xmeshend(j)-xmeshstart(j))
+c         enddo
+c New position choice including density gradients.
          do j=1,ndims_mesh
-            x_part(j,i)=xmeshstart(j)+
-     $        ran1(myid)*(xmeshend(j)-xmeshstart(j))
+            x_part(j,i)=ranlenposition(j)
          enddo
 c     If we are not in the plasma region, try again.
          if(.not.linregion(ibool_part,npdim,x_part(1,i)))then
