@@ -30,8 +30,8 @@ if [ $ARG1 -gt $ARG2 ] ; then MAX=$ARG1 ; else MAX=$ARG2; fi
 if [ $ARG3 -gt $MAX ] ; then MAX=$ARG3 ; fi
 echo >griddeclnew.f <<BLAH    "
 c Declarations of grid array parameters.
-      integer ndims,na_m,na_i,na_j,na_k
-      parameter (ndims=3)
+      integer ndims_grid,na_m,na_i,na_j,na_k
+      parameter (ndims_grid=3)
       parameter (na_i=$ARG1,na_j=$ARG2,na_k=$ARG3,na_m=$MAX)
 "
 BLAH

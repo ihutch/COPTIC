@@ -136,11 +136,11 @@ c File name:
       real u(ifull(1),ifull(2),ifull(3),ied)
       include 'plascom.f'
       include 'meshcom.f'
-      character*(100) charout
+      character*(130) charout
 
 c      write(*,*)'ifull',ifull
-      write(charout,51)debyelen,Ti,vd,rs,phip
- 51   format('V2 debyelen,Ti,vd,rs,phip:',5f9.4)
+      write(charout,51)debyelen,Ti,vd,rs,phip,ixnlength
+ 51   format('V3 debyelen,Ti,vd,rs,phip',5f9.4,' ixnlength',i6)
       open(22,file=name,status='unknown',err=101)
       close(22,status='delete')
       open(22,file=name,status='new',form='unformatted',err=101)
@@ -174,11 +174,23 @@ c File name:
       real u(ifull(1),ifull(2),ifull(3),ied)
       include 'plascom.f'
       include 'meshcom.f'
-      character*(100) charout
+      character*(130) charout
 
       open(23,file=name,status='old',form='unformatted',err=101)
       read(23)charout
+      irst=istrstr(charout,'ixnlength')
+      if(irst.ne.0)then
+c String contains ixnlength value. Get it and check it.
+         read(charout(irst+9:),*)ixnlen
+         if(ixnlen.ne.ixnlength)then
+            write(*,*)'ixnlength mismatch',
+     $           ' in array3read. Written with different griddecl.',
+     $           ixnlen,ixnlength
+            stop 'array3read fatal'
+         endif
+      endif
 c      write(*,'(2a)')'Charout=',charout(1:lentrim(charout))
+c      write(*,*)charout(irst+9:)
       read(23)debyelen,Ti,vd,rs,phip
       read(23)ixnp,xn
       read(23)iuds
@@ -187,7 +199,7 @@ c First version
          if(ierr.ne.0)write(*,*)'Old version file'
          ied=0
          read(23)(((u(i,j,k,1),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
-      elseif(charout(1:2).eq.'V2')then
+      elseif(charout(1:1).eq.'V')then
          read(23)ie
          if(ierr.ne.0)write(*,*
      $        )'New version. Number of quantities in file=',ie

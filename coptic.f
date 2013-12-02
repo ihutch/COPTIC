@@ -4,7 +4,10 @@ c Main program of cartesian coordinate, oblique boundary, pic code.
 c Object data storage.
       include 'objcom.f'
 c Storage array spatial count size
-      include 'griddecl.f'
+c Mesh spacing description structure includes grid decl too.
+      include 'meshcom.f'
+      integer ndims
+      parameter (ndims=ndims_grid)
 c coptic runs correctly with unequal dimensions but phiexamine does not.
       parameter (Li1=na_i,Li2=Li1*na_j,Li3=Li2*na_k)
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
@@ -24,8 +27,6 @@ c      real fv(ndistmax,na_i,na_j,na_k)
 
 c Used dimensions, Full dimensions. Used dims-2
       integer iuds(ndims_cij),ifull(ndims_cij),ium2(ndims_cij)
-c Mesh spacing description structure
-      include 'meshcom.f'
 c Processor cartesian geometry can be set by default.
       integer nblksi,nblksj,nblksk
       parameter (nblksi=1,nblksj=1,nblksk=1)

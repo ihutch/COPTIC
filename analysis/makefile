@@ -36,7 +36,7 @@ all: $(TARGETS)
 dummyreduce.o : ../dummyreduce.f
 	$(G77) -c ../dummyreduce.f
 
-% : %.f  makefile $(ACCISLIB) dummyreduce.o ../libcoptic.a $(HEADERS) libvtkwrite.a
+% : %.f  makefile examdecl.f $(ACCISLIB) dummyreduce.o ../libcoptic.a $(HEADERS) libvtkwrite.a
 # I don't remember why this explicit form was preferred to a dependency below.
 #	make -C ../ libcoptic.a
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f dummyreduce.o ../libcoptic.a $(LIBRARIES)
