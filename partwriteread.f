@@ -140,7 +140,7 @@ c File name:
 
 c      write(*,*)'ifull',ifull
       write(charout,51)debyelen,Ti,vd,rs,phip
- 51   format('V2 debyelen,Ti,vd,rs,phip:',5f9.4)
+ 51   format('V3 debyelen,Ti,vd,rs,phip,ixnlength:',5f9.4,i6)
       open(22,file=name,status='unknown',err=101)
       close(22,status='delete')
       open(22,file=name,status='new',form='unformatted',err=101)
@@ -187,7 +187,7 @@ c First version
          if(ierr.ne.0)write(*,*)'Old version file'
          ied=0
          read(23)(((u(i,j,k,1),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
-      elseif(charout(1:2).eq.'V2')then
+      elseif(charout(1:1).eq.'V')then
          read(23)ie
          if(ierr.ne.0)write(*,*
      $        )'New version. Number of quantities in file=',ie
@@ -199,6 +199,14 @@ c First version
          endif
          read(23)((((u(i,j,k,l),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3)),l
      $        =1,ied)
+         if(istrstr(charout,'ixnlength').ne.0)then
+c String contains ixnlength value. Get it and check it.
+            irst=lentrim(charout)-6
+            read(charout(irst:),*)ixnlen
+            if(ixnlen.ne.ixnlength)write(*,*)'ixnlength mismatch',
+     $           ' in array3read. Written with different griddecl.',
+     $           ixnlen,ixnlength
+         endif
       endif
       close(23)
       if(ierr.ne.0)write(*,'(''Read back array data from '',a,3i4)')
