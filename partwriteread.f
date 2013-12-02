@@ -139,7 +139,7 @@ c File name:
       character*(100) charout
 
 c      write(*,*)'ifull',ifull
-      write(charout,51)debyelen,Ti,vd,rs,phip
+      write(charout,51)debyelen,Ti,vd,rs,phip,ixnlength
  51   format('V3 debyelen,Ti,vd,rs,phip,ixnlength:',5f9.4,i6)
       open(22,file=name,status='unknown',err=101)
       close(22,status='delete')
@@ -201,7 +201,7 @@ c First version
      $        =1,ied)
          if(istrstr(charout,'ixnlength').ne.0)then
 c String contains ixnlength value. Get it and check it.
-            irst=lentrim(charout)-6
+            irst=lentrim(charout)-5
             read(charout(irst:),*)ixnlen
             if(ixnlen.ne.ixnlength)write(*,*)'ixnlength mismatch',
      $           ' in array3read. Written with different griddecl.',
