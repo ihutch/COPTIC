@@ -178,6 +178,17 @@ c File name:
 
       open(23,file=name,status='old',form='unformatted',err=101)
       read(23)charout
+      if(istrstr(charout,'ixnlength').ne.0)then
+c String contains ixnlength value. Get it and check it.
+         irst=lentrim(charout)-5
+         read(charout(irst:),*)ixnlen
+         if(ixnlen.ne.ixnlength)then
+            write(*,*)'ixnlength mismatch',
+     $           ' in array3read. Written with different griddecl.',
+     $           ixnlen,ixnlength
+            stop 'array3read fatal'
+         endif
+      endif
 c      write(*,'(2a)')'Charout=',charout(1:lentrim(charout))
       read(23)debyelen,Ti,vd,rs,phip
       read(23)ixnp,xn
@@ -199,14 +210,6 @@ c First version
          endif
          read(23)((((u(i,j,k,l),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3)),l
      $        =1,ied)
-         if(istrstr(charout,'ixnlength').ne.0)then
-c String contains ixnlength value. Get it and check it.
-            irst=lentrim(charout)-5
-            read(charout(irst:),*)ixnlen
-            if(ixnlen.ne.ixnlength)write(*,*)'ixnlength mismatch',
-     $           ' in array3read. Written with different griddecl.',
-     $           ixnlen,ixnlength
-         endif
       endif
       close(23)
       if(ierr.ne.0)write(*,'(''Read back array data from '',a,3i4)')
