@@ -271,8 +271,8 @@ c Calls: Confol, polyline, labeline.
 c*************************************************************************
       subroutine consgen(z,cv,l,ixmax,iymax,ppath,xc,yc,ic,x,y,consw)
 c contour searching routine. 9 Aug 92
-      real z(l,iymax),cv,x(1),y(1)
       integer l,ixmax,iymax
+      real z(l,iymax),cv,x(1),y(1)
       character ppath(l,iymax)
       integer ic
       real xc(ic),yc(ic)
@@ -405,8 +405,8 @@ c************************************************************************
      $	   ppath,xc,yc,i)
 c Follow a contour of function z, at value cv. Path marking version.
 c Inputs: function-array, contour value, dimensions: true,used,used.
-      real z(l,iymax),cv
       integer l,ixmax,iymax
+      real z(l,iymax),cv
 c Previous path record. Sets for each dir plotted for this point.
       character ppath(l,iymax)
 c Initial point and direction:

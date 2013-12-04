@@ -1075,10 +1075,10 @@ c********************************************************************
       subroutine rankdraw(xpl,xnl,ntx,tx,idtx,ir)
 c Draw visibly, those segments of the line which have rank greater than
 c ir.
+      integer ntx,ir
       real xpl(3),xnl(3)
       real tx(ntx)
       integer idtx(ntx)
-      integer ntx,ir
 
 c      write(*,*)idtx
       ipen=0
@@ -1100,8 +1100,8 @@ c on a 1-D grid x=1..nq, solve Q(x)=y for x with interpolation.
 c If return is 0, then the y is outside Q's range or other error.
 c The function returns the integer part of x.
       function accinterp(Q,nq,y,x)
-      real Q(nq)
       integer nq
+      real Q(nq)
       real y,x
 c
       integer iqr,iql,iqx

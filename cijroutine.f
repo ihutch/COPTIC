@@ -1,13 +1,5 @@
-c********************************************************************
-c This initialization of oi_cij costs a big size hit on object.
-c Now done in objstart.
-c      block data objcomset
-c      include 'objcom.f'
-c      data oi_cij/0/
-c      end
 c****************************************************************
 c Routine for setting cij, which is used by the general mditerarg.
-c      subroutine cijroutine(inc,ipoint,indm1,ndims,iLs,iused,cij)
       subroutine cijroutine(inc,ipoint,indi,ndims,iLs,iused,cij,debyelen
      $     ,error)
 c This routine sets the object pointer in cij if there is an object
@@ -372,9 +364,9 @@ c Initialization to save block-data cost.
 c Start object data for this point if not already started.
       if(cijp.eq.0)then
          oi_cij=oi_cij+1
-         if(oi_cij.gt.lobjmax) then
+         if(oi_cij.gt.Lobjmax) then
             write(*,*)'cijobj: oi_cij overflow',oi_cij,
-     $           ' Increase in objcom.'
+     $           ' Increase Lobjmax in objcom.'
             stop 
          endif
 c Initialize the object data: 1s for frac, 0 for b/a,c/a,diag,...

@@ -5,8 +5,8 @@ c 9 Aug 92.
 c If nlabel eq -99, then set the interval between labels to the value of 
 c x in normalized units, and the ipen (up down) to the value of y. 
 c If x=0. set it to default, 0.3. If ipen.ne.0 then draw line.
-      real x(npts),y(npts)
       integer npts,nlabel
+      real x(npts),y(npts)
       character*(*) label
       character llstr*10
       integer i,nlab1

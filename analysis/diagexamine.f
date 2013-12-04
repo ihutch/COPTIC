@@ -2,9 +2,10 @@
 
       include 'examdecl.f'
 
-      parameter (ndiagmax=7)
+      parameter (ndiagmax=8)
+c diagmax here must be 7+1 to accommodate potential possibly.
       real diagsum(na_i,na_j,na_k,ndiagmax+1)      
-c      real volumes(na_i,na_j,na_k)
+c Volumes are stored in ndiagmax+1
 
 c Extra work array for arrowplotting in sliceGweb.
       real vp(na_m,na_m,3,3)
@@ -27,7 +28,7 @@ c 1-d plotting arrays.
       mname(5)='T!d1!d'
       mname(6)='T!d2!d'
       mname(7)='T!d3!d'
-      mname(8)='Density'
+      mname(9)='Density'
       xleg=.75
       ipp=0
 c      pscale=3.
@@ -101,7 +102,8 @@ c Suppress help.
       endif
 
 c Normalize by dividing by density, which is first diagnostic.
-      do id=2,ndiags
+c But as of 4 Dec 2013 the ndiags is phi, so don't normalize that.
+      do id=2,ndiags-1
          do k=1,iuds(3)
             do j=1,iuds(2)
                do i=1,iuds(1)
@@ -158,7 +160,7 @@ c      write(*,*)'Normalized diagnostics.'
 
 c      lvtk=.false.
       if(lvtk)then
-c Write Visit-readable vtk file of potential and velocity.
+c Write Visit-readable vtk file of density, velocity, and potential.
          if(fluxfilename(1:1).eq.' ')then
             fluxfilename='Velocity'//char(0)
          else
@@ -187,14 +189,23 @@ c Spaces are not allowed in visit data names. Fix:
      $        ,'Density'//char(0))
 c         write(*,*)'Finished density vtkwrite',ifull,iuds,u(1,1,1)
          if(ndiags.ge.4)then
-         call vtkwritevector(ifull,iurs
+            call vtkwritevector(ifull,iurs
      $        ,diagsum(isrs(1),isrs(2),isrs(3),2)
      $        ,xn(isrs(1)),xn(isrs(2)+iuds(1))
      $        ,xn(isrs(3)+iuds(1)+iuds(2))
      $        ,ibinary,3
      $        ,'V'//diagfilename(1:lentrim(diagfilename))//char(0)
      $        ,fluxfilename)
-         write(*,*)'Finished velocity vtkwrite',ifull,iuds,u(1,1,1)
+            write(*,*)'Finished velocity vtkwrite',ifull,iuds,u(1,1,1)
+c This is supposed to be the potential. It is the last array ndiags.
+            call vtkwritescalar(ifull,iurs
+     $        ,diagsum(isrs(1),isrs(2),isrs(3),ndiags)
+     $        ,xn(isrs(1)),xn(isrs(2)+iuds(1))
+     $        ,xn(isrs(3)+iuds(1)+iuds(2))
+     $        ,ibinary
+     $        ,'u'//diagfilename(1:lentrim(diagfilename))//char(0)
+     $        ,'Potential'//char(0))
+c         write(*,*)'Finished potential vtkwrite',ifull,iuds,u(1,1,1)
          endif
         stop
       endif
@@ -338,8 +349,10 @@ c Default examination of all diagnostics.
          do k=i1,ndiags
             zp(1,1,1)=99
             ifix=2
-c         write(fluxfilename,'(''diagnorm('',i1,'')'')')k
+c            write(fluxfilename,'(''diagnorm('',i1,'')'')')k
             fluxfilename=mname(k)
+c            write(*,*)k,mname
+            if(k.eq.ndiags)fluxfilename='Potential'
 c         write(*,*)mname(k),fluxfilename,lentrim(fluxfilename)
             call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
      $           ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)

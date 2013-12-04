@@ -13,8 +13,8 @@ c Calculate the total maxwell force on a surface from its surface
 c representation which consists of km facets each of which has 
 c ndims position + ndims surface coefficients. 2.ndims.km.
 
-      real surfobj(2*ndims*km),fieldforce(ndims)
       integer km,ndims
+      real surfobj(2*ndims*km),fieldforce(ndims)
       real u(*),cij(*)
       integer iLs(*)
 
@@ -100,8 +100,8 @@ c representation which consists of km facets each of which has
 c ndims position + ndims surface coefficients. 2.ndims.km.
 c The charge is simply the integral E.dA over the surface.
 
-      real surfobj(2*ndims*km),charge
       integer km,ndims
+      real surfobj(2*ndims*km),charge
       real u(*),cij(*)
       integer iLs(*)
 
@@ -298,8 +298,8 @@ c By averaging the electric field on the surface whose
 c representation consists of km facets each of which has 
 c ndims position + ndims surface coefficients. 2.ndims.km.
 
-      real surfobj(2*ndims*km),fieldforce(ndims)
       integer km,ndims
+      real surfobj(2*ndims*km),fieldforce(ndims)
       real u(*)
       integer iLs(*)
 

@@ -184,8 +184,8 @@ c If successful, the function returns the integer part of x.
 c If return is 0, then the y is outside Q's range or other error
 c and then x=0 indicates y<>Q(1); x=nq+1 indicates y><Q(nq); x=1 other.
 c We want interp=x=1 if y=Q(1), interp=x=nq if y=Q(nq).
-      real Q(nq)
       integer nq
+      real Q(nq)
       real y,x
 c
       integer iqr,iql,iqx

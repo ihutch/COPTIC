@@ -1,8 +1,8 @@
 C********************************************************************
       subroutine polyline(x,y,npts)
 c Dashed line version.
-      real x(npts),y(npts)
       integer npts
+      real x(npts),y(npts)
       integer i
       include 'plotcom.h'
 c Dashed line code
@@ -376,8 +376,8 @@ c acgen data:
 C********************************************************************
       subroutine poly3line(x,y,z,npts)
 c Dashed line version.
-      real x(npts),y(npts),z(npts)
       integer npts
+      real x(npts),y(npts),z(npts)
       integer i
       include 'plotcom.h'
       include 'world3.h'
@@ -517,8 +517,8 @@ C********************************************************************
       subroutine stpolyline(x,y,npts,nstx,nsty)
 c Strided polyline. nstx/y are the increments of the x and y data.
 c Dashed line version.
-      real x(npts),y(npts)
       integer npts
+      real x(npts),y(npts)
       integer i
       include 'plotcom.h'
 c Dashed line code
