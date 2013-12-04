@@ -26,8 +26,8 @@ c crude plotting of y versus its index. No dashed line capability.
 c********************************************************************
 c         Automatic plotting of Arrays*/
       subroutine autoplot(x, y, n)
-      real x(n),y(n)
       integer n
+      real x(n),y(n)
       call autoinit(x,y,n)
       call axis()
       call polyline(x,y,n)
@@ -35,8 +35,8 @@ c         Automatic plotting of Arrays*/
       end
 c******************************************************************
       subroutine autoinit(x,y,n)
-      real x(n),y(n)
       integer n
+      real x(n),y(n)
       include 'plotcom.h'
       real xmin,xmax,ymin,ymax
       real xfac,xdelta
@@ -58,8 +58,8 @@ c Bits 0-3 of isw when set enforce override of xmin[0]...ymax[4].
 c If a bit is not set, the corresponding limit is returned in the
 c corresponding variable sxmin...symax. 
 c So e.g. isw=3 sets xmin=sxmin, xmax=sxmax, symin=ymin, symax=ymax.
-      real x(n),y(n),sxmin,sxmax,symin,symax
       integer n,isw
+      real x(n),y(n),sxmin,sxmax,symin,symax
       include 'plotcom.h'
       real xmin,xmax,ymin,ymax
       real xfac,xdelta
@@ -97,8 +97,8 @@ c So e.g. isw=3 sets xmin=sxmin, xmax=sxmax, symin=ymin, symax=ymax.
 c********************************************************************
 c    Automatic symbol plotting of Arrays*/
       subroutine automark(x, y, n, isym)
-      real x(n),y(n)
       integer n,isym
+      real x(n),y(n)
       call autoinit(x,y,n)
       call axis()
       if(isym.gt.0)call polymark(x,y,n,isym)
@@ -106,8 +106,8 @@ c    Automatic symbol plotting of Arrays*/
       end
 c******************************************************************
       subroutine auto3init(x,y,z,n)
-      real x(n),y(n),z(n)
       integer n
+      real x(n),y(n),z(n)
       save
       include 'plotcom.h'
       real xmin(3),xmax(3),dx(3)

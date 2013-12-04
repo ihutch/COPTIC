@@ -10765,3 +10765,21 @@ particle. Fixed the test to ensure that is really in the region.
 The other was the parity changing in sorrelaxgen, which previously 
 assumed the grid was even. Fixed that. Now grids of length 3 which
 are effectively two-dimensional, will run.
+
+Summary for Calendar Year 2013 of code developments
+
+Fixes to Eneutral and Enfraction.
+Improved file Arguments.
+Velocity scaling of collision time.
+Null-collisions colinit code.
+Fixed bug from collisional increment of npart.
+Fixed bug associated with arithmetic rather than xor of idiffreg.
+Made the drift direction arbitrary.
+Fixed bug to do with dtpos not being used to back up when tallying.
+Updates to the makefile to work on NERSC.
+Implement Te gradient.
+Implement ne/i gradient.
+Major tidy up of cartreinject associated with gradients.
+Implement setdimens script.
+Fixed small grid error in red-black iteration so it works for grids
+as short as 3. (One point plus two boundaries).

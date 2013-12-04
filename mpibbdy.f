@@ -3,6 +3,8 @@ c Block boundary communication.
       subroutine bbdy(iLs,ifull,iuds,u,kc,
      $     ndims,idims,icoords,iLcoords,myside,myorig,
      $     icommcart,mycartid,myid,lperiod)
+c The number of dimensions of the cartesian topology. (2 for 2d) (IN)
+      integer ndims
 c Dimensional structure of u, for 2d should be (1,Li,Lj), 
 c 3d (1,Li,Li*Lj,Li*Lj*Lk) etc (last element may not be used)
       integer iLs(ndims+1)
@@ -15,8 +17,6 @@ c      if kc=-1 this is the final call: gather only.
 c      if kc=-2 only (re)initialize the topology, cartesian communicator
 c
       integer kc
-c The number of dimensions of the cartesian topology. (2 for 2d) (IN)
-      integer ndims
 c The length of each topology dimension (number of blocks) (IN)
       integer idims(ndims)
 c For each topology dimension whether it is periodic or not (IN)
