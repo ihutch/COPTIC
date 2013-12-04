@@ -325,9 +325,10 @@ c ild is the dimension that is fixed, and must be the same for all files.
 c the logic will break if it is changed by -l in the middle.
 
       include 'examdecl.f'
+      integer nf
       character*100 filenames(na_m)
       real rp(nf),pp(nf)
-      integer nf,ild,ilinechoice(ndims_mesh,nf)
+      integer ild,ilinechoice(ndims_mesh,nf)
       integer idj(ndims_mesh)
 
       logical lrange,lwrite,lvd,ldiff,lbva,llout,llw

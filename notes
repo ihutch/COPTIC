@@ -3793,6 +3793,8 @@ It seems that x_part(3) is corrupted on entry to partlocate.
 Also xpart(6) is corrupted and seems to be the source of the corruption.
 Yes this is coming from the getfield, and is corruption of the value.
 
+Mesh Domain Boundary Pointers.
+
 I think the problem is in field interpolation at the boundary. We are
 not (it seems) setting the boundary pointers in such a way as to
 prevent trying to get potential from past the end of the mesh for
@@ -10766,6 +10768,37 @@ The other was the parity changing in sorrelaxgen, which previously
 assumed the grid was even. Fixed that. Now grids of length 3 which
 are effectively two-dimensional, will run.
 
+
+4 Dec 13
+
+Running thin cases with large numbers of points in the other
+directions overruns Lobjmax. This appears to be because many the
+points are being given cij pointer entries. This is because all
+boundary points are given entries. Researched back in the notes to see
+where this was set. Dec 09.  Mesh Domain Boundary Pointers. The region
+is set to -1 in order to prevent field interpolation from using the
+edge points as a center from which to do field interpolation. A point
+that is the center of interpolation reaches either side of itself, and
+hence beyond the actual mesh, which is an error. If points are set as
+outside the region, they are not used as a center of interpolation.
+
+I think this need arises because of the choice to make the particle domain
+edge equal to the last mesh nodes (except for periodic particles). Since
+periodic particle only go to the half-way point between the last two 
+mesh nodes, they ought never to choose by preference an edge node as 
+a center of interpolation. Perhaps if I had made this particle domain
+choice for all cases, the edge setting might be able to be avoided.
+The mesh-edge-adjacent points are still in the particle region.
+The question is whether their cij pointers are being set because of the
+mesh-edge region or not. It does not seem that their pointers need to be
+set. And in fact cijedge is iterated _after_ cijroutine has been interated.
+Therefore the cijedge, which sets the special edge region, is not set when
+the pointers are set for the adjacent points. So their cijpointers ought
+to remain unset. Consequently there ought not to be additional cost for
+doing field calculations for adjacent-node centered interpolations. 
+If particles are periodic, therefore, there ought to be no significant
+slow down arising from the fact that the edge nodes have pointers set.
+
 Summary for Calendar Year 2013 of code developments
 
 Fixes to Eneutral and Enfraction.
@@ -10783,3 +10816,5 @@ Major tidy up of cartreinject associated with gradients.
 Implement setdimens script.
 Fixed small grid error in red-black iteration so it works for grids
 as short as 3. (One point plus two boundaries).
+
+

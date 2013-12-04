@@ -157,7 +157,7 @@ c the checks for object identities are skipped.
       include '3dcom.f'
       include 'meshcom.f'
       real obj1(odata,ngeomobjmax)
-      real xn1(1000)
+      real xn1(ixnlength)
       parameter (iunit=14)
 
 c Use istat to decide action.
