@@ -376,8 +376,8 @@ c acgen data:
 C********************************************************************
       subroutine poly3line(x,y,z,npts)
 c Dashed line version.
-      real x(npts),y(npts),z(npts)
       integer npts
+      real x(npts),y(npts),z(npts)
       integer i
       include 'plotcom.h'
       include 'world3.h'
