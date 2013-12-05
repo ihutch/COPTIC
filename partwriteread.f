@@ -10,6 +10,7 @@ c names constructed from the parameters and suitable extensions.
       include 'ptchcom.f'
       character*100 localfilename
 
+      ndims=ndims_grid
       partfilename=restartpath
       call partwrite(partfilename,myid)
       if(myid.eq.0)then
