@@ -147,12 +147,16 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 	cc -c $(PROFILING) $*.c
 
 # The testing target pattern used for files in geometry/
-%.phi : %.dat $(COPTIC)
+# Ensure we are using a standard allocated array size.
+# Run coptic on the dat file. If it works and gives phi output, sum it.
+# Compare with the old cks file and see if it's the same.
+%.cks : %.dat $(COPTIC)
+	./setdimens 64 64 128
 	rm -f *.phi
 	./${COPTIC} $*.dat
-	@if [ -f *.phi ] ; then cd .; else echo NO .phi FILE GENERATED; fi ; ls *.phi 2>/dev/null
-	@if diff *.phi $*.phi >diffout 2>&1; then echo; echo "        Case $*.phi: OK. No differences"; touch $*.phi;else cat diffout; echo '******** Failed geometry test *********'; cat diffout >> GeometryTests; fi; rm -f diffout
-	@if [ -f $*.phi ] ; then echo ; else echo "******** $*.phi not present. Creating it."; mv -f *.phi $*.phi; fi
+	@if [ -f *.phi ] ; then sum *.phi >checksum ; else echo NO .phi FILE GENERATED; ls *.phi 2>/dev/null; exit 1; fi
+	@if diff checksum $*.cks >diffout 2>&1; then echo; echo "        Case $*.cks: OK. No differences"; touch $*.cks; else cat diffout; echo '******** Failed geometry test *********'; cat diffout >> GeometryTests; fi; rm -f diffout checksum
+	@if [ -f $*.cks ] ; then echo ; else echo "******** $*.cks not present. Creating it."; sum *.phi >$*.cks; fi
 	@echo -----------------------------------------------------------------
 
 ##########################################
@@ -259,7 +263,7 @@ vecx :
 	make VECX=vecx
 
 #####################################################
-geometry : geometry/*.phi
+geometry : geometry/*.cks
 	rm -f T1*
 	date >>GeometryTests
 	cat GeometryTests
