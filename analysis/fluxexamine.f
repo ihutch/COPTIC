@@ -347,6 +347,8 @@ c      write(*,*)'iomask=',iomask,' iosw=',iosw,' iplot=',iplot
       if(iplot.ne.0)then
          call pltend()
 c         if(iplot.eq.1)
+         write(*,*)'abs(iplot),rview,cv,iosw,iomask',abs(iplot),rview,cv
+     $        ,iosw,iomask
          call objplot(abs(iplot),rview,cv,iosw,iomask)
       endif
 

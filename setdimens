@@ -37,7 +37,7 @@ c Declarations of grid array parameters.
 BLAH
 
 if diff griddeclnew.f griddecl.f ; 
-then echo No grid changes ; cat griddecl.f; exit 0; 
+then echo No grid changes ; cat griddecl.f; rm griddeclnew.f; exit 0; 
 else mv griddeclnew.f griddecl.f ; fi
 echo "Remaking coptic with new grid $1 $2 $3"
 cat griddecl.f
