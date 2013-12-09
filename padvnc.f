@@ -495,7 +495,7 @@ c To do the slice plot we need this it include grid decl.
       parameter (ndims=ndims_grid)
       include 'ptchcom.f'
       include 'plascom.f'
-      real zp(na_m,na_m)
+      real zp(na_m,na_m2)
       integer ipoint
       external ucrhoset
       iptch_copy=irptch

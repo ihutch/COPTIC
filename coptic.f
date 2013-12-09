@@ -63,7 +63,7 @@ c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical lmyidhead,lphiplot,ldenplot
       integer ipstep,iwstep,idistp,idcount,icijcount,lrestart
 c Diagnostics etc
-      real zp(na_m,na_m,ndims_mesh)
+      real zp(na_m,na_m2,ndims_mesh)
       real xlimit(2,ndims_mesh),vlimit(2,ndims_mesh)
       real xnewlim(2,ndims_mesh)
 c Input for face boundary data:

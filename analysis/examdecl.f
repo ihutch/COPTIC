@@ -4,7 +4,7 @@ c Mesh spacing description structure
       integer ndims
       parameter (ndims=ndims_grid)
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
-      real zp(na_m,na_m,ndims_grid)
+      real zp(na_m,na_m2,ndims_grid)
       integer ifull(ndims),iuds(ndims)
 c Object data
       include '../objcom.f'
