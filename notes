@@ -10814,6 +10814,25 @@ Changed griddecl to include a parameter na_m2 that is the second largest
 grid dimension. This allows us to specify workspace that is not excessive
 in cases where one of the dimensions is much larger than all the others.
 
+Dec 10
+
+Merging of Chuteng's creation of vtkwriting for fluxexamine.
+git branch fluxvtk
+[tp400 coptic]$ git pull --no-commit hutch@loki:/home/ctzhou/COPTIC/.git/
+remote: Counting objects: 93, done.
+remote: Compressing objects: 100% (63/63), done.
+remote: Total 72 (delta 47), reused 13 (delta 8)
+Unpacking objects: 100% (72/72), done.
+From loki:/home/ctzhou/COPTIC/
+ * branch            HEAD       -> FETCH_HEAD
+Automatic merge went well; stopped before committing as requested
+[tp400 coptic]$ 
+However, there's an error in the commit. Chuteng edits and commits.
+I can't repeat the pull over the MERGE_HEAD.
+Have to    git merge --abort  then can repeat
+Remove some plotting commands from sphereplot to prevent additional
+complexity. Then only faceplot has links to vtkwriting and vtkcom.f
+
 
 Summary for Calendar Year 2013 of code developments
 

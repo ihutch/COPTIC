@@ -14,7 +14,7 @@ c 2:            according to average flux-density already in nf_step+2
       parameter (ncorn=5)
       real rface(ncorn,ns_ndims)
       integer wp(ncorn),wc(ncorn)
-      character*20 string
+c      character*20 string
       logical lfw
       data wp/1,0,0,1,1/wc/0,0,1,1,0/
 
@@ -106,15 +106,6 @@ c            write(*,*)'Calling facecolor',iosw
      $              ,fmax,1,lfw,isign)               
          enddo
       enddo
-c This legend ought really to account for every object. But at the 
-c moment only spheres do it. 
-      if(iosw.ne.0)then
-         call gradlegend(fmin,fmax,-.35,0.,-.35,.7,-.1,.false.)
-         string='Flux: iosw='
-         call iwrite(iosw,iwd,string(12:))
-         call jdrwstr(.05,.6,string,1.)
-      endif
-
       end
 c*********************************************************************
       subroutine cubeplot(iq,objg,iobj,ioswin)
@@ -324,7 +315,6 @@ c 2:            according to average flux-density already in nf_step+2
       logical lfw
       integer wp(ncorn),wc(ncorn)
       data wp/1,0,0,1,1/wc/0,0,1,1,0/
-
       ifobj=nf_map(iobj)
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
@@ -529,21 +519,35 @@ c i2 is the dimension-index of the first facet index
 c lfw determines whether to write flux on this face
 c isign determines the direction of such writing.
 
-      integer iosw,imin,k2,k3,iobj,iav,i2
+      integer iosw,imin,k2,k3,iobj,iav,i2,incorn,idim
       real fmin,fmax
       logical lfw
       include '3dcom.f'
+      include 'vtkcom.f'
       parameter (ncorn=5)
       real rface(ncorn,pp_ndims)
       character*20 string
 
-      if(iosw.ne.0)then
+      if(iosw.ne.0.or.vtkflag.eq.1)then
          ifobj=nf_map(iobj)
 c Coloring by flux
          ijbin=(k2-1)+nf_dimlens(nf_flux,ifobj,i2)*(k3-1)
      $        +nf_faceind(nf_flux,ifobj,imin)
          iadd=ijbin+iav
          ff=ff_data(iadd)
+c This part of the code is called when we want vtk files
+c And the coloring and plotting part will be skipped
+         if(vtkflag.eq.1)then
+           do incorn=1,ncorn-1
+              do idim=1,pp_ndims
+                 vtkpoints(12*vtkindex+(incorn-1)*3+idim)
+     $           =rface(incorn,idim)
+              enddo
+           enddo
+           vtkindex=vtkindex+1
+           vtkflx(vtkindex)=ff
+           goto 20
+         endif
          icolor=int(240*(ff-fmin)/(fmax-fmin))+1
          call gradcolor(icolor)
       else
@@ -583,7 +587,7 @@ c         call drcstr(string)
          call color(15)
          call charsize(.0,.0)
       endif
-
+ 20   continue
       end
 c*********************************************************************
       subroutine zsort(ngeomobj,zta,index)
@@ -618,6 +622,7 @@ c rv gives the Window size, cv the center of the view.
       real rv
       include '3dcom.f'
       include 'sectcom.f'
+      include 'vtkcom.f'
       real cv(nf_ndims)
       integer index(ngeomobjmax)
       real zta(ngeomobjmax)
@@ -627,7 +632,7 @@ c rv gives the Window size, cv the center of the view.
       ipint=ioswin/256
       iosw=ioswin- ipint*256
 
-c      write(*,*)iosw,ipint
+c      write(*,*)iosw,ipint,'iosw,iprint'
       irotating=0
       call pltinit(0.,1.,0.,1.)
       call setcube(.2,.2,.2,.5,.4)
@@ -671,6 +676,16 @@ c         write(*,*)'objplotting',ik,iobj,itype,iobjmask
          if(iobjmask.ne.1 .and. 0.lt.iq.and.iq.le.mf_quant(iobj))then
             if(itype.eq.1.)then
                call sphereplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
+c This legend was removed from sphereplot to enable vtkwriting to
+c use that routine without additional complexity.
+c      if(iosw.ne.0)then
+c         call gradlegend(fmin,fmax,-.35,0.,-.35,.7,-.1,.false.)
+c         string='Flux: iosw='
+c         call iwrite(iosw,iwd,string(12:))
+c         call jdrwstr(.05,.6,string,1.)
+c      endif
+
+
             elseif(itype.eq.2.)then
                call cubeplot(iq,obj_geom(1,iobj),iobj,iosw)
             elseif(itype.eq.3.)then
@@ -703,4 +718,51 @@ c User interface:
       call rotatezoom(isw)
       if(isw.eq.ichar('p'))iprinting=mod(iprinting+1,2)
       if(isw.ne.0.and.isw.ne.ichar('q'))goto 51
+      end
+c*************************************************************
+c This subroutine is called to write data in vtkcom common blocks
+      subroutine vtkwrite(iq,ioswin,iomask)
+      integer iq,iosw,iomask
+      include '3dcom.f'
+      include 'sectcom.f'
+      include 'vtkcom.f'
+      integer index(ngeomobjmax)
+      real zta(ngeomobjmax)
+      iosw=ioswin
+c Initializing vtkindex
+      vtkindex=0
+c Decide the order in which to draw objects, based on the position of
+c their centers.
+      do i=1,ngeomobj
+         index(i)=i
+c Get the position in view coordinates.
+         call trn32(obj_geom(ocenter,i),obj_geom(ocenter+1,i),
+     $        obj_geom(ocenter+2,i),xt,yt,zta(i),3)
+      enddo
+      call zsort(ngeomobj,zta,index)
+c      write(*,*)(index(k),zta(k),k=1,ngeomobj)
+
+      fmin=0.
+      fmax=0.
+c Do drawing in order
+      do ik=1,ngeomobj
+         iobj=index(ik)
+         iobjmask=ibits(iomask,iobj-1,1)
+         itype=int(obj_geom(otype,iobj))-256*(int(obj_geom(otype,iobj))
+     $        /256)
+c         write(*,*)'objplotting',ik,iobj,itype,iobjmask
+         if(iobjmask.ne.1 .and. 0.lt.iq.and.iq.le.mf_quant(iobj))then
+            if(itype.eq.1.)then
+               call sphereplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
+            elseif(itype.eq.2.)then
+               call cubeplot(iq,obj_geom(1,iobj),iobj,iosw)
+            elseif(itype.eq.3.)then
+               call cylplot(iq,obj_geom(1,iobj),iobj,iosw)
+            elseif(itype.eq.4.)then
+               call pllelplot(iq,obj_geom(1,iobj),iobj,iosw)
+            elseif(itype.eq.5)then
+               call cylgplot(iq,obj_geom(1,iobj),iobj,iosw)
+            endif
+         endif
+      enddo
       end

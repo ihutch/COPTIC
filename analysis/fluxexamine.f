@@ -4,12 +4,14 @@ c**************************************************************
       include '../plascom.f'
       include '../sectcom.f'
       include '../colncom.f'
+      include '../vtkcom.f'
 
       parameter (ntr=10000)
       real plotdata(ntr,6),stepdata(ntr)
+C      real traceave(ntr)
       real traceave(ntr)
       character*100 filename,argument
-      integer iplot,iprint,ifmask,idimf,iomask,ivprn
+      integer iplot,iprint,ifmask,idimf,iomask,ivprn,ivtk,istep
       real avefield(ns_ndims),avepress(ns_ndims),avepart(ns_ndims)
       real avetotal(ns_ndims),avecoln(ns_ndims),avesq(ns_ndims)
       real rp,yrange,cv(ns_ndims)
@@ -26,12 +28,16 @@ c**************************************************************
       yrange=0.
       nbox=0
       iarg1=1
+      ivtk=0
+      istep=5
+      vtkflag=0
 
       filename='T1e0v000r05P02L1e0.flx'
  11   continue
       do iarg=iarg1,iargc()
 c         write(*,*)'iarg',iarg
          call getarg(iarg,argument)
+c         write(*,*) argument
          if(argument(1:3).eq.'-n1')
      $        read(argument(4:),'(f10.4)')fn1
          if(argument(1:3).eq.'-n2')
@@ -52,8 +58,12 @@ c            read(argument(3:),'(i5)')iquiet
      $        read(argument(3:),'(i5)')iprint
          if(argument(1:2).eq.'-m')
      $        read(argument(3:),'(i5)')ifmask
-         if(argument(1:2).eq.'-v')
-     $        read(argument(3:),'(i5)')ivprn
+         if(argument(1:4).eq.'-vtk')then
+            ivtk=1
+            read(argument(5:),'(i5)') istep
+         elseif(argument(1:2).eq.'-v') then
+            read(argument(3:),'(i5)')ivprn
+         endif
          if(argument(1:3).eq.'-rp')then
             read(argument(4:),*)rp
          elseif(argument(1:2).eq.'-r')then
@@ -74,6 +84,7 @@ c            if(iomask.eq.0)iomask=2*(2**30-1)+1
             if(iomask.eq.0)iomask=65535
             iomask=IBCLR(iomask,ims-1)
          endif
+
          if(argument(1:2).eq.'-h')goto 201
          if(argument(1:2).eq.'-?')goto 201
          if(argument(1:1).ne.'-')then
@@ -122,12 +133,17 @@ c For all the objects being flux tracked.
                write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i
      $              -1),i=1,nf_posno(1,k)),j=1,nf_posdim)
             endif
-            do kk=max(nf_step/5,1),nf_step,max(nf_step/5,1)
+            do kk=max(nf_step/istep,1),nf_step,max(nf_step/istep,1)
                if(mf_quant(k).ge.1)then
                   write(*,'(a,i4,a,f10.2,a)')'Step(',kk,') rho='
      $                 ,ff_rho(kk),'  Flux data'
                   write(*,'(10f8.2)')(ff_data(nf_address(nf_flux,k,kk)+i
      $                 -1),i=1,nf_posno(nf_flux,k))
+c If flag '-vtk' is true then we call vtkoutput
+                 if (ivtk.eq.1)then
+                       vtkflag=1
+                      call vtkoutput(filename,kk,iplot,iomask)
+                  endif
                endif
                if(mf_quant(k).ge.2)then
                   write(*,'(''x-momentum'',i4)')nf_posno(nf_gx,k)
@@ -146,7 +162,6 @@ c For all the objects being flux tracked.
                endif
             enddo
          endif
-      
          n1=fn1*nf_step
          n2=fn2*nf_step
 c         if(mf_quant(k).ge.iplot)then
@@ -183,8 +198,6 @@ c            write(*,*)i,nf_npart(i)
          endif
          call pltend()
       endif
-
-
 c Plots if 
       if(rp.ne.0.)write(*,'(a,f10.4,a,f10.4)')
      $     'Radius',rp,' Potential',phip
@@ -327,7 +340,7 @@ c v printing this object
 
 c      write(*,*)'iomask=',iomask,' iosw=',iosw,' iplot=',iplot
 
-      if(iplot.ne.0)then
+      if(iplot.ne.0 .and.vtkflag.eq.0)then
          call pltend()
 c         if(iplot.eq.1)
          write(*,*)'abs(iplot),rview,cv,iosw,iomask',abs(iplot),rview,cv
@@ -360,6 +373,7 @@ c Read more arguments if there are any.
       write(*,*)'-f<id> set dimension whose force to plot'
       write(*,*)'-b<nb> set boxcar average range +-nb.'
       write(*,*)'-yfff set range of force plot'
+      write(*,*)'-vtkiii outputs a vtk file every nf_step/iii steps'
 
       end
 c********************************************************************
@@ -367,4 +381,33 @@ c********************************************************************
       include '../3dcom.f'
       include '../plascom.f'
       include '../sectcom.f'
+      end
+c*********************************************************************
+c This subroutine calls vtkwrite to write in the common blocks our vtk data
+c then it calls vtkwritescalarfacets to write vtk files for unstructred meshes
+      subroutine vtkoutput(filename,kk,iplot,iomask)
+      include '../3dcom.f'
+      include '../plascom.f'
+      include '../sectcom.f'
+      include '../colncom.f'
+      include '../vtkcom.f'
+      parameter (ntr=10000)
+      integer centering(ntr),conn(ntr),celltypes(ntr)
+      character*100 filename
+      integer kk,iosw,iplot,iomask
+      character*4 charstep
+      iosw=kk-nf_step
+      call vtkwrite(abs(iplot),iosw,iomask)
+      do i=1,vtkindex
+         celltypes(i)=9
+         centering(i)=0
+      enddo
+      do j=1,4*vtkindex
+         conn(j)=j-1
+      enddo
+      write(charstep,'(i4.4)') kk
+      call vtkwritescalarfacets(4*vtkindex,vtkflx,vtkpoints,vtkindex,
+     $                          celltypes,conn,centering,
+     $                          0,filename(1:lentrim(filename))//
+     $                           charstep//char(0),'flux'//char(0))
       end
