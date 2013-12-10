@@ -4,7 +4,10 @@ c Main program of cartesian coordinate, oblique boundary, pic code.
 c Object data storage.
       include 'objcom.f'
 c Storage array spatial count size
-      include 'griddecl.f'
+c Mesh spacing description structure includes grid decl too.
+      include 'meshcom.f'
+      integer ndims
+      parameter (ndims=ndims_grid)
 c coptic runs correctly with unequal dimensions but phiexamine does not.
       parameter (Li1=na_i,Li2=Li1*na_j,Li3=Li2*na_k)
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
@@ -16,7 +19,7 @@ c
 c Diagnostics (moments)
       integer ndiagmax
       parameter (ndiagmax=7)
-      real diagsum(na_i,na_j,na_k,ndiagmax)
+      real diagsum(na_i,na_j,na_k,ndiagmax+1)
 c Distribution functions
       integer ndistmax
       parameter (ndistmax=300)
@@ -24,8 +27,6 @@ c      real fv(ndistmax,na_i,na_j,na_k)
 
 c Used dimensions, Full dimensions. Used dims-2
       integer iuds(ndims_cij),ifull(ndims_cij),ium2(ndims_cij)
-c Mesh spacing description structure
-      include 'meshcom.f'
 c Processor cartesian geometry can be set by default.
       integer nblksi,nblksj,nblksk
       parameter (nblksi=1,nblksj=1,nblksk=1)
@@ -232,15 +233,12 @@ c If head, write the geometry data if we've had to calculate it.
      $        ,.true.)
       endif
 c---------------------------------------------
-c Set an object pointer for all the edges so their regions get
-c set by the iregioninit call
+c Initialize the region flags in the object data
       call iregioninit(ndims,ifull)
       if(lmyidhead)call reportfieldmask()
+c Set an object pointer region -1 for all the edges.
       ipoint=0
       call mditerarg(cijedge,ndims,ifull,iuds,ipoint,cij,dum2,dum3,dum4)
-c Initialize the region flags in the object data
-c This old position overruled the new edge setting.
-c      call iregioninit(ndims,ifull)
 c---------------------------------------------
       if(.not.lmyidhead)then
 c Don't do plotting from any node except the master.
@@ -275,7 +273,7 @@ c Initialize charge (set q to zero over entire array).
 c Initialize potential (set u to zero over entire array).
       call mditerset(u,ndims,ifull,iuds,0,0.)
 c Initialize diagsum if necessary.
-      do idiag=1,ndiags
+      do idiag=1,ndiags+1
          call mditerset(diagsum(1,1,1,idiag),ndims,ifull,iuds,0,0.)
       enddo
 c Initialize additional potential and charge if needed.
@@ -489,17 +487,22 @@ c Reduce the data
                call diagperiod(diagsum,ndims,ifull,iuds,iLs,ndiags)
 c Do any other processing? Here or later?
 c               call diagstep(iLs,diagsum,ndiags)
+c Write the ave potential into the ndiags+1 slot of diagsum (by adding
+c to the previously zeroed values).
+               ipin=0
+               call mditeradd(diagsum(1,1,1,ndiags+1),ndims,ifull,iuds
+     $              ,ipin,uave)
                if(lmyidhead)then
 c If I'm the head, write it.
                   write(*,'(a,i3,a)')'Diags',ndiags,' '
 c                  write(argument,'(''.dia'',i4.4)')j
                   write(argument,'(''.dia'',i4.4)')nf_step
                   diagfilename=' '
-                  call namewrite(diagfilename,ifull,iuds,ndiags,diagsum
-     $                 ,argument)
+                  call namewrite(diagfilename,ifull,iuds,ndiags+1
+     $                 ,diagsum,argument)
                endif
 c Now reinit diagsum
-               do idiag=1,ndiags
+               do idiag=1,ndiags+1
                   call mditerset(diagsum(1,1,1,idiag),ndims,ifull,iuds,0
      $                 ,0.)
                enddo

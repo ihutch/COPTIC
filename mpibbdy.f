@@ -3,6 +3,8 @@ c Block boundary communication.
       subroutine bbdy(iLs,ifull,iuds,u,kc,
      $     ndims,idims,icoords,iLcoords,myside,myorig,
      $     icommcart,mycartid,myid,lperiod)
+c The number of dimensions of the cartesian topology. (2 for 2d) (IN)
+      integer ndims
 c Dimensional structure of u, for 2d should be (1,Li,Lj), 
 c 3d (1,Li,Li*Lj,Li*Lj*Lk) etc (last element may not be used)
       integer iLs(ndims+1)
@@ -15,8 +17,6 @@ c      if kc=-1 this is the final call: gather only.
 c      if kc=-2 only (re)initialize the topology, cartesian communicator
 c
       integer kc
-c The number of dimensions of the cartesian topology. (2 for 2d) (IN)
-      integer ndims
 c The length of each topology dimension (number of blocks) (IN)
       integer idims(ndims)
 c For each topology dimension whether it is periodic or not (IN)
@@ -94,11 +94,12 @@ c within u. That is, the bottom of the boundary cells in each dimension.
 c Three blocks in the x-direction, one in y-direction on 16x4 grid:
 c 1  ^----^
 c 2      ^----^
-c 3          ^------^ 1
-c    ................ ^
-c    X...X...X.....X. |
-c    ................ |
-c    X...X...X.....X. ^
+c 3          ^------^
+c
+c  4 ................   ^
+c  3 X...X...X.....X.   |
+c  2 ................   |
+c  1 X...X...X.....X.   v  1
 c    1234567890123456
 c X-Side-lengths 6[,6],8
 c Blocks must be of equal size except for the uppermost
@@ -114,9 +115,7 @@ c It must be of dimension greater than the number of processes (blocks)
       include 'mpif.h'
       integer status(MPI_STATUS_SIZE)
       integer iobindex
-c Flag that we have called this routine once. Can't use multiple
-c instances in one program. No way to reset this. Might include as
-c an argument to allow us to reset. Not done yet.
+c Flag that we have called this routine once.
       logical lflag
       data lflag/.false./
 c Initialize iobindex to quiet initialization warnings.

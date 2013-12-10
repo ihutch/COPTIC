@@ -10,6 +10,7 @@ c to unity at infinity.
       integer index
 c In order to access point-charge information we need:
       include '3dcom.f'
+c Needed for ptchcom.f:
       include 'griddecl.f'
       include 'ptchcom.f'
       real ubig,um
@@ -24,8 +25,6 @@ c Need to compensate for point charges and/or Te-gradient.
          if(abs(um).gt.ubig)um=sign(ubig,um)
          fprime=exp(um)
          faddu=fprime-rhoci(index)
-c This does not seem to be needed except for testing:
-c         call indexexpand(ndims,ifull,index-1,ix)
       endif
 c If the overflow trap above is working, then this ought not to be needed.
       if(.not.faddu.lt.1.e20)then

@@ -488,12 +488,13 @@ c Also any temperature-gradient and density-gradient factors.
       integer ifull(ndimsp),iuds(ndimsp),irptch
       logical lsliceplot
 c Defines iptch_copy uci, rhoc and dimensions.
-      include 'griddecl.f'
+c ndims must be same as ndimsp.
+c To do the slice plot we need this it include grid decl.
+      include 'meshcom.f'
+      integer ndims
+      parameter (ndims=ndims_grid)
       include 'ptchcom.f'
       include 'plascom.f'
-c ndims must be same as ndimsp.
-c To do the slice plot we need:
-      include 'meshcom.f'
       real zp(na_m,na_m)
       integer ipoint
       external ucrhoset

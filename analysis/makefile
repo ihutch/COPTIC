@@ -11,16 +11,19 @@ ifeq ("$(VECX)","vecglx")
 endif
 ######################################################################
 # An option setting might override default compiler.
-G77=mpif77 -f77=g77 
-#G77=mpif77
-# For loki:
-#G77=/opt/mvapich2.gbe/path/bin/mpif90
+ifeq ("$(G77)","")
+	override G77=$(shell cat ../compiler 2>/dev/null)
+endif
 # export this so it is inherited by sub-makes.
 export G77
 GFINAL=gcc-4.1 -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
 #OPTIMIZE=-O3 -funroll-loops -finline-functions
-OPTIMIZE=-O3
-COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I. 
+OPTIMIZE=
+COMPILE-SWITCHES=-I.
+ifeq ("$(G77)","mpif77 -f77=g77")	
+  COMPILE-SWITCHES = -Wall $(OPTIMIZE) -I.
+  OPTIMIZE=-O3
+endif	
 #COMPILE-SWITCHES = -Wall   $(OPTIMIZE) -I. -g -fbounds-check
 ##COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -g -I.
 NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
@@ -36,7 +39,7 @@ all: $(TARGETS)
 dummyreduce.o : ../dummyreduce.f
 	$(G77) -c ../dummyreduce.f
 
-% : %.f  makefile $(ACCISLIB) dummyreduce.o ../libcoptic.a $(HEADERS) libvtkwrite.a
+% : %.f  makefile examdecl.f $(ACCISLIB) dummyreduce.o ../libcoptic.a $(HEADERS) libvtkwrite.a
 # I don't remember why this explicit form was preferred to a dependency below.
 #	make -C ../ libcoptic.a
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f dummyreduce.o ../libcoptic.a $(LIBRARIES)

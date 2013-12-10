@@ -215,8 +215,8 @@ c 2:            according to average flux-density already in nf_step+2
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
-      ism1=0
-      ism2=0
+      ism1=1
+      ism2=1
 c Use position arrays compatible with flux array but not too coarse.
       if(objg(ofn2).gt.nadef)then
          nangle=int(objg(ofn2))
@@ -267,12 +267,13 @@ c Draw curved surface.
                rface(k,ids)=objg(oradius+ids-1)
      $              *sin(wp(k)*t1+(1.-wp(k))*t2)+objg(ocenter+ids-1)
             enddo
-c Now rface contains the coordinates of the face corners.            
+c Now rface contains the coordinates of the face corners. 
                lfw=(mod(i-1+ism2,ism2).eq.ism2/2)
                call facecolor(iosw,2,itc+1,j,iobj,iav,rface,fmin
      $              ,fmax,2,lfw,isign)               
          enddo
       enddo
+
 c Draw visible end surface, equal spacing in r^2.
 c Discover perspective, eye position in world coords:
 c Unnecessary a second time.
@@ -332,8 +333,8 @@ c 2:            according to average flux-density already in nf_step+2
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
-      ism1=0
-      ism2=0
+      ism1=1
+      ism2=1
 c Use position arrays compatible with flux array but not too coarse.
       if(objg(ofn2).gt.nadef)then
          nangle=int(objg(ofn2))
@@ -625,7 +626,7 @@ c 2:            according to average flux density in nf_step+2
 c Byte 2: 256 plot intersections, 0 don't plot intersections.
 c iomask is a mask where non-zero bits mask _out_ objects.
 c iq references the quantity, 1 flux, 2-4 momentum etc, to be plotted.
-c rv gives the Window size
+c rv gives the Window size, cv the center of the view.
       integer iq,iosw,iomask
       real rv
       include '3dcom.f'

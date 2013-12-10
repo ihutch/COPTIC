@@ -1,12 +1,13 @@
-c Storage array spatial count size
-      include '../griddecl.f'
+c Storage array spatial count size included in
+c Mesh spacing description structure
+      include '../meshcom.f'
+      integer ndims
+      parameter (ndims=ndims_grid)
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
-      real zp(na_m,na_m,ndims)
+      real zp(na_m,na_m,ndims_grid)
       integer ifull(ndims),iuds(ndims)
 c Object data
       include '../objcom.f'
-c Mesh spacing description structure
-      include '../meshcom.f'
 c Plasma common data
       include '../plascom.f'
 c Filenames
