@@ -7,6 +7,7 @@ c 1:            according to average flux already in nf_step+1
 c 2:            according to average flux-density already in nf_step+2
 
       include '3dcom.f'
+      include 'vtkcom.f'
       real objg(odata)
       real fmin,fmax
       real xe(ns_ndims)
