@@ -4,6 +4,7 @@ c**************************************************************
       include '../plascom.f'
       include '../sectcom.f'
       include '../colncom.f'
+      include '../vtkcom.f'
 
       parameter (ntr=10000)
       real plotdata(ntr,6),stepdata(ntr)
@@ -19,6 +20,7 @@ C      real traceave(ntr)
       data ifmask/1023/iomask/0/
       data idimf/3/
       data rp/0./cv/ns_ndims*0./
+      
 
       fn1=0.5
       fn2=1.
@@ -29,6 +31,7 @@ C      real traceave(ntr)
       iarg1=1
       ivtk=0
       istep=5
+      vtkflag=0
 
       filename='T1e0v000r05P02L1e0.flx'
  11   continue
@@ -131,14 +134,16 @@ c For all the objects being flux tracked.
                write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i
      $              -1),i=1,nf_posno(1,k)),j=1,nf_posdim)
             endif
-            do kk=max(nf_step/istep,1),nf_step,max(nf_step/istep,1)
+            do kk=max(nf_step/istep,1),nf_step-max(nf_step/istep,1)
+     $            ,max(nf_step/istep,1)
                if(mf_quant(k).ge.1)then
                   write(*,'(a,i4,a,f10.2,a)')'Step(',kk,') rho='
      $                 ,ff_rho(kk),'  Flux data'
                   write(*,'(10f8.2)')(ff_data(nf_address(nf_flux,k,kk)+i
      $                 -1),i=1,nf_posno(nf_flux,k))
                   if (ivtk.eq.1)then
-                      call sphericalvtkoutput(filename,kk,k)
+                       vtkflag=1
+                      call vtkoutput(filename,kk,iplot,iomask)
                   endif
                endif
                if(mf_quant(k).ge.2)then
@@ -195,12 +200,14 @@ c            write(*,*)i,nf_npart(i)
          endif
          call pltend()
       endif
+       
+       
 
-       if(iplot.ne.0)then
+       if(iplot.ne.0 .and.vtkflag.eq.0)then
          call pltend()
 c         if(iplot.eq.1)
          call objplot(abs(iplot),rview,cv,iosw,iomask)
-      endif
+       endif
 c Plots if 
       if(rp.ne.0.)write(*,'(a,f10.4,a,f10.4)')
      $     'Radius',rp,' Potential',phip
@@ -343,12 +350,7 @@ c v printing this object
 
 c      write(*,*)'iomask=',iomask,' iosw=',iosw,' iplot=',iplot
 
-      if(iplot.ne.0)then
-         call pltend()
-c         if(iplot.eq.1)
-         call objplot(abs(iplot),rview,cv,iosw,iomask)
-      endif
-
+      
 c Read more arguments if there are any.
       if(iarg1.le.iargc())goto 11
       
@@ -384,27 +386,30 @@ c********************************************************************
       include '../sectcom.f'
       end
 c*********************************************************************
-      subroutine sphericalvtkoutput(filename,kk,k)
+      subroutine vtkoutput(filename,kk,iplot,iomask)
       include '../3dcom.f'
       include '../plascom.f'
       include '../sectcom.f'
       include '../colncom.f'
+      include '../vtkcom.f'
       parameter (ntr=10000)
-      real posi(ntr), flx(ntr)
+      integer centering(ntr),conn(ntr),celltypes(ntr)
       character*100 filename
-      integer kk, k
+      integer kk,iosw,iplot,iomask
       character*4 charstep
-      do i=1,(nf_posno(1,k))
-         posi(3*i-2)=sqrt(1.-ff_data(nf_address(nf_flux,k,0)+i-
-     $   1)**2)*cos(ff_data(nf_address(nf_flux,k,-1)+i-1))
-         posi(3*i-1)=sqrt(1.-ff_data(nf_address(nf_flux,k,0)+i-
-     $   1)**2)*sin(ff_data(nf_address(nf_flux,k,-1)+i-1))
-         posi(3*i)=ff_data(nf_address(nf_flux,k,0)+i-1)
-         flx(i)=ff_data(nf_address(nf_flux,k,kk)+i-1)
+      iosw=kk-nf_step
+      call vtkwrite(abs(iplot),iosw,iomask)
+      do i=1,vtkindex
+         celltypes(i)=9
+         centering(i)=0
       enddo
-      write(charstep,'(i4.4)') kk
-      call vtkwritescalarpoints(nf_posno(1,k),flx,posi,
-     $         0,filename(1:lentrim(filename))//
-     $         charstep//char(0),'flux'//char(0))
+      do j=1,4*vtkindex
+         conn(j)=j-1
+      enddo
+      write(charstep,'(i4.4)') kk              
+      call vtkwritescalarfacets(4*vtkindex,vtkflx,vtkpoints,vtkindex,
+     $                          celltypes,conn,centering,
+     $                          0,filename(1:lentrim(filename))//
+     $                           charstep//char(0),'flux'//char(0))
       end
       
