@@ -134,14 +134,14 @@ c For all the objects being flux tracked.
                write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i
      $              -1),i=1,nf_posno(1,k)),j=1,nf_posdim)
             endif
-            do kk=max(nf_step/istep,1),nf_step-max(nf_step/istep,1)
-     $            ,max(nf_step/istep,1)
+            do kk=max(nf_step/istep,1),nf_step,max(nf_step/istep,1)
                if(mf_quant(k).ge.1)then
                   write(*,'(a,i4,a,f10.2,a)')'Step(',kk,') rho='
      $                 ,ff_rho(kk),'  Flux data'
                   write(*,'(10f8.2)')(ff_data(nf_address(nf_flux,k,kk)+i
      $                 -1),i=1,nf_posno(nf_flux,k))
-                  if (ivtk.eq.1)then
+c If flag '-vtk' is true then we call vtkoutput 
+                 if (ivtk.eq.1)then
                        vtkflag=1
                       call vtkoutput(filename,kk,iplot,iomask)
                   endif
@@ -163,7 +163,6 @@ c For all the objects being flux tracked.
                endif
             enddo
          endif
-      
          n1=fn1*nf_step
          n2=fn2*nf_step
 c         if(mf_quant(k).ge.iplot)then
@@ -200,14 +199,6 @@ c            write(*,*)i,nf_npart(i)
          endif
          call pltend()
       endif
-       
-       
-
-       if(iplot.ne.0 .and.vtkflag.eq.0)then
-         call pltend()
-c         if(iplot.eq.1)
-         call objplot(abs(iplot),rview,cv,iosw,iomask)
-       endif
 c Plots if 
       if(rp.ne.0.)write(*,'(a,f10.4,a,f10.4)')
      $     'Radius',rp,' Potential',phip
@@ -350,7 +341,7 @@ c v printing this object
 
 c      write(*,*)'iomask=',iomask,' iosw=',iosw,' iplot=',iplot
 
-      if(iplot.ne.0)then
+      if(iplot.ne.0 .and.vtkflag.eq.0)then
          call pltend()
 c         if(iplot.eq.1)
          write(*,*)'abs(iplot),rview,cv,iosw,iomask',abs(iplot),rview,cv
@@ -383,7 +374,7 @@ c Read more arguments if there are any.
       write(*,*)'-f<id> set dimension whose force to plot'
       write(*,*)'-b<nb> set boxcar average range +-nb.'
       write(*,*)'-yfff set range of force plot'
-      write(*,*)'-vtkiii output a vtk file every nf_step/iii steps'
+      write(*,*)'-vtkiii outputs a vtk file every nf_step/iii steps'
 
       end
 c********************************************************************
@@ -393,6 +384,8 @@ c********************************************************************
       include '../sectcom.f'
       end
 c*********************************************************************
+c This subroutine calls vtkwrite to write in the common blocks our vtk data
+c then it calls vtkwritescalarfacets to write vtk files for unstructred meshes
       subroutine vtkoutput(filename,kk,iplot,iomask)
       include '../3dcom.f'
       include '../plascom.f'
@@ -413,10 +406,9 @@ c*********************************************************************
       do j=1,4*vtkindex
          conn(j)=j-1
       enddo
-      write(charstep,'(i4.4)') kk              
+      write(charstep,'(i4.4)') kk
       call vtkwritescalarfacets(4*vtkindex,vtkflx,vtkpoints,vtkindex,
      $                          celltypes,conn,centering,
      $                          0,filename(1:lentrim(filename))//
      $                           charstep//char(0),'flux'//char(0))
       end
-      
