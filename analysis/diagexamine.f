@@ -8,7 +8,7 @@ c diagmax here must be 7+1 to accommodate potential possibly.
 c Volumes are stored in ndiagmax+1
 
 c Extra work array for arrowplotting in sliceGweb.
-      real vp(na_m,na_m,3,3)
+      real vp(na_m,na_m2,3,3)
 c 1-d plotting arrays.
       real z1d(na_m),u1d(na_m),dene1d(na_m),deni1d(na_m)
       character*20 mname(ndiagmax+1)
