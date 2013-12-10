@@ -156,6 +156,7 @@ c      write(*,*)'minz,maxz,c1st,clast',minz,maxz,c1st,clast
       id=4
       incolor=igetcolor() 
 c      write(*,*)'ncolor=',ncolor,'incolor=',incolor
+c      write(*,*)'c1st,clast,ngradcol,itri',c1st,clast,ngradcol,itri
       do j=1,jmax
          y1=j-0.500001
          y2=j+0.500001
@@ -207,7 +208,7 @@ c Triangle gradients.
                   zd(4)=z(i,j+1)
 c                  write(*,*)c1st,clast,ngradcol
                   call gradquad(xd,yd,zd,zd,
-     $                 c1st,clast,0,ngradcol,256*istep)
+     $                 c1st,clast,0,ngradcol-1,256*istep)
                endif
             endif
          enddo
@@ -271,8 +272,8 @@ c Calls: Confol, polyline, labeline.
 c*************************************************************************
       subroutine consgen(z,cv,l,ixmax,iymax,ppath,xc,yc,ic,x,y,consw)
 c contour searching routine. 9 Aug 92
-      integer l,ixmax,iymax
       real z(l,iymax),cv,x(1),y(1)
+      integer l,ixmax,iymax
       character ppath(l,iymax)
       integer ic
       real xc(ic),yc(ic)
@@ -405,8 +406,8 @@ c************************************************************************
      $	   ppath,xc,yc,i)
 c Follow a contour of function z, at value cv. Path marking version.
 c Inputs: function-array, contour value, dimensions: true,used,used.
-      integer l,ixmax,iymax
       real z(l,iymax),cv
+      integer l,ixmax,iymax
 c Previous path record. Sets for each dir plotted for this point.
       character ppath(l,iymax)
 c Initial point and direction:
