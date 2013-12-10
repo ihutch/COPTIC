@@ -7,7 +7,6 @@ c 1:            according to average flux already in nf_step+1
 c 2:            according to average flux-density already in nf_step+2
 
       include '3dcom.f'
-      include 'vtkcom.f'
       real objg(odata)
       real fmin,fmax
       real xe(ns_ndims)
@@ -539,13 +538,15 @@ c isign determines the direction of such writing.
       real rface(ncorn,pp_ndims)
       character*20 string
 
-      if(iosw.ne.0)then
+      if(iosw.ne.0.or.vtkflag.eq.1)then
          ifobj=nf_map(iobj)
 c Coloring by flux
          ijbin=(k2-1)+nf_dimlens(nf_flux,ifobj,i2)*(k3-1)
      $        +nf_faceind(nf_flux,ifobj,imin)
          iadd=ijbin+iav
          ff=ff_data(iadd)
+c This part of the code is called when we want vtk files  
+c And the coloring and plotting part will be skipped
          if(vtkflag.eq.1)then
            do incorn=1,ncorn-1
               do idim=1,pp_ndims
@@ -553,7 +554,7 @@ c Coloring by flux
      $           =rface(incorn,idim)
               enddo
            enddo
-           vtkindex=vtkindex+1         
+           vtkindex=vtkindex+1
            vtkflx(vtkindex)=ff
            goto 20
          endif
@@ -719,6 +720,7 @@ c User interface:
       if(isw.ne.0.and.isw.ne.ichar('q'))goto 51
       end
 c*************************************************************
+c This subroutine is called to write data in vtkcom common blocks
       subroutine vtkwrite(iq,ioswin,iomask)
       integer iq,iosw,iomask
       include '3dcom.f'
@@ -726,12 +728,11 @@ c*************************************************************
       include 'vtkcom.f'
       integer index(ngeomobjmax)
       real zta(ngeomobjmax)
-      
       iosw=ioswin
 c Initializing vtkindex
       vtkindex=0
 c Decide the order in which to draw objects, based on the position of
-c their centers. 
+c their centers.
       do i=1,ngeomobj
          index(i)=i
 c Get the position in view coordinates.
