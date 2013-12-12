@@ -234,8 +234,44 @@ c     $     *(0.999999*theta/3.1415926+1.)*0.5)
       fto=(nangle*(thetao/(2.*pi)+0.5))
       ito=int(fto)
       itp=nint(fto)-ito
+c int(sign(1.,xe(ia))) is the sign of the end of the cylinder closest to
+c eye.  so reversing ie draws the invisible end face.
+      ie=-int(sign(1.,xe(ia)))
+
+c Draw INvisible end surface, equal spacing in r^2.
+c This is necessary only for vtkfile writing. For accis plotting,
+c the invisible face is always overdrawn by the others.
+c The eye is at angle running from minus-pi to plus-pi.
+      psie=atan2(xe(2),xe(1))
+      do i=1,nangle
+         t1=2.*pi*(i-1)/nangle-pi
+         t2=2.*pi* i   /nangle-pi
+         if(abs(mod(2.*pi+t2-psie,2.*pi)-pi).lt.pi/2.)then
+            isign=-1
+         else
+            isign=1
+         endif
+         itc=int(objg(ofn2)*(t1/(2.*pi)+0.50001))
+         do j=1,nr
+            r1=sqrt(float(j-1)/nr)
+            r2=sqrt(float(j  )/nr)
+            do k=1,ncorn
+               rface(k,ia)=ie*objg(oradius+ia-1)+objg(ocenter+ia-1)
+               ids=mod(2+ia-2,ns_ndims)+1
+               rface(k,ids)=objg(oradius+ids-1)*(wc(k)*r1+(1.-wc(k))*r2)
+     $              *cos(wp(k)*t1+(1.-wp(k))*t2)+objg(ocenter+ids-1)
+               ids=mod(3+ia-2,ns_ndims)+1
+               rface(k,ids)=objg(oradius+ids-1)*(wc(k)*r1+(1.-wc(k))*r2)
+     $              *sin(wp(k)*t1+(1.-wp(k))*t2)+objg(ocenter+ids-1)
+            enddo
+            lfw=(mod(i-1+ism2,ism2).eq.ism2/2)
+            call facecolor(iosw,2+ie,j,itc+1,iobj,iav,rface,fmin
+     $           ,fmax,1,lfw,isign) 
+         enddo
+      enddo
+
+c Reset to visible end face
       ie=int(sign(1.,xe(ia)))
-c      write(*,*)(objg(k),k=1,odata)
 c Draw curved surface.
       do it=1,nangle
          isign=2*mod(it+itp,2)-1
@@ -264,10 +300,6 @@ c Now rface contains the coordinates of the face corners.
       enddo
 
 c Draw visible end surface, equal spacing in r^2.
-c Discover perspective, eye position in world coords:
-c Unnecessary a second time.
-c      call trn32(x,y,z,xe(1),xe(2),xe(3),-1)
-c      call nxyz2wxyz(xe(1),xe(2),xe(3),xe(1),xe(2),xe(3))
 c The eye is at angle running from minus-pi to plus-pi.
       psie=atan2(xe(2),xe(1))
       do i=1,nangle
@@ -353,8 +385,44 @@ c Flux accumulation is (zero based):
       fto=(nangle*(thetao/(2.*pi)+0.5))
       ito=int(fto)
       itp=nint(fto)-ito
+
+c Set to invisible end face and draw for vtkwriting.
+      ie=-int(sign(1.,xe(ia)))
+      psie=atan2(xe(2),xe(1))
+      do i=1,nangle
+         t1=2.*pi*(i-1)/nangle-pi
+         t2=2.*pi* i   /nangle-pi
+         if(abs(mod(2.*pi+t2-psie,2.*pi)-pi).lt.pi/2.)then
+            isign=-1
+         else
+            isign=1
+         endif
+         itc=int(objg(ofn2)*(t1/(2.*pi)+0.50001))
+         do j=1,nr
+            r1=sqrt(float(j-1)/nr)
+            r2=sqrt(float(j  )/nr)
+            do k=1,ncorn
+               xcontra(ia)=ie
+               ids=mod(2+ia-2,ns_ndims)+1
+               xcontra(ids)=(wc(k)*r1+(1.-wc(k))*r2)
+     $              *cos(wp(k)*t1+(1.-wp(k))*t2)
+               ids=mod(3+ia-2,ns_ndims)+1
+               xcontra(ids)=(wc(k)*r1+(1.-wc(k))*r2)
+     $              *sin(wp(k)*t1+(1.-wp(k))*t2)
+c Transform to world
+               call contra3world(ns_ndims,xcontra,xcontra,iobj)
+               do m=1,ns_ndims
+                  rface(k,m)=xcontra(m)
+               enddo
+            enddo
+            lfw=(mod(i-1+ism2,ism2).eq.ism2/2)
+            call facecolor(iosw,2+ie,j,itc+1,iobj,iav,rface,fmin
+     $           ,fmax,1,lfw,isign) 
+         enddo
+      enddo
+c Set back to visible face.
       ie=int(sign(1.,xe(ia)))
-c      write(*,*)(objg(k),k=1,odata)
+
 c Draw curved surface.
       do it=1,nangle
          isign=2*mod(it+itp,2)-1
@@ -384,6 +452,7 @@ c Transform back from unit-cyl to world coordinates
          enddo
       enddo
 
+c Draw the visible end face.
 c The eye is at angle running from minus-pi to plus-pi.
       psie=atan2(xe(2),xe(1))
       do i=1,nangle
