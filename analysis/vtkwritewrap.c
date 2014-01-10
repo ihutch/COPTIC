@@ -51,43 +51,38 @@ void vtkwritescalar_(int *ifull, int *iuds, float *u,
   free(udata);
 }
 
-/* Version to write a vector variable input as separate variables. */
+// Version to write multicomp. variables; vtkwritevector_ for single vector,
+// and vtkwritevars_ for multiple vectors
 
 void vtkwritevector(int *ifull, int *iuds, float *u,
-		     float *xn, float *yn, float *zn,
-		     int *ibinary,  int *ndims, char *filename, char *ivarnames,
-		     int *stringlength, int *invars,
-		     int *ivardims, int *ivardims_alloc,
-		     int *icentering)
-{ // On entry u(ifull[1,2,3], ndims) is the vector (dimension ndims) on the grid
-  // Alternately u(ifull[1,2,3], vardims_alloc, nvars)
-  // varnames(stringlength,nvars) assumed to contain null-terminated strings
+		    float *xn, float *yn, float *zn,
+		    int *ibinary,  int *vardims, char *filename,
+		    char *ivarnames, int *str_alloc, int *idims_alloc,
+		    int *ivars, int *icentering)
+{ // u(ifull[1,2,3], idims_alloc[, nvars]) contains the ivars vectors.
+  // iuds(1:3) gives the number of used points in each spatial dimension.
+  // vardims(ivars) gives the number of used components of each vector.
+  // varnames(str_alloc,ivars) contains null-terminated strings.
+  // icentering(ivars) specifies whether each vector is node-centered.
   int binary=1;
   int i,j,k,m,n;
   int nvars=1;
-  int *vardims;
-  int vardims_storage[nvars];
   int *centering;
-  int centering_storage[nvars]; // node centering
+  int centering_storage[nvars];
   char **varnames;
-  int vardims_alloc;
+  int dims_alloc;
 
   float *udata;
   float **vars;
 
-  if (invars)
-    nvars = *invars;
+  // If called through vtkwritevars_ pointers are non-NULL
+  if (ivars)
+    nvars = *ivars;
 
-  if (ivardims) {
-    vardims = ivardims;
+  if (idims_alloc) {
+    dims_alloc = *idims_alloc;
   } else {
-    *vardims_storage = *ndims;
-    vardims = vardims_storage;
-  }
-  if (ivardims_alloc) {
-    vardims_alloc = *ivardims_alloc;
-  } else {
-    vardims_alloc = *vardims;
+    dims_alloc = *vardims;
   }
 
   if (icentering) {
@@ -98,32 +93,39 @@ void vtkwritevector(int *ifull, int *iuds, float *u,
   }
 
   varnames = (char**)malloc(nvars*sizeof(char*));
-  if (stringlength) {
+  if (str_alloc) {
     for (i=0; i<nvars; i++)
-      varnames[i] = ivarnames + i*(*stringlength);
+      varnames[i] = ivarnames + i*(*str_alloc);
   } else {
     varnames[0] = ivarnames;
   }
 
-  udata = (float*)calloc(nvars*vardims_alloc*iuds[0]*iuds[1]*iuds[2],sizeof(float));
+  udata = (float*)calloc(nvars*dims_alloc*iuds[0]*iuds[1]*iuds[2],
+			 sizeof(float));
   vars = (float**)malloc(nvars*sizeof(float*));
   /*  Testing diagnostics.
-      fprintf(stderr,
+  fprintf(stderr,
 	  "Allocated udata. ifull %d %d %d; iuds %d %d %d. Pointer = %p\n"
 	  ,ifull[0],ifull[1],ifull[2],
 	  iuds[0],iuds[1],iuds[2],udata);
   fprintf(stderr,"xn %f %f %f %f %f\n",*xn, *(xn+1), *(xn+2), *(xn+3), *(xn+4));
-  fprintf(stderr,"Calling write. %f  %f  %f \n",*xn,*(xn+iuds[0]),*(xn+iuds[1])); */
+  for (i=0; i<nvars; i++) {
+    fprintf(stderr,"u(0,0,0,0,%d)=%f, vardims(%d)=%d, varnames[%d]=%s\n", i,
+	    *(u+i*dims_alloc*ifull[0]*ifull[1]*ifull[2]),
+	    i, vardims[i], i, varnames[i]);
+  }
+  //fprintf(stderr,"Calling write. %f  %f  %f \n",*xn,*(xn+iuds[0]),*(xn+iuds[1]));
+  */
 
   for (n=0; n<nvars; n++) {
-    vars[n] = udata + n*vardims_alloc*iuds[0]*iuds[1]*iuds[2];
+    vars[n] = udata + n*dims_alloc*iuds[0]*iuds[1]*iuds[2];
     for (k=0;k<iuds[2];k++){
       for (j=0;j<iuds[1];j++){
 	for (i=0;i<iuds[0];i++){
 	  /* Compactify the data, and make components the fast arg. */
 	  for (m=0;m<vardims[n];m++){
 	    *(vars[n]+m+vardims[n]*(i+iuds[0]*(j+iuds[1]*k)))
-	      =*(u+n*vardims_alloc*ifull[0]*ifull[1]*ifull[2]
+	      =*(u+n*dims_alloc*ifull[0]*ifull[1]*ifull[2]
 		 +i+ifull[0]*(j+ifull[1]*(k+ifull[2]*m)));
 	  }
 	}
@@ -132,7 +134,7 @@ void vtkwritevector(int *ifull, int *iuds, float *u,
   }
 
   if(*ibinary==0) binary=0;
-  write_rectilinear_mesh( (const char * const)filename , 
+  write_rectilinear_mesh( (const char * const)filename,
 			  binary, iuds, xn, yn, zn,
 			  nvars , vardims, centering,
 			  (const char * const *)varnames, vars);
@@ -145,18 +147,16 @@ void vtkwritevector_(int *ifull, int *iuds, float *u,
 		     float *xn, float *yn, float *zn,
 				int *ibinary,  int *ndims, char *filename, char *ivarnames) {
   vtkwritevector(ifull, iuds, u, xn, yn, zn, ibinary, ndims, filename,
-		 ivarnames, NULL, NULL, NULL, NULL, NULL);
+		 ivarnames, NULL, NULL, NULL, NULL);
 }
 
 void vtkwritevars_(int *ifull, int *iuds, float *u,
-		     float *xn, float *yn, float *zn,
-		     int *ibinary,  int *ndims, char *filename, char *ivarnames,
-		     int *stringlength, int *invars,
-		     int *ivardims, int *ivardims_alloc,
-		     int *icentering) {
-  vtkwritevector(ifull, iuds, u, xn, yn, zn, ibinary, ndims, filename,
-		 ivarnames, stringlength, invars, ivardims, ivardims_alloc,
-		 icentering);
+		   float *xn, float *yn, float *zn,
+		   int *ibinary,  int *vardims, char *filename,
+		   char *ivarnames, int *str_alloc, int *ivars,
+		   int *idims_alloc, int *icentering) {
+  vtkwritevector(ifull, iuds, u, xn, yn, zn, ibinary, vardims, filename,
+		 ivarnames, str_alloc, idims_alloc, ivars, icentering);
 }
 
 
