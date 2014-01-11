@@ -114,11 +114,20 @@ void vtkwritevector(int *ifull, int *iuds, float *u,
 	    *(u+i*dims_alloc*ifull[0]*ifull[1]*ifull[2]),
 	    i, vardims[i], i, varnames[i]);
   }
-  //fprintf(stderr,"Calling write. %f  %f  %f \n",*xn,*(xn+iuds[0]),*(xn+iuds[1]));
+  for (i=0; i<100; i++) {
+    fprintf(stderr,"u(0,0,0,0,%d)=%f\n", i,
+	    *(u+i+0*dims_alloc*ifull[0]*ifull[1]*ifull[2]));
+  }
+  fprintf(stderr,"Calling write. %f  %f  %f \n",*xn,*(xn+iuds[0]),*(xn+iuds[1]));
   */
 
   for (n=0; n<nvars; n++) {
     vars[n] = udata + n*dims_alloc*iuds[0]*iuds[1]*iuds[2];
+    for (i=0; i<3; i++) {
+      // NB: this doesn't work properly unless all or none centered
+      if (centering[n]==0)
+	iuds[i] -= 1;
+    }
     for (k=0;k<iuds[2];k++){
       for (j=0;j<iuds[1];j++){
 	for (i=0;i<iuds[0];i++){
@@ -130,6 +139,11 @@ void vtkwritevector(int *ifull, int *iuds, float *u,
 	  }
 	}
       }
+    }
+    for (i=0; i<3; i++) {
+      // NB: this doesn't work properly unless all or none centered
+      if (centering[n]==0)
+	iuds[i] += 1;
     }
   }
 

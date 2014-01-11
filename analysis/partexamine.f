@@ -1,7 +1,7 @@
       program partexamine
 c Examine the particle data, showing distribution function(s) for 
 c selected cell ranges.
-      include 'examdecl.f'
+      include 'examdecl.f' 
 c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       parameter (nfilemax=999)
       include '../partcom.f'
@@ -10,18 +10,22 @@ c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       character*10 chartemp
       character*100 name
       character*100 string
-
       logical ldoc
       real extra(nptdiag,mdims),diff(nptdiag,mdims)
 c Spatial limits bottom-top, dimensions
       real xlimit(2,mdims),xnewlim(2,mdims)
       real Bdirs(mdims+1)
 c Velocity limits
-      real vlimit(2,mdims)
+      real vlimit(2,mdims),wicell,wjcell,wkcell
       character*1 axnames(3)
       real vmean(mdims)
-      integer iuin(mdims)
+      real vtkxn(nsub_i+1),vtkyn(nsub_j+1),vtkzn(nsub_k+1)
+      integer iuin(mdims),vtkifull(mdims),vtkiuds(mdims),ibinary
+      integer ivtk,ip3index,ip,icentering(2*mdims)
+      integer ivardims(2*mdims),ivardims_alloc(2*mdims)
+      external ip3index
       data axnames/'x','y','z'/ 
+      character*200 ivarnames(2*mdims)
 
       nfmax=nfilemax
 c silence warnings:
@@ -40,7 +44,7 @@ c Overlapping vlimits make limitdeterm the usual setting method.
          vlimit(2,id)=-5.
       enddo
 
-      call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc)
+      call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc,ivtk)
       do id=1,mdims
 c Needed initialization removed from partacinit.
          xmeshstart(id)=min(-5.,xlimit(1,id))
@@ -58,6 +62,7 @@ c Needed initialization removed from partacinit.
      $        ,nsbins,' Incorrect array size choice.'
       endif
 c Now the base filename is in partfilename.
+
       ip=lentrim(partfilename)-3
       if(partfilename(ip:ip).eq.'.')then
 c If filename has a 3-character extension or is a numbered pex
@@ -75,7 +80,6 @@ c file. Should do this only the first time.
          name=partfilename
          write(*,*)'Reading numbered pex file ',name(1:lentrim(name))
       endif
-
 c Possible multiple files.
       do i=0,nfmax
          if(nfmax.ne.0)then
@@ -127,8 +131,77 @@ c         call bincalc()
          name(lentrim(name)-2:lentrim(name))='pex'
          call distwrite(xlimit,vlimit,xnewlim,name,cellvol)
       endif
+      
+c      write(*,*)'isfull'
+c      write(*,*)'isuds'
+c      write(*,*)'vsbin',vsbin
+c      write(*,*)'fvx',fvx
+      if (ivtk.eq.1)then
+         wicell=(xnewlim(2,1)-xnewlim(1,1))/isuds(1)
+         wjcell=(xnewlim(2,2)-xnewlim(1,2))/isuds(2)
+         wkcell=(xnewlim(2,3)-xnewlim(1,3))/isuds(3)
+         do i=1,isuds(1)+1
+            vtkxn(i)=xnewlim(1,1)+(i-1)*wicell
+         enddo
+         do j=1,isuds(2)+1
+            vtkyn(j)=xnewlim(1,2)+(j-1)*wjcell
+         enddo
+         do k=1,isuds(3)+1
+            vtkzn(k)=xnewlim(1,3)+(k-1)*wkcell
+         enddo
+         do i=1,mdims
+            vtkifull(i)=isfull(i)+1
+         enddo
+         do j=1,mdims
+            vtkiuds(j)=isuds(j)+1
+         enddo
+         ibinary=0
 
-
+         do i=1,isuds(1)
+            do j=1,isuds(2)
+               do k=1,isuds(3)
+                  do l=0,nsbins
+                     do m=1,mdims
+                        vtkudata(i,j,k,l,m)=vhbin(l,m)
+                     enddo
+                  enddo
+                  do l=1,nsbins
+                     do m=mdims+1,2*mdims
+                        ip=ip3index(isuds,i,j,k)+1
+                        vtkudata(i,j,k,l-1,m)=fvx(l,m-mdims,ip)
+                     enddo
+                  enddo
+               enddo
+            enddo
+         enddo
+         ivarnames(1)='vx'//char(0)
+         ivarnames(2)='vy'//char(0)
+         ivarnames(3)='vz'//char(0)
+         ivarnames(4)='fvx'//char(0)
+         ivarnames(5)='fvy'//char(0)
+         ivarnames(6)='fvz'//char(0)
+         do i=1,2*mdims
+            icentering(i)=0
+         enddo         
+         do i=1,mdims
+            ivardims(i)=nsbins+1
+            ivardims_alloc(i)=nsbins+1
+         enddo
+         do i=mdims+1,2*mdims
+            ivardims(i)=nsbins
+            ivardims_alloc(i)=nsbins+1
+         enddo
+         call vtkwritevars(vtkifull,vtkiuds
+     $        ,vtkudata
+     $        ,vtkxn,vtkyn
+     $        ,vtkzn
+     $        ,ibinary,ivardims
+     $        ,partfilename(1:lentrim(partfilename))//char(0)
+     $        ,ivarnames,200
+     $        ,2*mdims,ivardims_alloc
+     $        ,icentering) 
+      else
+             
       call multiframe(2,1,2)
       do id=1,mdims
          do k=1,nsbins
@@ -161,7 +234,10 @@ c         write(*,*)nsbins
          call color(13)
 c         call polybox(vhbin(0,id),extra(1,id),nsbins)
 c         call polybox(vhbin(0,id),diff(1,id),nsbins)
+c         write(*,*) 'vdiag'
 c         write(*,*)(vdiag(kk,id),kk=1,nptdiag)
+c         write(*,*) 'fv'
+c         write(*,*) (fv(kk,id),kk=1,nptdiag)
 c         write(*,*)(vsbin(kk,id),kk=1,nsbins)
 c         write(*,*)(fsv(kk,id),kk=1,nsbins)
          call color(15)
@@ -210,19 +286,21 @@ c Plot the subdistributions at a particular cell.
       jcell=isuds(2)/2+1
       kcell=isuds(3)/2+1
       call pltsubdist(icell,jcell,kcell,vlimit,xnewlim,cellvol)
-
+      endif                   
       end
 c*************************************************************
-      subroutine partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc)
+      subroutine partexamargs(xlimit,vlimit
+     $           ,iuin,cellvol,Bdirs,ldoc,ivtk)
       include 'examdecl.f'
       real xlimit(2,3),vlimit(2,3),Bdirs(4)
       integer iuin(3)
       logical ldoc
-
+      integer ivtk
 c I think unused here 26 May 12. But I'm not sure.
       ifull(1)=na_i
       ifull(2)=na_j
       ifull(3)=na_k
+      ivtk=0
 
       do i=1,3
          iuin(i)=9
@@ -252,6 +330,8 @@ c Deal with arguments
                read(argument(3:),*,err=201) xlimit(1,3),xlimit(2,3)
             elseif(argument(1:2).eq.'-u')then
                read(argument(3:),*,err=201) vlimit(1,1),vlimit(2,1)
+            elseif(argument(1:4).eq.'-vtk')then
+               ivtk=1
             elseif(argument(1:2).eq.'-v')then
                read(argument(3:),*,err=201) vlimit(1,2),vlimit(2,2)
             elseif(argument(1:2).eq.'-w')then
@@ -307,6 +387,7 @@ c Help text
       write(*,302)' -p[bx,by,bz]  project [in direction]   [',Bdirs
       write(*,301)' -f   set name of partfile.'
       write(*,301)' -h -?   Print usage.'
+      write(*,301)' -vtk   Output distribution function vtk files.'
       call exit(0)
  202  continue
       if(lentrim(partfilename).lt.5)then

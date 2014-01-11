@@ -25,6 +25,7 @@ c However, they functionally only set defaults and the total nsub_tot.
       real vhbin(0:nsbins,mdims)
       real fvx(nsbins,mdims,nsub_tot)
       real denfvx(nsub_tot)
+      real vtkudata(nsub_i+1,nsub_j+1,nsub_k+1,0:nsbins,2*mdims)
 c ibinmap is the map from uniform to combined bins
 c vsbin is the center velocity of the combined bins
 c csbin is the number of fine bins in each combined bin
@@ -33,4 +34,4 @@ c     accumulation and bin calculation.
 c vhbin is the histogram boundaries of the combined bins
 c All of these must be common to all processes.
       common /subdiag/ibinmap,isfull,isuds,vsbin,csbin,vhbin,fsv,fvx
-     $     ,denfvx
+     $     ,denfvx,vtkudata
