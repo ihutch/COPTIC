@@ -260,7 +260,8 @@ c	 call hidvecn(-scby3,-scbz3,1)
       end
 c***********************************************************************
 c Version that finds the right corner to hide lines from.
-      subroutine cubeproj()
+c And returns it to caller.
+      subroutine cubeproj(icorner)
       call geteye(x2,y2,z2)
       if(y2.le.0.)then 
          if(x2.le.0.)then
@@ -302,7 +303,6 @@ c Draw projected axes using the current projection according to ic.
       data ixc/-1,-1,1,1,-1,-1/iyc/1,-1,-1,1,1,-1/
 c
       
-      call ticnumget(inticnum)
       yhoriz=(ic/64 - (ic/128)*2) .eq.0
       xhoriz=(ic/32 - (ic/64)*2) .eq.0
       flip=(ic/16 - (ic/32)*2) .ne.0

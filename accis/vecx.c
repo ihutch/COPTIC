@@ -265,6 +265,17 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
   return 0;
 }
 
+void accisclear_()
+{
+  XSetForeground(accis_display,accis_gc,accis_pixels[0]);  
+  if(accis_back==0)XFillRectangle(accis_display,accis_window,accis_gc,0,0,
+		 s_s.width,s_s.height);
+  /* Clear the pixmap  */
+  XFillRectangle(accis_display,accis_pixmap,accis_gc,0,0,
+		 s_s.width,s_s.height);
+  XSetForeground(accis_display,accis_gc,accis_pixels[15]); 
+}
+
 /************************************************************************/
 int is_truecolor()
 {  

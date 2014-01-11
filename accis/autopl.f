@@ -137,7 +137,7 @@ C We assume we want to preserve metric of the geometry, so:
 c Need a way to determine eye position. Use defaults.
       call geteye(x2,y2,z2)
       call pltinit(0.,1.,0.,1.)
-      call SCALE3(xmin(1),xmax(1),xmin(2),xmax(2),xmin(3),xmax(3))
+      call scale3(xmin(1),xmax(1),xmin(2),xmax(2),xmin(3),xmax(3))
       call trn32(0.,0.,0.,x2,y2,z2,1)
 c determine icorner:
       xb=0

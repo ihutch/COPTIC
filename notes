@@ -10853,3 +10853,10 @@ Fixed small grid error in red-black iteration so it works for grids
 as short as 3. (One point plus two boundaries).
 
 
+11 Jan 14
+
+Discovered a problem with the reorganization of meshcom.f to include griddecl
+It is that in analysis (or any other directory) we can't include meshcom.f
+unless griddecl.f is also in this directory, because when including meshcom
+griddecl.f can't otherwise be found. meshcom.f includes griddecl only
+after 4 Dec 13.
