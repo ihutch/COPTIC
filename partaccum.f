@@ -517,13 +517,11 @@ c**********************************************************************
       do i=1,mdims
          isftot=isftot*isfull(i)
       enddo
-c This does not seem to be necessary since the nsubs only determine
-c the total allocation and defaults that are already overridden.
-c      if(nsbf.ne.nsbins .or. isfull(1).ne.nsub_i .or.
-c     $     isfull(2).ne.nsub_j .or. isfull(3).ne.nsub_k) goto 103
+c Check if the nsbins is correct and there's enough storage.
+      if(nsbf.ne.nsbins)goto 103
       if(isftot.gt.nsub_tot)goto 103
       read(25)(((fvx(i,j,k),i=1,nsbins),j=1,mdims),k=1,isftot)
-      read(25)(denfvx(k),k=1,isfull(1)*isftot)
+      read(25)(denfvx(k),k=1,isftot)
       read(25)((vsbin(i,j),csbin(i,j),fsv(i,j),i=1,nsbins),
      $     (vhbin(i,j),i=0,nsbins),j=1,mdims)
       read(25)((ibinmap(i,j),i=1,nptdiag),j=1,mdims)
