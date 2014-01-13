@@ -215,6 +215,7 @@ c Plot the subdistributions at a particular cell.
 c*************************************************************
       subroutine partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc)
       include 'examdecl.f'
+      include '../ptaccom.f'
       real xlimit(2,3),vlimit(2,3),Bdirs(4)
       integer iuin(3)
       logical ldoc
@@ -298,12 +299,13 @@ c Help text
  203  continue
  301  format(a,i5)
  302  format(a,4f8.3)
+ 303  format(a,5i5)
       write(*,301)'Usage: partexamine [switches] <partfile> (no ext)'
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [ccpicgeom.dat'
       write(*,301)' -x -y -z<fff,fff>  set position range. [ -5,5'
       write(*,301)' -u -v -w<fff,fff>  set velocity range. [ -5,5'
-      write(*,301)' -b<nx,ny,nz>  set spatial block range. [',iuin(1)
+      write(*,303)' -b<nx,ny,nz>  set spatial block range. [',iuin
       write(*,302)' -p[bx,by,bz]  project [in direction]   [',Bdirs
       write(*,301)' -f   set name of partfile.'
       write(*,301)' -h -?   Print usage.'

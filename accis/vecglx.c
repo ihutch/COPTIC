@@ -30,7 +30,7 @@ static Pixmap accis_pixmap;
 static GLint  accis_att[] = { GLX_RGBA, /* Truecolor and Directcolor */
 			      /*GLX_ACCUM_RED_SIZE,8, /* Require accum */
 			      GLX_DEPTH_SIZE, 24, /* Depth 24 */
-			      GLX_DOUBLEBUFFER, /* */
+			      GLX_DOUBLEBUFFER,/* */
 			      None };
 static XVisualInfo             *accis_vi;
 static Colormap                accis_cmap;
@@ -242,7 +242,6 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
 /*Start of OpenGL calls ******************/
     accis_glc = glXCreateContext(accis_display, accis_vi, NULL, GL_TRUE);
     glXMakeCurrent(accis_display, accis_window, accis_glc);
-/*    printf("Finished glXCreateContext\n");  */
     /* All writes into both buffers at once  */
     glDrawBuffer(GL_FRONT_AND_BACK); 
     /* reads from the back buffer */
@@ -376,14 +375,7 @@ void initDefaultColors()
       } /* Redraw everything.*/					      \
       glCallList(1);						      \
       glXSwapBuffers(accis_display,accis_window);		\
-      glFlush(); /* Proves to be necessary for remote servers. */	\
-      /*      printf("Expose action\n");				\*/
-      /* The following did not work well. Stuff got written misaligned. */
-/*       glDrawBuffer(GL_BACK);\ */
-/*       glCallList(1);\ */
-/*       glFlush(); /\* Proves to be necessary for remote servers. *\/\ */
-/*       glXSwapBuffers(accis_display,accis_window);	\*/
-/*       glDrawBuffer(GL_FRONT_AND_BACK); */
+      glFlush(); /* Proves to be necessary for remote servers. */ 
 
 /* ******************************************************************** */
 /* End plotting */
@@ -497,8 +489,7 @@ void accisrefresh_()
     it works with just two calls. In other words one does not have to
     GL_LOAD first. Also glFlush works as good as glXSwapBuffers*/
   /*glAccum(GL_LOAD,1.);*/
-  /* glXSwapBuffers(accis_display, accis_window); */
-  glFlush();
+  glFlush();  /* glXSwapBuffers(accis_display, accis_window); */
   /* this alternative attempt does not work: 
      glXWaitGL();XSync(accis_display,False);glXWaitX();*/
   glAccum(GL_RETURN,1.);

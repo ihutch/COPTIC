@@ -10859,4 +10859,8 @@ Discovered a problem with the reorganization of meshcom.f to include griddecl
 It is that in analysis (or any other directory) we can't include meshcom.f
 unless griddecl.f is also in this directory, because when including meshcom
 griddecl.f can't otherwise be found. meshcom.f includes griddecl only
-after 4 Dec 13.
+after 2 Dec 13.
+
+Adjust distread in partaccum.f not to require the individual nsubs to be
+correct, only that there's enough total space allocated. Also make
+more consistent so there are no assumed number of dimensions.

@@ -411,9 +411,9 @@ c Deal with arguments
             endif
             if(argument(1:2).eq.'-h')goto 203
             if(argument(1:2).eq.'-?')goto 203
-            if(argument(1:2).eq.'-f')goto 204
+c            if(argument(1:2).eq.'-f')goto 204
          else
- 204        read(argument(1:),'(a)',err=201)phifilename
+            read(argument(1:),'(a)',err=201)phifilename
 c               write(*,*)ild, idj
             do k=1,ndims_mesh-1
                ilinechoice(mod(ild+k-1,ndims_mesh)+1,nf)=idj(k)
