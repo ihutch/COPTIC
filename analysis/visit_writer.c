@@ -377,12 +377,12 @@ void write_variables(int nvars, int *vardim, int *centering,
             int num_to_write = 0;
             int should_write = 0;
 
-            if (vardim[i] == 1)
+            if (vardim[i] != 3)
             {
                 if (first_scalar == 0)
                 {
                     should_write = 1;
-                    sprintf(str, "SCALARS %s float\n", varname[i]);
+                    sprintf(str, "SCALARS %s float %d\n", varname[i], vardim[i]);
                     write_string(str);
                     write_string("LOOKUP_TABLE default\n");
                     first_scalar = 1;
@@ -390,7 +390,7 @@ void write_variables(int nvars, int *vardim, int *centering,
                 else 
                     num_scalars++;
             }
-            else if (vardim[i] == 3)
+            else
             {
                 if (first_vector == 0)
                 {
@@ -401,12 +401,6 @@ void write_variables(int nvars, int *vardim, int *centering,
                 }
                 else 
                     num_vectors++;
-            }
-            else
-            {
-                printf("Only supported variable dimensions are 1 and 3.\n");
-                printf("Ignoring variable %s.\n", varname[i]);
-                continue;
             }
 
             if (should_write)
@@ -431,7 +425,7 @@ void write_variables(int nvars, int *vardim, int *centering,
             int should_write = 0;
             if (centering[i] == 0)
             {
-                if (vardim[i] == 1)
+                if (vardim[i] != 3)
                 {
                     if (first_scalar == 0)
                     {
@@ -440,7 +434,7 @@ void write_variables(int nvars, int *vardim, int *centering,
                     else
                     {
                         should_write = 1;
-                        sprintf(str, "%s 1 %d float\n", varname[i], ncells);
+                        sprintf(str, "%s %d %d float\n", varname[i], vardim[i], ncells);
                         write_string(str);
                     }
                 }
@@ -516,12 +510,12 @@ void write_variables(int nvars, int *vardim, int *centering,
             int num_to_write = 0;
             int should_write = 0;
 
-            if (vardim[i] == 1)
+            if (vardim[i] != 3)
             {
                 if (first_scalar == 0)
                 {
                     should_write = 1;
-                    sprintf(str, "SCALARS %s float\n", varname[i]);
+                    sprintf(str, "SCALARS %s float %d\n", varname[i], vardim[i]);
                     write_string(str);
                     write_string("LOOKUP_TABLE default\n");
                     first_scalar = 1;
@@ -529,7 +523,7 @@ void write_variables(int nvars, int *vardim, int *centering,
                 else 
                     num_scalars++;
             }
-            else if (vardim[i] == 3)
+            else
             {
                 if (first_vector == 0)
                 {
@@ -540,12 +534,6 @@ void write_variables(int nvars, int *vardim, int *centering,
                 }
                 else 
                     num_vectors++;
-            }
-            else
-            {
-                printf("Only supported variable dimensions are 1 and 3.\n");
-                printf("Ignoring variable %s.\n", varname[i]);
-                continue;
             }
 
             if (should_write)
@@ -570,7 +558,7 @@ void write_variables(int nvars, int *vardim, int *centering,
             int should_write = 0;
             if (centering[i] != 0)
             {
-                if (vardim[i] == 1)
+                if (vardim[i] != 3)
                 {
                     if (first_scalar == 0)
                     {
@@ -579,7 +567,7 @@ void write_variables(int nvars, int *vardim, int *centering,
                     else
                     {
                         should_write = 1;
-                        sprintf(str, "%s 1 %d float\n", varname[i], npts);
+                        sprintf(str, "%s %d %d float\n", varname[i], vardim[i], ncells);
                         write_string(str);
                     }
                 }
