@@ -491,7 +491,8 @@ c*******************************************************************
       enddo
       cellvol=1.
       do id=1,mdims
-         cellvol=cellvol*(xnewlim(2,id)-xnewlim(1,id))/isfull(id)
+c         cellvol=cellvol*(xnewlim(2,id)-xnewlim(1,id))/isfull(id)
+         cellvol=cellvol*(xnewlim(2,id)-xnewlim(1,id))/isuds(id)
 c         write(*,*)xnewlim(2,id),xnewlim(1,id)
       enddo
 c      write(*,*)'cellvol=',cellvol
