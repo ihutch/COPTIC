@@ -302,6 +302,15 @@ coptic.prof : compiler makefile $(OBJECTS)
 	$(GCURR)
 
 help :
-	@echo Targets: clean mproper ftnchek tree coptic.prof
-	@echo Tests: geometry testing 
+	@echo Targets: clean mproper ftnchek tree coptic.prof vecx
+	@echo Tests:   geometry testing testanal
 
+testanal : 
+	make clean
+	make -C analysis clean
+	make
+	make -C analysis
+	analysis/partexamine -vtk T1e0v000P200L1e0z005x05
+	analysis/phiexamine T1e0v000P200L1e0z005x05.pha -w
+	analysis/fluxexamine -q T1e0v000P200L1e0z005x05.flx
+	@echo "******* Completed tests with no obvious analysis errors."

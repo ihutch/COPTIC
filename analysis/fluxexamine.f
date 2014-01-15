@@ -351,7 +351,7 @@ c         if(iplot.eq.1)
 c Read more arguments if there are any.
       if(iarg1.le.iargc())goto 11
       
-      call exit(1)
+      call exit(0)
  201  write(*,*)'Usage: fluxexamine [filename '//
      $     '-n1fff -n2fff -piii -wiii -rfff -iiii ...]'
       write(*,*)'Read back flux data from file and display.'
