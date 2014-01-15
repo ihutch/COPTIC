@@ -1,15 +1,13 @@
       program sortest
 c Main program of cartesian coordinate solver 
       include '../objcom.f'
-c Storage array spatial count size
-      include '../griddecl.f'
+c Mesh spacing description structure
+      include '../meshcom.f'
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
      $     ,cij(2*ndims_cij+1,na_i,na_j,na_k)
       real volumes(na_i,na_j,na_k)
 c Used dimensions, Full dimensions. Used dims-2
       integer iuds(ndims_cij),ifull(ndims_cij),ium2(ndims_cij)
-c Mesh spacing description structure
-      include '../meshcom.f'
 c Processor cartesian geometry can be set by default.
       integer nblksi,nblksj,nblksk
       parameter (nblksi=1,nblksj=1,nblksk=1)
