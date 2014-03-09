@@ -17,7 +17,10 @@ c e.g. point-charge objects.
       logical linregion
       include 'meshcom.f'
       real xm(ndims_mesh),xi(ndims_mesh),xp(ndims_mesh)
-      parameter (npoints=10000)
+c      parameter (npoints=10000)
+c Sobel numbers are more "favorable" if the number of them is 2^k
+c where k>6 (for 3 dimensions). So make it a power of 2.
+      parameter (npoints=2**13)
 c Structure vector needed for finding adjacent u values.
       integer iLs(ndims+1)
       include 'myidcom.f'
@@ -85,7 +88,10 @@ c We are inside a point-charge region.
 
       end
 c********************************************************************
-c Volume integrations by monte-carlo.  For a node i in the mesh the
+c Volume integrations by monte-carlo.  
+c New version using Sobel quasi-random numbers from toms659.
+c Using intrinsic IEOR it is faster than using rand. And less noisy.
+c For a node i in the mesh the
 c cic-volume is the integral of 1-|f| from x_{i-1}=xm to x_{i+1}=xp,
 c where f is the mesh-fractional distance from x_i.  This integration is
 c performed in each dimension.  To do this integration using monte-carlo
@@ -104,11 +110,76 @@ c examined.
 
       parameter (mdims=10)
       real x(mdims)
+      double precision qrn(mdims)
+      include '3dcom.f'
+      external linregion
+      logical linregion
+C     .. Scalar Arguments ..
+      INTEGER ATMOST,DIMEN,TAUS
+C     ..
+C     .. Array Arguments ..
+      LOGICAL FLAG(2)
+C     ..
+
+      ATMOST=npoints
+      DIMEN=ndims
+      wtot=0.
+      vmax=0.
+      vmin=1.e30
+      call INSOBL(FLAG,DIMEN,ATMOST,TAUS)
+      do i=1,npoints
+         call GOSOBL(qrn)
+         w=1.
+         do id=1,ndims
+            p=qrn(id)
+c            p=rand()
+            x(id)=xp(id)*p+xm(id)*(1-p)
+            f=x(id)-xi(id)
+            if(f.lt.0)then
+               f=f/(xm(id)-xi(id))
+            else
+               f=f/(xp(id)-xi(id))
+            endif
+            w=w*(1.-f)*(xp(id)-xm(id))
+         enddo
+         if(linregion(ibool_part,ndims,x))wtot=wtot+w
+c         if(npoints-i.lt.100)then
+c            v=wtot/i
+c            if(v.gt.vmax)vmax=v
+c            if(v.lt.vmin)vmin=v
+c         endif
+      enddo
+      volintegrate=wtot/npoints
+c      write(*,'(i6,f8.5,'' +-fraction'',f7.4,f7.4)')npoints,volintegrate
+c     $     ,(vmax-volintegrate)/vmax,(volintegrate-vmin)/vmax
+      end
+c********************************************************************
+c Volume integrations by monte-carlo.  For a node i in the mesh the
+c cic-volume is the integral of 1-|f| from x_{i-1}=xm to x_{i+1}=xp,
+c where f is the mesh-fractional distance from x_i.  This integration is
+c performed in each dimension.  To do this integration using monte-carlo
+c techniques, for each direction, we choose a random position uniformly
+c between x_{i-1} and x_{i+1}; (not uniform in mesh-fraction, although a
+c scheme could be constructed uniform in mesh-fraction, which would
+c probably be slightly less efficient); we weight by
+c (1-|f|)(x_{i+1}-x_{i-1}). Then if it is in the region we add it on. If
+c not we throw away. Eventually we divide by the total number of points
+c examined.
+
+      real function volintegrate0(ndims,xm,xi,xp,npoints)
+
+      real xm(ndims),xi(ndims),xp(ndims)
+      integer npoints
+
+      parameter (mdims=10)
+      real x(mdims)
       include '3dcom.f'
       external linregion
       logical linregion
 
       wtot=0.
+      vmax=0.
+      vmin=1.e30
       do i=1,npoints
          w=1.
          do id=1,ndims
@@ -128,9 +199,16 @@ c            x(id)=(xp(id)-xm(id))*p+xm(id)
             w=w*(1.-f)*(xp(id)-xm(id))
          enddo
          if(linregion(ibool_part,ndims,x))wtot=wtot+w
+c         if(npoints-i.lt.100)then
+c            v=wtot/i
+c            if(v.gt.vmax)vmax=v
+c            if(v.lt.vmin)vmin=v
+c         endif
       enddo
       volintegrate=wtot/npoints
-
+c      write(*,'(i6,f8.5,'' +-fraction'',f7.4,f7.4)')npoints,volintegrate
+c     $     ,(vmax-volintegrate)/vmax,(volintegrate-vmin)/vmax
+      volintegrate0=volintegrate
       end
 c**********************************************************************
 c Read and/or write geometric information.

@@ -19,7 +19,7 @@ c    Axis labels.   */
       return
       end
 c***********************************************************************
-      subroutine axident3()
+      subroutine axident3old()
       include 'world3.h'
 c draw an axis orientation
       call trn32(-scbx3,-scby3,0.7*scbz3,x2,y2,z2,0)
@@ -31,6 +31,10 @@ c draw an axis orientation
       call trn32(-scbx3,0.7*scby3,-scbz3,x2,y2,z2,0)
       call vecn(x2+xcbc2,y2+ycbc2,0)
       call drcstr('!B y!@')
+      end
+c***********************************************************************
+      subroutine axident3()
+      call ax3labels('           x','           y','      z')
       end
 c***********************************************************************
       subroutine boxtitle(title)

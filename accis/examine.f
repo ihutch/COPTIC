@@ -33,25 +33,6 @@ c Set the new transform and redraw the cube.
       call cubed(0)
       end
 c***************************************************************************
-      subroutine viewrotorig(xmoved,ymoved,x0,y0,z0,xn,yn,zn)
-c return new eye position rotated around origin by xmoved,ymoved.
-      real xmoved,ymoved,x0,y0,z0,xn,yn,zn
-      real dist2ang
-      parameter (dist2ang=.005)
-      rp0=(x0*x0 + y0*y0)
-      r0 = sqrt(rp0+z0*z0)
-      if(r0.eq.0.) stop 'Viewrot error: zero initial length'
-      tht=-dist2ang*xmoved
-      xn=x0*cos(tht) - y0*sin(tht)
-      yn=x0*sin(tht) + y0*cos(tht)
-      zn=z0+ymoved*.1*sqrt(rp0)/r0 
-      rn=sqrt(xn*xn + yn*yn + zn*zn)
-      if(rn.eq.0.) stop 'Viewrot error: zero length'
-      xn=r0*xn/rn
-      yn=r0*yn/rn
-      zn=r0*zn/rn
-      end
-c***************************************************************************
       subroutine viewrot(xmoved,ymoved,x0,y0,z0,xn,yn,zn)
 c return new eye position rotated around origin by xmoved,ymoved.
       real xmoved,ymoved,x0,y0,z0,xn,yn,zn

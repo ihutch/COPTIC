@@ -1,5 +1,23 @@
 c*********************************************************************
+c Routines for writing drawing commands to output 'plotter' files.
+c The only format-dependent actions we need are
+c 1. inib Initialize the file and some of the strings.
+c 2. vecnp draw a line with pen up or down.
+c 3. pathfill fill (non-destructively) the path just drawn.
+c 4. gradcolor set a color from the gradient.
+c 5. asleep sleep before executing next graphics commands
+c 6. npgradtri attempt to draw a triangle gradient.
+c 7. zerolinewidth set linewidth zero for color contouring.
+c 8. npcolor write the 16-color change command.
+c 9. flushb flush remaining writes, postlude, and close file.
+c*********************************************************************
+c Postscript (2,3) and PCL (1) are drawn to unit 12.
+c pgf (4,5) to unit 13.
+c*********************************************************************
 c        Draw a vector to the plotter file, normalized coords   */
+c On input ud=0 indicates moveto/pen-up; ud=1 lineto/pen-down; 
+c ud=2 lift pen but don't draw; ud=3 stroke (don't move) and disable
+c the stroke at the start of the next move by putting updown=99.
       subroutine vecnp(nx,ny,ud)
       real nx,ny
       integer ud
@@ -9,57 +27,73 @@ c      integer updown in common set to 99 by blockdata or color.
       integer plx,ply
       common /plcoord/ plx,ply
 
+      integer ipsunit,ipgunit
+      parameter (ipsunit=12,ipgunit=13)
       integer ipscale
       parameter (ipscale=10)
 c Bigger scale is supposed to prevent rounding problems. See 1016 below.
-      character*4 pu,pd, spc, endpair
-      character*17 postlude
-      character*300 prelude
-      integer nr,nu,nd,ns,ne,no
-      common /pltfc/pu,pd,spc,endpair,postlude,prelude
-      common /pltfi/nr,nu,nd,ns,ne,no
-
-c Difference form, requires M and D to be rmoveto, rdrawto: relative.
-c Caused rounding erros in gs in some rare cases.
-c      pldx=int(ipscale*(25+1000*nx)) - plx
-c      pldy=int(ipscale*(25+1000*ny)) - ply
-c      plx=plx+pldx
-c      ply=ply+pldy
+      include 'npcom.f'
 c Absolute form
       pldx=int(ipscale*(25+1000*nx))
       pldy=int(ipscale*(25+1000*ny))
       plx=pldx
       ply=pldy
-c postscript section
       if(abs(pfsw).eq.2.or.abs(pfsw).eq.3)then
+c Postscript section
 	 if(updown.ne.ud)then
-	    if(ud.eq.0)call abufwrt(endpair,ne,12)
+c Not sure in PS.
+	    if(ud.ne.1.and.updown.ne.99)call abufwrt(endpair,ne,ipsunit)
+c	    if(ud.ne.1)call abufwrt(endpair,ne,ipsunit)
 	    updown=ud
 	 endif
-	 call ibufwrt(pldx,12)
-	 call abufwrt(spc,ns,12)
-	 call ibufwrt(pldy,12)
-	 call abufwrt(spc,ns,12)
-	 if(ud.ne.0)then
-	    call abufwrt(pd,nd,12)
-c	    updown=ud
+c ud=2 signals pen-up but don't draw this position.
+         if(ud.eq.2)return
+         if(ud.eq.3)then
+            updown=99
+            return
+         endif
+	 call ibufwrt(pldx,ipsunit)
+	 call abufwrt(spc,ns,ipsunit)
+	 call ibufwrt(pldy,ipsunit)
+	 call abufwrt(spc,ns,ipsunit)
+	 if(ud.eq.1)then
+	    call abufwrt(pd,nd,ipsunit)
 	 else
-	    call abufwrt(pu,nd,12)
+	    call abufwrt(pu,nd,ipsunit)
 	 endif
+      elseif(abs(pfsw).eq.4.or.abs(pfsw).eq.5)then
+c pgfgraphics
+	 if(updown.ne.ud)then
+	    if(ud.ne.1 .and. updown.ne.99)write(ipgunit,*)only(1:ns)
+     $           ,'\pgfusepath{stroke}'
+	    updown=ud
+	 endif
+         if(ud.eq.2)return
+         if(ud.eq.3)updown=99
+         if(ud.eq.1)then
+            write(ipgunit,*)only(1:ns),'\pgfpathlineto{\pgfpointxy{'
+     $           ,pldx,'}{',pldy ,'}}'
+         elseif(ud.eq.0)then
+            write(ipgunit,*)only(1:ns),'\pgfpathmoveto{\pgfpointxy{'
+     $           ,pldx,'}{',pldy,'}}'
+         endif
       else
+c PCL
 	 if(ud.ne.updown)then
 	    updown=ud
-	    if(ud.ne.0)then
-	       call abufwrt(pd,nd,12)
-	    else
-	       call abufwrt(pu,nu,12)
+	    if(ud.eq.1)then
+	       call abufwrt(pd,nd,ipsunit)
+	    elseif(ud.eq.0)then
+	       call abufwrt(pu,nu,ipsunit)
+            else
+               return
 	    endif
 	 else 
-	    call abufwrt(endpair,ne,12)
+	    call abufwrt(endpair,ne,ipsunit)
 	 endif
-	 call ibufwrt(pldx,12)
-	 call abufwrt(spc,ns,12)
-	 call ibufwrt(pldy,12)
+	 call ibufwrt(pldx,ipsunit)
+	 call abufwrt(spc,ns,ipsunit)
+	 call ibufwrt(pldy,ipsunit)
       endif
       return
       end
@@ -76,19 +110,455 @@ c*********************************************************************/
       integer plx,ply
       common /plcoord/ plx,ply
 
-      character*4 pu,pd, spc,endpair
-      character*17 postlude
-      character*300 prelude
-      integer nr,nu,nd,ns,ne,no
-      common /pltfc/pu,pd,spc,endpair,postlude,prelude
-      common /pltfi/nr,nu,nd,ns,ne,no
-      character*1745 ca
+      include 'npcom.f'
+
+      itunit=iunit+1
+c      write(*,*)'Starting inib',iunit,'  ',filen
+c The following ensures we can open the file for writing. If not then 
+c an error condition exists.
+      open(unit=iunit,FILE=filen,status='unknown',err=901)
+      close(unit=iunit,status='delete',err=901)
+      open(unit=iunit,FILE=filen,status='new',err=901)
+      sblen=1
+      if(abs(pfsw).eq.1)then
+c PCL
+	 pu=';PU'
+	 nu=3
+	 pd=';PD'
+	 nd=3
+	 spc=','
+	 ns=1
+	 endpair=','
+	 ne=1
+	 postlude=';PG'//char(26)
+	 no=4
+	 prelude= '   ;SP1;PU0,0;PR;'
+c        move plot pen to (0,0), switch to relative plotting.
+	 nr=17
+	 call abufwrt(prelude,nr,iunit)
+         updown=99
+      elseif(abs(pfsw).eq.2 .or.abs(pfsw).eq.3)then
+c PS
+	 pu='M '
+	 nu=2
+	 pd='D '
+	 nd=2
+	 spc=' '
+	 ns=1
+	 endpair='ST '
+	 ne=3
+	 if(abs(pfsw).eq.3)then
+	    postlude='grestore'
+	    no=8
+	 elseif(abs(pfsw).eq.2)then
+	    postlude='showpage grestore'
+	    no=17
+	 endif
+         call psheader(iunit,pfsw)
+	 if(abs(pfsw).eq.2)then
+c Landscape, PS'.
+	    write(iunit,*)' 8000  0 translate 90 rotate 0 0 MT'
+            write(iunit,'(a)')'%%EndProlog'
+            write(iunit,'(a)')'%%PageOrientation: Landscape'
+	 elseif(abs(pfsw).eq.3)then
+            write(iunit,*)' 0.8 dup scale'
+         endif
+         updown=0
+      elseif(abs(pfsw).eq.4)then
+c PGF. 
+c Define postlude etc.
+         postlude='\end{pgfpicture}'
+c Write out the header. Start with possible warning about \pgffillsave
+ 8       format(9a)
+         write(iunit,8
+     $        )'\ifx\undefined\pgffillsave\gdef\pgffillsave{\message{**'
+     $        ,'**** You must'
+         write(iunit,8
+     $        )'    uncomment the pgfillsave code outside a beamer fra'
+     $        ,'me ****** }}\fi'
+         write(iunit,8)'%\makeatletter'
+         write(iunit,8
+     $        )'%\def\pgffillsave{\pgfsyssoftpath@getcurrentpath\mysof'
+     $        ,'tpath\pgfusepath{fill}'
+         write(iunit,8)'%\pgfsyssoftpath@setcurrentpath\mysoftpath}'
+         write(iunit,8)'%\makeatother'
+         write(iunit,*)'\begin{pgfpicture}','\pgfsetroundjoin'
+c Set the pgfxy-scaling so that unit normal, which is 10000 plot units
+c is 100 mm.
+         write(iunit,*)'\pgfsetxvec{\pgfpoint{0.01mm}{0pt}}'
+         write(iunit,*)'\pgfsetyvec{\pgfpoint{0pt}{.01mm}}'
+c Use the integer ne  for frame counter
+         ne=1
+         only=''
+         ns=lntrim(only)
+      elseif(abs(pfsw).eq.5)then
+c PGF animateinline with timeline
+         ilast=lntrim(filen)
+         filen(ilast:ilast)='t'
+c Open timeline file for writing
+         open(unit=itunit,FILE=filen,status='unknown',err=901)
+         close(unit=itunit,status='delete',err=901)
+         open(unit=itunit,FILE=filen,status='new',err=901)
+         ne=0
+         write(itunit,*)':: 0x0'
+c Write header         
+         write(iunit,8
+     $        )'\ifx\undefined\pgffillsave\gdef\pgffillsave{\message{**'
+     $        ,'**** You must'
+         write(iunit,8
+     $        )'    uncomment the pgfillsave code outside a beamer fra'
+     $        ,'me ****** }}\fi'
+         write(iunit,8)'%\makeatletter'
+         write(iunit,8
+     $        )'%\def\pgffillsave{\pgfsyssoftpath@getcurrentpath\mysof'
+     $        ,'tpath\pgfusepath{fill}'
+         write(iunit,8)'%\pgfsyssoftpath@setcurrentpath\mysoftpath}'
+         write(iunit,8)'%\makeatother'
+         write(iunit,8)'\begin{animateinline}['
+         write(iunit,8)'  timeline=',filen(1:lntrim(filen)),','
+         write(iunit,8)'  begin={'
+         write(iunit,8)'   \begin{pgfpicture}'
+         write(iunit,8)'    \pgfsetxvec{\pgfpoint{0.01mm}{0pt}}'
+         write(iunit,8)'    \pgfsetyvec{\pgfpoint{0pt}{.01mm}}'
+         write(iunit,8)'    \pgfpathrectangle{\pgfpointorigin}',
+     $        '{\pgfpoint{10cm}{7.5cm}}'
+         write(iunit,8)'    \pgfusepath{use as bounding box}'
+     $        ,'\pgfsetroundjoin'
+c An alternative might be \pgfsetmiterlimit{3}
+         write(iunit,8)'  },'
+         write(iunit,8)'  end={\end{pgfpicture}},'
+         write(iunit,8)'  loop,autoplay'
+         write(iunit,8)']{5}'
+c Define postlude etc.
+         postlude='\end{animateinline}'
+         only=''
+         ns=lntrim(only)
+      endif
+      plx=0
+      ply=0
+c      write(*,*)'Finished inib',iunit
+      return
+ 901  write(*,*)'**** Accis Error! Cannot open file ',filen
+      write(*,*)'Graphics files will not be written.'
+      pfsw=0
+      return
+      end
+c*********************************************************************/
+      subroutine flushb(iunit)
+      integer iunit
+      integer sblen
+      character*80 sbuf
+      common /wbuf/sblen,sbuf
+
+      include 'npcom.f'
+
+c      write(*,*)'Inside flushb',iunit
+      if(sblen.gt.1)write(iunit,*)sbuf(1:sblen-1)
+      write(iunit,*)postlude
+      endfile(iunit)
+      close(iunit)
+      end
+c********************************************************************
+c Fill the path just drawn. A path is a set of vectors all drawn with
+c pen down one after the other. The vecfill is dummy except for X11.
+      subroutine pathfill()
+      include 'plotcom.h'
+      integer ipsunit,ipgunit
+      parameter (ipsunit=12,ipgunit=13)
+      include 'npcom.f'
+
+      if(pfsw.ge.0) call vecfill()
+      if(abs(pfsw).eq.4.or. abs(pfsw).eq.5)then
+c PGF
+         write(ipgunit,*)only(1:ns),'\pgffillsave'
+      elseif(abs(pfsw) .eq. 2 .or. abs(pfsw) .eq. 3)then
+c This is level 2 postscript:
+c     $     call abufwrt(' false upath ufill ',19,ipsunit)
+c Level 1 is probably more compatible:
+         call abufwrt(' gsave fill grestore ',21,ipsunit)
+      endif
+      end
+
+C********************************************************************
+c*******************************************************************
+      subroutine gradcolor(i)
+      integer i
+      include 'plotcom.h'
+      include 'npcom.f'
+      integer ipsunit,ipgunit
+      parameter (ipsunit=12,ipgunit=13)
+
+      character*60 string 
+c      write(*,*)'gradcolor',i
+      if(pfsw.ge.0) call acgradcolor(i)
+      if(abs(pfsw).ne.0)then
+         call getrgbcolor(i,ired,igreen,iblue)
+         call abufwrt(spc,ns,ipsunit)
+         red=ired/65535.
+         green=igreen/65535.
+         blue=iblue/65535.
+         if(abs(pfsw).eq.3 .or. abs(pfsw).eq.2)then
+c Stroke the previous path, if necessary.
+            if(updown.ne.0) call abufwrt(endpair,ne,ipsunit)
+            write(string,'(3f8.4,'' setrgbcolor '')')
+     $           red,green,blue
+            call abufwrt(string,istlen(string,59)+1,ipsunit)
+         elseif(abs(pfsw).eq.4.or.abs(pfsw).eq.5)then
+c PGF
+            if(updown.ne.0)write(ipgunit,*)only(1:ns)
+     $           ,'\pgfusepath{stroke}'
+ 101        format(' \color[rgb]{',f5.3,',',f5.3,',',f5.3,'}')
+            write(ipgunit,101)red,green,blue
+         endif
+c Prevent the stroking of this path after the color change.         
+         updown=0
+      endif
+      end
+c*******************************************************************
+c************************************************************************
+      subroutine asleep(iusec)
+c Generalized usleep routine including putting delay into ps files.
+c Using repetitive drawing for timing.
+      integer iusec
+      include 'plotcom.h'
+      integer ipsunit,ipgunit
+      parameter (ipsunit=12,ipgunit=13)
+c common for ne integer
+      include 'npcom.f'
+c Lift the pen
+      call vecn(crsrx,crsry,3)
+c Calibration
+      isleep=.4*iusec
+      if(abs(pfsw).eq.2.or.abs(pfsw).eq.3)then
+         call ibufwrt(isleep,ipsunit)
+         call abufwrt(' sleep ',7,ipsunit)
+      elseif(abs(pfsw).eq.4)then
+c PGF. Increment the frame and update the onlystring.
+         ne=ne+1
+c         write(only,'(''\only<'',i,''->'')')ne
+         write(only,*)'\only<',ne,'->'
+         ns=lntrim(only)
+      elseif(abs(pfsw).eq.5)then
+         ne=ne+1
+         write(ipgunit,*)'\newframe'
+         write(ipgunit+1,*)'::',ne,'x0'
+      endif
+      call accisusleep(iusec)
+      end
+c***********************************************************************
+      subroutine accisusleep(ius)
+      integer ius
+      include 'plotcom.h'
+c Calibration 
+      imax=ius*.25
+      do i=1,imax
+         call vec(0,0,0)
+         call vec(1,0,1)
+         call vec(0,1,1)
+         call vecfill()
+      enddo
+      call vecn(crsrx,crsry,0)
+      end
+c*********************************************************************
+c*********************************************************************
+      integer function npgradtri(x,y,z,h,i3d)
+c Draw triangle color gradient to the postscript file, 
+c using level 3 command shfill.
+c Returns 1 for success. 
+c i3d indicates 3d x,y,z if 1, 2d x,y if 0. color in h. */
+      real x(3),y(3),z(3),h(3)
+
+      include 'plotcom.h'
+      include 'world3.h'
+      integer pldx,pldy
+      integer plx,ply
+      common /plcoord/ plx,ply
+
+      integer ipsunit
+      parameter (ipsunit=12)
+      integer ipscale
+      parameter (ipscale=10)
+c Bigger scale is supposed to prevent rounding problems. See 1016 below.
+      include 'npcom.f'
+      character*60 string 
+      real xn,yn,zn,xs,ys,zs
+
+      if(abs(pfsw).eq.4.or.abs(pfsw).eq.5)then
+c PGF not yet implemented.
+c If a dummy routine avoiding level-3 postscript, return 0.
+         npgradtri=0
+         return
+      endif
+
+      call nlwrt(ipsunit)
+      call abufwrt('<< /ShadingType 4 /ColorSpace /DeviceRGB '
+     $     ,41,ipsunit)
+      call abufwrt('/DataSource [ ',13,ipsunit)
+c      call abufwrt('% (edge-flag x- y-positions',27,ipsunit)
+c      call abufwrt(' color-triplet)x3',17,ipsunit)
+
+      do i=1,3
+         if(i3d.eq.1)then
+            call wxyz2nxyz(x(i),y(i),z(i),xn,yn,zn)
+            call trn32(xn,yn,zn,xs,ys,zs,0)
+            xn=xs+xcbc2
+            yn=ys+ycbc2
+         else
+            xn=wx2nx(x(i))
+            yn=wy2ny(y(i))
+            call tn2s(xn,yn,sx,sy)
+         endif
+         pldx=int(ipscale*(25+1000*xn))
+         pldy=int(ipscale*(25+1000*yn))
+         plx=pldx
+         ply=pldy
+
+         li=h(i)+1
+         call getrgbcolor(li,ired,igreen,iblue)
+         call abufwrt(spc,ns,ipsunit)
+         red=ired/65535.
+         green=igreen/65535.
+         blue=iblue/65535.
+         
+         call nlwrt(ipsunit)
+         call abufwrt('  0  ',5,ipsunit)
+         call ibufwrt(pldx,ipsunit)
+         call abufwrt(spc,ns,ipsunit)
+         call ibufwrt(pldy,ipsunit) 
+         call abufwrt(spc,ns,ipsunit)
+         write(string,'(3f8.4,'' '')')red,green,blue
+         call abufwrt(string,istlen(string,59)+1,ipsunit)
+
+      enddo
+
+      call abufwrt('] >> shfill ',12,ipsunit)
+      call nlwrt(ipsunit)
+
+      npgradtri=1
+
+      end
+c*********************************************************************
+      subroutine zerolinewidth()
+      include 'plotcom.h'
+      integer ipsunit
+      parameter (ipsunit=12)
+c Make line width minimal for contouring
+       if(abs(pfsw).eq.2 .or. abs(pfsw).eq.3)
+     $     call abufwrt(' ST 0 setlinewidth ',19,ipsunit)
+c Not yet implemented for PGF.
+       end
+c********************************************************************
+c Write the color change commands to the plot file.
+      subroutine npcolor(li)
+      integer li
+      integer wid
+      character*6 spchr
+      include 'plotcom.h'
+      include 'npcom.f'
+      integer ipsunit,ipgunit
+      parameter (ipsunit=12,ipgunit=13)
+      character*16 colorname(16)
+      data colorname/'white','blue!50!black','green!50!black'
+     $     ,'cyan!60!black','red!68!black','violet!90!white'
+     $     ,'brown!90!white','gray','lightgray','blue','green','cyan'
+     $     ,'red','magenta','yellow','black'/
+
+c      write(*,*)'Color changing',li,pfsw,' ',colorname(li+1)
+      if(pfsw.ne.0) then
+	 updown=99
+	 if(abs(pfsw).eq.2.or.abs(pfsw).eq.3) call abufwrt(' ST',3,ipsunit)
+         if(abs(pfsw).eq.4.or.abs(pfsw).eq.5)then
+c PGF
+            write(ipgunit,*)only(1:ns),'\pgfusepath{stroke}'
+            write(ipgunit,*)only(1:ns),'\pgfsetcolor{'
+     $           ,colorname(li+1)(1:lntrim(colorname(li+1))),'}'
+         else
+c PS and PCL code combined.
+            if(li.lt.15 )then
+               spchr(1:3)=' SP'
+               if(abs(pfsw).eq.2 .or. abs(pfsw).eq.3) then
+                  call iwrite(mod(li,16),wid,spchr(4:6))
+               else
+                  call iwrite(mod(li,8)+1,wid,spchr(4:6))
+               endif
+               call abufwrt(spchr(1:3+wid)//' ',4+wid,ipsunit)
+            else
+               call abufwrt(' SP15 ',6,ipsunit)
+            endif
+         endif
+      endif
+      end
+
+c*************************************************************************
+      subroutine ibufwrt(i,iunit)
+c Add a minimum length integer i to the line buffer for unit iunit
+      integer i,iunit,iw
+      character*80 str
+	 call iwrite(i,iw,str)
+	 call abufwrt(str,iw,iunit)
+      end
+c*************************************************************************
+      subroutine fbufwrt(r,ip,iunit)
+c Add a minimum length real (fx.ip) i to the line buffer for unit iunit
+      integer iw,ip,iunit
+      character*80 str
+	 call fwrite(r,iw,ip,str)
+	 call abufwrt(str,iw,iunit)
+      end
+c*************************************************************************
+      subroutine abufwrt(str,la,iunit)
+c Add a string str of length la to the line buffer for unit iunit
+c If overflowing the line, write line.
+      character*(*) str
+      integer sblen,iunit,la
+      character*80 sbuf
+      common /wbuf/sblen,sbuf
+c      write(*,*)'abufwrt:',str(1:la)
+      if(sblen.le.0) write(*,*)'sblen error:',sblen,la,sbuf,iunit
+      if(sblen+la.gt.78) then
+         write(iunit,*)sbuf(1:sblen-1)
+         sbuf=str(1:la)
+         sblen=la+1
+      else
+         sbuf(sblen:sblen+la)=str(1:la)
+         sblen=sblen+la
+      endif
+      end
+c*********************************************************************/
+      subroutine lnswrt(iunit,str,iln,ch,iomit)
+c Write lines to unit iunit from the compact string str, length iln, using 
+c character ch to define the end of line, omitting last iomit characters.
+      integer iunit,iln,iomit
+      character*(*) str
+      character*1 ch
+      integer iend,istpos,ilmin
+      iend=0
+    1 ilmin=iend+1
+      iend=istpos(str,ilmin,iln,ch)
+      if(iend.eq.0)iend=iln
+      write(iunit,'(a)')str(ilmin:iend-iomit)
+      if(iend.lt.iln) goto 1
+      end
+c********************************************************************
+      subroutine nlwrt(iunit)
+c Start a new line on the unit iunit.
+      integer sblen,iunit,la
+      character*80 sbuf
+      common /wbuf/sblen,sbuf
+      if(sblen.le.0) write(*,*)'sblen error:',sblen,la,sbuf,iunit
+      write(iunit,*)sbuf(1:sblen-1)
+      sblen=1
+      end
+c*********************************************************************
+      subroutine psheader(iunit,pfsw)
+      integer iunit,pfsw
+c Write the psheader out to iunit.
       character*2 crlf
       parameter (crlf=' \')
 c See lnswrt below for the end-of line character definition here.
-c g77 is incapable of handling non-printable characters properly.
-      save ca
-
+c g77 is incapable of handling non-printable characters properly.'
+c      save ca
+      character*1745 ca
       data ca(00001:00023)/'%!PS-Adobe-3.0 EPSF-2.0'/
       data ca(00024:00025)/crlf/
       data ca(00026:00053)/'%%BoundingBox: 28 28 575 762'/
@@ -184,239 +654,21 @@ c g77 is incapable of handling non-printable characters properly.
       data ca(01732:01743)/'SP15 0 0 MT '/
       data ca(01744:01745)/crlf/
 
-      
-c The following ensures we can open the file for writing. If not then 
-c an error condition exists.
-      open(unit=iunit,FILE=filen,status='unknown',err=901)
-      close(unit=iunit,status='delete',err=901)
-      open(unit=iunit,FILE=filen,status='new',err=901)
-      sblen=1
-      if(abs(pfsw).eq.1)then
-	 pu=';PU'
-	 nu=3
-	 pd=';PD'
-	 nd=3
-	 spc=','
-	 ns=1
-	 endpair=','
-	 ne=1
-	 postlude=';PG'//char(26)
-	 no=4
-c	 prelude= ' IN;SP1;PU0,0;PR;'   Caused rotation problem on hplj4.
-	 prelude= '   ;SP1;PU0,0;PR;'
-c        move plot pen to (0,0), switch to relative plotting.
-	 nr=17
-	 call abufwrt(prelude,nr,iunit)
-         updown=99
-      else
-	 pu='M '
-	 nu=2
-	 pd='D '
-	 nd=2
-	 spc=' '
-	 ns=1
-	 endpair='ST '
-	 ne=3
 	 if(abs(pfsw).eq.3)then
 	    ca(00026:00053)='%%BoundingBox: 30 30 620 480'
-	    postlude='grestore'
-	    no=8
 	 elseif(abs(pfsw).eq.2)then
 	    ca(00026:00053)='%%BoundingBox: 28 28 575 762'
-	    postlude='showpage grestore'
-	    no=17
 	 endif
-	 call lnswrt(iunit,ca,1745,'\',2)
-	 if(abs(pfsw).eq.2)then
-c Landscape, postscript.
-	    write(iunit,*)' 8000  0 translate 90 rotate 0 0 MT'
-            write(iunit,'(a)')'%%EndProlog'
-            write(iunit,'(a)')'%%PageOrientation: Landscape'
-	 elseif(abs(pfsw).eq.3)then
-           write(iunit,*)' 0.8 dup scale'
-         endif
-         updown=0
-      endif
-      plx=0
-      ply=0
-      return
- 901  write(*,*)'**** Accis Error! Cannot open file ',filen
-      write(*,*)'Graphics files will not be written.'
-      pfsw=0
-      return
+      call lnswrt(iunit,ca,1745,'\',2)
+c ' Done
       end
-c*********************************************************************/
-      subroutine flushb(iunit)
-      integer iunit
-      integer sblen
-      character*80 sbuf
-      common /wbuf/sblen,sbuf
-
-      character*4 pu,pd, spc, endpair
-      character*17 postlude
-      character*300 prelude
-      integer nr,nu,nd,ns,ne,no
-      common /pltfc/pu,pd,spc,endpair,postlude,prelude
-      common /pltfi/nr,nu,nd,ns,ne,no
-
-      if(sblen.gt.1)write(iunit,*)sbuf(1:sblen-1)
-      write(iunit,*)postlude
-      endfile(iunit)
-      close(iunit)
-      end
-c********************************************************************
-c Fill the path just drawn. A path is a set of vectors all drawn with
-c pen down one after the other. The vecfill is dummy except for X11.
-      subroutine pathfill()
-      include 'plotcom.h'
-c      write(*,*)'Called pathfill'
-      if(pfsw.ge.0) call vecfill()
-      if(abs(pfsw) .eq. 2 .or. abs(pfsw) .eq. 3)
-     $     call abufwrt(' false upath ufill ',19,12)
-      end
-
-C********************************************************************
-c*******************************************************************
-      subroutine gradcolor(i)
-      integer i
-      include 'plotcom.h'
-      character*4 pu,pd, spc, endpair
-      character*17 postlude
-      character*300 prelude
-      integer nr,nu,nd,ns,ne,no
-      common /pltfc/pu,pd,spc,endpair,postlude,prelude
-      common /pltfi/nr,nu,nd,ns,ne,no
-
-      character*60 string 
-c      write(*,*)'gradcolor',i
-      if(pfsw.ge.0) call acgradcolor(i)
-      if(abs(pfsw).eq.3 .or. abs(pfsw).eq.2)then
-c         write(*,*)'Calling getrgbcolor',i,ired,igreen,iblue
-         call getrgbcolor(i,ired,igreen,iblue)
-c         write(*,*)i,ired,igreen,iblue
-         call abufwrt(spc,ns,12)
-         red=ired/65535.
-         green=igreen/65535.
-         blue=iblue/65535.
-c Stroke the previous path, if necessary.
-         if(updown.ne.0) call abufwrt(endpair,ne,12)
-c         if(red.gt.1.or.green.gt.1.or.blue.gt.1)then
-c            write(*,*)i,red,green,blue,ired,igreen,iblue
-c         endif
-         write(string,'(3f8.4,'' setrgbcolor '')')
-     $        red,green,blue
-         call abufwrt(string,istlen(string,59)+1,12)
-c Prevent the stroking of this path after the color change.         
-         updown=0
-      endif
-      end
-c*******************************************************************
-c************************************************************************
-
-      subroutine asleep(iusec)
-c Generalized usleep routine including putting delay into ps files.
-c Using repetitive drawing for timing.
-      integer iusec
-      include 'plotcom.h'
-c Calibration
-      isleep=.4*iusec
-      if(abs(pfsw).eq.2.or.abs(pfsw).eq.3)then
-         call ibufwrt(isleep,12)
-         call abufwrt(' sleep ',7,12)
-      endif
-      call accisusleep(iusec)
-      end
-
-c***********************************************************************
-      subroutine accisusleep(ius)
-      integer ius
-      include 'plotcom.h'
-c Calibration 
-      imax=ius*.25
-      do i=1,imax
-         call vec(0,0,0)
-         call vec(1,0,1)
-         call vec(0,1,1)
-         call vecfill()
+c******************************************************************
+c Obtain the length of a string omitting trailing blanks.
+      function lntrim(string)
+      character*(*) string
+      do i=len(string),1,-1
+         if(string(i:i).ne.' ') goto 101
       enddo
-      call vecn(crsrx,crsry,0)
-      end
-c*********************************************************************
-c*********************************************************************
-      integer function npgradtri(x,y,z,h,i3d)
-c Draw triangle color gradient to the postscript file, 
-c using level 3 command shfill.
-c Returns 1 for success. 
-c i3d indicates 3d x,y,z if 1, 2d x,y if 0. color in h. */
-      real x(3),y(3),z(3),h(3)
-
-      include 'plotcom.h'
-      include 'world3.h'
-      integer pldx,pldy
-      integer plx,ply
-      common /plcoord/ plx,ply
-
-      integer ipscale
-      parameter (ipscale=10)
-c Bigger scale is supposed to prevent rounding problems. See 1016 below.
-      character*4 pu,pd, spc, endpair
-      character*17 postlude
-      character*300 prelude
-      integer nr,nu,nd,ns,ne,no
-      common /pltfc/pu,pd,spc,endpair,postlude,prelude
-      common /pltfi/nr,nu,nd,ns,ne,no
-
-      character*60 string 
-      real xn,yn,zn,xs,ys,zs
-
-c If a dummy routine avoiding level-3 postscript, return 0.
-c      npgradtri=0
-c      return
-
-
-      call nlwrt(12)
-      call abufwrt('<< /ShadingType 4 /ColorSpace /DeviceRGB ',41,12)
-      call abufwrt('/DataSource [ ',13,12)
-c      call abufwrt('% (edge-flag x- y-positions',27,12)
-c      call abufwrt(' color-triplet)x3',17,12)
-
-      do i=1,3
-         if(i3d.eq.1)then
-            call wxyz2nxyz(x(i),y(i),z(i),xn,yn,zn)
-            call trn32(xn,yn,zn,xs,ys,zs,0)
-            xn=xs+xcbc2
-            yn=ys+ycbc2
-         else
-            xn=wx2nx(x(i))
-            yn=wy2ny(y(i))
-            call tn2s(xn,yn,sx,sy)
-         endif
-         pldx=int(ipscale*(25+1000*xn))
-         pldy=int(ipscale*(25+1000*yn))
-         plx=pldx
-         ply=pldy
-
-         li=h(i)+1
-         call getrgbcolor(li,ired,igreen,iblue)
-         call abufwrt(spc,ns,12)
-         red=ired/65535.
-         green=igreen/65535.
-         blue=iblue/65535.
-         
-         call nlwrt(12)
-         call abufwrt('  0  ',5,12)
-         call ibufwrt(pldx,12)
-         call abufwrt(spc,ns,12)
-         call ibufwrt(pldy,12) 
-         call abufwrt(spc,ns,12)
-         write(string,'(3f8.4,'' '')')red,green,blue
-         call abufwrt(string,istlen(string,59)+1,12)
-
-      enddo
-
-      call abufwrt('] >> shfill ',12,12)
-      call nlwrt(12)
-
-      npgradtri=1
-
+      i=0
+ 101  lntrim=i
       end

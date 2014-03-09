@@ -218,10 +218,8 @@ c Second byte of isw: level-skip.
       real x(3),y(3),z(3),d(3)
 
       include 'plotcom.h'
-c Make line width minimal for contouring
-       if(abs(pfsw).eq.2 .or. abs(pfsw).eq.3)
-     $     call abufwrt(' ST 0 setlinewidth ',19,12)
-      
+
+      call zerolinewidth()
 
 c centroid point
       x(1)=(xq(1)+xq(2)+xq(3)+xq(4))*.25
@@ -274,9 +272,7 @@ c which the value changes most.
       real x(3),y(3),z(3),d(3)
 
       include 'plotcom.h'
-c Make line width minimal for contouring
-       if(abs(pfsw).eq.2 .or. abs(pfsw).eq.3)
-     $     call abufwrt(' ST 0 setlinewidth ',19,12)
+      call zerolinewidth()
       
        id=0
       if((isw/2-2*(isw/4)).eq.0)then

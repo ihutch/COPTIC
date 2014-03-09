@@ -44,13 +44,13 @@ c 3.General call.
 c Poor-man's gamma effect with truncated color curves.
        call accisgradinit(-40000,-40000,32000,64000,64000,64000)
 c x,y matrices used since last arg 2. Coloring since +16.
-       write(*,*)'Finished gradinit'
+c       write(*,*)'Finished gradinit'
        call contourl(z,ppath,nx,nx,ny,cl,snl,x,y,2+16)
-       write(*,*)'Finished contourl'
+c       write(*,*)'Finished contourl'
        call axis
        call axlabels('x','y')
 
-       write(*,*)c1st,clast
+c       write(*,*)c1st,clast
        call gradlegend(c1st,clast,.0,-.4,1.,-.4,.03,.true.)
 
        call pltend

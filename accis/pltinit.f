@@ -36,11 +36,16 @@ c     Initialize buffer and open file on unit 12.
 	    str1(1:4)='plot'
 	    if(abs(pfsw).eq.1)then
 	       str1(9:11)='.hp'
-	    else
+               call inib(12,str1(1:11))
+	    elseif(abs(pfsw).eq.2 .or.abs(pfsw).eq.3)then
 	       str1(9:11)='.ps'
+               call inib(12,str1(1:11))
+	    elseif(abs(pfsw).eq.4.or.abs(pfsw).eq.5)then
+c pgfgraphic driver
+	       str1(9:12)='.pgf'
+               call inib(13,str1(1:12))
 	    endif
             psini=2
-	    call inib(12,str1(1:11))
             if(pfPS.eq.1)call PSfontinit()
 	 endif
       endif
@@ -65,58 +70,36 @@ C********************************************************************
       subroutine pltend()
 c Wait for return, then switch to text mode
       include 'plotcom.h'
-c	write (*,*)' PLtend, updown=',updown
-c This is to ensure that we really complete the previous draw. 
-      call vecn(crsrx,crsry,0)
-c This gives ps errors:      ltlog=.false.
-c Instead this new approach truncates outside window.
+      call prtend()
       call truncf(0.,0.,0.,0.)
-      if(pfsw .ne. 0)then
-	 call flushb(12)
-      endif
-      if(pfsw.ge.0) call txtmode
-      updown=99
+      if(pfsw.ge.0)call txtmode
       if(nrows.ne.0) then
 	 call ticset(0.,0.,0.,0.,0,0,0,0)
 	 nframe=0
       endif
-      return
       end
 c*********************************************************************
       subroutine prtend()
 c Version of pltend that does not call txtmode or wait. Just flushes
 c the print buffers etc.
       include 'plotcom.h'
-      call vecn(crsrx,crxry,0)
-      if(pfsw.ne.0)call flushb(12)
+      call vecn(crsrx,crsry,2)
+      if(abs(pfsw).eq.4.or.abs(pfsw).eq.5) then
+         call flushb(13)
+      elseif(abs(pfsw).ne.0)then
+         call flushb(12)
+      endif
       updown=99
+      pfsw=pfnextsw
       end
 c*********************************************************************
       subroutine color(li)
 c Set line color. li=15 resets. Plotting translates to dashed etc.
       integer li
       include 'plotcom.h'
-      integer wid
-      character*6 spchr
       ncolor=li
 c      write(*,*)' color: updown=',updown
-      if(pfsw.ne.0) then
-	 updown=99
-	 if(abs(pfsw).eq.2.or.abs(pfsw).eq.3) call abufwrt(' ST',3,12)
-	 if(li.lt.15 )then
-	    spchr(1:3)=' SP'
-c	    call abufwrt(' SP',3,12)
-	    if(abs(pfsw).eq.2 .or. abs(pfsw).eq.3) then
-	       call iwrite(mod(li,16),wid,spchr(4:6))
-	    else
-	       call iwrite(mod(li,8)+1,wid,spchr(4:6))
-c	       call ibufwrt(mod(li,8)+1,12)
-	    endif
-	    call abufwrt(spchr(1:3+wid)//' ',4+wid,12)
-	 else
-	    call abufwrt(' SP15 ',6,12)
-	 endif
-      endif
+      call npcolor(li)
       if(pfsw.ge.0) call scolor(li)
       return
       end

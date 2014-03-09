@@ -27,66 +27,6 @@ c     Get character angle in degrees.
       theta=theta*180./3.14159
       end
 c*************************************************************************
-c*************************************************************************
-      subroutine ibufwrt(i,iunit)
-c Add a minimum length integer i to the line buffer for unit iunit
-      integer i,iunit,iw
-      character*80 str
-	 call iwrite(i,iw,str)
-	 call abufwrt(str,iw,iunit)
-      end
-c*************************************************************************
-      subroutine fbufwrt(r,ip,iunit)
-c Add a minimum length real (fx.ip) i to the line buffer for unit iunit
-      integer iw,ip,iunit
-      character*80 str
-	 call fwrite(r,iw,ip,str)
-	 call abufwrt(str,iw,iunit)
-      end
-c*************************************************************************
-      subroutine abufwrt(str,la,iunit)
-c Add a string str of length la to the line buffer for unit iunit
-c If overflowing the line, write line.
-      character*(*) str
-      integer sblen,iunit,la
-      character*80 sbuf
-      common /wbuf/sblen,sbuf
-c      write(*,*)'abufwrt:',str(1:la)
-      if(sblen.le.0) write(*,*)'sblen error:',sblen,la,sbuf,iunit
-      if(sblen+la.gt.78) then
-         write(iunit,*)sbuf(1:sblen-1)
-         sbuf=str(1:la)
-         sblen=la+1
-      else
-         sbuf(sblen:sblen+la)=str(1:la)
-         sblen=sblen+la
-      endif
-      end
-c*********************************************************************/
-      subroutine lnswrt(iunit,str,iln,ch,iomit)
-c Write lines to unit iunit from the compact string str, length iln, using 
-c character ch to define the end of line, omitting last iomit characters.
-      integer iunit,iln,iomit
-      character*(*) str
-      character*1 ch
-      integer iend,istpos,ilmin
-      iend=0
-    1 ilmin=iend+1
-      iend=istpos(str,ilmin,iln,ch)
-      if(iend.eq.0)iend=iln
-      write(iunit,'(a)')str(ilmin:iend-iomit)
-      if(iend.lt.iln) goto 1
-      end
-c********************************************************************
-      subroutine nlwrt(iunit)
-c Start a new line on the unity iunit.
-      integer sblen,iunit,la
-      character*80 sbuf
-      common /wbuf/sblen,sbuf
-      if(sblen.le.0) write(*,*)'sblen error:',sblen,la,sbuf,iunit
-      write(iunit,*)sbuf(1:sblen-1)
-      sblen=1
-      end
 c********************************************************************
       integer function istlen(str,ilmax)
 c Return the active length of string str, length ilmax, ignoring 

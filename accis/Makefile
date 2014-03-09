@@ -48,7 +48,9 @@ initiald.o\
 sysfont.o\
 slicing.o\
 fillgrad.o\
-boxcarave.o
+boxcarave.o\
+surfaces.o\
+arrowplot.o
 
 noback_object_files = drwstr.o fontdata.o vecnp.o 
 
@@ -57,7 +59,7 @@ object_files=$(standard_object_files) $(noback_object_files)
 ifeq ("$(VECX)","vec4014")
 	libraries = -L.
 else
-	libraries = -L$(XLIB) -L. -lXt -lX11 $(GLLIBS)
+	libraries = -L$(XLIB) -L. -lX11 $(GLLIBS)
 endif
 
 ifeq ("$(VECX)","vecglx")
@@ -189,7 +191,7 @@ mproper : clean
 clean :
 	rm -f *.o
 	rm -f *.ida
-	rm -f plot*.ps
+	rm -f plot*.ps plot*.pg*
 	rm -f *test fontshow
 
 

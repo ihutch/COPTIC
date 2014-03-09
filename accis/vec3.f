@@ -124,7 +124,7 @@ c      write(*,*)'xn,yn,zn',xn,yn,zn
       end
 c***********************************************************************
       subroutine nxyz2wxyz(xn,yn,zn,x,y,z)
-c Transform from world3 to normal3
+c Transform from normal3 to world3
       real x,y,z
       real xn,yn,zn
       include 'world3.h'
@@ -217,7 +217,7 @@ c icorner=0 => omit none.
       include 'plotcom.h'
       include 'world3.h'
       integer ic,i,j,kx,ky,iu
-c      write(*,*)icorner
+c      write(*,*)'cubed call pfsw=',pfsw
 
 c Chop the top bits off icorner
       icorner=icin-(icin/8)*8
@@ -257,26 +257,13 @@ c	 call hidvecn(-scby3,-scbz3,1)
 	 endif
     1 continue
       call hdprset(0,0.)
+c      write(*,*)'cubed ending pfsw=',pfsw
       end
 c***********************************************************************
 c Version that finds the right corner to hide lines from.
 c And returns it to caller.
       subroutine cubeproj(icorner)
-      call geteye(x2,y2,z2)
-      if(y2.le.0.)then 
-         if(x2.le.0.)then
-            icorner=1
-         else
-            icorner=2
-         endif
-      else
-         if(x2.le.0.)then
-            icorner=4
-         else
-            icorner=3
-         endif
-      endif
-      if(z2.lt.0.)icorner=-icorner
+      icorner=igetcubecorner()
       call cubed(icorner)
       end
 c***********************************************************************
@@ -432,4 +419,55 @@ c Write eye.
       close(2)
  99   continue
  98   continue
+      end
+c********************************************************************
+c Return the nearest corner to eye in standard convention.
+      function igetcorner()
+c This was wrong. geteye reads the eyefile.
+c      call geteye(x2,y2,z2)
+      call trn32(xdum,ydum,zdum,x2,y2,z2,-1)
+      if(y2.le.0.)then 
+         if(x2.le.0.)then
+            icorner=1
+         else
+            icorner=2
+         endif
+      else
+         if(x2.le.0.)then
+            icorner=4
+         else
+            icorner=3
+         endif
+      endif
+c      write(*,*)'x2,y2,z2',x2,y2,z2,mod(icorner,2)
+c If appropriate tell axproj to flip labels.
+      if(abs(x2).gt.abs(y2).eqv.(mod(icorner,2).ne.0))
+     $	   icorner=icorner+16
+c If appropriate use vertical labels
+c	 if(z2*z2.lt.x2*x2) icorner=icorner+32
+c Trying for better results.
+      xy2i=min(x2**2,y2**2)
+      if(z2*z2.lt.xy2i+.2*y2**2) icorner=icorner+32
+      if(z2*z2.lt.xy2i+.2*x2**2) icorner=icorner+64
+      igetcorner=icorner
+      end
+c********************************************************************
+c Return the nearest corner to eye for use with cubed
+      function igetcubecorner()
+      call trn32(xdum,ydum,zdum,x2,y2,z2,-1)
+      if(y2.le.0.)then 
+         if(x2.le.0.)then
+            icorner=1
+         else
+            icorner=2
+         endif
+      else
+         if(x2.le.0.)then
+            icorner=4
+         else
+            icorner=3
+         endif
+      endif
+      if(z2.lt.0)icorner=-icorner
+      igetcubecorner=icorner
       end

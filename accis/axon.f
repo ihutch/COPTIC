@@ -7,15 +7,6 @@ c Plot axonometrically z(x,y) dim (iLx\nx,ny).
       integer i,j,nyfac
       include 'plotcom.h'
 c Read eye.
-c      open(unit=2,file='eye.dat',status='old',err=99)
-c      read(2,*)xfrac,yfrac,zmin
-c      close(2)
-c      goto 98
-c   99 continue
-c If eye.dat has an error (e.g. does not exist) Default eye.
-c      xfrac=.2
-c      yfrac=.2
-c   98 continue
       call geteye(xfrac,yfrac,zmin)
       call hidinit(0.,1.)
       if(y(ny)-y(1).eq.0.) stop 'AXON: needs y(ny).ne.y(1).'

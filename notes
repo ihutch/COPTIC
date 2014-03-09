@@ -10864,3 +10864,8 @@ after 2 Dec 13.
 Adjust distread in partaccum.f not to require the individual nsubs to be
 correct, only that there's enough total space allocated. Also make
 more consistent so there are no assumed number of dimensions.
+
+4 Mar 14
+
+Replaced the random number integrator in volintegrate with a Sobol number
+generator toms659. It is faster even for the same number of points used. 

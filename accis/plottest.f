@@ -48,6 +48,7 @@ c Plot 3.
 c Use the built in response facility by calling with negative switch.
 c This will prompt for plotting to file.
 c      call pfset(-3)
+      call pfset(3)
 c Set to dashed line plotting, only polylines are dashed:
       call dashset(2)
 c Do a log autoplot of the arrays. x logarithmic, y linear.

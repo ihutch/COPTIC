@@ -35,6 +35,8 @@ c These arguments ought to be present at least as dummy reals for all
 c calls; otherwise the length of the utitle will not be found correctly.
 c Do arrow plots of this field over contours Needed for perspective plot
       include 'world3.h'
+c For testing only
+      include 'plotcom.h'
 c Workspace size is problematic.
       parameter (nwksp=100000)
       character*1 pp(nwksp)
@@ -241,20 +243,29 @@ c         jsw=0 + 256*6 + 256*256*7
 
       if(ips.ne.0)then
 c We called for a local print of plot. Terminate and switch it off.
-         call pltend()
+c The problem is that pfset does not immediately turn off writing to
+c the plotfile. It only sets up the switch off at the next pltinit.
+c Then cubeupd calls invoked from button presses in the user interface
+c are written to a closed file because pltend has closed it. Therefore
+c we need an immediate turn off of the pfsw. This is fixed by calling
+c pfset before pltend. On entry, pltend sees pfsw as negative, so does
+c not pause. The last thing pltend does is set the pfsw from
+c the pfnextsw set by pfset to zero.
          call pfset(0)
+         call prtend()
+c         write(*,*)'Terminating sliceweb ips=',ips,pfsw
          ips=0
       endif
 
 c User interface
-      call ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping
+      call ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping,ips
      $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice)
       if(iquit.eq.0)goto 21
 
       call hdprset(0,0.)
       end
 c******************************************************************
-      subroutine ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping
+      subroutine ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping,ips
      $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice)
 c Encapsulated routine for controlling a 3-D plot.
 c But many things have to be passed at present. A proper API needs
@@ -684,9 +695,10 @@ c 5. Draw line only in places in front of all 3 planes.
       if(ips.ne.0)then
 c We called for a local print of plot. Terminate and switch it off.
 c Prevent pltend from querying the interface.
+c         write(*,*)'Terminating sliceGweb. ips=',ips
          pfsw=-ips
-         call pltend()
          call pfset(0)
+         call pltend()
          ips=0
       endif
       call gradlegend(c1st,clast,-.55,0.,-.55,1.,.03,.false.) 

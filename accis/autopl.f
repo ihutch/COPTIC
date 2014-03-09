@@ -140,21 +140,21 @@ c Need a way to determine eye position. Use defaults.
       call scale3(xmin(1),xmax(1),xmin(2),xmax(2),xmin(3),xmax(3))
       call trn32(0.,0.,0.,x2,y2,z2,1)
 c determine icorner:
-      xb=0
-      yb=0
-      zb=0
-      if(x2.ge.0)xb=1
-      if(y2.ge.0)yb=1
-      if(z2.ge.0)zb=1
-      icorner= (2*zb-1)*( (1 +3*yb) + (1 - 2*yb)*xb )
+c      xb=0
+c      yb=0
+c      zb=0
+c      if(x2.ge.0)xb=1
+c      if(y2.ge.0)yb=1
+c      if(z2.ge.0)zb=1
+c      icorner= (2*zb-1)*( (1 +3*yb) + (1 - 2*yb)*xb )
 c Then decide on optimal axis labels. Not done now.
 c      write(*,*)'icorner',icorner
-      icorner=icorner
+c      icorner=igetcorner()
 c      write(*,*) 'icorner=',icorner
 c      call cubed(-mod(icorner+2,4))
 c or draw full cube      
       call cubed(0)
 c I don't know why the calling of cubed changes the behaviour of axproj.
-      call axproj(icorner)
+      call axproj(igetcorner())
 c      call axis()
       end
