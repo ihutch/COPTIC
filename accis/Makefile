@@ -31,7 +31,6 @@ charsize.o \
 lautopl.o \
 pltinit.o \
 vecw.o \
-winset.o \
 polyline.o \
 labeline.o \
 minmax.o \
@@ -87,7 +86,9 @@ all : $(MAKEFILE) lib$(ACCISDRV).a
 # So we make the second call to an explicit file.
 makefile : Makefile configure
 	@echo Configuring the Makefile for this platform. 
-	@export COMPILER="$(COMPILER)"; export VECX=$(VECX); export NOBACKSLASH="$(NOBACKSLASH)"; ./configure
+#	@export COMPILER="$(COMPILER)"; export VECX=$(VECX); export NOBACKSLASH="$(NOBACKSLASH)"; ./configure
+# Better probably to let the configure script decide:
+	@export COMPILER="$(COMPILER)"; ./configure
 	@echo Now running make again using the new Makefile.
 # The problem with this recursion is that it does not override any command
 # argument such as G77= Thus G77 might be forced blank inside the submake
@@ -100,8 +101,12 @@ makefile : Makefile configure
 # Touch vecx to prevent a libaccisX remake with the outermost VECX definition,
 # For which vecx is standard.
 
-accissum.html : accissum.tex
-	if which tth ; then tth -e2 accissum ; fi
+RefManual.html : RefManual.tex RefManual.pdf makefile
+	if which tth ; then tth -e2 RefManual ; fi
+	rm -f *.log *.out *.dvi *.toc *.ilg *.idx *.synctex.gz
+
+RefManual.pdf : RefManual.tex makefile
+	pdflatex RefManual
 	rm -f *.log *.out *.dvi *.toc *.ilg *.idx *.synctex.gz
 
 #update the libraries.
@@ -116,7 +121,7 @@ libaccisX.a : libaccis.a $(VECX)
 # Objects depend on headers
 $(standard_object_files) :: $(headers) $(MAKEFILE)
 
-#vecx is the C linkage to X-window. If told -DPTHREADS it uses threads.
+#vecx is the C linkage to X-window. Threading is not (yet) completed.
 vecx.o : vecx.c $(MAKEFILE)
 	$(CC)  $(THREADING) -c vecx.c
 
@@ -163,35 +168,37 @@ vec4014 : libaccis.a
 # Synchronization of versions on other machines.
 sync : syncsource synccoptic syncsceptic
 
-syncsceptic : lib$(ACCISDRV).a accissum.html
-	rsync -u -e ssh --copy-links -v *.h *.f *.c accissum.* configure Makefile ~/src/sceptic/accis/
-	date > synchorace
+syncsceptic : lib$(ACCISDRV).a RefManual.html
+	rsync -u -e ssh --copy-links -v *.h *.f *.c RefManual.* configure Makefile ~/src/sceptic/accis/
+	date > synsceptic
 
-syncsilas : lib$(ACCISDRV).a accissum.html
-	rsync -u -e ssh  --copy-links -v *.h *.f *.c accissum.* configure Makefile silas:~/accis/
+syncsilas : lib$(ACCISDRV).a RefManual.html
+	rsync -u -e ssh  --copy-links -v *.h *.f *.c RefManual.* configure Makefile silas:~/accis/
 	date > syncsilas
 
-syncunity : lib$(ACCISDRV).a accissum.html
-	rsync -u -e ssh  --copy-links -v *.h *.f *.c accissum.* configure Makefile unity.psfc.mit.edu:~/accis/
-	date > syncunity
-
-syncsource : lib$(ACCISDRV).a accissum.html
-	rsync -u -e ssh  --copy-links -v *.h *.f *.c accissum.* configure Makefile ~/src/accis/
+syncsource : lib$(ACCISDRV).a RefManual.html
+	rsync -u -e ssh  --copy-links -v *.h *.f *.c RefManual.* configure Makefile ~/src/accis/
 	date > syncsource
 
-synccoptic : lib$(ACCISDRV).a accissum.html
-	rsync -u -e ssh  --copy-links -v *.h *.f *.c accissum.* configure Makefile ~/src/coptic/accis/
+synccoptic : lib$(ACCISDRV).a RefManual.html
+	rsync -u -e ssh  --copy-links -v *.h *.f *.c RefManual.* configure Makefile ~/src/coptic/accis/
 	date > synccoptic
 
+tests : 
+	make
+	make `ls testing/*.f | sed -e "s/[.]f//g"`
+	@echo Run executables in testing/
+
+cleantest :
+	rm -f `ls testing/*.f | sed -e "s/[.]f//g"`
+
 mproper : clean
-	rm -f *.a
+	rm -f *.a *~ eye.dat sync*
 	rm -f makefile
 	rm -f vecx vecglx vec4014
 
-clean :
+clean : cleantest
 	rm -f *.o
 	rm -f *.ida
 	rm -f plot*.ps plot*.pg*
-	rm -f *test fontshow
-
 

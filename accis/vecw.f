@@ -393,4 +393,15 @@ c* ptrunc bits 0-4 set if x1,y1 is moved; bits 5-7 set if x2,y2 moved
       end
 
 
+c***************************************************************************
+	subroutine winset(wsw)
+	logical wsw
+      include 'plotcom.h'
+      if(wsw)then
+      call truncf(naxmin,naxmax,naymin,naymax)
+      else
+      call truncf(0.,0.,0.,0.)
+      endif
+      return
+      end
 

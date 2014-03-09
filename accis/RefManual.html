@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
            "http://www.w3.org/TR/REC-html40/loose.dtd">
 <html>
-<meta name="GENERATOR" content="TtH 4.03">
+<meta name="GENERATOR" content="TtH 4.04">
  <style type="text/css"> div.p { margin-top: 7pt;}</style>
  <style type="text/css"><!--
  td div.comp { margin-top: -0.6ex; margin-bottom: -1ex;}
@@ -24,27 +24,63 @@
  .huge {font-size:300%;}
  --></style>
 
-<title>  Summary of ACCIS plotting system routines</title>
  
-<h1 align="center"><b>Summary of ACCIS plotting system routines</b> </h1>
+<title> Summary of ACCIS plotting system routines</title>
+ 
+<h1 align="center">Summary of ACCIS plotting system routines </h1>
+
+<h3 align="center">I.H.Hutchinson </h3>
+
+<h3 align="center"> </h3>
+    <a id="tth_sEc1"></a><h2>
+1&nbsp;&nbsp;Apologia</h2>
 
 <div class="p"><!----></div>
-
-<table align="center" border="0"><tr><td>
-I.H.Hutchinson</td></tr></table><!--hboxt-->
+The ACCIS plotting library is a lightweight portable library that
+gives fortran what it ought to have had: simple graphical output of
+scientific data. There are other libraries that fulfil that purpose;
+but this happens to be the one I wrote; so I like it. Also it is
+entirely free and open, so it can be included in the distribution of
+any program, without encumbrance. 
 
 <div class="p"><!----></div>
-<br /><br />
-<h2> Conventions
-</h2>
+It is powerful. For example, it has interactive routines for
+displaying selectable slices of 3-D data, rotating the views of
+surfaces, projecting 2-D contours, and producing smoothly coloured
+contours.
+
+<div class="p"><!----></div>
+It observes what ought to be a standard principle of scientific
+programming: that the focus should be the calculation, not the
+graphical interface. In other words, the fortran program calls the
+graphical display, rather than what has become the standard approach
+in windowing systems that the graphical interface calls the
+calculation. The result is that the learning curve is easy, and one
+can get started with a couple of subroutine calls.
+
+<div class="p"><!----></div>
+Finally, it is written in fortran 77 (with the exception of the X or
+Win32 graphics driver which need C) so if you can compile your
+fortran program, you can compile the accis routines.
+
+<div class="p"><!----></div>
+The best way to get into using accis is by example. So I recommend
+looking at the routine plottest.f.
+
+<div class="p"><!----></div>
+ <a id="tth_sEc2"></a><h2>
+2&nbsp;&nbsp;Conventions</h2>
+
+<div class="p"><!----></div>
 For purposes of this summary, the following implicitly indicate types:
 i: integer, c: character, l: logical, all others: real.
 Terminating letter indicates: v: vector (1-d array), a: 2-d array.
 
 <div class="p"><!----></div>
+ <a id="tth_sEc3"></a><h2>
+3&nbsp;&nbsp;Automatic plotting, single call plots.</h2>
 
-<h2> Automatic plotting, single call plots.
-</h2>
+<div class="p"><!----></div>
 <a href="plottest.f"><img align="right" src="plainplot.png"></a>
 AUTOPLOT(xv,yv,ilength) Line plot yv versus xv; linear axes.
 
@@ -61,9 +97,10 @@ LAUTOMARK(xv,yv,ilength,lnx,lny,isym) Symbol plot with logarithmic axis(es).
 YAUTOPLOT(yv,ilength) Line plot yv versus index; linear axes.
 
 <div class="p"><!----></div>
+ <a id="tth_sEc4"></a><h2>
+4&nbsp;&nbsp;Setup</h2>
 
-<h2> Setup
-</h2>
+<div class="p"><!----></div>
 PLTINIT(xmin,xmax,ymin,ymax) Switch to graphics, set world scaling.
 
 <div class="p"><!----></div>
@@ -81,21 +118,6 @@ FITSCALE(xmin,xmax,ymin,ymax,lnx,lny) same but fitting nice ranges.
 <div class="p"><!----></div>
 PLTINASPECT(xmin,xmax,ymin,ymax) Initiate graphics. Resize axis region
 to retain aspect ratio of plot. Set world scaling.
-
-<div class="p"><!----></div>
-AUTOINIT(xv,yv,ilength) Initialization using autoscaling for the
-plotting of xv, yv arrays. AUTOPLOT consists of CALL
-AUTOINIT(xv,yv,ilength) CALL AXIS() CALL POLYLINE(xv,yv,ilength).
-
-<div class="p"><!----></div>
-LAUTOINIT(xv,yv,ilength,lx,ly) same but for (possibly) logarithmic axes.
-
-<div class="p"><!----></div>
-MANAUTOINIT(xv,yv,ilength,isw,sxmin,sxmax,symin,symax) Initialize
-either using the autoscaling, or else override one or more of the
-automatic limits, according to bits 0-3 of isw, which if set indicate
-override and use sxmin[0] ...  symax[3]. E.g. isw=3 sets xmin=sxmin,
-xmax=sxmax, symin=ymin, symax=ymax.
 
 <div class="p"><!----></div>
 AXREGION(xin,xan,yin,yan) Set the axis region in normal units.
@@ -136,9 +158,10 @@ PLTEND() Flush graphics, wait for mouse click in plotting window; then
 return.
 
 <div class="p"><!----></div>
+ <a id="tth_sEc5"></a><h2>
+5&nbsp;&nbsp;Data plotting</h2>
 
-<h2> Data plotting
-</h2>
+<div class="p"><!----></div>
 POLYLINE(xv,yv,ilength) Draw a polyline on an already setup graph.
 
 <div class="p"><!----></div>
@@ -179,7 +202,8 @@ height are scaled by chrswdth and chrshght, aspect-ratio can be scaled
 using charsize().
 
 <div class="p"><!----></div>
-POLYERR(xv,yv,errv,ilength) Draw error bars yv to yv+errv.
+POLYERRS(xv,yv,errv,ilength,u,d) Draw error bars from yv-d*errv to
+yv+u*errv for all the xv, yv, errv arrays.
 
 <div class="p"><!----></div>
 STPOLYLINE(xa,ya,ilength,ixstride,iystride),
@@ -191,9 +215,10 @@ passing the leading dimension of the matrix as the stride. Passing
 strides of 1 gives equivalent sampling to the unstrided versions.
 
 <div class="p"><!----></div>
+ <a id="tth_sEc6"></a><h2>
+6&nbsp;&nbsp;Color</h2>
 
-<h2> Color
-</h2>
+<div class="p"><!----></div>
 <a href="filltest.f"><img align="right" src="filltest.png"></a>
 COLOR(icol) Set current color of 0-15. Default 15 black (on white).
 
@@ -242,9 +267,10 @@ units. Width of color bar is colwith times axis-box
 width. lpara=.true. says use parallel labels.
 
 <div class="p"><!----></div>
+ <a id="tth_sEc7"></a><h2>
+7&nbsp;&nbsp;Axes</h2>
 
-<h2> Axes
-</h2>
+<div class="p"><!----></div>
 AXIS() Automatic x and y axis.
 
 <div class="p"><!----></div>
@@ -292,76 +318,39 @@ ixw &#8804; 0. Defaults set respectively if reals all =0 or ints all
 TICREV() Reverse the tics and labels to the other side of axis.
 
 <div class="p"><!----></div>
-TICNUMSET(itics) Set the number of tics of axis (approximately).
-
-<div class="p"><!----></div>
 TICLABTOG() Toggle the tic labels on and off.
 
 <div class="p"><!----></div>
-TOGMINOR() Toggle the minor tics on and off.
+TICNUMSET(itics) Set the number of tics of axis (approximately).
 
 <div class="p"><!----></div>
+ <a id="tth_sEc8"></a><h2>
+8&nbsp;&nbsp;Text plotting</h2>
 
-<h2> Text plotting
-</h2>
+<div class="p"><!----></div>
 <img align="right" src="fontshow.png"> 
 
 <div class="p"><!----></div>
 Special text is accessed via "\" or "!" followed by one of 
 the following:
 
+<pre>
+@&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;normal&nbsp;font&nbsp;0.
+A&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;font&nbsp;1&nbsp;(math)
+B&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;font&nbsp;2&nbsp;(italic)
+R&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;font&nbsp;3&nbsp;(roman)
+E&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;font&nbsp;4&nbsp;(english&nbsp;gothic)
+G&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;font&nbsp;5&nbsp;(german&nbsp;gothic)
+d/D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Toggle&nbsp;subscript&nbsp;mode
+u/U&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Toggle&nbsp;superscript&nbsp;mode
+p&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Save&nbsp;this&nbsp;position
+q&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Save&nbsp;current&nbsp;position&nbsp;and&nbsp;return&nbsp;to&nbsp;previously&nbsp;saved&nbsp;position.
+o&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Toggle&nbsp;Write-over&nbsp;mode
+n/N&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Toggle&nbsp;Write-under&nbsp;mode
 
-<dl>
- <dt>
-@</dt>
-<dd>
-       to normal font 0.
-</dd>
- <dt>
-A</dt>
-<dd>       to font 1 (math)
-</dd>
- <dt>
-B</dt>
-<dd>       to font 2 (italic)
-</dd>
- <dt>
-R</dt>
-<dd>       to font 3 (roman)
-</dd>
- <dt>
-E</dt>
-<dd>       to font 4 (english gothic)
-</dd>
- <dt>
-G</dt>
-<dd>       to font 5 (german gothic)
-</dd>
- <dt>
-d/D</dt>
-<dd>       Toggle subscript mode
-</dd>
- <dt>
-u/U</dt>
-<dd>       Toggle superscript mode
-</dd>
- <dt>
-p</dt>
-<dd>         Save this position
-</dd>
- <dt>
-q</dt>
-<dd>         Save current position and return to previously saved
-position.
-</dd>
- <dt>
-o</dt>
-<dd>        Toggle Write-over mode
-</dd>
- <dt>
-n/N</dt>
-<dd>      Toggle Write-under mode
-</dd></dl>
+</pre>
+
+<div class="p"><!----></div>
 JDRWSTR(xn,yn,cstring,just) Draw cstring at (xn,yn)(normal), justified
 per parameter just:  0. centered, +1. normal left-justified, etc.
 
@@ -398,9 +387,10 @@ If nsym=257 use nothing but put the string at the usual place.
 If nsym=258 use nothing but put the string at the start of the line.
 
 <div class="p"><!----></div>
+ <a id="tth_sEc9"></a><h2>
+9&nbsp;&nbsp;Contouring</h2>
 
-<h2> Contouring
-</h2>
+<div class="p"><!----></div>
 <a href="contest.f"><img align="right" src="contest.png"></a>
 
 <div class="p"><!----></div>
@@ -436,15 +426,10 @@ E/Erange. Plot region should be setup up prior to
 call.
 
 <div class="p"><!----></div>
-SETCONLOG(ltf) Set logarithmic color contouring true or false
-according to logical ltf. GETCONLOG() is the logical function
-returning the value to which logarithmic contouring is set. Contour
-lines are not affected by this value.
+ <a id="tth_sEc10"></a><h2>
+10&nbsp;&nbsp;Projected 3-D surface routines</h2>
 
 <div class="p"><!----></div>
-
-<h2> Projected 3-D surface routines
-</h2>
 <a href="hidtest.f"><img align="right" src="hidtest.png"></a>
 
 <div class="p"><!----></div>
@@ -453,20 +438,15 @@ dimension iL) at xv,yv.  View obtained from file eye.dat (3 reals) or
 default if nonexistent. Control switch isw: .lt.0 no axes.
 Lowest byte abs(isw)=
 
-<dl>
- <dt>
-0</dt>
-<dd>
- don't rescale, use last scaling.
-</dd>
- <dt>
-1</dt>
-<dd> scale to fit 1-D range xv(1)-xv(ix), yv(1)-yv(iy), zmin-zmax.
-</dd>
- <dt>
-2</dt>
-<dd> scale to 2-D xmin,xmax, ...; don't hide lines, just wiremesh. 
-</dd></dl>Higher bytes: 2nd (*256) color of web if non-zero. 3rd (*65536) color
+<pre>
+0&nbsp;don't&nbsp;rescale,&nbsp;use&nbsp;last&nbsp;scaling.
+1&nbsp;scale&nbsp;to&nbsp;fit&nbsp;1-D&nbsp;range&nbsp;xv(1)-xv(ix),&nbsp;yv(1)-yv(iy),&nbsp;zmin-zmax.
+2&nbsp;scale&nbsp;to&nbsp;2-D&nbsp;xmin,xmax,&nbsp;...;&nbsp;don't&nbsp;hide&nbsp;lines,&nbsp;just&nbsp;wiremesh.&nbsp;
+
+</pre>
+
+<div class="p"><!----></div>
+Higher bytes: 2nd (*256) color of web if non-zero. 3rd (*65536) color
 of axes (if !=0). (Remains set).
 
 <div class="p"><!----></div>
@@ -515,9 +495,10 @@ coordinate to hold fixed (ifixedcoord), what its world value is
 (fxdworld), and right (+1) or left (-1) handed system (irlsys).
 
 <div class="p"><!----></div>
+ <a id="tth_sEc11"></a><h2>
+11&nbsp;&nbsp;Three-Dimensional Perspective Drawing</h2>
 
-<h2> Three-Dimensional Perspective Drawing
-</h2>
+<div class="p"><!----></div>
 POLY3LINE(xv,yv,zv,ilength) Draw a polyline in 3-D. (Minimum setup
 call prior to this is just pltinit.)
 
@@ -566,7 +547,7 @@ example to project onto the z=constant (negative) face of the cube,
 you do: call hdprset(-3,-scbn(3))
 
 <div class="p"><!----></div>
-TN2S(px,py,sx,sy) Transform normalized to px,py to screen coordinates
+TN2S(px,py,sx,sy) Transform normalized px,py to screen coordinates
 sx,sy. If (world3.h) ihiding is  &lt; 0, project in direction of 3-d axis
 mod(abs(ihiding),2) at value fixedn, right/left-handed when
 (1 &#8804; &#8722;ihiding &#8804; 3 ) or (4 &#8804; &#8722;ihiding &#8804; 6).
@@ -579,24 +560,20 @@ motion. Normally motion calls for a redraw of the plot and reentering
 eye3d, while no motion is the signal to continue. Thus the following
 code gives interactive examination of the object:
 
+<div class="p"><!----></div>
+<tt>&nbsp;51&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Continue</tt>
 
-<dl>
- <dt>
-51</dt>
-<dd>
-Continue
-</dd>
- <dt>
-</dt>
-<dd>Drawing commands ...
-</dd>
- <dt>
-</dt>
-<dd>call eye3d(isw)
-</dd>
- <dt>
-</dt>
-<dd>if(isw.eq.1)goto 51</dd></dl> Key presses with focus in the plot window, return isw= keysym of key
+<div class="p"><!----></div>
+<tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawing&nbsp;commands&nbsp;...</tt>
+
+<div class="p"><!----></div>
+<tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;call&nbsp;eye3d(isw)</tt>
+
+<div class="p"><!----></div>
+<tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if(isw.eq.1)goto&nbsp;51</tt>
+
+<div class="p"><!----></div>
+Key presses with focus in the plot window, return isw= keysym of key
 pressed. For example in X, left, up, right, down cursor arrows are
 ff51-4 respectively (65361-4 decimal). Letters are their lower case
 ASCII codes, etc.  The return value can be used for other control
@@ -607,9 +584,23 @@ purposes. But the codes for cursors are different under Windows
 IEYE3D() Integer function of convenience to return switch value of eye3d.
 
 <div class="p"><!----></div>
+DRAW3ARROW(arrowdata) Draw a 3-D arrow according to settings of
+arrowdata(10): Base position world coords (3), Point position (3),
+Barb parallel, perp size as fraction of length (2). 
+Feather size parallel, perp, frac of length (2). If barbperp arrow(8)
+is negative, then arrowplot must have total length 12, and the last
+two parameters control (11) the number of barb angles and (12) whether the barb
+is filled or not.
 
-<h2> Plotting volumetric 3-D Data
-</h2>
+<div class="p"><!----></div>
+ARG3ARROW(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10[,a11,a12]) call DRAW3ARROW
+with explicitly passed individual arguments.
+
+<div class="p"><!----></div>
+ <a id="tth_sEc12"></a><h2>
+12&nbsp;&nbsp;Plotting volumetric 3-D Data</h2>
+
+<div class="p"><!----></div>
 <a href="slicetest.f"><img align="left"
 src="sgweb.jpg" width="400"></a>
 
@@ -645,9 +636,10 @@ by the third bit of ifix being set; the work array vp(nw,nw,3,3)
 must then be provided.
 
 <div class="p"><!----></div>
+ <a id="tth_sEc13"></a><h2>
+13&nbsp;&nbsp;Primitives</h2>
 
-<h2> Primitives
-</h2>
+<div class="p"><!----></div>
 VECW(x,y,ipen) Draw world-unit vector to (x,y) with pen up (ipen=0) or down (1).
 
 <div class="p"><!----></div>
@@ -674,9 +666,10 @@ normalized.
 GTIC(xgw,ilab,xg,yg,tcos,tsin,axcos,axsin,lpara) Low level tic drawing.
 
 <div class="p"><!----></div>
+ <a id="tth_sEc14"></a><h2>
+14&nbsp;&nbsp;Utilities</h2>
 
-<h2> Utilities
-</h2>
+<div class="p"><!----></div>
 FITRANGE(min,max,itics,ipow,fac10,delta,first,xlast) Fit a maximum of
 itics ticks to range (min, max). Decide a scaling factor 10<sup><span class="roman">ipow</span></sup>=fac10 and a sensible (scaled) delta between tics. First (xlast)
 is integer multiple of delta lying closest to min (max) outside the
@@ -688,16 +681,6 @@ MINMAX(xv,isize,min,max) Find min and max of vector of size isize.
 <div class="p"><!----></div>
 MINMAX2(xa,iL1,ix,iy,min,max) Find min and max of 2-d array of
 leading dimension iL1, over indices (ix,iy).
-
-<div class="p"><!----></div>
-BOXCARAVE(nt,nb,xv,xavev) Box-car average the vector xv of length nt,
-into xavev over a box extending from i-nb to i+nb. (So if nb=0 no 
-averaging is done.)
-
-<div class="p"><!----></div>
-TRIANGAVE(nt,nb,xv,xavev) Average the vector xv of length nt, into
-xavev using triangular weighting proportional to 1-abs(j)/(nr+1), for
-j from -nr to +nr.
 
 <div class="p"><!----></div>
 FWRITE(x,iwdth,ipoint,cstring) Format write the float x into cstring
@@ -731,9 +714,10 @@ gs -c /SF 2.5 def -f plot0001.ps
 which causes the animation duration to be multiplied by 2.5
 
 <div class="p"><!----></div>
+ <a id="tth_sEc15"></a><h2>
+15&nbsp;&nbsp;Linking</h2>
 
-<h2> Linking
-</h2>
+<div class="p"><!----></div>
 The routines are normally compiled and gathered into a library which
 is subsequently linked against. The interface routines are contained
 in vecx.c, vecglx.c, vecwin.c, or the obsolete but occasionally useful
@@ -742,13 +726,11 @@ vecfill, scolor, accisgraddef, acgradcolor, getrgbcolor are public,
 for calling by higher level routines, and possibly the user.
 
 <div class="p"><!----></div>
-For X window systems, vecx.c requires the X header files such as
-X11/StringDefs.h and the Xlib and Xt libraries, calling for
-compiler/linker arguments such as -L/usr/X11R6/lib/ -lXt -lX11. The
-driver vecglx.c requires GL and GLU, instead of Xt.  Typically these
-requirements are present in current linux distributions only if the
-development packages of X11 etc are installed. These usually go by
-names like libx11-dev, libxt-dev.
+For X window systems, the X11 driver (vecx.c) requires linking against
+the Xlib library using compiler/linker arguments such as
+-L/usr/X11R6/lib/-lX11.  The OpenGL driver vecglx.c requires in
+addition -lGL and -lGLU. The development versions of the X11 and
+OpenGL packages may be required to provide these.
 
 <div class="p"><!----></div>
 
@@ -756,5 +738,5 @@ names like libx11-dev, libxt-dev.
 T<sub><span class="small">E</span></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><span class="small">T</span></sub>H</a>,
-version 4.03.<br />On 25 Apr 2013, 12:31.</small>
+version 4.04.<br />On  9 Mar 2014, 17:55.</small>
 </html>

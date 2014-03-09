@@ -1,27 +1,54 @@
-\newif \iftth
-\iftth 
-\else
-\parindent= 0 pt
-\parskip = 2 pt
-\pretolerance=9000
-\overfullrule 0 pt
-\rightskip 0pt plus0pt minus1pt
-\fi
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\parindent=0pt
+\newif \iftth 
 
-\magnification \magstep2
 
-\centerline{\bf Summary of ACCIS plotting system routines}
+\title{Summary of ACCIS plotting system routines}
+\author{I.H.Hutchinson}
+\date{}
+\begin{document}
+\maketitle
 
-\centerline{I.H.Hutchinson}
-\bigskip
+\tableofcontents
 
-\beginsection{Conventions}
+\section{Apologia}
+
+The ACCIS plotting library is a lightweight portable library that
+gives fortran what it ought to have had: simple graphical output of
+scientific data. There are other libraries that fulfil that purpose;
+but this happens to be the one I wrote; so I like it. Also it is
+entirely free and open, so it can be included in the distribution of
+any program, without encumbrance. 
+
+It is powerful. For example, it has interactive routines for
+displaying selectable slices of 3-D data, rotating the views of
+surfaces, projecting 2-D contours, and producing smoothly coloured
+contours.
+
+It observes what ought to be a standard principle of scientific
+programming: that the focus should be the calculation, not the
+graphical interface. In other words, the fortran program calls the
+graphical display, rather than what has become the standard approach
+in windowing systems that the graphical interface calls the
+calculation. The result is that the learning curve is easy, and one
+can get started with a couple of subroutine calls.
+
+Finally, it is written in fortran 77 (with the exception of the X or
+Win32 graphics driver which need C) so if you can compile your
+fortran program, you can compile the accis routines.
+
+The best way to get into using accis is by example. So I recommend
+looking at the routine plottest.f.
+
+\section{Conventions}
 
 For purposes of this summary, the following implicitly indicate types:
 i: integer, c: character, l: logical, all others: real.
 Terminating letter indicates: v: vector (1-d array), a: 2-d array.
 
-\beginsection{Automatic plotting, single call plots.}
+\section{Automatic plotting, single call plots.}
 
 \iftth \special{html:<a href="plottest.f"><img align="right" src="plainplot.png"></a>}\fi
 AUTOPLOT(xv,yv,ilength) Line plot yv versus xv; linear axes.
@@ -35,7 +62,7 @@ LAUTOMARK(xv,yv,ilength,lnx,lny,isym) Symbol plot with logarithmic axis(es).
 YAUTOPLOT(yv,ilength) Line plot yv versus index; linear axes.
 
 
-\beginsection{Setup}
+\section{Setup}
 
 PLTINIT(xmin,xmax,ymin,ymax) Switch to graphics, set world scaling.
 
@@ -49,18 +76,6 @@ FITSCALE(xmin,xmax,ymin,ymax,lnx,lny) same but fitting nice ranges.
 
 PLTINASPECT(xmin,xmax,ymin,ymax) Initiate graphics. Resize axis region
 to retain aspect ratio of plot. Set world scaling.
-
-AUTOINIT(xv,yv,ilength) Initialization using autoscaling for the
-plotting of xv, yv arrays. AUTOPLOT consists of CALL
-AUTOINIT(xv,yv,ilength) CALL AXIS() CALL POLYLINE(xv,yv,ilength).
-
-LAUTOINIT(xv,yv,ilength,lx,ly) same but for (possibly) logarithmic axes.
-
-MANAUTOINIT(xv,yv,ilength,isw,sxmin,sxmax,symin,symax) Initialize
-either using the autoscaling, or else override one or more of the
-automatic limits, according to bits 0-3 of isw, which if set indicate
-override and use sxmin[0] ...  symax[3]. E.g. isw=3 sets xmin=sxmin,
-xmax=sxmax, symin=ymin, symax=ymax.
 
 AXREGION(xin,xan,yin,yan) Set the axis region in normal units.
 Default: .31,.91,.1,.7
@@ -92,7 +107,7 @@ PLTEND() Flush graphics, wait for mouse click in plotting window; then
 return.
 
 
-\beginsection{Data plotting}
+\section{Data plotting}
 
 POLYLINE(xv,yv,ilength) Draw a polyline on an already setup graph.
 
@@ -127,7 +142,8 @@ Thereafter acgen generates the sybol specified. Since the width and
 height are scaled by chrswdth and chrshght, aspect-ratio can be scaled
 using charsize().
 
-POLYERR(xv,yv,errv,ilength) Draw error bars yv to yv+errv.
+POLYERRS(xv,yv,errv,ilength,u,d) Draw error bars from yv-d*errv to
+yv+u*errv for all the xv, yv, errv arrays.
 
 STPOLYLINE(xa,ya,ilength,ixstride,iystride),
 STPOLYMARK(xa,ya,ilength,ixstride,iystride,isym) Strided versions of
@@ -137,7 +153,7 @@ allow one to plot data from rows (rather than columns) of a matrix by
 passing the leading dimension of the matrix as the stride. Passing
 strides of 1 gives equivalent sampling to the unstrided versions.
 
-\beginsection{Color}
+\section{Color}
 
 \iftth \special{html:<a href="filltest.f"><img align="right" src="filltest.png"></a>}\fi
 COLOR(icol) Set current color of 0-15. Default 15 black (on white).
@@ -178,7 +194,7 @@ units. Width of color bar is colwith times axis-box
 width. lpara=.true. says use parallel labels.
 
 
-\beginsection{Axes}
+\section{Axes}
 
 AXIS() Automatic x and y axis.
 
@@ -215,34 +231,31 @@ ixw$\le$0. Defaults set respectively if reals all =0 or ints all
 
 TICREV() Reverse the tics and labels to the other side of axis.
 
-TICNUMSET(itics) Set the number of tics of axis (approximately).
-
 TICLABTOG() Toggle the tic labels on and off.
 
-TOGMINOR() Toggle the minor tics on and off.
+TICNUMSET(itics) Set the number of tics of axis (approximately).
 
-
-\beginsection{Text plotting}
+\section{Text plotting}
 
 \iftth \special{html:<img align="right" src="fontshow.png">} \fi
 
 Special text is accessed via ``$\backslash$'' or ``!'' followed by one of 
 the following:
-{\parindent 5 pc
-\item{@}       to normal font 0.
-\item{A}       to font 1 (math)
-\item{B}       to font 2 (italic)
-\item{R}       to font 3 (roman)
-\item{E}       to font 4 (english gothic)
-\item{G}       to font 5 (german gothic)
-\item{d/D}       Toggle subscript mode
-\item{u/U}       Toggle superscript mode
-\item{p}         Save this position
-\item{q}         Save current position and return to previously saved
-position.
-\item{o}        Toggle Write-over mode
-\item{n/N}      Toggle Write-under mode
-}
+\begin{verbatim}
+@        to normal font 0.
+A        to font 1 (math)
+B        to font 2 (italic)
+R        to font 3 (roman)
+E        to font 4 (english gothic)
+G        to font 5 (german gothic)
+d/D      Toggle subscript mode
+u/U      Toggle superscript mode
+p        Save this position
+q        Save current position and return to previously saved position.
+o        Toggle Write-over mode
+n/N      Toggle Write-under mode
+\end{verbatim}
+
 
 JDRWSTR(xn,yn,cstring,just) Draw cstring at (xn,yn)(normal), justified
 per parameter just:  0. centered, +1. normal left-justified, etc.
@@ -270,7 +283,7 @@ If nsym$<$0 use both line and symbol. If nsym=0 put only line.
 If nsym=257 use nothing but put the string at the usual place.
 If nsym=258 use nothing but put the string at the start of the line.
 
-\beginsection{Contouring}
+\section{Contouring}
 
 \iftth \special{html:<a href="contest.f"><img align="right" src="contest.png"></a>}\fi
 
@@ -301,12 +314,7 @@ like icsw (see CONTOURL). Arrow length is 1 normalized unit times
 E/Erange. Plot region should be setup up prior to
 call.
 
-SETCONLOG(ltf) Set logarithmic color contouring true or false
-according to logical ltf. GETCONLOG() is the logical function
-returning the value to which logarithmic contouring is set. Contour
-lines are not affected by this value.
-
-\beginsection{Projected 3-D surface routines}
+\section{Projected 3-D surface routines}
 
 \iftth \special{html:<a href="hidtest.f"><img align="right" src="hidtest.png"></a>}\fi
 
@@ -314,9 +322,11 @@ HIDWEB(xv,yv,za,iL,ix,iy,isw) Draw a 3-D web of za(ix,iy) (leading
 dimension iL) at xv,yv.  View obtained from file eye.dat (3 reals) or
 default if nonexistent. Control switch isw: .lt.0 no axes.
 Lowest byte abs(isw)=
-\item{0} don't rescale, use last scaling.
-\item{1} scale to fit 1-D range xv(1)-xv(ix), yv(1)-yv(iy), zmin-zmax.
-\item{2} scale to 2-D xmin,xmax, ...; don't hide lines, just wiremesh. 
+\begin{verbatim}
+0 don't rescale, use last scaling.
+1 scale to fit 1-D range xv(1)-xv(ix), yv(1)-yv(iy), zmin-zmax.
+2 scale to 2-D xmin,xmax, ...; don't hide lines, just wiremesh. 
+\end{verbatim}
 
 Higher bytes: {2nd} (*256) color of web if non-zero. {3rd} (*65536) color
 of axes (if !=0). (Remains set).
@@ -359,7 +369,7 @@ Set hiding (ihide = 1), projecting 2$\rightarrow$3 (iproject.ne.0), which
 coordinate to hold fixed (ifixedcoord), what its world value is
 (fxdworld), and right (+1) or left (-1) handed system (irlsys).
 
-\beginsection{Three-Dimensional Perspective Drawing}
+\section{Three-Dimensional Perspective Drawing}
 
 POLY3LINE(xv,yv,zv,ilength) Draw a polyline in 3-D. (Minimum setup
 call prior to this is just pltinit.)
@@ -397,7 +407,7 @@ corresponding to coordinate icoord=constant (icoord =1,2,3). So for
 example to project onto the z=constant (negative) face of the cube,
 you do: call hdprset(-3,-scbn(3))
 
-TN2S(px,py,sx,sy) Transform normalized to px,py to screen coordinates
+TN2S(px,py,sx,sy) Transform normalized px,py to screen coordinates
 sx,sy. If (world3.h) ihiding is $<0$, project in direction of 3-d axis
 mod(abs(ihiding),2) at value fixedn, right/left-handed when
 $(1\le-ihiding\le3 )$ or $(4\le-ihiding\le 6)$.
@@ -408,12 +418,17 @@ routine exits with isw=1 if motion occured or isw=0 if no
 motion. Normally motion calls for a redraw of the plot and reentering
 eye3d, while no motion is the signal to continue. Thus the following
 code gives interactive examination of the object:
-{\parindent 5em\parskip 0pt
-\item{51}Continue
-\item{}Drawing commands ...
-\item{}call eye3d(isw)
-\item{}if(isw.eq.1)goto 51\par
-} Key presses with focus in the plot window, return isw= keysym of key
+
+\verb! 51     Continue!
+
+\verb!        Drawing commands ...!
+
+\verb!        call eye3d(isw)!
+
+\verb!        if(isw.eq.1)goto 51!
+
+
+Key presses with focus in the plot window, return isw= keysym of key
 pressed. For example in X, left, up, right, down cursor arrows are
 ff51-4 respectively (65361-4 decimal). Letters are their lower case
 ASCII codes, etc.  The return value can be used for other control
@@ -422,8 +437,18 @@ purposes. But the codes for cursors are different under Windows
  
 IEYE3D() Integer function of convenience to return switch value of eye3d.
 
+DRAW3ARROW(arrowdata) Draw a 3-D arrow according to settings of
+arrowdata(10): Base position world coords (3), Point position (3),
+Barb parallel, perp size as fraction of length (2). 
+Feather size parallel, perp, frac of length (2). If barbperp arrow(8)
+is negative, then arrowplot must have total length 12, and the last
+two parameters control (11) the number of barb angles and (12) whether the barb
+is filled or not.
 
-\beginsection{Plotting volumetric 3-D Data}
+ARG3ARROW(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10[,a11,a12]) call DRAW3ARROW
+with explicitly passed individual arguments.
+
+\section{Plotting volumetric 3-D Data}
 
 \iftth \special{html:<a href="slicetest.f"><img align="left"
 src="sgweb.jpg" width="400"></a>}\fi
@@ -458,7 +483,7 @@ by the third bit of ifix being set; the work array vp(nw,nw,3,3)
 must then be provided.
 
 
-\beginsection{Primitives}
+\section{Primitives}
 
 VECW(x,y,ipen) Draw world-unit vector to (x,y) with pen up (ipen=0) or down (1).
 
@@ -479,7 +504,7 @@ normalized.
 GTIC(xgw,ilab,xg,yg,tcos,tsin,axcos,axsin,lpara) Low level tic drawing.
 
 
-\beginsection{Utilities}
+\section{Utilities}
 
 FITRANGE(min,max,itics,ipow,fac10,delta,first,xlast) Fit a maximum of
 itics ticks to range (min, max). Decide a scaling factor 10$^{\rm
@@ -491,14 +516,6 @@ MINMAX(xv,isize,min,max) Find min and max of vector of size isize.
 
 MINMAX2(xa,iL1,ix,iy,min,max) Find min and max of 2-d array of
 leading dimension iL1, over indices (ix,iy).
-
-BOXCARAVE(nt,nb,xv,xavev) Box-car average the vector xv of length nt,
-into xavev over a box extending from i-nb to i+nb. (So if nb=0 no 
-averaging is done.)
-
-TRIANGAVE(nt,nb,xv,xavev) Average the vector xv of length nt, into
-xavev using triangular weighting proportional to 1-abs(j)/(nr+1), for
-j from -nr to +nr.
 
 FWRITE(x,iwdth,ipoint,cstring) Format write the float x into cstring
 with specified ipoint decimal places. Total width returned as iwdth.
@@ -524,7 +541,7 @@ gs -c /SF 2.5 def -f plot0001.ps
 
 which causes the animation duration to be multiplied by 2.5
 
-\beginsection{Linking}
+\section{Linking}
 
 The routines are normally compiled and gathered into a library which
 is subsequently linked against. The interface routines are contained
@@ -533,15 +550,12 @@ vec4014.f. Of these driver files, the routines svga, txtmode, vec,
 vecfill, scolor, accisgraddef, acgradcolor, getrgbcolor are public,
 for calling by higher level routines, and possibly the user.
 
-For X window systems, vecx.c requires the X header files such as
-X11/StringDefs.h and the Xlib and Xt libraries, calling for
-compiler/linker arguments such as -L/usr/X11R6/lib/ -lXt -lX11. The
-driver vecglx.c requires GL and GLU, instead of Xt.  Typically these
-requirements are present in current linux distributions only if the
-development packages of X11 etc are installed. These usually go by
-names like libx11-dev, libxt-dev.
+For X window systems, the X11 driver (vecx.c) requires linking against
+the Xlib library using compiler/linker arguments such as
+-L/usr/X11R6/lib/-lX11.  The OpenGL driver vecglx.c requires in
+addition -lGL and -lGLU. The development versions of the X11 and
+OpenGL packages may be required to provide these.
 
+\end{document}
 
-
-\end
 

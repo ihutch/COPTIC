@@ -17,7 +17,7 @@ C********************************************************************
 c Switch to graphics mode Tek 4010/14.
       subroutine svga(scrxpix,scrypix,vmode,ncolor)
       integer scrxpix,scrypix,vmode,ncolor
-      accis_nodisplay=1
+      accis_nodisplay=1;
 c Enter Tek mode. Modified for Xterm.
       write(*,'(1x,a)')char(27)//'[?38h'
       write(*,*)'                                 '
@@ -182,7 +182,7 @@ c***********************************************************************
       end
 c********** Tell the current rgb color ********************************
       subroutine getrgbcolor(ipixel,red,green,blue)
-      integer ipixel,red,green,blue
+      integer ipixel,red,green,blue;
       integer a_gradPixno
       parameter (a_gradPixno=240)
       integer a_gradPix(a_gradPixno)
@@ -200,15 +200,15 @@ c********** Tell the current rgb color ********************************
 c*************************************************************************
       subroutine accisgraddef()
       integer top, bot
-      top=65535
-      bot=0
-      call accisgradinit(bot,bot,bot,top,top,top)
+      top=65535;
+      bot=0;
+      call accisgradinit(bot,bot,bot,top,top,top);
       end
 c*************************************************************************
       subroutine accisgradinit(r1,g1,b1,r2,g2,b2)
       integer r1,g1,b1,r2,g2,b2
       integer i,j,status
-      integer ipixel,red,green,blue
+      integer ipixel,red,green,blue;
       integer a_gradPixno
       parameter (a_gradPixno=240)
       integer a_gradPix(a_gradPixno)
@@ -239,8 +239,8 @@ c*************************************************************************
          elseif(j.gt.65535) then
             j=65535
          endif
-         a_gradblue(i)=j
-         a_grad_inited=2
+         a_gradblue(i)=j;
+         a_grad_inited=2;
       enddo
       end
 c*************************************************************************

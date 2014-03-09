@@ -466,7 +466,8 @@ c Write the color change commands to the plot file.
 c      write(*,*)'Color changing',li,pfsw,' ',colorname(li+1)
       if(pfsw.ne.0) then
 	 updown=99
-	 if(abs(pfsw).eq.2.or.abs(pfsw).eq.3) call abufwrt(' ST',3,ipsunit)
+	 if(abs(pfsw).eq.2.or.abs(pfsw).eq.3)
+     $        call abufwrt(' ST',3,ipsunit)
          if(abs(pfsw).eq.4.or.abs(pfsw).eq.5)then
 c PGF
             write(ipgunit,*)only(1:ns),'\pgfusepath{stroke}'

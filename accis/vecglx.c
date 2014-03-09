@@ -52,7 +52,7 @@ static int accis_eye3d=9999;
 static XPoint accis_path[accis_path_max];
 static int accis_pathlen=0;
 /* Until svga is called, the default is that there is no display */
-static int accis_nodisplay=1;
+static int accis_nodisplay=99;
 
 /* 256 color gradient globals */
 /* Use only 240 colors so that 16 are left for the 16 colors and you can
@@ -197,7 +197,6 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
     getcmdargs_();
     /* Obsolete compatibility settings */
     *vmode=88;
-
     if( (accis_display = XOpenDisplay(NULL)) == NULL) {
         printf("\n\tcannot connect to X server\n\n");
         exit(0); 
@@ -725,17 +724,18 @@ void accisgradset_(red,green,blue,npixel)
     a_gradgreen[i]=theRGBcolor.green=ilimit(0,*(green+i),65535);
     a_gradblue[i]=theRGBcolor.blue=ilimit(0,*(blue+i),65535);
     /*printf("theRGBcolor %d,%d,%d\n",theRGBcolor.red,theRGBcolor.green,theRGBcolor.blue);*/
-    if(is_truecolor()){
-      /*fprintf(stderr,"Setting a_gradPix, %d",i);*/
-      a_gradPix[i]=
-	((theRGBcolor.red/256)*256+(theRGBcolor.green/256))*256
-	+(theRGBcolor.blue/256);
-      /*fprintf(stderr,"Allocated Color %d =%d\n",i,a_gradPix[i]);*/
-    }else if(XAllocColor(accis_display,accis_colormap,&theRGBcolor)){
-      fprintf(stderr,"Allocated Color %d=%ld\n",i,theRGBcolor.pixel);
-      a_gradPix[i]=theRGBcolor.pixel;
-    }else{
-      a_gradPix[i]=BlackPixel(accis_display,0);
+    if(accis_nodisplay!=1){/*Unless screen display is off, initialize gradPix.*/
+      if(is_truecolor()){
+	a_gradPix[i]=
+	  ((theRGBcolor.red/256)*256+(theRGBcolor.green/256))*256
+	  +(theRGBcolor.blue/256);
+	/*fprintf(stderr,"Allocated Color %d =%d\n",i,a_gradPix[i]);*/
+      }else if(XAllocColor(accis_display,accis_colormap,&theRGBcolor)){
+	fprintf(stderr,"Allocated Color %d=%ld\n",i,theRGBcolor.pixel);
+	a_gradPix[i]=theRGBcolor.pixel;
+      }else{
+	a_gradPix[i]=BlackPixel(accis_display,0);
+      }
     }
   }
   a_grad_inited=2;

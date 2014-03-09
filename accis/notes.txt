@@ -1,0 +1,834 @@
+
+#Problems 17 May 96. 
+# vecnp causes f2c segmentation fault. Data statements at fault.
+# 18 May 96 vecnp can't be fixed, but dos f2c works on it. Also used the
+# ca definition fix so we can use -E switch.
+#
+# 24 May recompiled f2c from source using the -DCRAY switch on malloc.c
+# it now works on these two files.
+# We still have a problem with commons in vecnp unless this is compiled
+# WITHOUT the -E switch, because its commons seem to be declared external.
+# In xterm does not autoswitch to Tek mode. Fixed by getting the PFC
+# version of vec4014. However, now we have lost the alternate fonts.
+# Old version has the same problem. Perhaps we never had them.
+# Ah! need to compile plottest with '-!bs' switch to get the backslash
+# sequences. Then greek letters are there.
+# Discovered the problem to lie with the fact that ichar(char(x)) is 
+# negative if x > 128. Fixed in drwstr.for.
+#
+# 5 Jun 99 rewrote makefile for $(G77). '-!bs' becomes -fno-backslash.
+# Had some problems with parameter char() in vecnp, vec4014, drwstr.
+# Intrinsic not allowed in parameter statement. Used ' ' strings instead.
+# xargc/v had to become f__xargc/v for $(G77) command line access.
+
+# 10 Jul 99 found things were not fixed properly. There were some additional
+# char() in parameters that had to be fixed. Also vecnp ' ' approach was
+# not working. In the end had to use printable character ' \' to denote line
+# end, and old style in lnswrt. Also there was a deep bug in wstr that it
+# was not being properly terminated and so the string length was wrong.
+
+# 26 July 99 got f2c going by recompiling the library from source and removing
+# the .so. version which was being used by default. Then created an f2c
+# version of the accis library by replacing the vecx with vecxf2c which
+# accesses the command line arguments as xargv/c. Other stuff left the same.
+# It seems to work ok with geqread.make
+
+10 Jul 2001
+hidtest shows there is a problem in the new code. Errors in the contouring
+part.
+
+Seems to be associated with the changes that brought in optvecn.
+This is present in
+labeline
+polyline
+vecw
+
+Returning these to their old versions got rid of the problem.
+
+Just replacing the vecw with the new one got back an error.
+Verified that the error goes away if we remove optvecn call from vecn.
+
+labeline does return it.
+
+polyline alone does not return it.
+
+Looks as if I was fooling around with hiding of projected 2d lines 
+on Mar 2nd and left the library in a bad state. Remove the places that
+this was inserted till we figure out what the problem is.
+Polyline, labeline, vecw. So now hid is the only place calling optvecn.
+Seems ok.
+
+24 Feb 2002
+
+Fixing the terrible slowness of the networked colors in contour coloring.
+Any calls that require data back from the Xdisplay are painfully slow, 
+and need to be avoided if possible. 
+
+My worst error was in getrgbcolor, where I used a call back to the server
+to determine the color to use in the Postscript output. That meant that 
+every color change with gradient colors required a call. Changed that to
+store the gradient colors locally and hence not require the network
+exchange.
+
+Other problem was with the gradient initialization. That uses 256 calls
+for the 256 colors which is rather slow causing a very slow start up.
+Introduced the assumption for the default grey-scale that we can just scale
+between black and white in the pixel value.
+
+For a true gradient, built a test to recognize a standard 24 bit depth 
+display and use direct evaluation of the pixel. This is a big win.
+
+Now the startup penalty is just the 16 colors that are always evaluated.
+
+28 Feb 2004
+
+Made the truncation present in all 2d plotting, to prevent vectors
+being drawn outside the plotting area. However, 3-d code must turn
+this off by explicitly putting ltlog=.false. and does so when ihiding
+is non-zero, otherwise it gets confused.
+
+This change may be problematic for some cases that write just outside
+the window with postscript. So make the truncation 20% outside the 
+windows to see if that gives us sufficient protection.
+
+17 Dec 2005
+
+Working on using internal PS fonts for postscript. Got some test routines
+going pretty reasonably. However, we need to have something that is 
+consistent with the way that the scaling and angles work in the standard
+vector drawn fonts. They are governed by the common block:
+
+      common/chrcter/chrscos,chrssin,chrswdth,chrshght,chrsslnt
+     &  ,chrsaddr(NOCHARS)
+
+of which only really the cos,sin and wdth,hght are important here.
+In vector drawing the following logic governs the behaviour.
+
+When a new font is selected, it draws at the current angle and size.
+The font selection is returned to duplex at the start of each string.
+The subscript or superscript positioning is not reset till it is toggled.
+Selection of alternative fonts is always done within strings. There
+are always just three fonts available. Which is being used is governed
+by the value of 'offset'.
+
+In principle a new fontset can be loaded by reading a new file
+(although that is essentially never done). It might be sensible to implement 
+internal PS fonts in a way that is equivalent to reading the new file.
+In other words, there are always going to be three fonts available, but
+in principle you can replace any of them with other fonts, but continue 
+to refer to them as !@ !A !B.
+
+Probably the best way to do this is to define in the PS file three
+fonts scaled to the default size, with internal keys. Then when a font
+switch is done, the font required is referenced, and if the current
+size/angle is non-standard, is scaled appropriately. We could perhaps
+restore the !@ font by having pushed it prior to the switch. That
+would avoid us having to rescale the font if we are drawing at a
+non-default size. But it does so at the expense of some complexity,
+probably not worth it. 
+
+I was trying to keep track of current font size inside the PS code. But that
+does not really work, because if one changes to a different font, then
+you always have to do the scaling up, because the font switched to comes
+in as a default sized/angled font. Again, none of this cleverness seems
+to be worth the candle. 
+
+Simplest approach:
+
+initializing: define three fonts at .015 size.
+starting a string: load standard font 0, size, rotate.
+font-switch: load new font, size, rotate.
+sub-super toggle: resize and shift position same as with vector.
+changing size/angle: do nothing because we'll rotate/size on next start.
+
+Ok implemented that:
+
+PSfontinit()
+PSsetfont(0)
+PSsetfont(1) or (2)
+[sub-super (no change), charsize etc no change.]
+
+Also need to go inside the drawing routines and if psPS is 1 then
+call vecnops PSchardrw.
+
+PSfontinit() needs to be called right after pltinit. We can demand
+that fonts are consistent throughout a plot. Therefore pfPSset has
+to be called before pltinit, and pltinit calls PSfontinit (optionally).
+
+Seems all to be pretty much working.
+
+Need to figure out what to do with polymark. It gives crazy symbols 
+at present. Made it turn off the pfPS during the drawing of symbols
+1-10, otherwise just draw psfont character.
+
+23 Dec 05
+
+Some problems with arrows because they are substantially larger in the 
+PS fonts than in hershey. Need a way to implement some standard scalings
+of individual characters. Or else we need to turn off the PSfonts for drawing
+the arrow characters. That's probably sufficient (and better).
+Problem with that is that you need to know whether to turn it back
+on again. A simple way to do that is to make pfPSset a function and
+return its current state. But it's probably better simply to have a separate
+function to get the state. Use switch value 3 to revert to previous.
+
+23 Sep 06
+Bugs in PS plotting sometimes don't show up in other places.
+One occurs here:
+               call legendline(.5,.20,0,' Lampe')
+               call color(15)
+               call dashset(0)
+c work around accis bug:
+               call vecw(1.,1.,0)
+               call pltend()
+Which is something to do with being outside the winset when the line
+is ended.
+Another is when the number of points in a polyline is zero.
+Think I fixed the second in polyline.
+
+6 Oct 06
+I think first is now fixed by changes in vecn.
+
+Nov 06
+Implemented checks in drawing when in logarithmic mode to catch
+plots of (e.g.) zero values. These were fairly frequent cause of PS
+errors, but did not give a problem with screen. So this was hard to diagnose.
+
+
+Mar 07
+Still tracking down the BadMatch problems. Found this on the internet.
+I never used XLockDisplay before.
+
+ - XSetInputFocus (priv->display, priv->fullscreen_window,
+- RevertToNone, CurrentTime);
++ {
++ XWindowAttributes attr;
++ XLockDisplay (priv->display);
++ if (XGetWindowAttributes (priv->display, priv->fullscreen_window, &attr)
++ == Success && attr.map_state == IsViewable)
++ XSetInputFocus (priv->display, priv->fullscreen_window,
++ RevertToNone, CurrentTime);
++ XUnlockDisplay (priv->display);
+
+ man says:
+       The XLockDisplay function locks out all other threads from using
+       the specified display.  Other threads attempting to use the display
+       will block until the display is unlocked by this thread.  Nested
+       calls to XLockDisplay work correctly; the display will not actually
+       be unlocked until XUnlockDisplay has been called the same number of
+       times as XLockDisplay.  This function has no effect unless Xlib was
+       successfully initialized for threads using XInitThreads.
+
+Mar 07
+
+The above did not fix. Trying to fix by introducing ManageEvents after
+the Xflush. 
+
+Feb 08
+
+Trying to run on 64 linux (loki). There are problems in the vecx.c 
+routines. Most seem to be attributable to the long ... arguments of 
+routines callable from fortran. Many of the problems are fixed by
+explicitly converting the values to int:  (int)*li etc. They seem
+to be more permanently fixed by changing the specification to 
+int ... Which seems to show that fortran integer is being passed with
+the same length as C int. This is not the convention in GCC on 32 bit,
+I think. But I don't know that I have really got to the bottom of this.
+
+Replace all the types of fortran integer parameter/arguments with
+typdef int FORT_INT; (and remove some of the casts, now unnecessary). 
+Then it still seems to work ok under gfortran.
+Also works with the pathscale compiler on loki. Seems fixed.
+
+There are also several problems with the makefile:
+Need to avoid -fno-backslash. 
+Need to use mpif77 throughout (including accis).
+Need to link with /usr/X11R6/lib64
+
+Mar 9 08
+
+Separated the fontdata.f file into a separate file, and modified the makefile
+appropriately. The font block data program is forced to be linked in by
+making a call "external fonts" in the drwstrdo program. This is apparently
+the standard way to ensure block data linkage. Seems to work fine.
+
+Nope. It doesn't. Oh! Found that I had edited the wrong makefile. Need to
+edit Makefile, which is the real source. The other gets rewritten on
+./configure.
+
+10 Mar 08
+
+Pull out all the block data programs into initiald.f and fontdata.f
+And put in external statements to ensure loading appropriately.
+
+15 Mar 08
+
+Exploring using pthreads to handle the window refreshing implicitly.
+Can create a thread that runs the XtMainLoop. It then works fine when
+the fortran program is waiting for input provided an XSync is removed.
+But the txtmode does not work reliably then. Presumably because some
+events are being sent through the XtMainLoop and not through the explicit
+handling in the txtmode function.
+
+Moved the button and key press handler definitions into svga. 
+I think that's the way to do things. But I note that this causes
+the box rotation to be switched on in standard txtmode calls.
+This is actually because the button is down when we enter txtmode.
+So it only happens on the second plot of a series terminated by
+txtmode. It is nothing new. This bug existed before any changes.
+
+Perhaps the way to do this is to register and unregister the handlers,
+although that's a bit cumbersome. The alternative is to make the handlers
+behave differently in different contexts. That might also be cumbersome.
+
+Tried unregistering handlers in eye3d. It works and fixes the above bug.
+Seems a decent way to go.
+
+Implemented cancelling and restarting the XtMainLoop in the eye3d and
+txtmode code. It works, although you have to make sure that everything
+is flushed before calling it, and I don't seem to be successful in 
+ensuring that. I think the problem is that there are events being 
+grabbed by XtMainLoop and then dropped when it is stopped.
+
+The bottom line is that turning on and off the MainLoop doesn't give
+something that works reliably. 
+
+Found that one of the hangs is in XAllocColor. This is called before
+any stopping of the main loop is done, so it's not clear why that's a
+problem. However, stopping the thread and restarting after does appear
+to fix the hangs. Therefore it does seem to be some sort of bad
+interaction with the thread.
+
+16 Mar 08
+
+With precaution to stop the thread while using XAllocColor, it seems as if
+things are working correctly with the threaded XtMainLoop. Make that
+the default for now. 
+
+23 Mar 08
+
+Since my solution does not work on other servers than my laptop
+there's still a problem. Tried a number of locks etc, without any
+improvement (often retrogression) c.f. stopping and starting the
+thread. Eventually doing some reading on the network I see this is a
+long-standing problem.  The general opinion is that it is well nigh
+impossible to write a stable X program that makes X calls from more
+than one thread to the same widget. The safe solution is to make all X
+calls from just the one thread and have an interface that accepts the
+data into that thread from your other program.
+
+[It is said that XtNextEvent modifies the Event queue, and thus can't 
+be going on when other calls are happening:
+http://vlsi.cornell.edu/magic/archive/2002/0031.html]
+
+One view of this might be that the drawing thread does a ManageEvents.
+Then when there are no events left, it comes back and looks at the 
+memory shared with the main thread (if it can get the lock) if not it 
+blocks till it gets it. 
+
+If it finds new drawing commands, it executes them, with the main
+thread locked out of the shared memory. Then it releases the lock and
+goes back to ManageEvents. The drawing command interface allows
+writing to shared memory provided one can get the lock. There could be
+a queue of commands, of a fixed size. If the size gets filled, the
+drawing code should release the lock and wait for the X-thread to come
+in and clear it out. It should wait a certain time, then get the lock
+back. Then check if it has cleared, if not, wait again, if so,
+proceed. Thus there needs to be a polling loop.
+
+If there are no new drawing commands, what does it do? If it goes
+immediately back to ManageEvents then we have a tight-loop polling for
+events and looking for drawing. This needs timing/polling. We can't
+block at either side, because if we do, the other is potentially going
+to be ignored for a long time, when it shouldn't be. It could probably 
+be done with an explicit usleep for (say) 10-100 ms or so. Provided that
+the sleeping is done with the main thread free to proceed, the cost 
+would probably be negligible. One could even do delay auto-adjustment
+based on whether there are any events to handle when we come around. If so
+we keep the delay short; if not, we increase it. 
+
+The above URL's lockout method depends upon signals.  It blocks in
+XtNextEvent and calls a handler out of it to block the main loop and
+permit processing of other calls. But that's not the same, there are
+multiple threads calling X. The key question, though, is whether if
+a thread blocked in XtNextEvent can safely be jumped out of by a signal,
+and then do some X calls, followed by returning to where it was. If
+it can, then we could afford to block in XtNextEvent and then give a
+signal every time a drawing event happens. 
+
+1 Nov 08
+
+Remove the short integer specification from arguments to svga and
+from plotcom.h. This ought to make it possible to use the same
+plotcom for the windows version as for linux X. Yes it works.
+Now the win32 version is working fine when compiled from that directory.
+Executing the files calls up wine automatically in an impressive way.
+
+Link files back into home directory so that one can actually compile
+windows versions in that directory provided one does 
+make clean
+make fontshow -f makefile.win
+Of course this is not really a universal makefile.
+
+11 Jan 09
+Last week created the gradient coloring routines based upon triangles
+and splitting quadrilaterals into four at the centroid. 
+
+Today: Created a new vecx.c routine, accisgradset, that can set the color
+gradient in accordance with integer arrays passed from fortran. This
+therefore allows arbitrary non-linear 240 color gradients. Also fixed
+is_truecolor to do tests only once, thus allowing us to call in more
+freely. 
+
+Created a new gradient filler of quadrilaterals that splits up only
+into two triangles. Unfortunately, that is not a big win in terms of
+efficiency.  Its time for confilltest is 6.3s versus 8.0s, and its
+plot size is 8.3 vs 10.3 Mbyte. Only a 20% improvement. Thus, for this
+rather challenging case which fills the whole range of colors, the
+work is determined mostly by the large number of colors required,
+rather than the size of the filled triangles. The number of triangles
+is certainly decreased by a factor of 2. I can't see any significant
+difference in the quality of color interpolation.
+
+Implemented a way to skip levels if the motion is small. This definitely
+speeds things up. But it leaves blank pixels in the fill. This is greatly
+improved by using 5 and 6 point closed polygons rather than implied 
+closure. But not completely fixed, even so. No problems show with the 
+postscript output. Tried several ideas. Could not get the blanks to go
+away completely. They mostly occur when the quality is visibly deteriorating.
+An effort reduction of only perhaps a factor of 3 or so can be obtained 
+before deterioration sets in. 
+
+In short, the spatial skips approach is unreliable and does not give 
+a very great reduction in effort/time. It is probably not worth the effort.
+
+Tried spacing of greater than one between levels. This produces gaps.
+It appears there's a logical error in the routine that it might not
+fill a triangle that has not two valid levels, which can happen if we
+skip or have a spacing greater than one. That is fixed by a better
+choice of lmax, but then missed pixels appear with the level skipping
+as well as the space skipping. Perhaps we need both the polygon closure
+and the fix of this level bug. No, we can get gradfillnoskip to give a
+few missed pixels with the dsig negligibly small. So that is not enough
+to fix it. I don't seem to have got to the bottom of it. Not helped by
+trying to account for rounding in the fp 0. 1. limits.
+
+I don't know what the line-width under X is. Perhaps it is thin. Perhaps
+the problem could be fixed by making it wider. See man XCreateGC.
+Specifically setting the line_width in the graphics context to 1 instead
+of 0 causes the missed pixels to be filled. Good! That certainly fixes
+a major part of the problem. But even that does not fix it entirely.
+Since skipping 7.e-5 gives missed pixels. Perhaps there's still a bug.
+
+12 Jan 09
+
+Idea is that the pixel omission occurs because of T-junction. These
+arise when a boundary is drawn on one side with two strokes, between
+different levels, while on the other side it is drawn with one. Such
+junctions also occur with fixed level skipping when the starting level
+lmin, is different for each side of the draw. That effect can be
+prevented by calculation of lmax via:
+      lmin=max(int(hmin/iskip),min(ng0,ng1)/iskip)*iskip
+which forces it to be always a multiple of iskip.
+
+Tried in fillgradskip. It appears to work to fix all problems. No examples
+of an open pixel for skips between 1 and 10. Also works with fillgradnoskip
+which has none of the extra precautions of fillgradskip (implied polygon
+closure etc). Both these situations are with zero width lines. It seems
+as if I have located the source of the problem. I don't quite know how
+to fix it if I use the spatial skipping (as opposed to fixed level skip).
+The speed up/slim down with istep is a little less than the value of istep,
+but it is pretty close.
+
+I think this problem is unfixable for spatial skipping. If each
+triangle boundary must be divided at the same levels, then adjacent
+triangles can never use different stepping along a shared
+boundary. Consequently, if there's one triangle that steps by every
+level along its entire boundaries, then every level will propagate out
+from that triangle compelling the adjacent triangles to be drawn at
+those levels. It might be that these level lines, which are
+effectively contours, close on themselves, leaving some other parts of
+the region unaffected. But modulo those different, disconnected, regions
+of the fill, it appears that once a level has been drawn in one triangle
+it must be drawn in all.
+
+
+18 Jan 09 
+
+Found that gradquad2 did not work properly for the sphere,
+(surfdrtest) for reasons that are not obvious right now. Removed it
+from the working fillgrad.f. Ok found the problem. Put it back even
+though it is not used.
+
+Did various corrections of accissum.tex
+
+30 May 09
+
+Now have versions of fillgrad that use GL libraries and the Postscript
+level-3 commands to do the gradient fills. These are a considerable
+advantage. The GL needs vecglx. But the postscript needs nothing,
+except that it can be turned off, currently by editing vecnp.f, which
+might conceivably be useful to produce level-2 postscript in limited
+situations.
+
+13 June 09
+Small additions to help with 3D display for ccpic.
+Major fix of trn32 to be consistent about the point looked at.
+Prior to this, the point looked at was assumed to be 0,0,0 but
+was not returned as this in x,y,z, with ifl=-1.
+Now this assumption is removed, which means that one must really
+give the point looked at when setting. It is returned with ifl=-1.
+
+14 June 09
+Fix fitrange bug when xmin=xmax=0.
+
+15 June 09
+Added general sliceplot: sliceGplot to these routines.
+
+4 July 09
+
+The vecglx driver is badly broken on Ubuntu, using compiz with UFA
+enabled.  After some experimentation I find that writing to the front
+buffer is basically broken. It seems to appear at the top left of the
+screen. It is essential to do glXSwapBuffers, without which no window
+is even mapped with its decorations. Moving another window over the 
+accis window does NOT generate expose events. One must not eat up all
+the initial expose events or the window does not map. 
+
+Another major headache with drivers is that the vecx driver is
+painfully slow on compiz. The problem seems to be writing to the
+screen rather than the pixmap.  If I disable this by calling glback()
+(fortran), it is very fast. This difference shows most in plottest,
+or other relatively simple plots. Some surface plots are very fast.
+contest.f is another good example of the problem. 
+
+For now made accis_back=1 the default. It sometimes gives a wait
+but is generally faster.
+
+26 July 09
+
+Pursuing new BadMatch errors. Discovered how to install my own 
+error handler. Did so the first time that XSetInputFocus is called,
+and left it there. It flags bad match but does not crash on them. 
+
+Apparently there's a call XSynchronize(*display, Bool) that returns the
+previous value and sets whether X is synchronized, but this is apparently
+only for debugging since it really slows things down. Can also be set
+in Xt by giving command line argument -synchronous.
+
+It is recommended that one uses a StructureNotify mask and then looks 
+for MapNotify events to determine whether the window has been mapped.
+One might also look for events that tell one whether the focus has
+been changed and then restore the original handler.
+
+23 Apr 11
+
+Constructed lineout capability in sliceGcont. The next thing to do with this
+is to improve the graphic visibility by plotting the lineout line in the 
+right order so that it is correctly obscured by the plane slices. 
+
+21 May 11
+
+Added the ability to draw single points into the vecx and vecglx drivers.
+Invoked simply by specifying a pen of -1 to vec (and hence to vecn and vecw).
+
+23 Dec 11
+
+Had a registration difference between gradient contour fills and block
+chunky. Struggled with this for some time until finally figured out 
+where to put the adj in gradtri to shift the fills to a sensible place.
+Did not really understand why the code is touchy like that. It gave 
+strange extra ghost lines when the adj was in the wrong place.
+
+However, this only seems to fix the hand drawn case. Not the glx or 
+ps direct drivers.
+
+29 Mar 12
+Need a projectable arrow plot that can go over a projected contour plot,
+then we can incorporate into (e.g.) sliceGweb. I don't think the present
+one will work because it calculates the arrow angle in normalized space.
+But maybe that's ok, because text can be written on the projected plot.
+
+9 Feb 13
+Added minor tics.
+
+Adjusted vecglx driver by adding expose action to the accisrefresh. 
+But there's a problem with lorentztrack that the animation does not work.
+Trying a different approach with just
+      glXSwapBuffers(accis_display,accis_window);		\
+      glFlush(); /* Proves to be necessary for remote servers. */	\
+No. Doesn't work with lorentztrack. Background of window not erased.
+
+Basically its all very flakey. I don't seem to be able to make anything
+work with both sceptic and lorentztrack. And I don't understand the issues.
+
+16 Feb 13
+
+Implemented logarithmic color shading in contourl controlled by
+setconlog.
+
+17 Feb 13
+Returning to trying to get vecglx going with incremental drawing animation.
+Actually it seems to work if the visual is not double buffered. But not
+with double buffered. I guess FRONT_AND_BACK is not working with double
+buffering. However, the accisrefresh is needed:
+  glAccum(GL_LOAD,1.);
+  glXSwapBuffers(accis_display, accis_window);
+      glBegin(GL_LINES);
+            glVertex2f(0.,0.);
+      glEnd();
+      glAccum(GL_RETURN,1.);
+without it, one gets a black screen till finished. With it, and single-buffered 
+things are quick. But requiring accum makes the draws too painfully slow.
+
+In vecx accisrefresh basically just calls accis_refresh which does:
+  XCopyArea(XtDisplay(w),accis_pixmap,accis_window,accis_gc,0,0,
+	    s_s.width,s_s.height,0,0);
+  XFlush(accis_display);
+accisflush does:
+  XFlush(accis_display);  
+  accisrefresh_();
+  ManageEvents();
+
+Trying some options with single-buffering. The two commands needful in 
+accisrefresh are
+
+  glAccum(GL_RETURN,1.);
+  glXSwapBuffers(accis_display, accis_window);
+
+in either order!
+Actually a glFlush() will do just as well as glXSwapBuffers, but we do
+need the other call for some reason.
+
+Found there's a bad drawable error running from silas with single buffering.
+It seems to come from glXSwapBuffers. 
+
+Found that one does not need to turn off double-buffering provided that
+the FRONT_AND_BACK writing is set. And the bad drawable error goes
+away. Yeah! 
+
+6 Oct 2013
+Changed code in examine.f and world3.h to allow rotation using the 
+mouse to invert the object. This requires viewrot to be different and
+some tracking of the inversion in other places where z3sign is used.
+
+12 Jan 2013
+Removed accisrefresh entirely from vecglx. It seems glFlush() is
+essentially as good. It must remain in vecx.
+
+Need to implement accisclear in vecglx as well as vecx. Needed for
+lorentztrack and rotation. It just clears the screen to white. Done.
+
+Created glxvisuals.c to check the behaviour of visuals. 
+Found that actually it seems to work correctly, when I thought it did not
+based on experiments with accis.
+
+Added a fall-back if double buffering fails, to go to single buffering.
+
+All this seems to work. 
+Now my idea is to streamline the vecx.c driver to remove Xt calls.
+The way to do this is to replace all the gl calls with their appropriate
+Xlib version. The trickiest part might be the setup. It probably needs
+things like
+DefaultRootWindow
+DefaultScreen
+DefaultVisual
+XCreateColormap
+XCreateWindow
+XCreateGC
+
+Starting from vecglx replaced all the gl calls with Xlib calls etc.
+Then a couple of tweaks gets the new driver
+vecX11.c 
+working. Amazing!
+
+The old vecx.c driver is vecxunthread.c
+
+There are some tweaks necessary for displaying dynamics: accisflush is 
+needed not just Xflush.
+
+There are signs that under some circumstances, keypresses are being 
+misinterpreted as signs to quit, when they are e or r for rotation.
+
+It happens when a key is hit during an animation e.g. with lorentztrack.
+Didn't have time to get to the bottom of it.
+
+Fixed. Was due to value being obtained in the wrong place and also
+to large number of NoExpose events being posted by the XCopyArea calls.
+
+Therefore, I think the new vecx.c is working now. It requires only X11
+library. Not Xt.
+
+There are some problems with this new version. It is really flashy
+and flakey on rotation in slicing. That was caused by adding an
+XCopyArea to the initialization. Removed it.
+
+3-D arrows. Implemented.
+
+23 Jan 2014
+
+Made numerous corrections in the use of igetcorner and igetcubecorner
+which are supposed to fix various inconsistencies in 3-D axis labelling
+etc.
+
+27 Jan 2014 
+
+Elaborate arrows.
+
+16 Feb 2014
+
+Reorganized the fileplotting to be all in the vecnp.f and sysfont files.
+This is in preparation for considering another file plot driver,
+which might be desirable for e.g. pgf plotting.
+
+Fix various things to do with printing from slicing routines.
+Mostly caused by misuse of pfset for turning off the plot file.
+Now the p switch only prints the next frame, then turns itself off.
+Also we fixed the writing to closed unit 12.
+
+17 Feb 2014 
+Thinking about pgf graphics driver output. This has the potential for
+being able to put animations into pdf, using the capabilities of beamer.
+
+c*********************************************************************
+c Routines for writing drawing commands to output 'plotter' files.
+c The only format-dependent actions we need are
+c 1. inib Initialize the file and some of the strings.
+c 2. vecnp draw a line with pen up or down.
+c 3. pathfill fill (non-destructively) the path just drawn.
+c 4. gradcolor set a color from the gradient.
+c 5. asleep sleep before executing next graphics commands
+c 6. npgradtri attempt to draw a triangle gradient.
+c 7. zerolinewidth set linewidth zero for color contouring.
+c 8. npcolor write the 16-color change command.
+c 9. flushb flush remaining writes, postlude, and close file.
+c*********************************************************************
+
+The way pgf graphics works at the basic level is stuff like.
+\pgfpathmoveto{\pgfpoint{20}{25}}
+\pgfpathlineto{\pgfpoint{15}{15}}
+\onslide<4->\pgfusepath{stroke}
+\onslide<4->\pgfusepath{fill}
+I think the units are points.
+
+Since the first pgfusepath empties the path. One might have to defer
+the output of that command and build up the actions list: stroke, fill
+etc. Then write the command only when we begin the next move.
+That would be problematic with color setting, because the stroking etc
+might then be output after the color setting, when in accis it is done
+before. 
+
+There's a package under development called spath, that apparently helps
+with storing and recovering paths. There's also a way to name paths
+in tikz, using the intersections library.
+
+The way this is overcome is that there are low level pgf routines to 
+save and restore a path. Unfortunately they are @ commands, and it
+is not possible to use \makeatletter inside a beamer frame unless
+it is [fragile]. It is better therefore to define \pgfsavefill 
+outside the beamer frame and just use it. 
+
+
+25 Feb 2014
+
+Implemented two pgf drivers capable of animation. 
+pfsw=4 does animation using beamer \only<> construct.
+pfsw=5 does animation using the animation package and \newframe.
+
+They have different strengths and weaknesses. Neither does a good
+job of gradient color fills because this is too verbose because I
+am using the postscript level 2 explicit drawing scheme. They can
+easily overflow TeX's capacity. I think trying to use these with
+color fills is probably a mistake. Bit mapped images are probably
+much more suitable.
+
+Neither really works with externalize and tikz.
+The animateinline will never work with externalize in tikz unless
+one stops using the begin and end options to insert the begin and end
+picture, and instead do it directly with the writing that takes 
+place for accissleep and postlude. Also one would have to change
+the environment to tikzpicture not just pgfpicture.
+
+The following error was generated from partexamine on loki displaying
+on my laptop. This arises when compiled without the doublebuffering
+required.
+
+        GLX visual 0x95 selected
+Intercepted Xlib error: error code 174 request code 154  Unfiltered error passed to Xlib.
+X Error of failed request:  GLXBadDrawable
+  Major opcode of failed request:  154 (GLX)
+  Minor opcode of failed request:  11 (X_GLXSwapBuffers)
+  Serial number of failed request:  32
+  Current serial number in output stream:  34
+
+[hutch@head unsteady]$ glxinfo
+name of display: localhost:17.0
+display: localhost:17  screen: 0
+direct rendering: No
+server glx vendor string: SGI
+server glx version string: 1.4
+server glx extensions:
+...
+
+   visual  x  bf lv rg d st colorbuffer ax dp st accumbuffer  ms  cav
+ id dep cl sp sz l  ci b ro  r  g  b  a bf th cl  r  g  b  a ns b eat
+----------------------------------------------------------------------
+0x21 24 tc  0 32  0 r  y  .  8  8  8  8  0 24  8  0  0  0  0  0 0 None
+0x22 24 dc  0 32  0 r  y  .  8  8  8  8  0 24  8  0  0  0  0  0 0 None
+0x92 24 tc  0 24  0 r  .  .  8  8  8  0  0  0  0  0  0  0  0  0 0 None
+0x93 24 tc  0 24  0 r  y  .  8  8  8  0  0  0  0  0  0  0  0  0 0 None
+0x94 24 tc  0 24  0 r  y  .  8  8  8  0  0  0  0  0  0  0  0  0 0 None
+0x95 24 tc  0 24  0 r  .  .  8  8  8  0  0 24  8  0  0  0  0  0 0 None
+0x96 24 tc  0 24  0 r  y  .  8  8  8  0  0 24  8  0  0  0  0  0 0 None
+0x97 24 tc  0 24  0 r  y  .  8  8  8  0  0 24  8  0  0  0  0  0 0 None
+0x98 24 tc  0 32  0 r  .  .  8  8  8  8  0  0  0  0  0  0  0  0 0 None
+0x99 24 tc  0 32  0 r  y  .  8  8  8  8  0  0  0  0  0  0  0  0 0 None
+0x9a 24 tc  0 32  0 r  y  .  8  8  8  8  0  0  0  0  0  0  0  0 0 None
+0x9b 24 tc  0 32  0 r  .  .  8  8  8  8  0 24  8  0  0  0  0  0 0 None
+0x9c 24 tc  0 24  0 r  y  .  8  8  8  0  0 24  8  0  0  0  0  0 0 None
+0x9d 24 tc  0 24  0 r  y  .  8  8  8  0  0 24  8 16 16 16  0  0 0 Slow
+0x9e 24 tc  0 32  0 r  y  .  8  8  8  8  0 24  8  0  0  0  0  0 0 None
+0x9f 24 tc  0 32  0 r  y  .  8  8  8  8  0 24  8 16 16 16 16  0 0 Slow
+0xa0 24 dc  0 24  0 r  .  .  8  8  8  0  0  0  0  0  0  0  0  0 0 None
+0xa1 24 dc  0 24  0 r  y  .  8  8  8  0  0  0  0  0  0  0  0  0 0 None
+0xa2 24 dc  0 24  0 r  y  .  8  8  8  0  0  0  0  0  0  0  0  0 0 None
+
+
+This error appears to be a bug in this glx implementation. The
+documentation says 
+   If  drawable  was not created with respect to a double-buffered visual,
+       glXSwapBuffers has no effect, and no error is generated.
+
+ERRORS
+       GLXBadDrawable is generated if drawable is not a valid GLX drawable.
+
+
+Yet actually an error IS generated, even though there's really nothing
+wrong with the drawable. The error goes away if double buffer is required:
+
+/* Attributes to require of the visual chosen:*/
+/* It proves advantageous to _avoid_ doublebuffering for incremental
+   drawing using accisrefresh. Speed seems best this way too. */
+static GLint  accis_att[] = { GLX_RGBA, /* Truecolor and Directcolor */
+                              /*GLX_ACCUM_RED_SIZE,8, /* Require accum */
+                              GLX_DEPTH_SIZE, 24, /* Depth 24 */
+                              GLX_DOUBLEBUFFER, /* */
+                              None };
+
+
+glxinfo gives the same answer from my laptop as from loki.
+
+On the laptop visual 96 is selected even when DOUBLEBUFFER is
+commented out. That also seems to be an error, since the man page says
+
+ GLX_DOUBLEBUFFER      If present, only double-buffered visuals are
+                       considered.   Otherwise, only single-buffered  visu‐
+                       als are considered.
+
+The client vendor string is different on loki. Not mesa.
+
+I think there are at least two bugs in my opengl. 
+1. Giving errors with glXSwapBuffers in singlebuffer mode.
+2. Selecting double buffering when not asked to.
+
+Seems that loki's opengl does not have 2, as a consequence it trips 1.

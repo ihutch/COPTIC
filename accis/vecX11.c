@@ -42,8 +42,9 @@ static int accis_back=1;
 #define accis_path_max 4000
 static XPoint accis_path[accis_path_max];
 static int accis_pathlen=0;
-/* Until svga is called, the default is that there is no display */
-static int accis_nodisplay=1;
+/* Until svga is called, the default is that there is no display 
+   Indicated by 99, not quite the same as nodisplay=1*/
+static int accis_nodisplay=99;
 
 /* 256 color gradient globals */
 /* Use only 240 colors so that 16 are left for the 16 colors and you can
@@ -261,7 +262,8 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
   
   XSetForeground(accis_display,accis_gc,accis_pixels[15]); 
 
-  XRaiseWindow(accis_display, accis_window);
+  /* This does not seem to be necessary and may be the cause of problems.
+     XRaiseWindow(accis_display, accis_window);*/
   return 0;
 }
 
@@ -706,17 +708,18 @@ void accisgradset_(red,green,blue,npixel)
     a_gradgreen[i]=theRGBcolor.green=ilimit(0,*(green+i),65535);
     a_gradblue[i]=theRGBcolor.blue=ilimit(0,*(blue+i),65535);
     /*printf("theRGBcolor %d,%d,%d\n",theRGBcolor.red,theRGBcolor.green,theRGBcolor.blue);*/
-    if(is_truecolor()){
-      /*fprintf(stderr,"Setting a_gradPix, %d",i);*/
-      a_gradPix[i]=
-	((theRGBcolor.red/256)*256+(theRGBcolor.green/256))*256
-	+(theRGBcolor.blue/256);
-      /*fprintf(stderr,"Allocated Color %d =%d\n",i,a_gradPix[i]);*/
-    }else if(XAllocColor(accis_display,accis_colormap,&theRGBcolor)){
-      fprintf(stderr,"Allocated Color %d=%ld\n",i,theRGBcolor.pixel);
-      a_gradPix[i]=theRGBcolor.pixel;
-    }else{
-      a_gradPix[i]=BlackPixel(accis_display,0);
+    if(accis_nodisplay!=1){
+      if(is_truecolor()){
+	a_gradPix[i]=
+	  ((theRGBcolor.red/256)*256+(theRGBcolor.green/256))*256
+	  +(theRGBcolor.blue/256);
+	/*fprintf(stderr,"Allocated Color %d =%d\n",i,a_gradPix[i]);*/
+      }else if(XAllocColor(accis_display,accis_colormap,&theRGBcolor)){
+	/*fprintf(stderr,"Allocated Color %d=%ld\n",i,theRGBcolor.pixel);*/
+	a_gradPix[i]=theRGBcolor.pixel;
+      }else{
+	a_gradPix[i]=BlackPixel(accis_display,0);
+      }
     }
   }
   a_grad_inited=2;
