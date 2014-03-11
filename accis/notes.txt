@@ -832,3 +832,10 @@ I think there are at least two bugs in my opengl.
 2. Selecting double buffering when not asked to.
 
 Seems that loki's opengl does not have 2, as a consequence it trips 1.
+
+
+===========================================================================
+
+Accis now under git version control.
+
+The only subdirectory in the repository is testing.

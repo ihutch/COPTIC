@@ -101,11 +101,11 @@ makefile : Makefile configure
 # Touch vecx to prevent a libaccisX remake with the outermost VECX definition,
 # For which vecx is standard.
 
-RefManual.html : RefManual.tex RefManual.pdf makefile
+RefManual.html : RefManual.tex RefManual.pdf
 	if which tth ; then tth -e2 RefManual ; fi
 	rm -f *.log *.out *.dvi *.toc *.ilg *.idx *.synctex.gz
 
-RefManual.pdf : RefManual.tex makefile
+RefManual.pdf : RefManual.tex
 	pdflatex RefManual
 	rm -f *.log *.out *.dvi *.toc *.ilg *.idx *.synctex.gz
 
@@ -169,7 +169,7 @@ vec4014 : libaccis.a
 sync : syncsource synccoptic syncsceptic
 
 syncsceptic : lib$(ACCISDRV).a RefManual.html
-	rsync -u -e ssh --copy-links -v *.h *.f *.c RefManual.* configure Makefile ~/src/sceptic/accis/
+	cd ~/src/sceptic/accis ; git pull ~/accis
 	date > synsceptic
 
 syncsilas : lib$(ACCISDRV).a RefManual.html
@@ -177,11 +177,11 @@ syncsilas : lib$(ACCISDRV).a RefManual.html
 	date > syncsilas
 
 syncsource : lib$(ACCISDRV).a RefManual.html
-	rsync -u -e ssh  --copy-links -v *.h *.f *.c RefManual.* configure Makefile ~/src/accis/
+	cd ~/src/accis/ ; git pull ~/accis
 	date > syncsource
 
 synccoptic : lib$(ACCISDRV).a RefManual.html
-	rsync -u -e ssh  --copy-links -v *.h *.f *.c RefManual.* configure Makefile ~/src/coptic/accis/
+	cd ~/src/coptic/accis ; git pull ~/accis
 	date > synccoptic
 
 tests : 
