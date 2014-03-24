@@ -110,10 +110,6 @@ c All directions were set by commandline. Or none were read from file.
 c The cellvol==-1 call will set ivproj=1 in ptaccom.
          call partdistup(xlimit,vlimit,xnewlim,cellvol,0,isuds)
 
-c If we wish to accumulate to the uniform mesh for other than the first
-c occasion (when cellvol is zero) we need to do:
-c         call partsaccum
-
       enddo
  11   continue
 
@@ -382,7 +378,7 @@ c Help text
  303  format(a,5i5)
       write(*,301)'Usage: partexamine [switches] <partfile> (no ext)'
       write(*,301)' --objfile<filename>  set name of object data file.'
-     $     //' [ccpicgeom.dat'
+     $     //' [copticgeom.dat'
       write(*,301)' -x -y -z<fff,fff>  set position range. [ -5,5'
       write(*,301)' -u -v -w<fff,fff>  set velocity range. [ -5,5'
       write(*,303)' -b<nx,ny,nz>  set spatial block range. [',iuin

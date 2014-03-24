@@ -17,6 +17,9 @@ c However, they functionally only set defaults and the total nsub_tot.
       parameter (nsub_tot=nsub_i*nsub_j*nsub_k)
       integer isfull(mdims),isuds(mdims)
 
+c Data for summed nonuniform binning to reduce the size of the output
+c If nsbins.eq.nptdiag, then uniform binning will be used for the summed
+c bins. Behavior for nsbins>nptdiag is uncertain. Avoid that.
       integer nsbins
       parameter (nsbins=32)
       integer ibinmap(nptdiag,mdims)

@@ -169,7 +169,7 @@ vec4014 : libaccis.a
 sync : syncsource synccoptic syncsceptic
 
 syncsceptic : lib$(ACCISDRV).a RefManual.html
-	cd ~/src/sceptic/accis ; git pull ~/accis
+	cd ~/src/sceptic/accis ; git pull origin
 	date > synsceptic
 
 syncsilas : lib$(ACCISDRV).a RefManual.html
@@ -177,11 +177,11 @@ syncsilas : lib$(ACCISDRV).a RefManual.html
 	date > syncsilas
 
 syncsource : lib$(ACCISDRV).a RefManual.html
-	cd ~/src/accis/ ; git pull ~/accis
+	cd ~/src/accis/ ; git pull origin
 	date > syncsource
 
 synccoptic : lib$(ACCISDRV).a RefManual.html
-	cd ~/src/coptic/accis ; git pull ~/accis
+	cd ~/src/coptic/accis ; git pull origin
 	date > synccoptic
 
 tests : 

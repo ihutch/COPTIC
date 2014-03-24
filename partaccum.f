@@ -312,6 +312,10 @@ c csbin(nsbins,mdims) is the number of fine bins in each combined bin
 c fsv is the sum of fv in each combined bin during the initial
 c     accumulation and bin calculation.
 c vhbin(0:nsbins,mdims) is the histogram boundaries of the combined bins
+c If nptdiag.le.nsbins, implying no compression of the data, then
+c a simple identification of summed and uniform bins is used so that the
+c summed bins are actually uniform. The lengths must be set in ptaccom.f
+
       include 'meshcom.f'
       include 'ptaccom.f'
 
@@ -327,41 +331,43 @@ c
          dv=(vdiag(nptdiag,id)-vdiag(1,id))/(nptdiag-1)
          vhbin(0,id)=vdiag(1,id)-dv*0.5
          ib=1
-         do k=1,nptdiag
-            cumfv(k,id)=cumfv(k-1,id)+fv(k,id)/float(nfvaccum)
+         if(nsbins.lt.nptdiag)then
+c Normal summed binning compression.
+            do k=1,nptdiag
+               cumfv(k,id)=cumfv(k-1,id)+fv(k,id)/float(nfvaccum)
 c Prevent rounding overflow here rather than by increments:
-            cumfv(k,id)=min(1.,cumfv(k,id))
+               cumfv(k,id)=min(1.,cumfv(k,id))
 c            write(*,*)id,k,fv(k,id),cumfv(k,id),ib
 c This linear mapping does not work well.
 c            ib=1+ int(cumfv(k,id)*(nsbins)*(.99999))
-            bx=float(ib)/nsbins
+               bx=float(ib)/nsbins
 c cubic progression.
 c               cfn=1.0001*(3.*bx**2-2.*bx**3)
 c quintic progression puts more bins further out.
 c            cfn=1.00002*bx**3*(10.-15.*bx+6*bx**2) -.00001
 c Does not help to reduce the number of zeroes in 1.0002.
 c septic progression is broadest, but still good.
-            cfn=(((-20.*bx+70.)*bx-84.)*bx+35.)*bx**4
+               cfn=(((-20.*bx+70.)*bx-84.)*bx+35.)*bx**4
 c            write(*,*)'cfn',cfn,cumfv(k,id)
-            if(cumfv(k,id).gt.cfn)then
+               if(cumfv(k,id).gt.cfn)then
 c find the histogram bin-boundary.
-               vhbin(ib,id)=vhbin(0,id)+(k-1)*dv
-               ib=ib+1
-            endif
-            ibinmap(k,id)=ib
-            if(ib.lt.1 .or. ib.gt.nsbins)then
-               write(*,*)'ibinmap error',ib,cumfv(k,id),cfn,k,id
-               stop
-            endif
-            vsbin(ib,id)=vsbin(ib,id)+vdiag(k,id)
-            csbin(ib,id)=csbin(ib,id)+1.
+                  vhbin(ib,id)=vhbin(0,id)+(k-1)*dv
+                  ib=ib+1
+               endif
+               ibinmap(k,id)=ib
+               if(ib.lt.1 .or. ib.gt.nsbins)then
+                  write(*,*)'ibinmap error',ib,cumfv(k,id),cfn,k,id
+                  stop
+               endif
+               vsbin(ib,id)=vsbin(ib,id)+vdiag(k,id)
+               csbin(ib,id)=csbin(ib,id)+1.
 c Also accumulate this data into the summed bins
-            fsv(ib,id)=fsv(ib,id)+fv(k,id)
-         enddo
+               fsv(ib,id)=fsv(ib,id)+fv(k,id)
+            enddo
 c Fix any summed bins that are off the end, and hence zero width.
-         do ibk=ib,nsbins
-            vhbin(ibk,id)=vhbin(0,id)+nptdiag*dv
-         enddo
+            do ibk=ib,nsbins
+               vhbin(ibk,id)=vhbin(0,id)+nptdiag*dv
+            enddo
 c Now cumfv is the cumulative probability distribution (to 1.0) over the
 c uniform bins, and ibinmap maps those bins to nonuniform bins.  The
 c uniform bin centers are in vdiag. Each non-uniform bin is composed of
@@ -370,17 +376,29 @@ c the centroid of those bins = vsbin.
 c The number of uniform bins that they contain is csbin.
 c But we invert csbin so that a multiplication is needed and zeros are 
 c corrected for. 
-         do k=1,nsbins
-            if(csbin(k,id).eq.0)then
-               ifixed=ifixed+1
+            do k=1,nsbins
+               if(csbin(k,id).eq.0)then
+                  ifixed=ifixed+1
 c               write(*,*)'Fixing csbin zero',k,id,fv(k,id)
 c     $              ,vhbin(k,id)
-               vsbin(k,id)=vhbin(k,id)
-            else
-               vsbin(k,id)=vsbin(k,id)/csbin(k,id)
-               csbin(k,id)=1./csbin(k,id)
-            endif
-         enddo
+                  vsbin(k,id)=vhbin(k,id)
+               else
+                  vsbin(k,id)=vsbin(k,id)/csbin(k,id)
+                  csbin(k,id)=1./csbin(k,id)
+               endif
+            enddo
+         else
+c Ignore the cumulative calculation and do uniform mapping
+            if(id.eq.1)write(*,*)'****Uniform Bins for nptdiag,nsbins='
+     $           ,nptdiag,nsbins
+            do k=1,nptdiag
+               ibinmap(k,id)=k
+               vsbin(k,id)=vdiag(k,id)
+               vhbin(k,id)=vhbin(0,id)+(k-1)*dv
+               csbin(k,id)=1.
+               fsv(k,id)=fv(k,id)
+            enddo
+         endif
       enddo
       if(ifixed.gt.0)then
          write(*,*)'Bincalc had to fix some zero csbins.'
