@@ -34,6 +34,7 @@ c Local variables:
       character*100 argument,message
       logical lfirst
       data lfirst/.true./
+      save argument,message
 
 c Set defaults and objfilename only the first time, subsequently skip.
       if(lfirst)then
@@ -514,7 +515,7 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
      $     ' Shade by 1:flux 2:flux-density[',iobpsw
       write(*,301)' -gc   set wireframe [& stencils(-)] mask.'//
      $     ' objects<->bits. [',iobpl
-      write(*,301)' -gr   set override view scale (box size)'//
+      write(*,302)' -gr   set override view scale (box size)'//
      $     ' for -gc, -gf plots.  [',rcij
       write(*,301)' -go   set No of orbits'
      $     //'(to plot on objects set by -gc). [',norbits
