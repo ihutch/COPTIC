@@ -104,11 +104,12 @@ c Initialize cij for just the inner part, not the edges.
          ium2(id)=iuds(id)-2
       enddo         
       ipoint=iLs(1)+iLs(2)+iLs(3)
+c      write(*,*)ndims,ifull
       call mditerarg(cijroutine,ndims,ifull,ium2,ipoint,
      $     cij(1,1,1,1),debyelen,dum3,dum4)
 c---------------------------------------------
 c Initialize the region flags in the object data
-      call iregioninit(ndims,ifull)
+      call iregioninit(ifull)
 c      if(lmyidhead)call reportfieldmask()
       ipoint=0
       call mditerarg(cijedge,ndims,ifull,iuds,ipoint,cij,dum2,dum3,dum4)

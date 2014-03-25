@@ -54,7 +54,7 @@ c*************************************************************
       program bbdytest
 
       include 'mpif.h'
-      parameter (ndimsdecl=3,idim1=2,idim2=1,idim3=1)
+      parameter (ndimsbbdy=3,idim1=2,idim2=1,idim3=1)
       include 'bbdydecl.f'
 
       parameter (ifd1=40,ifd2=20,ifd12=ifd1*ifd2)
@@ -64,9 +64,9 @@ c      real v(ifd1,ifd2,ifd3)
       real u123(ifd123)
       equivalence (u,u123)
 c ifull full dimensions of u
-C      integer ifull(ndimsdecl)
-c      integer ktype(2**(ndimsdecl+1))
-c      integer iside(2,ndimsdecl)
+C      integer ifull(ndimsbbdy)
+c      integer ktype(2**(ndimsbbdy+1))
+c      integer iside(2,ndimsbbdy)
 
 c Access iorig via common block since arguments removed.
       parameter (norigmax=1000)
@@ -78,14 +78,14 @@ c Access iorig via common block since arguments removed.
       data ifull/ifd1,ifd2,ifd3/
 
 c Set key data in the arrays declared in bbdydecl
-      data lperiod/ndimsdecl*.false./
+      data lperiod/ndimsbbdy*.false./
       data idims/idim1,idim2,idim3/
 c
 c Setup the used block geometry for nrd dimensions.
       data iuds/10,10,6/
       data nrd/3/
 c Initialize icoords just in case
-      data icoords/ndimsdecl*0/
+      data icoords/ndimsbbdy*0/
 c  Initialize u [gives a g77 warning if large]
       data u/ifd123*1000./
 c So do it explicitly if it is large.

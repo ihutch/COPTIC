@@ -250,6 +250,7 @@ c On exit ix contains the corresponding (ndims)-dimensional indices.
       enddo
       ix(ndims)=ind+1
       if(ind.gt.ifull(3)) write(*,*)'indexexpand index too big',index
+     $     ,' ndims=',ndims,' ifull=',ifull
       end
 c********************************************************************
 c Convert indices into pointer

@@ -15,15 +15,18 @@ c test program
 c the call      
       call spheremesh(nt,np,surfobj)
 
+
 c the tests:
  1    call pltinit(0.,1.,0.,1.)
       call setcube(0.2,0.2,0.2,.5,.4)
 c      call scale3(-1.,1.,-1.,1.,-1.,1.)
 c      call geteye(x2,y2,z2)
 c      call trn32(0.,0.,0.,x2,y2,z2,1)
+c      read(*,*)in
       call axproj(igetcorner())
       call ax3labels('x','y','z')
-      call cubeproj()
+      call cubeproj(igetcorner())
+      write(*,*)'Done cubeproj'
 
       scale=nt*np/100.
       do i=1,nt*np
@@ -63,6 +66,7 @@ c It is noticeable that these sum tests give good results only if the
 c number of cells in the mesh is even. 
 
       km=nt*np
+      write(*,*)'Calling maxwell'
       call maxwellforce(ndims,km,surfobj,force,  u,cij,iLs)
       write(*,'(a,3f8.4)')'Maxwellforce=',(force(k),k=1,ndims)
 
