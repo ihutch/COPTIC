@@ -34,8 +34,7 @@ else if [ $ARG3 -gt $NEXT ] ; then $NEXT=$ARG3 ; fi
 fi
 echo >griddeclnew.f <<BLAH    "
 c Declarations of grid array parameters.
-      integer ndims_grid,na_m,na_m2,na_i,na_j,na_k
-      parameter (ndims_grid=3)
+      integer na_m,na_m2,na_i,na_j,na_k
       parameter (na_i=$ARG1,na_j=$ARG2,na_k=$ARG3,na_m=$MAX,na_m2=$NEXT)
 "
 BLAH

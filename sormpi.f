@@ -4,7 +4,7 @@ c     L(u) + f(u) = q(x,y,...),
 c     where L is a second order elliptical differential operator 
 c     represented by a difference stencil of specified coefficients,
 c     f is some additional function, and q is the "charge density".
-c Ian Hutchinson, 2006-2012
+c Ian Hutchinson, 2006-2014
 c
       subroutine sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset,faddu
      $     ,ictl,ierr,mpiid,idims)
