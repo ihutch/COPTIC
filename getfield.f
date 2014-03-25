@@ -407,7 +407,6 @@ c Type of interpolation
       integer itype
       
       include 'ndimsdecl.f'
-c objcom, which is needed, contain ndims_... so we don't pass it.
       include 'objcom.f'
 c Local vector storage
 c      integer idn(ndims)
@@ -665,19 +664,19 @@ c of arguments. Return it as a vector in field.
       subroutine fieldatpoint(x,u,cij,iLs,field)
 c u is potential, cij is stencil array, iLs is the structure of u,cij.
 c All the other parameters must be obtained from commons. 
-c Include the mesh xn, and ndims_mesh.
+c Include the mesh xn, and ndims.
       include 'ndimsdecl.f' 
       include 'meshcom.f'
-      real x(ndims_mesh),u(*),cij(*),field(ndims_mesh)
-      integer iLs(ndims_mesh+1)
+      real x(ndims),u(*),cij(*),field(ndims)
+      integer iLs(ndims+1)
       external imaskregion
-      real xff(ndims_mesh)
+      real xff(ndims)
 
 c Determine the region
-c      iregion=insideall(ndims_mesh,x)
-      iregion=insidemask(ndims_mesh,x)
+c      iregion=insideall(ndims,x)
+      iregion=insidemask(ndims,x)
 c Locate the mesh full fractional postion of x.
-      do id=1,ndims_mesh
+      do id=1,ndims
 c Offset to start of dimension-id-position array.
          ioff=ixnp(id)
 c xn is the position array for each dimension arranged linearly.
@@ -687,8 +686,8 @@ c Find the index of xprime in the array xn:
       enddo
 
 c Get each component of the field.
-      do id=1,ndims_mesh
-         call getfield(cij(2*ndims_mesh+1),u,iLs
+      do id=1,ndims
+         call getfield(cij(2*ndims+1),u,iLs
      $        ,xn(ixnp(id)+1)
      $        ,id,xff,imaskregion(iregion),field(id))
       enddo
@@ -699,19 +698,19 @@ c Get the potential at a specified postion x.
       real function potentialatpoint(x,u,cij,iLs)
 c u is potential, cij is stencil array, iLs is the structure of u,cij.
 c All the other parameters must be obtained from commons. 
-c Include the mesh xn, and ndims_mesh. 
+c Include the mesh xn, and ndims. 
       include 'ndimsdecl.f'
       include 'meshcom.f'
-      real x(ndims_mesh),u(*),cij(*)
-      integer iLs(ndims_mesh+1)
+      real x(ndims),u(*),cij(*)
+      integer iLs(ndims+1)
 
-      real xff(ndims_mesh)
+      real xff(ndims)
 
 c Determine the region
-c      iregion=insideall(ndims_mesh,x)
-      iregion=insidemask(ndims_mesh,x)
+c      iregion=insideall(ndims,x)
+      iregion=insidemask(ndims,x)
 c Locate the mesh full fractional postion of x.
-      do id=1,ndims_mesh
+      do id=1,ndims
 c Offset to start of dimension-id-position array.
          ioff=ixnp(id)
 c xn is the position array for each dimension arranged linearly.
@@ -736,17 +735,17 @@ c This simple version assumes no object boundary in the vicinity.
       subroutine fieldsimple3atpoint(x,u,iLs,field)
 c u is potential, iLs is the structure of u.
 c All the other parameters must be obtained from commons. 
-c Include the mesh xn, and ndims_mesh. 
+c Include the mesh xn, and ndims. 
       include 'ndimsdecl.f'
       include 'meshcom.f'
-      real x(ndims_mesh),u(*),field(ndims_mesh)
-      integer iLs(ndims_mesh+1)
-      real xff(ndims_mesh)
-      integer kxf(ndims_mesh)
+      real x(ndims),u(*),field(ndims)
+      integer iLs(ndims+1)
+      real xff(ndims)
+      integer kxf(ndims)
 
       koff=1
 c Locate the mesh full fractional postion of x.
-      do id=1,ndims_mesh
+      do id=1,ndims
 c Offset to start of dimension-id-position array.
          ioff=ixnp(id)
 c xn is the position array for each dimension arranged linearly.
@@ -760,7 +759,7 @@ c Find the index of x in the array xn:
       
 
 c Get each component of the field.
-      do id=1,ndims_mesh
+      do id=1,ndims
          call getsimple3field(ns_ndims,u(koff)
      $        ,iLs,xn(ixnp(id)+kxf(id)),id,xff,field(id))
       enddo

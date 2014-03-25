@@ -4,7 +4,7 @@ c Particle weight sum, having structure iLs, and (possible) diagnostics.
 c Which are enumerated up to ndiags in their trailing dimension.
       real psum(*)
       real diagsum(*)
-c mesh data, notably ndims_mesh, since we don't pass it:
+c mesh data, notably ndims, since we don't pass it:
       include 'ndimsdecl.f'
       include 'meshcom.f'
       integer iLs(ndims+1)
@@ -15,28 +15,28 @@ c On entry, psum ought to have been initialized to zero.
 c For all (possibly-active) particles.
       do i=1,ioc_part
          if(if_part(i).ne.0)then
-            inewregion=insideall(ndims_mesh,x_part(1,i))
-c            x1=x_part(ndims_mesh*2+1,i)
+            inewregion=insideall(ndims,x_part(1,i))
+c            x1=x_part(ndims*2+1,i)
 c Alternative to partlocate:
             iu=0
-            do id=1,ndims_mesh
-               ix=int(x_part(ndims_mesh*2+id,i))
+            do id=1,ndims
+               ix=int(x_part(ndims*2+id,i))
                iu=iu+(ix-1)*iLs(id)
             enddo
 c Cycle through the vertices of the box we are in.
-            do ii=0,2**ndims_mesh-1
+            do ii=0,2**ndims-1
                ii1=ii
                iinc=iu
                fac=1.
 c Calculate the index and weight of this vertex.
-               do ik=1,ndims_mesh
+               do ik=1,ndims
 c There may be bit-manipulation routines to accelerate this.
 c But likely not by very much since the main cost is divide+mult by 2
                   ii2=ii1/2
                   ip=ii1-2*ii2
                   ii1=ii2
                   iinc=iinc+ip*iLs(ik)
-                  xm=x_part(ndims_mesh*2+ik,i)
+                  xm=x_part(ndims*2+ik,i)
                   ix=int(xm)
                   xf=xm-ix
                   if(ip.eq.1)then
@@ -56,10 +56,10 @@ c Assumption here is diags1 n, diags2-4 v, diags5-7 v^2.
                   diagsum(1+iinc)=diagsum(1+iinc)+fac
                   do k=1,ndiags-1
 c Six moments. 3 for v and 3 for v^2.
-                     temp=x_part(ndims_mesh+1+mod(k-1,ndims_mesh),i)
-                     if(k.gt.ndims_mesh)temp=temp*temp
-                     diagsum(1+iinc+k*iLs(ndims_mesh+1))=
-     $                    diagsum(1+iinc+k*iLs(ndims_mesh+1))+
+                     temp=x_part(ndims+1+mod(k-1,ndims),i)
+                     if(k.gt.ndims)temp=temp*temp
+                     diagsum(1+iinc+k*iLs(ndims+1))=
+     $                    diagsum(1+iinc+k*iLs(ndims+1))+
      $                    fac*temp
                   enddo
                endif
@@ -79,16 +79,16 @@ c,iuds(ndims)
       integer iLs(ndims+1)
 
       include 'meshcom.f'
-      integer iview(3,ndims_mesh),indi(ndims_mesh)
+      integer iview(3,ndims),indi(ndims)
       integer istart,iend,istride
       parameter (istart=1,iend=2,istride=3)
       include 'partcom.f'
 c This data statement serves to silence ftnchek. The first mditerator
 c call actually initializes the iview and indi.
-      data iview/ndims_mesh*0,ndims_mesh*0,ndims_mesh*0/
-      data indi/ndims_mesh*0/
+      data iview/ndims*0,ndims*0,ndims*0/
+      data indi/ndims*0/
 
-      do id=1,ndims_mesh
+      do id=1,ndims
          if(ipartperiod(id).eq.4)then
 c Set view to entire array (Offsets indi [0:iaux(id)-1]).
             icomplete=mditerator(ndims,iview,indi,4,iaux)
@@ -117,16 +117,16 @@ c exchange sum.
       integer iLs(mdims+1)
       include 'ndimsdecl.f'
       include 'meshcom.f'
-      integer iview(3,ndims_mesh),indi(ndims_mesh)
+      integer iview(3,ndims),indi(ndims)
       integer istart,iend,istride
       parameter (istart=1,iend=2,istride=3)
       include 'partcom.f'
 c This data statement serves to silence ftnchek. The first mditerator
 c call actually initializes the iview and indi.
-      data iview/ndims_mesh*0,ndims_mesh*0,ndims_mesh*0/
-      data indi/ndims_mesh*0/
+      data iview/ndims*0,ndims*0,ndims*0/
+      data indi/ndims*0/
 
-      do id=1,ndims_mesh
+      do id=1,ndims
          if(ipartperiod(id).eq.4)then
 c Set view to entire array (Offsets indi [0:iaux(id)-1]).
             icomplete=mditerator(ndims,iview,indi,4,iaux)
@@ -140,7 +140,7 @@ c Slice dimension id:
             ib=1+ii
 c Diagnostic particles must be transferred, not just added.
             do k=0,ndiags-1
-               kshift=k*iLs(ndims_mesh+1)
+               kshift=k*iLs(ndims+1)
                diagsum(ib1+kshift)= diagsum(ib1+kshift)+ diagsum(it
      $              +kshift)
                diagsum(it+kshift)=0.

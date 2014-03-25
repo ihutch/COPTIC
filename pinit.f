@@ -12,8 +12,8 @@ c Common data:
       external linregion,ranlenposition
       logical linregion
 c Local dummy variables for partlocate.
-      real xfrac(ndims_mesh)
-      integer ixp(ndims_mesh)
+      real xfrac(ndims)
+      integer ixp(ndims)
       logical linmesh
 
 c-----------------------------------------------------------------
@@ -32,7 +32,7 @@ c Tangential velocity of circular orbit at r=?.
       if_part(1)=1
       i1=2
       call partlocate(1,ixp,xfrac,iregion,linmesh)
-      if(.not.linmesh.or..not.linregion(ibool_part,ndims_mesh,x_part(1
+      if(.not.linmesh.or..not.linregion(ibool_part,ndims,x_part(1
      $     ,1)))then
          if(myid.eq.0.)then
             write(*,*)'WARNING Special particle-1 outside region.'
@@ -56,9 +56,9 @@ c Finalize the Eneutral fraction and related settings.
          Eneutral=Enfrac*Eneutral
 c Add on the orthogonal EnxB drift, so as to make vperp the velocity of
 c the frame of reference in which the background E-field is truly zero:
-         do k=1,ndims_mesh
-            k1=mod(k,ndims_mesh)+1
-            k2=mod(k+1,ndims_mesh)+1
+         do k=1,ndims
+            k1=mod(k,ndims)+1
+            k2=mod(k+1,ndims)+1
             vperp(k)=vperp(k)+(Eneutral/Bt)
      $           *(vdrift(k1)*Bfield(k2)-vdrift(k2)*Bfield(k1))
          enddo
@@ -71,12 +71,12 @@ c     We initialize the 'true' particles'
 c         write(*,'(i8,$)')i
          ntries=ntries+1
 c Old uniform choice:
-c         do j=1,ndims_mesh
+c         do j=1,ndims
 c            x_part(j,i)=xmeshstart(j)+
 c     $        ran1(myid)*(xmeshend(j)-xmeshstart(j))
 c         enddo
 c New position choice including density gradients.
-         do j=1,ndims_mesh
+         do j=1,ndims
             x_part(j,i)=ranlenposition(j)
          enddo
 c     If we are not in the plasma region, try again.
@@ -148,16 +148,16 @@ c      include 'myidcom.f'
       include '3dcom.f'
       include 'meshcom.f'
 c Local dummy variables for partlocate.
-      real xfrac(ndims_mesh)
-      integer ixp(ndims_mesh)
+      real xfrac(ndims)
+      integer ixp(ndims)
       logical linmesh,linregion
       external linregion
 
       do i=1,ioc_part
          call partlocate(i,ixp,xfrac,iregion,linmesh)
-c         write(*,*)linmesh,linregion(ibool_part,ndims_mesh,x_part(1,i))
+c         write(*,*)linmesh,linregion(ibool_part,ndims,x_part(1,i))
          if(.not.linmesh .or. .not.
-     $        linregion(ibool_part,ndims_mesh,x_part(1,i)))if_part(i)=0
+     $        linregion(ibool_part,ndims,x_part(1,i)))if_part(i)=0
       enddo
       nrein=0
 c      write(*,*)'Redetermined particle mesh locations (locateinit)'

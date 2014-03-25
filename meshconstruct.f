@@ -64,7 +64,7 @@ c**************************************************************
       real shift
       parameter (shift=3.e-5)
 c      write(*,'(a)')'Shifted mesh' 
-      do id=1,ndims_mesh
+      do id=1,ndims
          do j=1,nspec_mesh
             xmeshpos(id,j)=(xmeshpos(id,j)*(1.-shift)+.1*shift)
 c            write(*,'(f8.4,$)')xmeshpos(id,j)

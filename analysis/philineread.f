@@ -5,11 +5,11 @@
       character*100 filenames(na_m)
       character*50 string
       parameter (nfx=200)
-      integer ild,ilinechoice(ndims_mesh,nfx),ip(ndims_mesh)
+      integer ild,ilinechoice(ndims,nfx),ip(ndims)
       real philine(na_m),xline(na_m),dphidx(na_m),xd(na_m)
       real darray(nfx),pmax(nfx),punscale(nfx),rp(nfx),pp(nfx)
       real tp(nfx),vp(nfx)
-      integer ip2(ndims_mesh)
+      integer ip2(ndims)
 
 c philineread commons
       logical lrange,lwrite,lvd,ldiff,lbva,llout,llw
@@ -62,7 +62,7 @@ c         write(*,*)ifull,iuds
          ied=1
          call array3read(phifilename,ifull,iuds,ied,u,ierr)
          if(ierr.eq.1)stop
-         do i=1,ndims_mesh
+         do i=1,ndims
             if(iuds(i).gt.na_m) then
                write(*,*)'Data too large for na_m',na_m,iuds(i)
                stop
@@ -81,8 +81,8 @@ c         write(*,*)ifull,iuds
 c Select the lineout into the plotting arrays.      
 c         if(ild.ne.0)then
             write(*,*)'Dim, Mesh-No, Positions, /debye:'
-            do k=1,ndims_mesh-1
-               ik=mod(ild+k-1,ndims_mesh)+1
+            do k=1,ndims-1
+               ik=mod(ild+k-1,ndims)+1
                ip(ik)=ilinechoice(ik,inm)
 c implement default here
                if(ip(ik).eq.0)ip(ik)=iuds(ik)/2
@@ -328,8 +328,8 @@ c the logic will break if it is changed by -l in the middle.
       integer nf
       character*100 filenames(na_m)
       real rp(nf),pp(nf)
-      integer ild,ilinechoice(ndims_mesh,nf)
-      integer idj(ndims_mesh)
+      integer ild,ilinechoice(ndims,nf)
+      integer idj(ndims)
 
       logical lrange,lwrite,lvd,ldiff,lbva,llout,llw
       integer iover
@@ -350,7 +350,7 @@ c Defaults and silence warnings.
       nf=1
       zp(1,1,1)=0.
       lrange=.false.
-      do id=1,ndims_mesh
+      do id=1,ndims
          idj(id)=0
          ilinechoice(id,1)=0
       enddo
@@ -370,7 +370,7 @@ c Deal with arguments
          call getarg(i,argument)
          if(argument(1:1).eq.'-')then
             if(argument(1:2).eq.'-l')then
-               read(argument(3:),*,end=11)ild,(idj(k),k=1,ndims_mesh-1)
+               read(argument(3:),*,end=11)ild,(idj(k),k=1,ndims-1)
  11            continue
             endif
             if(argument(1:2).eq.'-y')then
@@ -415,8 +415,8 @@ c            if(argument(1:2).eq.'-f')goto 204
          else
             read(argument(1:),'(a)',err=201)phifilename
 c               write(*,*)ild, idj
-            do k=1,ndims_mesh-1
-               ilinechoice(mod(ild+k-1,ndims_mesh)+1,nf)=idj(k)
+            do k=1,ndims-1
+               ilinechoice(mod(ild+k-1,ndims)+1,nf)=idj(k)
 c                  write(*,*)'nf,k,idj(k)',nf,k,idj(k)
             enddo
             filenames(nf)(1:)=phifilename

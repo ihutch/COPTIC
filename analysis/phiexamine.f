@@ -114,7 +114,7 @@ c 3-D examination of the array.
       endif
       iplot=2
 c Default spherical r plot.
-      do k=1,ndims_mesh-1
+      do k=1,ndims-1
          if(xn(ixnp(k+1)).ne.xn(ixnp(k+2)))then 
             if(k.eq.1)then
                write(*,*)'Unequal x-y mesh dimensions. No radial plot.'

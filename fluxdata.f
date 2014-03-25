@@ -5,6 +5,7 @@ c The number of ibins in each (2) of the surface dimensions is indicated
 c by obj_geom(ofn1[/2],i), and data space and addresses allocated.
 c The uniform-spacing bin-positions are calculated and set.
       subroutine fluxdatainit(myid)
+      include 'ndimsdecl.f'
       include '3dcom.f'
       include 'sectcom.f'
 c-----------------------------------------------
@@ -149,6 +150,7 @@ c Initialize the position and area data for each object.
       end
 c******************************************************************
       subroutine nfaddressinit()
+      include 'ndimsdecl.f'
       include '3dcom.f'
 c General iteration given correct settings of nf_posno. Don't change!
 c Zero nums to silence incorrect warnings.
@@ -182,6 +184,7 @@ c Check if we might overrun the datasize.
       end
 c******************************************************************
       subroutine positioninit()
+      include 'ndimsdecl.f'
       include '3dcom.f'
 
 c      real xyz(ns_ndims)
@@ -393,6 +396,7 @@ c Normally, returning an error will cause this particle to be
 c considered to have left the particle region, so it will be discarded.
       integer i,idiffreg
       logical ltlyerr
+      include 'ndimsdecl.f'
       include 'partcom.f'
       include '3dcom.f'
 
@@ -441,6 +445,7 @@ c Find the intersection of the last step of particle j (length dtpos)
 c with object iobj, and update the positioned-fluxes accordingly.  ierr
 c is returned: 0 good. 1 no intersection. 99 unknown object.
 c
+      include 'ndimsdecl.f'
       include '3dcom.f'
       include 'partcom.f'
       include 'sectcom.f'
@@ -508,7 +513,7 @@ c Count up to total intersections. Then store cyclically.
       iob_sc(isc)=iobj
       ibin_sc(isc)=ijbin
 c      write(*,*)'Saving intersection',isc,iobj,ijbin
-      do i=1,sc_ndims
+      do i=1,ndims
          x_sc(i,1,isc)=x1(i)
          x_sc(i,2,isc)=x1(i)*(1.-fraction)+x2(i)*fraction
       enddo
@@ -526,6 +531,7 @@ c*******************************************************************
       subroutine binadding(j,infobj,sd,ijbin)
 c Add particle-j data to infobj bin ijbin with crossing-direction sd.
       implicit none
+      include 'ndimsdecl.f'
       include '3dcom.f'
       include 'partcom.f'
       integer j,infobj,ijbin
@@ -577,6 +583,7 @@ c*******************************************************************
       subroutine pllelfrac(xp,xn,iobj)
 c For input point xp(ndims) return the normalized position relative to
 c the parallelogram object objg in output xn(ndims)
+      include 'ndimsdecl.f'
       include '3dcom.f'
       real xp(ns_ndims),xn(ns_ndims)
       integer iobj
@@ -635,6 +642,7 @@ c***********************************************************************
       real function fluxdiag()
 c Get the total count to object 1 and convert to normalized flux.
 c Assuming it's a unit sphere.
+      include 'ndimsdecl.f'
       include '3dcom.f'
 c For rhoinf, dt
       include 'partcom.f'
@@ -663,6 +671,7 @@ c Rhoinf is returned in rinf.
       integer n1in,n2in
 c      logical lplot
       integer iquant
+      include 'ndimsdecl.f'
       include '3dcom.f'
       include 'sectcom.f'
 c Use for averaging:ff_data(nf_address(iq,ifobj,nf_maxsteps+1)+i-1)
@@ -771,6 +780,7 @@ c*******************************************************************
 c Initialize the name before entry. Very Important!
 c File name:
       character*(*) name
+      include 'ndimsdecl.f'
 c Common data containing the BC-object geometric information
       include '3dcom.f'
 c Particle common data
@@ -821,7 +831,7 @@ c Object data:
       write(22)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
 c Intersection data:
       write(22)sc_ipt
-      write(22)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),
+      write(22)(((x_sc(j,i,k),j=1,ndims),i=1,2),iob_sc(k),
      $     ibin_sc(k),k=1,sc_ipt)
 c n_part data
       write(22)(nf_npart(k),k=1,nf_step)
@@ -847,6 +857,7 @@ c*****************************************************************
 c On entry ierr .ne.0 indicates write informational messages.
 c On exit  ierr .ne.0 indicates error.
       character*(*) name
+      include 'ndimsdecl.f'
       include '3dcom.f'
       include 'plascom.f'
       include 'sectcom.f'
@@ -914,7 +925,7 @@ c      write(*,*)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
 c      write(*,*)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
 c Intersection data:
       read(23)sc_ipt
-      read(23)(((x_sc(j,i,k),j=1,sc_ndims),i=1,2),iob_sc(k),
+      read(23)(((x_sc(j,i,k),j=1,ndims),i=1,2),iob_sc(k),
      $     ibin_sc(k),k=1,sc_ipt)
 c n_part data
       if(iversion.ge.2)read(23,end=104)(nf_npart(k),k=1,nf_step)
@@ -972,6 +983,7 @@ c side boundary. 3 altogether.  The order of faces is bottom, side, top.
       integer npdim,iobj,ijbin
       real xp1(npdim),xp2(npdim)
       real sdmin
+      include 'ndimsdecl.f'
       include '3dcom.f'
 c 3D here.
       parameter (nds=3)

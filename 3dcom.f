@@ -33,7 +33,7 @@ c A point is on the surface if, in addition, equality holds in at least
 c one of the (6) relations. 
 c [i-k refers to cartesian components, p-r to pp basis.] 
       integer pp_ndims,pp_orig,pp_vec,pp_contra,pp_total
-      parameter (pp_ndims=3,pp_orig=ocenter)
+      parameter (pp_ndims=ndims,pp_orig=ocenter)
       parameter (pp_vec=pp_orig+pp_ndims)
       parameter (pp_contra=pp_vec+pp_ndims*pp_ndims)
       parameter (pp_total=pp_contra+pp_ndims*pp_ndims-1)
@@ -60,7 +60,7 @@ c-------------------------------------------------------------------
 c Data that describes the flux to positions on the objects:
       integer nf_quant,nf_obj,nf_maxsteps,nf_datasize,nf_posdim,nf_ndims
 c Number of slots needed for position descriptors. Dimensions.
-      parameter (nf_posdim=4,nf_ndims=3)
+      parameter (nf_posdim=4,nf_ndims=ndims)
 c Maximum (i.e. storage size) of array 
       parameter (nf_quant=5,nf_obj=20,nf_maxsteps=6000)
       parameter (nf_datasize=10000000)
@@ -116,7 +116,7 @@ c where nf_posdim is the number of coefficients in position info.
 c------------------------------------------------------------------
 c Data for storing integrated field quantities such as forces.
       integer ns_ndims
-      parameter (ns_ndims=3)
+      parameter (ns_ndims=ndims)
       integer ns_nt,ns_np
 c the size of the stress-calculating mesh in theta and psi directions
       parameter (ns_nt=20,ns_np=20)

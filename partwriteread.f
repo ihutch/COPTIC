@@ -266,6 +266,7 @@ c      name=' '
       end
 c*****************************************************************
       subroutine phipset(myid)
+      include 'ndimsdecl.f'
       include 'plascom.f'
       include '3dcom.f'
 

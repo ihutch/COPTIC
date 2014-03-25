@@ -1,6 +1,6 @@
-c Dependent on having meshcom loaded already, defining ndims_mesh.
+c Dependent on having meshcom loaded already, defining ndims.
       integer nptdiag,mdims
-      parameter (nptdiag=400,mdims=ndims_mesh)
+      parameter (nptdiag=400,mdims=ndims)
       real fv(nptdiag,mdims),cumfv(0:nptdiag,mdims)
       real px(nptdiag,mdims)
       real vdiag(nptdiag,mdims)

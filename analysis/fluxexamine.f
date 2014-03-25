@@ -1,5 +1,6 @@
 c**************************************************************
       program fluxexamine
+      include '../ndimsdecl.f'
       include '../3dcom.f'
       include '../plascom.f'
       include '../sectcom.f'
@@ -378,6 +379,7 @@ c Read more arguments if there are any.
       end
 c********************************************************************
       subroutine fluxcheck()
+      include '../ndimsdecl.f'
       include '../3dcom.f'
       include '../plascom.f'
       include '../sectcom.f'
@@ -386,6 +388,7 @@ c*********************************************************************
 c This subroutine calls vtkwrite to write in the common blocks our vtk data
 c then it calls vtkwritescalarfacets to write vtk files for unstructred meshes
       subroutine vtkoutput(filename,kk,iplot,iomask)
+      include '../ndimsdecl.f'
       include '../3dcom.f'
       include '../plascom.f'
       include '../sectcom.f'

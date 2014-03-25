@@ -322,8 +322,8 @@ c using information in meshcom.
       real x(mdims)
       include 'ndimsdecl.f'
       include 'meshcom.f'
-      if(ndims.ne.ndims_mesh)then
-         write(*,*)'rindi dimension mismatch',ndims,ndims_mesh
+      if(ndims.ne.ndims)then
+         write(*,*)'rindi dimension mismatch',ndims,ndims
          stop
       endif
       r2indi=0.
@@ -410,11 +410,11 @@ c Initialize (if idn<1). Turn off this type of BC if idn=0.
 c Or update the face boundary conditions if 0<idn<=ndims.
 c For index idn = 1,2,3 (lower) 4,5,6 (upper) face.
 c You can't literally equivalence them but 
-c      real Ain,Bin,C0in,Cxyzin(ndims_mesh) == CFpin(6)
+c      real Ain,Bin,C0in,Cxyzin(ndims) == CFpin(6)
       integer idn
       include 'ndimsdecl.f'
       include 'meshcom.f'
-      real CFpin(3+ndims_mesh)
+      real CFpin(3+ndims)
       include 'facebcom.f'
       integer id
 
@@ -422,14 +422,14 @@ c      real Ain,Bin,C0in,Cxyzin(ndims_mesh) == CFpin(6)
 c Print out settings:
          write(*,*)' AF      BF       C0F     CxyzF'
      $        ,'                  AmBF     ApBF  LF LCF LPF'
-         do id=1,2*ndims_mesh
+         do id=1,2*ndims
             write(*,'(8f8.4,7L3)')AF(id),BF(id),C0F(id) ,(CxyzF(ii,id)
      $           ,ii=1,3),AmBF(id),ApBf(id),LF,LCF(id)
      $           ,LPF(mod(id-1,3)+1)
          enddo
       elseif(idn.le.0)then
 c Initialize A=-1, B=0, C=0
-         do id=1,2*ndims_mesh
+         do id=1,2*ndims
             AF(id)=1.
             BF(id)=0.
             C0F(id)=0.
@@ -438,20 +438,20 @@ c Uniform C:
 c And switch off this type of BC:
             if(idn.eq.0)LF=.false.
          enddo
-      elseif(idn.le.2*ndims_mesh)then
+      elseif(idn.le.2*ndims)then
          LF=.true.
          AF(idn)=CFpin(1)
          BF(idn)=CFpin(2)
          if(BF(idn).eq.0.and.AF(idn).eq.0)AF(idn)=1.
          C0F(idn)=CFpin(3)
-         do id=1,ndims_mesh
+         do id=1,ndims
             CxyzF(id,idn)=CFpin(3+id)
             if(CxyzF(id,idn).ne.0)LCF(idn)=.true.
          enddo
          if(BF(idn).ne.0.)then
 c Calculate the extra coefficients.
-            if(idn.gt.ndims_mesh)then
-               id=idn-ndims_mesh
+            if(idn.gt.ndims)then
+               id=idn-ndims
                dn=xn(ixnp(id+1))-xn(ixnp(id+1)-1)
 c               write(*,*)'FACEPOS Upper',dn,xn(ixnp(id+1)),xn(ixnp(id+1)
 c     $              -1)

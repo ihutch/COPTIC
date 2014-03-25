@@ -24,13 +24,13 @@ c Structure vector needed for finding adjacent u values.
       logical ltestplot,lsliceplot,linjplot
       logical lmyidhead,lphiplot,lpgraph
       integer ipstep,idebug
-      real CFin(3+ndims_mesh,2*ndims_mesh)
-      integer ipartperiod(ndims_mesh)
+      real CFin(3+ndims,2*ndims)
+      integer ipartperiod(ndims)
       include '../facebcom.f'
 c Either include plascom or define vperp and Bfield.
       include '../plascom.f'
-c      real vperp(ndims_mesh),Bfield(ndims_mesh)
-      real zp(na_m,na_m,ndims_mesh)
+c      real vperp(ndims),Bfield(ndims)
+      real zp(na_m,na_m,ndims)
 c sor control values
       common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
 c Set up the structure vector.

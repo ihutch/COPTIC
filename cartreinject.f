@@ -167,7 +167,7 @@ c Correcting for uniform density scale-length.
      $                 -gp0(id))*gn(id))
                endif
                do k=0,1
-                  ii=mod(abs(id)+k,ndims_mesh)+1
+                  ii=mod(abs(id)+k,ndims)+1
                   if(gn(ii).ne.0)then
                      dengfac=dengfac*(
      $                   exp((max(xmeshstart(ii),xmeshend(ii))-gp0(ii))
@@ -202,11 +202,11 @@ c
       write(*,*)'grein',grein
       gtot=0.
 c Alternative general-dimension fcarea calculation:
-      do i=1,ndims_mesh
+      do i=1,ndims
          fcarea(i)=1.
          if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
-         do j=1,ndims_mesh-1
-            id=mod(i+j-1,ndims_mesh)+1
+         do j=1,ndims-1
+            id=mod(i+j-1,ndims)+1
             fcarea(i)=fcarea(i)*abs(xmeshend(id)-xmeshstart(id))
          enddo
 c         write(*,*)'fcarea(',i,')=',fcarea(i)
@@ -662,11 +662,11 @@ c Use particle information for initializing.
       volume=1.
       flux=0.
 
-      do i=1,ndims_mesh
+      do i=1,ndims
          fcarea(i)=1.
          if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
-         do j=1,ndims_mesh-1
-            id=mod(i+j-1,ndims_mesh)+1
+         do j=1,ndims-1
+            id=mod(i+j-1,ndims)+1
             fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
          enddo
 c         write(*,*)'fcarea(',i,')=',fcarea(i)
@@ -728,13 +728,13 @@ c
 c Calculate ninjcomp from ripernode
       volume=1.
       flux=0.
-      do i=1,ndims_mesh
+      do i=1,ndims
          fcarea(i)=1.
 c We don't correct area here, because we now count every relocation as
 c a reinjection.
          if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
-         do j=1,ndims_mesh-1
-            id=mod(i+j-1,ndims_mesh)+1
+         do j=1,ndims-1
+            id=mod(i+j-1,ndims)+1
             fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
          enddo
 c         flux=flux+fonefac(i)*fcarea(i)*sqrt(2.*Ti/3.1415926)
@@ -913,13 +913,13 @@ c accounting for the density scale length if present
       include 'meshcom.f'
       include 'creincom.f'
       include 'plascom.f'
-      real expsa(ndims_mesh),expsi(ndims_mesh)
+      real expsa(ndims),expsi(ndims)
       logical lfirst
       data lfirst/.true./
       save lfirst,expsa,expsi
 
       if(lfirst)then
-         do i=1,ndims_mesh
+         do i=1,ndims
             g=gn(i)
             s0=gp0(i)
             si=min(xmeshstart(i),xmeshend(i))-s0

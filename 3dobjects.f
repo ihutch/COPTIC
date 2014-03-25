@@ -27,9 +27,9 @@ c Normally there's no external field.
       data lextfield/.false./extfield/ns_ndims*0./
 
 c Mesh default initialization (meshcom.f)
-      parameter (imsr=ndims_mesh*(nspec_mesh-2))
-      data imeshstep/ndims_mesh*1,ndims_mesh*32,imsr*0/
-      data xmeshpos/ndims_mesh*-5.,ndims_mesh*5.,imsr*0./
+      parameter (imsr=ndims*(nspec_mesh-2))
+      data imeshstep/ndims*1,ndims*32,imsr*0/
+      data xmeshpos/ndims*-5.,ndims*5.,imsr*0./
 
 c Default no point charges:
       data iptch_mask/0/
@@ -128,8 +128,8 @@ c Read the geometric data about objects from the file filename
       include '3dcom.f'
       include 'meshcom.f'
       include 'partcom.f'
-      real CFin(3+ndims_mesh,2*ndims_mesh)
-      logical LPF(ndims_mesh)
+      real CFin(3+ndims,2*ndims)
+      logical LPF(ndims)
       character*256 argline
 c Common data containing the object geometric information. 
 c Each object, i < 64 has: type, data(odata).
@@ -202,7 +202,7 @@ c Cuboid has 6 facets and uses numbering in three coordinates:
          obj_geom(offc,ngeomobj)=2*nd
          if(myid.eq.0)then 
             write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
-            do k=1,ndims_mesh
+            do k=1,ndims
                if(obj_geom(ocenter+k-1,ngeomobj).eq.obj_geom(oradius+k-1
      $              ,ngeomobj)) stop 'Zero volume cube not allowed'
             enddo
@@ -267,7 +267,7 @@ c Don't count this as an object.
      $        ngeomobj,idumtype,ipartperiod
          ngeomobj=ngeomobj-1
          goto 1
-      elseif(type.gt.90.and.type.le.90+ndims_mesh)then
+      elseif(type.gt.90.and.type.le.90+ndims)then
 c Mesh specification for a particular dimension. 
          id=int(type-90)
          ist=0
@@ -297,38 +297,38 @@ c            write(*,*)id,j,xmeshpos(id,j)
 c Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1
-      elseif(type.ge.100.and.type.lt.100+2*ndims_mesh+1)then
+      elseif(type.ge.100.and.type.lt.100+2*ndims+1)then
 c Face boundary conditions.
          id=int(type)-100
          if(iCFcount.eq.0)then
 c Reset all.
-            do ii=1,2*ndims_mesh
-               do idc=1,3+ndims_mesh
+            do ii=1,2*ndims
+               do idc=1,3+ndims
                   CFin(idc,ii)=0.
                enddo
             enddo
          endif
          read(cline,*,err=901,end=882)idumtype,(CFin(ii,id),ii=1,3
-     $        +ndims_mesh)
+     $        +ndims)
  882     continue
-         LPF(mod(id-1,ndims_mesh)+1)=.false.
+         LPF(mod(id-1,ndims)+1)=.false.
          iCFcount=iCFcount+1
 c Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1         
-      elseif(type.gt.110.and.type.lt.110+ndims_mesh)then
+      elseif(type.gt.110.and.type.lt.110+ndims)then
 c Periodic boundary condition on this dimension
          if(iCFcount.eq.0)then
 c Reset all if this is the first face call.
-            do ii=1,2*ndims_mesh
-               do idc=1,3+ndims_mesh
+            do ii=1,2*ndims
+               do idc=1,3+ndims
                   CFin(idc,ii)=0.
                enddo
             enddo
          endif
          id=int(type)-110
          LPF(id)=.not.LPF(id)
-         do ii=id,id+ndims_mesh,ndims_mesh
+         do ii=id,id+ndims,ndims
             CFin(1,ii)=0.
             CFin(2,ii)=1.
          enddo
@@ -393,6 +393,7 @@ c They are such that they yield the covariant coefficients relative
 c to a unit cylinder. They are in the order vb,vg,va.
 c Where vb is the component of u perpendicular to va, and vg is the 
 c cross product of u and va.
+      include 'ndimsdecl.f'
       include '3dcom.f'
       real objg(odata)
 
@@ -453,6 +454,7 @@ c****************************************************************
       subroutine plleloinit(iobj)
 c Initialize the iobj pp_structure by calculating the contravariant 
 c vectors from the covariant vectors.
+      include 'ndimsdecl.f'
       include '3dcom.f'
 
       triple=0.
@@ -491,13 +493,14 @@ c normalize
 
       end
 c**********************************************************************
-      function insideall(ndims,x)
+      function insideall(mdims,x)
 c For an ndims-dimensional point x, return the integer insideall
 c consisting of bits i=0-30 that are zero or one according to whether
 c the point x is outside or inside object i.
-      integer ndims
-      real x(ndims)
+      integer mdims
+      real x(mdims)
 c Common object geometric data.
+      include 'ndimsdecl.f'
       include '3dcom.f'
 c
       insideall=0
@@ -509,15 +512,16 @@ c     $     'ngeomobj=',ngeomobj,' insideall=',insideall,x
 
       end
 c****************************************************************
-      function insidemask(ndims,x)
+      function insidemask(mdims,x)
 c For an ndims-dimensional point x, return the integer insidemask
 c consisting of bits i=1-31 that are zero or one according to whether
 c the point x is outside or inside object i. But bits are masked by
 c the regionmask.
-      integer ndims
-      real x(ndims)
+      integer mdims
+      real x(mdims)
       intrinsic btest
 c Common object geometric data.
+      include 'ndimsdecl.f'
       include '3dcom.f'
 c
       insidemask=0
@@ -532,17 +536,19 @@ c
 c*****************************************************************
 c Return the masked iregion. Used only in fieldatpoint now.
       function imaskregion(iregion)
+      include 'ndimsdecl.f'
       include '3dcom.f'
       integer iregion
       imaskregion=IAND(iregion,ifield_mask)
       end
 c*****************************************************************
-      function inside_geom(ndims,x,i)
+      function inside_geom(mdims,x,i)
 c Return integer 0 or 1 according to whether ndims-dimensional point x
 c is outside or inside object number i. Return 0 for non-existent object.
-      integer ndims,i
-      real x(ndims)
+      integer mdims,i
+      real x(mdims)
 c Common object geometric data.
+      include 'ndimsdecl.f'
       include '3dcom.f'
       
       inside_geom=0
@@ -748,7 +754,7 @@ c A fraction of 1 causes all the bounding conditions to be ignored.
 c      integer debug
 
       real xx(10),xd(10)
-      real xp1(ndims_mesh),xp2(ndims_mesh)
+      real xp1(ndims),xp2(ndims)
 c Default no intersection.
       fraction=1
 c      debug=0
@@ -907,6 +913,7 @@ c 101     format(3i8,5f10.4)
       end
 c*****************************************************************
       subroutine reportfieldmask()
+      include 'ndimsdecl.f'
       include '3dcom.f'
       integer ipb(32),ifb(32)
 c Calculate the bits of the field mask and iptch_mask.
@@ -948,6 +955,7 @@ c read in.
       integer iobject
       real a,b,c
 
+      include 'ndimsdecl.f'
       include '3dcom.f'
 
       if(iobject.gt.ngeomobj)then
@@ -966,15 +974,16 @@ c****************************************************************
 c> Convert from contravariant coefficients to world cartesian.
 c> Covariant and Contravariant vectors are stored in obj_geom(...,iobj)
 c> xcontra and xw can be the same storage positions if desired.
-      subroutine contra3world(ndims,xcontra,xw,iobj)
+      subroutine contra3world(mdims,xcontra,xw,iobj)
 c> Number of dimensions. 
-      integer ndims
+      integer mdims
 c> Object number
       integer iobj
 c> World coordinates
-      real xw(ndims)
+      real xw(mdims)
 c> Contravariant coordinates
-      real xcontra(ndims)
+      real xcontra(mdims)
+      include 'ndimsdecl.f'
       include '3dcom.f'
       real xwl(ns_ndims)
 c Cartesian obtained as sum of covariant vectors times contra coeffs.
@@ -991,12 +1000,13 @@ c Contra
       enddo
       end
 c****************************************************************
-      subroutine world3contra(ndims,xw,xcontra,iobj)
+      subroutine world3contra(mdims,xw,xcontra,iobj)
 c Convert from world cartesian to contravariant coefficients 
 c Covariant and Contravariant vectors are stored in obj_geom(...,iobj)
 c xcontra and xw can overlap, if aligned.
-      integer ndims,iobj
-      real xw(ndims),xcontra(ndims)
+      integer mdims,iobj
+      real xw(mdims),xcontra(mdims)
+      include 'ndimsdecl.f'
       include '3dcom.f'
       real xd(ns_ndims),xcl(ns_ndims)
 

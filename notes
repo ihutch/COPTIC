@@ -10887,3 +10887,14 @@ preceded by ndimsdecl.f. Reached the point where
       integer ndims_mesh
       parameter (ndims_mesh=ndims)
 seems to work. Now we need to get rid of all ndims_mesh references.
+
+Commit for safety.
+Do universal change of ndims_mesh. Seems to work.
+Got rid of ndims_mesh
+
+Got rid of sc_ndims. Now I think only pp_ndims,ns_ndims, and nf_ndims remain.
+These are in 3dcom.f
+Included all the needed ndimsdecl.f before 3dcom.f. Compiles.
+Now I think all the dependences on these _ndims can be changed to ndims.
+
+Commit.

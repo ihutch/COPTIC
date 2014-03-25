@@ -62,13 +62,13 @@ c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical lmyidhead,lphiplot,ldenplot
       integer ipstep,iwstep,idistp,idcount,icijcount,lrestart
 c Diagnostics etc
-      real zp(na_m,na_m2,ndims_mesh)
-      real xlimit(2,ndims_mesh),vlimit(2,ndims_mesh)
-      real xnewlim(2,ndims_mesh)
+      real zp(na_m,na_m2,ndims)
+      real xlimit(2,ndims),vlimit(2,ndims)
+      real xnewlim(2,ndims)
 c Input for face boundary data:
-      real CFin(3+ndims_mesh,2*ndims_mesh)
+      real CFin(3+ndims,2*ndims)
 c Center of objplot final plot.
-      real cv(ndims_mesh)
+      real cv(ndims)
 
 c Set up the structure vector.
       data iLs/1,Li1,Li2,Li3/
@@ -92,7 +92,7 @@ c Defaults:
 c Determine what reinjection scheme we use. Sets rjscheme.
       include 'REINJECT.f'
 
-      do id=1,ndims_mesh
+      do id=1,ndims
 c Use very big xlimits by default to include whole domain
          xlimit(1,id)=-500.
          xlimit(2,id)=500.

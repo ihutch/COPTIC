@@ -2,6 +2,7 @@
       integer ifull(*),iuds(*)
       real cij(*),u(*)
       logical ltestplot
+      include 'ndimsdecl.f'
       include '3dcom.f'
 c Silence warning:
       r=rs

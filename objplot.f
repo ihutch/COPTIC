@@ -6,6 +6,7 @@ c 0: Color code according to position.
 c 1:            according to average flux already in nf_step+1
 c 2:            according to average flux-density already in nf_step+2
 
+      include 'ndimsdecl.f'
       include '3dcom.f'
       real objg(odata)
       real fmin,fmax
@@ -115,6 +116,7 @@ c 0: Color code according to position.
 c 1:            according to average flux already in nf_step+1
 c 2:            according to average flux-density already in nf_step+2
 
+      include 'ndimsdecl.f'
       include '3dcom.f'
       real objg(odata)
 c      character*20 string
@@ -187,6 +189,7 @@ c 0: Color code according to position.
 c 1:            according to average flux already in nf_step+1
 c 2:            according to average flux-density already in nf_step+2
 
+      include 'ndimsdecl.f'
       include '3dcom.f'
       parameter (nadef=20,nzdef=5,pi=3.141593)
       parameter (ncorn=5)
@@ -338,6 +341,7 @@ c 0: Color code according to position.
 c 1:            according to average flux already in nf_step+1
 c 2:            according to average flux-density already in nf_step+2
 
+      include 'ndimsdecl.f'
       include '3dcom.f'
       parameter (nadef=20,nzdef=5,pi=3.141593)
       parameter (ncorn=5)
@@ -495,6 +499,7 @@ c iosw determines the nature of the plot
 c 0: Color code according to position.
 c 1:            according to average flux already in nf_step+1
 c 2:            according to average flux-density already in nf_step+2
+      include 'ndimsdecl.f'
       include '3dcom.f'
       real objg(odata)
 c      character*20 string
@@ -591,6 +596,7 @@ c isign determines the direction of such writing.
       integer iosw,imin,k2,k3,iobj,iav,i2,incorn,idim
       real fmin,fmax
       logical lfw
+      include 'ndimsdecl.f'
       include '3dcom.f'
       include 'vtkcom.f'
       parameter (ncorn=5)
@@ -689,6 +695,7 @@ c iq references the quantity, 1 flux, 2-4 momentum etc, to be plotted.
 c rv gives the Window size, cv the center of the view.
       integer iq,iosw,iomask
       real rv
+      include 'ndimsdecl.f'
       include '3dcom.f'
       include 'sectcom.f'
       include 'vtkcom.f'
@@ -792,6 +799,7 @@ c*************************************************************
 c This subroutine is called to write data in vtkcom common blocks
       subroutine vtkwrite(iq,ioswin,iomask)
       integer iq,iosw,iomask
+      include 'ndimsdecl.f'
       include '3dcom.f'
       include 'sectcom.f'
       include 'vtkcom.f'

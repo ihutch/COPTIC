@@ -123,9 +123,10 @@ c         call fieldatpointtest(surfobj(koff+1),u,cij,iLs,field)
 
 c***************************************************************
 c Calculate the forces for objects that we are tracking.
-      subroutine calculateforces(ndims,iLs,cij,u)
-      integer ndims,iLs(ndims+1)
+      subroutine calculateforces(mdims,iLs,cij,u)
+      integer mdims,iLs(mdims+1)
       real u(*),cij(*)
+      include 'ndimsdecl.f'
       include '3dcom.f'
 
       do i=1,nf_obj
@@ -164,6 +165,7 @@ c***************************************************************
 c Initialize the force tracking for objects
 c Must be called after fluxdatainit.
       subroutine forcetrackinit()
+      include 'ndimsdecl.f'
       include '3dcom.f'
 
       do i=1,nf_obj

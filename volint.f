@@ -18,7 +18,7 @@ c e.g. point-charge objects.
       external linregion
       logical linregion
       include 'meshcom.f'
-      real xm(ndims_mesh),xi(ndims_mesh),xp(ndims_mesh)
+      real xm(ndims),xi(ndims),xp(ndims)
 c      parameter (npoints=10000)
 c Sobel numbers are more "favorable" if the number of them is 2^k
 c where k>6 (for 3 dimensions). So make it a power of 2.
@@ -49,26 +49,26 @@ c See if there is a chance the volume is intersected by a boundary.
       enddo
 c This is an unintersected case. Calculate simply.
       vol=1.
-      do id=1,ndims_mesh
+      do id=1,ndims
          index=ixnp(id)+indi(id)+1
          xi(id)=xn(index)
          vol=vol*(xn(index+1)-xn(index-1))*0.5
       enddo
-      if(.not.linregion(ibool_part,ndims_mesh,xi)) goto 3
+      if(.not.linregion(ibool_part,ndims,xi)) goto 3
       volumes(ipoint+1)=vol
       inc=1
       return
 
 c Intersected case.
  1    continue
-      do id=1,ndims_mesh
+      do id=1,ndims
          index=ixnp(id)+indi(id)+1
          xp(id)=xn(index+1)
          xi(id)=xn(index)
          xm(id)=xn(index-1)
       enddo
 c If we are outside the active region use unintersected case
-      if(.not.linregion(ibool_part,ndims_mesh,xi)) goto 3
+      if(.not.linregion(ibool_part,ndims,xi)) goto 3
 
 c      write(*,*)'Volintegrate call:',indi,xi,cij(icij)
 c Use volintegrate function.
@@ -80,7 +80,7 @@ c Outside region. Set a large volume. 10^30 if we are outside
 c everything.  10^20 if we are inside a pointcharge region, in which
 c case we (later) set the density to 0 rather than faddu alone.
  3    continue
-      iregion=insideall(ndims_mesh,xi)
+      iregion=insideall(ndims,xi)
       if(IAND(iregion,iptch_mask).ne.0)then
 c We are inside a point-charge region.
          volumes(ipoint+1)=1.e20
@@ -105,15 +105,14 @@ c (1-|f|)(x_{i+1}-x_{i-1}). Then if it is in the region we add it on. If
 c not we throw away. Eventually we divide by the total number of points
 c examined.
 
-      real function volintegrate(ndims,xm,xi,xp,npoints)
+      real function volintegrate(mdims,xm,xi,xp,npoints)
 
-      real xm(ndims),xi(ndims),xp(ndims)
+      real xm(mdims),xi(mdims),xp(mdims)
       integer npoints
-
-      parameter (mdims=10)
-      real x(mdims)
       double precision qrn(mdims)
+      include 'ndimsdecl.f'
       include '3dcom.f'
+      real x(ndims)
       external linregion
       logical linregion
 C     .. Scalar Arguments ..
@@ -168,14 +167,13 @@ c (1-|f|)(x_{i+1}-x_{i-1}). Then if it is in the region we add it on. If
 c not we throw away. Eventually we divide by the total number of points
 c examined.
 
-      real function volintegrate0(ndims,xm,xi,xp,npoints)
-
-      real xm(ndims),xi(ndims),xp(ndims)
+      real function volintegrate0(mdims,xm,xi,xp,npoints)
+      real xm(mdims),xi(mdims),xp(mdims)
       integer npoints
 
-      parameter (mdims=10)
-      real x(mdims)
+      include 'ndimsdecl.f'
       include '3dcom.f'
+      real x(ndims)
       external linregion
       logical linregion
 
@@ -229,7 +227,7 @@ c read.
 c Normally this is called with lstrict=.true. but if not, then
 c the checks for object identities are skipped.
       subroutine stored3geometry(volumes,iuds,ifull,istat,lstrict)
-      parameter (ndims=3)
+      include 'ndimsdecl.f'
       integer iuds(ndims),ifull(ndims)
       real volumes(ifull(1),ifull(2),ifull(3))
       logical lstrict
@@ -256,7 +254,7 @@ c Write out the current geometric data.
 c      write(iunit)((obj_geom(i,j),i=1,oabc-1),j=1,ngeomobj)
       write(iunit)((obj_geom(i,j),i=1,odata),j=1,ngeomobj)
       write(iunit)(iuds(i),i=1,ndims)
-      write(iunit)(xn(i),i=1,ixnp(ndims_mesh+1))
+      write(iunit)(xn(i),i=1,ixnp(ndims+1))
       write(iunit)
      $     (((volumes(i,j,k),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
       close(iunit)
@@ -284,8 +282,8 @@ c
       if(iuds1(1).ne.iuds(1)) goto 101
       if(iuds1(2).ne.iuds(2)) goto 101
       if(iuds1(3).ne.iuds(3)) goto 101
-      read(iunit)(xn1(i),i=1,ixnp(ndims_mesh+1))
-      do i=1,ixnp(ndims_mesh+1)
+      read(iunit)(xn1(i),i=1,ixnp(ndims+1))
+      do i=1,ixnp(ndims+1)
          if(xn(i).ne.xn1(i))goto 101
       enddo
       read(iunit,err=101,end=102)

@@ -8,6 +8,7 @@ c
 c***********************************************************************
       subroutine fluxreduce()
       include 'mpif.h'
+      include 'ndimsdecl.f'
       include '3dcom.f'
 c ALLREDUCE communicates the result to all processes.      
 

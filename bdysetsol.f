@@ -128,8 +128,8 @@ c using information in meshcom.
       integer indi(ndims)
       real x(ndims)
       include 'meshcom.f'
-      if(ndims.ne.ndims_mesh)then
-         write(*,*)'rindi dimension mismatch',ndims,ndims_mesh
+      if(ndims.ne.ndims)then
+         write(*,*)'rindi dimension mismatch',ndims,ndims
          stop
       endif
       r2indi=0.

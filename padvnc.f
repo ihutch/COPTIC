@@ -14,7 +14,7 @@ c      real u(nx,ny,nz)
 c Array structure vectors: (1,nx,nx*ny,nx*ny*nz)
       integer iLs(mdims+1)
 
-c Meshcom provides ixnp, xn, the mesh spacings. (+ndims_mesh)
+c Meshcom provides ixnp, xn, the mesh spacings. (+ndims)
       include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'myidcom.f'
@@ -33,10 +33,10 @@ c Lowest particle to print debugging data for.
       parameter (fieldtoosmall=1.e-3)
 c Local storage
       parameter (fieldtoolarge=1.e12)
-      integer ixp(ndims_mesh)
-      real field(ndims_mesh),adfield(ndims_mesh)
-      real xfrac(ndims_mesh)
-c      real xg(ndims_mesh),xc(ndims_mesh)
+      integer ixp(ndims)
+      real field(ndims),adfield(ndims)
+      real xfrac(ndims)
+c      real xg(ndims),xc(ndims)
       logical linmesh
       logical lcollided,ltlyerr
       save adfield
@@ -44,7 +44,7 @@ c Testing storage
       real ptot,atot
       data ptot/0./atot/0./
 
-c      real fieldp(ndims_mesh)
+c      real fieldp(ndims)
 c Make this always last to use the checks.
       include 'partcom.f'
 
@@ -54,7 +54,7 @@ c      tisq=sqrt(Ti)
       lcollided=.false.
       ncollided=0
 
-      if(ndims.ne.ndims_mesh.or. ndims.ne.3)
+      if(ndims.ne.ndims.or. ndims.ne.3)
      $     stop 'Padvnc incorrect ndims number of dimensions'
 c-----------------------------------------------------------------
       ic1=2*ndims+1
@@ -421,16 +421,17 @@ c      write(*,*)'Padvnc',n_part,nrein,ilaunch,ninjcomp,n_partmax
       end
 
 c***********************************************************************
-      subroutine getadfield(ndims,irptch,adfield,xp,isw,ierr)
+      subroutine getadfield(mdims,irptch,adfield,xp,isw,ierr)
 c Cycle through the nonzero bits of irptch and add up the extra
 c potential (isw=1), field (isw=2) or charge (isw=3) contributions.
 c adfield should be zero on entry, because it ain't set,
 c just incremented.
 c ierr returns zero for no error, 1 for too close to particle.
 
-      integer ndims,irptch,isw
-      real adfield(ndims)
-      real xp(ndims)
+      integer mdims,irptch,isw
+      real adfield(mdims)
+      real xp(mdims)
+      include 'ndimsdecl.f'
       include '3dcom.f'
       real xd(ns_ndims)
       im=irptch
@@ -532,7 +533,7 @@ c For debyelen and Tempr gradient.
       include 'plascom.f'
 c Local storage:
       integer isw,iregion,irptch
-      real xp(ndims_mesh),adfield(ndims_mesh)
+      real xp(ndims),adfield(ndims)
 c Silence warnings
       irptch=iLs
       irptch=iuds(1)
@@ -596,16 +597,16 @@ c If particle is relocated by periodicity, advance nrein.
 
       integer i,iregion
       logical linmesh
-c meshcom provides ixnp, xn, the mesh spacings. (+ndims_mesh)
+c meshcom provides ixnp, xn, the mesh spacings. (+ndims)
       include 'ndimsdecl.f'
       include 'meshcom.f'
-      integer ixp(ndims_mesh)
-      real xfrac(ndims_mesh)
-      parameter (ndimsx2=ndims_mesh*2)
+      integer ixp(ndims)
+      real xfrac(ndims)
+      parameter (ndimsx2=ndims*2)
       include 'partcom.f'
 
       linmesh=.true.
-      do id=1,ndims_mesh
+      do id=1,ndims
 c Offset to start of dimension-id-position array.
          ioff=ixnp(id)
 c xn is the position array for each dimension arranged linearly.
@@ -657,7 +658,7 @@ c Because we must not allow exactly on boundaries.
 c specific particle test
 c         if(i.eq.2298489) write(*,*)i,isz,ix,xm,linmesh
       enddo
-      iregion=insideall(ndims_mesh,x_part(1,i))
+      iregion=insideall(ndims,x_part(1,i))
       
       end
 c********************************************************************
@@ -667,6 +668,7 @@ c Update the collisional force by momentum change.
       integer i
       real tisq
       integer iregion
+      include 'ndimsdecl.f'
       include 'partcom.f'
       include 'colncom.f'
       include '3dcom.f'
@@ -778,6 +780,7 @@ c Add on the contribution of this particle to the collision force.
 c colntime is the collision time, vneutral the drift velocity, dt time
 c step.  The total force is the contained momentum difference over the
 c collision time. Needs subsequently to be properly normalized.
+      include 'ndimsdecl.f'
       include 'partcom.f'
       include '3dcom.f'
       real xpart(3*ns_ndims),colntime,vneutral
@@ -804,6 +807,7 @@ c     $              ,xpart(ns_ndims+3),vid,iregion
 c********************************************************************
       subroutine bulknorm(fac)
 c Normalize the bulkforce, multiplying by factor fac
+      include 'ndimsdecl.f'
       include '3dcom.f'
       do i=1,mf_obj
          do id=1,ns_ndims

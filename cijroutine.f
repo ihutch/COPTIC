@@ -1102,6 +1102,7 @@ c Calculate and return the total flux and total area of a
 c flux-collecting object ifobj.
       integer ifobj
       real flux,area
+      include 'ndimsdecl.f'
       include '3dcom.f'
       area=0.
       flux=0.

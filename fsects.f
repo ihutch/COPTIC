@@ -13,6 +13,7 @@ c the fractional position between xp1 and xp2 in frac.
       real sd,fraction
       real tiny,onemtiny
       parameter (tiny=1.e-5,onemtiny=1.-2.*tiny)
+      include 'ndimsdecl.f'
       include '3dcom.f'
 c 3D here.
       parameter (nds=3)
@@ -103,6 +104,7 @@ c coefficients of the adjacent vectors.
       integer npdim,iobj,ijbin
       real xp1(npdim),xp2(npdim)
       real sd
+      include 'ndimsdecl.f'
       include '3dcom.f'
       real xn1(ns_ndims),xn2(ns_ndims)
       sd=0.
@@ -164,6 +166,7 @@ c is determined by the cubeexplt code.
       integer npdim,iobj,ijbin
       real xp1(npdim),xp2(npdim)
       real sd
+      include 'ndimsdecl.f'
       include '3dcom.f'
       real xn1(pp_ndims),xn2(pp_ndims)
       sd=0.
@@ -209,6 +212,7 @@ c Master routine for calling cylusect after normalization of cyl.
       integer npdim,iobj,ijbin
       real xp1(npdim),xp2(npdim)
       real sdmin
+      include 'ndimsdecl.f'
       include '3dcom.f'
       real xn1(pp_ndims),xn2(pp_ndims)
 
@@ -237,6 +241,7 @@ c whose third component is the axial direction.
       integer npdim,iobj,ijbin
       real xp1(npdim),xp2(npdim)
       real sd
+      include 'ndimsdecl.f'
       include '3dcom.f'
       real xn1(pp_ndims),xn2(pp_ndims)
 
@@ -335,6 +340,7 @@ c xp1,xp2 with it and return the relevant flux index ijbin.
 c xp1 must be always inside the cube.
       real xp1(npdim),xp2(npdim)
       integer ijbin,iobj
+      include 'ndimsdecl.f'
       include '3dcom.f'
       integer idebug
       imin=0
@@ -408,6 +414,7 @@ c side boundary. 3 altogether.  The order of faces is bottom, side, top.
       integer npdim,iobj,ijbin
       real xp1(npdim),xp2(npdim)
       real sdmin
+      include 'ndimsdecl.f'
       include '3dcom.f'
 c 3D here.
       parameter (nds=3)

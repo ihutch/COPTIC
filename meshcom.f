@@ -1,7 +1,5 @@
       include 'griddecl.f'
 c Mesh specification data that get translated into the position data below
-      integer ndims_mesh
-      parameter (ndims_mesh=ndims)
       integer nspec_mesh
       parameter (nspec_mesh=10)
       integer imeshstep(ndims,nspec_mesh)
