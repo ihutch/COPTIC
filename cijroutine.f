@@ -397,7 +397,7 @@ c The fractions for each dimension.
 c-----------------------------------------------
 c Iteration parameters. Leave these alone.
       integer mdims,mpoints
-      parameter (mdims=10,mpoints=20)
+      parameter (mdims=3,mpoints=20)
 c Array of counters at the different levels.
       integer jd(mdims)
 c Array of coefficients in the different dimensions.

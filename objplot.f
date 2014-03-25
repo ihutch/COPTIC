@@ -10,10 +10,10 @@ c 2:            according to average flux-density already in nf_step+2
       include '3dcom.f'
       real objg(odata)
       real fmin,fmax
-      real xe(ns_ndims)
+      real xe(ndims)
       parameter (nadef=20,ncosdef=20,pi=3.141593)
       parameter (ncorn=5)
-      real rface(ncorn,ns_ndims)
+      real rface(ncorn,ndims)
       integer wp(ncorn),wc(ncorn)
 c      character*20 string
       logical lfw
@@ -120,11 +120,11 @@ c 2:            according to average flux-density already in nf_step+2
       include '3dcom.f'
       real objg(odata)
 c      character*20 string
-      integer iov(ns_ndims)
-      real xe(ns_ndims),objn1(0:ns_ndims-1)
+      integer iov(ndims)
+      real xe(ndims),objn1(0:ndims-1)
       parameter (ncorn=5)
-      real rface(ncorn,ns_ndims),rfc(ns_ndims)
-      integer iof(ncorn,ns_ndims-1)
+      real rface(ncorn,ndims),rfc(ndims)
+      integer iof(ncorn,ndims-1)
       data iof/-1,1,1,-1,-1,   -1,-1,1,1,-1/
 
       ifobj=nf_map(iobj)
@@ -141,27 +141,27 @@ c Get the point and eye position. Make into world units.
       call nxyz2wxyz(xe(1),xe(2),xe(3),xe(1),xe(2),xe(3))
 c Transform eye position into fractional cube position.      
 c The starting fixed point is opposite signs from returned xn.
-      do iv=1,ns_ndims
+      do iv=1,ndims
 c Fix zero flux meshes:
          objn1(iv-1)=objg(ofn1+iv-1)
          if(objn1(iv-1).eq.0.)objn1(iv-1)=1.
          iov(iv)=int(-sign(1.,xe(iv)-objg(ocenter+iv-1)))
       enddo
 c Now ordered.
-c      write(*,*)(objg(k),k=1,4*ns_ndims),objg(ocenter),objg(oradius)
-      do is=1,2*ns_ndims
-         iv=mod(is-1,ns_ndims)+1
+c      write(*,*)(objg(k),k=1,4*ndims),objg(ocenter),objg(oradius)
+      do is=1,2*ndims
+         iv=mod(is-1,ndims)+1
 c Face index:
-         imin=iv+ns_ndims*(1+iov(iv))/2
-         do id=1,ns_ndims
+         imin=iv+ndims*(1+iov(iv))/2
+         do id=1,ndims
             rfc(id)=objg(ocenter+id-1)
             if(id.eq.iv)rfc(id)=rfc(id)+iov(iv)*objg(oradius+id-1)
          enddo
          iov(iv)=-iov(iv)
 c         write(*,*)'Face center',rfc
-         i1=mod(1+is-2,ns_ndims)+1
-         i2=mod(2+is-2,ns_ndims)+1
-         i3=mod(3+is-2,ns_ndims)+1
+         i1=mod(1+is-2,ndims)+1
+         i2=mod(2+is-2,ndims)+1
+         i3=mod(3+is-2,ndims)+1
          do k2=1,int(objn1(i2-1))
 c  fs run from 1-N to N-1 as ks run from 1 to N
             f2=2*k2-1.-objn1(i2-1)
@@ -193,8 +193,8 @@ c 2:            according to average flux-density already in nf_step+2
       include '3dcom.f'
       parameter (nadef=20,nzdef=5,pi=3.141593)
       parameter (ncorn=5)
-      real rface(ncorn,ns_ndims)
-      real xe(ns_ndims)
+      real rface(ncorn,ndims)
+      real xe(ndims)
       real objg(odata)
       logical lfw
       integer wp(ncorn),wc(ncorn)
@@ -260,10 +260,10 @@ c The eye is at angle running from minus-pi to plus-pi.
             r2=sqrt(float(j  )/nr)
             do k=1,ncorn
                rface(k,ia)=ie*objg(oradius+ia-1)+objg(ocenter+ia-1)
-               ids=mod(2+ia-2,ns_ndims)+1
+               ids=mod(2+ia-2,ndims)+1
                rface(k,ids)=objg(oradius+ids-1)*(wc(k)*r1+(1.-wc(k))*r2)
      $              *cos(wp(k)*t1+(1.-wp(k))*t2)+objg(ocenter+ids-1)
-               ids=mod(3+ia-2,ns_ndims)+1
+               ids=mod(3+ia-2,ndims)+1
                rface(k,ids)=objg(oradius+ids-1)*(wc(k)*r1+(1.-wc(k))*r2)
      $              *sin(wp(k)*t1+(1.-wp(k))*t2)+objg(ocenter+ids-1)
             enddo
@@ -286,12 +286,12 @@ c Draw curved surface.
             z1=(-1.+(j-1)*2./nz)*objg(oradius+ia-1)
             z2=(-1.+ j   *2./nz)*objg(oradius+ia-1)
             do k=1,ncorn
-               ids=mod(1+ia-2,ns_ndims)+1
+               ids=mod(1+ia-2,ndims)+1
                rface(k,ids)=(wc(k)*z1+(1.-wc(k))*z2)+objg(ocenter+ids-1)
-               ids=mod(2+ia-2,ns_ndims)+1
+               ids=mod(2+ia-2,ndims)+1
                rface(k,ids)=objg(oradius+ids-1)
      $              *cos(wp(k)*t1+(1.-wp(k))*t2)+objg(ocenter+ids-1)
-               ids=mod(3+ia-2,ns_ndims)+1
+               ids=mod(3+ia-2,ndims)+1
                rface(k,ids)=objg(oradius+ids-1)
      $              *sin(wp(k)*t1+(1.-wp(k))*t2)+objg(ocenter+ids-1)
             enddo
@@ -319,10 +319,10 @@ c The eye is at angle running from minus-pi to plus-pi.
             r2=sqrt(float(j  )/nr)
             do k=1,ncorn
                rface(k,ia)=ie*objg(oradius+ia-1)+objg(ocenter+ia-1)
-               ids=mod(2+ia-2,ns_ndims)+1
+               ids=mod(2+ia-2,ndims)+1
                rface(k,ids)=objg(oradius+ids-1)*(wc(k)*r1+(1.-wc(k))*r2)
      $              *cos(wp(k)*t1+(1.-wp(k))*t2)+objg(ocenter+ids-1)
-               ids=mod(3+ia-2,ns_ndims)+1
+               ids=mod(3+ia-2,ndims)+1
                rface(k,ids)=objg(oradius+ids-1)*(wc(k)*r1+(1.-wc(k))*r2)
      $              *sin(wp(k)*t1+(1.-wp(k))*t2)+objg(ocenter+ids-1)
             enddo
@@ -345,8 +345,8 @@ c 2:            according to average flux-density already in nf_step+2
       include '3dcom.f'
       parameter (nadef=20,nzdef=5,pi=3.141593)
       parameter (ncorn=5)
-      real rface(ncorn,ns_ndims)
-      real xe(ns_ndims),xcontra(ns_ndims)
+      real rface(ncorn,ndims)
+      real xe(ndims),xcontra(ndims)
       real objg(odata)
       logical lfw
       integer wp(ncorn),wc(ncorn)
@@ -382,7 +382,7 @@ c Discover perspective, eye position in world coords:
       call trn32(x,y,z,xe(1),xe(2),xe(3),-1)
       call nxyz2wxyz(xe(1),xe(2),xe(3),xe(1),xe(2),xe(3))
 c Transform to unit cylinder coordinates.
-      call world3contra(ns_ndims,xe,xe,iobj)
+      call world3contra(ndims,xe,xe,iobj)
 c Flux accumulation is (zero based):
       thetae=atan2(xe(mod(ia+1,3)+1),xe(mod(ia,3)+1))
       thetao=mod((thetae+pi),2.*pi)
@@ -407,15 +407,15 @@ c Set to invisible end face and draw for vtkwriting.
             r2=sqrt(float(j  )/nr)
             do k=1,ncorn
                xcontra(ia)=ie
-               ids=mod(2+ia-2,ns_ndims)+1
+               ids=mod(2+ia-2,ndims)+1
                xcontra(ids)=(wc(k)*r1+(1.-wc(k))*r2)
      $              *cos(wp(k)*t1+(1.-wp(k))*t2)
-               ids=mod(3+ia-2,ns_ndims)+1
+               ids=mod(3+ia-2,ndims)+1
                xcontra(ids)=(wc(k)*r1+(1.-wc(k))*r2)
      $              *sin(wp(k)*t1+(1.-wp(k))*t2)
 c Transform to world
-               call contra3world(ns_ndims,xcontra,xcontra,iobj)
-               do m=1,ns_ndims
+               call contra3world(ndims,xcontra,xcontra,iobj)
+               do m=1,ndims
                   rface(k,m)=xcontra(m)
                enddo
             enddo
@@ -438,15 +438,15 @@ c Draw curved surface.
             z1=(-1.+(j-1)*2./nz)
             z2=(-1.+ j   *2./nz)
             do k=1,ncorn
-               ids=mod(1+ia-2,ns_ndims)+1
+               ids=mod(1+ia-2,ndims)+1
                xcontra(ids)=(wc(k)*z1+(1.-wc(k))*z2)
-               ids=mod(2+ia-2,ns_ndims)+1
+               ids=mod(2+ia-2,ndims)+1
                xcontra(ids)=cos(wp(k)*t1+(1.-wp(k))*t2)
-               ids=mod(3+ia-2,ns_ndims)+1
+               ids=mod(3+ia-2,ndims)+1
                xcontra(ids)=sin(wp(k)*t1+(1.-wp(k))*t2)
 c Transform back from unit-cyl to world coordinates
-               call contra3world(ns_ndims,xcontra,xcontra,iobj)
-               do m=1,ns_ndims
+               call contra3world(ndims,xcontra,xcontra,iobj)
+               do m=1,ndims
                   rface(k,m)=xcontra(m)
                enddo
             enddo
@@ -473,15 +473,15 @@ c The eye is at angle running from minus-pi to plus-pi.
             r2=sqrt(float(j  )/nr)
             do k=1,ncorn
                xcontra(ia)=ie
-               ids=mod(2+ia-2,ns_ndims)+1
+               ids=mod(2+ia-2,ndims)+1
                xcontra(ids)=(wc(k)*r1+(1.-wc(k))*r2)
      $              *cos(wp(k)*t1+(1.-wp(k))*t2)
-               ids=mod(3+ia-2,ns_ndims)+1
+               ids=mod(3+ia-2,ndims)+1
                xcontra(ids)=(wc(k)*r1+(1.-wc(k))*r2)
      $              *sin(wp(k)*t1+(1.-wp(k))*t2)
 c Transform to world
-               call contra3world(ns_ndims,xcontra,xcontra,iobj)
-               do m=1,ns_ndims
+               call contra3world(ndims,xcontra,xcontra,iobj)
+               do m=1,ndims
                   rface(k,m)=xcontra(m)
                enddo
             enddo
@@ -503,12 +503,12 @@ c 2:            according to average flux-density already in nf_step+2
       include '3dcom.f'
       real objg(odata)
 c      character*20 string
-      integer iov(ns_ndims)
-      real xe(ns_ndims),xn(ns_ndims),objn1(0:ns_ndims-1)
-      real xi(pp_ndims)
+      integer iov(ndims)
+      real xe(ndims),xn(ndims),objn1(0:ndims-1)
+      real xi(ndims)
       parameter (ncorn=5)
-      real rface(ncorn,pp_ndims),rfc(pp_ndims)
-      integer iof(ncorn,pp_ndims-1)
+      real rface(ncorn,ndims),rfc(ndims)
+      integer iof(ncorn,ndims-1)
       data iof/-1,1,1,-1,-1,   -1,-1,1,1,-1/
 
 
@@ -529,7 +529,7 @@ c Transform eye position into fractional cube position.
 c The starting fixed point is opposite signs from returned xn.
 c So the first three center vectors have values equal to minus
 c the sign of xn times the three pp_vectors. 
-      do iv=1,ns_ndims
+      do iv=1,ndims
 c Fix zero flux meshes:
          objn1(iv-1)=objg(ofn1+iv-1)
          if(objn1(iv-1).eq.0.)objn1(iv-1)=1.
@@ -537,19 +537,19 @@ c Fix zero flux meshes:
 c Now if iov(iv) is negative that refers to the first ns_nbins bins.
       enddo
       
-      do is=1,2*pp_ndims
+      do is=1,2*ndims
 c Face Dimension index:
-         iv=mod(is-1,pp_ndims)+1
+         iv=mod(is-1,ndims)+1
 c Face index:
-         imin=iv+ns_ndims*(1+iov(iv))/2
-         do id=1,pp_ndims
+         imin=iv+ndims*(1+iov(iv))/2
+         do id=1,ndims
             rfc(id)=objg(pp_orig+id-1)
-     $           +iov(iv)*objg(pp_vec+(iv-1)*pp_ndims+id-1)
+     $           +iov(iv)*objg(pp_vec+(iv-1)*ndims+id-1)
          enddo
          iov(iv)=-iov(iv)
-         i1=mod(1+is-2,pp_ndims)+1
-         i2=mod(2+is-2,pp_ndims)+1
-         i3=mod(3+is-2,pp_ndims)+1
+         i1=mod(1+is-2,ndims)+1
+         i2=mod(2+is-2,ndims)+1
+         i3=mod(3+is-2,ndims)+1
          do k2=1,int(objn1(i2-1))
 c  fs run from 1-N to N-1 as ks run from 1 to N
             f2=2*k2-1.-objn1(i2-1)
@@ -560,11 +560,11 @@ c  fs run from 1-N to N-1 as ks run from 1 to N
 c xi's run from (1-N)+-1 to (N-1)+-1 /N
                   xi(i2)=(f2+iof(ic,1))/objn1(i2-1)
                   xi(i3)=(f3+iof(ic,2))/objn1(i3-1)
-                  do id=1,pp_ndims
+                  do id=1,ndims
                      rface(ic,id)=rfc(id)
-                     do ivv=1,pp_ndims
+                     do ivv=1,ndims
                         rface(ic,id)=rface(ic,id)
-     $                       +xi(ivv)*objg(pp_vec+(ivv-1)*pp_ndims+id-1)
+     $                       +xi(ivv)*objg(pp_vec+(ivv-1)*ndims+id-1)
                      enddo
                   enddo
                enddo
@@ -600,7 +600,7 @@ c isign determines the direction of such writing.
       include '3dcom.f'
       include 'vtkcom.f'
       parameter (ncorn=5)
-      real rface(ncorn,pp_ndims)
+      real rface(ncorn,ndims)
       character*20 string
 
       if(iosw.ne.0.or.vtkflag.eq.1)then
@@ -614,7 +614,7 @@ c This part of the code is called when we want vtk files
 c And the coloring and plotting part will be skipped
          if(vtkflag.eq.1)then
            do incorn=1,ncorn-1
-              do idim=1,pp_ndims
+              do idim=1,ndims
                  vtkpoints(12*vtkindex+(incorn-1)*3+idim)
      $           =rface(incorn,idim)
               enddo
@@ -699,7 +699,7 @@ c rv gives the Window size, cv the center of the view.
       include '3dcom.f'
       include 'sectcom.f'
       include 'vtkcom.f'
-      real cv(nf_ndims)
+      real cv(ndims)
       integer index(ngeomobjmax)
       real zta(ngeomobjmax)
       character*10 string

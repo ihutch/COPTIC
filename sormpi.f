@@ -12,7 +12,7 @@ c The used number of dimensions. But this must be equal to ndims
 c parameter used for bbdydecl dimensions.
       integer ndims
 c     The number of dimensions declared in bbdydecl.f
-      parameter (ndimsdecl=3)
+      parameter (ndimsbbdy=3)
 c     ifull full dimensions, iuds used dimensions
 c     cij coefficients of the finite difference scheme, in the order
 c         east,west,north,south ... [regarding i,j, as x,y].
@@ -66,24 +66,24 @@ c k_sor is the sor iteration index, for diagnostics.
       logical laddu
       logical ldebugs
 
-c bbdydecl declares most things for bbdy, using parameter ndimsdecl.
+c bbdydecl declares most things for bbdy, using parameter ndimsbbdy.
       include 'bbdydecl.f'
 c iLs has been removed from bbdydecl.f
-      integer iLs(ndimsdecl+1)
+      integer iLs(ndimsbbdy+1)
 
 c Scratch arrays for bdyshare communications
-      integer idone(ndimsdecl)
-      integer zeros(ndimsdecl)
-      integer ones(ndimsdecl)
+      integer idone(ndimsbbdy)
+      integer zeros(ndimsbbdy)
+      integer ones(ndimsbbdy)
 
       real delta,umin,umax
       data ldebugs/.false./
 c This saves data between calls so we can use separate initialization
       save
 c-------------------------------------------------------------------
-      if(ndims.gt.ndimsdecl)then
+      if(ndims.gt.ndimsbbdy)then
          write(*,*)'Too many dimensions in sormpi call',
-     $        ndims,ndimsdecl
+     $        ndims,ndimsbbdy
          stop
       endif
       if(ldebugs)write(*,*)'In sormpi',ictl,ndims,ifull,iuds,idims,ierr

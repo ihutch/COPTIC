@@ -45,7 +45,7 @@ c Region code of particle
       integer iregion
 
 c Local vector storage
-      parameter (mdims=10)
+      parameter (mdims=3)
       integer idn(mdims)
       real xf(mdims)
 
@@ -760,7 +760,7 @@ c Find the index of x in the array xn:
 
 c Get each component of the field.
       do id=1,ndims
-         call getsimple3field(ns_ndims,u(koff)
+         call getsimple3field(ndims,u(koff)
      $        ,iLs,xn(ixnp(id)+kxf(id)),id,xff,field(id))
       enddo
 c      write(*,*)kxf,koff,xff,field

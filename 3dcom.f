@@ -32,11 +32,11 @@ c A point is inside the pp if |Sum_i(x_i-xc_i).v^p_i|<1 for all p.
 c A point is on the surface if, in addition, equality holds in at least
 c one of the (6) relations. 
 c [i-k refers to cartesian components, p-r to pp basis.] 
-      integer pp_ndims,pp_orig,pp_vec,pp_contra,pp_total
-      parameter (pp_ndims=ndims,pp_orig=ocenter)
-      parameter (pp_vec=pp_orig+pp_ndims)
-      parameter (pp_contra=pp_vec+pp_ndims*pp_ndims)
-      parameter (pp_total=pp_contra+pp_ndims*pp_ndims-1)
+      integer pp_orig,pp_vec,pp_contra,pp_total
+      parameter (pp_orig=ocenter)
+      parameter (pp_vec=pp_orig+ndims)
+      parameter (pp_contra=pp_vec+ndims*ndims)
+      parameter (pp_total=pp_contra+ndims*ndims-1)
       real obj_geom(odata,ngeomobjmax)
 c
 c Mapping from obj_geom object number to nf_flux object (many->fewer)
@@ -58,9 +58,9 @@ c What is the reinjection scheme?
      $     ,ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
 c-------------------------------------------------------------------
 c Data that describes the flux to positions on the objects:
-      integer nf_quant,nf_obj,nf_maxsteps,nf_datasize,nf_posdim,nf_ndims
+      integer nf_quant,nf_obj,nf_maxsteps,nf_datasize,nf_posdim
 c Number of slots needed for position descriptors. Dimensions.
-      parameter (nf_posdim=4,nf_ndims=ndims)
+      parameter (nf_posdim=4)
 c Maximum (i.e. storage size) of array 
       parameter (nf_quant=5,nf_obj=20,nf_maxsteps=6000)
       parameter (nf_datasize=10000000)
@@ -76,9 +76,9 @@ c Actual numbers of quantities, objects and steps <= maxes.
 c The number of positions at which this quantity is measured:
       integer nf_posno(nf_quant,nf_obj)
 c The dimensional structure of these: nf_posno = prod nf_dimlens
-      integer nf_dimlens(nf_quant,nf_obj,nf_ndims)
+      integer nf_dimlens(nf_quant,nf_obj,ndims)
 c The offset index to the start of cube faces
-      integer nf_faceind(nf_quant,nf_obj,2*nf_ndims)
+      integer nf_faceind(nf_quant,nf_obj,2*ndims)
 c Reverse mapping to the geomobj number from nf_obj number
       integer nf_geommap(nf_obj)
 c The address of the data-start for the quantity, obj, step.
@@ -115,22 +115,20 @@ c Steps 1-nf_posdim:0 store the quantitative position information.
 c where nf_posdim is the number of coefficients in position info.
 c------------------------------------------------------------------
 c Data for storing integrated field quantities such as forces.
-      integer ns_ndims
-      parameter (ns_ndims=ndims)
       integer ns_nt,ns_np
 c the size of the stress-calculating mesh in theta and psi directions
       parameter (ns_nt=20,ns_np=20)
       integer ns_flags(nf_obj)
-      real fieldforce(ns_ndims,nf_obj,nf_maxsteps)
-      real pressforce(ns_ndims,nf_obj,nf_maxsteps)
-      real partforce(ns_ndims,nf_obj,nf_maxsteps)
-      real colnforce(ns_ndims,nf_obj,nf_maxsteps)
+      real fieldforce(ndims,nf_obj,nf_maxsteps)
+      real pressforce(ndims,nf_obj,nf_maxsteps)
+      real partforce(ndims,nf_obj,nf_maxsteps)
+      real colnforce(ndims,nf_obj,nf_maxsteps)
       real charge_ns(nf_obj,nf_maxsteps)
-      real surfobj(2*ns_ndims,ns_nt,ns_np,nf_obj)
+      real surfobj(2*ndims,ns_nt,ns_np,nf_obj)
       common /stress/ns_flags,surfobj,fieldforce,pressforce
      $     ,partforce,colnforce,charge_ns
 c------------------------------------------------------------------
 c External field data (when used)
       logical lextfield
-      real extfield(ns_ndims)
+      real extfield(ndims)
       common /extfieldcom/lextfield,extfield

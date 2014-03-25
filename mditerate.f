@@ -5,7 +5,7 @@ c Shell for skipping over the boundary of ndims-dimensional volume.
       integer indi(ndims),iused(ndims)
       real u(*)
 
-      parameter (mdims=10)
+      parameter (mdims=3)
 c Structure vector needed for finding adjacent u values.
 c      integer iLs(mdims+1)
 
@@ -97,7 +97,7 @@ c for the whole _used_ array at nodes spaced by inc in the 1st dimension.
       real t(*),u(*),v(*),w(*)
 
       integer mdims
-      parameter (mdims=10)
+      parameter (mdims=3)
 c Effective index in dimension, c-style (zero based)
       integer indi(mdims),indinp(mdims)
 c Structure vector
@@ -278,7 +278,7 @@ c Normally, the starting pointer is ipin=0 for the full array.
       integer ndims,ifull(ndims),iused(ndims)
       real u(*),v,w
       integer mdims
-      parameter (mdims=5)
+      parameter (mdims=3)
 c Effective index in dimension, c-style (zero based)
       integer indi(mdims),iview(3,mdims)
 c This data statement serves to silence ftnchek. The first mditerator
@@ -303,7 +303,7 @@ c Normally, the starting pointer is ipin=0 for the full array.
       integer ndims,ifull(ndims),iused(ndims)
       real u(*),v(*)
       integer mdims
-      parameter (mdims=5)
+      parameter (mdims=3)
 c Effective index in dimension, c-style (zero based)
       integer indi(mdims),iview(3,mdims)
 c This data statement serves to silence ftnchek. The first mditerator
@@ -370,7 +370,7 @@ c for the whole _used_ array at nodes spaced by inc in the 1st dimension.
       real t(*),u(*),v(*),w(*)
 
       integer mdims,i
-      parameter (mdims=10)
+      parameter (mdims=3)
 c Effective index in dimension, c-style (zero based)
       integer indi(mdims),iview(3,mdims)
       integer ipoint,inc,icomplete,indexcontract,mditerator
@@ -463,7 +463,7 @@ c for the whole _used_ array at nodes spaced by inc in the 1st dimension.
       real t(*),u(*),v(*),w(*)
 
       integer mdims,i
-      parameter (mdims=10)
+      parameter (mdims=3)
 c Effective index in dimension, c-style (zero based)
       integer indi(mdims),iview(3,mdims)
       integer ipoint,inc,icomplete,indexcontract,mditerator
@@ -562,7 +562,7 @@ c Normally, the starting pointer is ipin=0 for the full array.
       real u(*),v,w
 
       integer mdims
-      parameter (mdims=10)
+      parameter (mdims=3)
 c Effective index in dimension, c-style (zero based)
       integer indi(mdims),indinp(mdims)
 c Structure vector
@@ -626,7 +626,7 @@ c Normally, the starting pointer is ipin=0 for the full array.
       real u(*),v(*)
 
       integer mdims
-      parameter (mdims=10)
+      parameter (mdims=3)
 c Effective index in dimension, c-style (zero based)
       integer indi(mdims),indinp(mdims)
 c Structure vector

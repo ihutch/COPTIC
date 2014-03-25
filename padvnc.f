@@ -269,7 +269,7 @@ c But correcting the collisional force appropriately.
                do iob=1,mf_obj
                   igeom=nf_geommap(iob)
                   if(btest(iregion,igeom-1))then
-                     colnforce(ns_ndims,iob,nf_step)=colnforce(ns_ndims
+                     colnforce(ndims,iob,nf_step)=colnforce(ndims
      $                    ,iob,nf_step)+Eneutral*dtaccel
                   endif
                enddo
@@ -433,7 +433,7 @@ c ierr returns zero for no error, 1 for too close to particle.
       real xp(mdims)
       include 'ndimsdecl.f'
       include '3dcom.f'
-      real xd(ns_ndims)
+      real xd(ndims)
       im=irptch
       do i=1,31
          if(im.eq.0)return
@@ -691,7 +691,7 @@ c Now contribute the momentum change to the collisional force.
 c Inside object nf_geommap(j) which is a flux measuring object.
 c            write(*,*)icount,i,j,'  dv=',dv,dtaccel
             icount=icount+1
-            do id=1,ns_ndims
+            do id=1,ndims
 c This force accounting should be subsequently bulknormed by rhoinf
 c and by dt.
                   colnforce(id,j,nf_step)=colnforce(id,j,nf_step)+dv(id)
@@ -783,7 +783,7 @@ c collision time. Needs subsequently to be properly normalized.
       include 'ndimsdecl.f'
       include 'partcom.f'
       include '3dcom.f'
-      real xpart(3*ns_ndims),colntime,vneutral
+      real xpart(3*ndims),colntime,vneutral
       integer iregion
       if(colntime.gt.0)then
          do i=1,mf_obj
@@ -792,14 +792,14 @@ c            if(iregion.ne.0)write(*,*)'iregion',iregion
             if(btest(iregion,igeom-1))then
 c Inside object i->igeom which is a flux measuring object.
 c The scalar drift velocity is in the z-direction.
-               do id=1,ns_ndims
+               do id=1,ndims
                   vid=0.
-                  if(id.eq.ns_ndims)vid=vneutral+Eneutral*colntime
+                  if(id.eq.ndims)vid=vneutral+Eneutral*colntime
                   colnforce(id,i,nf_step)=colnforce(id,i,nf_step)+
-     $                 (vid-xpart(ns_ndims+id))
+     $                 (vid-xpart(ndims+id))
                enddo
 c               write(*,*)'colnforce',i,colnforce(3,i,nf_step),vd
-c     $              ,xpart(ns_ndims+3),vid,iregion
+c     $              ,xpart(ndims+3),vid,iregion
             endif
          enddo
       endif
@@ -810,7 +810,7 @@ c Normalize the bulkforce, multiplying by factor fac
       include 'ndimsdecl.f'
       include '3dcom.f'
       do i=1,mf_obj
-         do id=1,ns_ndims
+         do id=1,ndims
             colnforce(id,i,nf_step)=colnforce(id,i,nf_step)
      $           *fac
          enddo

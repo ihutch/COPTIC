@@ -106,7 +106,7 @@ c coefficients of the adjacent vectors.
       real sd
       include 'ndimsdecl.f'
       include '3dcom.f'
-      real xn1(ns_ndims),xn2(ns_ndims)
+      real xn1(ndims),xn2(ndims)
       sd=0.
       ig1=inside_geom(npdim,xp1,iobj)
       ig2=inside_geom(npdim,xp2,iobj)
@@ -168,13 +168,13 @@ c is determined by the cubeexplt code.
       real sd
       include 'ndimsdecl.f'
       include '3dcom.f'
-      real xn1(pp_ndims),xn2(pp_ndims)
+      real xn1(ndims),xn2(ndims)
       sd=0.
 
-c      write(*,*)'Pllelo',npdim,xp1,xp2,iobj,pp_ndims
+c      write(*,*)'Pllelo',npdim,xp1,xp2,iobj,ndims
       ins1=0
       ins2=0
-      do j=1,pp_ndims
+      do j=1,ndims
          xn1(j)=0.
          xn2(j)=0.
 c Contravariant projections.
@@ -183,7 +183,7 @@ c Cartesian coordinates.
             ii=(ocenter+i-1)
             xc=obj_geom(ii,iobj)
 c xn1, xn2 are the contravariant coordinates with respect to the center.
-            ji=(pp_contra+pp_ndims*(j-1)+i-1)
+            ji=(pp_contra+ndims*(j-1)+i-1)
 c            write(*,*)'ji',ji
             xn1(j)=xn1(j)+(xp1(i)-xc)*obj_geom(ji,iobj)
             xn2(j)=xn2(j)+(xp2(i)-xc)*obj_geom(ji,iobj)
@@ -214,11 +214,11 @@ c Master routine for calling cylusect after normalization of cyl.
       real sdmin
       include 'ndimsdecl.f'
       include '3dcom.f'
-      real xn1(pp_ndims),xn2(pp_ndims)
+      real xn1(ndims),xn2(ndims)
 
       ida=int(obj_geom(ocylaxis,iobj))
-      do i=1,pp_ndims
-         ii=mod(i-ida+2,pp_ndims)+1
+      do i=1,ndims
+         ii=mod(i-ida+2,ndims)+1
          xn1(ii)=(xp1(i)-obj_geom(ocenter+i-1,iobj))
      $        /obj_geom(oradius+i-1,iobj)
          xn2(ii)=(xp2(i)-obj_geom(ocenter+i-1,iobj))
@@ -243,10 +243,10 @@ c whose third component is the axial direction.
       real sd
       include 'ndimsdecl.f'
       include '3dcom.f'
-      real xn1(pp_ndims),xn2(pp_ndims)
+      real xn1(ndims),xn2(ndims)
 
 c j refers to transformed coordinates in which it is unit cyl
-      do j=1,pp_ndims
+      do j=1,ndims
          xn1(j)=0.
          xn2(j)=0.
 c Contravariant projections.
@@ -254,7 +254,7 @@ c Contravariant projections.
 c i refers to the Cartesian coordinates.
             xc=obj_geom(ocenter+i-1,iobj)
 c xn1, xn2 are the contravariant coordinates with respect to the center.
-            ji=(pp_contra+pp_ndims*(j-1)+i-1)
+            ji=(pp_contra+ndims*(j-1)+i-1)
 c            write(*,*)'ji',ji
             xn1(j)=xn1(j)+(xp1(i)-xc)*obj_geom(ji,iobj)
             xn2(j)=xn2(j)+(xp2(i)-xc)*obj_geom(ji,iobj)
@@ -263,8 +263,8 @@ c            write(*,*)'ji',ji
 c Now xn1,2 are the coordinates relative to the unit cylinder.      
       fraction=1.
 c Shortcut
-      z1=xn1(pp_ndims)
-      z2=xn2(pp_ndims)
+      z1=xn1(ndims)
+      z2=xn2(ndims)
       if((z1.ge.1..and.z2.ge.1).or.(z1.le.-1..and.z2.le.-1.))return
 c Call the unit-cylinder code.
       call cylusect(npdim,xn1,xn2,iobj,ijbin,sd,fraction)

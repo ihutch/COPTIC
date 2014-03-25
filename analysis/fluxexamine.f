@@ -13,14 +13,14 @@ C      real traceave(ntr)
       real traceave(ntr)
       character*100 filename,argument
       integer iplot,iprint,ifmask,idimf,iomask,ivprn,ivtk,istep
-      real avefield(ns_ndims),avepress(ns_ndims),avepart(ns_ndims)
-      real avetotal(ns_ndims),avecoln(ns_ndims),avesq(ns_ndims)
-      real rp,yrange,cv(ns_ndims)
+      real avefield(ndims),avepress(ndims),avepart(ndims)
+      real avetotal(ndims),avecoln(ndims),avesq(ndims)
+      real rp,yrange,cv(ndims)
       intrinsic ibclr,btest
       data iplot/1/iprint/1/ivprn/0/iquiet/1/
       data ifmask/1023/iomask/0/
       data idimf/3/
-      data rp/0./cv/ns_ndims*0./
+      data rp/0./cv/ndims*0./
 
       fn1=0.5
       fn2=1.
@@ -210,7 +210,7 @@ c Plots if
          imk=imk-2*(imk/2)
          write(*,*)'ifmask=',ifmask,' k=',k,' imk=',imk
 
-         do j=1,ns_ndims
+         do j=1,ndims
             avefield(j)=0.
             avepart(j)=0.
             avepress(j)=0.
@@ -251,7 +251,7 @@ c               stop
             stepdata(i)=i
             if(i.ge.n1 .and. i.le.n2)then
                iavenum=iavenum+1
-               do j=1,ns_ndims
+               do j=1,ndims
                   avefield(j)=avefield(j)+fieldforce(j,k,i)
                   avepress(j)=avepress(j)+pressforce(j,k,i)
                   avepart(j)=avepart(j)+partforce(j,k,i)
@@ -262,7 +262,7 @@ c               stop
                avecharge=avecharge+charge_ns(k,i)
             endif
          enddo
-         do j=1,ns_ndims
+         do j=1,ndims
             avefield(j)=debyelen**2*avefield(j)/float(iavenum)
             avepress(j)=avepress(j)/float(iavenum)
             avepart(j)=avepart(j)/float(iavenum)
@@ -325,7 +325,7 @@ c            call polyline(stepdata,plotdata(1,4),nf_step)
  101        format('===== Object',i2,' ->'
      $        ,i3,' radius=',f7.3,' zcenter=',f7.3,' Charge='
      $        ,f10.4,' =====')
-            do j=1,ns_ndims            
+            do j=1,ndims            
                write(*,'(5f12.5  )')
      $              avefield(j),avepart(j),avepress(j),avecoln(j),
      $              avefield(j)+avepart(j)+avepress(j)+avecoln(j)

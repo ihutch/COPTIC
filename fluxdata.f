@@ -29,7 +29,7 @@ c-------------------------------------------------
 c This initialization ought not to be necessary except for partforce.
       do k=1,nf_maxsteps
          do j=1,nf_obj
-            do i=1,ns_ndims
+            do i=1,ndims
                fieldforce(i,j,k)=0.
                pressforce(i,j,k)=0.
                partforce(i,j,k)=0.
@@ -86,17 +86,17 @@ c Cuboid or parallelopiped.
 c Six faces, each using two of the three array lengths. 
                   nfluxes=0
                   do kk=1,int(obj_geom(offc,i))
-                     k=mod(kk-1,ns_ndims)+1
-                     if(kk.le.ns_ndims)
+                     k=mod(kk-1,ndims)+1
+                     if(kk.le.ndims)
      $                 nf_dimlens(j,mf_obj,k)=int(obj_geom(ofn1+k-1,i))
                      nf_faceind(j,mf_obj,kk)=nfluxes
                      nfluxes=nfluxes+
-     $                    int(obj_geom(ofn1+mod(k,ns_ndims),i))
-     $                    *int(obj_geom(ofn1+mod(k+1,ns_ndims),i))
+     $                    int(obj_geom(ofn1+mod(k,ndims),i))
+     $                    *int(obj_geom(ofn1+mod(k+1,ndims),i))
 c                     write(*,*)k,' nfluxes=',nfluxes
-c     $                    ,obj_geom(ofn1+mod(k,ns_ndims),i)
+c     $                    ,obj_geom(ofn1+mod(k,ndims),i)
                   enddo
-c                  write(*,*)(nf_faceind(j,mf_obj,k),k=1,2*ns_ndims)
+c                  write(*,*)(nf_faceind(j,mf_obj,k),k=1,2*ndims)
 c                  nfluxes=2*nfluxes
                elseif(itype.eq.3 .or. itype.eq.5)then
 c Cylinder specifying nr, nt, nz. 
@@ -187,7 +187,7 @@ c******************************************************************
       include 'ndimsdecl.f'
       include '3dcom.f'
 
-c      real xyz(ns_ndims)
+c      real xyz(ndims)
 c The k=1-nf_posdim to k=0 slots exist for us to put descriptive
 c information: values that provide positions to correspond to the
 c fluxes.  Area is most important and is in 1-nf_posdim.
@@ -233,17 +233,17 @@ c Parallelopiped/Cube ----------------------------
 c facet areas are face areas divided by no of facets.
                do j=1,mf_quant(io)
 c Over different faces:
-                  do k=1,2*ns_ndims
-                     k1=mod(k-1,ns_ndims)+1
-                     k2=mod(k  ,ns_ndims)+1
-                     k3=mod(k+1,ns_ndims)+1
+                  do k=1,2*ndims
+                     k1=mod(k-1,ndims)+1
+                     k2=mod(k  ,ndims)+1
+                     k3=mod(k+1,ndims)+1
 c                     write(*,'(/,a,i2,3i3,$)')'Face',k
 c     $                    ,nf_faceind(j,io,k)
 c     $                    ,nf_dimlens(j,io,k2),nf_dimlens(j,io,k3)
                      if(itype.eq.4)then
 c Structure position of start of covariant vectors
-                        i1=pp_vec+ns_ndims*(k2-1)
-                        i2=pp_vec+ns_ndims*(k3-1)
+                        i1=pp_vec+ndims*(k2-1)
+                        i2=pp_vec+ndims*(k3-1)
 c face area equals magnitude of cross product. 
 c 3d assumption for convenience.
                         ar2= (obj_geom(i1+1,i)*obj_geom(i2+2,i)
@@ -273,7 +273,7 @@ c     $                       ,ip,ar
                         if(itype.eq.2)then
 c Cube position data x,y,z
                            xr1=-obj_geom(oradius+k1-1,i)
-                           if(k.gt.ns_ndims)xr1=-xr1
+                           if(k.gt.ndims)xr1=-xr1
                            xr2=obj_geom(oradius+k2-1,i)*
      $                          (-1.+2.*(j2-0.5)/nf_dimlens(j,io,k2))
                            xr3=obj_geom(oradius+k3-1,i)*
@@ -294,10 +294,10 @@ c                           write(*,*)j2,j3,xr1,xr2,xr3
 c Cylinder and Non-aligned cylinder -------------------------------
                if(itype.eq.3)then
                   ica=int(obj_geom(ocylaxis,i))
-                  rc=obj_geom(oradius+mod(ica,ns_ndims),i)
+                  rc=obj_geom(oradius+mod(ica,ndims),i)
                   zr=obj_geom(oradius+ica-1,i)
                   zc=obj_geom(ocenter+ica-1,i)
-                  if(rc.ne.obj_geom(oradius+mod(ica+1,ns_ndims),i))then
+                  if(rc.ne.obj_geom(oradius+mod(ica+1,ndims),i))then
                      write(*,*)'Warning! Elliptical cylinder'
      $                    ,' surface areas'
      $                    ,' not calculated correctly.'
@@ -572,9 +572,9 @@ c Energy
       endif
 c Accumulate the particle force= momentum/time over whole object.
 c Normalized to rhoinf
-      do id=1,ns_ndims
+      do id=1,ndims
          partforce(id,infobj,nf_step)=partforce(id,infobj,nf_step)
-     $        +sd*x_part(ns_ndims+id,j)/dt/rhoinf
+     $        +sd*x_part(ndims+id,j)/dt/rhoinf
       enddo
       
       end
@@ -585,19 +585,19 @@ c For input point xp(ndims) return the normalized position relative to
 c the parallelogram object objg in output xn(ndims)
       include 'ndimsdecl.f'
       include '3dcom.f'
-      real xp(ns_ndims),xn(ns_ndims)
+      real xp(ndims),xn(ndims)
       integer iobj
 c      real objg(odata)
-      do j=1,pp_ndims
+      do j=1,ndims
          xn(j)=0.
 c Contravariant projections.
-         do i=1,ns_ndims
+         do i=1,ndims
 c Cartesian coordinates.
             ii=(ocenter+i-1)
 c            xc=objg(ii)
             xc=obj_geom(ii,iobj)
 c xn1, xn2 are the contravariant coordinates with respect to the center.
-            ji=(pp_contra+pp_ndims*(j-1)+i-1)
+            ji=(pp_contra+ndims*(j-1)+i-1)
 c            write(*,*)'ji',ji
             xn(j)=xn(j)+(xp(i)-xc)*obj_geom(ji,iobj)
          enddo
@@ -814,8 +814,8 @@ c This write sequence must be exactly that read below.
 c      write(*,*)'geommap',(nf_geommap(j),j=1,mf_obj)
       write(22)(ff_rho(k),k=1,nf_step)
       write(22)(ff_dt(k),k=1,nf_step)
-      write(22)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_ndims)
-     $     ,(nf_faceind(i,j,k),k=1,2*nf_ndims)
+      write(22)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,ndims)
+     $     ,(nf_faceind(i,j,k),k=1,2*ndims)
      $     ,i=1,mf_quant(j)),j=1,mf_obj)
       write(22)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+2)
@@ -823,7 +823,7 @@ c      write(*,*)'geommap',(nf_geommap(j),j=1,mf_obj)
       write(22)(ff_data(i),i=1,ndatalen)
 c New force write.
       write(22)(((fieldforce(i,j,k),pressforce(i,j,k) ,partforce(i,j,k)
-     $     ,colnforce(i,j,k),i=1,ns_ndims)
+     $     ,colnforce(i,j,k),i=1,ndims)
      $     ,charge_ns(j,k),j=1,mf_obj),k=1,nf_step)
 c Object data:
       write(22)ngeomobj
@@ -839,7 +839,7 @@ c n_part data
 c      write(*,*)'Wrote flux data to ',name(1:lentrim(name))
       do k=1,nf_step
          do j=1,mf_obj
-            do i=1,ns_ndims
+            do i=1,ndims
                if(.not.colnforce(i,j,k).lt.1.e30)then
                   write(*,*)'Strange colnforce',i,j,k,colnforce(i,j,k)
                endif
@@ -889,8 +889,8 @@ c Figure out the version:
 c      write(*,*)'geommap',(nf_geommap(j),j=1,mf_obj)
       read(23)(ff_rho(k),k=1,nf_step)
       read(23)(ff_dt(k),k=1,nf_step)
-      read(23)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,nf_ndims)
-     $     ,(nf_faceind(i,j,k),k=1,2*nf_ndims)
+      read(23)((nf_posno(i,j),(nf_dimlens(i,j,k),k=1,ndims)
+     $     ,(nf_faceind(i,j,k),k=1,2*ndims)
      $     ,i=1,mf_quant(j)),j=1,mf_obj)
       read(23)(((nf_address(i,j,k),i=1,mf_quant(j)),j=1,mf_obj),
      $     k=1-nf_posdim,nf_step+2)
@@ -909,12 +909,12 @@ c      write(*,*)'Datalen',ndatalen
          write(*,*)'Old force data version',iversion
          read(23,end=102, err=102)(((fieldforce(i,j,k),pressforce(i,j,k)
      $     ,partforce(i,j,k)
-     $     ,charge_ns(j,k),i=1,ns_ndims),j=1,mf_obj),k=1,nf_step)
+     $     ,charge_ns(j,k),i=1,ndims),j=1,mf_obj),k=1,nf_step)
       else
          read(23,end=102, err=102)(((fieldforce(i,j,k),pressforce(i,j,k)
      $     ,partforce(i,j,k)
      $     ,colnforce(i,j,k)
-     $     ,i=1,ns_ndims),charge_ns(j,k),j=1,mf_obj),k=1,nf_step)
+     $     ,i=1,ndims),charge_ns(j,k),j=1,mf_obj),k=1,nf_step)
       endif
 c Object data:
       read(23)ngeomobj
@@ -944,7 +944,7 @@ c obsolete.
       isc=0
       do k=1,nf_step
          do j=1,mf_obj
-            do i=1,ns_ndims
+            do i=1,ndims
                if(.not.colnforce(i,j,k).lt.1.e30)then
                   if(isc.eq.0)write(*,*)'Strange colnforce',i,j,k
      $                 ,colnforce(i,j,k)

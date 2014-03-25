@@ -1,18 +1,18 @@
-c***********************************************************************
-      subroutine bdyshare(ifull,iuds,u,idone,ndimsdecl,idims,
+***********************************************************************
+      subroutine bdyshare(ifull,iuds,u,idone,ndimsbbdy,idims,
      $     icoords,iLcoords,myside,myorig,
      $     icommcart,mycartid,myid,lperiod)
       implicit none
-      integer ndimsdecl
+      integer ndimsbbdy
       real u(*)
-c      parameter (ndimsdecl=3)
+c      parameter (ndimsbbdy=3)
 c Parallelized boundary setting routine.
 c Set the boundary conditions for my faces which are true boundaries.
 c A face is a boundary if my block's icoords position is 
 c     0 (lower) or idims-1 (upper)
 c On entry, the used information is
 c    idone(2)        if ==1, set periodic boundaries, else not.
-c    ndimsdecl       the number of dimensions
+c    ndimsbbdy       the number of dimensions
 c    myside(ndims)   the length of this block's sides
 c    ifull(ndims)    the full array lengths in each direction.
 c    myorig          the starting position in the u-array of this block.
@@ -36,7 +36,7 @@ c communication to bdyshrroutine.
 c Local variables
       integer ndims,id,ioff,ipin,mysave,ioffset,idn,ilsid
 
-      ndims=ndimsdecl
+      ndims=ndimsbbdy
 
       idone(1)=1
       ilsid=1

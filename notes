@@ -10896,5 +10896,17 @@ Got rid of sc_ndims. Now I think only pp_ndims,ns_ndims, and nf_ndims remain.
 These are in 3dcom.f
 Included all the needed ndimsdecl.f before 3dcom.f. Compiles.
 Now I think all the dependences on these _ndims can be changed to ndims.
-
 Commit.
+
+Do the universal replaces of these. OK. 
+Got rid of pp_ndims, ns_ndims, nf_ndims
+
+Now we have rationalized the ndims to the point where pretty much everything
+depends on ndimsdecl.f. However, in quite a lot of routines there is an 
+argument passed that has been renamed mdims and more or less ignored.
+That redundancy ought to be removed or somehow rationalized/tested.
+
+Actually bbdydecl.f and sormpi.f have ndimsdecl in it. Drat. Not yet complete.
+Maybe complete but bad name clash. Changed name to ndimsbbdy in sormpi etc.
+
+mdims rationalization not yet done. But that's enough for now.

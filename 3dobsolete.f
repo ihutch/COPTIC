@@ -246,7 +246,7 @@ c Return the fractional distance in fraction (1 for no intersection),
 c and total mesh spacing in dp, so that bdy distance is fraction*dp.
 c
 c The parallelopiped data structure in ppcom.f consists of
-c 1 pp_orig : origin xc (3=pp_ndims) 
+c 1 pp_orig : origin xc (3=ndims) 
 c 4 pp_vec : 3 (covariant) vectors v_p equal half the edges.(3x3)
 c 13 pp_contra : 3 contravariant vectors v^q such that v_p.v^q =
 c \delta_{pq} (3x3)
@@ -263,13 +263,13 @@ c
       integer indi(ndims)
       real fraction,dp
       include 'meshcom.f'
-      real s1(pp_ndims),s2(pp_ndims)
+      real s1(ndims),s2(ndims)
       real small
       parameter (small=1.e-6)
 
 c      write(*,*)(objg(k),k=1,pp_total)
  1    fraction=1.
-      do j=1,pp_ndims
+      do j=1,ndims
          s1(j)=0.
          s2(j)=0.
       enddo
@@ -283,22 +283,22 @@ c      write(*,*)(objg(k),k=1,pp_total)
             dp=abs(x2-x1)
          endif
 c x1, x2 are the coordinates with respect to the pp origin.
-         do j=1,pp_ndims
-            s1(j)=s1(j)+x1*objg(pp_contra+pp_ndims*(j-1)+i-1)
-            s2(j)=s2(j)+x2*objg(pp_contra+pp_ndims*(j-1)+i-1)
+         do j=1,ndims
+            s1(j)=s1(j)+x1*objg(pp_contra+ndims*(j-1)+i-1)
+            s2(j)=s2(j)+x2*objg(pp_contra+ndims*(j-1)+i-1)
          enddo
       enddo
 c Now we have the contravariant coefficients in s1,s2. 
 c Determine whether outside
       is1=0
       is2=0
-      do j=1,pp_ndims
+      do j=1,ndims
          if(abs(s1(j)).eq.1. .or. abs(s2(j)).eq.1.)then
             write(*,*)j,' s1,2=',s1(j),s2(j)
      $           ,' mesh clash. Scaling contra'
             do i=1,ndims
-               objg(pp_contra+pp_ndims*(j-1)+i-1)=
-     $              objg(pp_contra+pp_ndims*(j-1)+i-1)*(1.+small)
+               objg(pp_contra+ndims*(j-1)+i-1)=
+     $              objg(pp_contra+ndims*(j-1)+i-1)*(1.+small)
             enddo
             goto 1
          endif
@@ -311,7 +311,7 @@ c      write(*,*)is1,is2,s1,s2
 c One end inside and one outside. Find crossing. 
 c We want the crossing closest to the point that's inside.
 c         write(*,*)s1,s2
-         do j=1,pp_ndims
+         do j=1,ndims
             if(s1(j).le.-1. .and. s2(j).gt.-1.)then
                f1=abs(s1(j)+1.)/(abs(s1(j)+1.)+abs(s2(j)+1.))
             elseif(s1(j).gt.-1. .and. s2(j).le.-1.)then

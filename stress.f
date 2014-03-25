@@ -19,7 +19,7 @@ c ndims position + ndims surface coefficients. 2.ndims.km.
       integer iLs(*)
 
 c Local storage
-      parameter (mdims=10)
+      parameter (mdims=3)
       real field(mdims)
 
       do i=1,ndims
@@ -106,7 +106,7 @@ c The charge is simply the integral E.dA over the surface.
       integer iLs(*)
 
 c Local storage
-      parameter (mdims=10)
+      parameter (mdims=3)
       real field(mdims)
 
       charge=0.
@@ -150,7 +150,7 @@ c Point charge object. Just fieldforce.
      $           u,cij,iLs,fieldforce(1,i,nf_step))
             charge_ns(i,nf_step)=obj_geom(oradius,nf_geommap(i))
      $           *obj_geom(ofn1,nf_geommap(i))*4.*3.14159
-            do nd=1,ns_ndims
+            do nd=1,ndims
                pressforce(nd,i,nf_step)=0.
                fieldforce(nd,i,nf_step)=fieldforce(nd,i,nf_step)*
      $              charge_ns(i,nf_step)
@@ -194,13 +194,13 @@ c               write(*,*)'Object radius cubed',i,r3
                   do k=1,ns_np
                      do j=1,ns_nt
 c                     write(*,*)(surfobj(ii,j,k,nfmap),ii=1,3)
-                        do id=1,ns_ndims
+                        do id=1,ndims
                            r=obj_geom(oradius+id-1,i)*1.00001
                            surfobj(id,j,k,nfmap)=
      $                          obj_geom(ocenter+id-1,i)+
      $                          surfobj(id,j,k,nfmap)*r
-                           surfobj(ns_ndims+id,j,k,nfmap)=
-     $                          surfobj(ns_ndims+id,j,k,nfmap)*r3/r
+                           surfobj(ndims+id,j,k,nfmap)=
+     $                          surfobj(ndims+id,j,k,nfmap)*r3/r
                         enddo
                      enddo
                   enddo

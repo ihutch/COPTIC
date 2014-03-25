@@ -24,7 +24,7 @@ c      parameter (ifm1=31)
       data ifield_mask/ifm1/
 
 c Normally there's no external field.
-      data lextfield/.false./extfield/ns_ndims*0./
+      data lextfield/.false./extfield/ndims*0./
 
 c Mesh default initialization (meshcom.f)
       parameter (imsr=ndims*(nspec_mesh-2))
@@ -397,33 +397,33 @@ c cross product of u and va.
       include '3dcom.f'
       real objg(odata)
 
-      radius=objg(ovec+2*pp_ndims)
+      radius=objg(ovec+2*ndims)
       vamag=0.
       umag=0.
       uv=0.
-      do i=1,pp_ndims
+      do i=1,ndims
 c v^2, u^2
          vamag=vamag+objg(ovec+i-1)**2
-         umag=umag+objg(ovec+pp_ndims+i-1)**2
+         umag=umag+objg(ovec+ndims+i-1)**2
 c u.v
-         uv=uv+objg(ovec+i-1)*objg(ovec+pp_ndims+i-1)
+         uv=uv+objg(ovec+i-1)*objg(ovec+ndims+i-1)
 c v x u
-         ip=mod(i,pp_ndims)
-         im=mod(i+1,pp_ndims)
-         objg(ocontra+pp_ndims+i-1)=
-     $        objg(ovec+ip)*objg(ovec+pp_ndims+im)
-     $        -objg(ovec+im)*objg(ovec+pp_ndims+ip)
+         ip=mod(i,ndims)
+         im=mod(i+1,ndims)
+         objg(ocontra+ndims+i-1)=
+     $        objg(ovec+ip)*objg(ovec+ndims+im)
+     $        -objg(ovec+im)*objg(ovec+ndims+ip)
       enddo
       if(vamag.eq.0.)stop 'cylinit error axial vector zero'
       vbmag=0.
       vgmag=0.
-      do i=1,pp_ndims
+      do i=1,ndims
          vacontra=objg(ovec+i-1)/vamag
-         objg(ocontra+2*pp_ndims+i-1)=vacontra
-         vbcontra=(objg(ovec+pp_ndims+i-1)-uv*vacontra)
+         objg(ocontra+2*ndims+i-1)=vacontra
+         vbcontra=(objg(ovec+ndims+i-1)-uv*vacontra)
          objg(ocontra+i-1)=vbcontra
          vbmag=vbmag+vbcontra**2
-         vgmag=vgmag+objg(ocontra+pp_ndims+i-1)**2
+         vgmag=vgmag+objg(ocontra+ndims+i-1)**2
       enddo
       if(vbmag.eq.0. .or. vgmag.eq.0)
      $     stop 'cylinit error perp vector zero'
@@ -432,18 +432,18 @@ c v x u
       c1mag=0.
       c2mag=0.
       c3mag=0.
-      do i=1,pp_ndims
+      do i=1,ndims
          objg(ocontra+i-1)=objg(ocontra+i-1)/(vbmag*radius)
-         objg(ocontra+pp_ndims+i-1)=objg(ocontra+pp_ndims+i-1)
+         objg(ocontra+ndims+i-1)=objg(ocontra+ndims+i-1)
      $        /(vgmag*radius)
          c1mag=c1mag+objg(ocontra+i-1)**2
-         c2mag=c2mag+objg(ocontra+pp_ndims+i-1)**2
-         c3mag=c3mag+objg(ocontra+2*pp_ndims+i-1)**2
+         c2mag=c2mag+objg(ocontra+ndims+i-1)**2
+         c3mag=c3mag+objg(ocontra+2*ndims+i-1)**2
       enddo
-      do i=1,pp_ndims
+      do i=1,ndims
          objg(ovec+i-1)=objg(ocontra+i-1)/c1mag
-         objg(ovec+pp_ndims+i-1)=objg(ocontra+pp_ndims+i-1)/c2mag
-         objg(ovec+2*pp_ndims+i-1)=objg(ocontra+2*pp_ndims+i-1)/c3mag
+         objg(ovec+ndims+i-1)=objg(ocontra+ndims+i-1)/c2mag
+         objg(ovec+2*ndims+i-1)=objg(ocontra+2*ndims+i-1)/c3mag
       enddo
 c      write(*,*)'Covariant and contravariant:'
 c      write(*,'(9f8.4)')(objg(ovec+i-1),i=1,18)
@@ -458,24 +458,24 @@ c vectors from the covariant vectors.
       include '3dcom.f'
 
       triple=0.
-      do j=1,pp_ndims
-         jpv=pp_vec+(j-1)*pp_ndims-1
+      do j=1,ndims
+         jpv=pp_vec+(j-1)*ndims-1
 c Other vectors:
-         jpv2=pp_vec+mod(j,pp_ndims)*pp_ndims-1
-         jpv3=pp_vec+mod(j+1,pp_ndims)*pp_ndims-1
-         jpc=pp_contra+(j-1)*pp_ndims-1
+         jpv2=pp_vec+mod(j,ndims)*ndims-1
+         jpv3=pp_vec+mod(j+1,ndims)*ndims-1
+         jpc=pp_contra+(j-1)*ndims-1
 c Set obj_geom(jpc..,iobj) equal to the cross product between the other
 c vectors.
-         do i=1,pp_ndims
-            i2=mod(i,pp_ndims)+1
-            i3=mod(i+1,pp_ndims)+1
+         do i=1,ndims
+            i2=mod(i,ndims)+1
+            i3=mod(i+1,ndims)+1
             obj_geom(jpc+i,iobj)=(obj_geom(jpv2+i3,iobj)*obj_geom(jpv3
      $           +i2,iobj)-obj_geom(jpv2+i2,iobj)*obj_geom(jpv3+i3
      $           ,iobj))
          enddo
 c calculate the scalar triple product the first time:
          if(j.eq.1)then
-            do i=1,pp_ndims
+            do i=1,ndims
                triple=triple+obj_geom(jpc+i,iobj)*obj_geom(jpv+i,iobj)
             enddo
          endif
@@ -486,7 +486,7 @@ c calculate the scalar triple product the first time:
             stop
          endif
 c normalize
-         do i=1,pp_ndims
+         do i=1,ndims
             obj_geom(jpc+i,iobj)=obj_geom(jpc+i,iobj)/triple
          enddo
       enddo
@@ -985,7 +985,7 @@ c> Contravariant coordinates
       real xcontra(mdims)
       include 'ndimsdecl.f'
       include '3dcom.f'
-      real xwl(ns_ndims)
+      real xwl(ndims)
 c Cartesian obtained as sum of covariant vectors times contra coeffs.
       do i=1,ndims
          xwl(i)=obj_geom(ocenter+i-1,iobj)
@@ -1008,7 +1008,7 @@ c xcontra and xw can overlap, if aligned.
       real xw(mdims),xcontra(mdims)
       include 'ndimsdecl.f'
       include '3dcom.f'
-      real xd(ns_ndims),xcl(ns_ndims)
+      real xd(ndims),xcl(ndims)
 
       do j=1,ndims
          xcl(j)=0.
