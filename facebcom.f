@@ -11,10 +11,10 @@ c  If BF=0, then A is assumed =1. Otherwise precalculated coeffs are used
 c  AmBF= (A/2-B/dn), ApBF= (A/2+B/dn) where dn is the outward mesh step. 
 c  The precalculations are done in bdyfaceinit. 
 c  AmBF ApBF are internal and ought not to be altered.
-      integer ndims_face
-      parameter (ndims_face=3)
-      logical LF,LCF(2*ndims_face),LPF(ndims_face)
-      real AF(2*ndims_face),BF(2*ndims_face)
-      real C0F(2*ndims_face),CxyzF(ndims_face,2*ndims_face)
-      real ApBF(2*ndims_face),AmBF(2*ndims_face)
+
+c Requires ndimsdecl.f
+      logical LF,LCF(2*ndims),LPF(ndims)
+      real AF(2*ndims),BF(2*ndims)
+      real C0F(2*ndims),CxyzF(ndims,2*ndims)
+      real ApBF(2*ndims),AmBF(2*ndims)
       common /FaceBC/LF,LCF,LPF,AF,BF,C0F,CxyzF,ApBF,AmBF

@@ -1,3 +1,4 @@
+      include '../ndimsdecl.f'
 c Storage array spatial count size
       include '../griddecl.f'
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)

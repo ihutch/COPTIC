@@ -27,17 +27,17 @@ c The field region of the point is known and passed.
 c Value will be rubbish if xff<1. or xff>nmesh because arrays will be
 c overrun.
 
-      subroutine getfield(ndims,cij,u,iuinc,xn,idf
+      subroutine getfield(cij,u,iuinc,xn,idf
      $     ,xff,iregion,field)
 
+      include 'ndimsdecl.f'
 c Pointers and potential array with origin at the box corner.
       real cij(*),u(*)
 c Increments (i.e. structure vector) of u, in each dimension.
       integer iuinc(ndims+1)
 c Position array in the direction idf with origin at box corner.
       real xn(*)
-c Direction (dimension) of field component:
-      integer idf
+c Direction (dimension) of field component: integer idf
 c Fractional position to interpolate to for each dimension from the
 c passed origin within cij,u. 
       real xff(ndims)
@@ -54,10 +54,10 @@ c for external field need 3dcom.f
       include '3dcom.f'
 
 c We DONT include sormesh, because xn is passed
-      parameter (ipwr2nd=2**(ndims_cij-1))
+      parameter (ipwr2nd=2**(ndims-1))
       integer iflags(ipwr2nd)
       real weights(ipwr2nd)
-      real f(ipwr2nd),d(ndims_cij-1)
+      real f(ipwr2nd),d(ndims-1)
       integer ii1,ii2
 
 c Allow the passing of the real position, not just fraction.
@@ -405,10 +405,10 @@ c Region code of point
       integer iregion
 c Type of interpolation
       integer itype
-
+      
+      include 'ndimsdecl.f'
 c objcom, which is needed, contain ndims_... so we don't pass it.
       include 'objcom.f'
-      parameter (ndims=ndims_cij)
 c Local vector storage
 c      integer idn(ndims)
       real xf(ndims),uval(2**ndims)
@@ -552,11 +552,11 @@ c if necessary.
      $     ,u,cij,iuinc,xff,iregion)
 c Fill in values with the average of the others.
 c Need object data 
+      include 'ndimsdecl.f'
       include 'objcom.f'
 c Need mesh data for xn.
       include 'meshcom.f'
-      parameter (ndims=ndims_cij)
-c contains ndims_cij
+c contains ndims
       real uval(2**ndims)
       integer ival(2**ndims)
 c Passed derivatives for extrapolation.
@@ -622,7 +622,7 @@ c situations where a point is missing. In which case never use this:
          else
 c Null direction. We need a better calculation.
 c get field in idp1 direction at the point. 
-            call getfield(ndims,cij(2*ndims+1),u,iuinc
+            call getfield(cij(2*ndims+1),u,iuinc
      $           ,xn(ixnp(idp1)+1),idp1
      $           ,xff,iregion,field)
 c            write(*,*)'Fillin field value',field,' direction',idp1
@@ -665,7 +665,8 @@ c of arguments. Return it as a vector in field.
       subroutine fieldatpoint(x,u,cij,iLs,field)
 c u is potential, cij is stencil array, iLs is the structure of u,cij.
 c All the other parameters must be obtained from commons. 
-c Include the mesh xn, and ndims_mesh. 
+c Include the mesh xn, and ndims_mesh.
+      include 'ndimsdecl.f' 
       include 'meshcom.f'
       real x(ndims_mesh),u(*),cij(*),field(ndims_mesh)
       integer iLs(ndims_mesh+1)
@@ -687,7 +688,7 @@ c Find the index of xprime in the array xn:
 
 c Get each component of the field.
       do id=1,ndims_mesh
-         call getfield(ndims_mesh,cij(2*ndims_mesh+1),u,iLs
+         call getfield(cij(2*ndims_mesh+1),u,iLs
      $        ,xn(ixnp(id)+1)
      $        ,id,xff,imaskregion(iregion),field(id))
       enddo
@@ -699,6 +700,7 @@ c Get the potential at a specified postion x.
 c u is potential, cij is stencil array, iLs is the structure of u,cij.
 c All the other parameters must be obtained from commons. 
 c Include the mesh xn, and ndims_mesh. 
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       real x(ndims_mesh),u(*),cij(*)
       integer iLs(ndims_mesh+1)
@@ -735,6 +737,7 @@ c This simple version assumes no object boundary in the vicinity.
 c u is potential, iLs is the structure of u.
 c All the other parameters must be obtained from commons. 
 c Include the mesh xn, and ndims_mesh. 
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       real x(ndims_mesh),u(*),field(ndims_mesh)
       integer iLs(ndims_mesh+1)

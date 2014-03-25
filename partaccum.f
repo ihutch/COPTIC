@@ -17,6 +17,7 @@ c a second time for the subbinning.]
 c
 c Otherwise if cellvol.gt.0 just accumulate to bins.
       implicit none
+      include 'ndimsdecl.f'
       include 'plascom.f'
       include 'meshcom.f'
       include 'partcom.f'
@@ -77,6 +78,7 @@ c     $     isfull,isuds,vlimit,xnewlim)
 c****************************************************************
       subroutine partacinit(vlimit)
 c Initialize uniform bins for accumulation of the particles.
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'plascom.f'
@@ -101,6 +103,7 @@ c     $        id,vdiag(1,id),vdiag(nptdiag,id)
 c*****************************************************************
       subroutine oneaccum(xr,vlimit)
 c Accumulate a particle into velocity bins.
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'plascom.f'
@@ -316,6 +319,7 @@ c If nptdiag.le.nsbins, implying no compression of the data, then
 c a simple identification of summed and uniform bins is used so that the
 c summed bins are actually uniform. The lengths must be set in ptaccom.f
 
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
 
@@ -453,6 +457,7 @@ c            if(ip.gt.1000)write(*,*)isuds,isind,ip
 c*****************************************************************
       subroutine subvaccum(xr,vlimit,ip)
 c Accumulate a particle into velocity bin corresponding to position ip
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'plascom.f'
@@ -487,6 +492,7 @@ c Test for corruption ought not eventually to be necessary.
       end
 c*******************************************************************
       subroutine fvxinit(xnewlim,cellvol,ibset)
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
       real xnewlim(2,mdims)
@@ -518,6 +524,7 @@ c      write(*,*)'cellvol=',cellvol
 c**********************************************************************
       subroutine distread(xlimit,vlimit,xnewlim,name,cellvol)
 
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
       real xlimit(2,mdims),vlimit(2,mdims),xnewlim(2,mdims)
@@ -559,6 +566,7 @@ c Check if the nsbins is correct and there's enough storage.
       end
 c**********************************************************************
       subroutine distwrite(xlimit,vlimit,xnewlim,name,cellvol)
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
       real xlimit(2,mdims),vlimit(2,mdims),xnewlim(2,mdims)
@@ -597,6 +605,7 @@ c******************************************************************
      $     ,cellvol)
       implicit none
       integer icellin,jcellin,kcellin
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'partcom.f'
       include 'ptaccom.f'
@@ -832,6 +841,7 @@ c Backspace is 65288
       end
 c****************************************************************
       subroutine fsvzero()
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'partcom.f'
       include 'ptaccom.f'

@@ -1,22 +1,20 @@
 c****************************************************************
 c Routine for setting cij, which is used by the general mditerarg.
-      subroutine cijroutine(inc,ipoint,indi,ndims,iLs,iused,cij,debyelen
+      subroutine cijroutine(inc,ipoint,indi,mdms,iLs,iused,cij,debyelen
      $     ,error)
 c This routine sets the object pointer in cij if there is an object
 c crossing next to the the point at indi(ndims) in the 
 c dimension id (plus or minus), adjusts the cij values,
 c and sets the object data into the place pointed to in obj. 
-      integer mdims
-      parameter (mdims=10)
+c mdms is dummy here because ndimsdecl is used.
+      include 'ndimsdecl.f'
 c Effective index in dimension, c-style (zero based)
-c      integer indm1(mdims)
+c      integer indm1(ndims)
 c Shifted to correct for face omission.
-      integer indi(mdims)
-      integer ndims
+      integer indi(ndims)
 c Error indicator
       real error
 c Not used in this routine
-c      integer iused(ndims)
       real cij(*)
 c--------------------------------------------------
 c Object-data storage.
@@ -28,8 +26,8 @@ c-----------------------------------------------------
       real conditions(3,2)
       real tiny
       parameter (tiny=1.e-15)
-      integer ipa(mdims)
-      real fn(mdims)
+      integer ipa(ndims)
+      real fn(ndims)
       integer istart
       data istart/0/
 
@@ -325,6 +323,7 @@ c********************************************************************
 c********************************************************************
       subroutine ddn_cij(ip,dden,dnum)
 c Routine to do the adjustment to dden and dnum for this point (ip)
+      include 'ndimsdecl.f'
       include 'objcom.f'
       dden=dden+dob_cij(idgs_cij,ip)
       dnum=dnum+dob_cij(ibdy_cij,ip)
@@ -333,10 +332,11 @@ c********************************************************************
 c Initialize a specific object. 1s for frac, 0 for diag,potterm.
 c Reverse pointer.
       subroutine objinit(dob,idob,ipoint)
+      include 'ndimsdecl.f'
       include 'objcom.f'
       real dob(nobj_cij)
       integer idob(nobj_cij)
-      do j=1,2*ndims_cij
+      do j=1,2*ndims
          dob(3*j-2)=1.
          dob(3*j-1)=0.
          dob(3*j)=0.
@@ -352,6 +352,7 @@ c Zero the chained pointer.
 c******************************************************************
       subroutine objstart(cijp,istart,ipoint)
       real cijp
+      include 'ndimsdecl.f'
       include 'objcom.f'
       logical lfirst/.true./
       save lfirst
@@ -542,12 +543,13 @@ c Finished.
       end
 c**********************************************************************
 c************************************************************************
-      subroutine cijedge(inc,ipoint,indi,ndims,iLs,iused,cij)
+      subroutine cijedge(inc,ipoint,indi,mdims,iLs,iused,cij)
 c Edge routine which sets the iregion for all boundary points.
+c mdims argument is unused here because we use ndimsdecl to give ndims.
       integer ipoint,inc
+      include 'ndimsdecl.f'
       integer indi(ndims),iused(ndims)
       real cij(*)
-      parameter (mdims=10)
       include 'objcom.f'
 c Silence unused warnings
       icb=iLs
@@ -586,10 +588,11 @@ c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
 c****************************************************************
 c*********************************************************************
 c Print a text graphic of slices through the regions 
-      subroutine text3vgraph(ndims,iuds,ifull,volumes)
-      integer iuds(ndims),ifull(ndims)
+      subroutine text3vgraph(mdims,iuds,ifull,volumes)
+      integer iuds(mdims),ifull(mdims)
 c      real cij(*)
       real volumes(*)
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       character*40 form1
 c Standard volume for uniform mesh:
@@ -607,10 +610,11 @@ c Text graphic of slice through volumes
      $        j=1,iuds(1)),k=1,iuds(3))
          end
 c*********************************************************************
-      subroutine text3rgraph(ndims,iuds,ifull,cij)
-      integer iuds(ndims),ifull(ndims)
+      subroutine text3rgraph(mdims,iuds,ifull,cij)
+      integer iuds(mdims),ifull(mdims)
       real cij(*)
 c      real volumes(*)
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       character*40 form1
 c Text graphic of slice through cij
@@ -945,7 +949,7 @@ c Routine for directly updating cij, which needs no iteration.
 c The geometry: fractions etc, are assumed not to have changed.
 c It just treats the auxiliary data that is present, rather than
 c looking at every mesh node
-      subroutine cijdirect(ndims,debyelen,error)
+      subroutine cijdirect(debyelen,error)
 c If there is an object crossing next to the point at indi(ndims) whose
 c pointer is ipoint, in the dimension id (plus or minus), this routine
 c adjusts the cij values for situations where the cij are variables
@@ -953,11 +957,11 @@ c changing from step to step.  At present is is assumed only C changes
 c and it is updated in a smoothed manner toward the potential that
 c corresponds to floating.
 c Error indicator
-      integer ndims
       real error,debyelen
 c      real cij(*)
 c--------------------------------------------------
 c Object-data storage.
+      include 'ndimsdecl.f'
       include 'objcom.f'
 c Object information
       include '3dcom.f'

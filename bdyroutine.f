@@ -2,7 +2,8 @@ c**********************************************************************
 c This file gives examples of boundary setting for sormpi.
 c The bdyset routine can be called anything, and name passed.
 c Its arguments must of course be correct.
-      subroutine bdyset(ndims,ifull,iuds,cij,u,q)
+      subroutine bdyset(mdims,ifull,iuds,cij,u,q)
+      include 'ndimsdecl.f'
       include 'facebcom.f'
 c Specify external the boundary setting routine.
       external bdyface 
@@ -10,21 +11,22 @@ c Specify external the boundary setting routine.
 c Rectangular face setting
 c         write(*,*)'Calling bdyface setting',LF
          ipoint=0
-         call mditerarg(bdyface,ndims,ifull,iuds,ipoint,u)
+         call mditerarg(bdyface,mdims,ifull,iuds,ipoint,u)
       else
-         call bdysetfree(ndims,ifull,iuds,cij,u,q)
+         call bdysetfree(mdims,ifull,iuds,cij,u,q)
 c      call bdysetnull
       endif
       end
 c**********************************************************************
-      subroutine bdysetfree(ndims,ifull,iuds,cij,u,q)
-      integer ndims,ifull(ndims),iuds(ndims)
+      subroutine bdysetfree(mdims,ifull,iuds,cij,u,q)
+      integer mdims,ifull(mdims),iuds(mdims)
       real u(*)
       real cij(*),q(*)
 c Specify external the boundary setting routine.
 c If    Bit-0 of islp is not set, then use logarithmic derivative.
 c else  use Mach slope condition (higher bits relevant).
       external bdyslopeDh,bdyslopescreen,bdymach
+      include 'ndimsdecl.f'
       include 'plascom.f'
       include 'meshcom.f'
       include 'slpcom.f'
@@ -86,19 +88,19 @@ c Turn off alternative                  islp=islp-8192
       endif
       end
 c************************************************************************
-      subroutine bdyslopeDh(inc,ipoint,indi,ndims,iLs,iused,u)
+      subroutine bdyslopeDh(inc,ipoint,indi,mdims,iLs,iused,u)
 c Version of bdyroutine that sets logarithmic 'radial' gradient
 c equal to D=slpD
 c BC is du/dr=D u/r     in the form   (ub-u0)=  D*(ub+u0)*f/(1-f)
 c where f = Sum_j[(xb_j+x0_j)dx_j]/(2*rm^2), dx=xb-x0
 c Thus ub=u0(1-f-D.f)/(1-f+D.f) using radii from position (0,0,..)
       integer ipoint,inc
-      integer indi(ndims),iused(ndims)
+      integer indi(mdims),iused(mdims)
       real u(*)
 
 c Structure vector needed for finding adjacent u values.
-      integer iLs(ndims+1)
-
+      integer iLs(mdims+1)
+      include 'ndimsdecl.f'      
       include 'meshcom.f'
       include 'slpcom.f'
       D=slpD
@@ -148,7 +150,7 @@ c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
       end
 c************************************************************************
-      subroutine bdymach(inc,ipoint,indi,ndims,iLs,iused,u)
+      subroutine bdymach(inc,ipoint,indi,mdims,iLs,iused,u)
 c Version of bdyroutine that sets the BC on the x, y boundaries
 c as being  du/dr + M du/dz =0. (r the cylindrical radius)
 c The z-mach number, M, is the value of slpD in slpcom.
@@ -158,11 +160,12 @@ c    Bit-3  (8): set BC at lower-z boundary u=0.
 c    Bit-13 (8192): set BC at upper-z boundary u''= -k^2u, k=1/M.lambdaD
 c dxk2 is in slpcom.
       integer ipoint,inc
-      integer indi(ndims),iused(ndims)
+      integer indi(mdims),iused(mdims)
       real u(*)
 c Structure vector needed for finding adjacent u values.
-      integer iLs(ndims+1)
+      integer iLs(mdims+1)
 c Value of mach number passed in common.
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'slpcom.f'
       DM=slpD
@@ -256,20 +259,20 @@ c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
 c**********************************************************************
 c The logic of the following might miss some corners.
 c************************************************************************
-      subroutine bdyslopescreen(inc,ipoint,indi,ndims,iLs,iused,u)
+      subroutine bdyslopescreen(inc,ipoint,indi,mdims,iLs,iused,u)
 c Version of bdyroutine that sets logarithmic 'radial' gradient
 c equal to that for a Debye screened potential: -(1+r/lambdas)
 c slpD needs to be set to lamdas prior to call.
       integer ipoint,inc
-      integer indi(ndims),iused(ndims)
+      integer indi(mdims),iused(mdims)
       real u(*)
 
 c Structure vector needed for finding adjacent u values.
-      integer iLs(ndims+1)
-      parameter (mdims=10)
-      real x(mdims)
+      integer iLs(mdims+1)
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'slpcom.f'
+      real x(ndims)
 
       r2=r2indi(ndims,indi,x)
       r1=sqrt(r2)
@@ -314,9 +317,10 @@ c**********************************************************************
 c Return the radius squared and the vector position of point indexed as
 c indi(ndims), relative to the center of the coordinate ranges,
 c using information in meshcom.
-      function r2indi(ndims,indi,x)
-      integer indi(ndims)
-      real x(ndims)
+      function r2indi(mdims,indi,x)
+      integer indi(mdims)
+      real x(mdims)
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       if(ndims.ne.ndims_mesh)then
          write(*,*)'rindi dimension mismatch',ndims,ndims_mesh
@@ -329,15 +333,16 @@ c using information in meshcom.
       enddo
       end
 c********************************************************************
-      subroutine bdyface(inc,ipoint,indi,ndims,iLs,iused,u)
+      subroutine bdyface(inc,ipoint,indi,mdims,iLs,iused,u)
 c Boundary routine for general setting in terms of face.
 c Coefficients (2ndims) in facebcom. AF phi + BF dphi/dn + CF =0
 c CF may vary linearly with position with coefs CxyzF(3,6)
 c If B=0, A is assumed =1. Otherwise precalculated coeffs are used
 c AmBF= (A/2-B/dn), ApBF= (A/2+B/dn) where dn is the outward mesh step. 
       integer ipoint,inc
-      integer indi(ndims),iused(ndims)
+      integer indi(mdims),iused(mdims)
       real u(*)
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'facebcom.f'
 c Structure vector needed for finding adjacent u values.
@@ -407,6 +412,7 @@ c For index idn = 1,2,3 (lower) 4,5,6 (upper) face.
 c You can't literally equivalence them but 
 c      real Ain,Bin,C0in,Cxyzin(ndims_mesh) == CFpin(6)
       integer idn
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       real CFpin(3+ndims_mesh)
       include 'facebcom.f'

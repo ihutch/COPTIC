@@ -6,11 +6,11 @@ c names constructed from the parameters and suitable extensions.
       integer myid,ifull(*),iuds(*)
       real u(*),uave(*),qave(*)
       character*(*) partfilename,restartpath
+      include 'ndimsdecl.f'
       include 'griddecl.f'
       include 'ptchcom.f'
       character*100 localfilename
 
-      ndims=ndims_grid
       partfilename=restartpath
       call partwrite(partfilename,myid)
       if(myid.eq.0)then
@@ -135,6 +135,7 @@ c File name:
       character*(*) name
       integer ifull(3),iuds(3),ied
       real u(ifull(1),ifull(2),ifull(3),ied)
+      include 'ndimsdecl.f'
       include 'plascom.f'
       include 'meshcom.f'
       character*(130) charout
@@ -173,6 +174,7 @@ c File name:
       character*(*) name
       integer ifull(3),iuds(3),ied
       real u(ifull(1),ifull(2),ifull(3),ied)
+      include 'ndimsdecl.f'
       include 'plascom.f'
       include 'meshcom.f'
       character*(130) charout
@@ -237,6 +239,7 @@ c Construct name (extending input string name) and write data.
 c******************************************************************
       subroutine nameconstruct(name)
       character*(*) name
+      include 'ndimsdecl.f'
       include 'plascom.f'
       include 'colncom.f'
       include 'meshcom.f'

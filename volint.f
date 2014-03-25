@@ -5,12 +5,14 @@ c from meshcom for unintersected points or by volintegrate.
 c Can't be called for edge nodes.
 c Does not work for objects that do not set the intersections,
 c e.g. point-charge objects. 
-      subroutine volnode(inc,ipoint,indi,ndims,iLs,iused,
+      subroutine volnode(inc,ipoint,indi,mdims,iLs,iused,
      $     volumes,cij)
       integer ipoint,inc
-      integer indi(ndims),iused(ndims)
+      integer indi(mdims),iused(mdims)
       real volumes(*)
       real cij(*)
+
+      include 'ndimsdecl.f'
 
       include '3dcom.f'
       external linregion

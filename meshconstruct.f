@@ -6,8 +6,9 @@ c values starting imeshstep.
 c Return values of iuds(ndims) per constructed mesh.
 c Also initialize the value of rs in plascom. Put equal to
 c half the largest mesh box side length.
-      subroutine meshconstruct(ndims,iuds,ifull,ipartperiod)
-      integer iuds(ndims),ifull(ndims),ipartperiod(ndims)
+      subroutine meshconstruct(mdims,iuds,ifull,ipartperiod)
+      integer iuds(mdims),ifull(mdims),ipartperiod(mdims)
+      include 'ndimsdecl.f'
       include 'meshcom.f'
 
       iof=0
@@ -57,6 +58,7 @@ c      write(*,*)(xn(k),k=1,iof)
       end
 c**************************************************************
       subroutine meshshift()
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'objcom.f'
       real shift

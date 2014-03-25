@@ -1,21 +1,22 @@
       program sortest
+      include '../ndimsdecl.f'
 c Main program of cartesian coordinate solver 
       include '../objcom.f'
 c Mesh spacing description structure
       include '../meshcom.f'
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
-     $     ,cij(2*ndims_cij+1,na_i,na_j,na_k)
+     $     ,cij(2*ndims+1,na_i,na_j,na_k)
       real volumes(na_i,na_j,na_k)
 c Used dimensions, Full dimensions. Used dims-2
-      integer iuds(ndims_cij),ifull(ndims_cij),ium2(ndims_cij)
+      integer iuds(ndims),ifull(ndims),ium2(ndims)
 c Processor cartesian geometry can be set by default.
       integer nblksi,nblksj,nblksk
       parameter (nblksi=1,nblksj=1,nblksk=1)
-      integer idims(ndims_cij) 
+      integer idims(ndims) 
 c mpi process information.
       include '../myidcom.f'
 c Structure vector needed for finding adjacent u values.
-      integer iLs(ndims_cij+1)
+      integer iLs(ndims+1)
       external bdyshare,bdyset,bdysetnull,faddu,cijroutine,cijedge
       character*100 objfilename
       character*100 argument
@@ -46,8 +47,8 @@ c Data for plotting etc.
       data ipstep/1/
 c-------------------------------------------------------------
 c Consistency checks
-      if(ndims.ne.ndims_cij)then
-         write(*,*)'Inconsistent ndims, ndims_cij',ndims,ndims_cij
+      if(ndims.ne.ndims)then
+         write(*,*)'Inconsistent ndims, ndims',ndims,ndims
          stop
       endif
 c-------------------------------------------------------------

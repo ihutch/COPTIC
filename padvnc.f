@@ -1,20 +1,21 @@
-      subroutine padvnc(ndims,iLs,cij,u)
+      subroutine padvnc(mdims,iLs,cij,u)
 c Particle advancing routine.
 c If ninjcomp (in partcom) is non-zero, then we are operating in a mode
 c where the number of reinjections at each timestep is prescribed.
 c Otherwise we are using a fixed number npart of particles.
 
-c Number of dimensions: ndims
-      integer ndims
+c Number of dimensions: mdims
+      integer mdims
 c Storage size of the mesh arrays.
 c      real cij(2*ndims+1,nx,ny,nz)
 c      real u(nx,ny,nz)
       real cij(*),u(*)
 
 c Array structure vectors: (1,nx,nx*ny,nx*ny*nz)
-      integer iLs(ndims+1)
+      integer iLs(mdims+1)
 
 c Meshcom provides ixnp, xn, the mesh spacings. (+ndims_mesh)
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'myidcom.f'
       include '3dcom.f'
@@ -127,7 +128,7 @@ c the region information.
          r2=0.
          v2=0.
          do idf=1,ndims
-            call getfield(ndims,cij(ic1),u,iLs
+            call getfield(cij(ic1),u,iLs
      $           ,xn(ixnp(idf)+1),idf,x_part(ndimsx2+1,i)
      $           ,IAND(iregion,ifield_mask),field(idf))
             if(.not.abs(field(idf)).lt.fieldtoolarge)then
@@ -490,9 +491,8 @@ c Also any temperature-gradient and density-gradient factors.
 c Defines iptch_copy uci, rhoc and dimensions.
 c ndims must be same as ndimsp.
 c To do the slice plot we need this it include grid decl.
+      include 'ndimsdecl.f'
       include 'meshcom.f'
-      integer ndims
-      parameter (ndims=ndims_grid)
       include 'ptchcom.f'
       include 'plascom.f'
       real zp(na_m,na_m2)
@@ -516,16 +516,17 @@ c      write(*,*)'Point charges included. Mask:',iptch_copy,gtt
       endif
       end
 c**********************************************************************
-      subroutine ucrhoset(inc,ipoint,indi,ndims,iLs,iuds,
+      subroutine ucrhoset(inc,ipoint,indi,mdims,iLs,iuds,
      $     uci,rhoci,iptch_copy,Teci)
 c Set uci, rhoci, and Teci arrays to compensate for point charges,
 c electron temperature gradients, or density gradients. 
 c These are then subsequently used in faddu to decide the electron
 c density. [They are not used in getadfield.]
-      integer inc,ipoint,ndims,indi(ndims)
-      integer iuds(ndims)
+      integer inc,ipoint,mdims,indi(mdims)
+      integer iuds(mdims)
       real uci(*),rhoci(*),Teci(*)
 c Commons: For position.
+      include 'ndimsdecl.f'
       include 'meshcom.f'
 c For debyelen and Tempr gradient.
       include 'plascom.f'
@@ -596,6 +597,7 @@ c If particle is relocated by periodicity, advance nrein.
       integer i,iregion
       logical linmesh
 c meshcom provides ixnp, xn, the mesh spacings. (+ndims_mesh)
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       integer ixp(ndims_mesh)
       real xfrac(ndims_mesh)

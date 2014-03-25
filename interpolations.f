@@ -323,6 +323,7 @@ c Fractions, which give dxp1, must not be exactly zero.
       real xm
       real dx0,dx1
 
+      include 'ndimsdecl.f'
       include 'objcom.f'
 
       if(xm.lt.0)then
@@ -410,6 +411,7 @@ c (i.e. we pass xn(ixnp(idf)+ix)) needed for gradient evaluation.
 
       real cij(*)
       real u(*)
+      include 'ndimsdecl.f'
       include 'objcom.f'
 c Not here      include 'meshcom.f'
 c The direction in which we are interpolating.

@@ -112,6 +112,7 @@ c********************************************************************
       subroutine ptdiagreduce()
 c Reduce the particle distribution diagnostics accumulations.
       include 'mpif.h'
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
       integer nfv,nfsv

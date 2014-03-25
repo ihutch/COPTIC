@@ -1,13 +1,12 @@
       program coptic
 c Main program of cartesian coordinate, oblique boundary, pic code.
 
+      include 'ndimsdecl.f'
 c Object data storage.
       include 'objcom.f'
 c Storage array spatial count size
 c Mesh spacing description structure includes grid decl too.
       include 'meshcom.f'
-      integer ndims
-      parameter (ndims=ndims_grid)
 c coptic runs correctly with unequal dimensions but phiexamine does not.
       parameter (Li1=na_i,Li2=Li1*na_j,Li3=Li2*na_k)
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
@@ -15,7 +14,7 @@ c Running averages.
       real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
 c
       real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k)
-      real cij(2*ndims_cij+1,na_i,na_j,na_k)
+      real cij(2*ndims+1,na_i,na_j,na_k)
 c Diagnostics (moments)
       integer ndiagmax
       parameter (ndiagmax=7)
@@ -26,17 +25,17 @@ c Distribution functions
 c      real fv(ndistmax,na_i,na_j,na_k)
 
 c Used dimensions, Full dimensions. Used dims-2
-      integer iuds(ndims_cij),ifull(ndims_cij),ium2(ndims_cij)
+      integer iuds(ndims),ifull(ndims),ium2(ndims)
 c Processor cartesian geometry can be set by default.
       integer nblksi,nblksj,nblksk
       parameter (nblksi=1,nblksj=1,nblksk=1)
-      integer idims(ndims_cij)
+      integer idims(ndims)
 c mpi process information.
       include 'myidcom.f'
 c Common data containing the BC-object geometric information
       include '3dcom.f'
 c Structure vector needed for finding adjacent u values.
-      integer iLs(ndims_cij+1)
+      integer iLs(ndims+1)
 c Particle common data
       include 'partcom.f'
 c Plasma common data
@@ -85,11 +84,6 @@ c      data thetain,nth/.1,1/
       data lrestart/0/cv/0.,0.,0./
       data ipstep/1/idistp/0/idcount/0/icijcount/0/
 c-------------------------------------------------------------
-c Consistency checks
-      if(ndims.ne.ndims_cij)then
-         write(*,*)'Inconsistent ndims, ndims_cij',ndims,ndims_cij
-         stop
-      endif
 c-------------------------------------------------------------
 c Initialize the fortran random number generator with a fixed number
 c for solutions of volumes etc. Each node then does the same.
@@ -234,7 +228,7 @@ c If head, write the geometry data if we've had to calculate it.
       endif
 c---------------------------------------------
 c Initialize the region flags in the object data
-      call iregioninit(ndims,ifull)
+      call iregioninit(ifull)
       if(lmyidhead)call reportfieldmask()
 c Set an object pointer region -1 for all the edges.
       ipoint=0
@@ -263,8 +257,7 @@ c The following requires include objcom.f
 c Plot objects 0,1 and 2 (bits)
          if(iobpl.ne.0.and.lmyidhead)then
             if(rcij.eq.0.)rcij=rs
-c            call cijplot(ndims,ifull,iuds,cij,rcij,iobpl,0)
-            call cijplot(ndims,ifull,iuds,cij,rcij,iobpl)
+            call cijplot(ifull,iuds,cij,rcij,iobpl)
           endif
       endif
 c---------------------------------------------
@@ -445,7 +438,7 @@ c The normal call:
          endif
          call fluxreduce()
 c Now do cij update
-         call cijdirect(ndims,debyelen,error)
+         call cijdirect(debyelen,error)
 c Store the step's rhoinf, dt, npart.
          ff_rho(nf_step)=rhoinf
          ff_dt(nf_step)=dt
@@ -556,8 +549,7 @@ c the segfaults.
 c-------- End of Main Step Iteration -------------------------------
 c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
       if(norbits.ne.0)
-     $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl)
-c     $     call cijplot(ndims,ifull,iuds,cij,rs,iobpl,norbits)
+     $     call cijplot(ifull,iuds,cij,rs,iobpl)
 
       if(lorbitplot.and.norbits.ne.0)call orbitplot(ifull,iuds,u,phip,rc
      $     ,rs)

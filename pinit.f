@@ -2,6 +2,7 @@ c***********************************************************************
 c Initializing particles.
       subroutine pinit(sprior)
 c Common data:
+      include 'ndimsdecl.f'
       include 'partcom.f'
       include 'plascom.f'
       include 'myidcom.f'
@@ -141,6 +142,7 @@ c Initialize particles loaded from restart files so that they have the
 c correct mesh-fraction coordinate in their upper values.
 c If they are outside the mesh or particle region, drop them.
 c Common data:
+      include 'ndimsdecl.f'
       include 'partcom.f'
 c      include 'myidcom.f'
       include '3dcom.f'
@@ -164,14 +166,15 @@ c***********************************************************************
 c Return a random velocity from the (precalculated) distribution heap.
       subroutine colvget(v)
       implicit none
+      include 'ndimsdecl.f'
       include 'cdistcom.f'
-      real v(nc_ndims)
+      real v(ndims)
       integer nc,i
       real ran1
       external ran1
 
       nc=ncdist*ran1(1)
-      do i=1,nc_ndims
+      do i=1,ndims
          v(i)=v_col(i,nc)
       enddo
       end
@@ -182,6 +185,7 @@ c Wrapper of Version to do fullscale neutral statistics.
       implicit none
       integer ncin,myid
       real relax,vzave
+      include 'ndimsdecl.f'
       include 'plascom.f'
       include 'colncom.f'
       include 'cdistcom.f'
@@ -238,6 +242,7 @@ c vzave returns the sum of the vdrift-components of the velocities.
       implicit none
       integer nclim
       real vzave
+      include 'ndimsdecl.f'
       include 'cdistcom.f'
       include 'plascom.f'
       include 'colncom.f'
@@ -247,7 +252,7 @@ c vzave returns the sum of the vdrift-components of the velocities.
 c Local variables
       integer i
       real tisq,dt0,torb,ttic,v2
-      real v(nc_ndims),vn(nc_ndims)
+      real v(ndims),vn(ndims)
       real theta,stheta,ctheta,dvpar,delta
       real colnu,rd
       parameter (delta=0.2)
@@ -279,7 +284,7 @@ c a low order rational multiple of the cyclotron period. But there is no
 c sign in output of this need. Probably the random collision length does
 c enough to randomize even a bad coincidence.
 c Iterate over adjustments to Eneutral.
-      do i=1,nc_ndims
+      do i=1,ndims
          cdistflux(i)=0.
       enddo
       ncdist=0
@@ -290,9 +295,9 @@ c Start of a new orbit
  2    continue 
 c Inject from neutral distribution
       v2=delta*Tneutral
-      do i=1,nc_ndims
+      do i=1,ndims
          v(i)=tisq*gasdev(i)
-c         if(i.eq.nc_ndims)v(i)=v(i)+vneutral
+c         if(i.eq.ndims)v(i)=v(i)+vneutral
          v(i)=v(i)+vneutral*vdrift(i)
          v2=v2+v(i)**2
       enddo
@@ -309,8 +314,8 @@ c Subtract the timestep from time to the orbit end in scaled units
          ncdist=ncdist+1
          if(Bt.eq.0.)then
 c B-field free case
-            do i=1,nc_ndims
-c               if(i.eq.nc_ndims)v(i)=v(i)+Eneutral*ttic
+            do i=1,ndims
+c               if(i.eq.ndims)v(i)=v(i)+Eneutral*ttic
                v(i)=v(i)+Eneutral*vdrift(i)*ttic
                v2=v2+v(i)**2
                v_col(i,ncdist)=v(i)
@@ -324,7 +329,7 @@ c Rotation is counterclockwise for ions.
             stheta=sin(-theta)
             ctheta=cos(theta)
 c Subtract off the perpendicular velocity of frame in which E is zero.
-            do i=1,nc_ndims
+            do i=1,ndims
                v(i)=v(i)-vperp(i)
             enddo
 c Rotate the velocity
@@ -332,11 +337,11 @@ c Rotate the velocity
 c Acceleration along the B-direction:
 c            dvpar=Eneutral*ttic*Bfield(nplasdims)            
             dvpar=0.
-            do i=1,nc_ndims
+            do i=1,ndims
                dvpar=dvpar+Eneutral*vdrift(i)*Bfield(i)*ttic
             enddo
 c And add back the drift velocity, and the parallel acceleration.
-            do i=1,nc_ndims
+            do i=1,ndims
                v(i)=v(i)+vperp(i)+dvpar*Bfield(i)
                v2=v2+v(i)**2
                v_col(i,ncdist)=v(i)
@@ -345,8 +350,8 @@ c And add back the drift velocity, and the parallel acceleration.
 c               write(*,*)'ncdist=',ncdist
 c               write(*,*)'theta,v',theta,v
          endif
-c         vzave=vzave+v_col(nc_ndims,ncdist)
-         do i=1,nc_ndims
+c         vzave=vzave+v_col(ndims,ncdist)
+         do i=1,ndims
             vzave=vzave+v_col(i,ncdist)*vdrift(i)
          enddo
 c Now we are at the end of a tic. Set the next tic length
@@ -360,8 +365,8 @@ c distribution we need to do the null collision calculation and goto 3
 c not 2. 
 c Advance to a possible collision.
          if(Bt.eq.0.)then
-c            v(nc_ndims)=v(nc_ndims)+Eneutral*torb 
-            do i=1,nc_ndims
+c            v(ndims)=v(ndims)+Eneutral*torb 
+            do i=1,ndims
                v(i)=v(i)+Eneutral*vdrift(i)*torb
             enddo
          else
@@ -371,7 +376,7 @@ c Rotation is counterclockwise for ions.
             stheta=sin(-theta)
             ctheta=cos(theta)
 c Subtract off the perpendicular velocity of frame in which E is zero.
-            do i=1,nc_ndims
+            do i=1,ndims
                v(i)=v(i)-vperp(i)
             enddo
 c Rotate the velocity
@@ -379,19 +384,19 @@ c Rotate the velocity
 c Acceleration along the B-direction:
 c            dvpar=Eneutral*torb*Bfield(nplasdims)            
             dvpar=0.
-            do i=1,nc_ndims
+            do i=1,ndims
                dvpar=dvpar+Eneutral*vdrift(i)*Bfield(i)*torb
             enddo
 c And add back the drift velocity, and the parallel acceleration.
-            do i=1,nc_ndims
+            do i=1,ndims
                v(i)=v(i)+vperp(i)+dvpar*Bfield(i)
             enddo
          endif
 c Possible collision: Choose a neutral velocity and calculate (v-vd)^2
          v2=0.
-         do i=1,nc_ndims
+         do i=1,ndims
             vn(i)=tisq*gasdev(i)
-c            if(i.eq.nc_ndims)vn(i)=vn(i)+vneutral
+c            if(i.eq.ndims)vn(i)=vn(i)+vneutral
             vn(i)=vn(I)+vneutral*vdrift(i)
             v2=v2+(v(i)-vn(i))**2
          enddo
@@ -403,7 +408,7 @@ c Select a fraction of these collisions weighted by this ratio.
          rd=ran1(1)*colnu
          if(rd.lt.1.)then
 c This collision occurred. 
-            do i=1,nc_ndims
+            do i=1,ndims
                v(i)=vn(i)
             enddo
          else
@@ -421,15 +426,16 @@ c      write(*,*)'v(i)',v
       end
 c****************************************************************
       subroutine colndistshow()
+      include 'ndimsdecl.f'
       include 'cdistcom.f'
       integer nxbin,nybin
       parameter (nxbin=50,nybin=50,idim1=1,idim2=3)
       real fvxvy(nxbin,nybin),vxa(nxbin,nybin),vya(nxbin,nybin)
       real work(0:nxbin+1,0:nybin+1)
-      real vlimit(2,nc_ndims)
+      real vlimit(2,ndims)
 
 c Defaults
-      do id=1,nc_ndims
+      do id=1,ndims
          vlimit(1,id)=3.
          vlimit(2,id)=-2.
       enddo

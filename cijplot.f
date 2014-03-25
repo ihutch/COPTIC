@@ -1,9 +1,9 @@
 c Mostly for testing.
 c Assumed 3-D routine, plots representation of the cij/obj data.
-      subroutine  cijplot(ndims,ifull,iuds,cij,rs,iosw)
-      integer ndims,iosw
-      parameter (mdims=10)
-      integer ifull(mdims),iuds(ndims)
+      subroutine  cijplot(ifull,iuds,cij,rs,iosw)
+      include 'ndimsdecl.f'
+      integer iosw
+      integer ifull(ndims),iuds(ndims)
       real cij(ndims*2+1,ifull(1),ifull(2),ifull(3))
       include 'objcom.f'
       include 'meshcom.f'

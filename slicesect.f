@@ -6,6 +6,7 @@ c -zero, and there is a fraction<1 to the adjoining points.
       real x(ni),y(nj)
       real z(Li,nj)
       real cij(7,Li,nj)
+      include 'ndimsdecl.f'
       include 'objcom.f'
       include 'accis/world3.h'
 
@@ -294,8 +295,8 @@ c Find the perpendicular distance of xc from the plane, and the
 c distance from the base of the perpendicular to the point. 
 c Evaluate the difference of the perpendicular length from rc,
 c as a test of correct plane selection, and check base distance.
-      subroutine boxintersect(ndims,ifull,iuds,cij)
-      integer ndims
+      subroutine boxintersect(ifull,iuds,cij)
+      include 'ndimsdecl.f'
       parameter (mdims=3)
       integer ifull(mdims),iuds(mdims)
       real cij(ndims*2+1,ifull(1),ifull(2),ifull(3))

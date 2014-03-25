@@ -1,6 +1,7 @@
 c*****************************************************************
 c Initialize with zero 3d objects.
       block data com3dset
+      include 'ndimsdecl.f'
       include '3dcom.f'
       include 'meshcom.f'
       data ngeomobj/0/
@@ -123,6 +124,7 @@ c Read the geometric data about objects from the file filename
       integer myid
       integer ifull(*)
       character*256 cline
+      include 'ndimsdecl.f'
       include '3dcom.f'
       include 'meshcom.f'
       include 'partcom.f'
@@ -700,7 +702,7 @@ c      write(*,*)' lbounded=',lbounded
       end
 
 c************************************************************
-      subroutine potlsect(id,ipm,ndims,indi,fraction,conditions,dp,
+      subroutine potlsect(id,ipm,mdims,indi,fraction,conditions,dp,
      $     iobjno,ijbin)
 
 c In dimension id, direction ipm, 
@@ -711,8 +713,8 @@ c the intersection occurs (1 if no intersection), the "conditions" at
 c the intersection (irrelevant if fraction=1), the +ve length
 c in computational units of the full leg in dp, and the object number
 c in iobjno
-      integer id,ipm,ndims,iobjno,ijbin
-      integer indi(ndims)
+      integer id,ipm,mdims,iobjno,ijbin
+      integer indi(mdims)
       real fraction,dp
       real conditions(3)
 c Equivalence: c1,c2,c3==a,b,c
@@ -740,7 +742,7 @@ c that are applied to the active side of the surface, with consistently
 c reversed signs. (e.g. a=1, b=1, c=-2 -> a=-1, b=-1, c=2)
 c
 c A fraction of 1 causes all the bounding conditions to be ignored.
-
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include '3dcom.f'
 c      integer debug
@@ -876,22 +878,17 @@ c Address of mesh point.
 c*************************************************************
 c Initialize the iregion flags of the existing nodes with boundary
 c object data.
-      subroutine iregioninit(ndims,ifull)
-      integer ndims
+      subroutine iregioninit(ifull)
+c      integer ndims
+      include 'ndimsdecl.f'
       integer ifull(ndims)
 
       include 'objcom.f'
       include 'meshcom.f'
       include '3dcom.f'
 
-      integer ix(ndims_cij)
-      real x(ndims_cij)
-
-      if(ndims.ne.ndims_cij)then 
-         write(*,*)'iregioninit error; incorrect dimensions:',
-     $        ndims,ndims_cij
-         call exit(0)
-      endif
+      integer ix(ndims)
+      real x(ndims)
 
       do i=1,oi_cij
          ipoint=idob_cij(ipoint_cij,i)
@@ -931,11 +928,12 @@ c      if(ipp.ne.0)
 c*******************************************************************
       function ireg3(i,j,k,ifull,cij)
       integer i,j,k
+      include 'ndimsdecl.f'
       include 'objcom.f'
       integer ifull(3)
-      real cij(ndims_cij*2+1,ifull(1),ifull(2),ifull(3))
+      real cij(ndims*2+1,ifull(1),ifull(2),ifull(3))
 
-      ipoint=int(cij(ndims_cij*2+1,i,j,k))
+      ipoint=int(cij(ndims*2+1,i,j,k))
       if(ipoint.ne.0)then
          ireg3=idob_cij(iregion_cij,ipoint)
       else

@@ -1,10 +1,11 @@
-      subroutine chargetomesh(psum,ndims,iLs,diagsum,ndiags)
+      subroutine chargetomesh(psum,mdims,iLs,diagsum,ndiags)
 c Assign charge and other moments to the mesh accumulators.
 c Particle weight sum, having structure iLs, and (possible) diagnostics.
 c Which are enumerated up to ndiags in their trailing dimension.
       real psum(*)
       real diagsum(*)
 c mesh data, notably ndims_mesh, since we don't pass it:
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       integer iLs(ndims+1)
 
@@ -68,12 +69,13 @@ c Six moments. 3 for v and 3 for v^2.
 c End of charge deposition.
       end
 c********************************************************************
-      subroutine psumperiod(psum,ndims,ifull,iaux,iLs)
+      subroutine psumperiod(psum,mdims,ifull,iaux,iLs)
 c If there are periodic particles in any dimension, do the periodic
 c exchange sum.
-      integer ndims,ifull(ndims),iaux(ndims)
+      integer mdims,ifull(mdims),iaux(mdims)
 c,iuds(ndims)
       real psum(*)
+      include 'ndimsdecl.f'
       integer iLs(ndims+1)
 
       include 'meshcom.f'
@@ -107,12 +109,13 @@ c Other-1=Other-1 + Face
       enddo
       end
 c********************************************************************
-      subroutine diagperiod(diagsum,ndims,ifull,iaux,iLs,ndiags)
+      subroutine diagperiod(diagsum,mdims,ifull,iaux,iLs,ndiags)
 c If there are periodic particles in any dimension, do the periodic
 c exchange sum.
-      integer ndims,ifull(ndims),iaux(ndims)
+      integer mdims,ifull(mdims),iaux(mdims)
       real diagsum(*)
-      integer iLs(ndims+1)
+      integer iLs(mdims+1)
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       integer iview(3,ndims_mesh),indi(ndims_mesh)
       integer istart,iend,istride

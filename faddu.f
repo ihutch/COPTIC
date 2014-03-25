@@ -8,6 +8,7 @@ c to unity at infinity.
       real function faddu(u,fprime,index)
       real u,fprime
       integer index
+      include 'ndimsdecl.f'
 c In order to access point-charge information we need:
       include '3dcom.f'
 c Needed for ptchcom.f:

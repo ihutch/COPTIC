@@ -73,17 +73,18 @@ c            write(*,*)'Entering mditerarg upper',myside,icoords(id),ipin
       enddo
       end
 c**********************************************************************
-      subroutine bdyshrroutine(inc,ipoint,indi,ndims,ilsunused,iused
+      subroutine bdyshrroutine(inc,ipoint,indi,mdims,ilsunused,iused
      $     ,idn,u,idone,ioffset)
 c Set the boundary value of u according to the boundary conditions.
 c The position at which to set it is in indi(ndims) which is u(1+ipoint).
 c idn is the face index. ioffset is the offset to the adjacent point.
 c On entry idone(2)=1 indicates set periodic boundaries (default not).
-      integer inc,ipoint,ndims,indi(ndims),iused(ndims)
+      integer inc,ipoint,mdims,indi(mdims),iused(mdims)
       integer idn
       integer idone(2)
       real u(*)
 
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'facebcom.f'
 c Silence warnings:

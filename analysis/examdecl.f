@@ -1,10 +1,9 @@
 c Storage array spatial count size included in
 c Mesh spacing description structure
+      include '../ndimsdecl.f'
       include '../meshcom.f'
-      integer ndims
-      parameter (ndims=ndims_grid)
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
-      real zp(na_m,na_m2,ndims_grid)
+      real zp(na_m,na_m2,ndims)
       integer ifull(ndims),iuds(ndims)
 c Object data
       include '../objcom.f'

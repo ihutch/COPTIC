@@ -33,6 +33,7 @@ c Cartesian reinjection routine.
       real ranlenposition
       external ranlenposition
 
+      include 'ndimsdecl.f'
 c Random choice data for these routines:
       include 'creincom.f'
 c Plasma common data
@@ -113,6 +114,7 @@ c Cartesian reinjection initialization
 c drift velocity, vd, in the z-direction
 c maxwellians of width given by Ti
 
+      include 'ndimsdecl.f'
       include 'plascom.f'
       include 'meshcom.f'
       include 'creincom.f'
@@ -647,6 +649,7 @@ c*********************************************************************
       subroutine rhoinfcalc(dtin)
 c Obtain the rhoinf to be used in calculating the electron shielding,
 c based upon the number and average potential of the reinjections.
+      include 'ndimsdecl.f'
       include 'plascom.f'
 c No time-averaging for now.
 c Use particle information for initializing.
@@ -714,6 +717,7 @@ c for average edge potential. This is only called at initialization.
       include 'plascom.f'
 c No time-averaging for now.
 c Particle information
+      include 'ndimsdecl.f'
       include 'partcom.f'
       include 'meshcom.f'
       include 'creincom.f'
@@ -797,10 +801,11 @@ c distributions.
       subroutine colreinject(xr,ipartperiod,cdummy)
       implicit none
 c Collisional distribution data.
+      include 'ndimsdecl.f'
       include 'cdistcom.f'
-      real xr(3*nc_ndims)
+      real xr(3*ndims)
       real cdummy
-      integer ipartperiod(nc_ndims)
+      integer ipartperiod(ndims)
 c Reinjection data needed for idrein only, needed for creintest only.
       include 'creincom.f'
       include 'meshcom.f'
@@ -811,7 +816,7 @@ c Local data
 
 c Choose the normal-dimension for reinjection, from cumulative dist.
  2    ra=ran1(1)
-      do i=1,nc_ndims
+      do i=1,ndims
          id=i
          if(ra.lt.cdistcum(i+1))goto 1
       enddo
@@ -819,14 +824,14 @@ c Choose the normal-dimension for reinjection, from cumulative dist.
       idrein=id
 c Grab a random v-sample. Needs to be changed to reflect not just a 
 c random grab,
-c      call colvget(xr(nc_ndims+1))
+c      call colvget(xr(ndims+1))
 c but a grab weighted by the normal-dimension mod-v:
       ra=ran1(1)*fxvcol(ncdist+1,id)
       call invtfunc(fxvcol(1,id),ncdist+1,ra,rx)
 c Now the integer part of rx is the index of the chosen particle.
       k=int(rx)
-      do i=1,nc_ndims
-         xr(nc_ndims+i)=v_col(i,k)
+      do i=1,ndims
+         xr(ndims+i)=v_col(i,k)
       enddo
 
 c Determine face
@@ -834,7 +839,7 @@ c Determine face
          write(*,*)'Got erroneous periodic dimension',id
          face=0.
          goto 2
-      elseif(xr(nc_ndims+id).ge.0.)then
+      elseif(xr(ndims+id).ge.0.)then
          face=-.999999
          if(ipartperiod(id).eq.1.)goto 1
 c Injecting at a periodic/absorbing face. Get a different particle.
@@ -861,30 +866,31 @@ c********************************************************************
 c Initialize and normalize the cdistflux factors from the
 c Collisional distribution data, presumed already calculated by pinit.
 c Based upon the ipartperiod settings.
+      include 'ndimsdecl.f'
       include 'cdistcom.f'
       include 'partcom.f'
       if(ncdist.eq.0)return
       ctot=0.
-      do i=1,nc_ndims
+      do i=1,ndims
 c         if(myid.eq.0)write(*,*)ipartperiod(i),cdistflux(i)
          if(ipartperiod(i).ge.3)cdistflux(i)=0.
          ctot=ctot+cdistflux(i)
       enddo
       if(ctot.ne.0.)then
          cdistcum(1)=0.
-         do i=1,nc_ndims
+         do i=1,ndims
             cdistflux(i)=cdistflux(i)/ctot
             cdistcum(i+1)=cdistcum(i)+cdistflux(i)
          enddo
 c Avoid rounding problems.
-         cdistcum(nc_ndims+1)=1.
+         cdistcum(ndims+1)=1.
       else
          if(myid.eq.0)write(*,*
      $        )'PROBLEM. colreinject: No reinjection faces'
       endif
 
 c Now evaluate the cumulative distribution in 3 normal-directions.
-      do id=1,nc_ndims
+      do id=1,ndims
          fxvcol(1,id)=0.
          do i=1,ncdist
             fxvcol(i+1,id)=fxvcol(i,id)+abs(v_col(id,i))
@@ -903,6 +909,7 @@ c********************************************************************
       real function ranlenposition(id)
 c Return a random fractional position in the coordinate direction id,
 c accounting for the density scale length if present
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'creincom.f'
       include 'plascom.f'

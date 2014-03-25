@@ -1,5 +1,6 @@
       program creintest
 c Test the reinjection scheme by forming cartesian distributions.
+      include '../ndimsdecl.f'
       include '../plascom.f'
       include '../meshcom.f'
       include '../creincom.f'

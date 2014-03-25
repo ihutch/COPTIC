@@ -1,4 +1,6 @@
       subroutine vaccheck(ifull,iuds,cij,u,thetain,nth,rs,ltestplot)
+      integer ifull(*),iuds(*)
+      real cij(*),u(*)
       logical ltestplot
       include '3dcom.f'
 c Silence warning:
@@ -50,8 +52,9 @@ c********************************************************************
       subroutine spherecheck(ifull,iuds,u,phi,rc,phiinf)
 c Do some analytic checking of the case with a fixed potential sphere
 c inside a logarithmic derivative boundary condition. 1/r solution.
+      include 'ndimsdecl.f'
       include 'meshcom.f'
-      integer iuds(3),ifull(3)
+      integer iuds(ndims),ifull(ndims)
       real u(ifull(1),ifull(2),ifull(3))
       errmax=0.
       errvar=0.
@@ -114,9 +117,10 @@ c***************************************************************
 c Master plotting routine.
       subroutine solu3plot(ifull,iuds,u,cij,
      $     phi,phiinf,rc,thetain,nth)
-      parameter (ndims=3)
+      include 'ndimsdecl.f'
       integer ifull(ndims),iuds(ndims)
       integer iLs(ndims+1)
+      real u(*),cij(*)
       iLs(1)=1
       do i=1,3
          iLs(i+1)=iLs(i)*ifull(i)
@@ -131,7 +135,8 @@ c***************************************************************
 c Packaged version of plotting.
       subroutine slicesolu(ifull,iuds,u,cij)
 
-      parameter (ndims=3,nd2=ndims*2)
+      include 'ndimsdecl.f'
+      parameter (nd2=ndims*2)
       integer ifull(ndims),iuds(ndims)
       real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
       real u(ifull(1),ifull(2),ifull(3))
@@ -151,7 +156,8 @@ c*******************************************************************
 c Packaged version of plotting.
       subroutine gradradial(ifull,iLs,u,cij,phi,phiinf,rc,thetain,nth)
 c     $     ,rs)
-      parameter (ndims=3,nd2=ndims*2)
+      include 'ndimsdecl.f'
+      parameter (nd2=ndims*2)
       integer ifull(ndims)
 c     integer iuds(ndims)
       real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
@@ -228,8 +234,7 @@ c     $              ,(xprime(kk,i),kk=1,ndims)
                ioff=ixnp(idf)
 c New approach mirrors padvnc.
                call getfield(
-     $              ndims
-     $              ,cij(nd2+1,1,1,1)
+     $              cij(nd2+1,1,1,1)
      $              ,u,iLs,xn(ixnp(idf)+1),idf
      $              ,xff,iregion,upnd(idf,i))
 
@@ -337,7 +342,8 @@ c***************************************************************
 c Packaged version of potential plotting.
       subroutine phiradial(ifull,iLs,cij,
      $     phi,phiinf,rc,thetain,nth,rs)
-      parameter (ndims=3,nd2=ndims*2)
+      include 'ndimsdecl.f'
+      parameter (nd2=ndims*2)
       integer ifull(ndims)
 c      integer iuds(ndims)
       real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
@@ -470,6 +476,7 @@ c********************************************************************
       subroutine fixedline(ifull,iuds,u,phi,phiinf,rc)
       integer iuds(3),ifull(3)
       real u(ifull(1),ifull(2),ifull(3))
+      include 'ndimsdecl.f'
       include 'meshcom.f'
       integer ifmax
       parameter (ifmax=1000,Li=ifmax)
@@ -505,7 +512,8 @@ c********************************************************************
 c***************************************************************
 c Packaged version of potential error finding and plotting.
       subroutine eremesh(ifull,iLs,iuds,u,cij,phi,phiinf,rc)
-      parameter (ndims=3,nd2=ndims*2)
+      include 'ndimsdecl.f'
+      parameter (nd2=ndims*2)
       integer ifull(ndims),iuds(ndims)
       real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
       real u(ifull(1),ifull(2),ifull(3))
@@ -574,8 +582,8 @@ c         write(*,*)'f3,xff(idf)',f3,xff(idf),z0,z1,errmax
             iregion=insidemask(ndims,xprime)
 c            write(*,*),i,j,iregion,xprime
 
-            call getfield(ndims
-     $           ,cij(nd2+1,1,1,1)
+            call getfield(
+     $           cij(nd2+1,1,1,1)
      $           ,u,iLs,xn(ixnp(ide)+1),ide
      $           ,xff,iregion,ere(i,j))
 

@@ -10869,3 +10869,21 @@ more consistent so there are no assumed number of dimensions.
 
 Replaced the random number integrator in volintegrate with a Sobol number
 generator toms659. It is faster even for the same number of points used. 
+
+24 Mar 14 implemented uniform v-binning when nsbins=nptdiag.
+
+25 Mar 14
+Implemented ndimsdecl.f for defining the # of dimensions.
+Got rid of ndims_cij entirely replacing with ndimsdecl.
+There was one gotya. That was with iterators that are assuming the
+dimensions to be passed, but then include objcom which needs ndims.
+Made those arguments into dummy.
+Got rid of nc_ndims
+Got rid of ndims_face
+Got rid of ndims_grid
+
+Working on ndims_mesh many many places where meshcom.f has to be 
+preceded by ndimsdecl.f. Reached the point where 
+      integer ndims_mesh
+      parameter (ndims_mesh=ndims)
+seems to work. Now we need to get rid of all ndims_mesh references.
