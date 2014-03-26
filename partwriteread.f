@@ -230,8 +230,8 @@ c******************************************************************
       subroutine namewrite(name,ifull,iuds,ied,u,extension)
 c Construct name (extending input string name) and write data. 
       character*(*) name,extension
-      integer ifull(3),iuds(3),ied
-      real u(ifull(1),ifull(2),ifull(3))
+      integer ifull(*),iuds(*),ied
+      real u(*)
       call nameconstruct(name)
       i=nbcat(name,extension)
       call array3write(name,ifull,iuds,ied,u)

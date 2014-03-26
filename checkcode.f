@@ -1,6 +1,7 @@
 c***********************************************************************
 c This contains code that checks on the writing and reading back of
 c code state. It is for debugging restarts.
+c Because it reads and writes used data in 3-D it is 3-D only code.
 c***********************************************************************
       subroutine checkuqcij(ifull,u,q,psum,volumes,cij)
       implicit none
@@ -16,11 +17,17 @@ c Local duplicates.
       real u2(Li2,Li2,Li2),q2(Li2,Li2,Li2)
       real cij2(7,Li2,Li2,Li2)
 
+      include 'ndimsdecl.f'
       integer i,j,k,l,ic
       logical linit,lend
       data linit/.false./lend/.false./
       save
 
+      if(ndims.ne.3)then
+         write(*,*)'checkuqcij is 3-D only code. Skipping for ndims='
+     $        ,ndims
+         return
+      endif
       if(.not.linit)then
          linit=.true.
          open(41,file='uqcijnew',status='new',

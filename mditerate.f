@@ -5,10 +5,6 @@ c Shell for skipping over the boundary of ndims-dimensional volume.
       integer indi(ndims),iused(ndims)
       real u(*)
 
-      parameter (mdims=3)
-c Structure vector needed for finding adjacent u values.
-c      integer iLs(mdims+1)
-
 c Algorithm: if on a boundary face of dimension >1, steps of 1 (dim 1).
 c Otherwise steps of iused(1)-1 or 1 on first or last (of dim 1).
       inc=1
@@ -189,7 +185,8 @@ c On exit indi contains the corresponding (ndims)-dimensional offsets.
          ind=ind2
       enddo
       indi(ndims)=ind
-      if(ind.gt.ifull(3)) write(*,*)'offsetexpand index too big',index
+      if(ind.gt.ifull(ndims)) write(*,*)'offsetexpand index too big'
+     $     ,index
       end
 c******************************************************************
 c New code for the rationalized mditerator.
@@ -317,6 +314,36 @@ c Reset starting indices from input pointer, in case non-zero.
       if(ipin.ne.0)call offsetexpand(ndims,ifull,ipin,indi)
  1      ii=1+indexcontract(ndims,ifull,indi)
         u(ii)=u(ii)+v(ii)
+      if(mditerator(ndims,iview,indi,0,iused).eq.0)goto 1
+
+      end
+c*****************************************************************
+      subroutine mditerave(u,ndims,ifull,iused,ipin,uave,istepave)
+c Iterate over the array u, to produce uave in the form
+c ((istepave-1)*uave + u)/istepave
+
+c Normally, the starting pointer is ipin=0 for the full array.
+      integer ndims,ifull(ndims),iused(ndims),istepave
+      real u(*),uave(*)
+      integer mdims
+      parameter (mdims=3)
+c Effective index in dimension, c-style (zero based)
+      integer indi(mdims),iview(3,mdims)
+c This data statement serves to silence ftnchek. The first mditerator
+c call actually initializes the iview and indi.
+      data iview/mdims*0,mdims*0,mdims*0/
+      data indi/mdims*0/
+      
+      if(mdims.lt.ndims)then
+         write(*,*)'Dimension error in mditerave',mdims,ndims
+         stop
+      endif
+c Set to iterate the whole used array:
+      icomplete=mditerator(ndims,iview,indi,4,iused)
+c Reset starting indices from input pointer, in case non-zero.
+      if(ipin.ne.0)call offsetexpand(ndims,ifull,ipin,indi)
+ 1      ii=1+indexcontract(ndims,ifull,indi)
+        uave(ii)=(uave(ii)*(istepave-1.)+u(ii))/float(istepave)
       if(mditerator(ndims,iview,indi,0,iused).eq.0)goto 1
 
       end

@@ -468,9 +468,9 @@ c Report dropped ions because of excessive acceleration.
          endif
 
 c These running and box averages do not include the updates for this step.
-c Accumulate running q and u averages:
-         call average3d(q,qave,ifull,iuds,istepave)
-         call average3d(u,uave,ifull,iuds,istepave)
+c Accumulate running q and u averages (replaced 3d routines):
+         call averagegd(q,qave,ifull,iuds,istepave)
+         call averagegd(u,uave,ifull,iuds,istepave)
 c Every iavesteps, calculate the box average of the moments, and write it
 c out, if we are doing diagnostics.
          if(mod(j,iavesteps).eq.0)then

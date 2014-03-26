@@ -19,6 +19,12 @@ c      character*40 mystring
       data idelta/1,0,0,0,1,0,0,0,1, 1,1,1,  0,1,1,1,0,1,1,1,0/
       data iprinting/0/
 
+      if(ndims.ne.3)then
+         write(*,*)'cijplot called with ndims=',ndims
+         write(*,*)'Skipping this only-3D routine.'
+         return
+      endif
+
 c If iosw > 0, then wireframe the objects corresponding to its bits.
 c If iosw < 0, plot the sticks as well as the wireframes.
 c If iosw = 0, plot only sticks for everything.

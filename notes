@@ -10910,3 +10910,34 @@ Actually bbdydecl.f and sormpi.f have ndimsdecl in it. Drat. Not yet complete.
 Maybe complete but bad name clash. Changed name to ndimsbbdy in sormpi etc.
 
 mdims rationalization not yet done. But that's enough for now.
+
+26 Mar 14
+There were some differences detected in cks. I don't know why.
+Went back in and found that there were cks errors after the previous
+update of cks. In fact the current cks are different from old ones
+only for geom....dat files not for uniform, ... Therefore I am not going
+to worry too much about it. I think we are probably ok, and the cks
+files are updated as of 
+commit 8af483247503a6880d8eb0ac799a72d9c5ca7b48
+
+In mditerate.f there are no references to ndimsdecl.f the mdims is used
+for local definitions of working arrays and is set to 3. 
+
+Trying to get rid of ifull(3) references. Some of these might work if
+ifull and iuds have at least 3 dimensions and the trailing dimension
+length value is set to 1.
+average.f replace the 3-D only routine with general.
+checkcode.f implemented trap to skip. Needs to have array dims fixed.
+cijplot.f   implemented trap to skip. But compile should fail.
+cijroutine.f  warn in text3rgraph, but should work. 
+partaccum.f   trap to skip pltsubdist, but might work.
+partwriteread.f Ought to work for ndims<3 if ifull and iuds are 1.
+phisoluplot.f  spherecheck can't work for iuds<3, but might not crash.
+	       slicesolu calls slicing, might work.
+	       gradradial calls getfield etc. Probably won't work.
+	       fixedline may work.
+slicesect.f    slice3web. Probably won't work.
+volint.f       stored3geom. Probably will work.
+
+By test inspection, these seem to be the only places left where the 
+ifull is explicitly taken to be a 3-D array, and referenced that way.

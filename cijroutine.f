@@ -623,10 +623,29 @@ c         write(form1,'(''('',i3,''i1)'')')iuds(1)
 c         write(*,form1)((ireg3(j,iuds(2)/2,k,ifull,cij),
 c     $        j=1,iuds(1)),k=1,iuds(3))
 c Slightly more flexible ascii form:
-         write(form1,'(''('',i3,''a1)'')')iuds(1)
-         write(*,form1)
+      if(ndims.ne.3.or.mdims.ne.3)then
+         write(*,*)'****text3rgraph expects 3-D. Trying anyway.'
+      endif
+      write(form1,'(''('',i3,''a1)'')')iuds(1)
+      write(*,form1)
      $        ((char(min(126,48+ireg3(j,iuds(2)/2,k,ifull,cij))),
      $        j=1,iuds(1)),k=1,iuds(3))
+      end
+c*******************************************************************
+      function ireg3(i,j,k,ifull,cij)
+c Return the region value for point i,j,k specified in 3d.
+      integer i,j,k
+      include 'ndimsdecl.f'
+      include 'objcom.f'
+      integer ifull(3)
+      real cij(ndims*2+1,ifull(1),ifull(2),ifull(3))
+
+      ipoint=int(cij(ndims*2+1,i,j,k))
+      if(ipoint.ne.0)then
+         ireg3=idob_cij(iregion_cij,ipoint)
+      else
+         ireg3=99
+      endif
       end
 c*********************************************************************
       subroutine text3graphs(ndims,iuds,ifull,cij,volumes)

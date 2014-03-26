@@ -126,7 +126,7 @@ c Master plotting routine.
       do i=1,3
          iLs(i+1)=iLs(i)*ifull(i)
       enddo
-c      call fixedline(ifull,iuds,u,phi,phiinf,rc)
+      call fixedline(ifull,iuds,u,phi,phiinf,rc)
 c      call slicesolu(ifull,iuds,u,cij)
       call gradradial(ifull,iLs,u,cij,phi,phiinf,rc,thetain,nth)
 c      call phiradial(ifull,iLs,cij,phi,phiinf,rc,thetain,nth,rs)
@@ -139,8 +139,7 @@ c Packaged version of plotting.
       include 'ndimsdecl.f'
       parameter (nd2=ndims*2)
       integer ifull(ndims),iuds(ndims)
-      real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
-      real u(ifull(1),ifull(2),ifull(3))
+      real cij(*),u(*)
       integer ifmax
       parameter (ifmax=300,Li=ifmax)
       real cijp(2*ndims+1,ifmax,ifmax)
@@ -346,9 +345,7 @@ c Packaged version of potential plotting.
       include 'ndimsdecl.f'
       parameter (nd2=ndims*2)
       integer ifull(ndims)
-c      integer iuds(ndims)
-      real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
-c      real u(ifull(1),ifull(2),ifull(3))
+      real cij(*)
       integer ifmax
       parameter (ifmax=1000,Li=ifmax)
       real uanal(ifmax)
@@ -482,13 +479,10 @@ c********************************************************************
       integer ifmax
       parameter (ifmax=1000,Li=ifmax)
       real z(ifmax),xp(ifmax)
-c      write(*,*)'In solu3plot',ifull,iuds,rc,thetain,nth
-      n0=iuds(2)/2
-      n1=iuds(3)/2
+      write(*,*)'In solu3plot',ifull,iuds,rc,thetain,nth
+      n0=max(iuds(2)/2,1)
+      n1=max(iuds(3)/2,1)
       idf=3
-c      id1=mod(idf,3)+1
-c      id2=mod(idf+1,3)+1
-c      ifixed=iuds(3)/2
       do i=1,iuds(1)
          xr=xn(i)
          yr=xn(iuds(1)+n0)
@@ -516,8 +510,8 @@ c Packaged version of potential error finding and plotting.
       include 'ndimsdecl.f'
       parameter (nd2=ndims*2)
       integer ifull(ndims),iuds(ndims)
-      real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
-      real u(ifull(1),ifull(2),ifull(3))
+      real cij(*)
+      real u(*)
       integer ifmax
       parameter (ifmax=100,Li=ifmax)
       real xprime(ndims),xff(ndims)
@@ -584,7 +578,8 @@ c         write(*,*)'f3,xff(idf)',f3,xff(idf),z0,z1,errmax
 c            write(*,*),i,j,iregion,xprime
 
             call getfield(
-     $           cij(nd2+1,1,1,1)
+c     $           cij(nd2+1,1,1,1)
+     $           cij(nd2+1)
      $           ,u,iLs,xn(ixnp(ide)+1),ide
      $           ,xff,iregion,ere(i,j))
 
@@ -642,7 +637,7 @@ c      write(*,*)errmtot,delta,first,delta
             call polymark(xp,yp,1,1)
          enddo
       enddo
-      write(*,'(2f8.4,a,i1,a,2f8.4,a,f8.4)')xff(idf),xprime(idf)
+      write(*,'(2f8.4,a,f8.4,a,f8.4,a,2f8.4)')xff(idf),xprime(idf)
      $     ,' Max Field Error=',errs,' dir ',ide
      $     ,', sd=',sqrt(errvar),sqrt(errvtot)
 c     $     ,' Contours',zclv(2)-zclv(1)

@@ -601,6 +601,7 @@ c      write(*,'(2f10.4)')((vdiag(i,j),fv(i,j),i=1,5),j=1,mdims)
 
       end
 c******************************************************************
+c 3-D only code.
       subroutine pltsubdist(icellin,jcellin,kcellin,vlimit,xnewlim
      $     ,cellvol)
       implicit none
@@ -631,6 +632,11 @@ c Distributions in ptaccom.f
       data idw/0/
       data iup/1/jicell/0/jjcell/0/jkcell/0/
 c------------------------------------------
+      if(ndims.ne.3)then
+         write(*,*)'Skipping pltsubdist 3-D only code for ndims=',ndims
+         write(*,*)'But it might work ok if cellvol and xnewlime are ok'
+         return
+      endif
       isw=0
       icell=icellin
       jcell=jcellin
@@ -880,3 +886,12 @@ c Z-component.
       vproject=v
       end
 
+c********************************************************************
+c Convert 3-D indices into pointer. Only used in pltsubdist.
+      function ip3index(ifull,i,j,k)
+      integer ifull(3),i,j,k 
+      ip3index=0
+      ip3index=(k-1)+ip3index*ifull(3)
+      ip3index=(j-1)+ip3index*ifull(2)
+      ip3index=(i-1)+ip3index*ifull(1)
+      end

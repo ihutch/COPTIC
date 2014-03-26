@@ -933,22 +933,6 @@ c      if(ipp.ne.0)
       write(*,'('' Ptch Mask= '',i11,'' ='',32i1)')iptch_mask,ipb
       end
 c*******************************************************************
-      function ireg3(i,j,k,ifull,cij)
-      integer i,j,k
-      include 'ndimsdecl.f'
-      include 'objcom.f'
-      integer ifull(3)
-      real cij(ndims*2+1,ifull(1),ifull(2),ifull(3))
-
-      ipoint=int(cij(ndims*2+1,i,j,k))
-      if(ipoint.ne.0)then
-         ireg3=idob_cij(iregion_cij,ipoint)
-      else
-         ireg3=99
-      endif
-
-      end
-c*******************************************************************
       subroutine objsetabc(iobject,a,b,c)
 c Set/Reset the boundary conditions for an object that has already been
 c read in. 

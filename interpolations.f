@@ -249,8 +249,8 @@ c On exit ix contains the corresponding (ndims)-dimensional indices.
          ind=ind2
       enddo
       ix(ndims)=ind+1
-      if(ind.gt.ifull(3)) write(*,*)'indexexpand index too big',index
-     $     ,' ndims=',ndims,' ifull=',ifull
+      if(ind.gt.ifull(ndims)) write(*,*)'indexexpand index too big'
+     $     ,index,' ndims=',ndims,' ifull=',ifull
       end
 c********************************************************************
 c Convert indices into pointer
@@ -273,15 +273,6 @@ c a zero-based pointer using the full dimensions ifull
       do id=ndims,1,-1
          ipfindex=(ix(id)-1)+ipfindex*ifull(id)
       enddo
-      end
-c********************************************************************
-c Convert 3-D indices into pointer.
-      function ip3index(ifull,i,j,k)
-      integer ifull(3),i,j,k 
-      ip3index=0
-      ip3index=(k-1)+ip3index*ifull(3)
-      ip3index=(j-1)+ip3index*ifull(2)
-      ip3index=(i-1)+ip3index*ifull(1)
       end
 c===================================================================
 c*************************************************************
