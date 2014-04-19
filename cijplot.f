@@ -3,7 +3,7 @@ c Assumed 3-D routine, plots representation of the cij/obj data.
       subroutine  cijplot(ifull,iuds,cij,rs,iosw)
       include 'ndimsdecl.f'
       integer iosw
-      integer ifull(ndims),iuds(ndims)
+      integer ifull(ndimsmax),iuds(ndimsmax)
       real cij(ndims*2+1,ifull(1),ifull(2),ifull(3))
       include 'objcom.f'
       include 'meshcom.f'

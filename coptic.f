@@ -7,6 +7,9 @@ c Object data storage.
 c Storage array spatial count size
 c Mesh spacing description structure includes grid decl too.
       include 'meshcom.f'
+c Coptic here begins to assume it is 3-D. 
+c However allocation is to ndimsmax to allow adjustment to ndims.
+c Consequently it may be feasible to put na_k=1 and do 2-d.
 c coptic runs correctly with unequal dimensions but phiexamine does not.
       parameter (Li1=na_i,Li2=Li1*na_j,Li3=Li2*na_k)
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
@@ -14,7 +17,7 @@ c Running averages.
       real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
 c
       real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k)
-      real cij(2*ndims+1,na_i,na_j,na_k)
+      real cij(2*ndimsmax+1,na_i,na_j,na_k)
 c Diagnostics (moments)
       integer ndiagmax
       parameter (ndiagmax=7)
@@ -25,17 +28,17 @@ c Distribution functions
 c      real fv(ndistmax,na_i,na_j,na_k)
 
 c Used dimensions, Full dimensions. Used dims-2
-      integer iuds(ndims),ifull(ndims),ium2(ndims)
+      integer iuds(ndimsmax),ifull(ndimsmax),ium2(ndimsmax)
 c Processor cartesian geometry can be set by default.
       integer nblksi,nblksj,nblksk
       parameter (nblksi=1,nblksj=1,nblksk=1)
-      integer idims(ndims)
+      integer idims(ndimsmax)
 c mpi process information.
       include 'myidcom.f'
 c Common data containing the BC-object geometric information
       include '3dcom.f'
 c Structure vector needed for finding adjacent u values.
-      integer iLs(ndims+1)
+      integer iLs(ndimsmax+1)
 c Particle common data
       include 'partcom.f'
 c Plasma common data
@@ -62,13 +65,13 @@ c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical lmyidhead,lphiplot,ldenplot
       integer ipstep,iwstep,idistp,idcount,icijcount,lrestart
 c Diagnostics etc
-      real zp(na_m,na_m2,ndims)
-      real xlimit(2,ndims),vlimit(2,ndims)
-      real xnewlim(2,ndims)
+      real zp(na_m,na_m2,ndimsmax)
+      real xlimit(2,ndimsmax),vlimit(2,ndimsmax)
+      real xnewlim(2,ndimsmax)
 c Input for face boundary data:
-      real CFin(3+ndims,2*ndims)
+      real CFin(3+ndimsmax,2*ndimsmax)
 c Center of objplot final plot.
-      real cv(ndims)
+      real cv(ndimsmax)
 
 c Set up the structure vector.
       data iLs/1,Li1,Li2,Li3/
@@ -91,8 +94,13 @@ c for solutions of volumes etc. Each node then does the same.
 c Defaults:
 c Determine what reinjection scheme we use. Sets rjscheme.
       include 'REINJECT.f'
-
-      do id=1,ndims
+c This circumlocution to silence warnings.
+      i1=ndims+1
+      do id=i1,ndimsmax
+         ifull(id)=1
+         iuds(id)=1
+      enddo
+      do id=1,ndimsmax
 c Use very big xlimits by default to include whole domain
          xlimit(1,id)=-500.
          xlimit(2,id)=500.
@@ -179,8 +187,10 @@ c Now print out the result of the initialization.
          if(lmyidhead)call bdyfaceinit(-2,CFin(1,1))
       endif
 c-----------------------------------------------------------------
+      ipoint=0
       do id=1,ndims
          ium2(id)=iuds(id)-2
+         ipoint=ipoint+iLs(id)
       enddo         
 c---------------------------------------------------------------
 c      write(*,*)'Doing ninjcalc',n_part,ripernode,dt
@@ -193,10 +203,9 @@ c Initialize the fluxdata storage and addressing before cijroutine
       call fluxdatainit(myid)
       if(lmyidhead)write(*,*)'Initializing the stencil data cij.'
 c Initialize cij:
-      ipoint=iLs(1)+iLs(2)+iLs(3)
       error=0.
       call mditerarg(cijroutine,ndims,ifull,ium2,ipoint,
-     $     cij(1,1,1,1),debyelen,error,dum4)
+     $     cij(1,1,1,1),debyelen,error,dum4,dum5)
       if(error.ne.0.)then
          icijcount=icijcount+1
          if(icijcount.le.2)then
@@ -216,11 +225,14 @@ c Here we try to read the stored geometry volume data.
 c don't calculate volumes testing.      istat=1
       if(istat.eq.0)then
 c Calculate the nodal volumes for all non-edge points.
-         ipoint=iLs(1)+iLs(2)+iLs(3)
+         ipoint=0
+         do id=1,ndims
+            ipoint=ipoint+iLs(id)
+         enddo         
          if(lmyidhead)write(*,*)
      $        'Starting volume setting. Be patient this first time...'
          call mditerarg(volnode,ndims,ifull,ium2,ipoint,
-     $        volumes,cij,dum3,dum4)
+     $        volumes,cij,dum3,dum4,dum5)
          if(lmyidhead)write(*,*)'Finished volume setting'
 c If head, write the geometry data if we've had to calculate it.
          if(lmyidhead)call stored3geometry(volumes,iuds,ifull,istat
@@ -232,7 +244,8 @@ c Initialize the region flags in the object data
       if(lmyidhead)call reportfieldmask()
 c Set an object pointer region -1 for all the edges.
       ipoint=0
-      call mditerarg(cijedge,ndims,ifull,iuds,ipoint,cij,dum2,dum3,dum4)
+      call mditerarg(cijedge,ndims,ifull,iuds,ipoint,cij,dum2,dum3,dum4
+     $     ,dum5)
 c---------------------------------------------
       if(.not.lmyidhead)then
 c Don't do plotting from any node except the master.
@@ -390,11 +403,10 @@ c Acceleration code.
          if(ninjcomp.ne.0)nrein=ninjcomp
 
          call mditerset(psum,ndims,ifull,iuds,0,0.)
-c         write(*,*)'chargetomesh calling, ndiags',ndiags
-         call chargetomesh(psum,ndims,iLs,diagsum,ndiags)
-         call diagperiod(psum,ndims,ifull,iuds,iLs,1)
+         call chargetomesh(psum,iLs,diagsum,ndiags)
+         call diagperiod(psum,ifull,iuds,iLs,1)
 c The following call is marginally more efficient than diagperiod call.
-c         call psumperiod(psum,ndims,ifull,iuds,iLs)
+c         call psumperiod(psum,ifull,iuds,iLs)
 c But it is not necessary so simplify to one period routine.
 c Psumreduce takes care of the reductions that were in rhoinfcalc 
 c and explicit psum. It encapsulates the iaddtype iaddop generation.
@@ -404,12 +416,12 @@ c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
 c Convert psums to charge density, q. Remember external psumtoq!
          call mditerarg(psumtoq,ndims,ifull,ium2,
-     $        0,psum(2,2,2),q(2,2,2),volumes(2,2,2),u(2,2,2))
+     $        0,psum(2,2,2),q(2,2,2),volumes(2,2,2),u(2,2,2),rhoinf)
          istepave=min(nf_step,iavesteps)
 
          if(debyelen.eq.0)then
             call mditerarg(quasineutral,ndims,ifull,ium2,
-     $        0,q(2,2,2),u(2,2,2),volumes(2,2,2),dum4)
+     $        0,q(2,2,2),u(2,2,2),volumes(2,2,2),dum4,dum5)
             call bdyslope0(ndims,ifull,iuds,cij,u,q)
          else
             call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset,faddu
@@ -477,7 +489,7 @@ c out, if we are doing diagnostics.
             if(ndiags.gt.0)then
 c Reduce the data
                call diagreduce(diagsum,ndims,ifull,iuds,iLs,ndiags)
-               call diagperiod(diagsum,ndims,ifull,iuds,iLs,ndiags)
+               call diagperiod(diagsum,ifull,iuds,iLs,ndiags)
 c Do any other processing? Here or later?
 c               call diagstep(iLs,diagsum,ndiags)
 c Write the ave potential into the ndiags+1 slot of diagsum (by adding

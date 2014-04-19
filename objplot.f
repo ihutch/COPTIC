@@ -10,10 +10,10 @@ c 2:            according to average flux-density already in nf_step+2
       include '3dcom.f'
       real objg(odata)
       real fmin,fmax
-      real xe(ndims)
+      real xe(ndimsmax)
       parameter (nadef=20,ncosdef=20,pi=3.141593)
       parameter (ncorn=5)
-      real rface(ncorn,ndims)
+      real rface(ncorn,ndimsmax)
       integer wp(ncorn),wc(ncorn)
 c      character*20 string
       logical lfw
@@ -120,11 +120,11 @@ c 2:            according to average flux-density already in nf_step+2
       include '3dcom.f'
       real objg(odata)
 c      character*20 string
-      integer iov(ndims)
-      real xe(ndims),objn1(0:ndims-1)
+      integer iov(ndimsmax)
+      real xe(ndimsmax),objn1(0:ndimsmax-1)
       parameter (ncorn=5)
-      real rface(ncorn,ndims),rfc(ndims)
-      integer iof(ncorn,ndims-1)
+      real rface(ncorn,ndimsmax),rfc(ndimsmax)
+      integer iof(ncorn,ndimsmax-1)
       data iof/-1,1,1,-1,-1,   -1,-1,1,1,-1/
 
       ifobj=nf_map(iobj)
@@ -193,8 +193,8 @@ c 2:            according to average flux-density already in nf_step+2
       include '3dcom.f'
       parameter (nadef=20,nzdef=5,pi=3.141593)
       parameter (ncorn=5)
-      real rface(ncorn,ndims)
-      real xe(ndims)
+      real rface(ncorn,ndimsmax)
+      real xe(ndimsmax)
       real objg(odata)
       logical lfw
       integer wp(ncorn),wc(ncorn)
@@ -345,8 +345,8 @@ c 2:            according to average flux-density already in nf_step+2
       include '3dcom.f'
       parameter (nadef=20,nzdef=5,pi=3.141593)
       parameter (ncorn=5)
-      real rface(ncorn,ndims)
-      real xe(ndims),xcontra(ndims)
+      real rface(ncorn,ndimsmax)
+      real xe(ndimsmax),xcontra(ndimsmax)
       real objg(odata)
       logical lfw
       integer wp(ncorn),wc(ncorn)
@@ -503,12 +503,12 @@ c 2:            according to average flux-density already in nf_step+2
       include '3dcom.f'
       real objg(odata)
 c      character*20 string
-      integer iov(ndims)
-      real xe(ndims),xn(ndims),objn1(0:ndims-1)
-      real xi(ndims)
+      integer iov(ndimsmax)
+      real xe(ndimsmax),xn(ndimsmax),objn1(0:ndimsmax-1)
+      real xi(ndimsmax)
       parameter (ncorn=5)
-      real rface(ncorn,ndims),rfc(ndims)
-      integer iof(ncorn,ndims-1)
+      real rface(ncorn,ndimsmax),rfc(ndimsmax)
+      integer iof(ncorn,ndimsmax-1)
       data iof/-1,1,1,-1,-1,   -1,-1,1,1,-1/
 
 
@@ -600,7 +600,7 @@ c isign determines the direction of such writing.
       include '3dcom.f'
       include 'vtkcom.f'
       parameter (ncorn=5)
-      real rface(ncorn,ndims)
+      real rface(ncorn,ndimsmax)
       character*20 string
 
       if(iosw.ne.0.or.vtkflag.eq.1)then
@@ -699,7 +699,7 @@ c rv gives the Window size, cv the center of the view.
       include '3dcom.f'
       include 'sectcom.f'
       include 'vtkcom.f'
-      real cv(ndims)
+      real cv(ndimsmax)
       integer index(ngeomobjmax)
       real zta(ngeomobjmax)
       character*10 string

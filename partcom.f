@@ -1,6 +1,8 @@
 c Particle data common.
-      integer n_partmax,npdim
-      parameter (n_partmax=4000000,npdim=3)
+      integer n_partmax
+      parameter (n_partmax=4000000)
+c      integer npdim
+c      parameter (npdim=3)
 
 c Number of actual active particles < n_partmax
       integer n_part
@@ -8,7 +10,7 @@ c Maximum particle slot that we must examine
       integer ioc_part
 c Particle position and velocity (3D cartesian) in the order:
 c (x,y,z) (vx,vy,vz) (xm,ym,zm) where xm... is the mesh position.
-      real x_part(3*npdim,n_partmax)
+      real x_part(3*ndims,n_partmax)
 c Particle flag(s).
       integer if_part(n_partmax)
 c Particle previous cycle time step
@@ -35,9 +37,9 @@ c Factor by which we relax the rhoinf calculation. 1 immediate, 0 never.
       real crelax,caverein,chi
 c Flags for which dimensions are periodic or absorbing for particles.
 c 0 open, 1 lower absorbs, 2 upper absorbs, 3 both absorb, 4 periodic
-      integer ipartperiod(npdim)
+      integer ipartperiod(ndims)
 c Effective face area for purposes of reinjection. Small if periodic.
-      real fcarea(npdim)
+      real fcarea(ndims)
 c Whether not all directions of particles are periodic
       logical lnotallp
       common/particles/n_part,x_part,if_part,iregion_part,ioc_part

@@ -119,6 +119,7 @@ c actual cases. Don't want to use too much, or too little.
       real dt2,rhoinf2,phirein2
       logical ldiags2
 
+      include 'ndimsdecl.f'
       include 'partcom.f'
       integer i,j,ic,ii,jj
       logical linit,lend

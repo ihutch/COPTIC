@@ -943,6 +943,7 @@ c into a potential at which current density is zero.
 Contains rmtoz
       include 'plascom.f'
 Contains dt and rhoinf:
+      include 'ndimsdecl.f'
       include 'partcom.f'
 c For preventing logarithm infinities when count is zero.
       parameter (small=1.e-2)

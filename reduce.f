@@ -41,7 +41,8 @@ c********************************************************************
       integer ifull(ndims),iuds(ndims),iLs(ndims+1)
       real psum(*)
       include 'mpif.h'
-      include 'partcom.f'
+c      include 'ndimsdecl.f'
+c      include 'partcom.f'
 c Operator
       external addsubarray_MPI
 
@@ -82,7 +83,8 @@ c Sum reduce the diagnostic arrays.
 c Number of diagnostics ndiags
       integer ndiags
       include 'mpif.h'
-      include 'partcom.f'
+c      include 'ndimsdecl.f'
+c      include 'partcom.f'
 c Operator
       external addarray_MPI
 

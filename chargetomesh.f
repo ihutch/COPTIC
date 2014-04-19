@@ -1,4 +1,5 @@
-      subroutine chargetomesh(psum,mdims,iLs,diagsum,ndiags)
+c********************************************************************
+      subroutine chargetomesh(psum,iLs,diagsum,ndiags)
 c Assign charge and other moments to the mesh accumulators.
 c Particle weight sum, having structure iLs, and (possible) diagnostics.
 c Which are enumerated up to ndiags in their trailing dimension.
@@ -6,7 +7,7 @@ c Which are enumerated up to ndiags in their trailing dimension.
       real diagsum(*)
 c mesh data, notably ndims, since we don't pass it:
       include 'ndimsdecl.f'
-      include 'meshcom.f'
+c      include 'meshcom.f'
       integer iLs(ndims+1)
 
       include 'partcom.f'
@@ -15,70 +16,86 @@ c On entry, psum ought to have been initialized to zero.
 c For all (possibly-active) particles.
       do i=1,ioc_part
          if(if_part(i).ne.0)then
-            inewregion=insideall(ndims,x_part(1,i))
-c            x1=x_part(ndims*2+1,i)
-c Alternative to partlocate:
-            iu=0
-            do id=1,ndims
-               ix=int(x_part(ndims*2+id,i))
-               iu=iu+(ix-1)*iLs(id)
-            enddo
-c Cycle through the vertices of the box we are in.
-            do ii=0,2**ndims-1
-               ii1=ii
-               iinc=iu
-               fac=1.
-c Calculate the index and weight of this vertex.
-               do ik=1,ndims
-c There may be bit-manipulation routines to accelerate this.
-c But likely not by very much since the main cost is divide+mult by 2
-                  ii2=ii1/2
-                  ip=ii1-2*ii2
-                  ii1=ii2
-                  iinc=iinc+ip*iLs(ik)
-                  xm=x_part(ndims*2+ik,i)
-                  ix=int(xm)
-                  xf=xm-ix
-                  if(ip.eq.1)then
-c                     fac=fac*xfrac(ik)
-                     fac=fac*xf
-                  else
-c                     fac=fac*(1.-xfrac(ik))
-                     fac=fac*(1.-xf)
-                  endif
-               enddo 
-c Add to the particle sum the fraction for this vertex.
-c               write(*,*)'ii,iu,iinc,fac',ii,iu,iinc,fac
-               psum(1+iinc)=psum(1+iinc)+fac
-               if(ndiags.gt.0)then
-c Do something with diagnostics. 
-c Assumption here is diags1 n, diags2-4 v, diags5-7 v^2.
-                  diagsum(1+iinc)=diagsum(1+iinc)+fac
-                  do k=1,ndiags-1
-c Six moments. 3 for v and 3 for v^2.
-                     temp=x_part(ndims+1+mod(k-1,ndims),i)
-                     if(k.gt.ndims)temp=temp*temp
-                     diagsum(1+iinc+k*iLs(ndims+1))=
-     $                    diagsum(1+iinc+k*iLs(ndims+1))+
-     $                    fac*temp
-                  enddo
-               endif
-            enddo
+            call achargetomesh(i,psum,iLs,diagsum,ndiags)
          endif
       enddo
 c End of charge deposition.
       end
 c********************************************************************
-      subroutine psumperiod(psum,mdims,ifull,iaux,iLs)
+      subroutine achargetomesh(i,psum,iLs,diagsum,ndiags)
+c Assign charge and other moments to the mesh accumulators,
+c for a single particle i
+c Particle weight sum, having structure iLs, and (possible) diagnostics.
+c Which are enumerated up to ndiags in their trailing dimension.
+      real psum(*)
+      real diagsum(*)
+c mesh data, notably ndims, since we don't pass it:
+      include 'ndimsdecl.f'
+c      include 'meshcom.f'
+      integer iLs(ndims+1)
+      include 'partcom.f'
+
+      if(if_part(i).ne.0)then
+         inewregion=insideall(ndims,x_part(1,i))
+c Alternative to partlocate:
+         iu=0
+         do id=1,ndims
+            ix=int(x_part(ndims*2+id,i))
+            iu=iu+(ix-1)*iLs(id)
+         enddo
+c Cycle through the vertices of the box we are in.
+         do ii=0,2**ndims-1
+            ii1=ii
+            iinc=iu
+c We could use this statement to implement particle weighting.
+            fac=1.
+c Calculate the index and weight of this vertex.
+            do ik=1,ndims
+c There may be bit-manipulation routines to accelerate this.
+c But likely not by very much since the main cost is divide+mult by 2
+               ii2=ii1/2
+               ip=ii1-2*ii2
+               ii1=ii2
+               iinc=iinc+ip*iLs(ik)
+               xm=x_part(ndims*2+ik,i)
+               ix=int(xm)
+               xf=xm-ix
+               if(ip.eq.1)then
+                  fac=fac*xf
+               else
+                  fac=fac*(1.-xf)
+               endif
+            enddo 
+c Add to the particle sum the fraction for this vertex.
+c               write(*,*)'ii,iu,iinc,fac',ii,iu,iinc,fac
+            psum(1+iinc)=psum(1+iinc)+fac
+            if(ndiags.gt.0)then
+c Do something with diagnostics. 
+c Assumption here is diags1 n, diags2-4 v, diags5-7 v^2.
+               diagsum(1+iinc)=diagsum(1+iinc)+fac
+               do k=1,ndiags-1
+c Six moments. 3 for v and 3 for v^2.
+                  temp=x_part(ndims+1+mod(k-1,ndims),i)
+                  if(k.gt.ndims)temp=temp*temp
+                  diagsum(1+iinc+k*iLs(ndims+1))=
+     $                 diagsum(1+iinc+k*iLs(ndims+1))+
+     $                 fac*temp
+               enddo
+            endif
+         enddo
+      endif
+
+      end
+c********************************************************************
+      subroutine psumperiod(psum,ifull,iaux,iLs)
 c If there are periodic particles in any dimension, do the periodic
 c exchange sum.
-      integer mdims,ifull(mdims),iaux(mdims)
-c,iuds(ndims)
       real psum(*)
       include 'ndimsdecl.f'
+      integer ifull(ndims),iaux(ndims)
       integer iLs(ndims+1)
 
-      include 'meshcom.f'
+c      include 'meshcom.f'
       integer iview(3,ndims),indi(ndims)
       integer istart,iend,istride
       parameter (istart=1,iend=2,istride=3)
@@ -109,14 +126,14 @@ c Other-1=Other-1 + Face
       enddo
       end
 c********************************************************************
-      subroutine diagperiod(diagsum,mdims,ifull,iaux,iLs,ndiags)
+      subroutine diagperiod(diagsum,ifull,iaux,iLs,ndiags)
 c If there are periodic particles in any dimension, do the periodic
 c exchange sum.
-      integer mdims,ifull(mdims),iaux(mdims)
       real diagsum(*)
-      integer iLs(mdims+1)
       include 'ndimsdecl.f'
-      include 'meshcom.f'
+      integer ifull(ndims),iaux(ndims)
+      integer iLs(ndims+1)
+c      include 'meshcom.f'
       integer iview(3,ndims),indi(ndims)
       integer istart,iend,istride
       parameter (istart=1,iend=2,istride=3)
@@ -155,14 +172,12 @@ c Diagnostic particles must be transferred, not just added.
 
 c********************************************************************
       subroutine psumtoq(inc,ipoint,indi,ndims,iLs,iused,
-     $     psum,rho,volumes,u)
+     $     psum,rho,volumes,u,rhoinf)
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
-      real psum(*),rho(*),volumes(*),u(*)
+      real psum(*),rho(*),volumes(*),u(*),rhoinf
       real faddu
       external faddu
-c Partcom gives us rhoinf:
-      include 'partcom.f'
 
 c Silence warnings with spurious access.
       ind=iLs

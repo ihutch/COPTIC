@@ -39,6 +39,7 @@ c File name:
       character*(*) name
 c My mpi id
       integer myid
+      include 'ndimsdecl.f'
       include 'partcom.f'
       include 'plascom.f'
       include 'ran1com.f'
@@ -61,7 +62,7 @@ c      write(*,*)name
       write(22)ioc_part
       write(22)iregion_part,n_part,dt,ldiags,rhoinf,nrein,
      $     phirein,numprocs,
-     $     ((x_part(j,i),j=1,3*npdim),if_part(i),i=1,ioc_part)
+     $     ((x_part(j,i),j=1,3*ndims),if_part(i),i=1,ioc_part)
       write(22)(dtprec(i),i=1,ioc_part)
       write(22)rmtoz,Bt,Bfield,vpar,vperp
       write(22)caverein,chi
@@ -79,6 +80,7 @@ c*****************************************************************
 c Return ierr bit(0) no file. bit(1) no dtprec. bit(2) no Bfield etc.
       character*(*) name
       integer ierr
+      include 'ndimsdecl.f'
       include 'partcom.f'
       include 'plascom.f'
       include 'ran1com.f'
@@ -92,7 +94,7 @@ c Return ierr bit(0) no file. bit(1) no dtprec. bit(2) no Bfield etc.
       read(23)ioc_part
       read(23)iregion_part,n_part,dt,ldiags,rhoinf,nrein,
      $     phirein,numprocs,
-     $     ((x_part(j,i),j=1,3*npdim),if_part(i),i=1,ioc_part)
+     $     ((x_part(j,i),j=1,3*ndims),if_part(i),i=1,ioc_part)
 c Extra particle data written since 30 July 2010.
       read(23,err=102,end=102)(dtprec(i),i=1,ioc_part)
       read(23,err=104,end=104)rmtoz,Bt,Bfield,vpar,vperp

@@ -76,9 +76,9 @@ c Actual numbers of quantities, objects and steps <= maxes.
 c The number of positions at which this quantity is measured:
       integer nf_posno(nf_quant,nf_obj)
 c The dimensional structure of these: nf_posno = prod nf_dimlens
-      integer nf_dimlens(nf_quant,nf_obj,ndims)
+      integer nf_dimlens(nf_quant,nf_obj,ndimsmax)
 c The offset index to the start of cube faces
-      integer nf_faceind(nf_quant,nf_obj,2*ndims)
+      integer nf_faceind(nf_quant,nf_obj,2*ndimsmax)
 c Reverse mapping to the geomobj number from nf_obj number
       integer nf_geommap(nf_obj)
 c The address of the data-start for the quantity, obj, step.

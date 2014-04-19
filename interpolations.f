@@ -362,14 +362,15 @@ c Non-boundary interpolation.
      $        +(dx1-2.*x)/(dx0+dx1) * (u0-um)/dx0
          return
       endif
-c      write(*,'(a,/,i4,10f6.2)')
-c     $     'icp,   x,   dxf0, dxf1, dxd0, dxd1, dx0,  dx1, um, u0, up',
-c     $     icp,x,dxf0,dxf1,dxd0,dxd1,dx0,dx1,um,u0,up
-c      write(*,*)'fraction,boa,coa',fraction,boa,coa
 c General interpolation
       gradinterp= (2.*x+dxf0)/(dxf0+dxf1) * (up-u0)/dxd1
      $     +(dxf1-2.*x)/(dxf0+dxf1) * (u0-um)/dxd0
-
+      if(.not.abs(gradinterp).ge.0)then
+      write(*,'(a,/,i4,10f6.2,i3)')
+     $     'icp,   x,   dxf0, dxf1, dxd0, dxd1, dx0,  dx1, um, u0, up ',
+     $     icp,x,dxf0,dxf1,dxd0,dxd1,dx0,dx1,um,u0,up,id
+      write(*,*)'fraction,boa,coa',fraction,boa,coa
+      endif
       end
 
 c*******************************************************************
@@ -515,7 +516,7 @@ c In case this was not set previously
       if(.not.abs(uprime).lt.1.e20)then
          write(*,*)'Getlocalregion excessive uprime',icp0,xm,ix,ixiu
      $        ,iregion
-         write(*,*) dx0,dx1,   uprime,up,u0,um,u(1),iuinc
+         write(*,*) 'dx0,1',dx0,dx1,' uprime',uprime,up,u0,um,u(1),iuinc
       endif
 
       end

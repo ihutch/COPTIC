@@ -10941,3 +10941,51 @@ volint.f       stored3geom. Probably will work.
 
 By test inspection, these seem to be the only places left where the 
 ifull is explicitly taken to be a 3-D array, and referenced that way.
+
+There may well be reason to consider defining two versions of ndims.
+One would always be 3 to give the maximum dimensions allowed. 
+The other would be the actual number of active dimensions in this
+compile. The above things that might work require there to be length
+three vectors like ifull, iuds etc. They would use ndimsmax.
+
+Actually the coptic main program already is assuming the length of
+ifull because of its data statements.
+
+Implemented ndimsmax in ndimsdecl.f so as to be able to test whether
+things will compile with ndims set to 2. 
+
+Try ndims=2. This triggers a number of compile errors.
+Change the offending array definitions to ndimsmax.
+Then finally we can compile, but there are various errors.
+Progress till now is that we have errors in getlocal that seem to arise
+from the way cij has been initialized. No time to go further at the moment.
+To go back to 2d tests just set ndims=2 in ndimsdecl.f.
+
+19 Apr 14
+Remove ndims from the argument list of 
+       chargetomesh
+       psumperiod
+       diagperiod
+Remove meshcom also from these. It was there only for declarations
+that are now in ndimsdecl (I think).
+make geometry shows no differences.
+
+Make the charge assignment for each particle a separate routine.
+There might be slightly extra cost, but it is better structure.
+
+Remove all references to npdim, the dimension parameter in partcom
+from everything outside partcom.
+It is tricky to convert partcom to using ndims because the reduce
+routines have ndims as an argument and use partcom.
+I see no reason why they need partcom. And in fact it makes no difference
+if partcom inclusion is commented out.
+
+There's a problem with psumtoq. It uses partcom for rhoinf. That's a
+very bad use, but how does psumtoq get it otherwise? It is already using
+four arguments. One fix would be to increase the number of arguments
+in mditerarg to 5. That ought not to break anything else. 
+Did that and had to add some extra dum5 arguments to silence warnings.
+make geometry ok.
+
+Added ndimsdecl.f a few places. Then we can compile with no dependence
+on npdim from partcom.f. We've completely removed npdim in effect.

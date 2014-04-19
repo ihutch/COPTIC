@@ -2,6 +2,7 @@ c*********************************************************************
 c Wrapper:
       subroutine reinject(xr,ilaunch,cdummy)
       include 'colncom.f'
+      include 'ndimsdecl.f'
       include 'partcom.f'
       if(colntime.eq.0. .or. colpow.eq.0.)then
          call cartreinject(xr,ilaunch,caverein)
@@ -790,6 +791,7 @@ c********************************************************************
       subroutine cavereinset(phi)
 c Null
       include 'reincom.f'
+      include 'ndimsdecl.f'
       include 'partcom.f'
        caverein=crelax*phi+(1.-crelax)*caverein
 c      write(*,*)'CAvereinset',caverein
@@ -958,6 +960,7 @@ c Account for the possibility of infinite Bfield which
 c one-dimensionalizes the problem, for the parameters of this plasma
 c given in
       include 'plascom.f'
+      include 'ndimsdecl.f'
       include 'partcom.f'
       include 'colncom.f'
       real foneresult(nplasdims)

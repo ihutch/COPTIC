@@ -1,6 +1,8 @@
-c Dependent on having meshcom loaded already, defining ndims.
+c Dependent on having ndimsdecl.f loaded already, defining ndimsmax.
+c It is not clear whether mdims can be set equal to ndims and eliminated
+c Don't change it without finding out for sure.
       integer nptdiag,mdims
-      parameter (nptdiag=400,mdims=ndims)
+      parameter (nptdiag=400,mdims=ndimsmax)
       real fv(nptdiag,mdims),cumfv(0:nptdiag,mdims)
       real px(nptdiag,mdims)
       real vdiag(nptdiag,mdims)

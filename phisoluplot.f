@@ -55,7 +55,7 @@ c Do some analytic checking of the case with a fixed potential sphere
 c inside a logarithmic derivative boundary condition. 1/r solution.
       include 'ndimsdecl.f'
       include 'meshcom.f'
-      integer iuds(ndims),ifull(ndims)
+      integer iuds(ndimsmax),ifull(ndimsmax)
       real u(ifull(1),ifull(2),ifull(3))
       errmax=0.
       errvar=0.
@@ -119,7 +119,7 @@ c Master plotting routine.
       subroutine solu3plot(ifull,iuds,u,cij,
      $     phi,phiinf,rc,thetain,nth)
       include 'ndimsdecl.f'
-      integer ifull(ndims),iuds(ndims)
+      integer ifull(ndimsmax),iuds(ndimsmax)
       integer iLs(ndims+1)
       real u(*),cij(*)
       iLs(1)=1
@@ -137,8 +137,8 @@ c Packaged version of plotting.
       subroutine slicesolu(ifull,iuds,u,cij)
 
       include 'ndimsdecl.f'
-      parameter (nd2=ndims*2)
-      integer ifull(ndims),iuds(ndims)
+      parameter (nd2=ndimsmax*2)
+      integer ifull(ndimsmax),iuds(ndimsmax)
       real cij(*),u(*)
       integer ifmax
       parameter (ifmax=300,Li=ifmax)
@@ -157,19 +157,19 @@ c Packaged version of plotting.
       subroutine gradradial(ifull,iLs,u,cij,phi,phiinf,rc,thetain,nth)
 c     $     ,rs)
       include 'ndimsdecl.f'
-      parameter (nd2=ndims*2)
-      integer ifull(ndims)
+      parameter (nd2=ndimsmax*2)
+      integer ifull(ndimsmax)
 c     integer iuds(ndims)
-      real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
+      real cij(2*ndimsmax+1,ifull(1),ifull(2),ifull(3))
       real u(ifull(1),ifull(2),ifull(3))
       integer ifmax
       parameter (ifmax=500,Li=ifmax)
       real uanal(ifmax)
       real rfield(ifmax),tfield(ifmax)
-      real rprime(ifmax),xprime(ndims,ifmax)
-      real xfrac(ndims),xff(ndims),upnd(ndims,ifmax)
-      real upsimple(ndims,ifmax)
-      integer itemp(ndims)
+      real rprime(ifmax),xprime(ndimsmax,ifmax)
+      real xfrac(ndims),xff(ndims),upnd(ndimsmax,ifmax)
+      real upsimple(ndimsmax,ifmax)
+      integer itemp(ndimsmax)
       real rsimple(ifmax),region(ifmax)
       integer iLs(ndims+1)
 
@@ -343,14 +343,14 @@ c Packaged version of potential plotting.
       subroutine phiradial(ifull,iLs,cij,
      $     phi,phiinf,rc,thetain,nth,rs)
       include 'ndimsdecl.f'
-      parameter (nd2=ndims*2)
-      integer ifull(ndims)
+      parameter (nd2=ndimsmax*2)
+      integer ifull(ndimsmax)
       real cij(*)
       integer ifmax
       parameter (ifmax=1000,Li=ifmax)
       real uanal(ifmax)
       real rfield(ifmax),tfield(ifmax)
-      real rprime(ifmax),xprime(ndims,ifmax)
+      real rprime(ifmax),xprime(ndimsmax,ifmax)
       real xfrac(ndims),xff(ndims)
 c      real upsimple(ndims,ifmax),upnd(ndims,ifmax)
       integer itemp(ndims)
@@ -508,13 +508,13 @@ c***************************************************************
 c Packaged version of potential error finding and plotting.
       subroutine eremesh(ifull,iLs,iuds,u,cij,phi,phiinf,rc)
       include 'ndimsdecl.f'
-      parameter (nd2=ndims*2)
-      integer ifull(ndims),iuds(ndims)
+      parameter (nd2=ndimsmax*2)
+      integer ifull(ndimsmax),iuds(ndimsmax)
       real cij(*)
       real u(*)
       integer ifmax
       parameter (ifmax=100,Li=ifmax)
-      real xprime(ndims),xff(ndims)
+      real xprime(ndimsmax),xff(ndims)
       real ere(ifmax,ifmax),xcont(ifmax),ycont(ifmax)
       character cwork(ifmax,ifmax)
       real zclv(30)

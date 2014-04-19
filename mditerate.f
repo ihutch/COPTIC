@@ -48,17 +48,17 @@ c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
 
       end
 c***********************************************************************
-      subroutine mditerarg(routine,ndims,ifull,iused,ipin,t,u,v,w)
+      subroutine mditerarg(routine,ndims,ifull,iused,ipin,t,u,v,w,x)
 c multidimensional iteration. For dimensions ndims, iterate over the
 c array whose full dimensions are ifull(ndims) used iused(ndims).
-c This version allows four (array) arguments: t,u,v,w to be passed.
+c This version allows five (array) arguments: t,u,v,w,x to be passed.
 c At each iteration, the routine (which should be declared external)
 c
-c         routine(inc,ipoint,indi,ndims,iLs,iused,t,u,v,w) is called,
+c         routine(inc,ipoint,indi,ndims,iLs,iused,t,u,v,w,x) is called,
 c whose arguments are
 c      integer ipin,inc
 c      integer indi(ndims),iused(ndims)
-c      real t(*),u(*),v(*),w(*)
+c      real t(*),u(*),v(*),w(*),x(*)
 c
 c which accepts a pointer to the address in the array structure: ipoint
 c referred to the full dimensions of u, so u(1+ipoint) is processed.  It
@@ -142,7 +142,7 @@ c We're at the base level and have succeeded in incrementing.
 c Do whatever we need to and increment indi(1) and ipoint
 c        write(*,'(3i3,$)')(iused(ii),ii=1,3)
 c        write(*,'(3i3,i7,i5)')(indi(i),i=1,ndims),ipoint,inc
-         call routine(inc,ipoint,indi,ndims,iLs,iused,t,u,v,w)
+         call routine(inc,ipoint,indi,ndims,iLs,iused,t,u,v,w,x)
          indi(1)=indi(1)+inc
          ipoint=ipoint+inc
          goto 101
@@ -186,7 +186,7 @@ c On exit indi contains the corresponding (ndims)-dimensional offsets.
       enddo
       indi(ndims)=ind
       if(ind.gt.ifull(ndims)) write(*,*)'offsetexpand index too big'
-     $     ,index
+     $     ,index,'  ndims=',ndims,' ifull=',ifull
       end
 c******************************************************************
 c New code for the rationalized mditerator.

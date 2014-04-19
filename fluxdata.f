@@ -410,7 +410,7 @@ c Determine (all) the objects crossed and call objsect for each.
       if(idp.ne.idiff*2)then
          call objsect(i,iobj,ierr,dtpos)
          if(ierr.gt.0)then
-            ireg=insideall(npdim,x_part(1,i))
+            ireg=insideall(ndims,x_part(1,i))
             r=0.
             r1=0.
             do id=1,3
@@ -450,7 +450,7 @@ c
       include 'partcom.f'
       include 'sectcom.f'
 
-      real x1(npdim),x2(npdim)
+      real x1(ndims),x2(ndims)
       integer isc
       data isc/0/
 
@@ -467,27 +467,27 @@ c Use only bottom 8 bits:
       itype=itype-256*(itype/256)
 
 c Get the positions:
-      do i=1,npdim
+      do i=1,ndims
          x1(i)=x_part(i,j)-dtpos*x_part(i+3,j)
          x2(i)=x_part(i,j)
       enddo
       if(itype.eq.1)then
 c Sphere intersection. Return the bin number and direction ijbin,sd.
-         call spherefsect(npdim,x1,x2,iobj,ijbin,sd,fraction,ijbin2)
+         call spherefsect(ndims,x1,x2,iobj,ijbin,sd,fraction,ijbin2)
       elseif(itype.eq.2)then
 c Cube intersection. Return the bin number and direction ijbin,sd.
-         call cubefsect(npdim,x1,x2,iobj,ijbin,sd,fraction)
+         call cubefsect(ndims,x1,x2,iobj,ijbin,sd,fraction)
       elseif(itype.eq.3)then
 c Cylinder
-         call cylfsect(npdim,x1,x2,iobj,ijbin,sd,fraction)
+         call cylfsect(ndims,x1,x2,iobj,ijbin,sd,fraction)
       elseif(itype.eq.4)then
 c Parallelopiped intersection.
-c         write(*,*)'Calling pllel',npdim,x1,x1,iobj
-         call pllelofsect(npdim,x1,x2,iobj,ijbin,sd,fraction)
-c         write(*,*)'Returning from pllel',npdim,x1,x1,iobj,ijbin,sd
+c         write(*,*)'Calling pllel',ndims,x1,x1,iobj
+         call pllelofsect(ndims,x1,x2,iobj,ijbin,sd,fraction)
+c         write(*,*)'Returning from pllel',ndims,x1,x1,iobj,ijbin,sd
       elseif(itype.eq.5)then
 c Non-aligned cylinder
-         call cylgfsect(npdim,x1,x2,iobj,ijbin,sd,fraction)
+         call cylgfsect(ndims,x1,x2,iobj,ijbin,sd,fraction)
       else
 c         write(*,*)'Unknown object in objsect'
 c Unknown object type.
@@ -565,7 +565,7 @@ c Momentum
 c Energy
          iaddress=ijbin+nf_address(nf_heat,infobj,nf_step)
          xx=0.
-         do k=1,npdim
+         do k=1,ndims
             xx=xx+x_part(3+k,j)**2
          enddo
          ff_data(iaddress)=ff_data(iaddress)+ sd*xx
@@ -965,169 +965,3 @@ c      ierr=0
       ierr=1
       end
 c*********************************************************************
-c Obsolete
-c*********************************************************************
-      subroutine cylfsect1(npdim,xp1,xp2,iobj,ijbin,sdmin,fmin)
-c Given a coordinate-aligned cylinder object iobj. Find the point of
-c intersection of the line joining xp1,xp2, with it, and determine the
-c ijbin to which it is therefore assigned, and the direction it is
-c crossed (sdmin=+1 means inward from 1 to 2).  
-
-c The cylinder is specified by center and radii!=0 (to faces.)  in each
-c coordinate. Plus the axial coordinate.  Inside corresponds to between
-c the axial planes, i.e. x-xc < |rc|, and orthogonal radius < 1.
-
-c The facets of the cylinder to be the end faces -xr +xr, and the curved
-c side boundary. 3 altogether.  The order of faces is bottom, side, top.
-      
-      integer npdim,iobj,ijbin
-      real xp1(npdim),xp2(npdim)
-      real sdmin
-      include 'ndimsdecl.f'
-      include '3dcom.f'
-c 3D here.
-      parameter (nds=3)
-      real x12(nds)
-      real fn(4),zrf(4),sdf(4)
-
-      ida=int(obj_geom(ocylaxis,iobj))
-c First, return if both points are beyond the same axial end.
-      xca=obj_geom(ocenter+ida-1,iobj)
-      xra=obj_geom(oradius+ida-1,iobj)
-      xd1=(xp1(ida)-xca)
-      xd2=(xp2(ida)-xca)
-      xd=xd2-xd1
-      fmin=1.
-      sdmin=0.
-      if((xd1.gt.xra .and. xd2.gt.xra).or.
-     $     (-xd1.gt.xra .and. -xd2.gt.xra))return
-      sds=0.
-c Find the intersection (if any) with the circular surface.
-      call sphereinterp(npdim,ida,xp1,xp2,
-     $     obj_geom(ocenter,iobj),obj_geom(oradius,iobj),
-     $     fn(1),fn(2),sds,d1,d2)
-      if(sds.ne.0)then
-c Directions are both taken to be that of the closest. 
-c A bit inconsistent but probably ok. 
-         sdf(1)=sds
-         sdf(2)=sds
-         zrf(1)=((1.-fn(1))*xp1(ida)+fn(1)*xp2(ida)
-     $        -obj_geom(ocenter+ida-1,iobj))
-     $        /obj_geom(oradius+ida-1,iobj)
-         zrf(2)=((1.-fn(2))*xp1(ida)+fn(2)*xp2(ida)
-     $        -obj_geom(ocenter+ida-1,iobj))
-     $        /obj_geom(oradius+ida-1,iobj)
-      else
-c No radial intersections
-         zrf(1)=2.
-         zrf(2)=2.
-      endif
-c Find the axial intersection fractions with the end planes.
-      if(xd.ne.0)then
-         fn(3)=(xra-xd1)/(xd2-xd1)
-         sdf(3)=-1.
-         if(xd1.gt.xra)sdf(3)=1.
-         fn(4)=(-xra-xd1)/(xd2-xd1)
-         sdf(4)=-1.
-         if(xd1.lt.-xra)sdf(4)=1.
-         zrf(3)=0.
-         zrf(4)=0.
-c         z3=xp1(ida)*(1.-fn(3))+xp2(ida)*fn(3)
-c         z4=xp1(ida)*(1.-fn(4))+xp2(ida)*fn(4)
-c         write(*,*)'Axial crossings',fn(3),z3,fn(4),z4
-         do k=1,npdim
-            if(k.ne.ida)then
-               xrk=obj_geom(oradius+k-1,iobj)
-               xkg1=(1.-fn(3))*xp1(k)+fn(3)*xp2(k)
-     $              -obj_geom(ocenter+k-1,iobj)
-               zrf(3)=zrf(3)+(xkg1/xrk)**2
-               xkg2=(1.-fn(4))*xp1(k)+fn(4)*xp2(k)
-     $              -obj_geom(ocenter+k-1,iobj)
-               zrf(4)=zrf(4)+(xkg2/xrk)**2
-c               write(*,*)k,zrf(3),zrf(4),xrk,xd1,xd2,xra
-            endif
-         enddo
-      else
-c Pure radial difference. No end-intersections anywhere.
-         zrf(3)=2.
-         zrf(4)=2.
-      endif
-c Now we have 4 possible fractions fn(4). Two or none of those
-c are true. Truth is determined by abs(zrf(k))<=1. Choose closest.
-      fmin=10.
-      kmin=0
-      do k=1,4
-         if(abs(zrf(k)).le.1)then
-            if(fn(k).ge.0. .and. fn(k).lt.fmin)then
-               kmin=k
-               fmin=fn(k)
-            endif
-         endif
-      enddo
-      if(fmin.gt.1.)then
-c No crossing
-         sdmin=0.
-         fmin=1.
-         return
-      else
-         sdmin=sdf(kmin)
-         if(kmin.le.2)then
-c radial crossing
-            imin=0
-         else
-c axial crossing
-            imin=-1
-            zida=(1.-fmin)*xp1(ida)+fmin*xp2(ida)
-            if(zida.gt.xca)imin=1
-         endif
-      endif
-
-c Now the minimum fraction is in fmin, which is the crossing point.
-c imin contains the face-index of this crossing. -1,0, or +1.
-c Calculate normalized intersection coordinates.
-      do i=1,npdim
-         x12(i)=((1.-fmin)*xp1(i)+fmin*xp2(i)
-     $        -obj_geom(ocenter+i-1,iobj))/obj_geom(oradius+i-1,iobj)
-      enddo
-c Calculate r,theta,z (normalized) relative to the ida direction as z.
-      z=x12(ida)
-      theta=atan2(x12(mod(ida+1,npdim)+1),x12(mod(ida,npdim)+1))
-      r2=0.
-      do i=1,npdim-1
-         k=mod(ida+i-1,npdim)+1
-         r2=r2+x12(k)**2
-c         write(*,'(i2,2f8.4,'', '',$)')k,r2,x12(k)
-      enddo
-c      write(*,'(a,7f7.4,3i3)')'r2,theta,z,x12,fmin,imin'
-c     $     ,r2,theta,z,x12,fmin,imin
-c End blocks are of size nr x nt, and the curved is nt x nz.
-c 3-D only here. 
-      infobj=nf_map(iobj)
-      ijbin=0
-      ir=9
-      it=9
-      iz=9
-      if(imin.ne.0)then
-c Ends
-         if(imin.eq.1)then
-c offset by (nr+nz)*nt
-            ijbin=(nf_dimlens(nf_flux,infobj,1)
-     $           +nf_dimlens(nf_flux,infobj,3))
-     $           *nf_dimlens(nf_flux,infobj,2)
-         endif
-c Uniform mesh in r^2 normalized. 
-         ir=int(nf_dimlens(nf_flux,infobj,1)*(0.999999*r2))
-         it=int(nf_dimlens(nf_flux,infobj,2)
-     $     *(theta/3.1415927+1.)*0.5)
-         ijbin=ijbin+ir+it*nf_dimlens(nf_flux,infobj,1)
-      else
-c Side. Offset to this facet nr*nt:
-         ijbin=nf_dimlens(nf_flux,infobj,1)*nf_dimlens(nf_flux,infobj,2)
-         it=int(nf_dimlens(nf_flux,infobj,2)
-     $     *(theta/3.1415927+1.)*0.5)
-         iz=int(nf_dimlens(nf_flux,infobj,3)*(0.999999*z+1.)*0.5)
-c Index in order theta,z
-         ijbin=ijbin+it+iz*nf_dimlens(nf_flux,infobj,2)
-      endif
-c      write(*,'(6f8.4,3i3)')xp1,xp2,ir,it,iz
-      end

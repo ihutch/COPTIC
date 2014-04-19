@@ -1,7 +1,7 @@
 c Packaged version of orbit plotting.
       subroutine orbitplot(ifull,iuds,u,phi,rc,rs)
-      parameter (ndims=3)
-      integer ifull(ndims),iuds(ndims),itemp(ndims)
+      include 'ndimsdecl.f'
+      integer ifull(ndimsmax),iuds(ndimsmax),itemp(ndimsmax)
       real u(ifull(1),ifull(2),ifull(3))
       integer ifmax
       parameter (ifmax=100,Li=ifmax)
@@ -54,6 +54,7 @@ c      write(*,*)'Returning from orbit3plot.'
 c******************************************************************
 c Called in the middle of a 3-d plot by cijplot.
       subroutine orbit3plot()
+      include 'ndimsdecl.f'
       include 'partcom.f'
 c      write(*,*)'norbits,length=',norbits,iorbitlen(1)
       do kk=1,norbits

@@ -228,10 +228,10 @@ c Normally this is called with lstrict=.true. but if not, then
 c the checks for object identities are skipped.
       subroutine stored3geometry(volumes,iuds,ifull,istat,lstrict)
       include 'ndimsdecl.f'
-      integer iuds(ndims),ifull(ndims)
+      integer iuds(ndimsmax),ifull(ndimsmax)
       real volumes(ifull(1),ifull(2),ifull(3))
       logical lstrict
-      integer iuds1(ndims)
+      integer iuds1(ndimsmax)
       include '3dcom.f'
       include 'meshcom.f'
       real obj1(odata,ngeomobjmax)

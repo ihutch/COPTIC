@@ -41,7 +41,7 @@ c But xlimits mean that's problematic.
 c            nvlist=100
 c A small nvlist means we go right to the edge of actual particles.
          nvlist=5
-         call vlimitdeterm(npdim,x_part,if_part,ioc_part
+         call vlimitdeterm(ndims,x_part,if_part,ioc_part
      $        ,vlimit,nvlist,ivproj,Bfield)
          if(myid.eq.0)write(*,'('' Velocity limits:'',6f7.3)')
      $        vlimit
@@ -53,7 +53,7 @@ c Indicate csbin not initialized and start initialization
 
 c Do the accumulation for this file up to maximum relevant slot. 
          nfvaccum=0
-         call partsaccum(npdim,x_part,if_part,ioc_part,xlimit
+         call partsaccum(ndims,x_part,if_part,ioc_part,xlimit
      $        ,vlimit,xnewlim,nfvaccum)
          if(myid.eq.0)write(*,*)'Accumulated',nfvaccum,' of',ioc_part
      $        ,' total',' in',xlimit
@@ -66,7 +66,7 @@ c Should do this only the first time.
          call bincalc()
          call fvxinit(xnewlim,cellvol,ibset)
       else
-         call partsaccum(npdim,x_part,if_part,ioc_part,xlimit
+         call partsaccum(ndims,x_part,if_part,ioc_part,xlimit
      $        ,vlimit,xnewlim,nfvaccum)
       endif
 c         write(*,*)'isfull',isfull,cellvol

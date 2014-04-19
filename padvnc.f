@@ -674,17 +674,17 @@ c Update the collisional force by momentum change.
       include '3dcom.f'
 c Local variables
       integer icount
-      real dv(npdim)
+      real dv(ndims)
       data icount/0/
 
-      do k=1,npdim
-         dv(k)=-x_part(npdim+k,i)
-         x_part(npdim+k,i)=tisq*gasdev(0)
-         dv(k)=dv(k)+x_part(npdim+k,i)
+      do k=1,ndims
+         dv(k)=-x_part(ndims+k,i)
+         x_part(ndims+k,i)=tisq*gasdev(0)
+         dv(k)=dv(k)+x_part(ndims+k,i)
       enddo
 c Vneutral is in z-direction.
-      x_part(npdim+npdim,i)=x_part(npdim+npdim,i)+vneutral
-      dv(npdim)=dv(npdim)+vneutral
+      x_part(ndims+ndims,i)=x_part(ndims+ndims,i)+vneutral
+      dv(ndims)=dv(ndims)+vneutral
 c Now contribute the momentum change to the collisional force.
       do j=1,mf_obj
          if(btest(iregion,nf_geommap(j)-1))then

@@ -80,7 +80,7 @@ c New position choice including density gradients.
             x_part(j,i)=ranlenposition(j)
          enddo
 c     If we are not in the plasma region, try again.
-         if(.not.linregion(ibool_part,npdim,x_part(1,i)))then
+         if(.not.linregion(ibool_part,ndims,x_part(1,i)))then
 c            call partlocate(1,ixp,xfrac,inewregion,linmesh)
 c            write(*,*)'Initialization of',i,' wrong region',inewregion
 c     $           ,(x_part(kk,i),kk=1,3)
