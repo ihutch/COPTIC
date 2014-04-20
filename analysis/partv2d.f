@@ -117,7 +117,7 @@ c Accumulate the fvxvy distribution
             enddo
          enddo
          do j=1,ioc_part
-            if(if_part(j).ne.0)then
+            if(x_part(iflag,j).ne.0)then
                vx=x_part(1+npdim,j)
                vy=x_part(3+npdim,j)
                nx=nint(nxbin*(vx-vlimit(1,1))/(vlimit(2,1)-vlimit(1,1)))

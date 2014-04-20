@@ -29,9 +29,9 @@ c      x_part(4,1)=0.25*dt*(abs(phip)/x_part(1,1)**2)
 c Tangential velocity of circular orbit at r=?.
       x_part(5,1)=sqrt(abs(phip/x_part(1,1))-x_part(4,1)**2)
       x_part(6,1)=0.
-      if_part(1)=1
+      x_part(iflag,1)=1
       i1=2
-      call partlocate(1,ixp,xfrac,iregion,linmesh)
+      call partlocate(x_part(1,1),ixp,xfrac,iregion,linmesh)
       if(.not.linmesh.or..not.linregion(ibool_part,ndims,x_part(1
      $     ,1)))then
          if(myid.eq.0.)then
@@ -66,7 +66,7 @@ c the frame of reference in which the background E-field is truly zero:
 c     We initialize the 'true' particles'
       tisq=sqrt(Ti)
       do i=i1,n_part
-         if_part(i)=1
+         x_part(iflag,i)=1
  1       continue
 c         write(*,'(i8,$)')i
          ntries=ntries+1
@@ -81,7 +81,6 @@ c New position choice including density gradients.
          enddo
 c     If we are not in the plasma region, try again.
          if(.not.linregion(ibool_part,ndims,x_part(1,i)))then
-c            call partlocate(1,ixp,xfrac,inewregion,linmesh)
 c            write(*,*)'Initialization of',i,' wrong region',inewregion
 c     $           ,(x_part(kk,i),kk=1,3)
             goto 1
@@ -115,15 +114,15 @@ c close wake are in fact going to have mostly negative velocities. They
 c are therefore completely unmodelled in this initialization, which
 c fills in positive drifting ions even where they could not be present.
 
-         dtprec(i)=0.
+         x_part(idtp,i)=0.
 c Initialize the mesh fraction data in x_part.
-         call partlocate(i,ixp,xfrac,iregion,linmesh)
+         call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
 c This test rejects particles exactly on mesh boundary:
          if(.not.linmesh)goto 1
       enddo
 c Set flag of unused slots to 0
       do i=n_part+1,n_partmax
-         if_part(i)=0
+         x_part(iflag,i)=0
       enddo
       if(myid.eq.0)then
          write(*,'('' Initialized '',i3,''x n='',i7,'' ntries='',i7,$)')
@@ -154,10 +153,12 @@ c Local dummy variables for partlocate.
       external linregion
 
       do i=1,ioc_part
-         call partlocate(i,ixp,xfrac,iregion,linmesh)
+         call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
 c         write(*,*)linmesh,linregion(ibool_part,ndims,x_part(1,i))
          if(.not.linmesh .or. .not.
-     $        linregion(ibool_part,ndims,x_part(1,i)))if_part(i)=0
+     $        linregion(ibool_part,ndims,x_part(1,i)))then
+            x_part(iflag,i)=0
+         endif
       enddo
       nrein=0
 c      write(*,*)'Redetermined particle mesh locations (locateinit)'

@@ -1,24 +1,26 @@
 c Particle data common.
       integer n_partmax
       parameter (n_partmax=4000000)
-c      integer npdim
-c      parameter (npdim=3)
+      integer iflag,idtp
+      parameter(iflag=3*ndims+1,idtp=3*ndims+2)
+      integer nspeciesmax
+      parameter (nspeciesmax=1)
 
 c Number of actual active particles < n_partmax
       integer n_part
 c Maximum particle slot that we must examine
       integer ioc_part
+c Minimum particle slot used
+      integer iic_part
 c Particle position and velocity (3D cartesian) in the order:
 c (x,y,z) (vx,vy,vz) (xm,ym,zm) where xm... is the mesh position.
-      real x_part(3*ndims,n_partmax)
-c Particle flag(s).
-      integer if_part(n_partmax)
-c Particle previous cycle time step
-      real dtprec(n_partmax)
+      real x_part(idtp,n_partmax)
+c Particle flag(s). if_part Replaced by x_part(iflag,i).
+c      integer if_part(n_partmax)
+c Particle previous cycle time step dtprec replaced by x_part(idtp,i)
+c      real dtprec(n_partmax)
 c Timestep (unperturbed).
       real dt
-c Iregion where particles belong. Obsolete.
-      integer iregion_part
 c Control of diagnostics
       logical ldiags
 c Rho at infinity totalled over processes
@@ -42,8 +44,8 @@ c Effective face area for purposes of reinjection. Small if periodic.
       real fcarea(ndims)
 c Whether not all directions of particles are periodic
       logical lnotallp
-      common/particles/n_part,x_part,if_part,iregion_part,ioc_part
-     $     ,dtprec,dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
+      common/particles/n_part,x_part,iic_part,ioc_part
+     $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
      $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp
      $     ,caverein,chi
 

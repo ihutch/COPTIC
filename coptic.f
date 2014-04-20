@@ -382,8 +382,6 @@ c In case we have overwritten phip with the value from the restart file,
 c try to set it again from the first object. But tell it we are not
 c the head node, so it does not give out messages.
          call phipset(1)
-c         if(lmyidhead)write(*,*)'nrein,n_part,ioc_part,rhoinf,dt=',
-c     $        nrein,n_part,ioc_part,rhoinf,dt,(dtprec(k),k=1,4)
       endif
 c-----------------------------------------------
       if(lmyidhead)then
@@ -393,6 +391,7 @@ c-----------------------------------------------
          endif
          write(*,'(/,a)')'Step Iterations Flux:'
       endif
+      call mditerset(psum,ndims,ifull,iuds,0,0.)
 c Main step iteration -------------------------------------
       do j=1,nsteps
          nf_step=nf_step+1
@@ -402,7 +401,6 @@ c Acceleration code.
          ninjcomp=int(bdtnow*ninjcomp0)
          if(ninjcomp.ne.0)nrein=ninjcomp
 
-         call mditerset(psum,ndims,ifull,iuds,0,0.)
          call chargetomesh(psum,iLs,diagsum,ndiags)
          call diagperiod(psum,ifull,iuds,iLs,1)
 c The following call is marginally more efficient than diagperiod call.
@@ -418,6 +416,8 @@ c Convert psums to charge density, q. Remember external psumtoq!
          call mditerarg(psumtoq,ndims,ifull,ium2,
      $        0,psum(2,2,2),q(2,2,2),volumes(2,2,2),u(2,2,2),rhoinf)
          istepave=min(nf_step,iavesteps)
+c New position for psum reset to accommodate padvnc deposition.
+         call mditerset(psum,ndims,ifull,iuds,0,0.)
 
          if(debyelen.eq.0)then
             call mditerarg(quasineutral,ndims,ifull,ium2,
@@ -439,6 +439,7 @@ c Convert psums to charge density, q. Remember external psumtoq!
             endif
          endif
 
+c This might be the place to put electron advancing.
          if(nf_step.eq.ickst) then
 c      write(*,*)'Checking Step',nf_step
             call checkuqcij(ifull,u,q,psum,volumes,cij)

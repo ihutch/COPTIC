@@ -41,7 +41,7 @@ c But xlimits mean that's problematic.
 c            nvlist=100
 c A small nvlist means we go right to the edge of actual particles.
          nvlist=5
-         call vlimitdeterm(ndims,x_part,if_part,ioc_part
+         call vlimitdeterm(ndims,x_part,ioc_part
      $        ,vlimit,nvlist,ivproj,Bfield)
          if(myid.eq.0)write(*,'('' Velocity limits:'',6f7.3)')
      $        vlimit
@@ -53,7 +53,7 @@ c Indicate csbin not initialized and start initialization
 
 c Do the accumulation for this file up to maximum relevant slot. 
          nfvaccum=0
-         call partsaccum(ndims,x_part,if_part,ioc_part,xlimit
+         call partsaccum(ndims,x_part,ioc_part,xlimit
      $        ,vlimit,xnewlim,nfvaccum)
          if(myid.eq.0)write(*,*)'Accumulated',nfvaccum,' of',ioc_part
      $        ,' total',' in',xlimit
@@ -66,12 +66,12 @@ c Should do this only the first time.
          call bincalc()
          call fvxinit(xnewlim,cellvol,ibset)
       else
-         call partsaccum(ndims,x_part,if_part,ioc_part,xlimit
+         call partsaccum(ndims,x_part,ioc_part,xlimit
      $        ,vlimit,xnewlim,nfvaccum)
       endif
 c         write(*,*)'isfull',isfull,cellvol
 c         write(*,*)'calling subaccum'
-      call subaccum(mdims,x_part,if_part,ioc_part,
+      call subaccum(mdims,x_part,ioc_part,
      $     isuds,vlimit,xnewlim)
 c     $     isfull,isuds,vlimit,xnewlim)
       end
@@ -145,12 +145,11 @@ c Assign positions to bins
 
       end
 c**********************************************************************
-      subroutine partsaccum(mdims,xpart,ifpart,iocpart,xlimit
+      subroutine partsaccum(mdims,xpart,iocpart,xlimit
      $     ,vlimit,xnewlim,nfvaccum)
 c Accumulate all particles in the xlimit range into velocity bins.
 c If on entry xnewlim(2).eq.xnewlim(1) then adjust those limits.
-      real xpart(3*mdims,iocpart)
-      integer ifpart(iocpart)
+      real xpart(3*mdims+1,iocpart)
 c Spatial limits bottom-top, dimensions
       real xlimit(2,mdims),xnewlim(2,mdims)
 c Velocity limits
@@ -163,7 +162,7 @@ c Velocity limits
       endif
       do j=1,iocpart
 c Only for filled slots
-         if(ifpart(j).eq.1)then
+         if(xpart(3*mdims+1,j).ne.0)then
             do id=1,mdims
                x=xpart(id,j)
                if(x.lt.xlimit(1,id).or.x.gt.xlimit(2,id))goto 12
@@ -185,19 +184,17 @@ c      if(limadj.eq.1)write(*,'(a,6f10.5)')' xnewlim=',xnewlim
              
       end
 c**********************************************************************
-      subroutine vlimitdeterm(mdims,xpart,ifpart,iocpart,vlimit
+      subroutine vlimitdeterm(mdims,xpart,iocpart,vlimit
      $     ,nvlist,ivproj,Bfield)
 c Determine the required vlimits for this particle distribution.
 c On entry
 c    xpart contains all the particles.
-c    ifpart indicates filled slots in the particle list
 c    iocpart is the maximum filled slot.
 c    nvlist is the number of particles in the top and bottom bins.
 c On exit
 c    vlimit contains the velocity of the nvlist'th particle from the 
 c           bottom and the top of the list.
-      real xpart(3*mdims,iocpart)
-      integer ifpart(iocpart)
+      real xpart(3*mdims+1,iocpart)
 c Velocity limits
       real vlimit(2,mdims)
 c Velocity Sorting arrays
@@ -214,7 +211,7 @@ c Velocity Sorting arrays
          enddo
          do j=1,iocpart
 c Only for filled slots
-            if(ifpart(j).eq.1)then
+            if(xpart(3*mdims+1,j).ne.0)then
                if(ivproj.eq.0)then
 c Straight cartesian.
                   v=xpart(id+mdims,j)
@@ -415,12 +412,11 @@ c      write(*,*)' fsv  ',fsv
 c      write(*,*)' ibinmap',ibinmap
       end
 c**********************************************************************
-      subroutine subaccum(mdims,xpart,ifpart,iocpart,
+      subroutine subaccum(mdims,xpart,iocpart,
      $     isuds,vlimit,xnewlim)
 c     $     isfull,isuds,vlimit,xnewlim)
 c Over the whole particle population accumulate to space-resolved bins
-      real xpart(3*mdims,iocpart)
-      integer ifpart(iocpart)
+      real xpart(3*mdims+1,iocpart)
 c      integer isfull(mdims)
       integer isuds(mdims)
 c Spatial limits bottom-top, dimensions
@@ -437,7 +433,7 @@ c The equal bins fill the ranges xnewlim with index lengths isuds.
       enddo
       do j=1,iocpart
 c Only for filled slots
-         if(ifpart(j).eq.1)then
+         if(xpart(3*mdims+1,j).ne.0)then
             do id=1,mdims
 c Calculate the spatial sub-bin pointer.
                isind(id)=1+int(isuds(id)*

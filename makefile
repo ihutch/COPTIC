@@ -152,10 +152,10 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 # Compare with the old cks file and see if it's the same.
 %.cks : %.dat $(COPTIC)
 	./setdimens 64 64 128
-	rm -f *.phi
+	rm -f T*.phi
 	./${COPTIC} $*.dat
-	@if [ -f *.phi ] ; then sum *.phi >checksum ; else echo NO .phi FILE GENERATED; ls *.phi 2>/dev/null; exit 1; fi
-	@if diff checksum $*.cks >diffout 2>&1; then echo; echo "        Case $*.cks: OK. No differences"; touch $*.cks; else cat diffout; echo '******** Failed geometry test *********'; cat diffout >> GeometryTests; fi; rm -f diffout checksum
+	@if [ -f T*.phi ] ; then sum T*.phi >checksum ; else echo NO .phi FILE GENERATED; ls T*.phi 2>/dev/null; exit 1; fi
+	@if diff checksum $*.cks >diffout 2>&1; then echo; echo "        Case $*.cks: OK. No differences"; touch $*.cks; else cat diffout; echo '******** Failed geometry test on $*.cks *********'; cat diffout >> GeometryTests; fi; rm -f diffout checksum
 	@if [ -f $*.cks ] ; then echo ; else echo "******** $*.cks not present. Creating it."; sum *.phi >$*.cks; fi
 	@echo -----------------------------------------------------------------
 
@@ -167,7 +167,7 @@ smt.out : compiler $(COPTIC) copticgeom.dat
 	@if [ -f T1e0v000P200L1e0z005x05.phi ] ; then mv T1e0v000P200L1e0z005x05.phi prior.phi ; echo "Created prior.phi" ; fi
 	./$(COPTIC)
 	@if [ -f smt.prev ] ;then if [ -f smt.out ] ;then diff smt.prev smt.out ;else touch smt.out ;fi ;fi
-	@if [ -f prior.phi ] && [ -f T1e0v000P200L1e0z005x05.phi ] ; then if ! diff T1e0v000P200L1e0z005x05.phi prior.phi ; then echo "**** RESULT CHANGED" ; fi; rm prior.phi; else echo "File[s] lacking to compare result.\nProbably you've just made coptic for the first time."; fi 
+	@if [ -f prior.phi ] && [ -f T1e0v000P200L1e0z005x05.phi ] ; then if ! diff T1e0v000P200L1e0z005x05.phi prior.phi ; then echo "**** RESULT CHANGED" ; rm prior.phi; fi; else echo "File[s] lacking to compare result.\nProbably you've just made coptic for the first time."; fi 
 	@if [ "$(G77)" = "gfortran" ] ; then echo "Compiled serial coptic. make clean; make for MPI version if MPI available." ; fi
 
 # For now we are using a big hammer to ensure libcoptic is clean.

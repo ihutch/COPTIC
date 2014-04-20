@@ -44,12 +44,10 @@ c Testing storage
       real ptot,atot
       data ptot/0./atot/0./
 
-c      real fieldp(ndims)
 c Make this always last to use the checks.
       include 'partcom.f'
 
 c-------------------------------------------------------------
-c      tisq=sqrt(Ti)
       tisq=sqrt(Tneutral)
       lcollided=.false.
       ncollided=0
@@ -82,7 +80,7 @@ c         endif
          dtpos=dt
 c=================================
 c Decide nature of this slot
-         if(if_part(i).ne.0)then
+         if(x_part(iflag,i).ne.0)then
 c Standard occupied slot. Proceed.
          elseif(ninjcomp.ne.0.and.nrein.lt.ninjcomp)then
 c An unfilled slot needing to be filled. Jump to reinjection.
@@ -106,7 +104,7 @@ c Ought not to be necessary, but this is a safety check.
          if(x_part(ndimsx2+1,i).eq.0. .and.
      $        x_part(ndimsx2+2,i).eq.0. .and.
      $        x_part(ndimsx2+3,i).eq.0.) then
-            write(*,*)'Zero fractions',i,ioc_part,if_part(i)
+            write(*,*)'Zero fractions',i,ioc_part,x_part(iflag,i)
      $           ,nrein,ninjcomp
          endif
 c---------------------------------
@@ -173,28 +171,23 @@ c---------- Subcycling ----------------
 c Conditional test to set subcycling for this particle. 
 c Don't go smaller than dt/8
             if(f1*dtpos.gt.subcycle .and. 8*dtpos.gt.dt)then
-c               if(i.lt.norbits)then
-c                  write(*,*)
-c                  write(*,'(a,i3,4f10.5,$)')'Subcycling  ',i,dtpos
-c     $                 ,dtprec(i),dtremain,dtdone+dtpos+dtremain
-c               endif
 c Reduce the position-step size.
                dtpos=dtpos/2.
 c Subcycling backs up to the start of the current drift-step, and then 
 c takes a position corresponding to a drift-step smaller by a factor of 2.
 c That means the backed-up position is dtprec/4 earlier.
-               dtback=-dtprec(i)/4.
+               dtback=-x_part(idtp,i)/4.
                call moveparticle(x_part(1,i),ndims,Bt,Btinf,Bfield,vperp
      $              ,dtback)
                dtdone=dtdone+dtback
 c The remaining time in step is increased by back up and by step loss.
                dtremain=dtremain-dtback+dtpos
 c And the new dtprec is half as large:
-               dtprec(i)=dtprec(i)/2.
+               x_part(idtp,i)=x_part(idtp,i)/2.
                nsubc=nsubc+1
                if(i.lt.norbits)then
                   write(*,'(/,a,i3,4f10.5,$)')'Subcycle Set',i,dtpos
-     $                 ,dtprec(i),dtremain,dtdone+dtpos+dtremain
+     $                 ,x_part(idtp,i),dtremain,dtdone+dtpos+dtremain
                endif
                goto 100
             endif
@@ -221,11 +214,11 @@ c Set dtremain to how much time will be left after this step.
             endif
          endif 
 c---------- End Collision Decision ------------
-c         if(i.lt.norbits)write(*,*)dtprec(i),dtremain,dtdone
+c         if(i.lt.norbits)write(*,*)x_part(idtp,i),dtremain,dtdone
 c---------------- Particle Advance ----------------
 c Use dtaccel for acceleration. May be different from dtpos if there was
 c a subcycle, reinjection or collision last step.
-         dtaccel=0.5*(dtpos+dtprec(i))
+         dtaccel=0.5*(dtpos+x_part(idtp,i))
 c----- Excessive Acceleration test. Drop particle without any tally. ---
          if(f1*dtaccel.gt.dropaccel)then
             ndropped=ndropped+1
@@ -236,7 +229,7 @@ c            write(*,*)'Excessive acceleration. Dropping particle',i
 c Reinject if we haven't exhausted complement:
             if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)goto 200
 c Else empty slot and move to next particle.
-            if_part(i)=0
+            x_part(iflag,i)=0
             goto 300            
          endif
          ptot=ptot+dtpos
@@ -283,16 +276,17 @@ c ---------------- End Particle Advance -------------
 c ---------------- Special Conditions -------------
          if(lcollided)then
 c Treat collided particle at (partial) step end
-            call postcollide(i,tisq,iregion)
+            call postcollide(x_part(1,i),tisq,iregion)
             lcollided=.false.
          endif
-         call partlocate(i,ixp,xfrac,inewregion,linmesh)
+         call partlocate(x_part(1,i),ixp,xfrac,inewregion,linmesh)
 c---------------------------------
 c If we crossed a boundary, do tallying.
          ltlyerr=.false.
          if(inewregion.ne.iregion)
 c Integer exclusive or ieor bitwise is the correct way.
-     $        call tallyexit(i,ieor(inewregion,iregion),ltlyerr,dtpos)
+     $        call tallyexit(x_part(1,i),ieor(inewregion,iregion)
+     $        ,ltlyerr,dtpos)
 c------------ Possible Reinjection ----------
          if(ltlyerr .or. .not.linmesh .or.
      $        .not.linregion(ibool_part,ndims,x_part(1,i)))then
@@ -300,16 +294,11 @@ c We left the mesh or region.
             if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)goto 200
 c Reinject because we haven't exhausted complement. 
 c Else empty slot and move to next particle.
-            if_part(i)=0
+            x_part(iflag,i)=0
             goto 300
-c This section was incorrect here till 25 July 2013. Moved below remain.
-c         else
-c The standard exit point for a particle that is active
-c            iocthis=i
-c            n_part=n_part+1
          endif
 c--------------------------------------------
-         dtprec(i)=dtpos
+         x_part(idtp,i)=dtpos
 c If we haven't completed this full step, do so.
          if(dtremain.gt.0.)then
             if(dtc.ne.dtpos)then
@@ -334,10 +323,9 @@ c The standard exit point for a particle that is active.
 c================= End of Occupied Slot Treatement ================
 c----------- Reinjection treatment -----------
  200     continue
-         if_part(i)=1
+         x_part(iflag,i)=1
          call reinject(x_part(1,i),ilaunch,caverein)
-c         call partlocate(i,ixp,xfrac,iregion,linmesh,nrein)
-         call partlocate(i,ixp,xfrac,iregion,linmesh)
+         call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
          if(.not.linmesh)then
             write(*,*)'Reinject out of mesh',i,xfrac
             stop
@@ -350,7 +338,7 @@ c            stop
             goto 200
          endif
          dtpos=(dtpos+dtremain)*ran1(myid)
-         dtprec(i)=0.
+         x_part(idtp,i)=0.
          dtremain=0.
          dtdone=dt-dtpos
          nlost=nlost+1
@@ -372,7 +360,7 @@ c--------- Completion of particle i treatment ------
 c Not needed when the Eneutral is subtracted off above and the
 c collisional effect is in postcollide.
 c Special diagnostic orbit tracking:
-         if(i.le.norbits.and. if_part(i).ne.0)then
+         if(i.le.norbits.and.x_part(iflag,i).ne.0)then
             if(dtdone-dt.gt.1.e-4)then
                write(*,*)' Step error? i,dtdone,dt=',i,dtdone,dt
             endif
@@ -585,14 +573,14 @@ c      write(*,*)'ucrhoset return',irptch
       end
 
 c***********************************************************************
-      subroutine partlocate(i,ixp,xfrac,iregion,linmesh)
+      subroutine partlocate(xi,ixp,xfrac,iregion,linmesh)
 c Locate the particle numbered i (from common partcom) 
 c in the mesh (from common meshcom).
 c Return the integer cell-base coordinates in ixp(ndims)
 c Return the fractions of cell width at which located in xfrac(ndims)
 c Return the region identifier in iregion.
 c Return whether the particle is in the mesh in linmesh.
-c Store the mesh position into common partcom (x_part).
+c Store the mesh position into upper ndims of xi.
 c If particle is relocated by periodicity, advance nrein.
 
       integer i,iregion
@@ -600,6 +588,7 @@ c If particle is relocated by periodicity, advance nrein.
 c meshcom provides ixnp, xn, the mesh spacings. (+ndims)
       include 'ndimsdecl.f'
       include 'meshcom.f'
+      real xi(2*ndims)
       integer ixp(ndims)
       real xfrac(ndims)
       parameter (ndimsx2=ndims*2)
@@ -612,7 +601,7 @@ c Offset to start of dimension-id-position array.
 c xn is the position array for each dimension arranged linearly.
 c Find the index of xprime in the array xn:
          isz=ixnp(id+1)-ioff
-         ix=interp(xn(ioff+1),isz,x_part(id,i),xm)
+         ix=interp(xn(ioff+1),isz,xi(id),xm)
          if(ipartperiod(id).eq.4)then
 c In periodic directions, we do not allow particles to be closer to the
 c mesh boundary than half a cell, so as to use periodicity consistent
@@ -620,19 +609,17 @@ c with the potential periodicity. chargetomesh does additional sums
 c to communicate the extra particle weight periodically.
             fisz=float(isz)-0.5
             if(.not.(ix.ne.0.and.xm.gt.1.5.and.xm.lt.fisz))then
-c               write(*,'(''partperiod'',i7,2i3,f5.1,3f10.5)')i,id,ix,xm
-c     $           ,x_part(id,i),xn(ixnp(id)+1),xn(ixnp(id+1))
 c Move the particle by one grid length, to the periodic position. Use
 c tiny bit less so that if it starts exactly on boundary, it does not
 c end on it. The length is between end mid-cell positions.
                xgridlen=(xn(ixnp(id+1))+xn(ixnp(id+1)-1)
      $              -(xn(ixnp(id)+1)+xn(ixnp(id)+2)))*0.499999
                if(xm.le.1.5)then
-                  x_part(id,i)=x_part(id,i)+xgridlen
+                  xi(id)=xi(id)+xgridlen
                elseif(xm.ge.isz-0.5)then
-                  x_part(id,i)=x_part(id,i)-xgridlen
+                  xi(id)=xi(id)-xgridlen
                endif
-               ix=interp(xn(ioff+1),isz,x_part(id,i),xm)
+               ix=interp(xn(ioff+1),isz,xi(id),xm)
                if(.not.(xm.gt.1.5.and.xm.lt.fisz))then
 c It's conceivable that a particle might move more than one period,
 c in which case correction won't work. Don't repeat. Instead, just
@@ -653,23 +640,23 @@ c Because we must not allow exactly on boundaries.
             endif
          endif
          xfrac(id)=xm-ix
-         x_part(ndimsx2+id,i)=xm
+         xi(ndimsx2+id)=xm
          ixp(id)=ix
 c specific particle test
 c         if(i.eq.2298489) write(*,*)i,isz,ix,xm,linmesh
       enddo
-      iregion=insideall(ndims,x_part(1,i))
+      iregion=insideall(ndims,xi(1))
       
       end
 c********************************************************************
-      subroutine postcollide(i,tisq,iregion)
+      subroutine postcollide(xi,tisq,iregion)
 c Get new velocity; reflects neutral maxwellian shifted by vneutral.
 c Update the collisional force by momentum change.
-      integer i
       real tisq
       integer iregion
       include 'ndimsdecl.f'
-      include 'partcom.f'
+      real xi(2*ndims)
+c      include 'partcom.f'
       include 'colncom.f'
       include '3dcom.f'
 c Local variables
@@ -678,12 +665,12 @@ c Local variables
       data icount/0/
 
       do k=1,ndims
-         dv(k)=-x_part(ndims+k,i)
-         x_part(ndims+k,i)=tisq*gasdev(0)
-         dv(k)=dv(k)+x_part(ndims+k,i)
+         dv(k)=-xi(ndims+k)
+         xi(ndims+k)=tisq*gasdev(0)
+         dv(k)=dv(k)+xi(ndims+k)
       enddo
 c Vneutral is in z-direction.
-      x_part(ndims+ndims,i)=x_part(ndims+ndims,i)+vneutral
+      xi(ndims+ndims)=xi(ndims+ndims)+vneutral
       dv(ndims)=dv(ndims)+vneutral
 c Now contribute the momentum change to the collisional force.
       do j=1,mf_obj

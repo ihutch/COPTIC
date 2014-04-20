@@ -383,20 +383,21 @@ c     $     ,nf_address(1,1,11)-1)
 
       end
 c******************************************************************
-      subroutine tallyexit(i,idiffreg,ltlyerr,dtpos)
+      subroutine tallyexit(xi,idiffreg,ltlyerr,dtpos)
 c Document the exit of this particle just happened. 
 c Assign the exit to a specific object, and bin on object.
 c (If it is a mapped object, decided by objsect.)      
 c On entry
-c        i is particle number, 
+c        xi is particle position/velocity etc, 
 c        idiffreg is the xor between its region and previous.
 c        dtpos is the time step duration that brought us here.
 c On exit ltlyerr is true if an error occurred else unchanged.
 c Normally, returning an error will cause this particle to be
 c considered to have left the particle region, so it will be discarded.
-      integer i,idiffreg
+      integer idiffreg
       logical ltlyerr
       include 'ndimsdecl.f'
+      real xi(3*ndims)
       include 'partcom.f'
       include '3dcom.f'
 
@@ -408,29 +409,29 @@ c Determine (all) the objects crossed and call objsect for each.
       iobj=iobj+1
       idiff=idiff/2
       if(idp.ne.idiff*2)then
-         call objsect(i,iobj,ierr,dtpos)
+         call objsect(xi,iobj,ierr,dtpos)
          if(ierr.gt.0)then
-            ireg=insideall(ndims,x_part(1,i))
+            ireg=insideall(ndims,xi(1))
             r=0.
             r1=0.
             do id=1,3
-               r=r+x_part(id,i)**2
-               r1=r1+(x_part(id,i)-dtpos*x_part(id+3,i))**2
+               r=r+xi(id)**2
+               r1=r1+(xi(id)-dtpos*xi(id+3))**2
             enddo
             r=sqrt(r)
             r1=sqrt(r1)
             write(*,*)'Tallyexit error',ierr,i,iobj,idiffreg
             if(ierr.eq.99)write(*,*)'Unknown object type.'
-            write(*,*)'xpart,r=',(x_part(k,i),k=1,6),r,ireg
-            write(*,*)'xp1',(x_part(k,i)-dtpos*x_part(k+3,i),k=1,3),r1
+            write(*,*)'xpart,r=',(xi(k),k=1,6),r,ireg
+            write(*,*)'xp1',(xi(k)-dtpos*xi(k+3),k=1,3),r1
             ltlyerr=.true.
             return
          elseif(ierr.eq.-1)then
 c This Pass-through should not happen because tallyexit is not called
 c unless the region is changed. But leave for error detection.
             write(*,*)'idiffreg,i,iobj=',idiffreg,i,iobj
-            write(*,'(a,6f10.5)')'xp2',(x_part(k,i),k=1,6)
-            write(*,'(a,6f10.5)')'xp1',(x_part(k,i)-dtpos*x_part(k+3,i)
+            write(*,'(a,6f10.5)')'xp2',(xi(k),k=1,6)
+            write(*,'(a,6f10.5)')'xp1',(xi(k)-dtpos*xi(k+3)
      $           ,k=1,3)
          endif
       endif
@@ -440,12 +441,13 @@ c unless the region is changed. But leave for error detection.
       end
 c******************************************************************
 c****************************************************************
-      subroutine objsect(j,iobj,ierr,dtpos)
-c Find the intersection of the last step of particle j (length dtpos)
+      subroutine objsect(xi,iobj,ierr,dtpos)
+c Find the intersection of the last step of particle xi (length dtpos)
 c with object iobj, and update the positioned-fluxes accordingly.  ierr
 c is returned: 0 good. 1 no intersection. 99 unknown object.
 c
       include 'ndimsdecl.f'
+      real xi(3*ndims)
       include '3dcom.f'
       include 'partcom.f'
       include 'sectcom.f'
@@ -468,8 +470,8 @@ c Use only bottom 8 bits:
 
 c Get the positions:
       do i=1,ndims
-         x1(i)=x_part(i,j)-dtpos*x_part(i+3,j)
-         x2(i)=x_part(i,j)
+         x1(i)=xi(i)-dtpos*xi(i+3)
+         x2(i)=xi(i)
       enddo
       if(itype.eq.1)then
 c Sphere intersection. Return the bin number and direction ijbin,sd.
@@ -528,13 +530,14 @@ c This should not happen.
       endif
       end
 c*******************************************************************
-      subroutine binadding(j,infobj,sd,ijbin)
-c Add particle-j data to infobj bin ijbin with crossing-direction sd.
+      subroutine binadding(xi,infobj,sd,ijbin)
+c Add particle xi data to infobj bin ijbin with crossing-direction sd.
       implicit none
       include 'ndimsdecl.f'
+      real xi(3*ndims)
       include '3dcom.f'
       include 'partcom.f'
-      integer j,infobj,ijbin
+      integer infobj,ijbin
       real sd
       
       integer iaddress,k,id
@@ -551,22 +554,22 @@ c Perhaps ought to consider velocity interpolation.
       if(mf_quant(infobj).ge.2)then
 c Momentum               
          iaddress=ijbin+nf_address(nf_gx,infobj,nf_step)
-         ff_data(iaddress)=ff_data(iaddress)+ sd*x_part(4,j)
+         ff_data(iaddress)=ff_data(iaddress)+ sd*xi(4)
       endif
       if(mf_quant(infobj).ge.3)then
          iaddress=ijbin+nf_address(nf_gy,infobj,nf_step)
-         ff_data(iaddress)=ff_data(iaddress)+ sd*x_part(5,j)
+         ff_data(iaddress)=ff_data(iaddress)+ sd*xi(5)
       endif
       if(mf_quant(infobj).ge.4)then
          iaddress=ijbin+nf_address(nf_gz,infobj,nf_step)
-         ff_data(iaddress)=ff_data(iaddress)+ sd*x_part(6,j)
+         ff_data(iaddress)=ff_data(iaddress)+ sd*xi(6)
       endif
       if(mf_quant(infobj).ge.5)then
 c Energy
          iaddress=ijbin+nf_address(nf_heat,infobj,nf_step)
          xx=0.
          do k=1,ndims
-            xx=xx+x_part(3+k,j)**2
+            xx=xx+xi(3+k)**2
          enddo
          ff_data(iaddress)=ff_data(iaddress)+ sd*xx
       endif
@@ -574,7 +577,7 @@ c Accumulate the particle force= momentum/time over whole object.
 c Normalized to rhoinf
       do id=1,ndims
          partforce(id,infobj,nf_step)=partforce(id,infobj,nf_step)
-     $        +sd*x_part(ndims+id,j)/dt/rhoinf
+     $        +sd*xi(ndims+id)/dt/rhoinf
       enddo
       
       end

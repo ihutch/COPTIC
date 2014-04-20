@@ -111,16 +111,16 @@ c***********************************************************************
       implicit none
 c The storage used here defines how far our checking goes for bigger
 c actual cases. Don't want to use too much, or too little.
+      include 'ndimsdecl.f'
+      include 'partcom.f'
       integer icp
       parameter (icp=100000)
-      real x_part2(9,icp)
-      integer n_part2,if_part2(icp),iregion_part2,ioc_part2
+      real x_part2(iflag,icp)
+      integer n_part2,iic_part2,ioc_part2
       integer nrein2,numprocs2,ninjcomp2
       real dt2,rhoinf2,phirein2
       logical ldiags2
 
-      include 'ndimsdecl.f'
-      include 'partcom.f'
       integer i,j,ic,ii,jj
       logical linit,lend
       data linit/.false./lend/.false./
@@ -141,23 +141,23 @@ c actual cases. Don't want to use too much, or too little.
 
       write(51,err=103)ioc_part
       write(51,err=103)n_part
-     $     ,((x_part(ii,jj),ii=1,9),if_part(jj),jj=1,min(ioc_part,icp))
-     $     ,iregion_part,
+     $     ,((x_part(ii,jj),ii=1,iflag),jj=1,min(ioc_part,icp))
+     $     ,iic_part,
      $     dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
       if(lend) return
 
       read(50,err=102)ioc_part2
       read(50,err=102)n_part2
-     $     ,((x_part2(ii,jj),ii=1,9),if_part2(jj),
+     $     ,((x_part2(ii,jj),ii=1,iflag),
      $     jj=1,min(ioc_part2,icp))
-     $     ,iregion_part2,
+     $     ,iic_part2,
      $     dt2,ldiags2,rhoinf2,nrein2,phirein2,numprocs2,ninjcomp2
 
       if(ioc_part.ne.ioc_part2.or.n_part.ne.n_part2.or.
-     $     iregion_part.ne.iregion_part2) then
+     $     iic_part.ne.iic_part2) then
          write(*,*)'***** particle count difference',
-     $        ioc_part,n_part,iregion_part,
-     $        ioc_part2,n_part2,iregion_part2
+     $        ioc_part,n_part,iic_part,
+     $        ioc_part2,n_part2,iic_part2
       endif
          
       if(dt.ne.dt2.or.ldiags.neqv.ldiags2.or.rhoinf.ne.rhoinf2.or.
@@ -170,9 +170,9 @@ c actual cases. Don't want to use too much, or too little.
 
       ic=0
       do j=1,min(ioc_part,icp)
-         if(if_part(j).ne.if_part2(j))then
-            write(*,*)'***** if_part difference',
-     $           j,if_part(j),if_part2(j)
+         if(x_part(iflag,j).ne.x_part2(iflag,j))then
+            write(*,*)'***** iFlag difference',
+     $           j,x_part(iflag,j),x_part2(iflag,j)
             ic=ic+1
          endif
          do i=1,9

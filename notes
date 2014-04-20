@@ -10989,3 +10989,66 @@ make geometry ok.
 
 Added ndimsdecl.f a few places. Then we can compile with no dependence
 on npdim from partcom.f. We've completely removed npdim in effect.
+
+Make branch ionsonly
+
+Need to fix direct dependence of 
+partlocate postcollide tallyexit
+on the integer i particle list position. Change the call to be to xi.
+Seems to work.
+I think we now have padvnc to the state where it only passes x_part(1,i)
+to other called routines, not i itself. The point being that then the
+called routines can be applied to any type of particle, presumably.
+
+Get rid of if_part by incorporating it into x_part as x_part(iflag,i).
+Needs modifications to pinit.f partwriteread.f, checkcode.f, padvnc.f,
+partaccum.f.
+
+Seems to complete ok. make geometry shows no differences when complete.
+
+Remove also dtprec replacing it with x_part(idtp,i). Done.
+Remove iregion_part, which has long been obsolete.
+Add iic_part the start of the particle list. We are not using it yet
+but the idea is that for multiple particle species it might become the
+bottom of each stack in a long list. But we are a long way from being
+able to implement that yet. There are many many places where it is
+assumed that n_part, ioc_part, are scalars, not vectors. 
+
+The idea I am working towards is this. Electrons need a time step far
+shorter than the ions in order to resolve their orbits. This is of
+course the big problem with full PIC. If one has to update the
+potential and ions at each electron step, the work is far
+larger. However, suppose we don't actually care about potential
+fluctuations at the electron plasma timescale. We don't then have to
+update the potential except when the ions are moved. Also, we don't
+have to move the ions with timesteps nearly as short as the
+electrons. So one could imagine moving the electrons fast enough to
+resolve their orbits: a timestep far shorter than the ion timestep on
+which one moves the ions and updates the potential. This won't
+significantly help manage the cpu cost if there are as many electrons
+as ions. Essentially all the effort will be in moving electrons,
+because they move far more often. However, if one had fewer electrons,
+by approximately the ratio of electron to ion timestep, then electron
+cost would be reduced to comparable to ions. One would then worry that
+the electron noise would become far larger than the ion noise. But
+there's a way to prevent that. It is to deposit the electron charge at
+every electron step. Then the number of electron depositions will be
+as large as the number of ion depositions, and the electron noise will
+be only comparable to the ion noise. The result will be an effective
+smearing out of the electron charge over the orbit an electron makes
+during one ion time-step. Physically, this is just what you want if
+you wish to average over and suppress electron-generated potential
+fluctuations. What I'm not quite sure about is whether this whole 
+approach is stable. One might worry that failing to update the electric
+potential gives a sort of over-explicit scheme that is unstable.
+Insofar as the electron solution gives essentially a Boltzmann result,
+the current iterative scheme is implemented in a linearly-implicit 
+sense relative to Boltzmann electrons, and is very stable. I think there
+is therefore reason to think that a stable scheme might be the outcome.
+
+It seems likely that the most effective way to implement this scheme is
+to combine the charge deposition with the particle step. At the moment,
+COPTIC separates them completely doing chargetomesh in a different 
+routine. I don't see why that is necessary. I hope it isn't.
+However, in the first instance it may well be wise to combine only 
+the new electron advancing and deposition.

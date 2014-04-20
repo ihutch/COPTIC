@@ -49,7 +49,7 @@ c My mpi id
       call nameappendint(name,'.',myid,3)
 c      write(*,*)name
       write(charout,51)debyelen,Ti,vd,rs,phip
- 51   format('debyelen,Ti,vd,rs,phip:',5f10.4)
+ 51   format('V2. debyelen,Ti,vd,rs,phip:',5f10.4)
 
       open(22,file=name,status='unknown',err=101)
       close(22,status='delete')
@@ -60,10 +60,10 @@ c      write(*,*)name
 
       write(22)ranstate
       write(22)ioc_part
-      write(22)iregion_part,n_part,dt,ldiags,rhoinf,nrein,
+      write(22)iic_part,n_part,dt,ldiags,rhoinf,nrein,
      $     phirein,numprocs,
-     $     ((x_part(j,i),j=1,3*ndims),if_part(i),i=1,ioc_part)
-      write(22)(dtprec(i),i=1,ioc_part)
+     $     ((x_part(j,i),j=1,iflag),i=1,ioc_part)
+      write(22)(x_part(idtp,i),i=1,ioc_part)
       write(22)rmtoz,Bt,Bfield,vpar,vperp
       write(22)caverein,chi
       close(22)
@@ -92,11 +92,20 @@ c Return ierr bit(0) no file. bit(1) no dtprec. bit(2) no Bfield etc.
       read(23)debyelen,Ti,vd,rs,phip
       read(23)ranstate
       read(23)ioc_part
-      read(23)iregion_part,n_part,dt,ldiags,rhoinf,nrein,
-     $     phirein,numprocs,
-     $     ((x_part(j,i),j=1,3*ndims),if_part(i),i=1,ioc_part)
+      if(charout(1:2).eq.'de')then
+         write(*,*)'Version 1 detected'
+         read(23)iic_part,n_part,dt,ldiags,rhoinf,nrein,
+     $        phirein,numprocs,
+     $        ((x_part(j,i),j=1,3*ndims),ifp,i=1,ioc_part)
+         x_part(iflag,i)=ifp
+      elseif(charout(1:2).eq.'V2')then
+         write(*,*)'Version 2 detected'
+         read(23)iic_part,n_part,dt,ldiags,rhoinf,nrein,
+     $        phirein,numprocs,
+     $        ((x_part(j,i),j=1,iflag),i=1,ioc_part)
+      endif
 c Extra particle data written since 30 July 2010.
-      read(23,err=102,end=102)(dtprec(i),i=1,ioc_part)
+      read(23,err=102,end=102)(x_part(idtp,i),i=1,ioc_part)
       read(23,err=104,end=104)rmtoz,Bt,Bfield,vpar,vperp
       read(23,err=105,end=105)caverein,chi
       goto 103
@@ -112,7 +121,7 @@ c     $     ,name(1:lentrim(name))
 c      write(*,*)'Charout=',charout(1:lentrim(charout))
 c Check that the read back data is sane
       do i=1,ioc_part
-         if(if_part(i).ne.0)then 
+         if(x_part(iflag,i).ne.0)then 
             if(x_part(7,i).eq.0)then
                write(*,*)'Bizarre particle data read back',
      $              i,ioc_part,(x_part(j,i),j=1,9)
@@ -122,7 +131,7 @@ c Check that the read back data is sane
 
 c Zero the flags of higher slots.
       do i=ioc_part+1,n_partmax
-         if_part(i)=0
+         x_part(iflag,i)=0
       enddo
 
       return
