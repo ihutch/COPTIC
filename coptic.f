@@ -284,7 +284,7 @@ c Initialize diagsum if necessary.
       enddo
 c Initialize additional potential and charge if needed.
       if(iptch_mask.ne.0 .or. gtt.ne.0. .or. gnt.ne.0)
-     $     call setadfield(ndims,ifull,iuds,iptch_mask,lsliceplot)
+     $     call setadfield(ifull,iuds,iptch_mask,lsliceplot)
 c      if(myid.eq.0)call sliceGweb(ifull,iuds,rhoci,na_m,zp,
 c     $              ixnp,xn,ifix,'rhoci',dum,dum)
 
@@ -392,6 +392,7 @@ c-----------------------------------------------
          write(*,'(/,a)')'Step Iterations Flux:'
       endif
       call mditerset(psum,ndims,ifull,iuds,0,0.)
+      call chargetomesh(psum,iLs,diagsum,ndiags)
 c Main step iteration -------------------------------------
       do j=1,nsteps
          nf_step=nf_step+1
@@ -401,7 +402,8 @@ c Acceleration code.
          ninjcomp=int(bdtnow*ninjcomp0)
          if(ninjcomp.ne.0)nrein=ninjcomp
 
-         call chargetomesh(psum,iLs,diagsum,ndiags)
+c Call here if we are not doing direct deposition in padvnc.
+c         call chargetomesh(psum,iLs,diagsum,ndiags)
          call diagperiod(psum,ifull,iuds,iLs,1)
 c The following call is marginally more efficient than diagperiod call.
 c         call psumperiod(psum,ifull,iuds,iLs)
@@ -443,11 +445,11 @@ c This might be the place to put electron advancing.
          if(nf_step.eq.ickst) then
 c      write(*,*)'Checking Step',nf_step
             call checkuqcij(ifull,u,q,psum,volumes,cij)
-            call padvnc(ndims,iLs,cij,u)
+            call padvnc(iLs,cij,u,ndiags,psum,diagsum,)
             call checkx
          else
 c The normal call:
-            call padvnc(ndims,iLs,cij,u)
+            call padvnc(iLs,cij,u,ndiags,psum,diagsum)
          endif
          call fluxreduce()
 c Now do cij update

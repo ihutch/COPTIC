@@ -1,21 +1,20 @@
-      subroutine padvnc(mdims,iLs,cij,u)
+      subroutine padvnc(iLs,cij,u,ndiags,psum,diagsum)
 c Particle advancing routine.
 c If ninjcomp (in partcom) is non-zero, then we are operating in a mode
 c where the number of reinjections at each timestep is prescribed.
 c Otherwise we are using a fixed number npart of particles.
 
-c Number of dimensions: mdims
-      integer mdims
 c Storage size of the mesh arrays.
 c      real cij(2*ndims+1,nx,ny,nz)
 c      real u(nx,ny,nz)
-      real cij(*),u(*)
+      integer ndiags
+      real cij(*),u(*),psum(*),diagsum(*)
 
-c Array structure vectors: (1,nx,nx*ny,nx*ny*nz)
-      integer iLs(mdims+1)
+      include 'ndimsdecl.f'
+c Array structure vector: (1,nx,nx*ny,nx*ny*nz)
+      integer iLs(ndims+1)
 
 c Meshcom provides ixnp, xn, the mesh spacings. (+ndims)
-      include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'myidcom.f'
       include '3dcom.f'
@@ -114,7 +113,7 @@ c call getptchfield.
 c adfield must always be zero arriving here. But we don't set it
 c always because that would be expensive.
 c We are in a point-charge region. Get analytic part of force.
-            call getadfield(ndims,irptch,adfield,x_part(1,i),2,ierr)
+            call getadfield(irptch,adfield,x_part(1,i),2,ierr)
 c            if(i.eq.1)write(*,'(i7,'' in ptch region'',i8,6f8.3)')
 c     $           i,irptch,(x_part(k,i),k=1,3)
 c     $           ,(adfield(k),k=1,3)
@@ -369,6 +368,10 @@ c Special diagnostic orbit tracking:
             yorbit(iorbitlen(i),i)=x_part(2,i)
             zorbit(iorbitlen(i),i)=x_part(3,i)
          endif
+c This is the alternate charge deposition.
+         if(x_part(iflag,i).ne.0)then
+            call achargetomesh(i,psum,iLs,diagsum,ndiags)
+         endif
       enddo
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  102  continue
@@ -409,17 +412,17 @@ c      write(*,*)'Padvnc',n_part,nrein,ilaunch,ninjcomp,n_partmax
       end
 
 c***********************************************************************
-      subroutine getadfield(mdims,irptch,adfield,xp,isw,ierr)
+      subroutine getadfield(irptch,adfield,xp,isw,ierr)
 c Cycle through the nonzero bits of irptch and add up the extra
 c potential (isw=1), field (isw=2) or charge (isw=3) contributions.
 c adfield should be zero on entry, because it ain't set,
 c just incremented.
 c ierr returns zero for no error, 1 for too close to particle.
 
-      integer mdims,irptch,isw
-      real adfield(mdims)
-      real xp(mdims)
+      integer irptch,isw
       include 'ndimsdecl.f'
+      real adfield(ndims)
+      real xp(ndims)
       include '3dcom.f'
       real xd(ndims)
       im=irptch
@@ -469,18 +472,17 @@ c               write(*,*)tfield,obj_geom(omag,i),xr
       
       end
 c***********************************************************************
-      subroutine setadfield(ndimsp,ifull,iuds,irptch,lsliceplot)
+      subroutine setadfield(ifull,iuds,irptch,lsliceplot)
 c Set the values of the potential and charge at the grid
 c points that compensate for the analytic field of getadfield.
 c Also any temperature-gradient and density-gradient factors.
 
-      integer ndimsp
-      integer ifull(ndimsp),iuds(ndimsp),irptch
       logical lsliceplot
 c Defines iptch_copy uci, rhoc and dimensions.
 c ndims must be same as ndimsp.
 c To do the slice plot we need this it include grid decl.
       include 'ndimsdecl.f'
+      integer ifull(ndims),iuds(ndims),irptch
       include 'meshcom.f'
       include 'ptchcom.f'
       include 'plascom.f'
@@ -493,7 +495,7 @@ c To do the slice plot we need this it include grid decl.
 c      write(*,*)'Point charges included. Mask:',iptch_copy,gtt
       ipoint=0
       ifix=1
-      call mditerarg(ucrhoset,ndimsp,ifull,iuds,ipoint
+      call mditerarg(ucrhoset,ndims,ifull,iuds,ipoint
      $     ,uci,rhoci,iptch_copy,Teci)
       if(lsliceplot)then
          call sliceGweb(ifull,iuds,uci,na_m,zp,
@@ -511,9 +513,9 @@ c Set uci, rhoci, and Teci arrays to compensate for point charges,
 c electron temperature gradients, or density gradients. 
 c These are then subsequently used in faddu to decide the electron
 c density. [They are not used in getadfield.]
-      integer inc,ipoint,mdims,indi(mdims)
-      integer iuds(mdims)
+      integer inc,ipoint,mdims
       real uci(*),rhoci(*),Teci(*)
+      integer iuds(mdims),indi(mdims)
 c Commons: For position.
       include 'ndimsdecl.f'
       include 'meshcom.f'
@@ -559,12 +561,12 @@ c Set the uci and rhoci compensation for point charges:
 c Get uc
          isw=1
          adfield(1)=0.
-         call getadfield(ndims,irptch,adfield,xp,isw,ierr)
+         call getadfield(irptch,adfield,xp,isw,ierr)
          uci(ipoint+1)=uci(ipoint+1)+adfield(1)
 c Get charge
          isw=3
          adfield(1)=0.
-         call getadfield(ndims,irptch,adfield,xp,isw,ierr)
+         call getadfield(irptch,adfield,xp,isw,ierr)
          rhoci(ipoint+1)=rhoci(ipoint+1)+debyelen**2*adfield(1)
       endif
 c Always just increment by 1

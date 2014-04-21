@@ -11052,3 +11052,54 @@ COPTIC separates them completely doing chargetomesh in a different
 routine. I don't see why that is necessary. I hope it isn't.
 However, in the first instance it may well be wise to combine only 
 the new electron advancing and deposition.
+
+21 Apr 14
+Remove mdims from padvnc arguments.
+Remove mdims from getadfield, setadfield argumenst
+Also ucrhoset arguments, but that was a mistake corrected below.
+
+A question arises in respect of documenting the density and other moments
+of multiple species. If we directly add the electron density to psum, then
+it is no longer the ion density. Instead it is the charge density. 
+
+We have a mechanism for documenting various moments (including the 0th)
+of a distribution as a function of mesh position. It is diagsum. 
+Probably that's the right way to track the density (etc) of multiple
+species. Currently diagsum is (x,y,z,ndiagmax) with ndiagmax=7.
+It would be fairly straightforward to simply (extend ndiagmax and) add
+on density and other diagnostics for other species at the end of it.
+Then if one is using multiple species, one must use the diagsum instead
+of psum for (even the ion) density. In effect, then psum becomes a
+charge-sum rather than a particle sum. 
+
+What then needs to be done is to call achargetomesh passing the address
+of the start of the particular species' diagnostic storage.
+
+Another question arises about ndiags. If it is the number of diagnostics
+per species, we need to adjust diagperiod diagreduce commands etc. Looks
+easy.
+
+Add ndiags,psum,diagsum to padvnc argument list.
+
+Implemented an alternative charge deposition that happens in padvnc.
+It gives identical make results. 
+
+No differences in make geometry till geomforce.dat. Then a floating exception.
+Back up. It's not the alternative charge deposition that does it.
+Must be something in the argument adjustments. Yes I made a mistake with
+ucrhoset and mditerate arguments. Put that back to the way it was.
+Ok. That seems to fix it.
+
+Try timing make geometry. 
+New version 
+real    1m6.177s
+user    1m3.044s
+sys     0m2.796s
+Old version
+real    1m5.158s
+user    1m2.072s
+sys     0m2.720s
+Hardly significant.
+
+We now have an ion version of coptic running with charge deposition
+being done (only) in the particle advance. Commit.
