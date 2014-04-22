@@ -2,7 +2,7 @@
 c Particle advancing routine.
 c If ninjcomp (in partcom) is non-zero, then we are operating in a mode
 c where the number of reinjections at each timestep is prescribed.
-c Otherwise we are using a fixed number npart of particles.
+c Otherwise we are using a fixed number n_part of particles.
 
 c Storage size of the mesh arrays.
 c      real cij(2*ndims+1,nx,ny,nz)
@@ -46,31 +46,30 @@ c Testing storage
 c Make this always last to use the checks.
       include 'partcom.f'
 
+      ispecies=1
 c-------------------------------------------------------------
       tisq=sqrt(Tneutral)
       lcollided=.false.
       ncollided=0
-
-      if(ndims.ne.ndims.or. ndims.ne.3)
-     $     stop 'Padvnc incorrect ndims number of dimensions'
-c-----------------------------------------------------------------
       ic1=2*ndims+1
       ndimsx2=2*ndims
+c-----------------------------------------------------------------
 c Initialize. Set reinjection potential. We start with zero reinjections.
-      call cavereinset(phirein)
+      if(ispecies.eq.1)call cavereinset(phirein)
       phirein=0
       nrein=0
       nlost=0
       iocthis=0
-      n_part=0
+      nparta(ispecies)=0
       nsubc=0
       nwmax=20
       do idf=1,ndims
          adfield(idf)=0.
       enddo
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-c At most do over all particle slots. But generally we break earlier.
-      do i=1,n_partmax
+c At most do over all particle slots for this species. 
+c But generally we break earlier.
+      do i=iicparta(ispecies),iicparta(ispecies+1)-1
 c         if(mod(i,10000).eq.0)then
 c            write(*,*)'i,iocthis,n_part=',i,iocthis,n_part,ncollided
 c         endif
@@ -81,10 +80,11 @@ c=================================
 c Decide nature of this slot
          if(x_part(iflag,i).ne.0)then
 c Standard occupied slot. Proceed.
-         elseif(ninjcomp.ne.0.and.nrein.lt.ninjcomp)then
+         elseif(ninjcompa(ispecies).ne.0
+     $        .and.nrein.lt.ninjcompa(ispecies))then
 c An unfilled slot needing to be filled. Jump to reinjection.
             goto 200
-         elseif(i.ge.ioc_part)then
+         elseif(i.ge.iocparta(ispecies))then
 c We do not need to reinject new particles, and
 c this slot is higher than all previously handled. There are no
 c more active particles above it. So break from do loop.
@@ -100,18 +100,19 @@ c Occupied slot. Get its region
 c--------------------------------------
 c Check the fraction data is not stupid and complain if it is.
 c Ought not to be necessary, but this is a safety check. 
+c Remove after the reimplementation.
          if(x_part(ndimsx2+1,i).eq.0. .and.
      $        x_part(ndimsx2+2,i).eq.0. .and.
      $        x_part(ndimsx2+3,i).eq.0.) then
-            write(*,*)'Zero fractions',i,ioc_part,x_part(iflag,i)
-     $           ,nrein,ninjcomp
+            write(*,*)'Zero fractions',i,iocparta(ispecies)
+     $           ,x_part(iflag,i),nrein,ninjcompa(ispecies)
          endif
 c---------------------------------
-c call getptchfield.
+c adfield must always be zero arriving here regardless of irptch. 
+c But we don't set it always because that would be expensive. 
+c We only reset it below if it was changed
          irptch=IAND(iregion,iptch_mask)
          if(irptch.ne.0)then
-c adfield must always be zero arriving here. But we don't set it
-c always because that would be expensive.
 c We are in a point-charge region. Get analytic part of force.
             call getadfield(irptch,adfield,x_part(1,i),2,ierr)
 c            if(i.eq.1)write(*,'(i7,'' in ptch region'',i8,6f8.3)')
@@ -153,7 +154,7 @@ c     $              /x_part(idf,i)
 c If needed, reset adfield.
          if(irptch.ne.0)then
             do idf=1,ndims
-               adfield(idf)=0
+               adfield(idf)=0.
             enddo
          endif
          f1=sqrt(f2)
@@ -164,11 +165,8 @@ c                     write(*,'(i5,a,6f10.6)')i,' Point-field:',
 c     $                    fieldp,((fieldp(j)-field(j)),j=1,ndims)
 c--------------------------------------
          dtc=0.
-c Subcycle restart.
 c---------- Subcycling ----------------
          if(subcycle.ne.0)then
-c Conditional test to set subcycling for this particle. 
-c Don't go smaller than dt/8
             if(f1*dtpos.gt.subcycle .and. 8*dtpos.gt.dt)then
 c Reduce the position-step size.
                dtpos=dtpos/2.
@@ -193,7 +191,7 @@ c And the new dtprec is half as large:
          endif
 c---------- End of subcycling ---------
 c---------- Collision Decision ----------------
-         if(colntime.ne.0.)then
+         if(ispecies.eq.1.and.colntime.ne.0.)then
             if(colpow.ne.0.)then
 c The collision time scaled by velocity
                dtc=-alog(ran1(myid))*colntime
@@ -226,11 +224,13 @@ c It carried in some momentum. That disappears. It is accounted for
 c as being conveyed to any tallying object inside which it disappears.
 c            write(*,*)'Excessive acceleration. Dropping particle',i
 c Reinject if we haven't exhausted complement:
-            if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)goto 200
+            if(ninjcompa(ispecies).eq.0
+     $           .or. nrein.lt.ninjcompa(ispecies))goto 200
 c Else empty slot and move to next particle.
             x_part(iflag,i)=0
             goto 300            
          endif
+c Testing only otherwise unused:
          ptot=ptot+dtpos
          atot=atot+dtaccel
 c Accelerate ----------
@@ -282,7 +282,7 @@ c Treat collided particle at (partial) step end
 c---------------------------------
 c If we crossed a boundary, do tallying.
          ltlyerr=.false.
-         if(inewregion.ne.iregion)
+         if(inewregion.ne.iregion.and.ispecies.eq.1)
 c Integer exclusive or ieor bitwise is the correct way.
      $        call tallyexit(x_part(1,i),ieor(inewregion,iregion)
      $        ,ltlyerr,dtpos)
@@ -290,7 +290,8 @@ c------------ Possible Reinjection ----------
          if(ltlyerr .or. .not.linmesh .or.
      $        .not.linregion(ibool_part,ndims,x_part(1,i)))then
 c We left the mesh or region.
-            if(ninjcomp.eq.0 .or. nrein.lt.ninjcomp)goto 200
+            if(ninjcompa(ispecies).eq.0
+     $           .or. nrein.lt.ninjcompa(ispecies))goto 200
 c Reinject because we haven't exhausted complement. 
 c Else empty slot and move to next particle.
             x_part(iflag,i)=0
@@ -298,8 +299,8 @@ c Else empty slot and move to next particle.
          endif
 c--------------------------------------------
          x_part(idtp,i)=dtpos
-c If we haven't completed this full step, do so.
          if(dtremain.gt.0.)then
+c We haven't completed this full step; do so.
             if(dtc.ne.dtpos)then
 c We did not have a collision, we are purely subcycling, just double the
 c timestep for next subcycle. So as not to be over-optimistic.
@@ -317,7 +318,7 @@ c dtremain is the time remaining after the next dtpos step.
 c-------------------------------------------
 c The standard exit point for a particle that is active.
          iocthis=i
-         n_part=n_part+1
+         nparta(ispecies)=nparta(ispecies)+1
          goto 300
 c================= End of Occupied Slot Treatement ================
 c----------- Reinjection treatment -----------
@@ -344,10 +345,6 @@ c            stop
          nrein=nrein+ilaunch
          phi=getpotential(u,cij,iLs,x_part(2*ndims+1,i)
      $        ,IAND(iregion,ifield_mask),2)
-c This version multiply-weights a relaunched case:
-c         phirein=phirein+ilaunch*phi
-c But has to compensate for final division by nrein.
-c It's probably better to count the relaunches as average:
          phirein=phirein*(1+ilaunch-1)+phi
          call diaginject(x_part(1,i))
 c Restart the rest of the advance
@@ -376,16 +373,17 @@ c This is the alternate charge deposition.
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  102  continue
 c -------------- End of cycle through particles ----------
-      if(rhoinf*colntime.ne.0.)then
+      if(ispecies.eq.1.and.rhoinf*colntime.ne.0.)then
 c Normalize the collision force appropriately.
          call bulknorm(1./(rhoinf*dt))
       endif
-      if(ninjcomp.ne.0 .and. nrein.lt.ninjcomp)then
+      if(ninjcompa(ispecies).ne.0.and.nrein.lt.ninjcompa(ispecies))then
          write(*,*)'WARNING: Exhausted n_partmax=',n_partmax,
-     $        '  before ninjcomp=',ninjcomp,' . Increase n_partmax?'
+     $        '  before ninjcomp=',ninjcompa(ispecies)
+     $        ,' . Increase n_partmax?'
       endif
-      ioc_part=iocthis
-c      write(*,*)'i,iocthis,npart=',i,iocthis,n_part
+      iocparta(ispecies)=iocthis
+c      write(*,*)'i,iocthis,npart=',i,iocthis,nparta(ispecies)
 
 c Finished this particle step. Calculate the average reinjection 
 c potential
@@ -400,17 +398,17 @@ c            if(myid.eq.0)write(*,*)'PROBLEM: phirein>0:',phirein
             phirein=cap
          endif
       else
-         if(ninjcomp.gt.100)write(*,*)'No reinjections'
+         if(ninjcompa(ispecies).gt.100)write(*,*)'No reinjections'
       endif
 
-      if(colntime.gt.0)then
-         fcollided=float(ncollided)/n_part
+      if(ispecies.eq.1.and.colntime.gt.0)then
+         fcollided=float(ncollided)/nparta(ispecies)
       endif
 
 c      if(nsubc.ne.0) write(*,'(a,i6,$,'' '')')' Subcycled:',nsubc
 c      write(*,*)'Padvnc',n_part,nrein,ilaunch,ninjcomp,n_partmax
       end
-
+c***********************************************************************
 c***********************************************************************
       subroutine getadfield(irptch,adfield,xp,isw,ierr)
 c Cycle through the nonzero bits of irptch and add up the extra

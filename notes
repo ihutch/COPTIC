@@ -11103,3 +11103,48 @@ Hardly significant.
 
 We now have an ion version of coptic running with charge deposition
 being done (only) in the particle advance. Commit.
+
+
+It seems as if the easiest way to implement multiple-stepping is to
+install a secondary step loop just inside the particle loop, so the
+particles that are being multi-stepped are just done that way and 
+everything else is tracked as before. There needs to be a way to 
+adjust the tracking/deposition weights for different types of particles.
+Also there needs to be selection of particle iteration range limits etc.
+
+Implemented array definitions of n_part,ioc_part,iic_part,ninjcomp
+with equivalences to the first element to preserve prior programming.
+Works without difference. Implement iic_part as the starting slot
+of the particle padvnc iteration. Initialize iic_part in pinit. OK.
+
+Replace ioc_part with iocparta(ispecies) in padvnc.
+Replace n_part with nparta(ispecies)
+Replace iic_part with iicparta(ispecies).
+Replace ninjcomp with ninjcomp1(ispecies) in padvnc.
+Replace n_partmax iteration with iicparta(nspeciesmax+1) and set
+it to n_partmax in pinit by default. 
+Now we have a general particle slot range iteration governed by 
+ispecies. Although ispecies is always 1 at the moment.
+
+Other effective outputs from padvnc:
+fcollided -> colncom.f
+ncollided -> colncom.f
+nsubc -> colncom.f
+phirein -> partcom.f
+nrein -> partcom.f
+iocparta(ispecies)
+nparta(ispecies)
+postcollide call. Increments colnforce -> 3dcom.f
+caverein set right at start of padvnc from phirein.
+nlost not output
+tallyexit call. Calls objsect which adds intersection object's fluxes.
+  There's no way currently to add different species fluxes.
+
+For now it seems reasonable to decide to set n/fcollided, nsubc,
+phirein, and postcollide only for the first species: ions.
+Do this by adding ispecies.eq.1 to the collision tests.
+phirein is prevented from doing anything by calling cavereinset
+only when ispecies.eq.1. nrein is not adjusted because it is
+used to tell whether we have reinjected enough for this species.
+There's some danger with that in the diagnostics that print it.
+tallyexit only when ispecies.eq.1. That should fix everything.

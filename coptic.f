@@ -441,16 +441,11 @@ c New position for psum reset to accommodate padvnc deposition.
             endif
          endif
 
-c This might be the place to put electron advancing.
-         if(nf_step.eq.ickst) then
-c      write(*,*)'Checking Step',nf_step
-            call checkuqcij(ifull,u,q,psum,volumes,cij)
-            call padvnc(iLs,cij,u,ndiags,psum,diagsum,)
-            call checkx
-         else
-c The normal call:
-            call padvnc(iLs,cij,u,ndiags,psum,diagsum)
-         endif
+         if(nf_step.eq.ickst)call checkuqcij(ifull,u,q,psum,volumes,cij)
+c Particle advance:
+         call padvnc(iLs,cij,u,ndiags,psum,diagsum,)
+         if(nf_step.eq.ickst)call checkx
+
          call fluxreduce()
 c Now do cij update
          call cijdirect(debyelen,error)

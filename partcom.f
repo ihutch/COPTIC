@@ -5,13 +5,15 @@ c Particle data common.
       parameter(iflag=3*ndims+1,idtp=3*ndims+2)
       integer nspeciesmax
       parameter (nspeciesmax=1)
-
+      
 c Number of actual active particles < n_partmax
-      integer n_part
+      integer nparta(nspeciesmax)
 c Maximum particle slot that we must examine
-      integer ioc_part
-c Minimum particle slot used
-      integer iic_part
+      integer iocparta(nspeciesmax)
+c Starting particle slot
+      integer iicparta(nspeciesmax+1)
+c Charge to mass ratio of each species. 1 for ions
+      real eoverm(nspeciesmax)
 c Particle position and velocity (3D cartesian) in the order:
 c (x,y,z) (vx,vy,vz) (xm,ym,zm) where xm... is the mesh position.
       real x_part(idtp,n_partmax)
@@ -32,7 +34,7 @@ c Average potential of reinjections
 c Number of independent processors
       integer numprocs
 c Number of reinjections at each step (if non-zero)
-      integer ninjcomp
+      integer ninjcompa(nspeciesmax)
 c Rho at infinity per processor, relevant only in setup.
       real ripernode
 c Factor by which we relax the rhoinf calculation. 1 immediate, 0 never.
@@ -44,8 +46,14 @@ c Effective face area for purposes of reinjection. Small if periodic.
       real fcarea(ndims)
 c Whether not all directions of particles are periodic
       logical lnotallp
-      common/particles/n_part,x_part,iic_part,ioc_part
-     $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
+      integer n_part,iic_part,ioc_part,ninjcomp
+      equivalence (n_part,nparta(1)),(iic_part,iicparta(1))
+     $     ,(ioc_part,iocparta(1)),(ninjcomp,ninjcompa(1))
+      common/particles/x_part
+c     $     ,n_part,iic_part,ioc_part,ninjcomp
+     $     ,nparta,iicparta,iocparta,ninjcompa
+     $     ,eoverm
+     $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs
      $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp
      $     ,caverein,chi
 

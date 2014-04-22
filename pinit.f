@@ -43,6 +43,10 @@ c Tangential velocity of circular orbit at r=?.
 c-----------------------------------------------------------------
       ntries=0
 c      ntrapped=0
+c Minimum used slot is 1 by default
+      iic_part=1
+c The maximum available slot is n_partmax
+      iicparta(nspeciesmax+1)=n_partmax+1
 c The maximum used slot is the same as the number of particles initially
       ioc_part=n_part
       Eneutral=0.
