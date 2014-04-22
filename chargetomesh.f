@@ -216,12 +216,13 @@ c      endif
       inc=1
       end
 c********************************************************************
-      subroutine quasineutral(inc,ipoint,indi,ndims,iLs,iused,
+      subroutine quasineutral(inc,ipoint,indi,mdims,iLs,iused,
      $     q,u,volumes)
 c     ,dum3,dum4)
       integer ipoint,inc
-      integer indi(ndims),iused(ndims)
+      integer indi(mdims),iused(mdims)
       real q(*),u(*),volumes(*)
+      include 'ndimsdecl.f'
       include 'plascom.f'
 c      real dum3,dum4
 

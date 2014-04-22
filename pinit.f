@@ -340,7 +340,6 @@ c Subtract off the perpendicular velocity of frame in which E is zero.
 c Rotate the velocity
             call rotate3(v,stheta,ctheta,Bfield)
 c Acceleration along the B-direction:
-c            dvpar=Eneutral*ttic*Bfield(nplasdims)            
             dvpar=0.
             do i=1,ndims
                dvpar=dvpar+Eneutral*vdrift(i)*Bfield(i)*ttic
@@ -387,7 +386,6 @@ c Subtract off the perpendicular velocity of frame in which E is zero.
 c Rotate the velocity
             call rotate3(v,stheta,ctheta,Bfield)
 c Acceleration along the B-direction:
-c            dvpar=Eneutral*torb*Bfield(nplasdims)            
             dvpar=0.
             do i=1,ndims
                dvpar=dvpar+Eneutral*vdrift(i)*Bfield(i)*torb

@@ -940,10 +940,10 @@ c********************************************************************
       real function phiofcount(count,area)
 c Turn the particle count for the current timestep over an area 
 c into a potential at which current density is zero.
+      include 'ndimsdecl.f'
 Contains rmtoz
       include 'plascom.f'
 Contains dt and rhoinf:
-      include 'ndimsdecl.f'
       include 'partcom.f'
 c For preventing logarithm infinities when count is zero.
       parameter (small=1.e-2)

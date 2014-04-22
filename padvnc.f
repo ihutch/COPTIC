@@ -46,7 +46,6 @@ c Testing storage
 c Make this always last to use the checks.
       include 'partcom.f'
 
-      ispecies=1
 c-------------------------------------------------------------
       tisq=sqrt(Tneutral)
       lcollided=.false.
@@ -54,6 +53,7 @@ c-------------------------------------------------------------
       ic1=2*ndims+1
       ndimsx2=2*ndims
 c-----------------------------------------------------------------
+      ispecies=1
 c Initialize. Set reinjection potential. We start with zero reinjections.
       if(ispecies.eq.1)call cavereinset(phirein)
       phirein=0

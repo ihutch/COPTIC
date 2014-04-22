@@ -11115,7 +11115,8 @@ Also there needs to be selection of particle iteration range limits etc.
 Implemented array definitions of n_part,ioc_part,iic_part,ninjcomp
 with equivalences to the first element to preserve prior programming.
 Works without difference. Implement iic_part as the starting slot
-of the particle padvnc iteration. Initialize iic_part in pinit. OK.
+of the particle padvnc iteration. Initialize iic_part in pinit. OK
+but iicparta(2) is defaulted correctly only if nspeciesmax is 1. 
 
 Replace ioc_part with iocparta(ispecies) in padvnc.
 Replace n_part with nparta(ispecies)
@@ -11148,3 +11149,40 @@ only when ispecies.eq.1. nrein is not adjusted because it is
 used to tell whether we have reinjected enough for this species.
 There's some danger with that in the diagnostics that print it.
 tallyexit only when ispecies.eq.1. That should fix everything.
+
+commit.
+
+Now we need a way of activating new species. This requires
+modifications to cmdline.f. Seems that we could have a switch -sp that
+increments the nspecies, and defines eoverm of the nspecies
+species. At the moment, the temperature of that species is simply 1,
+electrons, and we can probably ignore the possibility of a different
+drift for now. It seems reasonable that we would simply take the
+density of the second species to be 1/sqrt(eoverm) of the
+ions. However, it doesn't seem right to constrain both electron and
+ion species to a fixed number because that would cause a fixed
+possibly non-zero charge in the region. Probably therefore, electrons
+should always be treated as having a fixed injection rate. Also the
+number of reinjections per timestep should be scaled appropriately.
+In summary, it is not obvious that anything about the electron
+injection needs to be explicitly set in the cmdline.f code. Just
+nspecies.
+
+Later we might wish to set other species where Ts, vs, etc are input.
+We also need to decide the whole reinjection process. It seems likely
+that the best long-term approach is to generalize the existing
+reinjection routines to accommodate a different mass. By the way we
+already have rmtoz, the ratio of mass to charge of the ions, so we need
+to be somewhat careful with eoverm. rmtoz is by default unity which 
+refers to hydrogen. The only active place rmtoz is used currently is
+in cijroutine for determining floating potential. Floating is another
+challenge that I defer.
+
+The difficulty is that creincom currently holds a lot of precalculated
+data for the injection. It would have to be duplicated for multiple
+species. The total volume of that data is ncrein*9 with ncrein=1000
+so it is not too bulky. However, there's considerable coding that will
+have to be redone. It is only in cartreinject.f.
+
+Remove all nplasdims references and replace by reference to
+ndimsdecl.f.
