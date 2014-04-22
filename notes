@@ -11186,3 +11186,34 @@ have to be redone. It is only in cartreinject.f.
 
 Remove all nplasdims references and replace by reference to
 ndimsdecl.f.
+
+commit.
+
+Remove references to mdims as a parameter from ptaccom.f definitions.
+There remains the need to replace mdims as a variable reference in
+various places in partaccum.f. Replaced with ndimsmax in the places it
+is a reference to common. There are probably many places where the
+reference ought to be to ndims. But haven't fixed those yet.  (Others are
+arguments). Remove mdims entirely from ptaccom.f
+
+Remove iasdims and replace with ndimsmax in mditcom.f 
+
+Now the only *com.f file that has variables containing 'dim'
+where it is not 'ndims' is 3dcom.f with nf_posdim and nf_dimlens.
+
+Introduced array forms:
+      real Ts(nspeciesmax),vds(nspeciesmax),rmtozs(nspeciesmax)
+      real vpars(nspeciesmax)
+      real vperps(ndims,nspeciesmax),vdrifts(ndims,nspeciesmax)
+
+in plascom.f Equivalence cannot be used for dummy arguments.
+Therefore just had to go through the entire routine and transform
+the references into array with extra dimension. When completed
+make geometry works. Add nspecies and nspeciesmax to the argument
+list. That's both the actual species we are working on currently in 
+cmdline and also the final number of species when cmdline finally returns.
+
+Got things working up to a point with nspeciesmax=2 but not actually
+initializing or moving the second species. Just setting its values.
+
+commit

@@ -1,11 +1,11 @@
-c Particle data common.
+c Particle data common. 
+c Requires ndimsdecl.f to define ndims, nspeciesmax
       integer n_partmax
       parameter (n_partmax=4000000)
       integer iflag,idtp
       parameter(iflag=3*ndims+1,idtp=3*ndims+2)
-      integer nspeciesmax
-      parameter (nspeciesmax=1)
-      
+c Actual number of species (default=1, max nspeciesmax)
+      integer nspecies
 c Number of actual active particles < n_partmax
       integer nparta(nspeciesmax)
 c Maximum particle slot that we must examine
@@ -49,8 +49,7 @@ c Whether not all directions of particles are periodic
       integer n_part,iic_part,ioc_part,ninjcomp
       equivalence (n_part,nparta(1)),(iic_part,iicparta(1))
      $     ,(ioc_part,iocparta(1)),(ninjcomp,ninjcompa(1))
-      common/particles/x_part
-c     $     ,n_part,iic_part,ioc_part,ninjcomp
+      common/particles/x_part,nspecies
      $     ,nparta,iicparta,iocparta,ninjcompa
      $     ,eoverm
      $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs

@@ -3,13 +3,12 @@ c Encapsulation of parameter setting.
       subroutine copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
-     $     ,colntime,dt,bdt,subcycle,dropaccel,rmtoz,Bfield,Bt,ninjcomp
-     $     ,nsteps,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
+     $     ,colntime,dt,bdt,subcycle,dropaccel,rmtozs,Bfield,Bt,ninjcomp
+     $     ,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax,debyelen,Ts
      $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
-     $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
+     $     ,lextfield ,vpars,vperps,ndims,islp,slpD,CFin,iCFcount,LPF
      $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
-     $     ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt
-     $     )
+     $     ,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies,nspeciesmax)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
@@ -18,18 +17,24 @@ c Encapsulation of parameter setting.
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
      $     ,lextfield,LPF(ndims),lnotallp,ldistshow
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
-     $     ,dropaccel,rmtoz,vneutral,vd,debyelen,Ti,extfield,vpar,slpD
+     $     ,dropaccel,vneutral,debyelen,extfield,slpD
      $     ,Tneutral,Enfrac,colpow
-      real Bfield(ndims),Bt,vperp(ndims),CFin(3+ndims,6),vdrift(ndims)
+      real Bfield(ndims),Bt,CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
       character*256 argline
       real gt(ndims),gp0(ndims),gtt,gn(ndims),gnt
+c Multiple species can have these things different.
+c Only the first species is possibly collisional.
+      real Ts(*),vds(*),rmtozs(*)
+      real vpars(*)
+      real vperps(ndims,*),vdrifts(ndims,*)
+      integer nspecies,nspeciesmax
 
 c Local variables:
       integer lentrim,iargc
       external lentrim
-      integer i,id,idn,idcn,i0,i1,iargcount,iargpos
+      integer i,id,idn,idcn,i0,i1,iargcount,iargpos,ispecies
       real vwork,bdotgn
       character*100 argument,message
       logical lfirst
@@ -38,17 +43,24 @@ c Local variables:
 
 c Set defaults and objfilename only the first time, subsequently skip.
       if(lfirst)then
+c Default (initial) number of particle species.
+         nspecies=1
 c Fixed number of particles rather than fixed injections.
          ninjcomp=0
          n_part=0
 c Default to constant ripernode not n_part.
          ripernode=100.
          debyelen=1.
-         vd=0.
-         Ti=1.
+         vds(nspecies)=0.
+         Ts(nspecies)=1.
+         rmtozs(nspecies)=1.
          Tneutral=1.
+         do id=1,ndims
+            vdrifts(id,nspecies)=0.
+         enddo
+         vdrifts(ndims,nspecies)=1.
 c Default edge-potential (chi) relaxation rate.     
-         crelax=1.*Ti/(1.+Ti)
+         crelax=1.*Ts(nspecies)/(1.+Ts(nspecies))
          dt=.1
          restartpath=' '
          objfilename='copticgeom.dat'
@@ -70,7 +82,6 @@ c Default edge-potential (chi) relaxation rate.
          ifplot=-1
          iwstep=99999
          rcij=0
-         rmtoz=1.
          iobpsw=1
          ldistshow=.false.
 c Boundary condition switch and value. 0=> logarithmic.
@@ -85,9 +96,7 @@ c Boundary condition switch and value. 0=> logarithmic.
          do id=1,ndims
             LPF(id)=.false.
             ipartperiod(id)=0
-            vdrift(id)=0.
          enddo
-         vdrift(ndims)=1.
          gtt=0.
          gnt=0.
          do i=1,iargc()
@@ -161,7 +170,8 @@ c         write(*,*)i,argument
          if(argument(1:3).eq.'-da')read(argument(4:),*,err=201)bdt
          if(argument(1:3).eq.'-ds')read(argument(4:),*,err=201)subcycle
          if(argument(1:3).eq.'-dd')read(argument(4:),*,err=201)dropaccel
-         if(argument(1:3).eq.'-mz')read(argument(4:),*,err=201)rmtoz
+         if(argument(1:3).eq.'-mz')read(argument(4:),*,err
+     $        =201)rmtozs(nspecies)
          if(argument(1:3).eq.'-bc')read(argument(4:),*,err=201)islp
          if(argument(1:3).eq.'-bp')then
             read(argument(4:),*,err=201)idn
@@ -231,7 +241,25 @@ c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
      $        read(argument(8:),*,err=201)ninjcomp
          if(argument(1:3).eq.'-rn')
      $        read(argument(4:),*,err=201)ninjcomp
-         if(argument(1:2).eq.'-s')then
+         if(argument(1:3).eq.'-sp')then
+            if(nspecies+1.gt.nspeciesmax)then
+               write(*,*)'***Disallowed more species than available'
+     $              ,nspecies+1,nspeciesmax
+               stop
+            else
+c Default to electron Temp/mass for subsequent species.
+               Ts(nspecies+1)=1.
+               rmtozs(nspecies+1)=1./1836.
+c Inherit the drifts of the previous species until explicitly changed.
+               vds(nspecies+1)=vds(nspecies)
+               do id=1,ndims
+                  vdrifts(id,nspecies+1)=vdrifts(id,nspecies)
+               enddo
+            endif
+            write(*,*)'vds(nspecies)=',vds(nspecies),nspecies
+            nspecies=nspecies+1
+c Drifts must be respecified for this species if different.
+         elseif(argument(1:2).eq.'-s')then
             read(argument(3:),*,err=201)nsteps
             if(nsteps.gt.nf_maxsteps)then
                if(lmyidhead)write(*,*)'Asked for more steps',nsteps,
@@ -242,17 +270,17 @@ c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
          if(argument(1:3).eq.'-vn')then
             read(argument(4:),*,err=201)vneutral
          elseif(argument(1:3).eq.'-vx')then
-            read(argument(4:),*,err=201)vdrift(1)
+            read(argument(4:),*,err=201)vdrifts(1,nspecies)
          elseif(argument(1:3).eq.'-vy')then
-            read(argument(4:),*,err=201)vdrift(2)
+            read(argument(4:),*,err=201)vdrifts(2,nspecies)
          elseif(argument(1:3).eq.'-vz')then
-            read(argument(4:),*,err=201)vdrift(3)
+            read(argument(4:),*,err=201)vdrifts(3,nspecies)
          elseif(argument(1:2).eq.'-v')then
-            read(argument(3:),*,err=201)vd
+            read(argument(3:),*,err=201)vds(nspecies)
 c For Mach bdy, set slpD equal to M.
-            slpD=vd
-c By default put the vneutral the same
-            vneutral=vd
+            slpD=vds(nspecies)
+c By default put the vneutral the same as first species
+            vneutral=vds(1)
          endif
          if(argument(1:3).eq.'-md')then 
             read(argument(4:),*,err=201)ndiags
@@ -273,9 +301,9 @@ c Electron temperature gradient parameters
          elseif(argument(1:3).eq.'-tn')then
             read(argument(4:),*,err=201)Tneutral
          elseif(argument(1:2).eq.'-t')then
-            read(argument(3:),*,err=201)Ti
-c Default Tneutral=Ti
-            Tneutral=Ti
+            read(argument(3:),*,err=201)Ts(nspecies)
+c Default Tneutral=Ts(nspecies)
+            Tneutral=Ts(nspecies)
          endif
          
          if(argument(1:2).eq.'-w')read(argument(3:),*,err=201)iwstep
@@ -324,24 +352,27 @@ c End of command line parameter parsing.
 c-------------------------------------------------------
 
  202  continue
-      if(vdrift(1).ne.0. .or. vdrift(2).ne.0)then
+      do ispecies=1,nspecies
+         if(vdrifts(1,nspecies).ne.0. .or. vdrifts(2,nspecies).ne.0)then
 c --- Drift in direction other than z. Normalize cosines.
-         vwork=0.
-         do i=1,ndims
+            vwork=0.
+            do i=1,ndims
 c Make all the vdrift components non-zero so that we can use that fact
 c as an indicator of non-z drift.
-            if(vdrift(i).eq.0.)vdrift(i)=1.e-25
-            vwork=vwork+vdrift(i)**2
-         enddo
-         vwork=sqrt(vwork)
-         do i=1,ndims
-            vdrift(i)=vdrift(i)/vwork
-         enddo
-      endif
+               if(vdrifts(i,nspecies).eq.0.)vdrifts(i,nspecies)=1.e-25
+               vwork=vwork+vdrifts(i,nspecies)**2
+            enddo
+            vwork=sqrt(vwork)
+            do i=1,ndims
+               vdrifts(i,nspecies)=vdrifts(i,nspecies)/vwork
+            enddo
+         endif
+      enddo
 c ---
       if(colntime.eq.0.)then
 c Collisionless, also set vneutral to vd, else things are inconsistent:
-         vneutral=vd
+c But vneutral is only the first species. This is redundant.
+c         vneutral=vds(1)
       endif
 c --- Deal with B-field
       Bt=0.
@@ -373,37 +404,45 @@ c Flag an inappropriate field and dt combination
      $           'UNWISE field',Bt,' and dt',dt
      $           ,' Use B.dt less than 1; else inaccurate.'
          endif
+         do ispecies=1,nspecies
 c This test is redundant now. Should use the general (else) case.
-         if(vdrift(1).eq.0)then
-c Assume that vd is in the z-direction
-            vpar=vd*Bfield(ndims)
-            do i=1,ndims
-               vperp(i)=-Bfield(i)*vpar
-            enddo
-            vperp(ndims)=vperp(ndims)+vd
-         else
-c vd non-z:
-            vpar=0.
-            do i=1,ndims
-               vpar=vd*vdrift(i)*Bfield(i)
-            enddo
-            do i=1,ndims
-               vperp(i)=-Bfield(i)*vpar
-            enddo
-            vwork=0.
-            do i=1,ndims
-               vperp(i)=vperp(i)+vd*vdrift(i)
-               vwork=vwork+(vperp(i)+vpar*Bfield(i))**2
-            enddo
-            vwork=sqrt(vwork)
-            if(lmyidhead)write(*,'(a,f10.6,a,3f10.6,a,f10.6)'
-     $           )'vpar,vperp,vtot',vpar,',',vperp,',',vwork
-         endif
+            if(vdrifts(1,ispecies).eq.0)then
+c Assume that vds(ispecies) is in the z-direction
+               vpars(ispecies)=vds(ispecies)*Bfield(ndims)
+               do i=1,ndims
+                  vperps(i,ispecies)=-Bfield(i)*vpars(ispecies)
+               enddo
+            vperps(ndims,ispecies)=vperps(ndims,ispecies)+vds(ispecies)
+            else
+c vds(ispecies) non-z:
+               vpars(ispecies)=0.
+               do i=1,ndims
+                  vpars(ispecies)=vds(ispecies)*vdrifts(i,ispecies)
+     $                 *Bfield(i)
+               enddo
+               do i=1,ndims
+                  vperps(i,ispecies)=-Bfield(i)*vpars(ispecies)
+               enddo
+               vwork=0.
+               do i=1,ndims
+                  vperps(i,ispecies)=vperps(i,ispecies)+vds(ispecies)
+     $                 *vdrifts(i,ispecies)
+                  vwork=vwork+(vperps(i,ispecies)+vpars(ispecies)
+     $                 *Bfield(i))**2
+               enddo
+               vwork=sqrt(vwork)
+               if(lmyidhead)write(*,'(a,f10.6,a,3f10.6,a,f10.6)'
+     $              )'vpars(ispecies),vperp,vtot',vpars(ispecies),','
+     $              ,(vperps(id,ispecies),id=1,3),',',vwork
+            endif
+         enddo
       else
 c Zero the vparallel and vperp. Probably not necessary; but tidy.
-         vpar=0.
-         do i=1,ndims
-            vperp(i)=0.
+         do ispecies=1,nspecies
+            vpars(ispecies)=0.
+            do i=1,ndims
+               vperps(i,ispecies)=0.
+            enddo
          enddo
       endif
 c Set and check particle periodicity logical.
@@ -457,18 +496,22 @@ c Help text
       write(*,304)' -dd   set Drop-ion impulse/step  [',dropaccel
      $     ,'  greater impulse => drop this ion.'
       write(*,301)' -s    set No of steps.           [',nsteps
-      write(*,302)' -t    set Ion Temperature.       [',Ti
+      write(*,302)' -t    set (Ion) Temperature.     [',(Ts(ispecies)
+     $     ,ispecies=1,nspecies)
       write(*,306)' -tge  set Elec Temp Center&Grad  [',gp0,gt
       write(*,306)' -ng   set Density gradient       [',gn
       write(*,302)' -l    set Debye Length.          [',debyelen
-      write(*,302)' -v    set drift speed.           [',vd
-      write(*,302)' -vx -vy -vz set velocity cosines [',vdrift
+      write(*,302)' -v    set drift speed.           [',(vds(ispecies)
+     $     ,ispecies=1,nspecies)
+      write(*,306)' -vx -vy -vz set velocity cosines [',((vdrifts(id
+     $     ,ispecies),id=1,3),ispecies=1,min(2,nspecies))
       write(*,302)' -ct   set collision time.        [',colntime
       write(*,302)' -vn   set neutral drift velocity [',vneutral
       write(*,302)' -tn   set neutral temperature    [',Tneutral
       write(*,302)' -Ef   set Ext v-drive fraction   [',Enfrac
       write(*,302)' -cp   set v-power coln freq      [',colpow
-      write(*,302)' -mz   set mass/Z ratio           [',rmtoz
+      write(*,302)' -mz   set mass/Z ratio           ['
+     $     ,(rmtozs(ispecies),ispecies=1,nspecies)
       write(*,302)' -Bx -By -Bz set mag field compts [',Bfield
       write(*,301)' -w    set write-step period.     [',iwstep
      $     ,'     If <1, only myid writes final.'

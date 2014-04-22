@@ -43,12 +43,6 @@ c Tangential velocity of circular orbit at r=?.
 c-----------------------------------------------------------------
       ntries=0
 c      ntrapped=0
-c Minimum used slot is 1 by default
-      iic_part=1
-c The maximum available slot is n_partmax
-      iicparta(nspeciesmax+1)=n_partmax+1
-c The maximum used slot is the same as the number of particles initially
-      ioc_part=n_part
       Eneutral=0.
       if(colntime.ne.0.)then
 c At this point vperp refers to the perp part of vd, set by cmdline.
@@ -138,6 +132,8 @@ c Initialize orbit tracking
       do ko=1,norbits
          iorbitlen(ko)=0
       enddo
+c The maximum used slot is the same as the number of particles initially
+      ioc_part=n_part
       end
 c***********************************************************************
       subroutine locateinit()

@@ -119,8 +119,8 @@ c Reduce the particle distribution diagnostics accumulations.
       include 'meshcom.f'
       include 'ptaccom.f'
       integer nfv,nfsv
-      parameter(nfv=2*nptdiag*mdims,
-     $     nfsv=nsbins*mdims*(nsub_tot+1)+nsub_tot)
+      parameter(nfv=2*nptdiag*ndimsmax,
+     $     nfsv=nsbins*ndimsmax*(nsub_tot+1)+nsub_tot)
 c Reduce the data for common /cartdiag/fv,px,... nfvaccum
 c Only the fv,px are to be added together. And nfvaccum.
       call MPI_ALLREDUCE(MPI_IN_PLACE,fv,nfv,MPI_REAL

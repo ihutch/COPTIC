@@ -137,7 +137,7 @@ c First time this routine just sets defaults and the object file name.
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
      $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
-     $     ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt
+     $     ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies,nspeciesmax
      $     )
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
@@ -151,7 +151,7 @@ c Second time: deal with any other command line parameters.
      $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
      $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
      $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
-     $     ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt
+     $     ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies,nspeciesmax
      $     )
       if(ierr.ne.0)stop
 c The double call enables cmdline switches to override objfile settings.
@@ -321,6 +321,10 @@ c (Re)Initialize the fortran random number generator.
 c Initialize with a specified number of particles.
 c      write(*,*)'ibool_part=',ibool_part
 c      if(lmyidhead)write(*,*)'Initializing',n_part,' particles'
+c Minimum used slot is 1 by default
+      iicparta(1)=1
+c The default maximum available slot is n_partmax
+      iicparta(2)=n_partmax+1
       call pinit(subcycle)
 c      if(lmyidhead)write(*,*)'Return from pinit'
 c---------------------------------------------

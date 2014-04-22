@@ -22,7 +22,7 @@ c Otherwise if cellvol.gt.0 just accumulate to bins.
       include 'meshcom.f'
       include 'partcom.f'
       include 'ptaccom.f'
-      real xlimit(2,mdims),vlimit(2,mdims),xnewlim(2,mdims)
+      real xlimit(2,ndimsmax),vlimit(2,ndimsmax),xnewlim(2,ndimsmax)
       real cellvol
       integer myid,ibset
       integer nvlist
@@ -45,7 +45,7 @@ c A small nvlist means we go right to the edge of actual particles.
      $        ,vlimit,nvlist,ivproj,Bfield)
          if(myid.eq.0)write(*,'('' Velocity limits:'',6f7.3)')
      $        vlimit
-         call minmaxreduce(mdims,vlimit)
+         call minmaxreduce(ndimsmax,vlimit)
 c            write(*,'('' Velocity reduced:'',6f7.3)') vlimit
 c Indicate csbin not initialized and start initialization
          csbin(1,1)=-1.
@@ -59,7 +59,7 @@ c Do the accumulation for this file up to maximum relevant slot.
      $        ,' total',' in',xlimit
 c Reduce back the data for MPI cases.
          call ptdiagreduce()
-         call minmaxreduce(mdims,xnewlim)
+         call minmaxreduce(ndimsmax,xnewlim)
          if(myid.eq.0)write(*,'(a,i8,a,6f8.3)')'Reduced',nfvaccum
      $        ,' Xnewlim=',xnewlim
 c Should do this only the first time.
@@ -71,7 +71,7 @@ c Should do this only the first time.
       endif
 c         write(*,*)'isfull',isfull,cellvol
 c         write(*,*)'calling subaccum'
-      call subaccum(mdims,x_part,ioc_part,
+      call subaccum(ndimsmax,x_part,ioc_part,
      $     isuds,vlimit,xnewlim)
 c     $     isfull,isuds,vlimit,xnewlim)
       end
@@ -82,10 +82,10 @@ c Initialize uniform bins for accumulation of the particles.
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'plascom.f'
-      real vlimit(2,mdims)
+      real vlimit(2,ndimsmax)
 
 c Initialization.
-      do id=1,mdims
+      do id=1,ndimsmax
          do i=1,nptdiag
             fv(i,id)=0.
             px(i,id)=0.
@@ -107,16 +107,16 @@ c Accumulate a particle into velocity bins.
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'plascom.f'
-      real vlimit(2,mdims)
-      real xr(3*mdims)
+      real vlimit(2,ndimsmax)
+      real xr(3*ndimsmax)
 
-      do id=1,mdims
+      do id=1,ndimsmax
 c Assign velocities to bins.
          if(ivproj.eq.0)then
-            v=xr(mdims+id)
+            v=xr(ndimsmax+id)
          else
 c Projected.
-            v=vproject(mdims,id,xr,Bfield)
+            v=vproject(ndimsmax,id,xr,Bfield)
          endif
 
          if(v.lt.vlimit(1,id))v=vlimit(1,id)
@@ -305,13 +305,13 @@ c***********************************************************************
 c Calculate the non-uniform bins for particle distribution accumlation.
 c There are nsbins combined bins for each dimension. 
 c These are in common subdiag:
-c ibinmap(nptdiag,mdims) is the map from uniform to combined bins
+c ibinmap(nptdiag,ndimsmax) is the map from uniform to combined bins
 c pointing to an nsbins bin for each of the nptdiag uniform bins.
-c vsbin(nsbins,mdims) is the center velocity of the combined bins
-c csbin(nsbins,mdims) is the number of fine bins in each combined bin
+c vsbin(nsbins,ndimsmax) is the center velocity of the combined bins
+c csbin(nsbins,ndimsmax) is the number of fine bins in each combined bin
 c fsv is the sum of fv in each combined bin during the initial
 c     accumulation and bin calculation.
-c vhbin(0:nsbins,mdims) is the histogram boundaries of the combined bins
+c vhbin(0:nsbins,ndimsmax) is the histogram boundaries of the combined bins
 c If nptdiag.le.nsbins, implying no compression of the data, then
 c a simple identification of summed and uniform bins is used so that the
 c summed bins are actually uniform. The lengths must be set in ptaccom.f
@@ -322,7 +322,7 @@ c summed bins are actually uniform. The lengths must be set in ptaccom.f
 
 c 
       ifixed=0
-      do id=1,mdims
+      do id=1,ndimsmax
          cumfv(0,id)=0.
          do j=1,nsbins
             vsbin(j,id)=0.
@@ -457,15 +457,15 @@ c Accumulate a particle into velocity bin corresponding to position ip
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'plascom.f'
-      real vlimit(2,mdims)
-      real xr(3*mdims)
+      real vlimit(2,ndimsmax)
+      real xr(3*ndimsmax)
 
-      do id=1,mdims
+      do id=1,ndimsmax
 c Assign velocities to bins.
          if(ivproj.eq.0)then
-            v=xr(mdims+id)
+            v=xr(ndimsmax+id)
          else
-            v=vproject(mdims,id,xr,Bfield)
+            v=vproject(ndimsmax,id,xr,Bfield)
          endif
          if(v.lt.vlimit(1,id))v=vlimit(1,id)
          if(v.gt.vlimit(2,id))v=vlimit(2,id)
@@ -491,26 +491,26 @@ c*******************************************************************
       include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
-      real xnewlim(2,mdims)
+      real xnewlim(2,ndimsmax)
 
       isfull(1)=nsub_i
       isfull(2)=nsub_j
       isfull(3)=nsub_k
       if(ibset.eq.0)then
-         do i=1,mdims
+         do i=1,ndimsmax
             isuds(i)=isfull(i)
          enddo
       endif
       do ip=1,nsub_tot
          denfvx(ip)=0.
-         do id=1,mdims
+         do id=1,ndimsmax
             do ibs=1,nsbins
                fvx(ibs,id,ip)=0.
             enddo
          enddo
       enddo
       cellvol=1.
-      do id=1,mdims
+      do id=1,ndimsmax
 c         cellvol=cellvol*(xnewlim(2,id)-xnewlim(1,id))/isfull(id)
          cellvol=cellvol*(xnewlim(2,id)-xnewlim(1,id))/isuds(id)
 c         write(*,*)xnewlim(2,id),xnewlim(1,id)
@@ -523,30 +523,30 @@ c**********************************************************************
       include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
-      real xlimit(2,mdims),vlimit(2,mdims),xnewlim(2,mdims)
+      real xlimit(2,ndimsmax),vlimit(2,ndimsmax),xnewlim(2,ndimsmax)
       character*(*) name
 
       open(25,file=name,status='old',form='unformatted',err=101)
-      read(25)nptdiagfile,mdimsfile
+      read(25)nptdiagfile,ndimsmaxfile
       read(25)(xlimit(1,j),xlimit(2,j),vlimit(1,j),vlimit(2,j),
-     $     j=1,mdims)
-      read(25)((xdiag(i,j),px(i,j),i=1,nptdiag),j=1,mdims)
-      read(25)((vdiag(i,j),fv(i,j),i=1,nptdiag),j=1,mdims)
-      read(25)(xnewlim(1,j),xnewlim(2,j),j=1,mdims)
-      read(25)nsbf,(isfull(i),i=1,mdims),cellvol
-      read(25)(isuds(i),i=1,mdims)
+     $     j=1,ndimsmax)
+      read(25)((xdiag(i,j),px(i,j),i=1,nptdiag),j=1,ndimsmax)
+      read(25)((vdiag(i,j),fv(i,j),i=1,nptdiag),j=1,ndimsmax)
+      read(25)(xnewlim(1,j),xnewlim(2,j),j=1,ndimsmax)
+      read(25)nsbf,(isfull(i),i=1,ndimsmax),cellvol
+      read(25)(isuds(i),i=1,ndimsmax)
       isftot=1
-      do i=1,mdims
+      do i=1,ndimsmax
          isftot=isftot*isfull(i)
       enddo
 c Check if the nsbins is correct and there's enough storage.
       if(nsbf.ne.nsbins)goto 103
       if(isftot.gt.nsub_tot)goto 103
-      read(25)(((fvx(i,j,k),i=1,nsbins),j=1,mdims),k=1,isftot)
+      read(25)(((fvx(i,j,k),i=1,nsbins),j=1,ndimsmax),k=1,isftot)
       read(25)(denfvx(k),k=1,isftot)
       read(25)((vsbin(i,j),csbin(i,j),fsv(i,j),i=1,nsbins),
-     $     (vhbin(i,j),i=0,nsbins),j=1,mdims)
-      read(25)((ibinmap(i,j),i=1,nptdiag),j=1,mdims)
+     $     (vhbin(i,j),i=0,nsbins),j=1,ndimsmax)
+      read(25)((ibinmap(i,j),i=1,nptdiag),j=1,ndimsmax)
       close(25)
 
       return
@@ -565,30 +565,30 @@ c**********************************************************************
       include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
-      real xlimit(2,mdims),vlimit(2,mdims),xnewlim(2,mdims)
+      real xlimit(2,ndimsmax),vlimit(2,ndimsmax),xnewlim(2,ndimsmax)
       character*(*) name
 
       open(25,file=name,status='unknown',err=101)
       close(25,status='delete')
       open(25,file=name,status='new',form='unformatted',err=101)
-      write(25)nptdiag,mdims
+      write(25)nptdiag,ndimsmax
       write(25)(xlimit(1,j),xlimit(2,j),vlimit(1,j),vlimit(2,j),
-     $     j=1,mdims)
-      write(25)((xdiag(i,j),px(i,j),i=1,nptdiag),j=1,mdims)
-      write(25)((vdiag(i,j),fv(i,j),i=1,nptdiag),j=1,mdims)
-c      write(*,'(2f10.4)')((vdiag(i,j),fv(i,j),i=1,5),j=1,mdims)
-      write(25)(xnewlim(1,j),xnewlim(2,j),j=1,mdims)
-      write(25)nsbins,(isfull(i),i=1,mdims),cellvol
-      write(25)(isuds(i),i=1,mdims)
+     $     j=1,ndimsmax)
+      write(25)((xdiag(i,j),px(i,j),i=1,nptdiag),j=1,ndimsmax)
+      write(25)((vdiag(i,j),fv(i,j),i=1,nptdiag),j=1,ndimsmax)
+c      write(*,'(2f10.4)')((vdiag(i,j),fv(i,j),i=1,5),j=1,ndimsmax)
+      write(25)(xnewlim(1,j),xnewlim(2,j),j=1,ndimsmax)
+      write(25)nsbins,(isfull(i),i=1,ndimsmax),cellvol
+      write(25)(isuds(i),i=1,ndimsmax)
       isftot=1
-      do i=1,mdims
+      do i=1,ndimsmax
          isftot=isftot*isfull(i)
       enddo
-      write(25)(((fvx(i,j,k),i=1,nsbins),j=1,mdims),k=1,isftot)
+      write(25)(((fvx(i,j,k),i=1,nsbins),j=1,ndimsmax),k=1,isftot)
       write(25)(denfvx(k),k=1,isftot)
       write(25)((vsbin(i,j),csbin(i,j),fsv(i,j),i=1,nsbins),
-     $     (vhbin(i,j),i=0,nsbins),j=1,mdims)
-      write(25)((ibinmap(i,j),i=1,nptdiag),j=1,mdims)
+     $     (vhbin(i,j),i=0,nsbins),j=1,ndimsmax)
+      write(25)((ibinmap(i,j),i=1,nptdiag),j=1,ndimsmax)
       close(25)
 
       return
@@ -608,7 +608,7 @@ c 3-D only code.
       include 'ptaccom.f'
       include 'plascom.f'
 c Distributions in ptaccom.f
-      real vlimit(2,mdims),xnewlim(2,mdims)
+      real vlimit(2,ndimsmax),xnewlim(2,ndimsmax)
       real cellvol,ftot,vtot,v2tot
       real fvplt(nsbins)
       integer ip,id,iv
@@ -847,7 +847,7 @@ c****************************************************************
       include 'meshcom.f'
       include 'partcom.f'
       include 'ptaccom.f'
-      do id=1,mdims
+      do id=1,ndimsmax
          do jj=1,nsbins
             fsv(jj,id)=0.
          enddo
