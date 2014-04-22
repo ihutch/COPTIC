@@ -295,7 +295,7 @@ c--------------------------------------------
 c Start of a new orbit
  2    continue 
 c Inject from neutral distribution
-      v2=delta*Tneutral
+      v2=delta*Ti
       do i=1,ndims
          v(i)=tisq*gasdev(i)
 c         if(i.eq.ndims)v(i)=v(i)+vneutral
@@ -306,12 +306,12 @@ c torb is the orbit time in velocity-scaled units. ttic in unscaled.
       torb=-alog(ran1(1)+1.e-15)*ctprime
 
 c      write(*,*)'ctprime=',ctprime
-c      write(*,*)ttic,torb,Eneutral,v,Tneutral,Bt
+c      write(*,*)ttic,torb,Eneutral,v,Ti,Bt
  3    if(ttic.le.torb)then
 c If ttic<torb, advance to tic.
 c Subtract the timestep from time to the orbit end in scaled units
          torb=torb-ttic
-         v2=delta*Tneutral
+         v2=delta*Ti
          ncdist=ncdist+1
          if(Bt.eq.0.)then
 c B-field free case
@@ -401,7 +401,7 @@ c            if(i.eq.ndims)vn(i)=vn(i)+vneutral
          enddo
 c Calculate the ratio of the actual collision time at this relative
 c velocity to the possible-collision time:
-         colnu=((v2+delta*Tneutral)/(Ti+delta*v2))**(colpow/2.)
+         colnu=((v2+delta*Ti)/(Ti+delta*v2))**(colpow/2.)
      $        *colntime/ctprime
 c Select a fraction of these collisions weighted by this ratio.
          rd=ran1(1)*colnu

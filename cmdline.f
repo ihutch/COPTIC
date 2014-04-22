@@ -2,7 +2,7 @@
 c Encapsulation of parameter setting.
       subroutine copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-     $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
+     $     ,thetain,nth,iavesteps,nparta,numprocs,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,dropaccel,rmtozs,Bfield,Bt,ninjcomp
      $     ,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax,debyelen,Ts
      $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
@@ -11,7 +11,7 @@ c Encapsulation of parameter setting.
      $     ,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies,nspeciesmax)
       implicit none
 
-      integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps,n_part
+      integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps
      $     ,numprocs,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
      $     ,iwstep,idistp,ndims,islp,lrestart
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
@@ -27,6 +27,7 @@ c Encapsulation of parameter setting.
 c Multiple species can have these things different.
 c Only the first species is possibly collisional.
       real Ts(*),vds(*),rmtozs(*)
+      integer nparta(*)
       real vpars(*)
       real vperps(ndims,*),vdrifts(ndims,*)
       integer nspecies,nspeciesmax
@@ -45,12 +46,11 @@ c Set defaults and objfilename only the first time, subsequently skip.
       if(lfirst)then
 c Default (initial) number of particle species.
          nspecies=1
+c Default to constant ripernode not npart.
+         ripernode=100.
 c Fixed number of particles rather than fixed injections.
          ninjcomp=0
-         n_part=0
-c Default to constant ripernode not n_part.
-         ripernode=100.
-         debyelen=1.
+         nparta(nspecies)=0
          vds(nspecies)=0.
          Ts(nspecies)=1.
          rmtozs(nspecies)=1.
@@ -61,6 +61,7 @@ c Default to constant ripernode not n_part.
          vdrifts(ndims,nspecies)=1.
 c Default edge-potential (chi) relaxation rate.     
          crelax=1.*Ts(nspecies)/(1.+Ts(nspecies))
+         debyelen=1.
          dt=.1
          restartpath=' '
          objfilename='copticgeom.dat'
@@ -158,7 +159,8 @@ c         write(*,*)i,argument
          elseif(argument(1:2).eq.'-a')then 
             read(argument(3:),*,err=201)iavesteps
          endif
-         if(argument(1:3).eq.'-ni')read(argument(4:),*,err=201)n_part
+         if(argument(1:3).eq.'-ni')read(argument(4:),*,err
+     $        =201)nparta(nspecies)
          if(argument(1:3).eq.'-pn')read(argument(4:),*,err=201)numprocs
          if(argument(1:3).eq.'-ri')read(argument(4:),*,err=201)ripernode
          if(argument(1:3).eq.'-rx')read(argument(4:),*,err=201)crelax
@@ -299,11 +301,13 @@ c Electron temperature gradient parameters
             read(argument(5:),*,err=201)gp0,gt
             gtt=sqrt(gt(1)**2+gt(2)**2+gt(3)**2)
          elseif(argument(1:3).eq.'-tn')then
-            read(argument(4:),*,err=201)Tneutral
+            write(*,*)'***Tneutral setting is obsolete. No can do.'
+            stop
+c            read(argument(4:),*,err=201)Tneutral
          elseif(argument(1:2).eq.'-t')then
             read(argument(3:),*,err=201)Ts(nspecies)
 c Default Tneutral=Ts(nspecies)
-            Tneutral=Ts(nspecies)
+c            Tneutral=Ts(nspecies)
          endif
          
          if(argument(1:2).eq.'-w')read(argument(3:),*,err=201)iwstep
@@ -480,8 +484,8 @@ c Help text
      $     //' Leave no gap before value. Defaults or set values [ddd'
       write(*,301)'[-of]<filename>  set name of object data file.'
      $     //'   ['//objfilename(1:30)
-      write(*,301)' -ni   set No of particles/node   [',n_part
-     $     ,'     zero => unset.'
+      write(*,301)' -ni   set No of particles/node   ['
+     $     ,(nparta(ispecies),ispecies=1,nspecies),'     zero => unset.'
       write(*,301)' -rn   set reinjection number     [',ninjcomp
      $     ,'     fixed/step => parts/node unset.'
       write(*,304)' -ri   set rhoinfinity/node       [',ripernode
@@ -507,7 +511,7 @@ c Help text
      $     ,ispecies),id=1,3),ispecies=1,min(2,nspecies))
       write(*,302)' -ct   set collision time.        [',colntime
       write(*,302)' -vn   set neutral drift velocity [',vneutral
-      write(*,302)' -tn   set neutral temperature    [',Tneutral
+c      write(*,302)' -tn   set neutral temperature    [',Tneutral
       write(*,302)' -Ef   set Ext v-drive fraction   [',Enfrac
       write(*,302)' -cp   set v-power coln freq      [',colpow
       write(*,302)' -mz   set mass/Z ratio           ['

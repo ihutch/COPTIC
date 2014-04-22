@@ -12,8 +12,6 @@ c Maximum particle slot that we must examine
       integer iocparta(nspeciesmax)
 c Starting particle slot
       integer iicparta(nspeciesmax+1)
-c Charge to mass ratio of each species. 1 for ions
-      real eoverm(nspeciesmax)
 c Particle position and velocity (3D cartesian) in the order:
 c (x,y,z) (vx,vy,vz) (xm,ym,zm) where xm... is the mesh position.
       real x_part(idtp,n_partmax)
@@ -51,7 +49,6 @@ c Whether not all directions of particles are periodic
      $     ,(ioc_part,iocparta(1)),(ninjcomp,ninjcompa(1))
       common/particles/x_part,nspecies
      $     ,nparta,iicparta,iocparta,ninjcompa
-     $     ,eoverm
      $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs
      $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp
      $     ,caverein,chi

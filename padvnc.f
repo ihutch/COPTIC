@@ -47,7 +47,7 @@ c Make this always last to use the checks.
       include 'partcom.f'
 
 c-------------------------------------------------------------
-      tisq=sqrt(Tneutral)
+      tisq=sqrt(Ti)
       lcollided=.false.
       ncollided=0
       ic1=2*ndims+1
@@ -195,7 +195,7 @@ c---------- Collision Decision ----------------
             if(colpow.ne.0.)then
 c The collision time scaled by velocity
                dtc=-alog(ran1(myid))*colntime
-     $              *(Ti/(v2+Tneutral))**(colpow/2.)
+     $              *(Ti/(v2+Ti))**(colpow/2.)
             else
 c Time to the first collision
                dtc=-alog(ran1(myid))*colntime
@@ -324,7 +324,7 @@ c================= End of Occupied Slot Treatement ================
 c----------- Reinjection treatment -----------
  200     continue
          x_part(iflag,i)=1
-         call reinject(x_part(1,i),ilaunch,caverein)
+         call reinject(x_part(1,i),ilaunch,ispecies)
          call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
          if(.not.linmesh)then
             write(*,*)'Reinject out of mesh',i,xfrac

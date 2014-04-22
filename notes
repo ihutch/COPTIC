@@ -11217,3 +11217,33 @@ Got things working up to a point with nspeciesmax=2 but not actually
 initializing or moving the second species. Just setting its values.
 
 commit
+
+Changed ninjcalc to refer to nparta etc in cartreinject.f
+One idea is to leave nrein the same for all species, and scale by
+the number of substeps per step. But this only works for electrons.
+
+There's a problem with Tneutral, a scalar. I don't think it is really
+ever used as something different from Ti. It would be better, I think
+if I just got rid of it. Replace with Ti in cartreinject.f, padvnc.f
+pinit.f Everything else is just writing an reading. Leave and ignore.
+
+vneutral is used in cartreinject to determine the extent to which the
+distribution is maxwellian or not based on the different
+vd-vneutral. One way to fix this without introducing multiple
+vneutrals is to set vd-vneutral to zero for ispecies.ne.1 That says
+only the first species can have velocity driven by electric field. The
+others not. Implemented. Passed ispecies in local common within
+cartreinject. We need to do the intialization cinjinit over all active
+nspecies, and make the creincom contain multiple interpolation data.
+Do the usual equivalencing of unarray to array. make geometry. Ok.
+cinjinit seems fine.
+
+Now cartreinject. Replace scalar rein references with vector (not
+idrein). That may have got the reinjection to the point where it
+is ready for more than one species. We still have rhoinfcalc, but 
+it is not clear that it will matter. Leave it for now.
+
+We still have not got different masses implemented. It's a bit
+annoying that we have the mass rmtov rather than the inverse of the mass.
+
+

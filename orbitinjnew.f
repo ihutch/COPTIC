@@ -577,6 +577,7 @@ c No time-averaging for now.
 c Particle information
       include 'partcom.f'
 
+      if(n_part.ne.0)return
 c Calculate ninjcomp from ripernode
       chi=min(-phirein/Ti,0.5)
       ninjcomp=nint(ripernode*dtin* 

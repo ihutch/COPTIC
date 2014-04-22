@@ -195,9 +195,9 @@ c-----------------------------------------------------------------
 c---------------------------------------------------------------
 c      write(*,*)'Doing ninjcalc',n_part,ripernode,dt
       if(n_part.ne.0)ripernode=0.
-c Set ninjcomp if we are using ripernode
-c This does not work until after we've set mesh in cartesian.
-      if(ripernode.ne.0)call ninjcalc(dt)
+c Set ninjcomp if we are using ripernode. This used to be called only
+c if n_part.eq.0. But now we do it always, for possible multiple species.
+      call ninjcalc(dt)
 c----------------------------------------------------------------
 c Initialize the fluxdata storage and addressing before cijroutine
       call fluxdatainit(myid)

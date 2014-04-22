@@ -6,3 +6,4 @@ c Collision settings
       common /colncom/colntime,subcycle,nsubc,vneutral,Tneutral
      $     ,ncollided,fcollided,ndropped,dropaccel,Eneutral,Enfrac
      $     ,colpow,ldistshow
+c Tneutral is obsolete. Ti is now used instead.

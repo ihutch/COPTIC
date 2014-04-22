@@ -1,11 +1,12 @@
 c*********************************************************************
 c Wrapper:
-      subroutine reinject(xr,ilaunch,cdummy)
+      subroutine reinject(xr,ilaunch,ispecies)
       include 'colncom.f'
       include 'ndimsdecl.f'
       include 'partcom.f'
+
       if(colntime.eq.0. .or. colpow.eq.0.)then
-         call cartreinject(xr,ilaunch,caverein)
+         call cartreinject(xr,ilaunch,caverein,ispecies)
       else
          call colreinject(xr,ipartperiod,caverein)
 c Only one launch allowed here (and actually in the other too).
@@ -15,18 +16,20 @@ c Only one launch allowed here (and actually in the other too).
 **********************************************************************
 c Initialize whether we are initialized!
       block data creinset
+      include 'ndimsdecl.f'
       include 'creincom.f'
       data lreininit/.false./
       end
 **********************************************************************
 c Cartesian reinjection routine.
-      subroutine cartreinject(xr,ilaunch,caverein)
+      subroutine cartreinject(xr,ilaunch,caverein,ispecies)
       implicit none
       integer mdims
       parameter (mdims=3)
       real xr(3*mdims)
       real caverein
       integer ilaunch
+      integer ispecies
       real ra,fc,sg,fr,x2,x1
       integer index,k,iother,ir
       real ran1
@@ -48,7 +51,7 @@ c      write(*,*)'Returned from cinjinit'
 c----------------------------------------
 c Pick the face from which to reinject.
       ra=ran1(0)
-      call invtfunc(gintrein,7,ra,fc)
+      call invtfunc(gintreins(0,ispecies),7,ra,fc)
 c Returns fc between 1+ and 7-.
       index=int(fc)
 c Make idrein 1-3, and sg +-1. 
@@ -82,11 +85,9 @@ c This should never happen.
             write(*,*)'Creinject fraction wrong',ra,ir,fr
          endif
 c velocity, linear interpolation:
-         xr(mdims+abs(iother))=
-     $        prein(ir,iother)*(1-fr)+prein(ir+1,iother)*fr
-c velocity, cubic/parabolic interpolation:
-c Works very badly. Don't use.
-c         xr(mdims+abs(iother))=yinterp4pt(prein(ir-1,iother),fr)
+         xr(mdims+abs(iother))= preins(ir,iother,ispecies)*(1-fr)
+     $        +preins(ir+1,iother,ispecies)*fr
+
       enddo
 c----------------------------------------
 c Pick the velocity perpendicular to this face:
@@ -94,7 +95,8 @@ c Pick the velocity perpendicular to this face:
       ir=int(ra)
       fr=ra-ir
 c      write(*,*)ra,ir,index,fr,ncrein
-      xr(mdims+idrein)=hrein(ir,index)*(1-fr)+hrein(ir+1,index)*fr
+      xr(mdims+idrein)=hreins(ir,index,ispecies)*(1-fr)+hreins(ir+1
+     $     ,index,ispecies)*fr
 c In this version of reinject we never try more than one launch
       ilaunch=1
 c----------------------------------------
@@ -128,9 +130,11 @@ c maxwellians of width given by Ti
       external fv1crein
       real fv1crein,ff1crein,fvdrein,ffdrein
       parameter (bdys=6.)
+      common /species/ispec
 
+      do ispec=1,nspecies
       xc=0.
-      xw=sqrt(Ti)
+      xw=sqrt(Ts(ispec))
 c For three coordinate directions
       do id=1,3
 c    For two ends (and hence velocity polarities)
@@ -141,13 +145,13 @@ c idrein determines the sign of velocity. i2 odd => idrein negative.
             if(Bt.lt.Btinf)then
 c Set the inverse cumulative probability fn hrein, and flux grein
                call cumprob(ffdrein,xw,xc,
-     $           ncrein,hrein(0,index),grein(index),myid)
+     $           ncrein,hreins(0,index,ispec),greins(index,ispec),myid)
             else
 c Infinite-Bt case 1-d projection.
-               xc=vpar*Bfield(id)+vperp(id)
-               xw=sqrt(Ti)*Bfield(id)
+               xc=vpars(ispec)*Bfield(id)+vperps(id,ispec)
+               xw=sqrt(Ts(ispec))*Bfield(id)
                call cumprob(ff1crein,xw,xc,
-     $           ncrein,hrein(0,index),grein(index),myid)
+     $           ncrein,hreins(0,index,ispec),greins(index,ispec),myid)
             endif
 c Zero grein on absorbing faces.
             ip=ipartperiod(id)
@@ -156,7 +160,7 @@ c That's the opposite of what I adopted for ipartperiod because
 c it corresponds to negative/positive velocity. Pity!
             ip=ip/2**(2-i2)
             ip=ip-2*(ip/2)
-            if(ip.eq.1)grein(index)=0.
+            if(ip.eq.1)greins(index,ispec)=0.
             if(gnt.ne.0)then
 c Correcting for uniform density scale-length.
                if(idrein.gt.0)then
@@ -178,28 +182,29 @@ c Correcting for uniform density scale-length.
                   else
                   endif
                enddo
-               grein(index)=grein(index)*dengfac
+               greins(index,ispec)=greins(index,ispec)*dengfac
             endif
 c Kludge fix of ends to avoid negative velocity injections.
             if(idrein.gt.0)then
-               if(hrein(0,index).lt.0.)hrein(0,index)=0.
+               if(hreins(0,index,ispec).lt.0.)hreins(0,index,ispec)=0.
             else
-               if(hrein(ncrein,index).gt.0.)hrein(ncrein,index)=0.
+               if(hreins(ncrein,index,ispec).gt.0.)hreins(ncrein,index
+     $              ,ispec)=0.
             endif
-c            write(*,*)index,(hrein(kk,index),kk=0,5)
-c     $           ,(hrein(kk,index),kk=ncrein-4,ncrein)
+c            write(*,*)index,(hreins(kk,index,ispec),kk=0,5)
+c     $           ,(hreins(kk,index,ispec),kk=ncrein-4,ncrein)
          enddo
          idrein=id
          if(Bt.lt.Btinf)then
             call cumprob(fvdrein,xw,xc,
-     $           ncrein,prein(0,id),gdummy,myid)
+     $           ncrein,preins(0,id,ispec),gdummy,myid)
          else
             call cumprob(fv1crein,xw,xc,
-     $           ncrein,prein(0,id),gdummy,myid)
+     $           ncrein,preins(0,id,ispec),gdummy,myid)
          endif
       enddo
 c
-c      write(*,*)'grein',grein
+c      write(*,*)'grein',greins
       gtot=0.
 c Alternative general-dimension fcarea calculation:
       do i=1,ndims
@@ -212,18 +217,20 @@ c Alternative general-dimension fcarea calculation:
 c         write(*,*)'fcarea(',i,')=',fcarea(i)
       enddo
       do id=1,6
-         gtot=gtot+grein(id)*fcarea((id+1)/2)
+         gtot=gtot+greins(id,ispec)*fcarea((id+1)/2)
       enddo
-      gintrein(0)=-0.0000005
+      gintreins(0,ispec)=-0.0000005
       do id=1,6
-         gintrein(id)=gintrein(id-1) +
-     $        1.000001*grein(id)*fcarea((id+1)/2)/gtot
+         gintreins(id,ispec)=gintreins(id-1,ispec) +
+     $        1.000001*greins(id,ispec)*fcarea((id+1)/2)/gtot
       enddo
-      if(.not.gintrein(6).gt.1.)write(*,*)'gintrein problem!'
-c      write(*,*)'ipartperiod',ipartperiod,' grein',grein
+      if(.not.gintreins(6,ispec).gt.1.)write(*,*)'gintrein problem!'
+c      write(*,*)'ipartperiod',ipartperiod,' grein',greins
 c      write(*,*)'gintrein',gintrein
-      lreininit=.true.
 
+      enddo
+      lreininit=.true.
+      
       end
 c**********************************************************************
 c Given a function f(x), whose integral from x=-\infty to +infty exists,
@@ -430,7 +437,11 @@ c Diamagnetic drift is implemented as a Maxwellian shift.
       include 'colncom.f'
       real vdia
       integer id2,id3
+      integer ispec
+      common /species/ispec
 
+      ud=vd-vneutral
+      if(ispec.ne.1)ud=0.
       vdia=0.
 c Are there background diamagnetic drifts? Density gradient. 
       if(gnt.ne.0.)then
@@ -445,9 +456,9 @@ c a Maxwellian shifted by the diamagnetic drift.
       if(vdrift(1).eq.0)then
 c Z-drift cases. (equiv old)
          if(abs(idrein).eq.3)then
-            vn=sqrt(2.*Tneutral)
-            ud=(vd-vneutral)/vn
-            u=(v-vneutral-vdia)/vn
+            vn=sqrt(2.*Ti)
+            u=(v-vd+ud-vdia)/vn
+            ud=ud/vn
             fvdrein=fvcx(u,ud)
             fvdrein=fvdrein/vn
          else
@@ -456,7 +467,6 @@ c Z-drift cases. (equiv old)
          endif
       else
 c Non-z
-         ud=(vd-vneutral)
          if(ud.ne.0.)then
             write(*,*)'Non-z collisional drift not implemented.'
      $           ,' Aborting.'
@@ -484,7 +494,11 @@ c Diamagnetic drift is implemented as a Maxwellian shift.
       include 'colncom.f'
       real vdia
       integer id2,id3
+      integer ispec
+      common /species/ispec
 
+      ud=vd-vneutral
+      if(ispec.ne.1)ud=0.
       vdia=0.
 c Are there background diamagnetic drifts? Density gradient. 
       if(gnt.ne.0.)then
@@ -503,9 +517,9 @@ c      endif
 c Z-drift cases. (equiv old)
          if(abs(idrein).eq.3)then
 c In z-direction use appropriate drift distribution.
-            vn=sqrt(2.*Tneutral)
-            ud=(vd-vneutral)/vn
-            u=(v-vneutral-vdia)/vn
+            vn=sqrt(2.*Ti)
+            u=(v-vd+ud-vdia)/vn
+            ud=ud/vn
             ffdrein=fvcx(u,ud)
             ffdrein=abs(v)*ffdrein/vn
          else
@@ -514,7 +528,6 @@ c In z-direction use appropriate drift distribution.
          endif
       else
 c Non-z
-         ud=(vd-vneutral)
          if(ud.ne.0.)then
             write(*,*)'Non-z collisional drift not implemented.'
      $           ,' Aborting.'
@@ -728,6 +741,9 @@ c Particle information
       real volume,flux
       real cfactor
 c 
+      do ispecies=1,nspecies
+c An ion species that has n_part set needs no ninjcalc.
+      if(nparta(ispecies).eq.0)then
       if(.not.lreininit)call cinjinit()
 c Calculate ninjcomp from ripernode
       volume=1.
@@ -741,28 +757,30 @@ c a reinjection.
             id=mod(i+j-1,ndims)+1
             fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
          enddo
-c         flux=flux+fonefac(i)*fcarea(i)*sqrt(2.*Ti/3.1415926)
          flux=flux+(grein(2*i-1)+grein(2*i))*fcarea(i)
          volume=volume*(xmeshend(i)-xmeshstart(i))
       enddo
 c Correct approximately for edge potential depression (OML).
-      chi=crelax*min(-phirein/Ti,0.5)
-      cfactor=smaxflux(vd/sqrt(2.*Ti),chi)/smaxflux(vd/sqrt(2.*Ti),0.)
-      ninjcomp=nint(ripernode*dtin*cfactor*flux)
+      chi=crelax*min(-phirein/Ts(ispecies),0.5)
+      cfactor=smaxflux(vd/sqrt(2.*Ts(ispecies)),chi)
+     $     /smaxflux(vd/sqrt(2.*Ts(ispecies)),0.)
+      ninjcompa(ispecies)=nint(ripernode*dtin*cfactor*flux)
 c      write(*,*)'ripernode,dtin,cfactor,flux,ninjcomp',ripernode,dtin
 c     $     ,cfactor,flux,ninjcomp
       nrein=ninjcomp*numprocs
       if(ninjcomp.le.0)ninjcomp=1
-      n_part=int(ripernode*volume)
+      nparta(ispecies)=int(ripernode*volume)
       rhoinf=ripernode*numprocs
       if(n_part.gt.n_partmax)then
          write(*,*)'ERROR. Too many particles required.'
-         write(*,101)rhoinf,n_part,n_partmax
+         write(*,101)rhoinf,nparta(ispecies),n_partmax
  101     format('rhoinf=',f8.2,'  needs n_part=',i9
      $        ,'  which exceeds n_partmax=',i9)
          stop
       endif
-c      write(*,*)'Ending ninjcalc',rhoinf,nrein,n_part
+      endif
+      enddo
+      write(*,*)'Ending ninjcalc',rhoinf,nrein,nparta(1)
 
       end
 c********************************************************************
