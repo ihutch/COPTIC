@@ -1,4 +1,4 @@
-      subroutine padvnc(iLs,cij,u,ndiags,psum,diagsum)
+      subroutine padvnc(iLs,cij,u,ndiags,psum,diagsum,ispecies)
 c Particle advancing routine.
 c If ninjcomp (in partcom) is non-zero, then we are operating in a mode
 c where the number of reinjections at each timestep is prescribed.
@@ -7,7 +7,7 @@ c Otherwise we are using a fixed number n_part of particles.
 c Storage size of the mesh arrays.
 c      real cij(2*ndims+1,nx,ny,nz)
 c      real u(nx,ny,nz)
-      integer ndiags
+      integer ndiags,ispecies
       real cij(*),u(*),psum(*),diagsum(*)
 
       include 'ndimsdecl.f'
@@ -47,13 +47,12 @@ c Make this always last to use the checks.
       include 'partcom.f'
 
 c-------------------------------------------------------------
-      tisq=sqrt(Ti)
+      tisq=sqrt(Ts(ispecies))
       lcollided=.false.
       ncollided=0
       ic1=2*ndims+1
       ndimsx2=2*ndims
 c-----------------------------------------------------------------
-      ispecies=1
 c Initialize. Set reinjection potential. We start with zero reinjections.
       if(ispecies.eq.1)call cavereinset(phirein)
       phirein=0

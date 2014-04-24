@@ -757,8 +757,8 @@ c From here on is non-general and is mostly for testing.
       write(*,*)'Flux density*r^2, normalized to rhoinf'
      $     ,fluxdensity
 c      write(*,*)'Sectcom ipt=',sc_ipt
-      rmtozlocal=1.
-      flogfac=0.5*alog(2.*3.1415926/(rmtozlocal*1836.))
+      eovermlocal=1.
+      flogfac=0.5*alog(2.*3.1415926*eovermlocal/1836.)
       phifloat=alog(fluxdensity)+flogfac
       write(*,*)'Floating potential=',phifloat
 

@@ -95,8 +95,8 @@ c Possible multiple files.
      $           'phirein,numprocs='
             write(*,*)iregion_part,n_part,dt,ldiags,rhoinf,nrein,phirein
      $           ,numprocs
-            write(*,*)'rmtoz,Bt,Bfield,vpar,vperp=',rmtoz,Bt,Bfield,vpar
-     $           ,vperp
+            write(*,*)'eoverm,Bt,Bfield,vpar,vperp=',eoverm,Bt,Bfield
+     $           ,vpar,vperp
             stop
          endif
          if(ierr-4*(ierr/4).ne.0)goto 11

@@ -132,13 +132,13 @@ c First time this routine just sets defaults and the object file name.
       call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
-     $     ,colntime,dt,bdt,subcycle,dropaccel,rmtoz,Bfield,Bt,ninjcomp
-     $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
-     $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
-     $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
-     $     ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies,nspeciesmax
-     $     )
+     $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
+     $     ,ninjcomp ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax
+     $     ,debyelen,Ti ,iwstep ,idistp,lrestart,restartpath,extfield
+     $     ,objfilename ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin
+     $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
+     $     ,idims,argline ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
+     $     ,nspeciesmax)
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -146,13 +146,13 @@ c Second time: deal with any other command line parameters.
       call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
-     $     ,colntime,dt,bdt,subcycle,dropaccel,rmtoz,Bfield,Bt,ninjcomp
-     $     ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
-     $     ,iwstep ,idistp,lrestart,restartpath,extfield,objfilename
-     $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
-     $     ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies,nspeciesmax
-     $     )
+     $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
+     $     ,ninjcomp ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax
+     $     ,debyelen,Ti ,iwstep ,idistp,lrestart,restartpath,extfield
+     $     ,objfilename ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin
+     $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
+     $     ,idims,argline ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
+     $     ,nspeciesmax)
       if(ierr.ne.0)stop
 c The double call enables cmdline switches to override objfile settings.
 c-----------------------------------------------------------------
@@ -160,18 +160,11 @@ c Finalize parameters after switch reading.
       ndropped=0
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
- 250  call meshconstruct(ndims,iuds,ifull,ipartperiod)
+ 250  call meshconstruct(ndims,iuds,ifull,ipartperiod,rs)
       if(lmyidhead)write(*,'(a,3i4,6f8.3)')
      $     ' Constructed mesh',iuds
      $     ,(xmeshstart(k),xmeshend(k),k=1,ndims)
-c Localizing use of rs as the size of domain.
       rs1=0.5*abs(xmeshend(1)-xmeshstart(1))
-      do id=1,ndims
-         rsi=0.5*abs(xmeshend(id)-xmeshstart(id))
-         if(rsi.gt.rs)then 
-            rs=rsi
-         endif
-      enddo
       if(lmyidhead.and.rs.gt.rs1 .and. islp.eq.0.and.iCFcount.le.0)
      $     write(*,*)'UNUSUAL choice islp=',islp
      $     ,' when non-square domain in use.'
@@ -186,12 +179,6 @@ c Initialize the face phi boundary conditions if we are using them.
 c Now print out the result of the initialization.
          if(lmyidhead)call bdyfaceinit(-2,CFin(1,1))
       endif
-c-----------------------------------------------------------------
-      ipoint=0
-      do id=1,ndims
-         ium2(id)=iuds(id)-2
-         ipoint=ipoint+iLs(id)
-      enddo         
 c---------------------------------------------------------------
 c      write(*,*)'Doing ninjcalc',n_part,ripernode,dt
       if(n_part.ne.0)ripernode=0.
@@ -201,9 +188,15 @@ c if n_part.eq.0. But now we do it always, for possible multiple species.
 c----------------------------------------------------------------
 c Initialize the fluxdata storage and addressing before cijroutine
       call fluxdatainit(myid)
+c-----------------------------------------------------------------
       if(lmyidhead)write(*,*)'Initializing the stencil data cij.'
 c Initialize cij:
       error=0.
+      ipoint=0
+      do id=1,ndims
+         ium2(id)=iuds(id)-2
+         ipoint=ipoint+iLs(id)
+      enddo         
       call mditerarg(cijroutine,ndims,ifull,ium2,ipoint,
      $     cij(1,1,1,1),debyelen,error,dum4,dum5)
       if(error.ne.0.)then
@@ -320,11 +313,6 @@ c (Re)Initialize the fortran random number generator.
       rdum=ran1(idum)
 c Initialize with a specified number of particles.
 c      write(*,*)'ibool_part=',ibool_part
-c      if(lmyidhead)write(*,*)'Initializing',n_part,' particles'
-c Minimum used slot is 1 by default
-      iicparta(1)=1
-c The default maximum available slot is n_partmax
-      iicparta(2)=n_partmax+1
       call pinit(subcycle)
 c      if(lmyidhead)write(*,*)'Return from pinit'
 c---------------------------------------------
@@ -396,6 +384,9 @@ c-----------------------------------------------
          write(*,'(/,a)')'Step Iterations Flux:'
       endif
       call mditerset(psum,ndims,ifull,iuds,0,0.)
+c This call is necessary for restart with fluid electrons.
+c It omits any particle electrons. So their restart is incorrect.
+c Also for particle electrons the first potential solve will be crazy.
       call chargetomesh(psum,iLs,diagsum,ndiags)
 c Main step iteration -------------------------------------
       do j=1,nsteps
@@ -447,7 +438,8 @@ c New position for psum reset to accommodate padvnc deposition.
 
          if(nf_step.eq.ickst)call checkuqcij(ifull,u,q,psum,volumes,cij)
 c Particle advance:
-         call padvnc(iLs,cij,u,ndiags,psum,diagsum,)
+         ispecies=1
+         call padvnc(iLs,cij,u,ndiags,psum,diagsum,ispecies)
          if(nf_step.eq.ickst)call checkx
 
          call fluxreduce()

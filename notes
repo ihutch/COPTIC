@@ -11243,7 +11243,32 @@ idrein). That may have got the reinjection to the point where it
 is ready for more than one species. We still have rhoinfcalc, but 
 it is not clear that it will matter. Leave it for now.
 
+commit
+
 We still have not got different masses implemented. It's a bit
 annoying that we have the mass rmtov rather than the inverse of the mass.
+The places where mass makes a difference is in padvnc acceleration, in 
+particle initialization, and in reinjection. (We haven't tackled flux
+accumulation yet.)
 
+Change rmtoz into eoverm everywhere in codebase.
+Correct cartreinject for eoverms (except in rhoinfcalc).
+Working on pinit. Part way done. Have to decide on nparta(ispecies)
+if quasineutrality does not decide it. Presumably decides only the
+topmost species nspecies, once the numbers of the others are decided.
+We currently have ninjcomp set the same for each species if we are doing
+-ri, but -ni is not set up to work properly, because for ispecies>1
+we have to decide on the injection number independent of ispecies=1.
+Also corrections to ninjcalc from caverein are of the wrong sign for
+electrons. Basically ninjcalc is not correct for higher species.
 
+24 Apr 14
+
+Change eoverms to represent the sign of the charge as well as mass.
+Make the reference abs(eoverms()) whereever it is governing a thermal
+velocity width. 
+
+The ripernode for higher ispecies if governed by quasineutrality, when
+-ni is set for ions, is equal to nion/volume. So do
+            if(ispecies.gt.1)ripn=nparta(1)/volume
+in ninjcalc. Now I think ninjcalc is correct for electrons.

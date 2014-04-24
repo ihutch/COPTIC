@@ -15,9 +15,11 @@ c Local dummy variables for partlocate.
       real xfrac(ndims)
       integer ixp(ndims)
       logical linmesh
-
+c Factor by which we leave additional space for increased number of 
+c particles if not fixed:
+      real slotsurplus
 c-----------------------------------------------------------------
-c A special orbit.
+c A special orbit. Preserved only for ispecies=1.
 c Pinit resets x_part. So set it for the special first particle.
       x_part(1,1)=2.
       x_part(2,1)=0.
@@ -41,55 +43,60 @@ c Tangential velocity of circular orbit at r=?.
          i1=1
       endif
 c-----------------------------------------------------------------
-      ntries=0
-c      ntrapped=0
-      Eneutral=0.
-      if(colntime.ne.0.)then
+c Point to the bottom of the particle stack for start of species 1.
+      iicparta(1)=1
+      do ispecies=1,nspecies
+         if(ninjcompa(ispecies).gt.1)then
+            slotsurplus=1.3
+         else
+            slotsurplus=1.
+         endif
+         ntries=0
+         Eneutral=0.
+         if(colntime.ne.0..and.ispecies.eq.1)then
 c At this point vperp refers to the perp part of vd, set by cmdline.
 c Initialize the reinjection particles and discover the full Eneutral.
-         call colninit(0,myid)
-         if(myid.eq.0.and.ldistshow)call colndistshow()
-         call colreinit(myid)
+            call colninit(0,myid)
+            if(myid.eq.0.and.ldistshow)call colndistshow()
+            call colreinit(myid)
 c Finalize the Eneutral fraction and related settings.
-         Eneutral=Enfrac*Eneutral
+            Eneutral=Enfrac*Eneutral
 c Add on the orthogonal EnxB drift, so as to make vperp the velocity of
 c the frame of reference in which the background E-field is truly zero:
-         do k=1,ndims
-            k1=mod(k,ndims)+1
-            k2=mod(k+1,ndims)+1
-            vperp(k)=vperp(k)+(Eneutral/Bt)
-     $           *(vdrift(k1)*Bfield(k2)-vdrift(k2)*Bfield(k1))
-         enddo
-      endif
-c     We initialize the 'true' particles'
-      tisq=sqrt(Ti)
-      do i=i1,n_part
-         x_part(iflag,i)=1
- 1       continue
-c         write(*,'(i8,$)')i
-         ntries=ntries+1
-c Old uniform choice:
-c         do j=1,ndims
-c            x_part(j,i)=xmeshstart(j)+
-c     $        ran1(myid)*(xmeshend(j)-xmeshstart(j))
-c         enddo
+            do k=1,ndims
+               k1=mod(k,ndims)+1
+               k2=mod(k+1,ndims)+1
+               vperp(k)=vperp(k)+(Eneutral/Bt)
+     $              *(vdrift(k1)*Bfield(k2)-vdrift(k2)*Bfield(k1))
+            enddo
+         endif
+         tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
+c      write(*,*)i1,' iicparta(1)',iicparta(1),iicparta(ispecies)
+c Scale the number of particles for higher slots to the ions(?)
+         nparta(ispecies)=nparta(1)
+     $        *sqrt(abs(eoverms(1)/eoverms(ispecies)))
+         do i=iicparta(ispecies)+i1-1,nparta(ispecies)
+     $        +iicparta(ispecies)-1
+            x_part(iflag,i)=1
+ 1          continue
+            ntries=ntries+1
 c New position choice including density gradients.
-         do j=1,ndims
-            x_part(j,i)=ranlenposition(j)
-         enddo
+            do j=1,ndims
+               x_part(j,i)=ranlenposition(j)
+            enddo
 c     If we are not in the plasma region, try again.
-         if(.not.linregion(ibool_part,ndims,x_part(1,i)))then
+            if(.not.linregion(ibool_part,ndims,x_part(1,i)))then
 c            write(*,*)'Initialization of',i,' wrong region',inewregion
 c     $           ,(x_part(kk,i),kk=1,3)
-            goto 1
-         endif
-         if(Eneutral.eq.0.)then
-            x_part(4,i)=tisq*gasdev(myid) + vd*vdrift(1)
-            x_part(5,i)=tisq*gasdev(myid) + vd*vdrift(2)
-            x_part(6,i)=tisq*gasdev(myid) + vd*vdrift(3)
-         else
-            call colvget(x_part(4,i))
-         endif
+               goto 1
+            endif
+            if(Eneutral.eq.0.)then
+               x_part(4,i)=tisq*gasdev(myid) + vd*vdrift(1)
+               x_part(5,i)=tisq*gasdev(myid) + vd*vdrift(2)
+               x_part(6,i)=tisq*gasdev(myid) + vd*vdrift(3)
+            else
+               call colvget(x_part(4,i))
+            endif
 
 c One idea that might improve the initialization would be to add the 
 c (electric) potential energy here, by scaling up the total velocity,
@@ -98,7 +105,7 @@ c but keeping the direction the same.
 c However, to make this accurate, one would have to have solved the
 c initial potential better than the simple Laplace solve currently
 c used. A solution of the electron-shielded case might be nearer the
-c mark, but it would not be correct when Ti<Te. It is perhaps
+c mark, but it would not be correct when T_i<T_e. It is perhaps
 c advantageous because it constitutes a minimal estimate of the
 c shielding, which is probably what one wants.
 
@@ -112,28 +119,48 @@ c close wake are in fact going to have mostly negative velocities. They
 c are therefore completely unmodelled in this initialization, which
 c fills in positive drifting ions even where they could not be present.
 
-         x_part(idtp,i)=0.
+c The previous timestep length.
+            x_part(idtp,i)=0.
 c Initialize the mesh fraction data in x_part.
-         call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
+            call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
 c This test rejects particles exactly on mesh boundary:
-         if(.not.linmesh)goto 1
+            if(.not.linmesh)goto 1
+         enddo
+c----------------------------------------
+c The maximum used slot for this species
+         iocparta(ispecies)=i-1
+c Start of next slot-set may give a gap for overflow.
+         iicparta(ispecies+1)=int(i*slotsurplus)
+c Zero the overflow slots' flag
+         do i=iocparta(ispecies)+1,iicparta(ispecies+1)-1
+            x_part(iflag,i)=0
+         enddo
+         if(myid.eq.0)then
+            if(nspecies.gt.0)write(*,*)'Slots',ispecies
+     $           ,iicparta(ispecies),iocparta(ispecies)
+     $           ,ninjcompa(ispecies)
+
+            write(*,101)ispecies,nprocs,
+     $           iocparta(ispecies)-iicparta(ispecies)+1,ntries
+ 101        format(' Initialized species',i2,i4,'x',i7
+     $           ,' ntries=',i7,$)
+         endif
+c Initialize rhoinf:
+         if(rhoinf.eq.0.)rhoinf=numprocs*n_part/(4.*pi*rs**3/3.)
+c Initialize orbit tracking
+         do ko=1,norbits
+            iorbitlen(ko)=0
+         enddo
+         
+c Don't shift for special particle the subsequent sections.
+         i1=1
       enddo
 c Set flag of unused slots to 0
-      do i=n_part+1,n_partmax
+      do i=iicparta(ispecies),n_partmax
          x_part(iflag,i)=0
       enddo
-      if(myid.eq.0)then
-         write(*,'('' Initialized '',i3,''x n='',i7,'' ntries='',i7,$)')
-     $     nprocs,n_part,ntries
-      endif
-c Initialize rhoinf:
-      if(rhoinf.eq.0.)rhoinf=numprocs*n_part/(4.*pi*rs**3/3.)
-c Initialize orbit tracking
-      do ko=1,norbits
-         iorbitlen(ko)=0
-      enddo
-c The maximum used slot is the same as the number of particles initially
-      ioc_part=n_part
+c Allow the last species to fill the array:
+      iicparta(ispecies)=n_partmax+1
       end
 c***********************************************************************
       subroutine locateinit()

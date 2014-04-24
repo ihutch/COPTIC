@@ -941,7 +941,7 @@ c********************************************************************
 c Turn the particle count for the current timestep over an area 
 c into a potential at which current density is zero.
       include 'ndimsdecl.f'
-Contains rmtoz
+Contains eoverms
       include 'plascom.f'
 Contains dt and rhoinf:
       include 'partcom.f'
@@ -953,7 +953,7 @@ c For preventing logarithm infinities when count is zero.
          phiofcount=-2.
          return
       endif
-      flogfac=0.5*alog(2.*3.1415926/(rmtoz*1837.))
+      flogfac=0.5*alog(2.*3.1415926*eoverm/1836.)
       fluxdensity=(count+small)/(area*rhoinf*dt)
       phiofcount=alog(fluxdensity)+flogfac
 

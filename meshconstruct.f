@@ -4,10 +4,11 @@ c Convert from previously set imeshstep, xmeshpos to ixnp.
 c There must be at least 2 non-zero and monotonically increasing
 c values starting imeshstep.
 c Return values of iuds(ndims) per constructed mesh.
-c Also initialize the value of rs in plascom. Put equal to
-c half the largest mesh box side length.
-      subroutine meshconstruct(mdims,iuds,ifull,ipartperiod)
+c Also return the value of rs equal to half the largest mesh box side
+c length.
+      subroutine meshconstruct(mdims,iuds,ifull,ipartperiod,rs)
       integer iuds(mdims),ifull(mdims),ipartperiod(mdims)
+      real rs
       include 'ndimsdecl.f'
       include 'meshcom.f'
 
@@ -49,6 +50,10 @@ c Half-cell-position mesh ends (but id+1 mesh is not yet set).
          else
             xmeshstart(id)=xmeshpos(id,1)
             xmeshend(id)=xmeshpos(id,iblk)
+         endif
+         rsi=0.5*abs(xmeshend(id)-xmeshstart(id))
+         if(rsi.gt.rs)then 
+            rs=rsi
          endif
       enddo
 c      write(*,*)'Meshconstructed',xmeshstart,xmeshend

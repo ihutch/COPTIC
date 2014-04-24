@@ -114,9 +114,8 @@ c Correct the total energy for caverein.
       end
 c*********************************************************************
       subroutine cinjinit()
-c Cartesian reinjection initialization
-c drift velocity, vd, in the z-direction
-c maxwellians of width given by Ti
+c Cartesian reinjection initialization for drift velocity, vd, in the
+c z-direction and maxwellians of width given by Ts
 
       include 'ndimsdecl.f'
       include 'plascom.f'
@@ -134,7 +133,8 @@ c maxwellians of width given by Ti
 
       do ispec=1,nspecies
       xc=0.
-      xw=sqrt(Ts(ispec))
+c Width of velocity distribution
+      xw=sqrt(Ts(ispec))*abs(eoverms(ispec))
 c For three coordinate directions
       do id=1,3
 c    For two ends (and hence velocity polarities)
@@ -149,7 +149,7 @@ c Set the inverse cumulative probability fn hrein, and flux grein
             else
 c Infinite-Bt case 1-d projection.
                xc=vpars(ispec)*Bfield(id)+vperps(id,ispec)
-               xw=sqrt(Ts(ispec))*Bfield(id)
+               xw=xw*Bfield(id)
                call cumprob(ff1crein,xw,xc,
      $           ncrein,hreins(0,index,ispec),greins(index,ispec),myid)
             endif
@@ -423,7 +423,7 @@ c in coordinate direction idrein (signed) in creincom,
 c from a drift-distribution shifted by vd (in plascom),
 c whose direction cosines are vdrift(3) (in plascom),
 c colliding with neutrals of velocity vneutral (in colncom).
-c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
+c If v is normalized by sqrt(ZT_e/m_i), then Tsi is the ratio T_i/ZT_e.
 c Because the drift distribution is not separable except in the directions
 c perpendicular and parallel to the drift, only degenerate Maxwellian
 c (vd-vneutral=0) non-z cases are allowed so far.
@@ -453,16 +453,15 @@ c v_dia = -(T_i \nabla n \times B / qnB^2)
 c The approximation is to represent the perpendicular distribution by
 c a Maxwellian shifted by the diamagnetic drift.
       endif
+      vn=sqrt(2.*Ts(ispec)*abs(eoverms(ispec)))
       if(vdrift(1).eq.0)then
 c Z-drift cases. (equiv old)
          if(abs(idrein).eq.3)then
-            vn=sqrt(2.*Ti)
             u=(v-vd+ud-vdia)/vn
             ud=ud/vn
             fvdrein=fvcx(u,ud)
             fvdrein=fvdrein/vn
          else
-            vn=sqrt(2.*Ti)
             fvdrein=exp(-((v-vdia)/vn)**2)/(vn*sqrt(3.1415926))
          endif
       else
@@ -473,7 +472,6 @@ c Non-z
             stop
          else
 c Maxwellian non-z drift.
-            vn=sqrt(2.*Ti)
             fvdrein=exp(-((v-vd*vdrift(abs(idrein))-vdia)/vn)**2)
      $           /(vn*sqrt(3.1415926))
          endif
@@ -513,17 +511,16 @@ c a Maxwellian shifted by the diamagnetic drift.
 c      if(vdia.ne.0..and.abs(v-1.).lt.0.0005)then
 c         write(*,*)'v,ffdrein,idrein,vdia',v,ffdrein,idrein,vdia,id2,id3
 c      endif
+      vn=sqrt(2.*Ts(ispec)*abs(eoverms(ispec)))
       if(vdrift(1).eq.0.and.vdrift(2).eq.0.)then
 c Z-drift cases. (equiv old)
          if(abs(idrein).eq.3)then
 c In z-direction use appropriate drift distribution.
-            vn=sqrt(2.*Ti)
             u=(v-vd+ud-vdia)/vn
             ud=ud/vn
             ffdrein=fvcx(u,ud)
             ffdrein=abs(v)*ffdrein/vn
          else
-            vn=sqrt(2.*Ti)
             ffdrein=abs(v)*exp(-((v-vdia)/vn)**2)/(vn*sqrt(3.1415926))
          endif
       else
@@ -534,7 +531,6 @@ c Non-z
             stop
          else
 c Maxwellian non-z drift.
-            vn=sqrt(2.*Ti)
             ffdrein=exp(-((v-vd*vdrift(abs(idrein))-vdia)/vn)**2)
      $           *abs(v)/(vn*sqrt(3.1415926))
          endif
@@ -600,7 +596,7 @@ c
 c Return the flux from a maxwellian for dimension idrein (in creincom)
 c In the positive or negative direction, determined by idrein's sign.
 c Maxwellian is shifted by vdj=Bfield(j)*vpar+vperp(j).
-c If v is normalized by sqrt(ZT_e/m_i), then Ti is the ratio T_i/ZT_e.
+c If v is normalized by sqrt(ZT_e/m_i), then Tsi is the ratio T_i/ZT_e.
 c But here, the thermal spread along Bfield must be projected into
 c the coordinate direction idrein. 
 
@@ -609,24 +605,27 @@ c the coordinate direction idrein.
       include 'creincom.f'
       real vt2min,argmax
       parameter (vt2min=1.e-6,argmax=12.)
+      integer ispec
+      common /species/ispec
       
       if(int(sign(1.,v)).eq.sign(1,idrein))then
+         Tsi=Ts(ispec)*abs(eoverms(ispec))
          j=abs(idrein)
          vs=Bfield(j)*vpar+vperp(j)
-         vt2=2.*Ti*Bfield(j)**2
+         vt2=2.*Tsi*Bfield(j)**2
          if(vt2.gt.vt2min)then
             arg=-(v-vs)**2/vt2
             scale=1./Bfield(j)
          else
             arg=-(v-vs)**2/vt2min
-            scale=sqrt(2.*Ti/vt2min)
+            scale=sqrt(2.*Tsi/vt2min)
          endif
          if(abs(arg).gt.argmax)then
             ff1crein=0.
          else
 c            if(Bfield(j).eq.0.)write(*,*)'v,vs,arg',v,vs,arg
 c Corrected the scaling to be consistent:
-            ff1crein=scale*abs(v)*exp(arg)/sqrt(2.*Ti*3.1415926)
+            ff1crein=scale*abs(v)*exp(arg)/sqrt(2.*Tsi*3.1415926)
          endif
       else
          ff1crein=0.
@@ -644,21 +643,24 @@ c Return the probability distribution value.
       include 'creincom.f'
       real vt2min,argmax
       parameter (vt2min=1.e-5,argmax=12.)
-      
+      integer ispec
+      common /species/ispec
+
       j=abs(idrein)
       vs=Bfield(j)*vpar+vperp(j)
-      vt2=2.*Ti*Bfield(j)**2
+      Tsi=Ts(ispec)*abs(eoverms(ispec))
+      vt2=2.*Tsi*Bfield(j)**2
       if(vt2.gt.vt2min)then
          arg=-(v-vs)**2/vt2
          scale=1./Bfield(j)
       else
          arg=-(v-vs)**2/vt2min
-         scale=sqrt(2.*Ti/vt2min)
+         scale=sqrt(2.*Tsi/vt2min)
       endif
       if(abs(arg).gt.argmax)then
          fv1crein=0.
       else
-         fv1crein=scale*exp(arg)/sqrt(2.*Ti*3.1415926)
+         fv1crein=scale*exp(arg)/sqrt(2.*Tsi*3.1415926)
       endif
 
       end
@@ -689,15 +691,6 @@ c Use particle information for initializing.
 c         write(*,*)'fcarea(',i,')=',fcarea(i)
 c Multiply the face area by the factor relative to unshifted maxwellian
 c that specifies the flux for this face, and add to total. 
-c The sum of the grein for this dimension ought to be equal to 
-c fonefac*sqrt(2.*Ti/\pi). And generally it is, unless B=\infty.
-c         ffc=fonefac(i)
-c         ratio=(grein(2*i-1)+grein(2*i))
-c     $    /(ffc+1.e-8)/sqrt(2.*Ti/3.1415926)
-c         write(*,*)'i,fonefac(i),grein',i,ffc ,grein(2*i-1),grein(2*i)
-c     $        ,ratio
-c         flux=flux+fonefac(i)*fcarea(i)*sqrt(2.*Ti/3.1415926)
-c This change to get rid of fonefac produces tiny rounding differences.
          flux=flux+(grein(2*i-1)+grein(2*i))*fcarea(i)
          volume=volume*(xmeshend(i)-xmeshstart(i))
       enddo
@@ -743,44 +736,50 @@ c Particle information
 c 
       do ispecies=1,nspecies
 c An ion species that has n_part set needs no ninjcalc.
-      if(nparta(ispecies).eq.0)then
-      if(.not.lreininit)call cinjinit()
+         if(nparta(ispecies).eq.0)then
+            if(.not.lreininit)call cinjinit()
 c Calculate ninjcomp from ripernode
-      volume=1.
-      flux=0.
-      do i=1,ndims
-         fcarea(i)=1.
+            volume=1.
+            flux=0.
+            ripn=ripernode
+            do i=1,ndims
+               fcarea(i)=1.
 c We don't correct area here, because we now count every relocation as
 c a reinjection.
-         if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
-         do j=1,ndims-1
-            id=mod(i+j-1,ndims)+1
-            fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
-         enddo
-         flux=flux+(grein(2*i-1)+grein(2*i))*fcarea(i)
-         volume=volume*(xmeshend(i)-xmeshstart(i))
-      enddo
+               if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
+               do j=1,ndims-1
+                  id=mod(i+j-1,ndims)+1
+                  fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
+               enddo
+               flux=flux+(grein(2*i-1)+grein(2*i))*fcarea(i)
+               volume=volume*(xmeshend(i)-xmeshstart(i))
+            enddo
+            if(ispecies.gt.1)ripn=nparta(1)/volume
 c Correct approximately for edge potential depression (OML).
-      chi=crelax*min(-phirein/Ts(ispecies),0.5)
-      cfactor=smaxflux(vd/sqrt(2.*Ts(ispecies)),chi)
-     $     /smaxflux(vd/sqrt(2.*Ts(ispecies)),0.)
-      ninjcompa(ispecies)=nint(ripernode*dtin*cfactor*flux)
-c      write(*,*)'ripernode,dtin,cfactor,flux,ninjcomp',ripernode,dtin
+            chi=sign(1.,eoverms(ispecies))*
+     $           crelax*min(-phirein/Ts(ispecies),0.5)
+            cfactor=smaxflux(vd/sqrt(2.*Ts(ispecies)),chi)
+     $           /smaxflux(vd/sqrt(2.*Ts(ispecies)),0.)
+            ninjcompa(ispecies)=nint(ripn*dtin*cfactor*flux)
+c I don't understand the purpose of this trap: 23 Apr 2014
+c      if(ninjcompa(ispecies).le.0)ninjcompa(ispecies)=1
+            nparta(ispecies)=int(ripn*volume)
+c      write(*,*)'ripn,dtin,cfactor,flux,ninjcomp',ripn,dtin
 c     $     ,cfactor,flux,ninjcomp
-      nrein=ninjcomp*numprocs
-      if(ninjcomp.le.0)ninjcomp=1
-      nparta(ispecies)=int(ripernode*volume)
-      rhoinf=ripernode*numprocs
-      if(n_part.gt.n_partmax)then
-         write(*,*)'ERROR. Too many particles required.'
-         write(*,101)rhoinf,nparta(ispecies),n_partmax
- 101     format('rhoinf=',f8.2,'  needs n_part=',i9
-     $        ,'  which exceeds n_partmax=',i9)
-         stop
-      endif
-      endif
+            
+            
+            nrein=ninjcomp*numprocs
+            rhoinf=ripn*numprocs
+            if(n_part.gt.n_partmax)then
+               write(*,*)'ERROR. Too many particles required.'
+               write(*,101)rhoinf,nparta(ispecies),n_partmax
+ 101           format('rhoinf=',f8.2,'  needs n_part=',i9
+     $              ,'  which exceeds n_partmax=',i9)
+               stop
+            endif
+         endif
       enddo
-      write(*,*)'Ending ninjcalc',rhoinf,nrein,nparta(1)
+      write(*,*)'Ending ninjcalc',rhoinf,nrein,nparta
 
       end
 c********************************************************************

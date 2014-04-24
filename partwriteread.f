@@ -64,7 +64,7 @@ c      write(*,*)name
      $     phirein,numprocs,
      $     ((x_part(j,i),j=1,iflag),i=1,ioc_part)
       write(22)(x_part(idtp,i),i=1,ioc_part)
-      write(22)rmtoz,Bt,Bfield,vpar,vperp
+      write(22)eoverm,Bt,Bfield,vpar,vperp
       write(22)caverein,chi
       close(22)
 c      write(*,*)'Wrote particle data to ',name(1:lentrim(name))
@@ -106,7 +106,7 @@ c Return ierr bit(0) no file. bit(1) no dtprec. bit(2) no Bfield etc.
       endif
 c Extra particle data written since 30 July 2010.
       read(23,err=102,end=102)(x_part(idtp,i),i=1,ioc_part)
-      read(23,err=104,end=104)rmtoz,Bt,Bfield,vpar,vperp
+      read(23,err=104,end=104)eoverm,Bt,Bfield,vpar,vperp
       read(23,err=105,end=105)caverein,chi
       goto 103
  102  write(*,*)'=========== No dtprec data in partfile.========='

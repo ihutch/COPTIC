@@ -3,12 +3,13 @@ c Encapsulation of parameter setting.
       subroutine copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,nparta,numprocs,ripernode,crelax,ickst
-     $     ,colntime,dt,bdt,subcycle,dropaccel,rmtozs,Bfield,Bt,ninjcomp
-     $     ,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax,debyelen,Ts
-     $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
-     $     ,lextfield ,vpars,vperps,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
-     $     ,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies,nspeciesmax)
+     $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
+     $     ,ninjcomp ,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax
+     $     ,debyelen,Ts ,iwstep,idistp,lrestart,restartpath,extfield
+     $     ,objfilename ,lextfield ,vpars,vperps,ndims,islp,slpD,CFin
+     $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
+     $     ,idims,argline ,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
+     $     ,nspeciesmax)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps
@@ -26,7 +27,7 @@ c Encapsulation of parameter setting.
       real gt(ndims),gp0(ndims),gtt,gn(ndims),gnt
 c Multiple species can have these things different.
 c Only the first species is possibly collisional.
-      real Ts(*),vds(*),rmtozs(*)
+      real Ts(*),vds(*),eoverms(*)
       integer nparta(*)
       real vpars(*)
       real vperps(ndims,*),vdrifts(ndims,*)
@@ -53,7 +54,7 @@ c Fixed number of particles rather than fixed injections.
          nparta(nspecies)=0
          vds(nspecies)=0.
          Ts(nspecies)=1.
-         rmtozs(nspecies)=1.
+         eoverms(nspecies)=1.
          Tneutral=1.
          do id=1,ndims
             vdrifts(id,nspecies)=0.
@@ -172,8 +173,8 @@ c         write(*,*)i,argument
          if(argument(1:3).eq.'-da')read(argument(4:),*,err=201)bdt
          if(argument(1:3).eq.'-ds')read(argument(4:),*,err=201)subcycle
          if(argument(1:3).eq.'-dd')read(argument(4:),*,err=201)dropaccel
-         if(argument(1:3).eq.'-mz')read(argument(4:),*,err
-     $        =201)rmtozs(nspecies)
+         if(argument(1:3).eq.'-zm')read(argument(4:),*,err
+     $        =201)eoverms(nspecies)
          if(argument(1:3).eq.'-bc')read(argument(4:),*,err=201)islp
          if(argument(1:3).eq.'-bp')then
             read(argument(4:),*,err=201)idn
@@ -251,7 +252,7 @@ c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
             else
 c Default to electron Temp/mass for subsequent species.
                Ts(nspecies+1)=1.
-               rmtozs(nspecies+1)=1./1836.
+               eoverms(nspecies+1)=-1836.
 c Inherit the drifts of the previous species until explicitly changed.
                vds(nspecies+1)=vds(nspecies)
                do id=1,ndims
@@ -514,8 +515,8 @@ c Help text
 c      write(*,302)' -tn   set neutral temperature    [',Tneutral
       write(*,302)' -Ef   set Ext v-drive fraction   [',Enfrac
       write(*,302)' -cp   set v-power coln freq      [',colpow
-      write(*,302)' -mz   set mass/Z ratio           ['
-     $     ,(rmtozs(ispecies),ispecies=1,nspecies)
+      write(*,302)' -zm   set Z/mass ratio           ['
+     $     ,(eoverms(ispecies),ispecies=1,nspecies)
       write(*,302)' -Bx -By -Bz set mag field compts [',Bfield
       write(*,301)' -w    set write-step period.     [',iwstep
      $     ,'     If <1, only myid writes final.'
