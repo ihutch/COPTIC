@@ -158,7 +158,9 @@ c Adjust the denominator and numerator using external call.
 c ------------------------------------------------------------------
          if(laddu) then
             addu=faddu(u(ipoint+1),daddu,ipoint+myorig)
-            dscl=abs(addu)/max(abs(daddu),1.e-6)
+c The following gave problems for fnodensity which puts addu=0.
+c            dscl=abs(addu)/max(abs(daddu),1.e-6)
+            dscl=1.
 c     relative weight of f term versus L term. Use max for next iteration.
 c This seemed to be an error 2 July 09. Also dden was being calculated after.
             raddu=abs(daddu/csum)

@@ -1,4 +1,4 @@
-      subroutine padvnc(iLs,cij,u,ndiags,psum,diagsum,ispecies)
+      subroutine padvnc(iLs,cij,u,ndiags,psum,diagsum,ispecies,ndiagmax)
 c Particle advancing routine.
 c If ninjcomp (in partcom) is non-zero, then we are operating in a mode
 c where the number of reinjections at each timestep is prescribed.
@@ -8,7 +8,9 @@ c Storage size of the mesh arrays.
 c      real cij(2*ndims+1,nx,ny,nz)
 c      real u(nx,ny,nz)
       integer ndiags,ispecies
-      real cij(*),u(*),psum(*),diagsum(*)
+      real cij(*),u(*),psum(*)
+      real diagsum(*)
+c      real diagsum(64,64,128,8,2)
 
       include 'ndimsdecl.f'
 c Array structure vector: (1,nx,nx*ny,nx*ny*nz)
@@ -39,9 +41,6 @@ c      real xg(ndims),xc(ndims)
       logical linmesh
       logical lcollided,ltlyerr
       save adfield
-c Testing storage
-      real ptot,atot
-      data ptot/0./atot/0./
 
 c Make this always last to use the checks.
       include 'partcom.f'
@@ -68,13 +67,15 @@ c Initialize. Set reinjection potential. We start with zero reinjections.
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 c At most do over all particle slots for this species. 
 c But generally we break earlier.
+      numratio=numratioa(ispecies)
+c      write(*,*)ispecies,iicparta(ispecies),iicparta(ispecies+1)-1
+c     $     ,numratio,dt
       do i=iicparta(ispecies),iicparta(ispecies+1)-1
-c         if(mod(i,10000).eq.0)then
-c            write(*,*)'i,iocthis,n_part=',i,iocthis,n_part,ncollided
-c         endif
+c         if(mod(i,100).eq.0)write(*,*)ispecies,i
+         do icycle=1,numratio
          dtdone=0.
          dtremain=0.
-         dtpos=dt
+         dtpos=dt/float(numratio)
 c=================================
 c Decide nature of this slot
          if(x_part(iflag,i).ne.0)then
@@ -229,14 +230,12 @@ c Else empty slot and move to next particle.
             x_part(iflag,i)=0
             goto 300            
          endif
-c Testing only otherwise unused:
-         ptot=ptot+dtpos
-         atot=atot+dtaccel
 c Accelerate ----------
 c Here we only include the electric field force. 
 c B-field force is accommodated within moveparticle routine.
          do j=ndims+1,2*ndims
-            x_part(j,i)=x_part(j,i)+(field(j-ndims))*dtaccel
+            x_part(j,i)=x_part(j,i)
+     $           +eoverms(ispecies)*field(j-ndims)*dtaccel
          enddo
          if(Eneutral.ne.0.)then
             if(Bt.ne.0.)then
@@ -267,8 +266,8 @@ c But correcting the collisional force appropriately.
             endif
          endif
 c Move ----------------
-         call moveparticle(x_part(1,i),ndims,Bt,Btinf,Bfield,vperp
-     $           ,dtpos)
+         call moveparticle(x_part(1,i),ndims,Bt*eoverms(ispecies)
+     $        ,Btinf,Bfield,vperp,dtpos)
          dtdone=dtdone+dtpos
 c ---------------- End Particle Advance -------------
 c ---------------- Special Conditions -------------
@@ -364,11 +363,21 @@ c Special diagnostic orbit tracking:
             yorbit(iorbitlen(i),i)=x_part(2,i)
             zorbit(iorbitlen(i),i)=x_part(3,i)
          endif
-c This is the alternate charge deposition.
+c This is the charge deposition. Diagnostics are put into the 
+c appropriate species place of diagsum. Charge magnitude is 1.
          if(x_part(iflag,i).ne.0)then
-            call achargetomesh(i,psum,iLs,diagsum,ndiags)
+            call achargetomesh(i,psum,iLs
+     $           ,diagsum(1+iLs(ndims+1)*(ndiagmax+1)*(ispecies-1))
+     $           ,ndiags,sign(1.,eoverms(ispecies)))
+c            if(mod(i,500).eq.0)write(*,*)'achargetomesh',ispecies,i,iLs
+c     $           ,ndiags,ndiagmax
+c     $           ,diagsum(1+iLs(ndims+1)*(ndiagmax+1)*(ispecies-1)+1)
          endif
+c End of icycle step subloop.
+         enddo
+c End of this particle's advance.
       enddo
+      write(*,*)'nrein=',nrein
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  102  continue
 c -------------- End of cycle through particles ----------
@@ -403,6 +412,9 @@ c            if(myid.eq.0)write(*,*)'PROBLEM: phirein>0:',phirein
       if(ispecies.eq.1.and.colntime.gt.0)then
          fcollided=float(ncollided)/nparta(ispecies)
       endif
+
+      if(ispecies.gt.1)
+     $     write(*,*)'Species particles',(k,nparta(k),k=1,nspecies)
 
 c      if(nsubc.ne.0) write(*,'(a,i6,$,'' '')')' Subcycled:',nsubc
 c      write(*,*)'Padvnc',n_part,nrein,ilaunch,ninjcomp,n_partmax
@@ -818,7 +830,7 @@ c Local
 
 c            write(*,*)Bt,Btinf,Bfield
       i=1
-c The below is literally the section of code removed from padvnc.
+
       if(Bt.eq.0.)then
 c B-field-less Move -----------------------------
          do j=1,ndims

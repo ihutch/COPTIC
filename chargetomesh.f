@@ -16,15 +16,15 @@ c On entry, psum ought to have been initialized to zero.
 c For all (possibly-active) particles.
       do i=1,ioc_part
          if(x_part(iflag,i).ne.0)then
-            call achargetomesh(i,psum,iLs,diagsum,ndiags)
+            call achargetomesh(i,psum,iLs,diagsum,ndiags,1.)
          endif
       enddo
 c End of charge deposition.
       end
 c********************************************************************
-      subroutine achargetomesh(i,psum,iLs,diagsum,ndiags)
+      subroutine achargetomesh(i,psum,iLs,diagsum,ndiags,echarge)
 c Assign charge and other moments to the mesh accumulators,
-c for a single particle i
+c for a single particle i of echarge value
 c Particle weight sum, having structure iLs, and (possible) diagnostics.
 c Which are enumerated up to ndiags in their trailing dimension.
       real psum(*)
@@ -48,7 +48,7 @@ c Cycle through the vertices of the box we are in.
             ii1=ii
             iinc=iu
 c We could use this statement to implement particle weighting.
-            fac=1.
+            fac=echarge
 c Calculate the index and weight of this vertex.
             do ik=1,ndims
 c There may be bit-manipulation routines to accelerate this.

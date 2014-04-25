@@ -761,11 +761,16 @@ c Correct approximately for edge potential depression (OML).
             cfactor=smaxflux(vd/sqrt(2.*Ts(ispecies)),chi)
      $           /smaxflux(vd/sqrt(2.*Ts(ispecies)),0.)
             ninjcompa(ispecies)=nint(ripn*dtin*cfactor*flux)
+     $           *sqrt(abs(eoverms(ispecies)/eoverms(1)))
+     $           / numratioa(ispecies)
+
 c I don't understand the purpose of this trap: 23 Apr 2014
 c      if(ninjcompa(ispecies).le.0)ninjcompa(ispecies)=1
-            nparta(ispecies)=int(ripn*volume)
-c      write(*,*)'ripn,dtin,cfactor,flux,ninjcomp',ripn,dtin
-c     $     ,cfactor,flux,ninjcomp
+            nparta(ispecies)=ripn*volume
+c     $           *sqrt(abs(eoverms(ispecies)/eoverms(1)))
+c     $           / numratioa(ispecies)
+      write(*,*)'ripn,dtin,cfactor,flux,ninjcomp',ripn,dtin
+     $     ,cfactor,flux,ninjcomp,nparta(ispecies)
             
             
             nrein=ninjcomp*numprocs

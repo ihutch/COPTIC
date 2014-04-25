@@ -11272,3 +11272,52 @@ The ripernode for higher ispecies if governed by quasineutrality, when
 -ni is set for ions, is equal to nion/volume. So do
             if(ispecies.gt.1)ripn=nparta(1)/volume
 in ninjcalc. Now I think ninjcalc is correct for electrons.
+
+Add ispecies to arguments of padvnc. make geometry OK.
+
+commit
+
+Work on padvnc to introduce the eoverm dependences. Moveparticle is handled
+simply by passing it a Bfield that is eoverm times larger.
+
+Seem to have got it going. Using padvc prior to the advance loop to do
+the initial deposition of electrons. The electrons appear to add a negative
+value of unity to the initial density, as expected. (Have not turned off
+the Boltzmann electrons yet.) Thereafter the density is near unity because
+we don't call the second species in the loop.
+
+Implement diagsum for all the species, and adjust the references to 
+accommodate that within coptic.f and padvnc.f. We need also to write out
+diagnostic files for more species. Change that. Fix partexamine for
+mdims->ndimsmax dependence. Made the writing of the species 2 diagnostics
+work after a struggle with ndiagmax+1.
+
+25 Apr 14
+
+Implemented all the processes for working without faddu. Actually use
+fnodensity, but probably it is not substantially different from 
+just turning off faddu. 
+
+Implement numratioa the ratio of species 1 to species ispecies number
+of particles. In addition to defining the expected amount of space
+needed for the particles (\propto 1/numratio) it defines the number of
+minor steps taken per ion step. Consequently, the expected number
+times the number of minor steps is equal to ni. When species 2 is
+electrons, as it is by default, this means the set numbers of initialized
+particles and reinjected particles for species 2 are such as to neutralize
+the ions. The default numratioa(2)=sqrt(abs(eoverma(2)))=sqrt(1836).
+It may be adjusted, after -sp, by the -nr argument. When -nr1 is used
+e.g. ./coptic -dt.01 -sp -nr1, then the electrons are the same in number
+as the ions and their step is the same as the ion step (no substeps). 
+In that case we are running a full electrons/ions pic code. It runs
+at approximately the same step rate, but one must choose the -dt to 
+be small enough for stability and electron dynamics accuracy. 
+That amounts to a requirement that dt < lambdadebye/sqrt(eoverm) which 
+is (for electrons) ~.025*lambdadebye. The experimental boundary for lambda=1
+for long wavelength (total particle number) instability on the standard
+coptigeom is -dt.05. (For smaller lambdadebye it seems smaller than this 
+scaling.)
+
+It seems as if coptic is now running with particle electrons.
+
+commit

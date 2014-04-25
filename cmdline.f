@@ -9,7 +9,7 @@ c Encapsulation of parameter setting.
      $     ,objfilename ,lextfield ,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline ,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax)
+     $     ,nspeciesmax,numratioa)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps
@@ -28,7 +28,7 @@ c Encapsulation of parameter setting.
 c Multiple species can have these things different.
 c Only the first species is possibly collisional.
       real Ts(*),vds(*),eoverms(*)
-      integer nparta(*)
+      integer nparta(*),numratioa(*)
       real vpars(*)
       real vperps(ndims,*),vdrifts(ndims,*)
       integer nspecies,nspeciesmax
@@ -55,6 +55,7 @@ c Fixed number of particles rather than fixed injections.
          vds(nspecies)=0.
          Ts(nspecies)=1.
          eoverms(nspecies)=1.
+         numratioa(nspecies)=1
          Tneutral=1.
          do id=1,ndims
             vdrifts(id,nspecies)=0.
@@ -173,8 +174,12 @@ c         write(*,*)i,argument
          if(argument(1:3).eq.'-da')read(argument(4:),*,err=201)bdt
          if(argument(1:3).eq.'-ds')read(argument(4:),*,err=201)subcycle
          if(argument(1:3).eq.'-dd')read(argument(4:),*,err=201)dropaccel
-         if(argument(1:3).eq.'-zm')read(argument(4:),*,err
-     $        =201)eoverms(nspecies)
+         if(argument(1:3).eq.'-zm')then
+            read(argument(4:),*,err =201)eoverms(nspecies)
+            numratioa(nspecies)=sqrt(abs(eoverms(nspecies)/eoverms(1)))
+         endif
+         if(argument(1:3).eq.'-nr')read(argument(4:),*,err=201)
+     $        numratioa(nspecies)
          if(argument(1:3).eq.'-bc')read(argument(4:),*,err=201)islp
          if(argument(1:3).eq.'-bp')then
             read(argument(4:),*,err=201)idn
@@ -250,17 +255,19 @@ c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
      $              ,nspecies+1,nspeciesmax
                stop
             else
+               nspecies=nspecies+1
 c Default to electron Temp/mass for subsequent species.
-               Ts(nspecies+1)=1.
-               eoverms(nspecies+1)=-1836.
+               Ts(nspecies)=1.
+               eoverms(nspecies)=-1836.
+               numratioa(nspecies)=
+     $              sqrt(abs(eoverms(nspecies)/eoverms(1)))
 c Inherit the drifts of the previous species until explicitly changed.
-               vds(nspecies+1)=vds(nspecies)
+               vds(nspecies)=vds(nspecies-1)
                do id=1,ndims
-                  vdrifts(id,nspecies+1)=vdrifts(id,nspecies)
+                  vdrifts(id,nspecies)=vdrifts(id,nspecies-1)
                enddo
             endif
             write(*,*)'vds(nspecies)=',vds(nspecies),nspecies
-            nspecies=nspecies+1
 c Drifts must be respecified for this species if different.
          elseif(argument(1:2).eq.'-s')then
             read(argument(3:),*,err=201)nsteps
@@ -480,6 +487,8 @@ c Help text
  304  format(a,f8.3,a)
  305  format(a,3i3,a,3i5)
  306  format(a,6f7.3)
+ 307  format(a,6f8.1)
+ 308  format(a,6i8)
       write(*,301)'Usage: coptic [objectfile] [-switches]'
       write(*,301)'Parameter switches.'
      $     //' Leave no gap before value. Defaults or set values [ddd'
@@ -515,8 +524,10 @@ c Help text
 c      write(*,302)' -tn   set neutral temperature    [',Tneutral
       write(*,302)' -Ef   set Ext v-drive fraction   [',Enfrac
       write(*,302)' -cp   set v-power coln freq      [',colpow
-      write(*,302)' -zm   set Z/mass ratio           ['
+      write(*,307)' -zm   set Z/mass ratio           ['
      $     ,(eoverms(ispecies),ispecies=1,nspecies)
+      write(*,308)' -nr   set species number ratio   ['
+     $     ,(numratioa(ispecies),ispecies=1,nspecies)
       write(*,302)' -Bx -By -Bz set mag field compts [',Bfield
       write(*,301)' -w    set write-step period.     [',iwstep
      $     ,'     If <1, only myid writes final.'

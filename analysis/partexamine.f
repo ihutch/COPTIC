@@ -11,28 +11,29 @@ c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       character*100 name
       character*100 string
       logical ldoc
-      real extra(nptdiag,mdims),diff(nptdiag,mdims)
+      real extra(nptdiag,ndimsmax),diff(nptdiag,ndimsmax)
 c Spatial limits bottom-top, dimensions
-      real xlimit(2,mdims),xnewlim(2,mdims)
-      real Bdirs(mdims+1)
+      real xlimit(2,ndimsmax),xnewlim(2,ndimsmax)
+      real Bdirs(ndimsmax+1)
 c Velocity limits
-      real vlimit(2,mdims),wicell,wjcell,wkcell
+      real vlimit(2,ndimsmax),wicell,wjcell,wkcell
       character*1 axnames(3)
-      real vmean(mdims)
+      real vmean(ndimsmax)
       real vtkxn(nsub_i+1),vtkyn(nsub_j+1),vtkzn(nsub_k+1)
-      integer iuin(mdims),vtkifull(mdims),vtkiuds(mdims),ibinary
-      integer ivtk,ip3index,ip,icentering(2*mdims)
-      integer ivardims(2*mdims),ivardims_alloc(2*mdims)
+      integer iuin(ndimsmax),vtkifull(ndimsmax),vtkiuds(ndimsmax)
+      integer ibinary
+      integer ivtk,ip3index,ip,icentering(2*ndimsmax)
+      integer ivardims(2*ndimsmax),ivardims_alloc(2*ndimsmax)
       external ip3index
       data axnames/'x','y','z'/ 
-      character*200 ivarnames(2*mdims)
+      character*200 ivarnames(2*ndimsmax)
 
       nfmax=nfilemax
 c silence warnings:
       zp(1,1,1)=0.
 
 c Defaults
-      do id=1,mdims
+      do id=1,ndimsmax
 c Use very big xlimits by default to include whole domain
 c They are then reset by the accumulation itself.
          xlimit(1,id)=-500.
@@ -45,7 +46,7 @@ c Overlapping vlimits make limitdeterm the usual setting method.
       enddo
 
       call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc,ivtk)
-      do id=1,mdims
+      do id=1,ndimsmax
 c Needed initialization removed from partacinit.
          xmeshstart(id)=min(-5.,xlimit(1,id))
          xmeshend(id)=max(5.,xlimit(2,id))
@@ -145,10 +146,10 @@ c      write(*,*)'fvx',fvx
          do k=1,isuds(3)+1
             vtkzn(k)=xnewlim(1,3)+(k-1)*wkcell
          enddo
-         do i=1,mdims
+         do i=1,ndimsmax
             vtkifull(i)=isfull(i)+1
          enddo
-         do j=1,mdims
+         do j=1,ndimsmax
             vtkiuds(j)=isuds(j)+1
          enddo
          ibinary=0
@@ -157,14 +158,14 @@ c      write(*,*)'fvx',fvx
             do j=1,isuds(2)
                do k=1,isuds(3)
                   do l=0,nsbins
-                     do m=1,mdims
+                     do m=1,ndimsmax
                         vtkudata(i,j,k,l,m)=vhbin(l,m)
                      enddo
                   enddo
                   do l=1,nsbins
-                     do m=mdims+1,2*mdims
+                     do m=ndimsmax+1,2*ndimsmax
                         ip=ip3index(isuds,i,j,k)+1
-                        vtkudata(i,j,k,l-1,m)=fvx(l,m-mdims,ip)
+                        vtkudata(i,j,k,l-1,m)=fvx(l,m-ndimsmax,ip)
                      enddo
                   enddo
                enddo
@@ -176,14 +177,14 @@ c      write(*,*)'fvx',fvx
          ivarnames(4)='fvx'//char(0)
          ivarnames(5)='fvy'//char(0)
          ivarnames(6)='fvz'//char(0)
-         do i=1,2*mdims
+         do i=1,2*ndimsmax
             icentering(i)=0
          enddo         
-         do i=1,mdims
+         do i=1,ndimsmax
             ivardims(i)=nsbins+1
             ivardims_alloc(i)=nsbins+1
          enddo
-         do i=mdims+1,2*mdims
+         do i=ndimsmax+1,2*ndimsmax
             ivardims(i)=nsbins
             ivardims_alloc(i)=nsbins+1
          enddo
@@ -194,12 +195,12 @@ c      write(*,*)'fvx',fvx
      $        ,ibinary,ivardims
      $        ,partfilename(1:lentrim(partfilename))//char(0)
      $        ,ivarnames,200
-     $        ,2*mdims,ivardims_alloc
+     $        ,2*ndimsmax,ivardims_alloc
      $        ,icentering) 
       else
              
       call multiframe(2,1,2)
-      do id=1,mdims
+      do id=1,ndimsmax
          do k=1,nsbins
             fk=fsv(k,id)
                fsv(k,id)=fk*csbin(k,id)
@@ -250,11 +251,11 @@ c Print to file the distribution.
          open(25,file=name,status='unknown',err=101)
          close(25,status='delete')
          open(25,file=name,status='new',err=101)
-         do id=1,mdims
+         do id=1,ndimsmax
 c            name(il:il)=char(48+id)
             write(25,*)'Dimension ',id
             write(25,'(a,a,a)')'legend: f(v!d',axnames(id),'!d)'
-c The following is for mdims>3.
+c The following is for ndimsmax>3.
 c            write(25,'(a,i1,a)')'legend: f(v!d',id,'!d)'
             write(25,*)nptdiag
             write(25,'(2g14.6)')(vdiag(i,id),fv(i,id),i=1,nptdiag)
@@ -266,7 +267,7 @@ c            write(25,'(a,i1,a)')'legend: f(v!d',id,'!d)'
          call exit(1)
  102     continue
       endif
-      do id=1,mdims
+      do id=1,ndimsmax
          vmean(id)=0.
          ftot=0.
          do i=1,nptdiag
@@ -275,7 +276,7 @@ c            write(25,'(a,i1,a)')'legend: f(v!d',id,'!d)'
          enddo
          vmean(id)=vmean(id)/ftot
       enddo
-      write(*,'(''Mean velocity:'',3f10.4)')(vmean(i),i=1,mdims)
+      write(*,'(''Mean velocity:'',3f10.4)')(vmean(i),i=1,ndimsmax)
 
 c Plot the subdistributions at a particular cell.
       icell=isuds(1)/2+1

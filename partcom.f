@@ -15,10 +15,8 @@ c Starting particle slot
 c Particle position and velocity (3D cartesian) in the order:
 c (x,y,z) (vx,vy,vz) (xm,ym,zm) where xm... is the mesh position.
       real x_part(idtp,n_partmax)
-c Particle flag(s). if_part Replaced by x_part(iflag,i).
-c      integer if_part(n_partmax)
-c Particle previous cycle time step dtprec replaced by x_part(idtp,i)
-c      real dtprec(n_partmax)
+c Ratio of the number of steps and inverse number of particles:
+      integer numratioa(nspeciesmax)
 c Timestep (unperturbed).
       real dt
 c Control of diagnostics
@@ -48,7 +46,7 @@ c Whether not all directions of particles are periodic
       equivalence (n_part,nparta(1)),(iic_part,iicparta(1))
      $     ,(ioc_part,iocparta(1)),(ninjcomp,ninjcompa(1))
       common/particles/x_part,nspecies
-     $     ,nparta,iicparta,iocparta,ninjcompa
+     $     ,nparta,iicparta,iocparta,ninjcompa,numratioa
      $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs
      $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp
      $     ,caverein,chi

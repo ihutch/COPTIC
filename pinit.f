@@ -73,8 +73,8 @@ c the frame of reference in which the background E-field is truly zero:
          tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
 c      write(*,*)i1,' iicparta(1)',iicparta(1),iicparta(ispecies)
 c Scale the number of particles for higher slots to the ions(?)
-         nparta(ispecies)=nparta(1)
-     $        *sqrt(abs(eoverms(1)/eoverms(ispecies)))
+         nparta(ispecies)=nparta(1)/numratioa(ispecies)
+c     $        *sqrt(abs(eoverms(1)/eoverms(ispecies)))
          do i=iicparta(ispecies)+i1-1,nparta(ispecies)
      $        +iicparta(ispecies)-1
             x_part(iflag,i)=1
@@ -136,14 +136,13 @@ c Zero the overflow slots' flag
             x_part(iflag,i)=0
          enddo
          if(myid.eq.0)then
-            if(nspecies.gt.0)write(*,*)'Slots',ispecies
-     $           ,iicparta(ispecies),iocparta(ispecies)
-     $           ,ninjcompa(ispecies)
-
             write(*,101)ispecies,nprocs,
      $           iocparta(ispecies)-iicparta(ispecies)+1,ntries
  101        format(' Initialized species',i2,i4,'x',i7
      $           ,' ntries=',i7,$)
+            if(nspecies.gt.0)write(*,*)'Slots'
+     $           ,iicparta(ispecies),iocparta(ispecies)
+     $           ,ninjcompa(ispecies)
          endif
 c Initialize rhoinf:
          if(rhoinf.eq.0.)rhoinf=numprocs*n_part/(4.*pi*rs**3/3.)

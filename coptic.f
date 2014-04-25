@@ -21,7 +21,7 @@ c
 c Diagnostics (moments)
       integer ndiagmax
       parameter (ndiagmax=7)
-      real diagsum(na_i,na_j,na_k,ndiagmax+1)
+      real diagsum(na_i,na_j,na_k,ndiagmax+1,nspeciesmax)
 c Distribution functions
       integer ndistmax
       parameter (ndistmax=300)
@@ -53,8 +53,8 @@ c Face boundary data
       include 'facebcom.f'
 
       external bdyshare,bdyset,faddu,cijroutine,cijedge,psumtoq
-     $     ,quasineutral
-      real faddu
+     $     ,quasineutral,fnodensity
+      real faddu,fnodensity
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
       character*100 diagfilename,restartpath
@@ -138,7 +138,7 @@ c First time this routine just sets defaults and the object file name.
      $     ,objfilename ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax)
+     $     ,nspeciesmax,numratioa)
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -152,7 +152,7 @@ c Second time: deal with any other command line parameters.
      $     ,objfilename ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax)
+     $     ,nspeciesmax,numratioa)
       if(ierr.ne.0)stop
 c The double call enables cmdline switches to override objfile settings.
 c-----------------------------------------------------------------
@@ -272,8 +272,11 @@ c Initialize charge (set q to zero over entire array).
 c Initialize potential (set u to zero over entire array).
       call mditerset(u,ndims,ifull,iuds,0,0.)
 c Initialize diagsum if necessary.
-      do idiag=1,ndiags+1
-         call mditerset(diagsum(1,1,1,idiag),ndims,ifull,iuds,0,0.)
+      do ispecies=1,nspecies
+         do idiag=1,ndiags+1
+            call mditerset(diagsum(1,1,1,idiag,ispecies)
+     $           ,ndims,ifull,iuds,0,0.)
+         enddo
       enddo
 c Initialize additional potential and charge if needed.
       if(iptch_mask.ne.0 .or. gtt.ne.0. .or. gnt.ne.0)
@@ -385,9 +388,12 @@ c-----------------------------------------------
       endif
       call mditerset(psum,ndims,ifull,iuds,0,0.)
 c This call is necessary for restart with fluid electrons.
-c It omits any particle electrons. So their restart is incorrect.
-c Also for particle electrons the first potential solve will be crazy.
-      call chargetomesh(psum,iLs,diagsum,ndiags)
+      call chargetomesh(psum,iLs,diagsum,ndiags) 
+c For any other species, do their advance (with dt=dtf) so as
+c to deposit smoothed charge.
+      do ispecies=2,nspecies
+         call padvnc(iLs,cij,u,ndiags,psum,diagsum,ispecies,ndiagmax)
+      enddo
 c Main step iteration -------------------------------------
       do j=1,nsteps
          nf_step=nf_step+1
@@ -421,8 +427,15 @@ c New position for psum reset to accommodate padvnc deposition.
      $        0,q(2,2,2),u(2,2,2),volumes(2,2,2),dum4,dum5)
             call bdyslope0(ndims,ifull,iuds,cij,u,q)
          else
-            call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset,faddu
-     $           ,ictl,ierr,myid,idims)
+            if(nspecies.gt.1)then
+               call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
+     $              ,fnodensity,ictl,ierr,myid,idims)
+c               call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
+c     $              ,faddu,ictl-2,ierr,myid,idims)
+            else
+               call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
+     $              ,faddu,ictl,ierr,myid,idims)
+            endif
          endif
          call calculateforces(ndims,iLs,cij,u)
 
@@ -438,8 +451,10 @@ c New position for psum reset to accommodate padvnc deposition.
 
          if(nf_step.eq.ickst)call checkuqcij(ifull,u,q,psum,volumes,cij)
 c Particle advance:
-         ispecies=1
-         call padvnc(iLs,cij,u,ndiags,psum,diagsum,ispecies)
+c         ispecies=1
+         do ispecies=1,nspecies
+            call padvnc(iLs,cij,u,ndiags,psum,diagsum,ispecies,ndiagmax)
+         enddo
          if(nf_step.eq.ickst)call checkx
 
          call fluxreduce()
@@ -482,28 +497,35 @@ c out, if we are doing diagnostics.
          if(mod(j,iavesteps).eq.0)then
             if(ndiags.gt.0)then
 c Reduce the data
-               call diagreduce(diagsum,ndims,ifull,iuds,iLs,ndiags)
-               call diagperiod(diagsum,ifull,iuds,iLs,ndiags)
+               do ispecies=1,nspecies
+                  call diagreduce(diagsum(1,1,1,1,ispecies),ndims,ifull
+     $                 ,iuds,iLs,ndiags)
+                  call diagperiod(diagsum(1,1,1,1,ispecies),ifull,iuds
+     $                 ,iLs,ndiags)
 c Do any other processing? Here or later?
-c               call diagstep(iLs,diagsum,ndiags)
 c Write the ave potential into the ndiags+1 slot of diagsum (by adding
 c to the previously zeroed values).
-               ipin=0
-               call mditeradd(diagsum(1,1,1,ndiags+1),ndims,ifull,iuds
-     $              ,ipin,uave)
-               if(lmyidhead)then
+                  ipin=0
+                  call mditeradd(diagsum(1,1,1,ndiags+1,ispecies),ndims
+     $                 ,ifull,iuds,ipin,uave)
+                  if(lmyidhead)then
 c If I'm the head, write it.
-                  write(*,'(a,i3,a)')'Diags',ndiags,' '
-c                  write(argument,'(''.dia'',i4.4)')j
-                  write(argument,'(''.dia'',i4.4)')nf_step
-                  diagfilename=' '
-                  call namewrite(diagfilename,ifull,iuds,ndiags+1
-     $                 ,diagsum,argument)
-               endif
+                     write(*,'(a,i3,a,i3)')'Diags',ndiags,' ',ispecies
+                     if(ispecies.eq.1)then
+                        write(argument,'(''.dia'',i4.4)')nf_step
+                     else
+                        write(argument,'(''.d'',i1.1,''a'',i4.4)')
+     $                       ispecies,nf_step
+                     endif
+                     diagfilename=' '
+                     call namewrite(diagfilename,ifull,iuds,ndiags+1
+     $                    ,diagsum(1,1,1,1,ispecies),argument)
+                  endif
 c Now reinit diagsum
-               do idiag=1,ndiags+1
-                  call mditerset(diagsum(1,1,1,idiag),ndims,ifull,iuds,0
-     $                 ,0.)
+                  do idiag=1,ndiags+1
+                     call mditerset(diagsum(1,1,1,idiag,ispecies),ndims
+     $                    ,ifull,iuds,0,0.)
+                  enddo
                enddo
             endif
             if(idistp.ne.0)then
