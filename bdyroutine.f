@@ -3,6 +3,7 @@ c This file gives examples of boundary setting for sormpi.
 c The bdyset routine can be called anything, and name passed.
 c Its arguments must of course be correct.
       subroutine bdyset(mdims,ifull,iuds,cij,u,q)
+      real u(*),cij(*),q(*)
       include 'ndimsdecl.f'
       include 'facebcom.f'
 c Specify external the boundary setting routine.
@@ -19,9 +20,8 @@ c      call bdysetnull
       end
 c**********************************************************************
       subroutine bdysetfree(mdims,ifull,iuds,cij,u,q)
-      integer mdims,ifull(mdims),iuds(mdims)
-      real u(*)
-      real cij(*),q(*)
+c      integer mdims,ifull(mdims),iuds(mdims)
+      real u(*),cij(*),q(*)
 c Specify external the boundary setting routine.
 c If    Bit-0 of islp is not set, then use logarithmic derivative.
 c else  use Mach slope condition (higher bits relevant).

@@ -521,7 +521,7 @@ c      write(*,*)'Saving intersection',isc,iobj,ijbin
       enddo
 c------------------------------
 c Do the bin adding in a subroutine.
-      call binadding(j,infobj,sd,ijbin)
+      call binadding(xi,infobj,sd,ijbin)
 
       if(ijbin2.ne.-1)then
 c This should not happen.

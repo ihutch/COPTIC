@@ -11321,3 +11321,11 @@ scaling.)
 It seems as if coptic is now running with particle electrons.
 
 commit
+
+mpiexec -n 2 is not obviously broken. It works with multiple processes and
+might not be incorrect.
+
+Did some RefManual updating.
+
+Did some checking using gfortran corrected a bug and some warnings.
+Do particle slot check in pinit to prevent overflow of slots.

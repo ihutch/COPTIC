@@ -7,7 +7,7 @@ c The number of dimensions of the cartesian topology. (2 for 2d) (IN)
       integer ndims
 c Dimensional structure of u, for 2d should be (1,Li,Lj), 
 c 3d (1,Li,Li*Lj,Li*Lj*Lk) etc (last element may not be used)
-      integer iLs(ndims+1)
+      integer iLs(ndims+1),ifull(ndims)
 c iuds used dimensions of u
       integer iuds(ndims)
 c Inside this routine, u and iorig are referenced linearly.

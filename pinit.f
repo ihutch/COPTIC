@@ -75,8 +75,13 @@ c      write(*,*)i1,' iicparta(1)',iicparta(1),iicparta(ispecies)
 c Scale the number of particles for higher slots to the ions(?)
          nparta(ispecies)=nparta(1)/numratioa(ispecies)
 c     $        *sqrt(abs(eoverms(1)/eoverms(ispecies)))
-         do i=iicparta(ispecies)+i1-1,nparta(ispecies)
-     $        +iicparta(ispecies)-1
+         islotmax=nparta(ispecies)+iicparta(ispecies)-1
+         if(islotmax.gt.n_partmax)then
+            write(*,*)'Overflowed available particle slots',n_partmax
+     $           ,' Asking for',islotmax
+            stop
+         endif
+         do i=iicparta(ispecies)+i1-1,islotmax
             x_part(iflag,i)=1
  1          continue
             ntries=ntries+1

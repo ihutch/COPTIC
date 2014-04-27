@@ -559,6 +559,19 @@ by any -tge call, (or otherwise at 0,0,0). The default density gradient is zero.
 no density gradient parallel to the magnetic field or if there is no
 magnetic field.
 
+\paragraph{-sp} Add a particle species. Thereafter particle parameters
+refer to the new species.
+
+\paragraph{-zm...} Set the charge-to-mass ratio. Default 1 ions -1836
+electrons.
+
+\paragraph{-nr...} Set the number-ratio of the ions to the current
+species. By default this is equal to the square root of the inverse
+mass ratio. The number of steps of this species per ion step is equal
+to the number-ratio, so the number of depositions of electrons and
+ions is equal (for the background).
+Setting -nr1 uses equal numbers of particles and no substepping.
+
 
 \subsubsection*{Neutrals, Collisions, Magnetic Field}
 
@@ -578,7 +591,6 @@ collision frequency and \verb!-cp1.! is constant cross-section. The
 thermal spread of the neutrals is only approximately accounted for in
 using this collision setting.
 
-\paragraph{-mz....} Set the ion mass-to-charge ratio. Default 1.
 
 \paragraph{-Bx.. -By.. -Bz..} Set the respective components of the
 magnetic field. 
@@ -705,31 +717,77 @@ flux quantity to be plotted in graphics emitted after the final step.
 
 \section{Data Structures}
 
+\subsection{Dimension}
+
+Is set by including file \verb!ndimsdecl.f! which defines the
+parameters \verb!ndims!, \verb!ndimsmax!, and \verb!nspeciesmax!.
+
+
 \subsection{Particles}
 
 Particle information resides, as defined in file \verb!partcom.f!, in
 common block \verb!particles!.
 \begin{verbatim}
-      real x_part(3*npdim,n_partmax)
-      integer if_part(n_partmax)
-      real dtprec(n_partmax)
-      integer ipartperiod(npdim)
-      common/particles/n_part,x_part,if_part,iregion_part,ioc_part
-     $     ,dtprec,dt,ldiags,rhoinf,nrein,phirein,numprocs,ninjcomp
+      integer nparta(nspeciesmax)
+c Maximum particle slot that we must examine
+      integer iocparta(nspeciesmax)
+c Starting particle slot
+      integer iicparta(nspeciesmax+1)
+c Particle position and velocity (3D cartesian) in the order:
+c (x,y,z) (vx,vy,vz) (xm,ym,zm) where xm... is the mesh position.
+      real x_part(idtp,n_partmax)
+c Ratio of the number of steps and inverse number of particles:
+      integer numratioa(nspeciesmax)
+c Timestep (unperturbed).
+      real dt
+c Control of diagnostics
+      logical ldiags
+c Rho at infinity totalled over processes
+      real rhoinf
+c Number of reinjections this step
+      integer nrein
+c Average potential of reinjections
+      real phirein
+c Number of independent processors
+      integer numprocs
+c Number of reinjections at each step (if non-zero)
+      integer ninjcompa(nspeciesmax)
+c Rho at infinity per processor, relevant only in setup.
+      real ripernode
+c Factor by which we relax the rhoinf calculation. 1 immediate, 0 never.
+      real crelax,caverein,chi
+c Flags for which dimensions are periodic or absorbing for particles.
+c 0 open, 1 lower absorbs, 2 upper absorbs, 3 both absorb, 4 periodic
+      integer ipartperiod(ndims)
+c Effective face area for purposes of reinjection. Small if periodic.
+      real fcarea(ndims)
+c Whether not all directions of particles are periodic
+      logical lnotallp
+      integer n_part,iic_part,ioc_part,ninjcomp
+      equivalence (n_part,nparta(1)),(iic_part,iicparta(1))
+     $     ,(ioc_part,iocparta(1)),(ninjcomp,ninjcompa(1))
+      common/particles/x_part,nspecies
+     $     ,nparta,iicparta,iocparta,ninjcompa,numratioa
+     $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs
      $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp
      $     ,caverein,chi
 \end{verbatim}
-The number of active particles is \verb!n_part!, and the maximum slot
-in the particle array that might have a particle in it is
-\verb!ioc_part!. These must not exceed the allocated length of the
-particle array \verb!n_partmax!. The ion density at infinity summed over the
-\verb!numprocs! processes is \verb!rhoinf!. The number of reinjections
-in this step is \verb!nrein! and the average potential at which they
+The number of active species is \verb!nspecies!.
+The number of active particles of each species is
+\verb!nparta(ispecies)!. Each species occupies particle slots starting
+at \verb!iicparta! and the maximum slot in the particle array that
+might have a particle in it is \verb!iocparta!. The last species must
+not go past the allocated length of the particle array
+\verb!n_partmax!. The ion density at infinity summed over the
+\verb!numprocs! processes is \verb!rhoinf!. Equivalences to the
+standard single particle species parameters assist with legacy code
+and clarity. The number of reinjections
+in this step is \verb!nrein!  and the average potential at which they
 were reinjected is \verb!phirein!. If \verb!ninjcomp! is non-zero,
 then it defines the specified number of reinjections per step. [But is
-  that changed during acceleration?] 
-The other scalar variables describe a few other setting such as the
-unperturbed timestep \verb!dt!. 
+that changed during acceleration?]  The other scalar variables
+describe a few other setting such as the unperturbed timestep
+\verb!dt!.
 
 The main data consists of \verb!x_part! whose first index references
 the {\bf position}, {\bf velocity}, and {\bf fractional mesh
@@ -1052,15 +1110,15 @@ generator to where they stood at the end of the saved run.
 number of steps, as follows.
 \begin{itemize}\itemsep=0pt
 \item The current timestep is adjusted for acceleration.
-\item The \verb!psum! is zeroed and then \verb!chargetomesh! generates
-  the \verb!psum!
+\item \verb!chargetomesh! generates the final \verb!psum! by deposition of ions.
 \item \verb!psum! is reduced from all nodes. \verb!rhoinfinity! is calculated.
-\item \verb!psumtoq! converts psums to charge density.
+\item \verb!psumtoq! converts psums to charge density, then zeroes \verb!psum!.
 \item The solver is called (\verb!sormpi!) or
   quasi-neutrality invoked to determine potential.
 \item Force contributions are accumulated by \verb!calculateforces!.
 \item Optionally, plotting is done. Optionally checking is done.
-\item The particles are advanced by \verb!padvnc!
+\item The particles are advanced by \verb!padvnc!. Charge deposition
+  of species higher than 1 is integrated into this routine.
 \item Fluxes are reduced.
 \item The stencils are updated by \verb!cijdirect!
 \item Running averages are calculated and optionally diagnostic data
@@ -1256,16 +1314,18 @@ contributions to the different velocity-moments. They are calculated
  for each cell of the whole mesh. The sums are (in order) density,
  velocity and squared velocity, up to 7 total.
 \begin{verbatim}
+c Diagnostics (moments)
       integer ndiagmax
       parameter (ndiagmax=7)
-      real diagsum(na_i,na_j,na_k,ndiagmax)
+      real diagsum(na_i,na_j,na_k,ndiagmax+1,nspeciesmax)
 \end{verbatim}
-When diagnostics are being accumulated, because the command line
-switch \verb!-mdX! has set a non-zero number of moments \verb!X!, then
-\verb!chargetomesh! updates this sum as well as the charge. Every
-\verb!iavesteps! (set by \verb!-a!) the sums are reduced from all
-processors and written to a file whose name indicates the step-number
-and \verb!.dia!. The sums are then reset to zero.
+ When diagnostics are being accumulated, because the command line
+ switch \verb!-mdX! has set a non-zero number of moments \verb!X!,
+ then \verb!chargetomesh! (or padvnc for higher species) updates this
+ sum as well as the charge. Every \verb!iavesteps! (set by \verb!-a!)
+ the sums are reduced from all processors and written to a file whose
+ name indicates the step-number and \verb!.dia!. The sums are then
+ reset to zero.
 
 \paragraph{Particle Distribution Diagnostics} are somewhat more
 complicated. This is because to maintain a full distribution function

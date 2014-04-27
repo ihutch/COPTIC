@@ -413,9 +413,6 @@ c            if(myid.eq.0)write(*,*)'PROBLEM: phirein>0:',phirein
          fcollided=float(ncollided)/nparta(ispecies)
       endif
 
-      if(ispecies.gt.1)
-     $     write(*,*)'Species particles',(k,nparta(k),k=1,nspecies)
-
 c      if(nsubc.ne.0) write(*,'(a,i6,$,'' '')')' Subcycled:',nsubc
 c      write(*,*)'Padvnc',n_part,nrein,ilaunch,ninjcomp,n_partmax
       end

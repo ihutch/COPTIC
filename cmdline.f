@@ -524,6 +524,7 @@ c Help text
 c      write(*,302)' -tn   set neutral temperature    [',Tneutral
       write(*,302)' -Ef   set Ext v-drive fraction   [',Enfrac
       write(*,302)' -cp   set v-power coln freq      [',colpow
+      write(*,308)' -sp   add a particle species     [',nspecies
       write(*,307)' -zm   set Z/mass ratio           ['
      $     ,(eoverms(ispecies),ispecies=1,nspecies)
       write(*,308)' -nr   set species number ratio   ['

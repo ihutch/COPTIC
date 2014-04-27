@@ -4,9 +4,9 @@ c Interpolations.
       integer flags(ndm1)
       boxinterp=0.
       if(ndm1.eq.1)then
-         boxinterp=box1interp(f,flags,d)
+         boxinterp=box1interp(f,flags,d(1))
       elseif(ndm1.eq.2)then
-         boxinterp=box2interp(f,flags,d)
+         boxinterp=box2interp(f,flags,d(1))
       else
          write(*,*)'Boxinterp Error. Unknown dimensionality:',ndm1
       endif

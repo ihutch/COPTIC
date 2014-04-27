@@ -1,6 +1,7 @@
 c*********************************************************************
 c Wrapper:
       subroutine reinject(xr,ilaunch,ispecies)
+      real xr(*)
       include 'colncom.f'
       include 'ndimsdecl.f'
       include 'partcom.f'

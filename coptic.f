@@ -467,6 +467,8 @@ c Store the step's rhoinf, dt, npart.
          if(lmyidhead)then
 c write out flux to object 1.
             write(*,'(f6.3,''| '',$)')fluxdiag()
+            if(nspecies.gt.1)write(*,*)'Species deposits'
+     $           ,(k,nparta(k),k=1,nspecies)
 c            write(*,'(f6.3,''| '',$)')n_part/(rhoinf*1000)
 c            write(*,'(i6,''| '',$)')n_part
             if(mod(nf_step,5).eq.0)write(*,*)

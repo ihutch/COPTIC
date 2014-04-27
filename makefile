@@ -168,7 +168,7 @@ smt.out : compiler $(COPTIC) copticgeom.dat
 	./$(COPTIC)
 	@if [ -f smt.prev ] ;then if [ -f smt.out ] ;then diff smt.prev smt.out ;else touch smt.out ;fi ;fi
 	@if [ -f prior.phi ] && [ -f T1e0v000P200L1e0z005x05.phi ] ; then if ! diff T1e0v000P200L1e0z005x05.phi prior.phi ; then echo "**** RESULT CHANGED" ; rm prior.phi; fi; else echo "File[s] lacking to compare result.\nProbably you've just made coptic for the first time."; fi 
-	@if [ "$(G77)" = "gfortran" ] ; then echo "Compiled serial coptic. make clean; make for MPI version if MPI available." ; fi
+	@if [ "$(G77)" = "gfortran" ] ; then echo "Compiled serial coptic. make mproper; make for MPI version if MPI available." ; fi
 
 # For now we are using a big hammer to ensure libcoptic is clean.
 libcoptic.a : compiler makefile $(OBJECTS) $(UTILITIES)

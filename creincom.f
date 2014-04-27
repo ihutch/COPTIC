@@ -20,7 +20,8 @@ c The cumulative distribution of flux among the six faces.
 c Whether reinjection is initialized or not
       logical lreininit
       real hrein(0:ncrein,6),grein(6),prein(0:ncrein,3)
-      real gintrein(0:6),idrein
+      real gintrein(0:6)
+      integer idrein
       equivalence (hrein,hreins),(grein,greins),(prein,preins)
       equivalence (gintrein,gintreins),(idrein,idreins)
 
