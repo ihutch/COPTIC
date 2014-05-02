@@ -176,7 +176,8 @@ c         write(*,*)i,argument
          if(argument(1:3).eq.'-dd')read(argument(4:),*,err=201)dropaccel
          if(argument(1:3).eq.'-zm')then
             read(argument(4:),*,err =201)eoverms(nspecies)
-            numratioa(nspecies)=sqrt(abs(eoverms(nspecies)/eoverms(1)))
+            numratioa(nspecies)=1.
+c            numratioa(nspecies)=sqrt(abs(eoverms(nspecies)/eoverms(1)))
          endif
          if(argument(1:3).eq.'-nr')read(argument(4:),*,err=201)
      $        numratioa(nspecies)
@@ -259,8 +260,8 @@ c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
 c Default to electron Temp/mass for subsequent species.
                Ts(nspecies)=1.
                eoverms(nspecies)=-1836.
-               numratioa(nspecies)=
-     $              sqrt(abs(eoverms(nspecies)/eoverms(1)))
+               numratioa(nspecies)=1.
+c     $              sqrt(abs(eoverms(nspecies)/eoverms(1)))
 c Inherit the drifts of the previous species until explicitly changed.
                vds(nspecies)=vds(nspecies-1)
                do id=1,ndims

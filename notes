@@ -11329,3 +11329,14 @@ Did some RefManual updating.
 
 Did some checking using gfortran corrected a bug and some warnings.
 Do particle slot check in pinit to prevent overflow of slots.
+
+2 May 14
+
+Make the default numratio -nr equal to 1, not 1836. Fix RefManual.
+Fix segfault caused by incorrect slicegweb workspace zp.
+Run some other tests
+
+Scalar, with electrons: 0m34.998s without 0m13.637s. Worse than a
+factor of 2 for same timestep. Probably because of noise and poisson time.
+
+Add geometry/uniformelec.cks and .dat for testing electron case.

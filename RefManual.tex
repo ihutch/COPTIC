@@ -566,11 +566,13 @@ refer to the new species.
 electrons.
 
 \paragraph{-nr...} Set the number-ratio of the ions to the current
-species. By default this is equal to the square root of the inverse
-mass ratio. The number of steps of this species per ion step is equal
-to the number-ratio, so the number of depositions of electrons and
-ions is equal (for the background).
-Setting -nr1 uses equal numbers of particles and no substepping.
+species. By default this is equal to 1. Other choices are
+possible. For example using square root of the inverse mass ratio
+makes the step length of particles of equal temperatures equal. The
+number of steps of this species per ion step is equal to the
+number-ratio, so the number of depositions of electrons and ions is
+equal (for the background).  Setting -nr1 uses equal numbers of
+particles and no substepping.
 
 
 \subsubsection*{Neutrals, Collisions, Magnetic Field}

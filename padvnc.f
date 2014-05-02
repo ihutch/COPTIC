@@ -492,7 +492,8 @@ c To do the slice plot we need this it include grid decl.
       include 'meshcom.f'
       include 'ptchcom.f'
       include 'plascom.f'
-      real zp(na_m,na_m2)
+c Here a segfault was caused if na_m2 was used.
+      real zp(na_m,na_m)
       integer ipoint
       external ucrhoset
       iptch_copy=irptch

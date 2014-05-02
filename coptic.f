@@ -65,7 +65,9 @@ c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical lmyidhead,lphiplot,ldenplot
       integer ipstep,iwstep,idistp,idcount,icijcount,lrestart
 c Diagnostics etc
-      real zp(na_m,na_m2,ndimsmax)
+c      real zp(na_m,na_m2,ndimsmax)
+c The above does not seem to be the correct workspace for zp (slicing)
+      real zp(na_m,na_m)
       real xlimit(2,ndimsmax),vlimit(2,ndimsmax)
       real xnewlim(2,ndimsmax)
 c Input for face boundary data:
@@ -428,10 +430,10 @@ c New position for psum reset to accommodate padvnc deposition.
             call bdyslope0(ndims,ifull,iuds,cij,u,q)
          else
             if(nspecies.gt.1)then
-               call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
-     $              ,fnodensity,ictl,ierr,myid,idims)
 c               call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
-c     $              ,faddu,ictl-2,ierr,myid,idims)
+c     $              ,fnodensity,ictl,ierr,myid,idims)
+               call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
+     $              ,faddu,ictl-2,ierr,myid,idims)
             else
                call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
      $              ,faddu,ictl,ierr,myid,idims)
