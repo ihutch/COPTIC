@@ -35,7 +35,7 @@ c Lowest particle to print debugging data for.
 c Local storage
       parameter (fieldtoolarge=1.e12)
       integer ixp(ndims)
-      real field(ndims),adfield(ndims)
+      real Efield(ndims),adfield(ndims)
       real xfrac(ndims)
 c      real xg(ndims),xc(ndims)
       logical linmesh
@@ -68,10 +68,7 @@ c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 c At most do over all particle slots for this species. 
 c But generally we break earlier.
       numratio=numratioa(ispecies)
-c      write(*,*)ispecies,iicparta(ispecies),iicparta(ispecies+1)-1
-c     $     ,numratio,dt
       do i=iicparta(ispecies),iicparta(ispecies+1)-1
-c         if(mod(i,100).eq.0)write(*,*)ispecies,i
          do icycle=1,numratio
          dtdone=0.
          dtremain=0.
@@ -128,12 +125,12 @@ c the region information.
          do idf=1,ndims
             call getfield(cij(ic1),u,iLs
      $           ,xn(ixnp(idf)+1),idf,x_part(ndimsx2+1,i)
-     $           ,IAND(iregion,ifield_mask),field(idf))
-            if(.not.abs(field(idf)).lt.fieldtoolarge)then
+     $           ,IAND(iregion,ifield_mask),Efield(idf))
+            if(.not.abs(Efield(idf)).lt.fieldtoolarge)then
                write(*,*)'Field corruption(?) by getfield.'
                write(*,'(''Particle'',i8,'' dimension='',i2,
      $'' iregion='',i3,'' masked='',i3,'' Field='',3f10.5)')i,idf
-     $              ,iregion ,IAND(iregion,ifield_mask),field(idf)
+     $              ,iregion ,IAND(iregion,ifield_mask),Efield(idf)
                write(*,'(''xp:'',9f8.4)')(x_part(kk,i),kk=1,3
      $              *ndims)
                write(*,'(''In region'',l2,''  iLs=''
@@ -142,12 +139,12 @@ c the region information.
             endif
             if(i.eq.1)then
 c               write(*,*)
-c     $             idf,irptch,' field,adfield',field(idf),adfield(idf)
-c     $              ,adfield(idf)/field(idf),field(idf)
+c     $             idf,irptch,' field,adfield',Efield(idf),adfield(idf)
+c     $              ,adfield(idf)/Efield(idf),Efield(idf)
 c     $              /x_part(idf,i)
             endif
-            field(idf)=field(idf)+adfield(idf)
-            f2=f2+field(idf)**2
+            Efield(idf)=Efield(idf)+adfield(idf)
+            f2=f2+Efield(idf)**2
             r2=r2+x_part(idf,i)**2
             v2=v2+x_part(idf+3,i)**2
          enddo
@@ -160,9 +157,9 @@ c If needed, reset adfield.
          f1=sqrt(f2)
 c Example of testing code: the few-argument field evaluator.
 c                  call fieldatpoint(x_part(1,i),u,cij,iLs,fieldp)
-c                  if(fieldp(2).ne.field(2))then
+c                  if(fieldp(2).ne.Efield(2))then
 c                     write(*,'(i5,a,6f10.6)')i,' Point-field:',
-c     $                    fieldp,((fieldp(j)-field(j)),j=1,ndims)
+c     $                    fieldp,((fieldp(j)-Efield(j)),j=1,ndims)
 c--------------------------------------
          dtc=0.
 c---------- Subcycling ----------------
@@ -174,8 +171,8 @@ c Subcycling backs up to the start of the current drift-step, and then
 c takes a position corresponding to a drift-step smaller by a factor of 2.
 c That means the backed-up position is dtprec/4 earlier.
                dtback=-x_part(idtp,i)/4.
-               call moveparticle(x_part(1,i),ndims,Bt,Btinf,Bfield,vperp
-     $              ,dtback)
+               call moveparticle(x_part(1,i),ndims,Bt*eoverms(ispecies)
+     $              ,Efield,Bfield,vperp,dtback,i-iicparta(ispecies))
                dtdone=dtdone+dtback
 c The remaining time in step is increased by back up and by step loss.
                dtremain=dtremain-dtback+dtpos
@@ -235,11 +232,12 @@ c Here we only include the electric field force.
 c B-field force is accommodated within moveparticle routine.
          do j=ndims+1,2*ndims
             x_part(j,i)=x_part(j,i)
-     $           +eoverms(ispecies)*field(j-ndims)*dtaccel
+     $           +eoverms(ispecies)*Efield(j-ndims)*dtaccel
          enddo
          if(Eneutral.ne.0.)then
             if(Bt.ne.0.)then
 c Only the Enparallel is needed for non-zero Bfield.
+c This doesn't seem to be correct unless drift is in z-direction.
                Enpar=Eneutral*Bfield(ndims)
                do j=ndims+1,2*ndims
                   Eadd=Enpar*Bfield(j)
@@ -267,7 +265,7 @@ c But correcting the collisional force appropriately.
          endif
 c Move ----------------
          call moveparticle(x_part(1,i),ndims,Bt*eoverms(ispecies)
-     $        ,Btinf,Bfield,vperp,dtpos)
+     $        ,Efield,Bfield,vperp,dtpos,i-iicparta(ispecies))
          dtdone=dtdone+dtpos
 c ---------------- End Particle Advance -------------
 c ---------------- Special Conditions -------------
@@ -351,17 +349,16 @@ c----------- End Reinjection treatment --------
 c========================================================
 c--------- Completion of particle i treatment ------
  300     continue
-c Not needed when the Eneutral is subtracted off above and the
-c collisional effect is in postcollide.
 c Special diagnostic orbit tracking:
-         if(i.le.norbits.and.x_part(iflag,i).ne.0)then
+         ii=i-iicparta(ispecies)+1
+         if(ii.le.norbits .and.x_part(iflag,i).ne.0)then
             if(dtdone-dt.gt.1.e-4)then
                write(*,*)' Step error? i,dtdone,dt=',i,dtdone,dt
             endif
-            iorbitlen(i)=iorbitlen(i)+1
-            xorbit(iorbitlen(i),i)=x_part(1,i)
-            yorbit(iorbitlen(i),i)=x_part(2,i)
-            zorbit(iorbitlen(i),i)=x_part(3,i)
+            iorbitlens(ii,ispecies)=iorbitlens(ii,ispecies)+1
+            xorbits(iorbitlens(ii,ispecies),ii,ispecies)=x_part(1,i)
+            yorbits(iorbitlens(ii,ispecies),ii,ispecies)=x_part(2,i)
+            zorbits(iorbitlens(ii,ispecies),ii,ispecies)=x_part(3,i)
          endif
 c This is the charge deposition. Diagnostics are put into the 
 c appropriate species place of diagsum. Charge magnitude is 1.
@@ -813,36 +810,50 @@ c Normalize the bulkforce, multiplying by factor fac
       enddo
       end
 c *******************************************************************
-      subroutine moveparticle(x_part,ndims,Bt,Btinf,Bfield,vperp,dtpos)
+      subroutine moveparticle(x_part,ndims,Bt,Efield,Bfield,vperp
+     $     ,dtpos,k)
       implicit none
-      integer ndims
-      real Bt,Btinf,dtpos
-      real x_part(2*ndims,1),Bfield(ndims),vperp(ndims)
+      integer ndims,k
+      real Bt,dtpos
+      real x_part(2*ndims,1),Bfield(ndims),Efield(ndims)
+      real vperp(ndims)
       integer j
 c Local      
       real theta,stheta,ctheta,vp
-      real xg(3),xc(3)
-      real fieldtoosmall
-      parameter (fieldtoosmall=1.e-3)
-      integer i
-
-c            write(*,*)Bt,Btinf,Bfield
+      real xg(3),xc(3),EB(3)
+      real thetatoosmall
+      parameter (thetatoosmall=1.e-3)
+      real thetamax
+      parameter (thetamax=1.)
+      integer i,k1,k2
       i=1
-
-      if(Bt.eq.0.)then
+      theta=Bt*dtpos
+c      if(k.lt.5)then
+c         write(*,'(a,2f8.2,7f8.4)')'theta=',theta,Bt,dtpos,Efield,Bfield
+c      endif
+      if(abs(theta).eq.0.)then
 c B-field-less Move -----------------------------
          do j=1,ndims
             x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos
          enddo          
-      elseif(Bt.lt.Btinf)then
+         return
+      endif
+
+c Only if Bt!=0:
+      do j=1,ndims
+         k1=mod(j,ndims)+1
+         k2=mod(j+1,ndims)+1
+c Explicit ExB velocity plus vperp
+         EB(j)=vperp(j)+(Efield(k1)*Bfield(k2)-Efield(k2)*Bfield(k1))/Bt
+      enddo
+      if(abs(theta).lt.thetamax)then
 c Magnetic field non-zero but finite -------------
-         theta=Bt*dtpos
 c Rotation is counterclockwise for ions. We only want to call the 
 c trig functions once, otherwise they dominate the cost.
          stheta=sin(-theta)
          ctheta=cos(theta)
-c            if(i.eq.1)write(*,*)'theta=',theta,fieldtoosmall
-         if(theta.lt.fieldtoosmall)then
+c            if(i.eq.1)write(*,*)'theta=',theta,thetatoosmall
+         if(theta.lt.thetatoosmall)then
 c Weak B-field. Advance using summed accelerations. First half-move
             do j=1,ndims
                x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
@@ -860,7 +871,7 @@ c Second half-move.
 c Strong but finite B-field case:
 c Subtract off the perpendicular drift velocity.
             do j=ndims+1,2*ndims
-               x_part(j,i)=x_part(j,i)-vperp(j-ndims)
+               x_part(j,i)=x_part(j,i)-EB(j-ndims)
             enddo
 c Find the gyro radius and gyrocenter.
             call gyro3(Bt,Bfield,x_part(1,i),x_part(4,i),xg,xc)
@@ -873,30 +884,31 @@ c Add the new gyro center and gyro radius
 c And add back the drift velocity.
             do j=1,ndims
 c Move the gyro-center perpendicular and add gyro-radius:
-               x_part(j,i)=xc(j)+vperp(j)*dtpos+xg(j)
-c Add back vperp.
-               x_part(j+ndims,i)=x_part(j+ndims,i)+vperp(j)
+               x_part(j,i)=xc(j)+EB(j)*dtpos+xg(j)
+c Add back EB.
+               x_part(j+ndims,i)=x_part(j+ndims,i)+EB(j)
             enddo
          endif
 c 801        format(a,6f10.6)
 c            if(i.le.npr)write(*,801)'x_part2',(x_part(k,i),k=1,6)
       else
-c Infinite magnetic field; -------------------------
-c i.e. one-dimensional motion plus a
-c perpendicular steady drift velocity. Set non-drift perp particle
-c velocity to zero.
-c Bfield is normalized: i.e. a direction cosine.
+c Drift motion parallel plus EB.
+c Set non-drift perp particle velocity to zero.
+c Bfield is normalized: i.e. a direction cosine, so parallel velocity
          vp=0.
          do j=1,ndims
+c v_parallel
             vp=vp+Bfield(j)*x_part(j+ndims,i)
          enddo
          do j=1,ndims
 c Parallel particle and perpendicular drift move:
-            x_part(j,i)=x_part(j,i)+(vp*Bfield(j)+vperp(j))*dtpos
-c Zero perp velocity. Why? Just to display consistent with vz?
-c               x_part(j+ndims,i)=vp*Bfield(j)
-c Reset perp velocity to just the drift.
-            x_part(j+ndims,i)=vp*Bfield(j)+vperp(j)
+            x_part(j,i)=x_part(j,i)
+     $           +(vp*Bfield(j)+EB(j))*dtpos
+c Reset perp velocity to just the drift. Effectively we remove the 
+c perpendicular energy forcing the magnetic moment to zero. This
+c is necessary because the perpendicular acceleration has been applied
+c improperly for the whole timestep.
+            x_part(j+ndims,i)=vp*Bfield(j)+EB(j)
          enddo
       endif
 c End of Move -----------------------------------------------------

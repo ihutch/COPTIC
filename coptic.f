@@ -579,7 +579,6 @@ c the segfaults.
          if(lmyidhead)call flush(6)
       enddo
 c-------- End of Main Step Iteration -------------------------------
-c      write(*,*)iorbitlen(1),(xorbit(k,1),k=1,10)
       if(norbits.ne.0)
      $     call cijplot(ifull,iuds,cij,rs,iobpl)
 

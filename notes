@@ -11340,3 +11340,30 @@ Scalar, with electrons: 0m34.998s without 0m13.637s. Worse than a
 factor of 2 for same timestep. Probably because of noise and poisson time.
 
 Add geometry/uniformelec.cks and .dat for testing electron case.
+
+3 May 14
+Chris reports errors with Bt turned on and electrons. I think we should
+first try to get drift electrons going. This is bound up with Btinf.
+However, at the moment, when Bt exceeds Btinf, the perpendicular 
+motion is taken to be only the set perpendicular drift, not including
+the ExB that arises from the local E. That's in a sense consistent, but
+I think not what we really want.
+
+Another issue is that the mass is not properly accounted for in Bt effects.
+Actually it is handled by passing Bt*eoverms(ispecies). Fixed that in all
+calls.
+
+It would also be rather useful to be able to examine electron orbits as
+we can for ion orbits. Added array index nspeciesmax to xorbit,yorbit...
+Added do over species into orbit3plot. Generalized the padvnc code.
+Seems to be working. Multiple species orbits are plotted.
+
+Implement automatic fallback to drift orbits. Test is whether the
+angle theta in the moveparticle is .gt.1 If so, drift setting the
+perpendicular velocity equal to the drift velocity only. This will
+almost always be tripped for electrons at a moderate field or above.
+
+Implemented vperp plus ExB drift in both the strong and infinite case of
+moving. We ought therefore to have reliable orbit integration. 
+
+Added magnetic field to uniformelec.dat

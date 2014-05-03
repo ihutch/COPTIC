@@ -56,8 +56,15 @@ c This nstepmax does NOT control the maximum number of steps.
 c That is controlled by nf_maxsteps not nstepmax
       integer nobsmax,norbits,nstepmax
       parameter (nobsmax=100)
-      parameter (nstepmax=10000)
-      real xorbit(nstepmax,nobsmax),yorbit(nstepmax,nobsmax),
-     $     zorbit(nstepmax,nobsmax)
+      parameter (nstepmax=5000)
+      real xorbits(nstepmax,nobsmax,nspeciesmax)
+      real yorbits(nstepmax,nobsmax,nspeciesmax)
+      real zorbits(nstepmax,nobsmax,nspeciesmax)
+      integer iorbitlens(nobsmax,nspeciesmax)
+      real xorbit(nstepmax,nobsmax)
+      real yorbit(nstepmax,nobsmax)
+      real zorbit(nstepmax,nobsmax)
       integer iorbitlen(nobsmax)
-      common /orbits/norbits,iorbitlen,xorbit,yorbit,zorbit
+      equivalence (xorbit,xorbits),(yorbit,yorbits),(zorbit,zorbits)
+      equivalence (iorbitlen,iorbitlens)
+      common /orbits/norbits,iorbitlens,xorbits,yorbits,zorbits

@@ -43,10 +43,14 @@ c Contour without labels, with coloring, using vector coordinates.
       call color(13)
       call circleplot(0.,0.,rs)
       call circleplot(0.,0.,rc)
+      do ispecies=1,nspecies
       do kk=1,norbits
          call color(kk)
-         call polyline(xorbit(1,kk),yorbit(1,kk),iorbitlen(kk))
-         call polymark(xorbit(1,kk),yorbit(1,kk),iorbitlen(kk),3)
+         call polyline(xorbits(1,kk,ispecies),yorbits(1,kk,ispecies)
+     $        ,iorbitlens(kk,ispecies))
+         call polymark(xorbits(1,kk,ispecies),yorbits(1,kk,ispecies)
+     $        ,iorbitlens(kk,ispecies),3)
+      enddo
       enddo
       call pltend()
 c      write(*,*)'Returning from orbit3plot.'
@@ -57,13 +61,16 @@ c Called in the middle of a 3-d plot by cijplot.
       include 'ndimsdecl.f'
       include 'partcom.f'
 c      write(*,*)'norbits,length=',norbits,iorbitlen(1)
+      do ispecies=1,nspecies
       do kk=1,norbits
          call color(kk)
-         call poly3line(xorbit(1,kk),yorbit(1,kk),zorbit(1,kk),
-     $        iorbitlen(kk))
-         call poly3mark(xorbit(1,kk),yorbit(1,kk),zorbit(1,kk),
-     $        iorbitlen(kk),1)
-         if(iorbitlen(kk).gt.0)call drcstr('End')         
+         call poly3line(xorbits(1,kk,ispecies),yorbits(1,kk,ispecies)
+     $        ,zorbits(1,kk,ispecies),iorbitlens(kk,ispecies))
+         call poly3mark(xorbits(1,kk,ispecies),yorbits(1,kk,ispecies)
+     $        ,zorbits(1,kk,ispecies),iorbitlens(kk,ispecies),ispecies
+     $        ,ispecies)
+         if(iorbitlens(kk,ispecies).gt.0)call drcstr('End')         
+      enddo
       enddo
 
       end
