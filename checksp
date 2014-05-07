@@ -1,0 +1,21 @@
+#!/bin/bash
+make coptic
+rm xpartnew
+rm uqcijnew
+rm xpart
+rm uqcij
+echo RUNNING coptic
+./coptic -s5 -sp
+echo RUNNING coptic -fs3 -s3 -ck6 -sp
+./coptic -fs3 -s3 -ck6 -sp
+echo FINISHED First
+mv xpartnew xpart
+mv uqcijnew uqcij
+echo RUNNING coptic -s8 -ck6 -sp
+./coptic -s8 -ck6 -sp
+echo If the last ====== Finished uqcijckeck and ====== Finished xpartcheck
+echo show no warnings or diagnostics. Everything is OK for restarting.
+rm xpartnew
+rm uqcijnew
+rm xpart
+rm uqcij

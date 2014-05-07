@@ -498,9 +498,9 @@ c Sometimes write them out:
      $        ,partfilename,restartpath,ifull,iuds,u,uave,qave)
 
 c This non-standard fortran call works with gfortran and g77 to flush stdout.
-c Comment it out if it causes problems. (E.g. pathscale gives segfaults.)
 c Pathscale demands an argument number. So give it explicitly. Should fix
 c the segfaults.
+c Comment it out if it causes problems.
          if(lmyidhead)call flush(6)
       enddo
 c-------- End of Main Step Iteration -------------------------------

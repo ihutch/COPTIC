@@ -75,13 +75,10 @@ c New MV format
          write(22)debyelen,rs,phip,dt,ldiags
          write(22)ranstate
          write(22)nspecies,rhoinf,nrein,phirein,numprocs
-         write(*,*)nspecies,rhoinf,nrein,phirein,numprocs
          write(22)Bt,Bfield,caverein,chi
          write(22)iocparta,iicparta,nparta,eoverms,vpars,vperps,vds
-         write(*,*)iocparta,iicparta,nparta,eoverms,vpars,vperps,vds
          write(22)((x_part(j,i),j=1,idtp),i=iicparta(1)
      $        ,iocparta(nspecies))
-         write(*,*)iflag,iicparta(1),iocparta(nspecies)
       endif
       close(22)
       write(*,*)'Wrote particle data to ',name(1:lentrim(name))
