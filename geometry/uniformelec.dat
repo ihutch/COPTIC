@@ -29,7 +29,7 @@
 106,1.,0.,0.
 # partperiod:
 98,0,0,0
-Arguments: -rx0. -Bz.2 -vx.3 -dt.01 
+Arguments: -rx0. -Bz.1 -vx.3 -vy0 -vz0 -v.0 -dt.01 
 # Add an electron species:
-Arguments: -sp
+#Arguments: -sp
 # It's important to end the last line.

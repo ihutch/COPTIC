@@ -11367,3 +11367,32 @@ Implemented vperp plus ExB drift in both the strong and infinite case of
 moving. We ought therefore to have reliable orbit integration. 
 
 Added magnetic field to uniformelec.dat
+
+6 May 2014 Restart
+
+./check is ok
+./check50 is ok.
+./checksp gives differences. This is a new test with electrons.
+
+To restart electrons requires us to write them all, and also to write
+nspecies, the arrays such as iocparta, and so on. This is going to be
+a substantial change to the particle file organization.
+
+Reorganized the particle data reading and writing. After debugging, 
+./check works correctly, which says the restart of just ions is working.
+However, ./checksp is not working. Had to insert electrons into the
+chargetomesh call and remove the initial move. This means they are not
+smoothed at the start. Fixed! Now electron restart is working.
+
+Implement thetamax test in cinjinit removing Btinf. There is substantial
+additional testing to be done. Magnetized electrons don't seem to be 
+correct yet. The plasma goes very negative and too many electron deposits
+occur. This seems to be because the reinjection number for electrons is
+calculated without consideration of the magnetic field. At least, the 
+number is the same for zero field as for finite (and hence for electrons
+large) field.
+
+7 May 2014
+
+Tidy up parts of the main iteration loop to make their work into subroutines
+Implement lengthening of the step number format when the nsteps exceeds 9999.

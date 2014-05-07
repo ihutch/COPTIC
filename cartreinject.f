@@ -130,9 +130,12 @@ c z-direction and maxwellians of width given by Ts
       external fv1crein
       real fv1crein,ff1crein,fvdrein,ffdrein
       parameter (bdys=6.)
+      real thetamax
+      parameter (thetamax=1.)
       common /species/ispec
 
       do ispec=1,nspecies
+      theta=Bt*eoverms(ispec)*dt
       xc=0.
 c Width of velocity distribution
       xw=sqrt(Ts(ispec))*abs(eoverms(ispec))
@@ -143,7 +146,7 @@ c    For two ends (and hence velocity polarities)
 c idrein determines the sign of velocity. i2 odd => idrein negative.
             idrein=id*(2*i2-3)
             index=2*(id-1)+i2
-            if(Bt.lt.Btinf)then
+            if(abs(theta).lt.thetamax)then
 c Set the inverse cumulative probability fn hrein, and flux grein
                call cumprob(ffdrein,xw,xc,
      $           ncrein,hreins(0,index,ispec),greins(index,ispec),myid)
@@ -196,7 +199,7 @@ c            write(*,*)index,(hreins(kk,index,ispec),kk=0,5)
 c     $           ,(hreins(kk,index,ispec),kk=ncrein-4,ncrein)
          enddo
          idrein=id
-         if(Bt.lt.Btinf)then
+         if(theta.lt.thetamax)then
             call cumprob(fvdrein,xw,xc,
      $           ncrein,preins(0,id,ispec),gdummy,myid)
          else
@@ -752,7 +755,8 @@ c a reinjection.
                   id=mod(i+j-1,ndims)+1
                   fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
                enddo
-               flux=flux+(grein(2*i-1)+grein(2*i))*fcarea(i)
+               flux=flux+(greins(2*i-1,ispecies)
+     $              +greins(2*i,ispecies))*fcarea(i)
                volume=volume*(xmeshend(i)-xmeshstart(i))
             enddo
             if(ispecies.gt.1)ripn=nparta(1)/volume
@@ -762,16 +766,19 @@ c Correct approximately for edge potential depression (OML).
             cfactor=smaxflux(vd/sqrt(2.*Ts(ispecies)),chi)
      $           /smaxflux(vd/sqrt(2.*Ts(ispecies)),0.)
             ninjcompa(ispecies)=nint(ripn*dtin*cfactor*flux)
-     $           *sqrt(abs(eoverms(ispecies)/eoverms(1)))
      $           / numratioa(ispecies)
+c This was a hack when we were using just grein not greins.
+c     $           *sqrt(abs(eoverms(ispecies)/eoverms(1)))
+c
 
 c I don't understand the purpose of this trap: 23 Apr 2014
 c      if(ninjcompa(ispecies).le.0)ninjcompa(ispecies)=1
             nparta(ispecies)=ripn*volume
-c     $           *sqrt(abs(eoverms(ispecies)/eoverms(1)))
-c     $           / numratioa(ispecies)
-      write(*,*)'ripn,dtin,cfactor,flux,ninjcomp',ripn,dtin
-     $     ,cfactor,flux,ninjcomp,nparta(ispecies)
+     $           / numratioa(ispecies)
+
+      write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp'
+      write(*,*) ispecies,ripn,dtin,cfactor,flux
+     $     ,nparta(ispecies),ninjcompa(ispecies)
             
             
             nrein=ninjcomp*numprocs
@@ -785,7 +792,7 @@ c     $           / numratioa(ispecies)
             endif
          endif
       enddo
-      write(*,*)'Ending ninjcalc',rhoinf,nrein,nparta
+c      write(*,*)'Ending ninjcalc',rhoinf,nrein,nparta
 
       end
 c********************************************************************

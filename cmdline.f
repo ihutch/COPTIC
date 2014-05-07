@@ -268,7 +268,6 @@ c Inherit the drifts of the previous species until explicitly changed.
                   vdrifts(id,nspecies)=vdrifts(id,nspecies-1)
                enddo
             endif
-            write(*,*)'vds(nspecies)=',vds(nspecies),nspecies
 c Drifts must be respecified for this species if different.
          elseif(argument(1:2).eq.'-s')then
             read(argument(3:),*,err=201)nsteps

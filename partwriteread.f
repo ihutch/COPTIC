@@ -13,6 +13,8 @@ c names constructed from the parameters and suitable extensions.
 
       partfilename=restartpath
       call partwrite(partfilename,myid)
+c      write(*,*)'Returned from partwrite'
+c      write(*,*)partfilename(1:lentrim(partfilename)),myid
       if(myid.eq.0)then
          if(iptch_copy.ne.0)then
             localfilename=restartpath
@@ -47,27 +49,42 @@ c My mpi id
 
       call nameconstruct(name)
       call nameappendint(name,'.',myid,3)
-c      write(*,*)name
-      write(charout,51)debyelen,Ti,vd,rs,phip
- 51   format('V2. debyelen,Ti,vd,rs,phip:',5f10.4)
-
       open(22,file=name,status='unknown',err=101)
       close(22,status='delete')
       open(22,file=name,status='new',form='unformatted',err=101)
 
-      write(22)charout
-      write(22)debyelen,Ti,vd,rs,phip
-
-      write(22)ranstate
-      write(22)ioc_part
-      write(22)iic_part,n_part,dt,ldiags,rhoinf,nrein,
-     $     phirein,numprocs,
-     $     ((x_part(j,i),j=1,iflag),i=1,ioc_part)
-      write(22)(x_part(idtp,i),i=1,ioc_part)
-      write(22)eoverm,Bt,Bfield,vpar,vperp
-      write(22)caverein,chi
+      if(.false.)then
+c Old format.
+         write(charout,51)debyelen,Ti,vd,rs,phip
+ 51      format('V2. debyelen,Ti,vd,rs,phip:',5f10.4)
+         write(22)charout
+         write(22)debyelen,Ti,vd,rs,phip
+         write(22)ranstate
+         write(22)ioc_part
+         write(22)iic_part,n_part,dt,ldiags,rhoinf,nrein,
+     $        phirein,numprocs,
+     $        ((x_part(j,i),j=1,iflag),i=1,ioc_part)
+         write(22)(x_part(idtp,i),i=1,ioc_part)
+         write(22)eoverm,Bt,Bfield,vpar,vperp
+         write(22)caverein,chi
+      else
+c New MV format
+         write(charout,52)debyelen,rs,phip,dt,ldiags
+ 52      format('MV1. debyelen,rs,phip,dt,ldiags:',4f10.4,i5)
+         write(22)charout
+         write(22)debyelen,rs,phip,dt,ldiags
+         write(22)ranstate
+         write(22)nspecies,rhoinf,nrein,phirein,numprocs
+         write(*,*)nspecies,rhoinf,nrein,phirein,numprocs
+         write(22)Bt,Bfield,caverein,chi
+         write(22)iocparta,iicparta,nparta,eoverms,vpars,vperps,vds
+         write(*,*)iocparta,iicparta,nparta,eoverms,vpars,vperps,vds
+         write(22)((x_part(j,i),j=1,idtp),i=iicparta(1)
+     $        ,iocparta(nspecies))
+         write(*,*)iflag,iicparta(1),iocparta(nspecies)
+      endif
       close(22)
-c      write(*,*)'Wrote particle data to ',name(1:lentrim(name))
+      write(*,*)'Wrote particle data to ',name(1:lentrim(name))
       return
 
  101  continue
@@ -89,25 +106,38 @@ c Return ierr bit(0) no file. bit(1) no dtprec. bit(2) no Bfield etc.
       ierr=0
       open(23,file=name,status='old',form='unformatted',err=101)
       read(23)charout
-      read(23)debyelen,Ti,vd,rs,phip
-      read(23)ranstate
-      read(23)ioc_part
-      if(charout(1:2).eq.'de')then
-         write(*,*)'Version 1 detected'
-         read(23)iic_part,n_part,dt,ldiags,rhoinf,nrein,
-     $        phirein,numprocs,
-     $        ((x_part(j,i),j=1,3*ndims),ifp,i=1,ioc_part)
-         x_part(iflag,i)=ifp
-      elseif(charout(1:2).eq.'V2')then
-         write(*,*)'Version 2 detected'
-         read(23)iic_part,n_part,dt,ldiags,rhoinf,nrein,
-     $        phirein,numprocs,
-     $        ((x_part(j,i),j=1,iflag),i=1,ioc_part)
-      endif
+      if(charout(1:2).eq.'MV')then
+c Multispecies versions:
+         write(*,*)'MV version detected'
+         read(23)debyelen,rs,phip,dt,ldiags
+         read(23)ranstate
+         read(23)nspecies,rhoinf,nrein,phirein,numprocs
+         read(23)Bt,Bfield,caverein,chi
+         read(23)iocparta,iicparta,nparta,eoverms,vpars,vperps,vds
+         read(23,err=102,end=102)
+     $        ((x_part(j,i),j=1,idtp),i=1,iocparta(nspecies))
+      else
+c Older versions.
+         read(23)debyelen,Ti,vd,rs,phip
+         read(23)ranstate
+         read(23)ioc_part
+         if(charout(1:2).eq.'de')then
+            write(*,*)'Version 1 detected'
+            read(23)iic_part,n_part,dt,ldiags,rhoinf,nrein,
+     $           phirein,numprocs,
+     $           ((x_part(j,i),j=1,3*ndims),ifp,i=1,ioc_part)
+            x_part(iflag,i)=ifp
+         elseif(charout(1:2).eq.'V2')then
+            write(*,*)'Version 2 detected'
+            read(23)iic_part,n_part,dt,ldiags,rhoinf,nrein,
+     $           phirein,numprocs,
+     $           ((x_part(j,i),j=1,iflag),i=1,ioc_part)
+         endif
 c Extra particle data written since 30 July 2010.
-      read(23,err=102,end=102)(x_part(idtp,i),i=1,ioc_part)
-      read(23,err=104,end=104)eoverm,Bt,Bfield,vpar,vperp
-      read(23,err=105,end=105)caverein,chi
+         read(23,err=102,end=102)(x_part(idtp,i),i=1,ioc_part)
+         read(23,err=104,end=104)eoverm,Bt,Bfield,vpar,vperp
+         read(23,err=105,end=105)caverein,chi
+      endif
       goto 103
  102  write(*,*)'=========== No dtprec data in partfile.========='
       ierr=2
@@ -120,7 +150,7 @@ c      write(*,*)'Finished reading back particle data from '
 c     $     ,name(1:lentrim(name))
 c      write(*,*)'Charout=',charout(1:lentrim(charout))
 c Check that the read back data is sane
-      do i=1,ioc_part
+      do i=1,iocparta(nspecies)
          if(x_part(iflag,i).ne.0)then 
             if(x_part(7,i).eq.0)then
                write(*,*)'Bizarre particle data read back',
@@ -130,7 +160,7 @@ c Check that the read back data is sane
       enddo
 
 c Zero the flags of higher slots.
-      do i=ioc_part+1,n_partmax
+      do i=iocparta(nspecies)+1,n_partmax
          x_part(iflag,i)=0
       enddo
 

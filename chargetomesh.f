@@ -10,14 +10,18 @@ c mesh data, notably ndims, since we don't pass it:
 c      include 'meshcom.f'
       integer iLs(ndims+1)
 
+      include 'plascom.f'
       include 'partcom.f'
 c On entry, psum ought to have been initialized to zero.
 
 c For all (possibly-active) particles.
-      do i=1,ioc_part
+      do ispecies=1,nspecies
+      do i=iicparta(ispecies),iocparta(ispecies)
          if(x_part(iflag,i).ne.0)then
-            call achargetomesh(i,psum,iLs,diagsum,ndiags,1.)
+            call achargetomesh(i,psum,iLs,diagsum,ndiags,
+     $           numratioa(ispecies)*sign(1.,eoverms(ispecies)))
          endif
+      enddo
       enddo
 c End of charge deposition.
       end
