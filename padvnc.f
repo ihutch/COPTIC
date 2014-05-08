@@ -278,10 +278,10 @@ c Treat collided particle at (partial) step end
 c---------------------------------
 c If we crossed a boundary, do tallying.
          ltlyerr=.false.
-         if(inewregion.ne.iregion.and.ispecies.eq.1)
+         if(inewregion.ne.iregion)
 c Integer exclusive or ieor bitwise is the correct way.
      $        call tallyexit(x_part(1,i),ieor(inewregion,iregion)
-     $        ,ltlyerr,dtpos)
+     $        ,ltlyerr,dtpos,ispecies)
 c------------ Possible Reinjection ----------
          if(ltlyerr .or. .not.linmesh .or.
      $        .not.linregion(ibool_part,ndims,x_part(1,i)))then

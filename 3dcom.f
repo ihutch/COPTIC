@@ -62,7 +62,7 @@ c Data that describes the flux to positions on the objects:
 c Number of slots needed for position descriptors. Dimensions.
       parameter (nf_posdim=4)
 c Maximum (i.e. storage size) of array 
-      parameter (nf_quant=5,nf_obj=20,nf_maxsteps=6000)
+      parameter (nf_quant=5*nspeciesmax,nf_obj=20,nf_maxsteps=6000)
       parameter (nf_datasize=10000000)
 c Mnemonics for quantities:
       integer nf_flux,nf_gx,nf_gy,nf_gz,nf_heat
@@ -73,6 +73,11 @@ c Mnemonics for positional variables.
       parameter (nf_pr=nf_p1,nf_pt=nf_p2,nf_pz=nf_p3,nf_pa=nf_p4)
 c Actual numbers of quantities, objects and steps <= maxes.
       integer nf_step,mf_quant(nf_obj),mf_obj
+c Array of number of quantities by species. 
+c mf_quant=sum_nspecies(if_quant) for each object.
+c We don't yet have a mechanism for setting it different for different
+c species
+      integer kf_quant(nf_obj,nspeciesmax),if_quant(nf_obj,nspeciesmax)
 c The number of positions at which this quantity is measured:
       integer nf_posno(nf_quant,nf_obj)
 c The dimensional structure of these: nf_posno = prod nf_dimlens
@@ -93,9 +98,12 @@ c The total number of particles for each step:
       integer nf_npart(nf_maxsteps)
 c The dt for each step
       real ff_dt(nf_maxsteps)
+c The number of species. Should equal nspecies
+      integer nf_species
 
-      common /fluxdata/nf_step,ff_rho,ff_dt,mf_quant,mf_obj,nf_posno
-     $     ,nf_npart,nf_dimlens,nf_faceind,nf_geommap,nf_address,ff_data
+      common /fluxdata/nf_species,nf_step,ff_rho,ff_dt,mf_quant,kf_quant
+     $     ,if_quant,mf_obj,nf_posno,nf_npart,nf_dimlens,nf_faceind
+     $     ,nf_geommap,nf_address,ff_data
 
 c Flux explanation:
 c For

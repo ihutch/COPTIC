@@ -11396,3 +11396,40 @@ large) field.
 
 Tidy up parts of the main iteration loop to make their work into subroutines
 Implement lengthening of the step number format when the nsteps exceeds 9999.
+
+commit.
+
+8 May 2014
+
+Multispecies data not yet implemented: 
+
+Flux to objects. Probably can be accommodated within the existing data
+structures which allow for up to 5 quantities to be accumulated on 
+objects. We could increase the number of quantities.
+
+Electron force contributions. Effectively these are additional momentum
+flux contributions. 
+
+Particle distribution diagnostics. 
+
+Start working on fluxes and forces.
+Add ispecies to arguments of tallyexit, objsect, ... binadding.
+Add nf_species to 3dcom.f. It is set to nspecies before calling 
+fluxdatainit. Now we are at liberty to set mf_quant according to 
+whatever number of species we wish to track.
+However, mf_quant might then be overloaded if it is also used to 
+tell how many quantities to track. So we need to be careful.
+It is used in reduce.f and objplot.f.
+Create a species-arrayed quantity count. kf_quant(object,species).
+Make mf_quant the sum of this over species.
+We need a cumulative quant address too if_quant(object,species) which
+is the start of the data for that species. Add that to 3dcom.
+
+Got working to write flx file. Testing. Seems to work. To examine with
+fluxexamine, you just have to specify the appropriate -piii switch with
+quantity number decided in terms of the stacked up stuff. So really
+at the moment you need to know how many quantities per species so that
+you can look at the right thing. Fluxexamine ought to be modified to
+make this easier and transparent. But that's not urgent.
+
+commit

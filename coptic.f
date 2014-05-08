@@ -188,6 +188,7 @@ c if n_part.eq.0. But now we do it always, for possible multiple species.
       call ninjcalc(dt)
 c----------------------------------------------------------------
 c Initialize the fluxdata storage and addressing before cijroutine
+      nf_species=nspecies
       call fluxdatainit(myid)
 c-----------------------------------------------------------------
       if(lmyidhead)write(*,*)'Initializing the stencil data cij.'
@@ -396,6 +397,7 @@ c instead made chargetomesh for all species.
 c      do ispecies=2,nspecies
 c         call padvnc(iLs,cij,u,ndiags,psum,diagsum,ispecies,ndiagmax)
 c      enddo
+c----------------------------------------------------------
 c Main step iteration -------------------------------------
       do j=1,nsteps
          nf_step=nf_step+1
@@ -421,9 +423,10 @@ c Convert psums to charge density, q. Remember external psumtoq!
          call mditerarg(psumtoq,ndims,ifull,ium2,
      $        0,psum(2,2,2),q(2,2,2),volumes(2,2,2),u(2,2,2),rhoinf)
          istepave=min(nf_step,iavesteps)
-c New position for psum reset to accommodate padvnc deposition.
+c Reset psum, after psumtoq accommodating padvnc deposition.
          call mditerset(psum,ndims,ifull,iuds,0,0.)
 
+c Solve for the new potential:
          if(debyelen.eq.0)then
             call mditerarg(quasineutral,ndims,ifull,ium2,
      $        0,q(2,2,2),u(2,2,2),volumes(2,2,2),dum4,dum5)
@@ -503,7 +506,8 @@ c the segfaults.
 c Comment it out if it causes problems.
          if(lmyidhead)call flush(6)
       enddo
-c-------- End of Main Step Iteration -------------------------------
+c-------- End of Main Step Iteration ----------------------
+c----------------------------------------------------------
       if(norbits.ne.0)
      $     call cijplot(ifull,iuds,cij,rs,iobpl)
 

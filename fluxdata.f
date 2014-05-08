@@ -54,7 +54,24 @@ c Might eventually need more interpretation of fluxtype.
      $              ,nf_obj,' Omitting later objects.'
                goto 1
             endif
-            mf_quant(mf_obj)=int(obj_geom(ofluxtype,i))
+c Here we ought perhaps to have a way to set the number of fluxes
+c different for different species. For now, they are the same.
+            mf_quant(mf_obj)=0
+            nq=int(obj_geom(ofluxtype,i))
+            if_quant(mf_obj,1)=0
+c Increment number of quantities provided there is allocated address room.
+            do j=1,nf_species
+               nt=mf_quant(mf_obj)+nq
+c               write(*,*)'Quantities',nq,nt,nf_quant,mf_quant(mf_obj)
+               if(nt.le.nf_quant)then
+                  kf_quant(mf_obj,j)=nq
+                  mf_quant(mf_obj)=nt
+               else
+                  kf_quant(mf_obj,j)=0
+               endif
+               if(j.gt.1)if_quant(mf_obj,j)=if_quant(mf_obj,j-1)
+     $              +kf_quant(mf_obj,j)
+            enddo
             itype=int(obj_geom(otype,i))
             i2type=(itype/256)
             if(i2type.eq.2)then
@@ -383,7 +400,7 @@ c     $     ,nf_address(1,1,11)-1)
 
       end
 c******************************************************************
-      subroutine tallyexit(xi,idiffreg,ltlyerr,dtpos)
+      subroutine tallyexit(xi,idiffreg,ltlyerr,dtpos,ispecies)
 c Document the exit of this particle just happened. 
 c Assign the exit to a specific object, and bin on object.
 c (If it is a mapped object, decided by objsect.)      
@@ -401,6 +418,11 @@ c considered to have left the particle region, so it will be discarded.
       include 'partcom.f'
       include '3dcom.f'
 
+c To start with, we do nothing for higher species:
+c      if(ispecies.gt.1)return
+
+c      if(ispecies.ge.2)write(*,*)'Tallying',ispecies
+
       idiff=abs(idiffreg)
       idp=idiff
 c Determine (all) the objects crossed and call objsect for each.
@@ -409,7 +431,7 @@ c Determine (all) the objects crossed and call objsect for each.
       iobj=iobj+1
       idiff=idiff/2
       if(idp.ne.idiff*2)then
-         call objsect(xi,iobj,ierr,dtpos)
+         call objsect(xi,iobj,ierr,dtpos,ispecies)
          if(ierr.gt.0)then
             ireg=insideall(ndims,xi(1))
             r=0.
@@ -441,7 +463,7 @@ c unless the region is changed. But leave for error detection.
       end
 c******************************************************************
 c****************************************************************
-      subroutine objsect(xi,iobj,ierr,dtpos)
+      subroutine objsect(xi,iobj,ierr,dtpos,ispecies)
 c Find the intersection of the last step of particle xi (length dtpos)
 c with object iobj, and update the positioned-fluxes accordingly.  ierr
 c is returned: 0 good. 1 no intersection. 99 unknown object.
@@ -521,7 +543,7 @@ c      write(*,*)'Saving intersection',isc,iobj,ijbin
       enddo
 c------------------------------
 c Do the bin adding in a subroutine.
-      call binadding(xi,infobj,sd,ijbin)
+      call binadding(xi,infobj,sd,ijbin,ispecies)
 
       if(ijbin2.ne.-1)then
 c This should not happen.
@@ -530,43 +552,46 @@ c This should not happen.
       endif
       end
 c*******************************************************************
-      subroutine binadding(xi,infobj,sd,ijbin)
-c Add particle xi data to infobj bin ijbin with crossing-direction sd.
+      subroutine binadding(xi,infobj,sd,ijbin,ispecies)
+c Add particle xi data to infobj bin ijbin with 
+c Surface-crossing-direction sd.
       implicit none
       include 'ndimsdecl.f'
       real xi(3*ndims)
       include '3dcom.f'
       include 'partcom.f'
-      integer infobj,ijbin
+      include 'plascom.f'
+      integer infobj,ijbin,ispecies
       real sd
       
-      integer iaddress,k,id
+      integer iaddress,k,id,iq
       real xx
 
 c Adding into bins. At this point all we need is sd, ijbin.
+c Multispecies approach
+      iq=if_quant(infobj,ispecies)
 c Particle Flux.
-      iaddress=ijbin+nf_address(nf_flux,infobj,nf_step)
+      iaddress=ijbin+nf_address(nf_flux+iq,infobj,nf_step)
       ff_data(iaddress)=ff_data(iaddress)+sd
 c This is the way to test that one is really accessing the right bin:
 c      write(*,*)'ijbin=',ijbin,nf_posno(1,infobj),infobj,sd,fraction
 c      ff_data(iaddress)=ijbin
-c Perhaps ought to consider velocity interpolation.
-      if(mf_quant(infobj).ge.2)then
+      if(kf_quant(infobj,ispecies).ge.2)then
 c Momentum               
-         iaddress=ijbin+nf_address(nf_gx,infobj,nf_step)
+         iaddress=ijbin+nf_address(nf_gx+iq,infobj,nf_step)
          ff_data(iaddress)=ff_data(iaddress)+ sd*xi(4)
       endif
       if(mf_quant(infobj).ge.3)then
-         iaddress=ijbin+nf_address(nf_gy,infobj,nf_step)
+         iaddress=ijbin+nf_address(nf_gy+iq,infobj,nf_step)
          ff_data(iaddress)=ff_data(iaddress)+ sd*xi(5)
       endif
       if(mf_quant(infobj).ge.4)then
-         iaddress=ijbin+nf_address(nf_gz,infobj,nf_step)
+         iaddress=ijbin+nf_address(nf_gz+iq,infobj,nf_step)
          ff_data(iaddress)=ff_data(iaddress)+ sd*xi(6)
       endif
       if(mf_quant(infobj).ge.5)then
 c Energy
-         iaddress=ijbin+nf_address(nf_heat,infobj,nf_step)
+         iaddress=ijbin+nf_address(nf_heat+iq,infobj,nf_step)
          xx=0.
          do k=1,ndims
             xx=xx+xi(3+k)**2
@@ -574,12 +599,12 @@ c Energy
          ff_data(iaddress)=ff_data(iaddress)+ sd*xx
       endif
 c Accumulate the particle force= momentum/time over whole object.
-c Normalized to rhoinf
+c Normalized to rhoinf, assuming 1/eoverm is equal to the mass.
       do id=1,ndims
          partforce(id,infobj,nf_step)=partforce(id,infobj,nf_step)
-     $        +sd*xi(ndims+id)/dt/rhoinf
+     $        +sd*xi(ndims+id)/(dt*rhoinf*abs(eoverms(ispecies)))
       enddo
-      
+
       end
 c*******************************************************************
 c*******************************************************************
@@ -687,7 +712,7 @@ c which is ff_data(iav+i)
       iq=abs(iquant)
 c If quantity asked for is not available, do nothing.
       if(iq.gt.mf_quant(ifobj).or.iq.eq.0)then
-c         write(*,*)ifobj,iq,mf_quant(ifobj)
+c         write(*,*)'No such quantity',ifobj,mf_quant(ifobj),iq
          return
       endif
 c Offset of averaging location:
@@ -802,7 +827,7 @@ c     np=nbcat(name,'.flx')
       call nbcat(name,'.flx')
 c      write(*,*)name
       write(charout,51)debyelen,Ti,vd,rs,phip
- 51   format('debyelen,Ti,vd,rs,phip:',5f10.4,' Version: 3')
+ 51   format('debyelen,Ti,vd,rs,phip:',5f10.4,' Version: 4')
 
 c      write(*,*)'mf_obj=',mf_obj,nf_step,mf_quant(1)
 
@@ -838,6 +863,9 @@ c Intersection data:
      $     ibin_sc(k),k=1,sc_ipt)
 c n_part data
       write(22)(nf_npart(k),k=1,nf_step)
+c Species information 
+      write(22)nf_species
+      write(22)((if_quant(j,k),kf_quant(j,k),j=1,mf_obj),k=1,nf_species)
       close(22)
 c      write(*,*)'Wrote flux data to ',name(1:lentrim(name))
       do k=1,nf_step
@@ -884,7 +912,7 @@ c Figure out the version:
       elseif(iversion.le.2)then
          read(23)debyelen,Ti,vd,rs,phip
      $        ,colntime,subcycle,vneutral,fcollided,dropaccel,Tneutral
-      elseif(iversion.le.3)then
+      else
          read(23)debyelen,Ti,vd,rs,phip ,colntime,subcycle,vneutral
      $        ,fcollided,dropaccel,Tneutral,Eneutral
       endif
@@ -932,7 +960,14 @@ c Intersection data:
      $     ibin_sc(k),k=1,sc_ipt)
 c n_part data
       if(iversion.ge.2)read(23,end=104)(nf_npart(k),k=1,nf_step)
-    
+      if(iversion.ge.4)then
+         read(23,end=105)nf_species
+         write(*,*)'nf_species=',nf_species
+         read(23,end=105)((if_quant(j,k),kf_quant(j,k),j=1,mf_obj),k=1
+     $        ,nf_species)
+         write(*,*)'Quantity start',(if_quant(1,k),k=1,nf_species)
+         write(*,*)'Quantity count',(kf_quant(1,k),k=1,nf_species)
+      endif
       goto 103
  102  write(*,*)'Failed to read back forces. Old format? Version='
      $     ,iversion
@@ -940,6 +975,8 @@ c n_part data
       goto 103
  104  write(*,*)'No nf_npart data. Mismatch of versions? Version='
      $     ,iversion
+      goto 103
+ 105  write(*,*)'Incomplete nf_species data. iversion=',iversion
  103  close(23)
 
 c Hack to fix nans when colnforce was wrong. Delete when that data is 
