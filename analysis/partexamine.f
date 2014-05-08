@@ -45,19 +45,20 @@ c Overlapping vlimits make limitdeterm the usual setting method.
          vlimit(2,id)=-5.
       enddo
 
-      call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc,ivtk)
+      call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc,ivtk
+     $     ,ispecies)
       do id=1,ndimsmax
 c Needed initialization removed from partacinit.
          xmeshstart(id)=min(-5.,xlimit(1,id))
          xmeshend(id)=max(5.,xlimit(2,id))
          isuds(id)=iuin(id)
       enddo
-      write(*,*)' isuds:',isuds
+c      write(*,*)' isuds:',isuds
       if(isuds(1)*isuds(2)*isuds(3).gt.nsub_tot)then
          write(*,*)'Too many blocks requested. Reduce or recompile.'
          stop
       endif
-      write(*,*)'nptdiag,nsbins',nptdiag,nsbins
+c      write(*,*)'nptdiag,nsbins',nptdiag,nsbins
       if(nptdiag.lt.nsbins)then
          write(*,*)'WARNING nptdiags=',nptdiag,' smaller than nsbins='
      $        ,nsbins,' Incorrect array size choice.'
@@ -90,6 +91,10 @@ c Possible multiple files.
          endif
          Bt=0.
          call partread(name,ierr)
+         if(ispecies.gt.nspecies)then
+            ispecies=nspecies
+            write(*,*)'nspecies=',nspecies,'  Reset ispecies',ispecies
+         endif
          if(ldoc)then
             write(*,*)'debyelen,Ti,vd,rs,phip=',debyelen,Ti,vd,rs,phip
             write(*,*)'iregion_part,n_part,dt,ldiags,rhoinf,nrein,',
@@ -98,7 +103,8 @@ c Possible multiple files.
      $           ,numprocs
             write(*,*)'eoverm,Bt,Bfield,vpar,vperp=',eoverm,Bt,Bfield
      $           ,vpar,vperp
-            stop
+            write(*,*)'nspecies',nspecies
+c            stop
          endif
          if(ierr-4*(ierr/4).ne.0)goto 11
          if(Bdirs(4).gt.0. .or. Bt.eq.0)then
@@ -109,7 +115,8 @@ c All directions were set by commandline. Or none were read from file.
          endif
          if(cellvol.eq.-1)write(*,*)'Bfield (projection)',Bfield
 c The cellvol==-1 call will set ivproj=1 in ptaccom.
-         call partdistup(xlimit,vlimit,xnewlim,cellvol,0,isuds)
+         call partdistup(xlimit,vlimit,xnewlim,cellvol,0,isuds,ispecies)
+         write(*,*)'partdistup completed',i
 
       enddo
  11   continue
@@ -287,7 +294,7 @@ c Plot the subdistributions at a particular cell.
       end
 c*************************************************************
       subroutine partexamargs(xlimit,vlimit
-     $           ,iuin,cellvol,Bdirs,ldoc,ivtk)
+     $           ,iuin,cellvol,Bdirs,ldoc,ivtk,ispecies)
       include 'examdecl.f'
       include '../ptaccom.f'
       real xlimit(2,3),vlimit(2,3),Bdirs(4)
@@ -299,6 +306,7 @@ c I think unused here 26 May 12. But I'm not sure.
       ifull(2)=na_j
       ifull(3)=na_k
       ivtk=0
+      ispecies=1
 
       do i=1,3
          iuin(i)=9
@@ -355,6 +363,8 @@ c Deal with arguments
                read(argument(3:),*,err=201)iuin
             elseif(argument(1:2).eq.'-q')then
                ldoc=.true.
+            elseif(argument(1:3).eq.'-sp')then
+               ispecies=ispecies+1
             endif
             if(argument(1:13).eq.'--objfilename')
      $        read(argument(14:),'(a)',err=201)objfilename
@@ -385,6 +395,8 @@ c Help text
       write(*,303)' -b<nx,ny,nz>  set spatial block range. [',iuin
       write(*,302)' -p[bx,by,bz]  project [in direction]   [',Bdirs
       write(*,301)' -f   set name of partfile.'
+      write(*,301)' -q   output diagnostics of file reading'
+      write(*,301)' -sp  increment species number to examine'
       write(*,301)' -h -?   Print usage.'
       write(*,301)' -vtk   Output distribution function vtk files.'
       call exit(0)

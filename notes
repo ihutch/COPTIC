@@ -11433,3 +11433,20 @@ you can look at the right thing. Fluxexamine ought to be modified to
 make this easier and transparent. But that's not urgent.
 
 commit
+
+Thinking about particle distributions. I realize there's a big bug
+in the multispecies code. It is that the particle accumulation 
+routines are assuming that x_part is 3*mdims+1 but it is now
+3*mdims+2. I really ought to get rid of the mdims usage completely.
+Start by changing mdims+1 to mdims+2. This seems to fix the clearly
+erroneous partexamine output. Actually that's not quite right the
+flags are in 3*mdims+1 but the length is 3*mdims+2.
+
+Purge all mdims from partaccum.f 
+Convert particle passing to reference to partcom.f. Now we are safe
+but still not doing any accumulation past the first species.
+We might perhaps easily implement accumulation of one of the species
+by adjusting the range of accumulation iic ioc.
+Implement that, passing argument ispecies.
+Implement control of ispecies in partexamine.
+coptic always assumes species 1.

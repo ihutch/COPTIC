@@ -493,9 +493,9 @@ c The serial cost for this call with 1M particles is about 1s in 17s.
 c Or less than 2s if both partaccum and vaccum are called. Thus the
 c total cost is roughly 10% of particle costs. Tell it that it must
 c set dimensions the first time by appending 0.
-c Update the particle distribution diagnostics:
+c Update the particle distribution diagnostics for species 1:
          if(idcount.gt.0)call partdistup(xlimit,vlimit,xnewlim,
-     $        cellvol,myid,0)
+     $        cellvol,myid,0,1)
 c Sometimes write them out:
          if(iwstep.gt.0.and.mod(nf_step,iwstep).eq.0)call datawrite(myid
      $        ,partfilename,restartpath,ifull,iuds,u,uave,qave)

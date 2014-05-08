@@ -1,7 +1,8 @@
 c********************************************************************
-      subroutine partdistup(xlimit,vlimit,xnewlim,cellvol,myid,ibset)
+      subroutine partdistup(xlimit,vlimit,xnewlim,cellvol,myid,ibset
+     $     ,ispecies)
 c Routine to update the particle distribution diagnostics for using the
-c current particle information. 
+c current particle information for species ispecies.
 c
 c If this is called for the first time, i.e. with cellvol.le.0, then
 c calculate the bins for accumulating the distribution. Also, in this
@@ -26,7 +27,8 @@ c Otherwise if cellvol.gt.0 just accumulate to bins.
       real cellvol
       integer myid,ibset
       integer nvlist
-c      integer i,j
+      integer ispecies
+
 c Use the first occasion to establish the accumulation range.
 c Indicated by cellvolume le 0.
       if(cellvol.le.0.)then
@@ -41,10 +43,10 @@ c But xlimits mean that's problematic.
 c            nvlist=100
 c A small nvlist means we go right to the edge of actual particles.
          nvlist=5
-         call vlimitdeterm(ndims,x_part,ioc_part
-     $        ,vlimit,nvlist,ivproj,Bfield)
-         if(myid.eq.0)write(*,'('' Velocity limits:'',6f7.3)')
+         call vlimitdeterm(vlimit,nvlist,ivproj,Bfield,ispecies)
+         if(myid.eq.0)write(*,'('' Velocity limits:'',6f8.3)')
      $        vlimit
+c         write(*,*)'ispecies=',ispecies
          call minmaxreduce(ndimsmax,vlimit)
 c            write(*,'('' Velocity reduced:'',6f7.3)') vlimit
 c Indicate csbin not initialized and start initialization
@@ -53,8 +55,7 @@ c Indicate csbin not initialized and start initialization
 
 c Do the accumulation for this file up to maximum relevant slot. 
          nfvaccum=0
-         call partsaccum(ndims,x_part,ioc_part,xlimit
-     $        ,vlimit,xnewlim,nfvaccum)
+         call partsaccum(xlimit ,vlimit,xnewlim,nfvaccum,ispecies)
          if(myid.eq.0)write(*,*)'Accumulated',nfvaccum,' of',ioc_part
      $        ,' total',' in',xlimit
 c Reduce back the data for MPI cases.
@@ -66,14 +67,11 @@ c Should do this only the first time.
          call bincalc()
          call fvxinit(xnewlim,cellvol,ibset)
       else
-         call partsaccum(ndims,x_part,ioc_part,xlimit
-     $        ,vlimit,xnewlim,nfvaccum)
+         call partsaccum(xlimit ,vlimit,xnewlim,nfvaccum,ispecies)
       endif
 c         write(*,*)'isfull',isfull,cellvol
 c         write(*,*)'calling subaccum'
-      call subaccum(ndimsmax,x_part,ioc_part,
-     $     isuds,vlimit,xnewlim)
-c     $     isfull,isuds,vlimit,xnewlim)
+      call subaccum(isuds,vlimit,xnewlim,ispecies)
       end
 c****************************************************************
       subroutine partacinit(vlimit)
@@ -145,26 +143,31 @@ c Assign positions to bins
 
       end
 c**********************************************************************
-      subroutine partsaccum(mdims,xpart,iocpart,xlimit
-     $     ,vlimit,xnewlim,nfvaccum)
+      subroutine partsaccum(xlimit,vlimit,xnewlim,nfvaccum,ispecies)
+      implicit none
+      integer nfvaccum,ispecies
+      include 'ndimsdecl.f'
+      include 'partcom.f'
+
 c Accumulate all particles in the xlimit range into velocity bins.
 c If on entry xnewlim(2).eq.xnewlim(1) then adjust those limits.
-      real xpart(3*mdims+1,iocpart)
 c Spatial limits bottom-top, dimensions
-      real xlimit(2,mdims),xnewlim(2,mdims)
+      real xlimit(2,ndims),xnewlim(2,ndims)
 c Velocity limits
-      real vlimit(2,mdims)
+      real vlimit(2,ndims)
+      integer limadj,j,id
+      real x
 
       if(xnewlim(1,1).eq.xnewlim(2,1))then
          limadj=1
       else
          limadj=0
       endif
-      do j=1,iocpart
+      do j=iicparta(ispecies),iocparta(ispecies)
 c Only for filled slots
-         if(xpart(3*mdims+1,j).ne.0)then
-            do id=1,mdims
-               x=xpart(id,j)
+         if(x_part(iflag,j).ne.0)then
+            do id=1,ndims
+               x=x_part(id,j)
                if(x.lt.xlimit(1,id).or.x.gt.xlimit(2,id))goto 12
                if(limadj.eq.1)then
 c Adjust the xnewlim.
@@ -173,7 +176,7 @@ c Adjust the xnewlim.
                endif
             enddo
             nfvaccum=nfvaccum+1
-            call oneaccum(xpart(1,j),vlimit)
+            call oneaccum(x_part(1,j),vlimit)
          endif
  12      continue
       enddo
@@ -184,40 +187,48 @@ c      if(limadj.eq.1)write(*,'(a,6f10.5)')' xnewlim=',xnewlim
              
       end
 c**********************************************************************
-      subroutine vlimitdeterm(mdims,xpart,iocpart,vlimit
-     $     ,nvlist,ivproj,Bfield)
+      subroutine vlimitdeterm(vlimit,nvlist,ivproj,Bfield,ispecies)
+      implicit none
+      include 'ndimsdecl.f'
+      include 'partcom.f'
+      integer nvlist
+      integer ivproj
+      integer ispecies
+
 c Determine the required vlimits for this particle distribution.
 c On entry
-c    xpart contains all the particles.
-c    iocpart is the maximum filled slot.
+c    x_part contains all the particles.
 c    nvlist is the number of particles in the top and bottom bins.
+c    ispecies is the species number to operate on => iic, ioc
 c On exit
 c    vlimit contains the velocity of the nvlist'th particle from the 
 c           bottom and the top of the list.
-      real xpart(3*mdims+1,iocpart)
 c Velocity limits
-      real vlimit(2,mdims)
+      real vlimit(2,ndims)
 c Velocity Sorting arrays
+      integer nvlistmax
       parameter (nvlistmax=200)
       real vtlist(nvlistmax),vblist(nvlistmax)
-      integer ivproj
-      real Bfield(mdims)
+      real Bfield(ndims)
+      integer id,j
+      real v,vproject
+      external vproject
 
       if(nvlist.gt.nvlistmax)nvlist=nvlistmax
-      do id=1,mdims
+      do id=1,ndims
          do j=1,nvlist
             vblist(j)=vlimit(1,id)
             vtlist(j)=vlimit(2,id)
          enddo
-         do j=1,iocpart
+         do j=iicparta(ispecies),iocparta(ispecies)
 c Only for filled slots
-            if(xpart(3*mdims+1,j).ne.0)then
+            if(x_part(iflag,j).ne.0)then
                if(ivproj.eq.0)then
 c Straight cartesian.
-                  v=xpart(id+mdims,j)
+                  v=x_part(id+ndims,j)
                else
 c Projected
-                  v=vproject(mdims,id,xpart(1,j),Bfield)
+                  v=vproject(ndims,id,x_part(1,j),Bfield)
                endif
 c Insert the value v into its ordered place in vtlist, retaining the top
 c nvlist values, and into vblist retaining the bottom-most nvlist values.
@@ -412,39 +423,40 @@ c      write(*,*)' fsv  ',fsv
 c      write(*,*)' ibinmap',ibinmap
       end
 c**********************************************************************
-      subroutine subaccum(mdims,xpart,iocpart,
-     $     isuds,vlimit,xnewlim)
-c     $     isfull,isuds,vlimit,xnewlim)
-c Over the whole particle population accumulate to space-resolved bins
-      real xpart(3*mdims+1,iocpart)
-c      integer isfull(mdims)
-      integer isuds(mdims)
+      subroutine subaccum(isuds,vlimit,xnewlim,ispecies)
+      implicit none
+      include 'ndimsdecl.f'
+      include 'partcom.f'
+      integer isuds(ndims)
+      integer ispecies
 c Spatial limits bottom-top, dimensions
-      real xnewlim(2,mdims)
+      real xnewlim(2,ndims)
 c Velocity limits
-      real vlimit(2,mdims)
+      real vlimit(2,ndims)
 c Subbin addressing.
-      integer isind(mdims)
-c Local storage with adequate dimensional length:
-      real xsf(10)
+      integer isind(ndims)
+c Local storage
+      real xsf(ndims)
 c The equal bins fill the ranges xnewlim with index lengths isuds.
-      do id=1,mdims
+      integer id,j,ip,ipfindex
+      external ipfindex
+      do id=1,ndims
          xsf(id)=.999999/(xnewlim(2,id)-xnewlim(1,id))
       enddo
-      do j=1,iocpart
+      do j=iicparta(ispecies),iocparta(ispecies)
 c Only for filled slots
-         if(xpart(3*mdims+1,j).ne.0)then
-            do id=1,mdims
+         if(x_part(iflag,j).ne.0)then
+            do id=1,ndims
 c Calculate the spatial sub-bin pointer.
                isind(id)=1+int(isuds(id)*
-     $              (xpart(id,j)-xnewlim(1,id))*xsf(id))
+     $              (x_part(id,j)-xnewlim(1,id))*xsf(id))
 c If we are outside the range skip this particle.
                if(isind(id).gt.isuds(id).or.isind(id).le.0)goto 1
             enddo
-            ip=ipfindex(mdims,isuds,isind)
+            ip=ipfindex(ndims,isuds,isind)
 c            if(ip.gt.1000)write(*,*)isuds,isind,ip
             if(ip.lt.0)write(*,*)isind,ip
-            call subvaccum(xpart(1,j),vlimit,ip+1)
+            call subvaccum(x_part(1,j),vlimit,ip+1)
          endif
  1       continue
       enddo
@@ -854,30 +866,30 @@ c****************************************************************
       enddo
       end
 c****************************************************************
-      real function vproject(mdims,id,xr,Bfield)
-c Return the id'th component of the "Projected" velocity xr(mdims+ii)
-c relative to the direction cosines Bfield(mdims). 
+      real function vproject(ndims,id,xr,Bfield)
+c Return the id'th component of the "Projected" velocity xr(ndims+ii)
+c relative to the direction cosines Bfield(ndims). 
 c id=1 Parallel, id=2 Perpendicular, id=3 3rd (=id'th) component.
       implicit none
-      integer mdims,id
-      real xr(mdims),Bfield(mdims) 
+      integer ndims,id
+      real xr(ndims),Bfield(ndims) 
       real v,v2
       integer ii
 c Projected. Very clumsy.
       v=0
-      do ii=1,mdims
-         v=v+xr(ii+mdims)*Bfield(ii)
+      do ii=1,ndims
+         v=v+xr(ii+ndims)*Bfield(ii)
       enddo
       if(id.eq.2)then
 c Perpendicular
          v2=0
-         do ii=1,mdims
-            v2=v2+(xr(ii+mdims)-v*Bfield(ii))**2
+         do ii=1,ndims
+            v2=v2+(xr(ii+ndims)-v*Bfield(ii))**2
          enddo
          v=sqrt(v2)
       elseif(id.eq.3)then
 c Z-component.
-         v=xr(id+mdims)
+         v=xr(id+ndims)
       endif
       vproject=v
       end
