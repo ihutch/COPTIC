@@ -11450,3 +11450,18 @@ by adjusting the range of accumulation iic ioc.
 Implement that, passing argument ispecies.
 Implement control of ispecies in partexamine.
 coptic always assumes species 1.
+
+commit.
+
+Fixed bug in periodicwrite diagsum dimension declaration. This fixes
+the diagnostics of electrons. And I notice there are electrons with
+substantial perpendicular velocity but only at the axis-3 ends of the
+box. Perhaps these are reinjected with non-zero velocity?
+
+Found bug in velocity cosine normalization for multiple species. Fixed.
+
+Setting the tangential velocity to zero does change the weird perpendicular
+velocity electrons. But there's also a systematic offset. Needs to be 
+more thoroughly investigated. Basically, how does the reinjection 
+and initialization detect that it should treat a species as drifting?
+And when it does, what should happen to the random choice?

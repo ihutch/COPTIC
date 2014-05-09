@@ -582,7 +582,7 @@ c state of the simulation.
       include 'ndimsdecl.f'
       include 'partcom.f'
       integer ifull(ndims),iuds(ndims),iLs(ndims+1)
-      real diagsum(ifull(1),ifull(2),ifull(3),ndiagmax,nspeciesmax)
+      real diagsum(ifull(1),ifull(2),ifull(3),ndiagmax+1,nspeciesmax)
       real uave(ifull(1),ifull(2),ifull(3))
       real xlimit(2,ndimsmax),vlimit(2,ndimsmax)
       real xnewlim(2,ndimsmax)

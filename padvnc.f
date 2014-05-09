@@ -412,6 +412,7 @@ c            if(myid.eq.0)write(*,*)'PROBLEM: phirein>0:',phirein
 
 c      if(nsubc.ne.0) write(*,'(a,i6,$,'' '')')' Subcycled:',nsubc
 c      write(*,*)'Padvnc',n_part,nrein,ilaunch,ninjcomp,n_partmax
+c     $     ,ispecies
       end
 c***********************************************************************
 c***********************************************************************

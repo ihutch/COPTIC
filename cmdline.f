@@ -365,18 +365,18 @@ c-------------------------------------------------------
 
  202  continue
       do ispecies=1,nspecies
-         if(vdrifts(1,nspecies).ne.0. .or. vdrifts(2,nspecies).ne.0)then
+         if(vdrifts(1,ispecies).ne.0. .or. vdrifts(2,ispecies).ne.0)then
 c --- Drift in direction other than z. Normalize cosines.
             vwork=0.
             do i=1,ndims
 c Make all the vdrift components non-zero so that we can use that fact
 c as an indicator of non-z drift.
-               if(vdrifts(i,nspecies).eq.0.)vdrifts(i,nspecies)=1.e-25
-               vwork=vwork+vdrifts(i,nspecies)**2
+               if(vdrifts(i,ispecies).eq.0.)vdrifts(i,ispecies)=1.e-25
+               vwork=vwork+vdrifts(i,ispecies)**2
             enddo
             vwork=sqrt(vwork)
             do i=1,ndims
-               vdrifts(i,nspecies)=vdrifts(i,nspecies)/vwork
+               vdrifts(i,ispecies)=vdrifts(i,ispecies)/vwork
             enddo
          endif
       enddo

@@ -88,7 +88,6 @@ c This should never happen.
 c velocity, linear interpolation:
          xr(mdims+abs(iother))= preins(ir,iother,ispecies)*(1-fr)
      $        +preins(ir+1,iother,ispecies)*fr
-
       enddo
 c----------------------------------------
 c Pick the velocity perpendicular to this face:
