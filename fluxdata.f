@@ -62,7 +62,6 @@ c different for different species. For now, they are the same.
 c Increment number of quantities provided there is allocated address room.
             do j=1,nf_species
                nt=mf_quant(mf_obj)+nq
-c               write(*,*)'Quantities',nq,nt,nf_quant,mf_quant(mf_obj)
                if(nt.le.nf_quant)then
                   kf_quant(mf_obj,j)=nq
                   mf_quant(mf_obj)=nt
@@ -71,6 +70,7 @@ c               write(*,*)'Quantities',nq,nt,nf_quant,mf_quant(mf_obj)
                endif
                if(j.gt.1)if_quant(mf_obj,j)=if_quant(mf_obj,j-1)
      $              +kf_quant(mf_obj,j)
+c               write(*,*)'Quantities',nq,nt,nf_quant,mf_quant(mf_obj)
             enddo
             itype=int(obj_geom(otype,i))
             i2type=(itype/256)
@@ -170,11 +170,14 @@ c******************************************************************
       include 'ndimsdecl.f'
       include '3dcom.f'
 c General iteration given correct settings of nf_posno. Don't change!
-c Zero nums to silence incorrect warnings.
+c Zero to silence incorrect warnings.
       numdata=0
       numobj=0
+      i=2
+      j=2
       nf_address(1,1,1-nf_posdim)=1
-      do k=1-nf_posdim,nf_maxsteps+2
+c      do k=1-nf_posdim,nf_maxsteps+2
+      do k=1-nf_posdim,nf_nsteps+2
          if(k.gt.1-nf_posdim)
      $        nf_address(1,1,k)=nf_address(1,1,k-1)+numobj
          numobj=0
@@ -190,11 +193,16 @@ c               write(*,*)i,j,k,nf_posno(i,j),nf_address(i,j,k),numdata
             numobj=numobj+numdata
          enddo
       enddo
+      nend=nf_address(max(i-1,1),max(j-1,1),k-1)+numobj
 c Check if we might overrun the datasize.
-      if(nf_address(nf_quant,mf_obj,nf_maxsteps+2)+numobj
-     $     .gt.nf_datasize)then
-         write(*,*)'DANGER: data from',nf_quant,mf_obj,nf_maxsteps,
-     $        ' would exceed nf_datasize',nf_datasize
+c      write(*,*)'Flux data',nend,' for',mf_obj,' objects,'
+c     $        ,nf_nsteps,' steps,',numdata,' quantities*positions'
+      if(nend.gt.nf_datasize)then
+         write(*,*)'DANGER: flux data',nend,' for',mf_obj,' objects,'
+     $        ,nf_nsteps,' steps,',numdata,' quantities*positions'
+     $        ,' would overrun nf_datasize',nf_datasize
+         write(*,*)'Use fewer quantities, positions, (max)steps,'
+     $        ,' or increase nf_datasize'
          stop
       else
       endif
@@ -702,7 +710,7 @@ c      logical lplot
       include 'ndimsdecl.f'
       include '3dcom.f'
       include 'sectcom.f'
-c Use for averaging:ff_data(nf_address(iq,ifobj,nf_maxsteps+1)+i-1)
+c Use for averaging:ff_data(nf_address(iq,ifobj,nf_step+1)+i-1)
 c which is ff_data(iav+i)
       real fluxofstep(nf_maxsteps),step(nf_maxsteps)
       character*30 string
@@ -716,10 +724,8 @@ c         write(*,*)'No such quantity',ifobj,mf_quant(ifobj),iq
          return
       endif
 c Offset of averaging location:
-c      iav=nf_address(iq,ifobj,nf_maxsteps+1)-1
       iav=nf_address(iq,ifobj,nf_step+1)-1
 c Offset to average flux density location
-c      iavd=nf_address(iq,ifobj,nf_maxsteps+2)-1
       iavd=nf_address(iq,ifobj,nf_step+2)-1
 c Offset to area
       iaa=nf_address(iq,ifobj,nf_pa)-1

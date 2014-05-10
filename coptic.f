@@ -189,6 +189,11 @@ c if n_part.eq.0. But now we do it always, for possible multiple species.
 c----------------------------------------------------------------
 c Initialize the fluxdata storage and addressing before cijroutine
       nf_species=nspecies
+      nf_nsteps=nf_maxsteps
+      if(lrestart/2-2*(lrestart/4).eq.0)then
+c Not restarting flux. Check only asked for step range
+         nf_nsteps=nsteps
+      endif
       call fluxdatainit(myid)
 c-----------------------------------------------------------------
       if(lmyidhead)write(*,*)'Initializing the stencil data cij.'
@@ -360,6 +365,13 @@ c We succeeded in reading the part-file. Relocate the particles.
      $              ,' Restart file read: '
      $              ,partfilename(1:lentrim(partfilename)+1),lrestart
                call locateinit()
+               if(nsteps+nf_step.gt.nf_maxsteps)then
+                  if(lmyidhead)write(*,*)'Asked for',
+     $                 nsteps,' in addition to',nf_step,
+     $                 ' Total',nsteps+nf_step,
+     $                 ' too much; set to',nf_maxsteps-1
+                  nsteps=nf_maxsteps-nsteps-1
+               endif
                ied=1
 c Only read the phi-file if the flux file was present. Full restart.
                if(iferr.eq.0)then
@@ -367,13 +379,6 @@ c                  write(*,*)'Reading phifile',ierr,phifilename
                   call array3read(phifilename,ifull,iuds,ied,u,ierr)
                endif
             endif
-         endif
-         if(nsteps+nf_step.gt.nf_maxsteps)then
-            if(lmyidhead)write(*,*)'Asked for',
-     $           nsteps,' in addition to',nf_step,
-     $           ' Total',nsteps+nf_step,
-     $           ' too much; set to',nf_maxsteps-1
-            nsteps=nf_maxsteps-nsteps-1
          endif
 c In case we have overwritten phip with the value from the restart file,
 c try to set it again from the first object. But tell it we are not

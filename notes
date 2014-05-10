@@ -11465,3 +11465,42 @@ velocity electrons. But there's also a systematic offset. Needs to be
 more thoroughly investigated. Basically, how does the reinjection 
 and initialization detect that it should treat a species as drifting?
 And when it does, what should happen to the random choice?
+
+Drift species should be injected with zero perpendicular velocity,
+and with appropriately random parallel velocity. This means perpendicular
+and parallel relative to B. At the moment the selection is done with
+the cumulative probability distributions in the coordinate directions.
+That doesn't seem to be correct because it will give rise to large
+tranverse velocities. We do need to get the fluxes on each face from
+a face-directed flux probability. However, having decided to inject,
+we ought to select velocities representing a true drift case.
+We also ought probably to avoid caverein.
+
+In fact, I realize that the same problem exists when the drift velocity
+is not in the direction of a coordinate axis. The probability distribution
+is then not separable in the coordinate directions and is probably wrong.
+In effect the expected tangential velocity depends upon the normal velocity.
+I suspect the natural way to solve this problem is to use the collisional
+reinjection technique. However, it needs to be initialized differently
+in pinit.
+
+Fix the test for overrun of nf_datasize. It did not work correctly for
+the current code status. (And gave overruns on big data.)
+Things are a bit tricky with restarts. Fluxdatainit is done before we
+do restarting. Therefore, if we are going to restart we don't know the
+total number of steps that is going to be taken at the time of
+fluxdatainit because it is the number taken already plus the new
+number. I think that means if we are going to restart, then we must
+do the test based on nf_maxsteps not the nsteps asked for. However, if
+we know we are not restarting we can do the test based on nsteps.
+
+Created new common nf_nsteps which is the number of steps that nf_step
+is supposed to go to. It is not written or read in fluxexamine, because
+when flux is written the nf_step determines how many steps the data is.
+Thus nf_nsteps is used only for initialization to tell how much data
+will be needed in this run. Normally nf_nsteps=nsteps. However, if we
+are restarting flux, then nf_nsteps=nf_maxsteps because we don't know
+how much total data we'll need till the restart is done and that isn't
+done till after the fluxdatainit. Seems to work.
+
+commit

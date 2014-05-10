@@ -71,8 +71,8 @@ c Mnemonics for positional variables.
       integer nf_p1,nf_p2,nf_p3,nf_p4,nf_pr,nf_pt,nf_pz,nf_pa
       parameter (nf_p1=0,nf_p2=-1,nf_p3=-2,nf_p4=-3)
       parameter (nf_pr=nf_p1,nf_pt=nf_p2,nf_pz=nf_p3,nf_pa=nf_p4)
-c Actual numbers of quantities, objects and steps <= maxes.
-      integer nf_step,mf_quant(nf_obj),mf_obj
+c Actual number of current step total steps, quantities, objects <= maxes.
+      integer nf_step,nf_nsteps,mf_quant(nf_obj),mf_obj
 c Array of number of quantities by species. 
 c mf_quant=sum_nspecies(if_quant) for each object.
 c We don't yet have a mechanism for setting it different for different
@@ -101,9 +101,9 @@ c The dt for each step
 c The number of species. Should equal nspecies
       integer nf_species
 
-      common /fluxdata/nf_species,nf_step,ff_rho,ff_dt,mf_quant,kf_quant
-     $     ,if_quant,mf_obj,nf_posno,nf_npart,nf_dimlens,nf_faceind
-     $     ,nf_geommap,nf_address,ff_data
+      common /fluxdata/nf_species,nf_step,nf_nsteps,ff_rho,ff_dt
+     $     ,mf_quant,kf_quant,if_quant,mf_obj,nf_posno,nf_npart
+     $     ,nf_dimlens,nf_faceind,nf_geommap,nf_address,ff_data
 
 c Flux explanation:
 c For
