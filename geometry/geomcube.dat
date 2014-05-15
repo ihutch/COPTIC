@@ -18,5 +18,5 @@
 91 1,40,0,-5.,5.
 92 1,40,0,-5.,5.
 93 1,40,0,-5.,5.
-Arguments: -v.5 -l5. -dt.1 
+Arguments: -v.5 -l5. -dt.1 -rx.5
 #Must terminate the last line

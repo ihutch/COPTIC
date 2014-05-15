@@ -156,7 +156,7 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 	./${COPTIC} $*.dat
 	@if [ -f T*.phi ] ; then sum T*.phi >checksum ; else echo NO .phi FILE GENERATED; ls T*.phi 2>/dev/null; exit 1; fi
 	@if diff checksum $*.cks >diffout 2>&1; then echo; echo "        Case $*.cks: OK. No differences"; touch $*.cks; else cat diffout; echo '******** Failed geometry test on $*.cks *********'; echo "$*.cks:" >> GeometryTests; cat diffout >> GeometryTests; fi; rm -f diffout checksum
-	@if [ -f $*.cks ] ; then echo ; else echo "******** $*.cks not present. Creating it."; sum *.phi >$*.cks; fi
+	@if [ -f $*.cks ] ; then echo ; else echo "******** $*.cks not present. Creating it."; sum T*.phi >$*.cks; fi
 	@echo -----------------------------------------------------------------
 
 ##########################################

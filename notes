@@ -11504,3 +11504,50 @@ how much total data we'll need till the restart is done and that isn't
 done till after the fluxdatainit. Seems to work.
 
 commit
+
+Why does fluxdatainit have to be done before cijroutine? 
+Earlier note:
+Had to move the fluxdatainit before cijroutine otherwise the ijbin
+is not calculated correctly.
+This apparently arises because of 
+                  idob_cij(ioad+1,oi_cij+ichain)=ijbin
+It is used subsequently in cijdirect to access flux densities for
+floating potential calculations.
+
+13 May 2014
+Perpendicular Temperature implementation.
+
+14 May 2014
+
+Implementation of maxwellstats which creates a bank of particles 
+distributed as an anisotropic maxwellian shifted by the component
+of drift velocity in the parallel direction. Parallel is either 
+B (if non-zero) or v direction. Tperps is the temperature perpendicular
+to it (gyrotropic at present). 
+This routine could be called multiple times to generate a bank that
+has particles corresponding to multiple maxwellians.
+
+Changed baresheath.dat to include drift velocity and collisions to
+generalize its test for collisions.
+
+We need to decide when the maxwellstats approach gets called. It is
+needed if Tperp!=Ti, or when there is drift velocity in a direction
+not along coordinate axis. Implemented those tests in pinit and
+set notseparable variable. 
+
+Implemented calling of maxwellstats and colreinit. 
+Seems to work. At least does not crash with anisotropic temperature.
+Can't be compared exactly with standard case because statistics are
+different.
+
+Now we need to set Tperp small for species that are effectively 
+infinite B. Implemented and fixed several problems for electrons
+that required the ispecies reference for cdistfluxs etc.
+
+There's another problem with ncdist for multiple species. Needed to
+reset ncdist to zero before starting the next species' maxwellstats.
+Probably ncdist should become an array to make the species independent.
+It did. I just need to reference it.
+
+Made -rx0. the default now. Added -rx.5 to several standard geometry
+files to retain their checksum outputs.

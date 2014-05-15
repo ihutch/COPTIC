@@ -9,7 +9,7 @@ c Encapsulation of parameter setting.
      $     ,objfilename ,lextfield ,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline ,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa)
+     $     ,nspeciesmax,numratioa,Tperps)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps
@@ -27,7 +27,7 @@ c Encapsulation of parameter setting.
       real gt(ndims),gp0(ndims),gtt,gn(ndims),gnt
 c Multiple species can have these things different.
 c Only the first species is possibly collisional.
-      real Ts(*),vds(*),eoverms(*)
+      real Ts(*),vds(*),eoverms(*),Tperps(*)
       integer nparta(*),numratioa(*)
       real vpars(*)
       real vperps(ndims,*),vdrifts(ndims,*)
@@ -54,6 +54,7 @@ c Fixed number of particles rather than fixed injections.
          nparta(nspecies)=0
          vds(nspecies)=0.
          Ts(nspecies)=1.
+         Tperps(nspecies)=1.
          eoverms(nspecies)=1.
          numratioa(nspecies)=1
          Tneutral=1.
@@ -62,7 +63,8 @@ c Fixed number of particles rather than fixed injections.
          enddo
          vdrifts(ndims,nspecies)=1.
 c Default edge-potential (chi) relaxation rate.     
-         crelax=1.*Ts(nspecies)/(1.+Ts(nspecies))
+c         crelax=1.*Ts(nspecies)/(1.+Ts(nspecies))
+         crelax=0.
          debyelen=1.
          dt=.1
          restartpath=' '
@@ -259,6 +261,7 @@ c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
                nspecies=nspecies+1
 c Default to electron Temp/mass for subsequent species.
                Ts(nspecies)=1.
+               Tperps(nspecies)=1.
                eoverms(nspecies)=-1836.
                numratioa(nspecies)=1.
 c     $              sqrt(abs(eoverms(nspecies)/eoverms(1)))
@@ -312,8 +315,11 @@ c Electron temperature gradient parameters
             write(*,*)'***Tneutral setting is obsolete. No can do.'
             stop
 c            read(argument(4:),*,err=201)Tneutral
+         elseif(argument(1:3).eq.'-tp')then
+            read(argument(4:),*,err=201)Tperps(nspecies)
          elseif(argument(1:2).eq.'-t')then
             read(argument(3:),*,err=201)Ts(nspecies)
+            Tperps(nspecies)=Ts(nspecies)
 c Default Tneutral=Ts(nspecies)
 c            Tneutral=Ts(nspecies)
          endif
@@ -512,6 +518,8 @@ c Help text
       write(*,301)' -s    set No of steps.           [',nsteps
       write(*,302)' -t    set (Ion) Temperature.     [',(Ts(ispecies)
      $     ,ispecies=1,nspecies)
+      write(*,302)' -tp   set perp. Temperature.     ['
+     $     ,(Tperps(ispecies),ispecies=1,nspecies)
       write(*,306)' -tge  set Elec Temp Center&Grad  [',gp0,gt
       write(*,306)' -ng   set Density gradient       [',gn
       write(*,302)' -l    set Debye Length.          [',debyelen
@@ -521,7 +529,6 @@ c Help text
      $     ,ispecies),id=1,3),ispecies=1,min(2,nspecies))
       write(*,302)' -ct   set collision time.        [',colntime
       write(*,302)' -vn   set neutral drift velocity [',vneutral
-c      write(*,302)' -tn   set neutral temperature    [',Tneutral
       write(*,302)' -Ef   set Ext v-drive fraction   [',Enfrac
       write(*,302)' -cp   set v-power coln freq      [',colpow
       write(*,308)' -sp   add a particle species     [',nspecies

@@ -21,4 +21,7 @@
 #91,1,32,0,-10.,10.
 #92,1,32,0,-10.,10.
 #93,1,96,0,-10.,10.
+
+# Set old default relaxation rate for edge potential.
+Arguments: -rx.5    
 # It's important to end the last line.

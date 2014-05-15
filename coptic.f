@@ -139,7 +139,7 @@ c First time this routine just sets defaults and the object file name.
      $     ,objfilename ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa)
+     $     ,nspeciesmax,numratioa,Tperps)
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -153,7 +153,7 @@ c Second time: deal with any other command line parameters.
      $     ,objfilename ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa)
+     $     ,nspeciesmax,numratioa,Tperps)
       if(ierr.ne.0)stop
 c The double call enables cmdline switches to override objfile settings.
 c-----------------------------------------------------------------
@@ -188,6 +188,8 @@ c if n_part.eq.0. But now we do it always, for possible multiple species.
       call ninjcalc(dt)
 c----------------------------------------------------------------
 c Initialize the fluxdata storage and addressing before cijroutine
+c That is necessary because ijbin addressing is used in cijroutine for
+c subsequent access by cijdirect when calculating floating potential.
       nf_species=nspecies
       nf_nsteps=nf_maxsteps
       if(lrestart/2-2*(lrestart/4).eq.0)then

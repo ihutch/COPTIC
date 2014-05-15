@@ -9,6 +9,7 @@ c Common data:
       include '3dcom.f'
       include 'meshcom.f'
       include 'colncom.f'
+      include 'cdistcom.f'
       external linregion,ranlenposition
       logical linregion
 c Local dummy variables for partlocate.
@@ -18,6 +19,8 @@ c Local dummy variables for partlocate.
 c Factor by which we leave additional space for increased number of 
 c particles if not fixed:
       real slotsurplus
+      real thetamax
+      parameter (thetamax=.1)
 c-----------------------------------------------------------------
 c A special orbit. Preserved only for ispecies=1.
 c Pinit resets x_part. So set it for the special first particle.
@@ -45,7 +48,10 @@ c Tangential velocity of circular orbit at r=?.
 c-----------------------------------------------------------------
 c Point to the bottom of the particle stack for start of species 1.
       iicparta(1)=1
+c Decide whether the external distribution is separable.
       do ispecies=1,nspecies
+c Conveniently here initialize distribution numbers.
+         ncdists(ispecies)=0
          if(ninjcompa(ispecies).gt.1)then
             slotsurplus=1.3
          else
@@ -53,14 +59,20 @@ c Point to the bottom of the particle stack for start of species 1.
          endif
          ntries=0
          Eneutral=0.
+c Set tperp to a tiny number if species is infinitely magnetized.
+         theta=Bt*eoverms(ispecies)*dt
+         if(abs(theta).gt.thetamax)Tperps(ispecies)=
+     $        0.001/sqrt(abs(eoverms(ispecies)))
+c         write(*,*)'theta=',theta,Bt,dt,Tperps(ispecies)
+         notseparable(ispecies)=0
          if(colntime.ne.0..and.ispecies.eq.1)then
 c At this point vperp refers to the perp part of vd, set by cmdline.
 c Initialize the reinjection particles and discover the full Eneutral.
             call colninit(0,myid)
-            if(myid.eq.0.and.ldistshow)call colndistshow()
-            call colreinit(myid)
+            call colreinit(myid,ispecies)
 c Finalize the Eneutral fraction and related settings.
             Eneutral=Enfrac*Eneutral
+            if(Eneutral.ne.0.and.colpow.ne.0)notseparable(ispecies)=1
 c Add on the orthogonal EnxB drift, so as to make vperp the velocity of
 c the frame of reference in which the background E-field is truly zero:
             do k=1,ndims
@@ -69,8 +81,36 @@ c the frame of reference in which the background E-field is truly zero:
                vperp(k)=vperp(k)+(Eneutral/Bt)
      $              *(vdrift(k1)*Bfield(k2)-vdrift(k2)*Bfield(k1))
             enddo
+         elseif(Tperps(ispecies).ne.Ts(ispecies))then
+c Collisionless anisotropic distribution is notseparable.
+            notseparable(ispecies)=2
+            if(myid.eq.0)write(*,*)'Non-separable anisotropic T.'
+     $           ,Ts(ispecies),Tperps(ispecies),' species',ispecies
+         else
+c Count the number of non-zero vdrift components. If it is more than one
+c then vdrift is not along a coordinate axis => nonseparable.
+            nonzero=0
+            do k=1,ndims
+               if(vdrifts(k,ispecies).ne.0)nonzero=nonzero+1
+            enddo
+            if(nonzero.gt.1)then
+               notseparable(ispecies)=3
+               if(myid.eq.0)write(*,*)'Non-separable oblique vdrift'
+     $           ,(vdrifts(k,ispecies),k=1,ndims),' species',ispecies
+            endif
          endif
-         tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
+         if(notseparable(ispecies).ge.2)then
+c This is where the collisionless distribution is really set.
+c More complicated distributions should redo this setting differently.
+c How many prior particles to save:
+c            ncdists(ispecies)=0
+c How many extra to add:
+            nclim=ncdistmax
+            call maxwellstats(nclim,vzave,ispecies)
+            call colreinit(myid,ispecies)
+         endif
+         if(myid.eq.0.and.ldistshow.and.notseparable(ispecies).ne.0)
+     $        call colndistshow(ispecies)
 c      write(*,*)i1,' iicparta(1)',iicparta(1),iicparta(ispecies)
 c Scale the number of particles for higher slots to the ions(?)
          nparta(ispecies)=nparta(1)/numratioa(ispecies)
@@ -81,6 +121,7 @@ c     $        *sqrt(abs(eoverms(1)/eoverms(ispecies)))
      $           ,' Asking for',islotmax
             stop
          endif
+         tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
          do i=iicparta(ispecies)+i1-1,islotmax
             x_part(iflag,i)=1
  1          continue
@@ -95,7 +136,8 @@ c            write(*,*)'Initialization of',i,' wrong region',inewregion
 c     $           ,(x_part(kk,i),kk=1,3)
                goto 1
             endif
-            if(Eneutral.eq.0.)then
+            if(notseparable(ispecies).eq.0. .and. Eneutral.eq.0)then
+c Shifted Gaussians.
                x_part(4,i)=tisq*gasdev(myid) + vd*vdrift(1)
                x_part(5,i)=tisq*gasdev(myid) + vd*vdrift(2)
                x_part(6,i)=tisq*gasdev(myid) + vd*vdrift(3)
@@ -268,7 +310,8 @@ c to weight the distribution of the neutrals when the collision frequency
 c is velocity dependent. 
 
 c The velocities are deposited in cdistcom variable v_col(i,j) for j=1,nclim.
-c In addition, the sum of all the velocities in cdistflux(i).
+c In addition, the sum of all the absolute velocity cpts in cdistflux(i).
+c It decides weight of 3 coordinate directions for reinjection.
 c vzave returns the sum of the vdrift-components of the velocities.
 
       implicit none
@@ -328,8 +371,7 @@ c Start of a new orbit
 c Inject from neutral distribution
       v2=delta*Ti
       do i=1,ndims
-         v(i)=tisq*gasdev(i)
-c         if(i.eq.ndims)v(i)=v(i)+vneutral
+         v(i)=tisq*gasdev(0)
          v(i)=v(i)+vneutral*vdrift(i)
          v2=v2+v(i)**2
       enddo
@@ -425,9 +467,8 @@ c And add back the drift velocity, and the parallel acceleration.
 c Possible collision: Choose a neutral velocity and calculate (v-vd)^2
          v2=0.
          do i=1,ndims
-            vn(i)=tisq*gasdev(i)
-c            if(i.eq.ndims)vn(i)=vn(i)+vneutral
-            vn(i)=vn(I)+vneutral*vdrift(i)
+            vn(i)=tisq*gasdev(0)
+            vn(i)=vn(i)+vneutral*vdrift(i)
             v2=v2+(v(i)-vn(i))**2
          enddo
 c Calculate the ratio of the actual collision time at this relative
@@ -455,7 +496,7 @@ c Choose next orbit time.
 c      write(*,*)'v(i)',v
       end
 c****************************************************************
-      subroutine colndistshow()
+      subroutine colndistshow(ispecies)
       include 'ndimsdecl.f'
       include 'cdistcom.f'
       integer nxbin,nybin
@@ -470,11 +511,12 @@ c Defaults
          vlimit(2,id)=-2.
       enddo
 c Adjust vlimits
-      do j=1,ncdist-1
-         vx=v_col(idim1,j)
+c      do j=1,ncdist-1 I did not understand the -1.
+      do j=1,ncdist
+         vx=vcols(idim1,j,ispecies)
          if(vx.gt.vlimit(1,1))vlimit(1,1)=vx
          if(vx.lt.vlimit(2,1))vlimit(2,1)=vx
-         vy=v_col(idim2,j)
+         vy=vcols(idim2,j,ispecies)
          if(vy.gt.vlimit(1,2))vlimit(1,2)=vy
          if(vy.lt.vlimit(2,2))vlimit(2,2)=vy
       enddo
@@ -494,9 +536,10 @@ c Accumulate the fvxvy distribution
                fvxvy(j,k)=0.
             enddo
          enddo
-         do j=1,ncdist-1
-            vx=v_col(idim1,j)
-            vy=v_col(idim2,j)
+c         do j=1,ncdist-1  I don't understand the -1
+         do j=1,ncdist
+            vx=vcols(idim1,j,ispecies)
+            vy=vcols(idim2,j,ispecies)
             nx=nint(nxbin*(vx-vlimit(1,1))/(vlimit(2,1)-vlimit(1,1)))
             ny=nint(nybin*(vy-vlimit(1,2))/(vlimit(2,2)-vlimit(1,2)))
             if(nx.ge.1.and.nx.le.nxbin.and.ny.ge.1.and.ny.le.nybin)
@@ -510,6 +553,7 @@ c       Plot the surface. With axes (2-D). Web color 10, axis color 7.
         j=2 + 256*10 + 256*256*7
         call surf3d(vxa,vya,fvxvy,nxbin,nxbin,nybin,j,work)
         call color(15)
+        call ax3labels('x','z','f ')
         if(ieye3d().ne.0) goto 98
 
         open(2,file='fvxvydist.dat')
@@ -518,3 +562,99 @@ c       Plot the surface. With axes (2-D). Web color 10, axis color 7.
       end
 
 c****************************************************************
+      subroutine maxwellstats(nclim,vzave,ispecies)
+c Routine for initializing particles with a general anisotropic and
+c shifted maxwellian distribution. An array of velocities that
+c represents the background distribution of ions is calculated The
+c velocities are deposited in cdistcom variable vcols(i,j,ispecies) for
+c j=1,nclim.  In addition, the sum of all the absolute velocity cpts in
+c cdistflux(i).  It decides weight of 3 coordinate directions for
+c reinjection.  vzave returns the sum of the vdrift-components of the
+c velocities.
+
+c If Bt is non-zero then probably the distribution is gyrotropic, and
+c thus the direction of any temperature asymmetry should be
+c perpendicular or parallel to B. B is the preferred axis.  If Bt is
+c zero, then only the velocity direction cosines vdrift determines a
+c preferred axis. 
+
+c Ts will be taken as representing the temperature(s) in the direction of 
+c the preferred axis. Tperps are then the temperatures in the perpendicular
+c direction (isotropic for now).
+
+      implicit none
+      integer nclim,ispecies
+      real vzave
+
+      include 'ndimsdecl.f'
+      include 'cdistcom.f'
+      include 'plascom.f'
+      real vdirs(ndims,ndims+1,nspeciesmax),rmag
+      real vns(nspeciesmax),vnp(nspeciesmax)
+      integer i,j
+      real gasdev,ran1
+      external gasdev,ran1      
+      save vns,vnp,vdirs
+
+      if(Bt.eq.0.)vpars(ispecies)=vds(ispecies)
+c Define the ndims directions 1 parallel and (ndims-1) perpendicular.
+      do i=1,ndims
+         cdistfluxs(i,ispecies)=0.
+         if(Bt.ne.0)then
+c Parallel is B-direction 
+            vdirs(i,1,ispecies)=Bfield(i)
+         else
+c vdrifts defines parallel direction
+            vdirs(i,1,ispecies)=vdrifts(i,ispecies)
+         endif
+         vdirs(i,ndims,ispecies)=0.
+         vdirs(i,ndims+1,ispecies)=0.
+      enddo
+c Alternative vectors to generate perpendicular.
+      vdirs(1,ndims,ispecies)=1.
+      vdirs(2,ndims+1,ispecies)=1.
+c Construct perpendicular vectors:
+      call crossprod(vdirs(1,1,ispecies),vdirs(1,ndims
+     $     ,ispecies),vdirs(1,2,ispecies),rmag)
+c If we were unlucky and chose a direction that coincides, redo.
+      if(rmag.le.0)
+     $     call crossprod(vdirs(1,1,ispecies),vdirs(1,ndims+1
+     $     ,ispecies),vdirs(1,2,ispecies),rmag)
+      do i=1,ndims
+         vdirs(i,2,ispecies)=vdirs(i,2,ispecies)/rmag
+      enddo
+      call crossprod(vdirs(1,1,ispecies),vdirs(1,2
+     $     ,ispecies),vdirs(1,3,ispecies),rmag)
+c Should already be normalized because 1st two orthonormal.
+c Now we have 3 orthogonal unit vectors in vdirs(1:3,1:3,ispecies)
+c Save the thermal velocity
+      vns(ispecies)=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
+      vnp(ispecies)=sqrt(Tperps(ispecies)*abs(eoverms(ispecies)))
+
+c      write(*,*)'vns,vnp=',vns,vnp,ispecies
+      if(ncdists(ispecies)+nclim.gt.ncdistmax)then
+         write(*,*)'Trying to initialize too many random particles',
+     $        ncdists(ispecies),'+',nclim,' in pinit.'
+      else
+         do j=ncdists(ispecies)+1,ncdists(ispecies)+nclim
+c Draw random parallel and perpendicular velocities, and add on the
+c parallel (only) drift velocity. 
+            do i=1,ndims
+               vcols(i,j,ispecies)
+     $              =(vns(ispecies)*gasdev(0)
+     $                     +vpars(ispecies))*vdirs(i,1,ispecies)
+     $              +vnp(ispecies)*gasdev(0)*vdirs(i,2,ispecies)
+     $              +vnp(ispecies)*gasdev(0)*vdirs(i,3,ispecies)
+               vzave=vzave+vcols(i,j,ispecies)*vdrift(i)
+c Evaluate the total absolute fluxes in the three coordinate directions.
+               cdistfluxs(i,ispecies)=cdistfluxs(i,ispecies)
+     $              +abs(vcols(i,j,ispecies))
+            enddo
+         enddo
+      endif
+      ncdists(ispecies)=ncdists(ispecies)+nclim
+
+c      write(*,*)'Completed Maxwellstats',nclim,ncdists(ispecies)
+      end
+
+

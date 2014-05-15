@@ -6,9 +6,18 @@ c Wrapper:
       include 'ndimsdecl.f'
       include 'partcom.f'
 
-      if(colntime.eq.0. .or. colpow.eq.0.)then
+c This test ought to be just whether the distribution is separable.
+c And probably it ought to be decided just once.
+c      if(colntime.eq.0. .or. colpow.eq.0.)then
+      if(notseparable(ispecies).eq.0)then
+c Cartreinject is the version to be used when the distribution is 
+c separable in the directions of the cartesian axes.
          call cartreinject(xr,ilaunch,caverein,ispecies)
       else
+c colreinject started as the collisional reinjection scheme. 
+c It is based upon sampling from a 3-D distribution function.
+c It can therefore be used for situations where the distribution
+c is not separable in coordinate directions.
          call colreinject(xr,ipartperiod,caverein)
 c Only one launch allowed here (and actually in the other too).
          ilaunch=1
@@ -896,7 +905,7 @@ c Position: Ensure we never quite reach the mesh edge:
       end
 
 c********************************************************************
-      subroutine colreinit(myid)
+      subroutine colreinit(myid,ispecies)
 c Initialize and normalize the cdistflux factors from the
 c Collisional distribution data, presumed already calculated by pinit.
 c Based upon the ipartperiod settings.
@@ -907,14 +916,14 @@ c Based upon the ipartperiod settings.
       ctot=0.
       do i=1,ndims
 c         if(myid.eq.0)write(*,*)ipartperiod(i),cdistflux(i)
-         if(ipartperiod(i).ge.3)cdistflux(i)=0.
-         ctot=ctot+cdistflux(i)
+         if(ipartperiod(i).ge.3)cdistfluxs(i,ispecies)=0.
+         ctot=ctot+cdistfluxs(i,ispecies)
       enddo
       if(ctot.ne.0.)then
          cdistcum(1)=0.
          do i=1,ndims
-            cdistflux(i)=cdistflux(i)/ctot
-            cdistcum(i+1)=cdistcum(i)+cdistflux(i)
+            cdistfluxs(i,ispecies)=cdistfluxs(i,ispecies)/ctot
+            cdistcum(i+1)=cdistcum(i)+cdistfluxs(i,ispecies)
          enddo
 c Avoid rounding problems.
          cdistcum(ndims+1)=1.
@@ -927,7 +936,7 @@ c Now evaluate the cumulative distribution in 3 normal-directions.
       do id=1,ndims
          fxvcol(1,id)=0.
          do i=1,ncdist
-            fxvcol(i+1,id)=fxvcol(i,id)+abs(v_col(id,i))
+            fxvcol(i+1,id)=fxvcol(i,id)+abs(vcols(id,i,ispecies))
          enddo
       enddo
 c There's a resolution issue in that a million steps can hardly

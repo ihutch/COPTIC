@@ -30,4 +30,6 @@
 106,1.,0.,3.
 # partperiod:
 98,1,1,0
+Arguments: -rx.5
+#end
 # It's important to end the last line.

@@ -17,6 +17,8 @@ c (x,y,z) (vx,vy,vz) (xm,ym,zm) where xm... is the mesh position.
       real x_part(idtp,n_partmax)
 c Ratio of the number of steps and inverse number of particles:
       integer numratioa(nspeciesmax)
+c Whether or not the external distribution is separable
+      integer notseparable(nspeciesmax)
 c Timestep (unperturbed).
       real dt
 c Control of diagnostics
@@ -49,7 +51,7 @@ c Whether not all directions of particles are periodic
      $     ,nparta,iicparta,iocparta,ninjcompa,numratioa
      $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs
      $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp
-     $     ,caverein,chi
+     $     ,caverein,chi,notseparable
 
 c Orbit plotting storage for tracking the first norbits orbits.
 c This nstepmax does NOT control the maximum number of steps.

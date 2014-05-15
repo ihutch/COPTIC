@@ -22,6 +22,6 @@
 92,1,8,0,-10.,10.
 93,1,8,0,-10.,10.
 
-Arguments: -ri20
+Arguments: -ri20 -rx.5
 # It's important to end the last line.
 

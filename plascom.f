@@ -16,16 +16,13 @@ c Reference point of ne gradient is same as Te gradient.
 c ne gradient components, total gradient:
       real gn(ndims),gnt
 c
-c Those used to be directly stored:
-c    common/plascom/debyelen,Ti,vd,rs,phip,eoverm,Bt,Bfield,vpar,vperp
-c     $     ,vdrift,gp0,gt,gtt,gn,gnt
-c but now some are just equivalences to the first species of the 
-c following array forms.
+c Those used to be directly stored but now some are just equivalences to
+c the first species of the following array forms.
       real Ts(nspeciesmax),vds(nspeciesmax),eoverms(nspeciesmax)
-      real vpars(nspeciesmax)
+      real vpars(nspeciesmax), Tperps(nspeciesmax)
       real vperps(ndims,nspeciesmax),vdrifts(ndims,nspeciesmax)
       equivalence (Ti,Ts),(vd,vds),(eoverm,eoverms)
       equivalence (vpar,vpars),(vperp,vperps),(vdrift,vdrifts)
 
-      common/plascom/debyelen,Ts,vds,rs,phip,eoverms,Bt,Bfield,vpars
-     $     ,vperps,vdrifts,gp0,gt,gtt,gn,gnt
+      common/plascom/debyelen,Ts,Tperps,vds,rs,phip,eoverms,Bt,Bfield
+     $     ,vpars,vperps,vdrifts,gp0,gt,gtt,gn,gnt

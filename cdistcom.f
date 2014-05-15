@@ -6,4 +6,10 @@ c Requires ndimsdecl.f to give ndims
       real v_col(ndimsmax,ncdistmax)
       real fxvcol(ncdistmax+1,ndims)
       real cdistflux(ndimsmax),cdistcum(ndimsmax+1)
-      common /cdistcom/ncdist,v_col,cdistflux,cdistcum,fxvcol
+c Multispecies
+      integer ncdists(nspeciesmax)
+      real vcols(ndimsmax,ncdistmax,nspeciesmax)
+      real cdistfluxs(ndimsmax,nspeciesmax)
+      equivalence (v_col,vcols),(cdistflux,cdistfluxs)
+      equivalence (ncdist,ncdists)
+      common /cdistcom/ncdists,vcols,cdistfluxs,cdistcum,fxvcol
