@@ -411,7 +411,8 @@ c But it is not necessary so simplify to one period routine.
 c Psumreduce takes care of the reductions that were in rhoinfcalc 
 c and explicit psum. It encapsulates the iaddtype iaddop generation.
 c Because psumtoq internally compensates for faddu, we reduce here
-         call psumreduce(psum,ndims,ifull,iuds,iLs)
+         call psumreduce(psum,nrein,phirein,numprocs,ndims,ifull,iuds
+     $        ,iLs)
 c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
 c Convert psums to charge density, q. Remember external psumtoq!

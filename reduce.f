@@ -37,12 +37,12 @@ c     $     i=1,nf_posno(1,1))
 
       end
 c********************************************************************
-      subroutine psumreduce(psum,ndims,ifull,iuds,iLs)
+      subroutine psumreduce(psum,nrein,phirein,numprocs,ndims,ifull,iuds
+     $     ,iLs)
+      integer nrein,ndims,numprocs
       integer ifull(ndims),iuds(ndims),iLs(ndims+1)
-      real psum(*)
+      real psum(*),phirein
       include 'mpif.h'
-c      include 'ndimsdecl.f'
-c      include 'partcom.f'
 c Operator
       external addsubarray_MPI
 
