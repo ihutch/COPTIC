@@ -37,7 +37,8 @@ c     $     i=1,nf_posno(1,1))
 
       end
 c********************************************************************
-      subroutine psumreduce(psum,nrein,phirein,ndims,ifull,iuds,iLs)
+      subroutine psumreduce(psum,nrein,phirein,numprocs,ndims,ifull,iuds
+     $     ,iLs)
       integer nrein,ndims
       integer ifull(ndims),iuds(ndims),iLs(ndims+1)
       real psum(*),phirein

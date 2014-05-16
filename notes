@@ -10959,3 +10959,14 @@ sum.
 
 Fixed this bug. It was present since 19 April 2014.
 
+Try to cherry pick 877b361318b35e23cfe56308ea67addd6a2f6672 the latest
+into ionsonly. Did not work.
+
+Instead edited the ionsonly branch. Then commit. This made the ionsonly 
+branch disappear from gitk unless it is explicitly checked out, in which case
+the master commits disappear. Apparently now the two branches are truly 
+forked. Apparently also, github will only receive the master on push
+unless I do something else. 
+
+I found there was a need for numprocs too. Added that to the arguments
+(of both branches.)
