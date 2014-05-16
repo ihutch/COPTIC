@@ -10989,3 +10989,5 @@ make geometry ok.
 
 Added ndimsdecl.f a few places. Then we can compile with no dependence
 on npdim from partcom.f. We've completely removed npdim in effect.
+
+Test commit
