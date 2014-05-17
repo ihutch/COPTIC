@@ -70,7 +70,7 @@ c Old format.
       else
 c New MV format
          write(charout,52)debyelen,rs,phip,dt,ldiags
- 52      format('MV1. debyelen,rs,phip,dt,ldiags:',4f10.4,i5)
+ 52      format('MV1. debyelen,rs,phip,dt,ldiags:',4f10.4,l5)
          write(22)charout
          write(22)debyelen,rs,phip,dt,ldiags
          write(22)ranstate

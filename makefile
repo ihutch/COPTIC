@@ -219,6 +219,19 @@ compiler : makefile
 #	@echo "*********** Terminating recursive make. Not an error *******"
 #	exit 1
 
+# Make the binary writes access='stream'. This has greater portability
+# between compilers but is g77 incompatible.
+streamset : 
+	for file in *.f; do sed -i -e "/form=[']unformatted['][,)]/s/[']unformatted[']/\'unformatted\'\n     \$$  ,access=\'stream\'/" $${file}; done
+	make mproper
+	@echo
+	@echo "**** Remake with FORTRAN 2003 compatible compiler e.g. G77=gfortran"
+
+# Undo the access='stream' setting. Note tricky $$ escaping.
+streamunset :
+	for file in *.f ; do sed -i -e "/^.*form=[']unformatted[']$$/N;s/\n     [$$]  ,access=[']stream[']//" $${file}; done
+	make
+
 #####################################################
 # Things to compile with non-standard switches
 # We make one of these the first thing in objects to force the header
@@ -252,17 +265,26 @@ $(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h
 	make -C accis
 	@if [ -f ./accis/$(VECX) ] ; then echo ; else echo "Failed making accis with $(VECX). Might need to specify a different driver."; fi
 
+vecx :
+	make clean
+	make VECX=vecx
+
 ######################################################
 testing : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a 
 	make -C testing
 	@echo Made tests in directory testing. Now running them to test.
 	make -C testing testing
 
-vecx :
+testanal : 
 	make clean
-	make VECX=vecx
+	make -C analysis clean
+	make
+	make -C analysis
+	analysis/partexamine -vtk T1e0v000P200L1e0z005x05
+	analysis/phiexamine T1e0v000P200L1e0z005x05.pha -w
+	analysis/fluxexamine -q T1e0v000P200L1e0z005x05.flx
+	@echo "******* Completed tests with no obvious analysis errors."
 
-#####################################################
 geometry : geometry/*.cks
 	rm -f T1*
 	date >>GeometryTests
@@ -304,13 +326,4 @@ coptic.prof : compiler makefile $(OBJECTS)
 help :
 	@echo Targets: clean mproper ftnchek tree coptic.prof vecx
 	@echo Tests:   geometry testing testanal
-
-testanal : 
-	make clean
-	make -C analysis clean
-	make
-	make -C analysis
-	analysis/partexamine -vtk T1e0v000P200L1e0z005x05
-	analysis/phiexamine T1e0v000P200L1e0z005x05.pha -w
-	analysis/fluxexamine -q T1e0v000P200L1e0z005x05.flx
-	@echo "******* Completed tests with no obvious analysis errors."
+	@echo Setup:   streamset streamunset

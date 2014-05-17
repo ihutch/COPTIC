@@ -10942,31 +10942,68 @@ volint.f       stored3geom. Probably will work.
 By test inspection, these seem to be the only places left where the 
 ifull is explicitly taken to be a 3-D array, and referenced that way.
 
-Chasing mpi rhoinf bug.
+There may well be reason to consider defining two versions of ndims.
+One would always be 3 to give the maximum dimensions allowed. 
+The other would be the actual number of active dimensions in this
+compile. The above things that might work require there to be length
+three vectors like ifull, iuds etc. They would use ndimsmax.
 
-95e8ba2b845fe60ca4ff7055ce1033acdbd96907
-seems last good. The next. ionsonly =
-9a5377830e380b61f0c0af93a38a0a28af2686a1
-is bad. The visible rhoinf is proportional to the number of processes
-for good case, not for bad case.
+Actually the coptic main program already is assuming the length of
+ifull because of its data statements.
 
-Found the bug. It was in the removal of partcom.f from psumreduce.
-nrein is in partcom.f. It must be there for the reduce. Or else
-nrein and phirein must be passed to psumreduce. 
-Incidentally reportprogress reports shortly after padvnc, before
-reduction. Therefore it has just the one node's nrein. Not the full
-sum.
+Implemented ndimsmax in ndimsdecl.f so as to be able to test whether
+things will compile with ndims set to 2. 
 
-Fixed this bug. It was present since 19 April 2014.
+Try ndims=2. This triggers a number of compile errors.
+Change the offending array definitions to ndimsmax.
+Then finally we can compile, but there are various errors.
+Progress till now is that we have errors in getlocal that seem to arise
+from the way cij has been initialized. No time to go further at the moment.
+To go back to 2d tests just set ndims=2 in ndimsdecl.f.
 
-Try to cherry pick 877b361318b35e23cfe56308ea67addd6a2f6672 the latest
-into ionsonly. Did not work.
+19 Apr 14
+Remove ndims from the argument list of 
+       chargetomesh
+       psumperiod
+       diagperiod
+Remove meshcom also from these. It was there only for declarations
+that are now in ndimsdecl (I think).
+make geometry shows no differences.
 
-Instead edited the ionsonly branch. Then commit. This made the ionsonly 
-branch disappear from gitk unless it is explicitly checked out, in which case
-the master commits disappear. Apparently now the two branches are truly 
-forked. Apparently also, github will only receive the master on push
-unless I do something else. 
+Make the charge assignment for each particle a separate routine.
+There might be slightly extra cost, but it is better structure.
 
-I found there was a need for numprocs too. Added that to the arguments
-(of both branches.)
+Remove all references to npdim, the dimension parameter in partcom
+from everything outside partcom.
+It is tricky to convert partcom to using ndims because the reduce
+routines have ndims as an argument and use partcom.
+I see no reason why they need partcom. And in fact it makes no difference
+if partcom inclusion is commented out.
+
+There's a problem with psumtoq. It uses partcom for rhoinf. That's a
+very bad use, but how does psumtoq get it otherwise? It is already using
+four arguments. One fix would be to increase the number of arguments
+in mditerarg to 5. That ought not to break anything else. 
+Did that and had to add some extra dum5 arguments to silence warnings.
+make geometry ok.
+
+Added ndimsdecl.f a few places. Then we can compile with no dependence
+on npdim from partcom.f. We've completely removed npdim in effect.
+
+Test commit
+
+Commit both branches. 
+
+Investigating more portable options for file writing. Fortran 2003 has
+access='stream' which gets rid of the record length indicators that are
+causes of differences between compilers. However g77 does not recognize
+it. It is an alternative to the access='sequential' that is used by 
+default. 
+
+Fixed creintest in testing/ make testing now does not give errors.
+
+Implemented make Setup streamset and streamunset that cause the 
+file writing to be access='stream' or undo it. This ought to be 
+used in situations where a FORTRAN 2003 compatible compiler is used
+and portability of the binary files is required. If g77 is desired
+the stream access cannot be used.
