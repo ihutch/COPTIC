@@ -11007,3 +11007,41 @@ file writing to be access='stream' or undo it. This ought to be
 used in situations where a FORTRAN 2003 compatible compiler is used
 and portability of the binary files is required. If g77 is desired
 the stream access cannot be used.
+
+20 May
+
+Trying to track down the remaining velocity diagnostic nonzeroes when 
+using drift electrons. I realize the cdist is not quite right. 
+I've implemented maxwellian with Ts and Tperp but drift only in the
+parallel direction. If I have perp drift, that's not correct.
+It is correct if there's no B-field. So it's only the Bt case that 
+is incorrect. I need to add on the vperp which is the drift perpendicular
+to the Bfield.
+
+There's a confusing problem in that I am using non-zero vdrift(1) to 
+indicate non-z drift, and setting it equal to a tiny value. It would 
+be better to test if vdrift(3) is exactly 1. Did that.
+
+We get a hang in the electron reinjection when they are colreinject
+if the ions are not. (Which they now aren't). This is some problem
+I don't understand with the colreinject multispecies handling. 
+Make everything in cdistcom into multi species, in colreinject, colreinit.
+Still hangs in invtfunc. Found the ncdist dependence problem and fixed.
+Things look better but we still have strange edge v-diagnostics.
+
+Working on tracking this down. It seems to come out of moveparticle.
+Furthermore it arises only when dtpos is smaller than standard. 
+This seems to make sense because it happens when dtpos*Bt*eoverms
+is smaller than the threshold. Perhaps it is not possible to put the
+drift case detection into moveparticle because of the possibility of
+a much reduced dtpos. We ought to make the decision once and for all
+for each species and treat all particles the same.
+
+Move the drift versus move decision into padvnc. 
+
+Found the problem with the zeroes in diagexamine and changed to require
+the divisor to have only gt 0 not gt 5.
+
+Looks as if the drift electrons are working.
+
+Commit.

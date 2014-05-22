@@ -107,7 +107,7 @@ c But as of 4 Dec 2013 the ndiags is phi, so don't normalize that.
          do k=1,iuds(3)
             do j=1,iuds(2)
                do i=1,iuds(1)
-                  if(abs(diagsum(i,j,k,1)).gt.5.)then
+                  if(abs(diagsum(i,j,k,1)).gt.0.)then
                      diagsum(i,j,k,id)=diagsum(i,j,k,id)/diagsum(i,j,k
      $                    ,1)
                   else

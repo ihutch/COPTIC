@@ -20,7 +20,7 @@ c Factor by which we leave additional space for increased number of
 c particles if not fixed:
       real slotsurplus
       real thetamax
-      parameter (thetamax=.1)
+      parameter (thetamax=1.)
 c-----------------------------------------------------------------
 c A special orbit. Preserved only for ispecies=1.
 c Pinit resets x_part. So set it for the special first particle.
@@ -61,8 +61,8 @@ c Conveniently here initialize distribution numbers.
          Eneutral=0.
 c Set tperp to a tiny number if species is infinitely magnetized.
          theta=Bt*eoverms(ispecies)*dt
-         if(abs(theta).gt.thetamax)Tperps(ispecies)=
-     $        0.001/sqrt(abs(eoverms(ispecies)))
+         if(abs(theta).gt.thetamax)Tperps(ispecies)=1.e-24
+c/sqrt(abs(eoverms(ispecies)))
 c         write(*,*)'theta=',theta,Bt,dt,Tperps(ispecies)
          notseparable(ispecies)=0
          if(colntime.ne.0..and.ispecies.eq.1)then
@@ -96,8 +96,10 @@ c then vdrift is not along a coordinate axis => nonseparable.
             if(nonzero.gt.1)then
                notseparable(ispecies)=3
                if(myid.eq.0)write(*,*)'Non-separable oblique vdrift'
-     $           ,(vdrifts(k,ispecies),k=1,ndims),' species',ispecies
+c     $           ,(vdrifts(k,ispecies),k=1,ndims),' species',ispecies
             endif
+c Test
+c               notseparable(ispecies)=3
          endif
          if(notseparable(ispecies).ge.2)then
 c This is where the collisionless distribution is really set.
@@ -507,8 +509,8 @@ c****************************************************************
 
 c Defaults
       do id=1,ndims
-         vlimit(1,id)=3.
-         vlimit(2,id)=-2.
+         vlimit(1,id)=1.
+         vlimit(2,id)=-1.
       enddo
 c Adjust vlimits
 c      do j=1,ncdist-1 I did not understand the -1.
@@ -582,6 +584,10 @@ c Ts will be taken as representing the temperature(s) in the direction of
 c the preferred axis. Tperps are then the temperatures in the perpendicular
 c direction (isotropic for now).
 
+c The triplet of unit vectors is 1-parallel (to B or v); 2-perpendicular to
+c 1 and to x, unless 1 happens to be in the x-direction, in which case 2
+c is perpendicular to 1 and y; 3-perpendicular to 1 and 2.
+
       implicit none
       integer nclim,ispecies
       real vzave
@@ -630,26 +636,31 @@ c Now we have 3 orthogonal unit vectors in vdirs(1:3,1:3,ispecies)
 c Save the thermal velocity
       vns(ispecies)=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
       vnp(ispecies)=sqrt(Tperps(ispecies)*abs(eoverms(ispecies)))
-
-c      write(*,*)'vns,vnp=',vns,vnp,ispecies
+c      write(*,'(3f10.4)'),((vdirs(i,j,ispecies),i=1,3),j=1,3)
+c      write(*,*)'ispecies,vns,vnp=',ispecies,vns,vnp
       if(ncdists(ispecies)+nclim.gt.ncdistmax)then
          write(*,*)'Trying to initialize too many random particles',
      $        ncdists(ispecies),'+',nclim,' in pinit.'
       else
          do j=ncdists(ispecies)+1,ncdists(ispecies)+nclim
 c Draw random parallel and perpendicular velocities, and add on the
-c parallel (only) drift velocity. 
+c drift velocity. 
             do i=1,ndims
                vcols(i,j,ispecies)
-     $              =(vns(ispecies)*gasdev(0)
-     $                     +vpars(ispecies))*vdirs(i,1,ispecies)
+     $              =vns(ispecies)*gasdev(0)*vdirs(i,1,ispecies)
      $              +vnp(ispecies)*gasdev(0)*vdirs(i,2,ispecies)
      $              +vnp(ispecies)*gasdev(0)*vdirs(i,3,ispecies)
+     $                     +vdrifts(i,ispecies)*vds(ispecies)
                vzave=vzave+vcols(i,j,ispecies)*vdrift(i)
 c Evaluate the total absolute fluxes in the three coordinate directions.
                cdistfluxs(i,ispecies)=cdistfluxs(i,ispecies)
      $              +abs(vcols(i,j,ispecies))
             enddo
+c            if(ispecies.eq.2.and.abs(vcols(2,j,ispecies)).gt.0.001
+c     $           .and.j.le.10)then
+c               write(*,*)'maxwell vynonzero',j,
+c     $              (vcols(i,j,ispecies),i=1,3)
+c            endif
          enddo
       endif
       ncdists(ispecies)=ncdists(ispecies)+nclim

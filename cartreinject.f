@@ -18,7 +18,7 @@ c colreinject started as the collisional reinjection scheme.
 c It is based upon sampling from a 3-D distribution function.
 c It can therefore be used for situations where the distribution
 c is not separable in coordinate directions.
-         call colreinject(xr,ipartperiod,caverein)
+         call colreinject(xr,ipartperiod,caverein,ispecies)
 c Only one launch allowed here (and actually in the other too).
          ilaunch=1
       endif
@@ -466,7 +466,7 @@ c The approximation is to represent the perpendicular distribution by
 c a Maxwellian shifted by the diamagnetic drift.
       endif
       vn=sqrt(2.*Ts(ispec)*abs(eoverms(ispec)))
-      if(vdrift(1).eq.0)then
+      if(vdrift(3).eq.1.)then
 c Z-drift cases. (equiv old)
          if(abs(idrein).eq.3)then
             u=(v-vd+ud-vdia)/vn
@@ -524,7 +524,7 @@ c      if(vdia.ne.0..and.abs(v-1.).lt.0.0005)then
 c         write(*,*)'v,ffdrein,idrein,vdia',v,ffdrein,idrein,vdia,id2,id3
 c      endif
       vn=sqrt(2.*Ts(ispec)*abs(eoverms(ispec)))
-      if(vdrift(1).eq.0.and.vdrift(2).eq.0.)then
+      if(vdrift(3).eq.1.)then
 c Z-drift cases. (equiv old)
          if(abs(idrein).eq.3)then
 c In z-direction use appropriate drift distribution.
@@ -784,9 +784,9 @@ c      if(ninjcompa(ispecies).le.0)ninjcompa(ispecies)=1
             nparta(ispecies)=ripn*volume
      $           / numratioa(ispecies)
 
-      write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp'
-      write(*,*) ispecies,ripn,dtin,cfactor,flux
-     $     ,nparta(ispecies),ninjcompa(ispecies)
+c      write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp'
+c      write(*,*) ispecies,ripn,dtin,cfactor,flux
+c     $     ,nparta(ispecies),ninjcompa(ispecies)
             
             
             nrein=ninjcomp*numprocs
@@ -841,27 +841,27 @@ c********************************************************************
 c********************************************************************
 c Reinjection based upon sample distribution for collisional
 c distributions. 
-      subroutine colreinject(xr,ipartperiod,cdummy)
+      subroutine colreinject(xr,ipartperiod,cdummy,ispecies)
       implicit none
 c Collisional distribution data.
       include 'ndimsdecl.f'
       include 'cdistcom.f'
       real xr(3*ndims)
       real cdummy
-      integer ipartperiod(ndims)
+      integer ipartperiod(ndims),ispecies
 c Reinjection data needed for idrein only, needed for creintest only.
       include 'creincom.f'
       include 'meshcom.f'
 c Local data
       real ra,ran1,face,fr,rx
-      integer i,id,k,iother
+      integer i,id,k,iother,ip
       external ran1
 
 c Choose the normal-dimension for reinjection, from cumulative dist.
  2    ra=ran1(1)
       do i=1,ndims
          id=i
-         if(ra.lt.cdistcum(i+1))goto 1
+         if(ra.lt.cdistcums(i+1,ispecies))goto 1
       enddo
  1    continue
       idrein=id
@@ -869,13 +869,21 @@ c Grab a random v-sample. Needs to be changed to reflect not just a
 c random grab,
 c      call colvget(xr(ndims+1))
 c but a grab weighted by the normal-dimension mod-v:
-      ra=ran1(1)*fxvcol(ncdist+1,id)
-      call invtfunc(fxvcol(1,id),ncdist+1,ra,rx)
+      ra=ran1(1)*fxvcols(ncdists(ispecies)+1,id,ispecies)
+c      write(*,*)'calling invtfunc',ncdists(ispecies)+1,ra,rx,fxvcols(1
+c     $     ,id,ispecies),fxvcols(ncdists(ispecies)+1,id,ispecies),id
+c     $     ,ispecies
+      call invtfunc(fxvcols(1,id,ispecies),ncdists(ispecies)+1,ra,rx)
 c Now the integer part of rx is the index of the chosen particle.
-      k=int(rx)
+      ip=int(rx)
       do i=1,ndims
-         xr(ndims+i)=v_col(i,k)
+         xr(ndims+i)=vcols(i,ip,ispecies)
       enddo
+c      if(ispecies.eq.2.and.abs(xr(ndims+2)).gt..001)then
+c         write(*,*)'colreinject vynonzero',rx,ip,ra
+c         write(*,*)(xr(i),i=1,6)
+c         stop
+c      endif
 
 c Determine face
       if(ipartperiod(id).ge.3)then
@@ -902,6 +910,10 @@ c Position: Ensure we never quite reach the mesh edge:
          fr=ran1(0)*0.999999+.0000005
          xr(iother)=xmeshstart(iother)*(1-fr)+xmeshend(iother)*fr
       enddo
+c      if(xr(5).gt..001)then
+c         write(*,*)'colreinject ',ra,rx,ip,id,ipartperiod(id)
+c         write(*,*)(xr(k),k=1,6)
+c      endif
       end
 
 c********************************************************************
@@ -912,7 +924,7 @@ c Based upon the ipartperiod settings.
       include 'ndimsdecl.f'
       include 'cdistcom.f'
       include 'partcom.f'
-      if(ncdist.eq.0)return
+      if(ncdists(ispecies).eq.0)return
       ctot=0.
       do i=1,ndims
 c         if(myid.eq.0)write(*,*)ipartperiod(i),cdistflux(i)
@@ -920,13 +932,14 @@ c         if(myid.eq.0)write(*,*)ipartperiod(i),cdistflux(i)
          ctot=ctot+cdistfluxs(i,ispecies)
       enddo
       if(ctot.ne.0.)then
-         cdistcum(1)=0.
+         cdistcums(1,ispecies)=0.
          do i=1,ndims
             cdistfluxs(i,ispecies)=cdistfluxs(i,ispecies)/ctot
-            cdistcum(i+1)=cdistcum(i)+cdistfluxs(i,ispecies)
+            cdistcums(i+1,ispecies)=cdistcums(i,ispecies)
+     $           +cdistfluxs(i,ispecies)
          enddo
 c Avoid rounding problems.
-         cdistcum(ndims+1)=1.
+         cdistcums(ndims+1,ispecies)=1.
       else
          if(myid.eq.0)write(*,*
      $        )'PROBLEM. colreinject: No reinjection faces'
@@ -934,9 +947,10 @@ c Avoid rounding problems.
 
 c Now evaluate the cumulative distribution in 3 normal-directions.
       do id=1,ndims
-         fxvcol(1,id)=0.
-         do i=1,ncdist
-            fxvcol(i+1,id)=fxvcol(i,id)+abs(vcols(id,i,ispecies))
+         fxvcols(1,id,ispecies)=0.
+         do i=1,ncdists(ispecies)
+            fxvcols(i+1,id,ispecies)=fxvcols(i,id,ispecies)
+     $           +abs(vcols(id,i,ispecies))
          enddo
       enddo
 c There's a resolution issue in that a million steps can hardly

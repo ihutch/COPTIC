@@ -334,7 +334,7 @@ c---------------------------------------------
       phirein=0.
       ninjcomp0=ninjcomp
       if(ninjcomp.ne.0.and.lmyidhead)
-     $     write(*,*)'Fixed injection count:',ninjcomp
+     $     write(*,*)'Fixed ion injection count:',ninjcomp
       maccel=nsteps/3
       dtf=dt
 c-----------------------------------------------
@@ -397,6 +397,7 @@ c-----------------------------------------------
       endif
       call mditerset(psum,ndims,ifull,iuds,0,0.)
 c This call is necessary for restart with fluid electrons.
+c      write(*,*)'Initial chargetomesh call',ndiags
       call chargetomesh(psum,iLs,diagsum,ndiags) 
 c For any other species, do their advance (with dt=dtf) so as
 c to deposit smoothed charge. This breaks restart. Therefore 
@@ -555,11 +556,11 @@ c Output parameter development to stdout.
 
 c write out flux to object 1.
             write(*,'(f6.3,''| '',$)')fluxdiag()
-            if(nspecies.gt.1)write(*,*)'Species deposits'
-     $           ,(k,nparta(k),k=1,nspecies)
-c            write(*,'(f6.3,''| '',$)')n_part/(rhoinf*1000)
-c            write(*,'(i6,''| '',$)')n_part
-            if(mod(nf_step,5).eq.0)write(*,*)
+            if(nspecies.gt.1)then
+               write(*,*)(k,nparta(k),k=1,nspecies)
+            else
+               if(mod(nf_step,5).eq.0)write(*,*)
+            endif
             if(mod(nf_step,(nsteps/25+1)*5).eq.0)then
                write(*,
      $    '(''nrein,n_part,ioc_part,rhoinf,dt='',i6,i9,i9,2f10.3)')
@@ -616,7 +617,10 @@ c to the previously zeroed values).
      $           ,ifull,iuds,ipin,uave)
             if(lmyidhead)then
 c If I'm the head, write it.
-               write(*,'(a,i3,a,i3)')'Diags',ndiags,' ',ispecies
+               if(ispecies.eq.1)write(*,'(a,i3,a,$)')'Diags',ndiags
+     $              ,' species'
+               write(*,'(a,i1,$)')' ',ispecies
+               if(ispecies.eq.nspecies)write(*,*)
                if(ispecies.eq.1)then
                   if(nsteps.gt.9999)then
                      write(argument,'(''.dia'',i5.5)')nf_step

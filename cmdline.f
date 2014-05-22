@@ -372,12 +372,12 @@ c-------------------------------------------------------
  202  continue
       do ispecies=1,nspecies
          if(vdrifts(1,ispecies).ne.0. .or. vdrifts(2,ispecies).ne.0)then
-c --- Drift in direction other than z. Normalize cosines.
+c --- Drift in direction other than z. Normalize vdrifts cosines.
             vwork=0.
             do i=1,ndims
 c Make all the vdrift components non-zero so that we can use that fact
 c as an indicator of non-z drift.
-               if(vdrifts(i,ispecies).eq.0.)vdrifts(i,ispecies)=1.e-25
+c               if(vdrifts(i,ispecies).eq.0.)vdrifts(i,ispecies)=1.e-25
                vwork=vwork+vdrifts(i,ispecies)**2
             enddo
             vwork=sqrt(vwork)
@@ -403,6 +403,7 @@ c --- Deal with B-field
       if(gnt.ne.0.)then
          if(Bt.ne.0.)then
             if(Bdotgn.gt.1.e-5*Bt*gnt)then
+c Complain if there's a B-component in the gradient direction.
                message='**Density gradient parallel to Bt not allowed'
                goto 203
             endif
@@ -424,7 +425,8 @@ c Flag an inappropriate field and dt combination
          endif
          do ispecies=1,nspecies
 c This test is redundant now. Should use the general (else) case.
-            if(vdrifts(1,ispecies).eq.0)then
+c            if(vdrifts(1,ispecies).eq.0)then
+            if(.false.)then
 c Assume that vds(ispecies) is in the z-direction
                vpars(ispecies)=vds(ispecies)*Bfield(ndims)
                do i=1,ndims

@@ -9,7 +9,11 @@ c Requires ndimsdecl.f to give ndims
 c Multispecies
       integer ncdists(nspeciesmax)
       real vcols(ndimsmax,ncdistmax,nspeciesmax)
+      real fxvcols(ncdistmax+1,ndims,nspeciesmax)
       real cdistfluxs(ndimsmax,nspeciesmax)
+      real cdistcums(ndimsmax+1,nspeciesmax)
       equivalence (v_col,vcols),(cdistflux,cdistfluxs)
       equivalence (ncdist,ncdists)
-      common /cdistcom/ncdists,vcols,cdistfluxs,cdistcum,fxvcol
+      equivalence (fxvcol,fxvcols)
+      equivalence (cdistcum,cdistcums)
+      common /cdistcom/ncdists,vcols,cdistfluxs,cdistcums,fxvcols

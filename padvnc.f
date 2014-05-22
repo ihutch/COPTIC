@@ -32,6 +32,8 @@ c Lowest particle to print debugging data for.
       parameter (npr=0)
       real fieldtoosmall
       parameter (fieldtoosmall=1.e-3)
+      real thetamax
+      parameter (thetamax=1.)
 c Local storage
       parameter (fieldtoolarge=1.e12)
       integer ixp(ndims)
@@ -51,6 +53,8 @@ c-------------------------------------------------------------
       ncollided=0
       ic1=2*ndims+1
       ndimsx2=2*ndims
+      theta=abs(dt*Bt*eoverms(ispecies))
+
 c-----------------------------------------------------------------
 c Initialize. Set reinjection potential. We start with zero reinjections.
       if(ispecies.eq.1)call cavereinset(phirein)
@@ -88,7 +92,7 @@ c more active particles above it. So break from do loop.
             goto 102
          else
 c Unoccupied but there might be slots occupied above so just cycle.
-            goto 300
+            goto 400
          endif
 c================ Occupied Slot Treatment =================
 c Occupied slot. Get its region
@@ -225,7 +229,7 @@ c Reinject if we haven't exhausted complement:
      $           .or. nrein.lt.ninjcompa(ispecies))goto 200
 c Else empty slot and move to next particle.
             x_part(iflag,i)=0
-            goto 300            
+            goto 400            
          endif
 c Accelerate ----------
 c Here we only include the electric field force. 
@@ -264,9 +268,20 @@ c But correcting the collisional force appropriately.
             endif
          endif
 c Move ----------------
-         call moveparticle(x_part(1,i),ndims,Bt*eoverms(ispecies)
+         if(abs(theta).lt.thetamax)then
+            call moveparticle(x_part(1,i),ndims,Bt*eoverms(ispecies)
      $        ,Efield,Bfield,vperp,dtpos,i-iicparta(ispecies))
+         else
+            call driftparticle(x_part(1,i),ndims,Bt*eoverms(ispecies)
+     $           ,Efield,Bfield,vperp,dtpos,i-iicparta(ispecies))
+         endif
          dtdone=dtdone+dtpos
+c         if(ispecies.eq.2.and.abs(x_part(ndims+2,i)).gt.0.001
+c     $        .and.i.lt.131000)then
+c Test if we have a non-zero vy.
+c            write(*,*)'Aftermove vynonzero',i,theta
+c            write(*,*)(x_part(k,i),k=1,6)
+c         endif
 c ---------------- End Particle Advance -------------
 c ---------------- Special Conditions -------------
          if(lcollided)then
@@ -291,7 +306,7 @@ c We left the mesh or region.
 c Reinject because we haven't exhausted complement. 
 c Else empty slot and move to next particle.
             x_part(iflag,i)=0
-            goto 300
+            goto 400
          endif
 c--------------------------------------------
          x_part(idtp,i)=dtpos
@@ -320,8 +335,15 @@ c================= End of Occupied Slot Treatement ================
 c----------- Reinjection treatment -----------
  200     continue
          x_part(iflag,i)=1
+c         write(*,*)'Calling reinject',i,ispecies
          call reinject(x_part(1,i),ilaunch,ispecies)
          call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
+c         if(ispecies.eq.2.and.abs(x_part(5,i)).gt..001
+c     $        .and.i.lt.131000)then
+c Testing
+c            write(*,*)'reinject vynonzero',i
+c            write(*,*)(x_part(j,i),j=1,6)
+c         endif
          if(.not.linmesh)then
             write(*,*)'Reinject out of mesh',i,xfrac
             stop
@@ -373,6 +395,13 @@ c     $           ,diagsum(1+iLs(ndims+1)*(ndiagmax+1)*(ispecies-1)+1)
 c End of icycle step subloop.
          enddo
 c End of this particle's advance.
+c         if(ispecies.eq.2.and.abs(x_part(ndims+2,i)).gt.0.001
+c     $        .and.i.lt.131000)then
+c Test if we have a non-zero vy.
+c            write(*,*)'vynonzero',i
+c            write(*,*)(x_part(k,i),k=1,6)
+c         endif
+ 400     continue
       enddo
       write(*,*)'nrein=',nrein
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -811,31 +840,30 @@ c Normalize the bulkforce, multiplying by factor fac
       enddo
       end
 c *******************************************************************
-      subroutine moveparticle(x_part,ndims,Bt,Efield,Bfield,vperp
+      subroutine moveparticle(xr,ndims,Bt,Efield,Bfield,vperp
      $     ,dtpos,k)
+c Move the passed particle in the fields B,E for timestep dtpos.
+c The Bt passed to this routine has been multiplied by eoverms already.
+c
       implicit none
       integer ndims,k
       real Bt,dtpos
-      real x_part(2*ndims,1),Bfield(ndims),Efield(ndims)
+      real xr(2*ndims),Bfield(ndims),Efield(ndims)
       real vperp(ndims)
       integer j
 c Local      
-      real theta,stheta,ctheta,vp
+      real theta,stheta,ctheta
       real xg(3),xc(3),EB(3)
       real thetatoosmall
       parameter (thetatoosmall=1.e-3)
       real thetamax
       parameter (thetamax=1.)
-      integer i,k1,k2
-      i=1
+      integer k1,k2
       theta=Bt*dtpos
-c      if(k.lt.5)then
-c         write(*,'(a,2f8.2,7f8.4)')'theta=',theta,Bt,dtpos,Efield,Bfield
-c      endif
       if(abs(theta).eq.0.)then
 c B-field-less Move -----------------------------
          do j=1,ndims
-            x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos
+            xr(j)=xr(j)+xr(j+ndims)*dtpos
          enddo          
          return
       endif
@@ -847,7 +875,7 @@ c Only if Bt!=0:
 c Explicit ExB velocity plus vperp
          EB(j)=vperp(j)+(Efield(k1)*Bfield(k2)-Efield(k2)*Bfield(k1))/Bt
       enddo
-      if(abs(theta).lt.thetamax)then
+c      if(abs(theta).lt.thetamax)then
 c Magnetic field non-zero but finite -------------
 c Rotation is counterclockwise for ions. We only want to call the 
 c trig functions once, otherwise they dominate the cost.
@@ -857,61 +885,99 @@ c            if(i.eq.1)write(*,*)'theta=',theta,thetatoosmall
          if(theta.lt.thetatoosmall)then
 c Weak B-field. Advance using summed accelerations. First half-move
             do j=1,ndims
-               x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
+               xr(j)=xr(j)+xr(j+ndims)*dtpos*0.5
             enddo          
 c Rotate the velocity to add the magnetic field acceleration.
 c This amounts to a presumption that the magnetic field acceleration
 c acts at the mid-point of the translation (drift) rather than at
 c the kick between translations.
-            call rotate3(x_part(4,i),stheta,ctheta,Bfield)
+            call rotate3(xr(4),stheta,ctheta,Bfield)
 c Second half-move.
             do j=1,ndims
-               x_part(j,i)=x_part(j,i)+x_part(j+ndims,i)*dtpos*0.5
+               xr(j)=xr(j)+xr(j+ndims)*dtpos*0.5
             enddo          
          else
 c Strong but finite B-field case:
 c Subtract off the perpendicular drift velocity.
             do j=ndims+1,2*ndims
-               x_part(j,i)=x_part(j,i)-EB(j-ndims)
+               xr(j)=xr(j)-EB(j-ndims)
             enddo
 c Find the gyro radius and gyrocenter.
-            call gyro3(Bt,Bfield,x_part(1,i),x_part(4,i),xg,xc)
+            call gyro3(Bt,Bfield,xr(1),xr(4),xg,xc)
 c Rotate the velocity and gyro radius.
-            call rotate3(x_part(4,i),stheta,ctheta,Bfield)
+            call rotate3(xr(4),stheta,ctheta,Bfield)
             call rotate3(xg,stheta,ctheta,Bfield)
 c Move xc along the B-direction.
-            call translate3(xc,x_part(4,i),dtpos,Bfield,xc)
+            call translate3(xc,xr(4),dtpos,Bfield,xc)
 c Add the new gyro center and gyro radius
 c And add back the drift velocity.
             do j=1,ndims
 c Move the gyro-center perpendicular and add gyro-radius:
-               x_part(j,i)=xc(j)+EB(j)*dtpos+xg(j)
+               xr(j)=xc(j)+EB(j)*dtpos+xg(j)
 c Add back EB.
-               x_part(j+ndims,i)=x_part(j+ndims,i)+EB(j)
+               xr(j+ndims)=xr(j+ndims)+EB(j)
             enddo
          endif
-c 801        format(a,6f10.6)
-c            if(i.le.npr)write(*,801)'x_part2',(x_part(k,i),k=1,6)
-      else
+
+c      else
+c         call driftparticle(xr,ndims,Bt,Efield,Bfield,vperp
+c     $        ,dtpos,k)
+c      endif
+c End of Move -----------------------------------------------------
+      end
+c********************************************************************
+      subroutine driftparticle(xr,ndims,Bt,Efield,Bfield,vperp
+     $     ,dtpos,k)
+c Drift particle instead of move for cases of large Bt.
+      implicit none
+      integer ndims,k
+      real Bt,dtpos
+      real xr(2*ndims),Bfield(ndims),Efield(ndims)
+      real vperp(ndims)
+      integer j
+c Local
+      real EB(3)
+      real vp
+      integer k1,k2
+
+      do j=1,ndims
+         k1=mod(j,ndims)+1
+         k2=mod(j+1,ndims)+1
+c Explicit ExB velocity plus vperp
+         EB(j)=vperp(j)+(Efield(k1)*Bfield(k2)-Efield(k2)*Bfield(k1))/Bt
+      enddo
 c Drift motion parallel plus EB.
 c Set non-drift perp particle velocity to zero.
 c Bfield is normalized: i.e. a direction cosine, so parallel velocity
-         vp=0.
-         do j=1,ndims
+      vp=0.
+      do j=1,ndims
 c v_parallel
-            vp=vp+Bfield(j)*x_part(j+ndims,i)
-         enddo
-         do j=1,ndims
+         vp=vp+Bfield(j)*xr(j+ndims)
+      enddo
+      do j=1,ndims
 c Parallel particle and perpendicular drift move:
-            x_part(j,i)=x_part(j,i)
-     $           +(vp*Bfield(j)+EB(j))*dtpos
+         xr(j)=xr(j)
+     $        +(vp*Bfield(j)+EB(j))*dtpos
 c Reset perp velocity to just the drift. Effectively we remove the 
 c perpendicular energy forcing the magnetic moment to zero. This
 c is necessary because the perpendicular acceleration has been applied
 c improperly for the whole timestep.
-            x_part(j+ndims,i)=vp*Bfield(j)+EB(j)
-         enddo
-      endif
-c End of Move -----------------------------------------------------
+         xr(j+ndims)=vp*Bfield(j)+EB(j)
+      enddo
+c      if(abs(xr(ndims+2)).gt.0.001)then
+c Test if we have a non-zero vy.
+c         write(*,*)'driftparticle nonzerovy',Efield
+c         write(*,*)dtpos,Bt
+c         write(*,*)vp,Bt,Bfield,EB
+c         write(*,*)(xr(k),k=1,6)
+c      endif
+c      if(abs(xr(ndims+1)-.5).gt.0.01)then
+c Test if we have a vx different from .5
+c         write(*,*)'driftparticle strangevx',Efield
+c         write(*,*)dtpos,Bt
+c         write(*,*)vp,Bt,Bfield,EB
+c         write(*,*)(xr(k),k=1,6)
+c      endif
+
       end
-c********************************************************************
+c*********************************************************************

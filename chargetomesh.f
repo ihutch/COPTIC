@@ -149,6 +149,7 @@ c call actually initializes the iview and indi.
 
       do id=1,ndims
          if(ipartperiod(id).eq.4)then
+c            write(*,*)'Diagperiod',id
 c Set view to entire array (Offsets indi [0:iaux(id)-1]).
             icomplete=mditerator(ndims,iview,indi,4,iaux)
 c Use the general iterator to sum periodically.

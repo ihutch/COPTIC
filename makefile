@@ -9,7 +9,7 @@ LIBPATH= -L./accis/ -L/usr/lib/mesa
 #########################################################################
 # Test whether X libraries are found. Null => yes.
  TESTGL:=$(shell ld  $(LIBPATH) -lGLU -lGL -o /dev/null none.o 2>&1 | grep GL)
- TESTX11:=$(shell ld $(LIBPATH) -lXt -lX11 -o /dev/null none.o 2>&1 | grep X)
+ TESTX11:=$(shell ld $(LIBPATH) -lX11 -o /dev/null none.o 2>&1 | grep X)
 ##########################################################################
 # The reinjection choice:
 #######################
@@ -81,7 +81,7 @@ ifeq ("$(G77)","")
 #	endif
 endif
 # In g77 -Wno-globals silences spurious type messages on reduce.f
-# This is unrecognized by gfortan. For which no-unused is better.
+# This is unrecognized by gfortran. For which no-unused is better.
 ifeq ("$(G77)","mpif77 -f77=g77")	
   NGW=-Wno-globals
 endif
@@ -301,17 +301,44 @@ mproper :
 	make -C analysis clean
 
 ftnchek :
-	./ftnchekrun "$(COPTIC).f $(OBJECTS)" >ftnchek.output
-	@echo To view do: google-chrome CallTree.html
-	less ftnchek.output
+	ftnchek  -nopure\
+ -truncation=no-significant-figures\
+ -usage=no-com-block-unused,no-var-set-unused,no-arg-array-alias,no-ext-unused\
+ -arguments=no-arrayness\
+ -noarray -noextern\
+ -calltree=tree,no-prune\
+ -nonovice\
+ -mkhtml=vars-and-consts-lowercase,keywords-lowercase\
+ -quiet\
+ `echo "$(COPTIC).f $(OBJECTS)" | sed -e "s/[.]o/[.]f/g"` >ftnchek.output
+	@echo To view do: firefox CallTree.html
+	@less ftnchek.output
 
 tree :
-	./ftnchekrun "-nocheck $(COPTIC).f $(OBJECTS)"
+	ftnchek  -nopure\
+ -truncation=no-significant-figures\
+ -usage=no-com-block-unused,no-var-set-unused,no-arg-array-alias,no-ext-unused\
+ -arguments=no-arrayness\
+ -noarray -noextern\
+ -calltree=tree,no-prune\
+ -nonovice\
+ -mkhtml=vars-and-consts-lowercase,keywords-lowercase\
+ -quiet -nocheck\
+ `echo "$(COPTIC).f $(OBJECTS)" | sed -e "s/[.]o/[.]f/g"` >ftnchek.output
 	@echo To view do: 
 	firefox CallTree.html
 
 vcg :
-	./ftnchekrun "-nocheck -vcg $(COPTIC).f $(OBJECTS)"
+	ftnchek  -nopure\
+ -truncation=no-significant-figures\
+ -usage=no-com-block-unused,no-var-set-unused,no-arg-array-alias,no-ext-unused\
+ -arguments=no-arrayness\
+ -noarray -noextern\
+ -calltree=tree,no-prune\
+ -nonovice\
+ -mkhtml=vars-and-consts-lowercase,keywords-lowercase\
+ -quiet -nocheck -vcg\
+ `echo "$(COPTIC).f $(OBJECTS)" | sed -e "s/[.]o/[.]f/g"`
 
 fordocu :
 	testing/fordocu.sh "$(COPTIC).f $(OBJECTS)"
