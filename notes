@@ -11246,7 +11246,7 @@ it is not clear that it will matter. Leave it for now.
 commit
 
 We still have not got different masses implemented. It's a bit
-annoying that we have the mass rmtov rather than the inverse of the mass.
+annoying that we have the mass rmtoz rather than the inverse of the mass.
 The places where mass makes a difference is in padvnc acceleration, in 
 particle initialization, and in reinjection. (We haven't tackled flux
 accumulation yet.)
@@ -11268,7 +11268,7 @@ Change eoverms to represent the sign of the charge as well as mass.
 Make the reference abs(eoverms()) whereever it is governing a thermal
 velocity width. 
 
-The ripernode for higher ispecies if governed by quasineutrality, when
+The ripernode for higher ispecies, if governed by quasineutrality, when
 -ni is set for ions, is equal to nion/volume. So do
             if(ispecies.gt.1)ripn=nparta(1)/volume
 in ninjcalc. Now I think ninjcalc is correct for electrons.
@@ -11559,7 +11559,7 @@ Investigating more portable options for file writing. Fortran 2003 has
 access='stream' which gets rid of the record length indicators that are
 causes of differences between compilers. However g77 does not recognize
 it. It is an alternative to the access='sequential' that is used by 
-default. 
+default. (Pathscale does not support it!)
 
 Fixed creintest in testing/ make testing now does not give errors.
 
@@ -11612,3 +11612,23 @@ May 16 appeared to lose major portions of the May notes. I take the
 latest notes and laminate it onto the notes from the prior commit
 defd4fd. That way I seem to have recovered most of the lost information.
 However, I am puzzled as to how this loss occurred.
+
+Checksum on uniformelec is different. Reset.
+
+25 Jun 2014
+
+My tests of ran1 for numerical methods shows that it has only a very 
+limited number of independent samples. Although this probably doesn't
+matter much, it would still be a good practice to replace it with a
+better code. I have a copy of RANLUX which is self-contained 
+restartable fortran. My tests show it is much better than ran1 even
+at the lowest level of luxury; (luxury means throwing away some of the 
+random numbers to improve randomness.) 
+
+First tried make testing. Found a bug in sortest. This led to a hunt for
+a major hidden segfault bug. Eventually found in a remnant argument to
+meshconstruct. Really bad. Don't know how long that's been there. Fixed.
+
+Found checksum differences in make geometry. Not all: baresheath[2],
+geomsmall, geomthin, uniform4. Turns out those are all cases that do
+not have partperiod set.

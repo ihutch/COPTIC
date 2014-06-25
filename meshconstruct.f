@@ -6,9 +6,10 @@ c values starting imeshstep.
 c Return values of iuds(ndims) per constructed mesh.
 c Also return the value of rs equal to half the largest mesh box side
 c length.
-      subroutine meshconstruct(mdims,iuds,ifull,ipartperiod,rs)
+      subroutine meshconstruct(mdims,iuds,ifull,ipartperiod)
       integer iuds(mdims),ifull(mdims),ipartperiod(mdims)
       real rs
+      integer iof
       include 'ndimsdecl.f'
       include 'meshcom.f'
 

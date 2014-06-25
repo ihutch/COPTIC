@@ -23,6 +23,7 @@ c Structure vector needed for finding adjacent u values.
       character*256 argline
       logical ltestplot,lsliceplot,linjplot
       logical lmyidhead,lphiplot,lpgraph
+      real dum(na_m,na_m,na_m)
       integer ipstep,idebug
       real CFin(3+ndims,2*ndims)
       integer ipartperiod(ndims)
@@ -67,20 +68,30 @@ c Deal with command-line arguments; not all valid here.
       call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
-     $     ,colntime,dt,bdt,subcycle,dropaccel,eoverm,Bfield,Bt,ninjcomp
-     $     ,nsteps,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
-     $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
-     $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
-     $     ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies,nspeciesmax
-     $     ,numratioa)
+     $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
+     $     ,ninjcomp ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax
+     $     ,debyelen,Ti ,iwstep ,idistp,lrestart,restartpath,extfield
+     $     ,objfilename ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin
+     $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
+     $     ,idims,argline ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
+     $     ,nspeciesmax,numratioa,Tperps)
+c      call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
+c     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
+c     $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
+c     $     ,colntime,dt,bdt,subcycle,dropaccel,eoverm,Bfield,Bt,ninjcomp
+c     $     ,nsteps,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
+c     $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
+c     $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
+c     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
+c     $     ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies,nspeciesmax
+c     $     ,numratioa)
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
 c Geometry and boundary information. Read in.
       if(idebug.gt.0)write(*,*)'Calling readgeom',myid,ifull,lmyidhead
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
-      if(idebug.gt.0)write(*,*)'Finished readgeom'
+      if(idebug.gt.0)write(*,*)'Finished with readgeom'
 c---------------------------------------------------------------
 c Construct the mesh vector(s) from the geometry info.
       call meshconstruct(ndims,iuds,ifull,ipartperiod)
@@ -167,8 +178,12 @@ c Putting the finalize here prevents end mpi-crashes.
 c
 c-------------------------------------------------------------------
       if(lmyidhead)then
-         if(ltestplot)call sliceGweb(ifull,iuds,u,na_m,zp,
+         if(ltestplot)then
+            ifix=1
+            write(*,*)'Calling sliceGweb',ifull,iuds,na_m,ixnp,ifix
+            call sliceGweb(ifull,iuds,u,na_m,zp,
      $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0),dum,dum)
+         endif
 
 c This only does anything if object 2 is an outer sphere.
          if(idebug.gt.0)write(*,*)'Calling vaccheck',rs,ltestplot
