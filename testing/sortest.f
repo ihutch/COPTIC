@@ -94,7 +94,7 @@ c Geometry and boundary information. Read in.
       if(idebug.gt.0)write(*,*)'Finished with readgeom'
 c---------------------------------------------------------------
 c Construct the mesh vector(s) from the geometry info.
-      call meshconstruct(ndims,iuds,ifull,ipartperiod)
+      call meshconstruct(ndims,iuds,ifull,ipartperiod,rs)
       if(lmyidhead)write(*,'(a,3i4,6f8.3)')
      $     ' Constructed mesh',iuds
      $     ,(xmeshstart(k),xmeshend(k),k=1,ndims)

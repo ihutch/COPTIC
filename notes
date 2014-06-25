@@ -11632,3 +11632,24 @@ meshconstruct. Really bad. Don't know how long that's been there. Fixed.
 Found checksum differences in make geometry. Not all: baresheath[2],
 geomsmall, geomthin, uniform4. Turns out those are all cases that do
 not have partperiod set.
+
+Back-track versions to establish where the difference happened.
+
+e2a35b87301a8574983aed59df535919f4971611 OK
+
+Just prior to now:
+1c738f8cbde093915c72141a003e39965db16d63 OK except for
+geometry/uniformelec.cks:
+1c1
+< 19669    34
+---
+> 31687    34
+Wed Jun 25 15:20:40 EDT 2014
+There's a diff in uniformelec.cks, but no others.
+Putting back the meshconstruct bug, the cks differences go away (except
+the uniformelec). Goodness knows what it did, but fixing that bug made
+the checksums change. I see that the coptic call has the extra argument
+therefore removing it from the meshconstruct was wrong. I should have
+added it to the sortest call.
+
+Backtrack the meshconstruct fix, and correct it to a sortest fix.
