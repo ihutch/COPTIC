@@ -11628,6 +11628,7 @@ random numbers to improve randomness.)
 First tried make testing. Found a bug in sortest. This led to a hunt for
 a major hidden segfault bug. Eventually found in a remnant argument to
 meshconstruct. Really bad. Don't know how long that's been there. Fixed.
+[Mistake. See below]
 
 Found checksum differences in make geometry. Not all: baresheath[2],
 geomsmall, geomthin, uniform4. Turns out those are all cases that do
@@ -11653,3 +11654,27 @@ therefore removing it from the meshconstruct was wrong. I should have
 added it to the sortest call.
 
 Backtrack the meshconstruct fix, and correct it to a sortest fix.
+
+Now think about ran1 replacement. There is an issue with restart.
+Gasdev has an internal state that needs to be saved along with the 
+ranlux restart information. Also the code needs to call the transfer
+operations to get the ranlux state in and out. That probably can be done
+in partwrite/read. That's where it is currently done in effect.
+
+There are maybe 80 calls to ran1 in the code base. Do I want to change
+all those calls, or do I want a wrapper. I think I probably want to change.
+First thing to do is to add extra restart capability that stores and 
+resets ranlux. Did that and git added ranlux.f. Checks ok. 
+
+Insert rluxgo calls as appropriate in coptic.f.
+Replace all ran1 calls outside randf.f with ranlux calls. 
+Replace gasdev random with ranlux. These changes change the make
+test. They should. Turning off the ran1 initialization in coptic.
+I find we can remove ran1 from the code base and still compile.
+./check gives no errors. Same with /check50. Basically seems to be working.
+
+Remake the geometry cks. Then those check out with subsequent makes.
+(Of course.)
+
+Finished replacing ran1 with ranlux. But haven't ripped out all the old
+code.

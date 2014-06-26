@@ -53,33 +53,20 @@ c My mpi id
       close(22,status='delete')
       open(22,file=name,status='new',form='unformatted',err=101)
 
-      if(.false.)then
-c Old format.
-         write(charout,51)debyelen,Ti,vd,rs,phip
- 51      format('V2. debyelen,Ti,vd,rs,phip:',5f10.4)
-         write(22)charout
-         write(22)debyelen,Ti,vd,rs,phip
-         write(22)ranstate
-         write(22)ioc_part
-         write(22)iic_part,n_part,dt,ldiags,rhoinf,nrein,
-     $        phirein,numprocs,
-     $        ((x_part(j,i),j=1,iflag),i=1,ioc_part)
-         write(22)(x_part(idtp,i),i=1,ioc_part)
-         write(22)eoverm,Bt,Bfield,vpar,vperp
-         write(22)caverein,chi
-      else
 c New MV format
-         write(charout,52)debyelen,rs,phip,dt,ldiags
- 52      format('MV1. debyelen,rs,phip,dt,ldiags:',4f10.4,l5)
-         write(22)charout
-         write(22)debyelen,rs,phip,dt,ldiags
-         write(22)ranstate
-         write(22)nspecies,rhoinf,nrein,phirein,numprocs
-         write(22)Bt,Bfield,caverein,chi
-         write(22)iocparta,iicparta,nparta,eoverms,vpars,vperps,vds
-         write(22)((x_part(j,i),j=1,idtp),i=iicparta(1)
+      write(charout,52)debyelen,rs,phip,dt,ldiags
+ 52   format('MV2. debyelen,rs,phip,dt,ldiags:',4f10.4,l5)
+      write(22)charout
+      write(22)debyelen,rs,phip,dt,ldiags
+      write(22)ranstate
+      write(22)nspecies,rhoinf,nrein,phirein,numprocs
+      write(22)Bt,Bfield,caverein,chi
+      write(22)iocparta,iicparta,nparta,eoverms,vpars,vperps,vds
+      write(22)((x_part(j,i),j=1,idtp),i=iicparta(1)
      $        ,iocparta(nspecies))
-      endif
+c write out ranlux settings.
+      call rluxut(ranluxstate)
+      write(22)ranluxstate
       close(22)
       write(*,*)'Wrote particle data to ',name(1:lentrim(name))
       return
@@ -113,6 +100,11 @@ c Multispecies versions:
          read(23)iocparta,iicparta,nparta,eoverms,vpars,vperps,vds
          read(23,err=102,end=102)
      $        ((x_part(j,i),j=1,idtp),i=1,iocparta(nspecies))
+         if(ichar(charout(3:3)).ge.2)then
+c Read back ranlux settings.
+            read(23)ranluxstate
+            call rluxin(ranluxstate)
+         endif
       else
 c Older versions.
          read(23)debyelen,Ti,vd,rs,phip

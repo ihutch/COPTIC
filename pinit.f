@@ -245,11 +245,14 @@ c Return a random velocity from the (precalculated) distribution heap.
       include 'ndimsdecl.f'
       include 'cdistcom.f'
       real v(ndims)
+      real ra
       integer nc,i
-      real ran1
-      external ran1
+c      real ran1
+c      external ran1
 
-      nc=ncdist*ran1(1)
+c      nc=ncdist*ran1(1)
+      call ranlux(ra,1)
+      nc=ncdist*ra
       do i=1,ndims
          v(i)=v_col(i,nc)
       enddo
@@ -323,8 +326,11 @@ c vzave returns the sum of the vdrift-components of the velocities.
       include 'cdistcom.f'
       include 'plascom.f'
       include 'colncom.f'
-      real gasdev,ran1,ctprime
-      external gasdev, ran1
+      real ctprime
+      real gasdev
+c      real ran1
+      external gasdev
+c      external ran1
 
 c Local variables
       integer i
@@ -378,7 +384,9 @@ c Inject from neutral distribution
          v2=v2+v(i)**2
       enddo
 c torb is the orbit time in velocity-scaled units. ttic in unscaled.
-      torb=-alog(ran1(1)+1.e-15)*ctprime
+c      torb=-alog(ran1(1)+1.e-15)*ctprime
+      call ranlux(torb,1)
+      torb=-alog(torb+1.e-15)*ctprime
 
 c      write(*,*)'ctprime=',ctprime
 c      write(*,*)ttic,torb,Eneutral,v,Ti,Bt
@@ -478,7 +486,9 @@ c velocity to the possible-collision time:
          colnu=((v2+delta*Ti)/(Ti+delta*v2))**(colpow/2.)
      $        *colntime/ctprime
 c Select a fraction of these collisions weighted by this ratio.
-         rd=ran1(1)*colnu
+c         rd=ran1(1)*colnu
+         call ranlux(rd,1)
+         rd=rd*colnu
          if(rd.lt.1.)then
 c This collision occurred. 
             do i=1,ndims
@@ -489,7 +499,9 @@ c No collision. Just carry on.
          endif
          ttic=ttic-torb
 c Choose next orbit time.
-         torb=-alog(ran1(1)+1.e-15)*ctprime
+c         torb=-alog(ran1(1)+1.e-15)*ctprime
+         call ranlux(torb,1)
+         torb=-alog(torb+1.e-15)*ctprime
          if(.not. torb.lt.100.*ctprime)then
             write(*,*)'torb problem',torb,ctprime
          endif
@@ -598,8 +610,10 @@ c is perpendicular to 1 and y; 3-perpendicular to 1 and 2.
       real vdirs(ndims,ndims+1,nspeciesmax),rmag
       real vns(nspeciesmax),vnp(nspeciesmax)
       integer i,j
-      real gasdev,ran1
-      external gasdev,ran1      
+      real gasdev
+c      real ran1
+      external gasdev
+c      real ran1      
       save vns,vnp,vdirs
 
       if(Bt.eq.0.)vpars(ispecies)=vds(ispecies)

@@ -99,9 +99,10 @@ c Testing
 c Making all variables declared:
       real a1,brc,brcsq,ceta,chium2,cosal,sinal,crt,czt,dv,eta
       real expuu2,p2,rcyl,rp,seta,srt,szt,u,ua,ua1,ua3
-      real Uc,uu2,vscale,y,y1,zt,ran1,alcos,alsin
+      real Uc,uu2,vscale,y,y1,zt,alcos,alsin
       integer icr,idum,ierr,iv
       real rri
+c      real ran1
 
 c In this routine we work in velocity units relative to ion thermal till end.
       vscale=sqrt(2.*Ti)
@@ -119,7 +120,8 @@ c Silence warnings.
          stop
       endif
 c Pick normal velocity from cumulative Pu
-      y1=ran1(idum)
+c      y1=ran1(idum)
+      call ranlux(y1,1)
       call finvtfunc(pu,nvel,y1,u)
       iv=int(u)
       dv=u-iv
@@ -127,7 +129,8 @@ c Pick normal velocity from cumulative Pu
       if(.not.dv.le.1)write(*,*)'Error in u calculation',y1,u,iv,dv
       vdist(iv)=vdist(iv)+1.
 c Pick angle from cumulative Pc.
-      y=ran1(idum)
+c      y=ran1(idum)
+      call ranlux(y,1)
 c Here the drift velocity is scaled to the ion temperature.
       Uc=vd/vscale
       uu2=2.*Uc*u
@@ -157,10 +160,14 @@ c Testing angular distribution.
 c End of testing distribution monitor.
       srt=sqrt(1.- crt**2)
 c Pick angle zt of poloidal impact and angle eta of impact parameter
-      zt=ran1(idum)*2.*pi
+c      zt=ran1(idum)*2.*pi
+      call ranlux(zt,1)
+      zt=zt*2.*pi
       czt=cos(zt)
       szt=sin(zt)
-      eta=ran1(idum)*2.*pi
+c      eta=ran1(idum)*2.*pi
+      call ranlux(eta,1)
+      eta=eta*2.*pi
       ceta=cos(eta)
       seta=sin(eta)
 c Choose impact parameter, preventing overflow.
@@ -172,7 +179,9 @@ c     $        ' u=',u,' iv=',iv
 c         stop
       endif
 c      if(.not.lfixedn)chium2=0.
-      brcsq=ran1(idum)*(1.+chium2)
+c      brcsq=ran1(idum)*(1.+chium2)
+      call ranlux(brcsq,1)
+      brcsq=brcsq*(1.+chium2)
 c Reject a particle that will not reach boundary.
       if(brcsq.lt.0.) then
          goto 1

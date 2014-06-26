@@ -91,7 +91,8 @@ c-------------------------------------------------------------
 c-------------------------------------------------------------
 c Initialize the fortran random number generator with a fixed number
 c for solutions of volumes etc. Each node then does the same.
-      rs=ran1(-1)
+c      rs=ran1(-1)
+      call rluxgo(0,0,0,0)
 c Defaults:
 c Determine what reinjection scheme we use. Sets rjscheme.
       include 'REINJECT.f'
@@ -322,7 +323,8 @@ c Set phip from the first object if it makes sense.
 c------------------------------------------------------------------
 c (Re)Initialize the fortran random number generator.
       idum=-myid-1
-      rdum=ran1(idum)
+c      rdum=ran1(idum)
+      call rluxgo(0,myid,0,0)
 c Initialize with a specified number of particles.
 c      write(*,*)'ibool_part=',ibool_part
       call pinit(subcycle)

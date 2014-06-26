@@ -42,8 +42,8 @@ c Cartesian reinjection routine.
       integer ispecies
       real ra,fc,sg,fr,x2,x1
       integer index,k,iother,ir
-      real ran1
-      external ran1
+c      real ran1
+c      external ran1
       real ranlenposition
       external ranlenposition
 
@@ -60,7 +60,8 @@ c Particle data to define the species of interest
 c      write(*,*)'Returned from cinjinit'
 c----------------------------------------
 c Pick the face from which to reinject.
-      ra=ran1(0)
+c      ra=ran1(0)
+      call ranlux(ra,1)
       call invtfunc(gintreins(0,ispecies),7,ra,fc)
 c Returns fc between 1+ and 7-.
       index=int(fc)
@@ -81,13 +82,12 @@ c to be independent of position.
       do k=1,2
          iother=mod(idrein+k-1,3)+1
 c Position: Ensure we never quite reach the mesh edge:
-c         fr=ran1(0)*0.999999+.0000005
-c         if(fr.le.0 .or. fr.ge.1.)write(*,*)'fr=',fr
-c         xr(iother)=xmeshstart(iother)*(1-fr)+xmeshend(iother)*fr
 c Or Accounting for density gradients:
          xr(iother)=ranlenposition(iother)
 c Velocity
-         ra=ran1(0)*ncrein
+c         ra=ran1(0)*ncrein
+         call ranlux(ra,1)
+         ra=ra*ncrein
          ir=int(ra)
          fr=ra-ir
          if(fr.gt.1. .or. fr.lt.0.)then
@@ -100,7 +100,9 @@ c velocity, linear interpolation:
       enddo
 c----------------------------------------
 c Pick the velocity perpendicular to this face:
-      ra=ran1(0)*ncrein
+c      ra=ran1(0)*ncrein
+      call ranlux(ra,1)
+      ra=ra*ncrein
       ir=int(ra)
       fr=ra-ir
 c      write(*,*)ra,ir,index,fr,ncrein
@@ -853,12 +855,15 @@ c Reinjection data needed for idrein only, needed for creintest only.
       include 'creincom.f'
       include 'meshcom.f'
 c Local data
-      real ra,ran1,face,fr,rx
+      real ra,face,fr,rx
       integer i,id,k,iother,ip
-      external ran1
+c      real ran1
+c      external ran1
 
 c Choose the normal-dimension for reinjection, from cumulative dist.
- 2    ra=ran1(1)
+ 2    continue
+c      ra=ran1(1)
+      call ranlux(ra,1)
       do i=1,ndims
          id=i
          if(ra.lt.cdistcums(i+1,ispecies))goto 1
@@ -869,7 +874,10 @@ c Grab a random v-sample. Needs to be changed to reflect not just a
 c random grab,
 c      call colvget(xr(ndims+1))
 c but a grab weighted by the normal-dimension mod-v:
-      ra=ran1(1)*fxvcols(ncdists(ispecies)+1,id,ispecies)
+c      ra=ran1(1)*fxvcols(ncdists(ispecies)+1,id,ispecies)
+      call ranlux(ra,1)
+      ra=ra*fxvcols(ncdists(ispecies)+1,id,ispecies)
+
 c      write(*,*)'calling invtfunc',ncdists(ispecies)+1,ra,rx,fxvcols(1
 c     $     ,id,ispecies),fxvcols(ncdists(ispecies)+1,id,ispecies),id
 c     $     ,ispecies
@@ -907,7 +915,9 @@ c Pick the velocities and positions parallel to this face:
       do k=1,2
          iother=mod(id+k-1,3)+1
 c Position: Ensure we never quite reach the mesh edge:
-         fr=ran1(0)*0.999999+.0000005
+c         fr=ran1(0)*0.999999+.0000005
+         call ranlux(ra,1)
+         fr=ra*0.999999+.0000005
          xr(iother)=xmeshstart(iother)*(1-fr)+xmeshend(iother)*fr
       enddo
 c      if(xr(5).gt..001)then
@@ -988,7 +998,8 @@ c            write(*,*)i,expsa(i),expsi(i),g
          lfirst=.false.
       endif
       g=gn(id)
-      P=ran1(0)
+c      P=ran1(0)
+      call ranlux(P,1)
       if(abs(g).ne.0)then
          sp=gp0(id)+alog(P*expsa(id)+(1.-P)*expsi(id))/g
       else

@@ -195,11 +195,16 @@ c---------- Collision Decision ----------------
          if(ispecies.eq.1.and.colntime.ne.0.)then
             if(colpow.ne.0.)then
 c The collision time scaled by velocity
-               dtc=-alog(ran1(myid))*colntime
+c               dtc=-alog(ran1(myid))*colntime
+c     $              *(Ti/(v2+Ti))**(colpow/2.)
+               call ranlux(dtc,1)
+               dtc=-alog(dtc)*colntime
      $              *(Ti/(v2+Ti))**(colpow/2.)
             else
 c Time to the first collision
-               dtc=-alog(ran1(myid))*colntime
+c               dtc=-alog(ran1(myid))*colntime
+               call ranlux(dtc,1)
+               dtc=-alog(dtc)*colntime
             endif
             if(dtc.lt.dtpos)then
 c               write(*,*)'Collision',dtpos,dtc,colntime
@@ -355,7 +360,9 @@ c            write(*,*)'Reinject out of region',i,iregion,xfrac
 c            stop
             goto 200
          endif
-         dtpos=(dtpos+dtremain)*ran1(myid)
+c         dtpos=(dtpos+dtremain)*ran1(myid)
+         call ranlux(ra,1)
+         dtpos=(dtpos+dtremain)*ra
          x_part(idtp,i)=0.
          dtremain=0.
          dtdone=dt-dtpos

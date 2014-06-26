@@ -12,6 +12,9 @@ c Internal state of ran1:
 c Internal state of the gaussian random generator gasdev:
       integer gd_iset
       real gd_gset
+c Ranlux integer array.
+      integer ranluxstate(25)
       equivalence (gd_iset,ranstate(102)),(gd_gset,ranstate(103))
 c The whole thing:
       common /ran1com/ranstate
+      common /ranluxcom/ranluxstate

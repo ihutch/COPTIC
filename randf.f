@@ -2,12 +2,17 @@ c***********************************************************************
 c Restartable gasdev based on NR.
       FUNCTION gasdev(ireset)
       integer ireset
+      real vr(2),v1,v2
+      equivalence (v1,vr(1)),(v2,vr(2))
       include 'ran1com.f'
       if(ireset.lt.0) gd_iset=0
       if(gd_iset.ne.1)then
  1       continue
-         v1=2.*ran1(1)-1.
-         v2=2.*ran1(1)-1.
+c         v1=2.*ran1(1)-1.
+c         v2=2.*ran1(1)-1.
+         call ranlux(vr,2)
+         v1=2.*v1-1.
+         v2=2.*v2-1.
          r=v1**2+v2**2
         if(r.ge.1..or.r.eq.0.)go to 1
         fac=sqrt(-2.*log(r)/r)
