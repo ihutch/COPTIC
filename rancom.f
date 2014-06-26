@@ -1,16 +1,11 @@
-c********************************************************************
-c Random interpolate data.
-      integer nvel,nQth
-      parameter (nvel=50)
-      parameter (nQth=200)
-      real Qcom(nQth) 
-      real Gcom(nvel,nQth)
-      real Vcom(nvel)
-      real pu1(nvel),pu2(nvel)
-      real Pc(nQth,nvel)
-c New BC
-      integer bcphi,bcr
-      logical infdbl
-c Reinjection flux as a function of cos(theta) (line) and chi (column,
-c from 0 to 9)
-      common /rancom/Gcom,Vcom,Qcom,pu1,pu2,Pc,infdbl,bcphi,bcr
+c Internal state of the random number generators.
+c This requires integers to be no longer than reals.
+c Actually only the internal state of the gaussian random generator gasdev:
+c is needed in common. But it is convenient to put it at the end of
+c the ranluxstate.
+      integer gd_iset
+      real gd_gset
+      integer ranluxstate(27)
+      equivalence(gd_iset,ranluxstate(26)),(gd_gset,ranluxstate(27))
+c The whole thing:
+      common /ranluxcom/ranluxstate

@@ -16,8 +16,9 @@ c***********************************************************************
       parameter (mdims=3)
       real xr(3*mdims)
 c      integer i
+      include 'ndimsdecl.f'
 c Common data for these routines:
-      include 'rancom.f'
+      include 'reincom.f'
 c Plasma common data
       include 'plascom.f'
       logical lfirst
@@ -34,7 +35,6 @@ c Plasma common data
       cerr=0.
       idum=1
  1    continue
-c      y=ran1(idum)
       call ranlux(y,1)
 c Pick angle from cumulative Q.
       call invtfunc(Qcom,nQth,y,x)
@@ -48,7 +48,6 @@ c Pick angle from cumulative Q.
 c      if(ic1.ge.nQth)ic1=ic1-1
       ic2=ic1+1
       dc=x-ic1
-c      y=ran1(idum)
       call ranlux(y,1)
 c Pick normal velocity from cumulative G.
       call invtfunc(Gcom(1,ic1),nvel,y,v1)
@@ -75,7 +74,6 @@ c in units of vti.
       vt=gasdev(0)- st*vdi
       vp=gasdev(0)
 c All velocities now.
-c      p=2.*pi*ran1(idum)
       call ranlux(p,1)
       p=2.*pi*p
       cp=cos(p)
@@ -105,7 +103,8 @@ c********************************************************************
 c Initialize the distributions describing reinjected particles
       subroutine injinit()
 c Common data:
-      include 'rancom.f'
+      include 'ndimsdecl.f'
+      include 'reincom.f'
       include 'plascom.f'
       real gam(nQth)
 
@@ -153,6 +152,7 @@ c*********************************************************************
       subroutine rhoinfcalc(dtin)
 c Return the rhoinf to be used in calculating the electron shielding,
 c based upon the number and average potential of the reinjections.
+      include 'ndimsdecl.f'
       include 'plascom.f'
 c No time-averaging for now.
 c Use particle information for initializing.
@@ -182,6 +182,7 @@ c*********************************************************************
       subroutine ninjcalc(dtin)
 c Given ripernode, decide the number of reinjections per step ninjcomp
 c for average edge potential.
+      include 'ndimsdecl.f'
       include 'plascom.f'
 c No time-averaging for now.
 c Particle information
@@ -234,3 +235,99 @@ c********************************************************************
       subroutine geominit()
       return
       end
+c********************************************************************
+      subroutine cavereinset(phi)
+c Null
+      include 'reincom.f'
+      include 'ndimsdecl.f'
+      include 'partcom.f'
+       caverein=crelax*phi+(1.-crelax)*caverein
+c      write(*,*)'CAvereinset',caverein
+      end
+c********************************************************************
+c********************************************************************
+      subroutine colreinit(myid,ispecies)
+c Initialize and normalize the cdistflux factors from the
+c Collisional distribution data, presumed already calculated by pinit.
+c Based upon the ipartperiod settings.
+      include 'ndimsdecl.f'
+      include 'cdistcom.f'
+      include 'partcom.f'
+      if(ncdists(ispecies).eq.0)return
+      ctot=0.
+      do i=1,ndims
+c         if(myid.eq.0)write(*,*)ipartperiod(i),cdistflux(i)
+         if(ipartperiod(i).ge.3)cdistfluxs(i,ispecies)=0.
+         ctot=ctot+cdistfluxs(i,ispecies)
+      enddo
+      if(ctot.ne.0.)then
+         cdistcums(1,ispecies)=0.
+         do i=1,ndims
+            cdistfluxs(i,ispecies)=cdistfluxs(i,ispecies)/ctot
+            cdistcums(i+1,ispecies)=cdistcums(i,ispecies)
+     $           +cdistfluxs(i,ispecies)
+         enddo
+c Avoid rounding problems.
+         cdistcums(ndims+1,ispecies)=1.
+      else
+         if(myid.eq.0)write(*,*
+     $        )'PROBLEM. colreinject: No reinjection faces'
+      endif
+
+c Now evaluate the cumulative distribution in 3 normal-directions.
+      do id=1,ndims
+         fxvcols(1,id,ispecies)=0.
+         do i=1,ncdists(ispecies)
+            fxvcols(i+1,id,ispecies)=fxvcols(i,id,ispecies)
+     $           +abs(vcols(id,i,ispecies))
+         enddo
+      enddo
+c There's a resolution issue in that a million steps can hardly
+c be resolved by single precision. However, it is unlikely that
+c substantial statistical distortion will occur. If it did we could
+c use double precision.
+c      if(myid.eq.0)write(*,'(a,7f8.4)')' colreinit completed',cdistcum
+c     $     ,cdistflux
+c      if(myid.eq.0)write(*,'(a,3f16.4)')' fxvcol:',(fxvcol(ncdist+1,j),j
+c     $     =1,3)
+      end
+c********************************************************************
+      real function ranlenposition(id)
+c Return a random fractional position in the coordinate direction id,
+c accounting for the density scale length if present
+      include 'ndimsdecl.f'
+      include 'meshcom.f'
+      include 'creincom.f'
+      include 'plascom.f'
+      real expsa(ndims),expsi(ndims)
+      logical lfirst
+      data lfirst/.true./
+      save lfirst,expsa,expsi
+
+      if(lfirst)then
+         do i=1,ndims
+            g=gn(i)
+            s0=gp0(i)
+            si=min(xmeshstart(i),xmeshend(i))-s0
+            sa=max(xmeshstart(i),xmeshend(i))-s0
+            expsa(i)=exp(g*sa)
+            expsi(i)=exp(g*si)
+c            write(*,*)i,expsa(i),expsi(i),g
+         enddo
+         lfirst=.false.
+      endif
+      g=gn(id)
+      call ranlux(P,1)
+      if(abs(g).ne.0)then
+         sp=gp0(id)+alog(P*expsa(id)+(1.-P)*expsi(id))/g
+      else
+         sp=(1.-P)*xmeshstart(id)+P*xmeshend(id)
+      endif
+      ranlenposition=sp*0.999999+.0000005
+      if(.false.)then
+         write(*,*)' ranlenpos',id,P,sp,g,expsi,expsa
+         write(*,*)'Ranlenpos error',id,P,sp,g,ranlenposition
+         write(*,*)expsi,expsa
+      endif
+      end
+c********************************************************************

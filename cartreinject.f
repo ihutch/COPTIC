@@ -42,8 +42,6 @@ c Cartesian reinjection routine.
       integer ispecies
       real ra,fc,sg,fr,x2,x1
       integer index,k,iother,ir
-c      real ran1
-c      external ran1
       real ranlenposition
       external ranlenposition
 
@@ -60,7 +58,6 @@ c Particle data to define the species of interest
 c      write(*,*)'Returned from cinjinit'
 c----------------------------------------
 c Pick the face from which to reinject.
-c      ra=ran1(0)
       call ranlux(ra,1)
       call invtfunc(gintreins(0,ispecies),7,ra,fc)
 c Returns fc between 1+ and 7-.
@@ -85,7 +82,6 @@ c Position: Ensure we never quite reach the mesh edge:
 c Or Accounting for density gradients:
          xr(iother)=ranlenposition(iother)
 c Velocity
-c         ra=ran1(0)*ncrein
          call ranlux(ra,1)
          ra=ra*ncrein
          ir=int(ra)
@@ -100,7 +96,6 @@ c velocity, linear interpolation:
       enddo
 c----------------------------------------
 c Pick the velocity perpendicular to this face:
-c      ra=ran1(0)*ncrein
       call ranlux(ra,1)
       ra=ra*ncrein
       ir=int(ra)
@@ -857,12 +852,9 @@ c Reinjection data needed for idrein only, needed for creintest only.
 c Local data
       real ra,face,fr,rx
       integer i,id,k,iother,ip
-c      real ran1
-c      external ran1
 
 c Choose the normal-dimension for reinjection, from cumulative dist.
  2    continue
-c      ra=ran1(1)
       call ranlux(ra,1)
       do i=1,ndims
          id=i
@@ -874,7 +866,6 @@ c Grab a random v-sample. Needs to be changed to reflect not just a
 c random grab,
 c      call colvget(xr(ndims+1))
 c but a grab weighted by the normal-dimension mod-v:
-c      ra=ran1(1)*fxvcols(ncdists(ispecies)+1,id,ispecies)
       call ranlux(ra,1)
       ra=ra*fxvcols(ncdists(ispecies)+1,id,ispecies)
 
@@ -915,7 +906,6 @@ c Pick the velocities and positions parallel to this face:
       do k=1,2
          iother=mod(id+k-1,3)+1
 c Position: Ensure we never quite reach the mesh edge:
-c         fr=ran1(0)*0.999999+.0000005
          call ranlux(ra,1)
          fr=ra*0.999999+.0000005
          xr(iother)=xmeshstart(iother)*(1-fr)+xmeshend(iother)*fr
@@ -998,7 +988,6 @@ c            write(*,*)i,expsa(i),expsi(i),g
          lfirst=.false.
       endif
       g=gn(id)
-c      P=ran1(0)
       call ranlux(P,1)
       if(abs(g).ne.0)then
          sp=gp0(id)+alog(P*expsa(id)+(1.-P)*expsi(id))/g

@@ -4,12 +4,10 @@ c Restartable gasdev based on NR.
       integer ireset
       real vr(2),v1,v2
       equivalence (v1,vr(1)),(v2,vr(2))
-      include 'ran1com.f'
+      include 'rancom.f'
       if(ireset.lt.0) gd_iset=0
       if(gd_iset.ne.1)then
  1       continue
-c         v1=2.*ran1(1)-1.
-c         v2=2.*ran1(1)-1.
          call ranlux(vr,2)
          v1=2.*v1-1.
          v2=2.*v2-1.
@@ -25,55 +23,6 @@ c         v2=2.*ran1(1)-1.
       endif
       end
 c**********************************************************************
-c**********************************************************************
-      FUNCTION ran1(IDUM)
-c Returns a uniform random deviate between 0 and 1.
-c Reentrant version of ran1 makes the state visible in common.
-c Get explicit 
-      implicit none
-      real ran1
-      integer idum
-c Common here requires separation of processes for reentrancy.
-c So this is not thread safe.
-      include 'ran1com.f'
-      real RM1,RM2
-      integer M1,M2,M3,ic1,ic2,ic3,ia1,ia2,ia3,j
-      save
-c      DIMENSION Rrnd(97)
-      PARAMETER (M1=259200,IA1=7141,IC1=54773,RM1=3.8580247E-6)
-      PARAMETER (M2=134456,IA2=8121,IC2=28411,RM2=7.4373773E-6)
-      PARAMETER (M3=243000,IA3=4561,IC3=51349)
-c Can't do auto initialize. Have to do it by hand.
-c      DATA IFF /0/
-c      IF (IDUM.LT.0.OR.IFF.EQ.0) THEN
-      IF (IDUM.LT.0) THEN
-c        IFF=1
-        IrX1=MOD(IC1-IDUM,M1)
-        IrX1=MOD(IA1*IrX1+IC1,M1)
-        IrX2=MOD(IrX1,M2)
-        IrX1=MOD(IA1*IrX1+IC1,M1)
-        IrX3=MOD(IrX1,M3)
-        do J=1,97
-           IrX1=MOD(IA1*IrX1+IC1,M1)
-           IrX2=MOD(IA2*IrX2+IC2,M2)
-           Rrnd(J)=(FLOAT(IrX1)+FLOAT(IrX2)*RM2)*RM1
-        enddo
-c Tell gasdev to reset.
-        gd_iset=0
-      ENDIF
-      IrX1=MOD(IA1*IrX1+IC1,M1)
-      IrX2=MOD(IA2*IrX2+IC2,M2)
-      IrX3=MOD(IA3*IrX3+IC3,M3)
-      JRC=1+(97*IrX3)/M3
-      if(JRC.GT.97.OR.JRC.LT.1)then
-         write(*,*)'RAN1 Error!'
-      endif
-      RAN1=Rrnd(JRC)
-      Rrnd(JRC)=(FLOAT(IrX1)+FLOAT(IrX2)*RM2)*RM1
-      RETURN
-      END
-c
-
 c********************************************************************
 c Given a monotonic function Q(x) on a 1-D grid x=1..nq, 
 c   solve Q(x)=y for x.

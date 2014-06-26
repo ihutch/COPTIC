@@ -247,10 +247,7 @@ c Return a random velocity from the (precalculated) distribution heap.
       real v(ndims)
       real ra
       integer nc,i
-c      real ran1
-c      external ran1
 
-c      nc=ncdist*ran1(1)
       call ranlux(ra,1)
       nc=ncdist*ra
       do i=1,ndims
@@ -328,9 +325,7 @@ c vzave returns the sum of the vdrift-components of the velocities.
       include 'colncom.f'
       real ctprime
       real gasdev
-c      real ran1
       external gasdev
-c      external ran1
 
 c Local variables
       integer i
@@ -384,7 +379,6 @@ c Inject from neutral distribution
          v2=v2+v(i)**2
       enddo
 c torb is the orbit time in velocity-scaled units. ttic in unscaled.
-c      torb=-alog(ran1(1)+1.e-15)*ctprime
       call ranlux(torb,1)
       torb=-alog(torb+1.e-15)*ctprime
 
@@ -486,7 +480,6 @@ c velocity to the possible-collision time:
          colnu=((v2+delta*Ti)/(Ti+delta*v2))**(colpow/2.)
      $        *colntime/ctprime
 c Select a fraction of these collisions weighted by this ratio.
-c         rd=ran1(1)*colnu
          call ranlux(rd,1)
          rd=rd*colnu
          if(rd.lt.1.)then
@@ -499,7 +492,6 @@ c No collision. Just carry on.
          endif
          ttic=ttic-torb
 c Choose next orbit time.
-c         torb=-alog(ran1(1)+1.e-15)*ctprime
          call ranlux(torb,1)
          torb=-alog(torb+1.e-15)*ctprime
          if(.not. torb.lt.100.*ctprime)then
@@ -611,9 +603,7 @@ c is perpendicular to 1 and y; 3-perpendicular to 1 and 2.
       real vns(nspeciesmax),vnp(nspeciesmax)
       integer i,j
       real gasdev
-c      real ran1
       external gasdev
-c      real ran1      
       save vns,vnp,vdirs
 
       if(Bt.eq.0.)vpars(ispecies)=vds(ispecies)

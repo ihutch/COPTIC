@@ -968,11 +968,11 @@ c n_part data
       if(iversion.ge.2)read(23,end=104)(nf_npart(k),k=1,nf_step)
       if(iversion.ge.4)then
          read(23,end=105)nf_species
-         write(*,*)'nf_species=',nf_species
          read(23,end=105)((if_quant(j,k),kf_quant(j,k),j=1,mf_obj),k=1
      $        ,nf_species)
-         write(*,*)'Quantity start',(if_quant(1,k),k=1,nf_species)
-         write(*,*)'Quantity count',(kf_quant(1,k),k=1,nf_species)
+         write(*,*)'Flux reading: nf_species=',nf_species,
+     $        ' Quantity start',(if_quant(1,k),k=1,nf_species),
+     $        ' Quantity count',(kf_quant(1,k),k=1,nf_species)
       endif
       goto 103
  102  write(*,*)'Failed to read back forces. Old format? Version='

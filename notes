@@ -11678,3 +11678,35 @@ Remake the geometry cks. Then those check out with subsequent makes.
 
 Finished replacing ran1 with ranlux. But haven't ripped out all the old
 code.
+
+Commit.
+
+Now remove ran1 procedure. Removed references to ran1 from everything
+except partwriteread, ran1com and randf.f.
+Now move the storage of gasdev state into the end of ranluxstate.
+Check still works.
+Remove ran1 equivalence to ranstate so it is dummy.
+
+In the interests of thoroughness try to compile with reinject.o as the
+REINJECT choice. It is broken. Thats because plascom.f now needs
+ndimsdecl.f That's easy to fix. However, now there are undefined
+references in pinit.f and padvnc.f. Copied the relevant routines from
+cartreinject.  Probably the reinject version isn't working correctly,
+but at least it now runs.
+
+Go through the same procedure for orbitinject. It stops with an error message
+0001-212 Error in external integration initialization. rb=  0.
+
+These routines do not break when every reincom has a rancom. Thus we are 
+going to rationalize the rancom information into reincom.f
+Did that. Everything compiles etc. Remove rancom.f reference everywhere.
+Now we can use that as our common file for ranlux.
+
+Remove ranstate writing (and reading for V>2) from partwriteread.
+Remove ranstate from ran1com. Ok. 
+Rename what's left to rancom.f and change reference in gasdev and 
+partwriteread.
+
+git rm ran1com.f All that's now left is ran1.f which is the routine
+itself. Not under git. Move it to numrec. Remove ran1com.f ref from makefile.
+Now seem to have purged ran1 from everything.

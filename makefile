@@ -126,7 +126,7 @@ UTILITIES=udisplay.o
 SOLOBJECTS= cijroutine.o mditerate.o mpibbdy.o sormpi.o sorrelaxgen.o meshconstruct.o getfield.o interpolations.o cijplot.o phisoluplot.o slicesect.o 3dobjects.o bdysetsol.o faddu.o fsects.o cmdline.o bdyshare.o
 REGULAROBJECTS= $(MPIOBJECTS) $(FIXEDOBJECTS) ${REINJECT} 
 OBJECTS=$(SPECIALOBJECTS) $(REGULAROBJECTS)
-HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f ran1com.f creincom.f ptaccom.f colncom.f griddecl.f ptchcom.f mditcom.f sectcom.f plascom.f slpcom.f myidcom.f facebcom.f cdistcom.f ndimsdecl.f
+HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f creincom.f ptaccom.f colncom.f griddecl.f ptchcom.f mditcom.f sectcom.f plascom.f slpcom.f myidcom.f facebcom.f cdistcom.f ndimsdecl.f reincom.f
 # Nothing in root directory now depends on  examdecl.f
 SOLHEADERS= bbdydecl.f meshcom.f objcom.f 3dcom.f accis/world3.h 
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest

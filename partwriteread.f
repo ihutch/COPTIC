@@ -44,7 +44,7 @@ c My mpi id
       include 'ndimsdecl.f'
       include 'partcom.f'
       include 'plascom.f'
-      include 'ran1com.f'
+      include 'rancom.f'
       character*(100) charout
 
       call nameconstruct(name)
@@ -58,7 +58,7 @@ c New MV format
  52   format('MV2. debyelen,rs,phip,dt,ldiags:',4f10.4,l5)
       write(22)charout
       write(22)debyelen,rs,phip,dt,ldiags
-      write(22)ranstate
+c      write(22)ranstate
       write(22)nspecies,rhoinf,nrein,phirein,numprocs
       write(22)Bt,Bfield,caverein,chi
       write(22)iocparta,iicparta,nparta,eoverms,vpars,vperps,vds
@@ -84,7 +84,7 @@ c Return ierr bit(0) no file. bit(1) no dtprec. bit(2) no Bfield etc.
       include 'ndimsdecl.f'
       include 'partcom.f'
       include 'plascom.f'
-      include 'ran1com.f'
+      include 'rancom.f'
       character*(100) charout
 
       ierr=0
@@ -92,16 +92,16 @@ c Return ierr bit(0) no file. bit(1) no dtprec. bit(2) no Bfield etc.
       read(23)charout
       if(charout(1:2).eq.'MV')then
 c Multispecies versions:
-         write(*,*)'MV version detected'
+         write(*,*)'Partread MV version detected'
          read(23)debyelen,rs,phip,dt,ldiags
-         read(23)ranstate
+         if(.not.ichar(charout(3:3)).ge.2)read(23)ranstate
          read(23)nspecies,rhoinf,nrein,phirein,numprocs
          read(23)Bt,Bfield,caverein,chi
          read(23)iocparta,iicparta,nparta,eoverms,vpars,vperps,vds
          read(23,err=102,end=102)
      $        ((x_part(j,i),j=1,idtp),i=1,iocparta(nspecies))
          if(ichar(charout(3:3)).ge.2)then
-c Read back ranlux settings.
+c Read back ranlux settings and initialize.
             read(23)ranluxstate
             call rluxin(ranluxstate)
          endif
