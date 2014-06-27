@@ -63,7 +63,7 @@ c Tell that we are looking from the top by default.
          laspect=.false.
          idfix=abs(idfix)
       endif
-      if(idfix.gt.256)idfix=ndims
+      if(idfix.gt.7)idfix=ndims
       if(idfix/4-2*(idfix/8).ne.0)then 
          larrow=.not.larrow
 c         write(*,*)'idfix=',idfix,'  larrow=',larrow

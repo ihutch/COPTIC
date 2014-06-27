@@ -11710,3 +11710,9 @@ partwriteread.
 git rm ran1com.f All that's now left is ran1.f which is the routine
 itself. Not under git. Move it to numrec. Remove ran1com.f ref from makefile.
 Now seem to have purged ran1 from everything.
+
+Commit.
+
+We have a segfault with -gp with slicegweb from main and -gt.
+All slicegweb. This proves to be caused by ifix uninitialized
+Setting to zero seems to fix it. Also put a safer test into slicegweb.

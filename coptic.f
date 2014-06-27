@@ -119,6 +119,7 @@ c Default zero field
       caverein=0.
       chi=0.
       ierr=0
+      ifix=0
 c---------------------------------------------------------------------
 c This necessary here so one knows early the mpi structure.
 c Otherwise could have been hidden in sormpi and pass back numprocs.
