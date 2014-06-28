@@ -11720,3 +11720,8 @@ Setting to zero seems to fix it. Also put a safer test into slicegweb.
 commit
 
 Remove dependence on randc.c and randc.c from objects and git.
+
+commit
+
+Remove dependence on randf.f by moving gasdev to ranlux and other stuff
+to average.f. git rm randf.f

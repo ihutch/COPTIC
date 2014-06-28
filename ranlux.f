@@ -489,3 +489,30 @@ C RANLUX INITIALIZED BY RLUXGO FROM SEEDS       11111          31           0
 C  Error in RESTARTING with RLUXGO:
 C  The values      11111         31          0 cannot occur at luxury level    4
       END
+c**************************************************************************
+c***********************************************************************
+c Restartable gasdev based on NR. Calculates gaussian-distributed
+c random numbers two at a time, costing a log and a sqrt.
+      FUNCTION gasdev(ireset)
+      integer ireset
+      real vr(2),v1,v2
+      equivalence (v1,vr(1)),(v2,vr(2))
+      include 'rancom.f'
+      if(ireset.lt.0) gd_iset=0
+      if(gd_iset.ne.1)then
+ 1       continue
+         call ranlux(vr,2)
+         v1=2.*v1-1.
+         v2=2.*v2-1.
+         r=v1**2+v2**2
+        if(r.ge.1..or.r.eq.0.)go to 1
+        fac=sqrt(-2.*log(r)/r)
+        gd_gset=v1*fac
+        gasdev=v2*fac
+        gd_iset=1
+      else
+        gasdev=gd_gset
+        gd_iset=0
+      endif
+      end
+c**********************************************************************

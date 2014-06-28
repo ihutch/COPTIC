@@ -587,17 +587,6 @@ c      write(*,*)'fvcx:vd,v,earg,fvcx',vd,v,earg,fvcx
          fvcx=0.
       endif
       end
-c****************************************************************
-c This is exp(X^2)*erfc(X)
-      FUNCTION expERFCC(X)
-      Z=ABS(X)      
-      T=1./(1.+0.5*Z)
-      expERFCC=T*EXP(-1.26551223+T*(1.00002368+T*(.37409196+
-     *    T*(.09678418+T*(-.18628806+T*(.27886807+T*(-1.13520398+
-     *    T*(1.48851587+T*(-.82215223+T*.17087277)))))))))
-      IF (X.LT.0.) expERFCC=2.*exp(z**2)-expERFCC
-      END
-c*********************************************************************
 c**********************************************************************
       real function ff1crein(v)
 c This is the flux function for 1-D motion in the direction of Bfield.
