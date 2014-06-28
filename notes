@@ -11716,3 +11716,7 @@ Commit.
 We have a segfault with -gp with slicegweb from main and -gt.
 All slicegweb. This proves to be caused by ifix uninitialized
 Setting to zero seems to fix it. Also put a safer test into slicegweb.
+
+commit
+
+Remove dependence on randc.c and randc.c from objects and git.

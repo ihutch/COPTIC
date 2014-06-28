@@ -104,6 +104,8 @@ c probably be slightly less efficient); we weight by
 c (1-|f|)(x_{i+1}-x_{i-1}). Then if it is in the region we add it on. If
 c not we throw away. Eventually we divide by the total number of points
 c examined.
+c Old version just uncomment rand() [and comment out sobel calls].
+c But randc.c would have to be reinstated. See end of file.
 
       real function volintegrate(mdims,xm,xi,xp,npoints)
 
@@ -153,62 +155,6 @@ c         endif
       volintegrate=wtot/npoints
 c      write(*,'(i6,f8.5,'' +-fraction'',f7.4,f7.4)')npoints,volintegrate
 c     $     ,(vmax-volintegrate)/vmax,(volintegrate-vmin)/vmax
-      end
-c********************************************************************
-c Volume integrations by monte-carlo.  For a node i in the mesh the
-c cic-volume is the integral of 1-|f| from x_{i-1}=xm to x_{i+1}=xp,
-c where f is the mesh-fractional distance from x_i.  This integration is
-c performed in each dimension.  To do this integration using monte-carlo
-c techniques, for each direction, we choose a random position uniformly
-c between x_{i-1} and x_{i+1}; (not uniform in mesh-fraction, although a
-c scheme could be constructed uniform in mesh-fraction, which would
-c probably be slightly less efficient); we weight by
-c (1-|f|)(x_{i+1}-x_{i-1}). Then if it is in the region we add it on. If
-c not we throw away. Eventually we divide by the total number of points
-c examined.
-
-      real function volintegrate0(mdims,xm,xi,xp,npoints)
-      real xm(mdims),xi(mdims),xp(mdims)
-      integer npoints
-
-      include 'ndimsdecl.f'
-      include '3dcom.f'
-      real x(ndims)
-      external linregion
-      logical linregion
-
-      wtot=0.
-      vmax=0.
-      vmin=1.e30
-      do i=1,npoints
-         w=1.
-         do id=1,ndims
-c Using the improved random number generator seems a significant hit on
-c time here. So use the direct C rand which is perhaps quicker.
-            p=rand()
-            x(id)=xp(id)*p+xm(id)*(1-p)
-c This more efficient expression gives a ~3% faster result but it is
-c different from the above, presumably by rounding errors.
-c            x(id)=(xp(id)-xm(id))*p+xm(id)
-            f=x(id)-xi(id)
-            if(f.lt.0)then
-               f=f/(xm(id)-xi(id))
-            else
-               f=f/(xp(id)-xi(id))
-            endif
-            w=w*(1.-f)*(xp(id)-xm(id))
-         enddo
-         if(linregion(ibool_part,ndims,x))wtot=wtot+w
-c         if(npoints-i.lt.100)then
-c            v=wtot/i
-c            if(v.gt.vmax)vmax=v
-c            if(v.lt.vmin)vmin=v
-c         endif
-      enddo
-      volintegrate=wtot/npoints
-c      write(*,'(i6,f8.5,'' +-fraction'',f7.4,f7.4)')npoints,volintegrate
-c     $     ,(vmax-volintegrate)/vmax,(volintegrate-vmin)/vmax
-      volintegrate0=volintegrate
       end
 c**********************************************************************
 c Read and/or write geometric information.
@@ -306,3 +252,31 @@ c No existing file.
       return
 
       end
+c*********************************************************************
+c Obsolete c function:
+c$$$#include <stdlib.h>
+c$$$#include <stdio.h>
+c$$$
+c$$$float rand_()
+c$$${
+c$$$  long i;
+c$$$  float x;
+c$$$  static double xfac;
+c$$$  static long il=0;
+c$$$  if(!il){
+c$$$    il=(long)RAND_MAX;
+c$$$    xfac=1./( ((double) il) + (((double) il)/1000000.));
+c$$$  }
+c$$$  i = random(); 
+c$$$  x = ((double) i)*xfac ;
+c$$$  if(x >= 1. || x < 0.) {
+c$$$    printf("RAND Error: x=%f, i=%ld, il=%ld\n",x,i,il);
+c$$$  }
+c$$$  return x;
+c$$$}
+c$$$
+c$$$void srand_(long *iseed)
+c$$${
+c$$$  srandom( (unsigned int) *iseed); 
+c$$$}
+c$$$/*******************************************************************/
