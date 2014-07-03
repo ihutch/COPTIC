@@ -23,7 +23,7 @@ typedef int FORT_INT;
 static Display *accis_display=NULL;
 static Window accis_root;
 static Window accis_window;
-static Pixmap accis_pixmap;
+/*static Pixmap accis_pixmap;*/
 /* Attributes to require of the visual chosen:*/
 /* It proves advantageous to _avoid_ doublebuffering for incremental
    drawing. Speed seems best this way too. Yet there was a problem with
@@ -34,14 +34,14 @@ static GLint  accis_double[] = { GLX_RGBA, /* Truecolor and Directcolor */
 			      None };
 static GLint  accis_single[] = { GLX_RGBA, /* Truecolor and Directcolor */
 			      GLX_DEPTH_SIZE, 24, /* Depth 24 */
-				 /*GLX_DOUBLEBUFFER, /* */
+				 /*GLX_DOUBLEBUFFER, */
 			      None };
 static XVisualInfo             *accis_vi;
 static Colormap                accis_cmap;
 static XSetWindowAttributes    accis_swa;
 static GLXContext              accis_glc;
 static XWindowAttributes       accis_gwa;
-static XEvent                  accis_xev;
+/*static XEvent                  accis_xev;*/
 static Colormap accis_colormap;
 static int accis_depth;
 static int accis_listing=0;
@@ -65,7 +65,7 @@ static int a_grad_inited=0;
 static int a_gradred[a_gradPixno];
 static int a_gradgreen[a_gradPixno];
 static int a_gradblue[a_gradPixno];
-static int a_gradno=a_gradPixno;/* Publically available Pixno */
+/*static int a_gradno=a_gradPixno;*/ /* Publically available Pixno */
 
 /* 16-color model globals. Pixels for truecolor display. */
 #define a_maxPixels 16
@@ -176,12 +176,6 @@ void accis_set_focus(){
     accis_old_handler=XSetErrorHandler(accis_errorhandler) ;
     XSetInputFocus(accis_display, accis_window, RevertToParent,CurrentTime);
 }
-
-int accisinit()
-{
-  FORT_INT xp, yp, vm, nc;
-  svga_(&xp,&yp,&vm,&nc);
-}
 /* Main setup subroutine */ 
 int svga_(scrxpix, scrypix, vmode, ncolor)
 FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
@@ -289,6 +283,13 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
 }
 
 /************************************************************************/
+void accisinit()
+{
+  FORT_INT xp, yp, vm, nc;
+  svga_(&xp,&yp,&vm,&nc);
+}
+
+/************************************************************************/
 int is_truecolor()
 {  
   /*See if this is a sensible 24 bit display or not 
@@ -315,16 +316,13 @@ void initDefaultColors()
 {
   XColor theRGBColor;
   XColor theHardColor;
-  int status,truecolor;
+  int status;
   int i,j,pix;
   if(accis_nodisplay){
-    truecolor=1;
   }else{
     if(is_truecolor()){	
-      truecolor=1;
 /*      fprintf(stderr,"True color shortcut Default colors.\n"); */
     }else{
-      truecolor=0;
       fprintf(stderr,"Looking up default colors the hard way.\n");
       for(i=0;i<a_maxPixels;i++){
 	status=XLookupColor(accis_display,accis_colormap,accis_colornames[i],
@@ -521,7 +519,7 @@ XEvent *event;
 /* ******************************************************************** */
 /* Externally callable routine to set noeye3d return value.
    Set to 9999 to disable. */ 
-int noeye3d_(value)
+void noeye3d_(value)
      int *value;
 {
   if(*value>1000)accis_eye3d=9999;
@@ -756,12 +754,12 @@ FORT_INT *i3d;
 {
   int i,li;
   float xn,yn,zn,xw,yw,xs,ys;
-  FORT_INT ixs,iys,three=3;
+  FORT_INT ixs,iys;
   float cbx,cby,cbz,xcbc,ycbc;
   float zs, zero=0.;
   /* Fortran functions called: */
-  float extern wx2nx_(),wy2ny_();
-  void extern tn2s_(),wxyz2nxyz_();
+  float extern wx2nx_(),wy2ny_(),getwx2nx_(),getwy2ny_();
+  void extern tn2s_(),wxyz2nxyz_(),getcube_(),trn32_();
 
 /*   if(h[1]>=a_gradPixno || h[3]>=a_gradPixno || h[3]>=a_gradPixno){ */
 /*     return 1; */

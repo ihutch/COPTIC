@@ -4,7 +4,7 @@ c Automatic plotting of an array versus its index
       include 'plotcom.h'
       integer n
       real y(n)
-      real xmin,xmax,ymin,ymax
+      real ymin,ymax
       real xfac,xdelta
       integer nxfac
       call minmax(y,n,ymin,ymax)
@@ -20,7 +20,7 @@ c crude plotting of y versus its index. No dashed line capability.
       real y(n)
       call vecw(1.,y(1),0)
       do 1 i=2,n
-	 call vecw(float(i),y(i),1)
+         call vecw(float(i),y(i),1)
     1 continue
       end
 c********************************************************************

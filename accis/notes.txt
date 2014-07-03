@@ -839,3 +839,10 @@ Seems that loki's opengl does not have 2, as a consequence it trips 1.
 Accis now under git version control.
 
 The only subdirectory in the repository is testing.
+
+
+19 June 2014
+The contour autofitting does not work satisfactorily. And I don't
+really understand either how it is supposed to work or why it
+doesn't. 
+Rewrote a more rational algorithm.

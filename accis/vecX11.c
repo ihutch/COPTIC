@@ -405,7 +405,7 @@ FORT_INT *px, *py, *ud;
     py1=py2;
     px2 = *px;
     py2 = *py;
-    if( *ud > 0) {
+    if( *ud == 1) {
       if(accis_back==0)XDrawLine(accis_display,
 				 accis_window,
 				 accis_gc,px1,py1,px2,py2);
@@ -652,7 +652,7 @@ FORT_INT *li;
   XSetForeground(accis_display,accis_gc,a_gradPix[(int) ii]);
   return 1;
 }
-/********** Tell the current rgb color ********************************/
+/********** Tell the ipixel rgb color ********************************/
 /* Subroutine */ int getrgbcolor_(ipixel,red,green,blue)
 FORT_INT *ipixel,*red,*green,*blue;
 {

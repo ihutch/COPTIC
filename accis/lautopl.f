@@ -1,5 +1,5 @@
 c************************************************************************
-c	Automatic setup of arrays with logarithmic scales.
+c       Automatic setup of arrays with logarithmic scales.
       subroutine lautoinit(x,y,n,lx,ly)
       real x(1),y(1)
       integer n
@@ -12,24 +12,24 @@ c	Automatic setup of arrays with logarithmic scales.
       ymax=y(1)
       ymin=ymax
       do 1 i=2,n
-	 xc=x(i)
-	 yc=y(i)
-	 if(xc.lt.xmin)xmin=xc
-	 if(xc.gt.xmax)xmax=xc
-	 if(yc.lt.ymin)ymin=yc
-	 if(yc.gt.ymax)ymax=yc
+         xc=x(i)
+         yc=y(i)
+         if(xc.lt.xmin)xmin=xc
+         if(xc.gt.xmax)xmax=xc
+         if(yc.lt.ymin)ymin=yc
+         if(yc.gt.ymax)ymax=yc
     1 continue
       if(.not.lx)then
-	 call fitrange(xmin,xmax,ticnum,nxfac,xfac,xdelta,xmin,xmax)
+         call fitrange(xmin,xmax,ticnum,nxfac,xfac,xdelta,xmin,xmax)
       else
-	 xmin=10.**(nint(log10(xmin)-0.49999))
-	 xmax=10.**(nint(log10(xmax)+0.49999))
+         xmin=10.**(nint(log10(xmin)-0.49999))
+         xmax=10.**(nint(log10(xmax)+0.49999))
       endif
       if(.not.ly)then
-	 call fitrange(ymin,ymax,ticnum,nxfac,xfac,xdelta,ymin,ymax)
+         call fitrange(ymin,ymax,ticnum,nxfac,xfac,xdelta,ymin,ymax)
       else
-	 ymin=10.**(nint(log10(ymin)-0.49999))
-	 ymax=10.**(nint(log10(ymax)+0.49999))
+         ymin=10.**(nint(log10(ymin)-0.49999))
+         ymax=10.**(nint(log10(ymax)+0.49999))
       endif
       call pltinit(xmin,xmax,ymin,ymax)
       call scalewn(xmin,xmax,ymin,ymax,lx,ly)

@@ -22,18 +22,16 @@ c Set all the bits of ifield_mask: =2**31-1=2*(2**30-1)+1 avoid overflow.
 c      parameter (ifm1=2**10-1)
 c      parameter (ifm1=31)
       data ifield_mask/ifm1/
-
 c Normally there's no external field.
       data lextfield/.false./extfield/ndims*0./
-
 c Mesh default initialization (meshcom.f)
       parameter (imsr=ndims*(nspec_mesh-2))
       data imeshstep/ndims*1,ndims*32,imsr*0/
       data xmeshpos/ndims*-5.,ndims*5.,imsr*0./
-
 c Default no point charges:
       data iptch_mask/0/
-
+c Default no subtractive objects
+      data normv/ngeomobjmax*0/
 c We don't do flux initialization in a block data. Too big.
       end
 c**********************************************************************
@@ -114,6 +112,9 @@ c**********************************************************************
      &         ,' periodity dimension d.'
       write(*,8)'Periodic Particle Region Setting: 98,ix,iy,iz equivale'
      &         ,'nt to -ppix,iy,iz.'
+      write(*,8)'Subtractive object association; 89, nassoc, nrmv,'
+     $     ,' irmv1,irmv2,...,irmvnrmv.'
+      write(*,*)'Set objects irmv1-irmvnrmv as subtractive for nassoc.'
       end
 
 c**********************************************************************
@@ -140,6 +141,9 @@ c      real obj_geom(odata,ngeomobjmax)
       real valread(2*nspec_mesh)
       logical lbounded
       external lbounded
+
+c silence spurious warning
+      ist=0
 
       ierr=0
 c Zero the obj_geom data.
@@ -203,8 +207,8 @@ c Cuboid has 6 facets and uses numbering in three coordinates:
          if(myid.eq.0)then 
             write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
             do k=1,ndims
-               if(obj_geom(ocenter+k-1,ngeomobj).eq.obj_geom(oradius+k-1
-     $              ,ngeomobj)) stop 'Zero volume cube not allowed'
+               if(obj_geom(oradius+k-1,ngeomobj).eq.0.)
+     $              stop 'Zero volume cube not allowed'
             enddo
          endif
       elseif(type.eq.3.)then
@@ -334,7 +338,42 @@ c Reset all if this is the first face call.
          enddo
          iCFcount=iCFcount+1
 c Don't count this as an object.
-         ngeomobj=ngeomobj-1         
+         ngeomobj=ngeomobj-1
+      elseif(type.eq.89.or.type.eq.88)then
+         read(cline,*,err=901,end=881)idumtype,iassoc,normv(iassoc)
+     $        ,(ormv(k,iassoc),k=1,normv(iassoc))
+         if(myid.eq.0)write(*,*)ngeomobj,' Subtracting association',type
+     $        ,iassoc,normv(iassoc),(ormv(k,iassoc),k=1,normv(iassoc))
+c Don't count this line as an object.
+         ngeomobj=ngeomobj-1
+         if(iassoc.gt.ngeomobj)stop
+     $        'Input error subtracting from non-existent object'
+         if(type.eq.88)then
+c Implement the implied subtractive effects of each subtracted object.
+c Make the complement of object iassoc subtractive for each subtracted.
+         do k=1,normv(iassoc)
+c isoc is the subtractive object
+            isoc=abs(ormv(k,iassoc))
+            if(isoc.gt.ngeomobj)stop
+     $           'Input error subtracting non-existent object' 
+c Increment its list of subtractives.
+            normv(isoc)=normv(isoc)+1
+c Make its last entry the complement of the additive.
+            ormv(normv(isoc),isoc)=-iassoc
+            if(obj_geom(oabc,isoc).eq.0.and.
+     $           obj_geom(oabc+1,isoc).eq.0.and.
+     $           obj_geom(oabc+2,isoc).eq.0.)then
+c Set subtractive boundary conditions equal to additive
+               do ii=1,ndims
+                  obj_geom(oabc+ii-1,isoc)=obj_geom(oabc+ii-1,iassoc)
+               enddo
+               ifield_mask=IBSET(ifield_mask,isoc-1)
+            endif
+            if(myid.eq.0)write(*,*)'  Set subtractive surfaces',isoc
+     $           ,normv(isoc),(ormv(ii,isoc),ii=1,normv(isoc))
+     $           ,(obj_geom(oabc+ii-1,isoc),ii=1,3*ndims)
+         enddo
+         endif
       endif
 c If this is a null boundary condition clear the relevant bit.
       if(obj_geom(oabc,ngeomobj).eq.0.
@@ -740,20 +779,22 @@ c Therefore, a fraction of 1 should be returned.]
 c
 c If the surface conditions include non-zero c2, then it is not possible
 c to apply the same BC to both sides, without a discontinuity arising.
-c Continuity alone should be applied
-c on the other (inactive) side of the surface.  A negative value of c2
-c is used to indicate that just the appropriate continuity condition is
-c to be applied, but c1,c2,c3, should all be returned with the magnitudes
-c that are applied to the active side of the surface, with consistently
-c reversed signs. (e.g. a=1, b=1, c=-2 -> a=-1, b=-1, c=2)
+c Continuity alone should be applied on the other (inactive) side of the
+c surface.  A negative value of c2 is used to indicate that just the
+c appropriate continuity condition is to be applied, but c1,c2,c3,
+c should all be returned with the magnitudes that are applied to the
+c active side of the surface, with consistently reversed
+c signs. (e.g. a=1, b=1, c=-2 -> a=-1, b=-1, c=2)
 c
 c A fraction of 1 causes all the bounding conditions to be ignored.
       include 'ndimsdecl.f'
       include 'meshcom.f'
       include '3dcom.f'
 c      integer debug
+      save numreports
+      data numreports/0/
 
-      real xx(10),xd(10)
+      real xx(ndims),xd(ndims)
       real xp1(ndims),xp2(ndims)
 c Default no intersection.
       fraction=1
@@ -791,9 +832,6 @@ c            if(debug.gt.0)fraction=101
 c First implemented just for spheres.
                call spherefsect(ndims,xp1,xp2,i,ijbin,sd,fraction
      $              ,ijbin2)
-c                  call sphereinterp(ndims,0,xp1,xp2
-c     $                 ,obj_geom(ocenter,i),obj_geom(oradius,i)
-c     $                 ,fraction,f2,sd,C,D)
             elseif(itype.eq.2)then
 c Coordinate-aligned cuboid.               
                call cubefsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
@@ -803,10 +841,13 @@ c Coordinate aligned cylinder.
             elseif(itype.eq.4)then
 c Parallelopiped.
                call pllelofsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
-               if(fraction.gt.1.)fraction=1.
-               if(fraction.lt.0.)fraction=1.
+c     I don't think this ever actually happens, but we'll see.
+               if(fraction.gt.1.or.fraction.lt.0.)then
+                  write(*,*)'***********pllelofsect fraction',fraction
+                  fraction=1.
+               endif
             elseif(itype.eq.5)then
-c Non-aligned cylinder needed
+c Non-aligned cylinder.
                call cylgfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
             else
                write(*,*)"Unknown object type",obj_geom(otype,i),
@@ -816,6 +857,40 @@ c Non-aligned cylinder needed
 c Null BC. Ignore.
             fraction=1.
          endif
+
+c Now we have decided the fraction for this object. Test if there's
+c some subtraction for this object
+         if(fraction.ne.1. .and. normv(i).ne.0)then
+            if(numreports.lt.1)then
+               write(*,*)'Subtraction from obj',i,'; total',normv(i)
+     $           ,' objects subtracted:',(ormv(k,i),k=1,normv(i))
+c     $              ,' indi',indi
+c     $              ,' ipm',ipm
+               numreports=numreports+1
+            endif
+c If this intersection is subtracted, exclude by setting fraction=1.
+c Construct the intersection.
+            do k=1,ndims
+               xx(k)=xp1(k)+fraction*(xp2(k)-xp1(k))
+            enddo
+c Test if +-inside objects.
+            do k=1,normv(i)
+               isubtr=abs(ormv(k,i))
+               inout=sign(1,ormv(k,i))
+               inout=inout*(2*inside_geom(ndims,xx,isubtr)-1)
+               if(inout.eq.1)then
+c                  write(*,*)'Removed',indi,i,k,xx,fraction
+                  fraction=1.
+               endif
+            enddo
+c Ad hoc diagnostics
+c            if(xx(1)**2+xx(2)**2.lt.1.)then
+c               ii=inside_geom(ndims,xx,2)
+c               write(*,*)'Unremoved',i,(ormv(k,i),ii,k=1,normv(i)),xx
+c     $              ,fraction
+c            endif
+         endif
+
          if(fraction.ne.1.)then
 c Default:
             projection=0.
@@ -840,15 +915,21 @@ c               write(*,*)'Gradient. cond=',conditions,i
             if(conditions(2).ne.0)then
 c Derivative term present. Calculate the projection:
 c    Calculate Coordinates of crossing
-               do idi=1,ndims
+c Unnecessarily complicated:
+c               do idi=1,ndims
 c    Address of mesh point. 
-                  ix=indi(idi)+ixnp(idi)+1
-                  xx(idi)=xn(ix)
+c                  ix=indi(idi)+ixnp(idi)+1
+c                  xx(idi)=xn(ix)
 c This needs to be generalized for other objects.
-                  if(idi.eq.idi)
-     $                 xx(idi)=xx(idi)+fraction*(xn(ix+ipm)-xn(ix))
+c                  if(idi.eq.id)
+c     $                 xx(idi)=xx(idi)+fraction*(xn(ix+ipm)-xn(ix))
 c    Component of outward vector = Sphere outward normal.
-                  xd(idi)=xx(idi)-obj_geom(ocenter+idi-1,i)
+c                  xd(idi)=xx(idi)-obj_geom(ocenter+idi-1,i)
+c               enddo
+               do k=1,ndims
+                  xx(k)=xp1(k)+fraction*xp2(k)
+c    Component of outward vector = Sphere outward normal.
+                  xd(k)=xx(k)-obj_geom(ocenter+k-1,i)
                enddo
 c    Signed projection cosine:
                projection=ipm*(xd(id)/obj_geom(oradius,i))

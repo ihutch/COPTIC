@@ -22,45 +22,45 @@ c Set axon scaling
       call pltinit(x(1),x(nx),zmin,zmax)
       call xaxis(0.,0.)
       if(xfrac.lt.0) then
-	 naxpt=naxmax
-	 call ticrev
+         naxpt=naxmax
+         call ticrev
       endif
       call yaxis(0.,0.)
       if(xfrac.lt.0)then
-	 naxpt=naxmin
-	 call ticrev
+         naxpt=naxmin
+         call ticrev
       endif
       call fitrange(y(1),y(ny),7,nyfac,ypscl,ydelta,y1st,ylast)
       if(nyfac.le.2.and.nyfac.ge.0)then
-	 nyfac=0.
-	 ypscl=1.
+         nyfac=0.
+         ypscl=1.
       endif
       if(xfrac.gt.0)then
-	 i=nx
-	 xni= wx2nx(x(i))
+         i=nx
+         xni= wx2nx(x(i))
          xna= wx2nx(x(i)+xfrac*(x(nx)-x(1))/xnreg)
-	 yni= wy2ny(zmin)
+         yni= wy2ny(zmin)
          yna= wy2ny(zmin+yfrac*(zmax-zmin)/ynreg)
-	 zmin=y(1)/ypscl
-	 zmax=y(ny)/ypscl
+         zmin=y(1)/ypscl
+         zmax=y(ny)/ypscl
       else
-	 i=1
-	 xna= wx2nx(x(i))
+         i=1
+         xna= wx2nx(x(i))
          xni= wx2nx(x(i)+xfrac*(x(nx)-x(1))/xnreg)
-	 yna= wy2ny(zmin)
+         yna= wy2ny(zmin)
          yni= wy2ny(zmin+yfrac*(zmax-zmin)/ynreg)
-	 zmin=y(ny)/ypscl
-	 zmax=y(1)/ypscl
+         zmin=y(ny)/ypscl
+         zmax=y(1)/ypscl
       endif
       call gaxis(zmin,zmax,nyfac,y1st/ypscl,ydelta/ypscl,
-     $	   xni,xna,yni,yna,.true.,.false.)
+     $     xni,xna,yni,yna,.true.,.false.)
       do 3 j=1,ny
-	 do 4 i=1,nx
-	    ud=i-1
-	    call trn32(wx2nx(x(i)),y(j)-y(1),wy2ny(z(i,j))
-     $		 ,xt,yt,zt,0)
-	    call hidvecn(xt,yt,ud)
-    4	 continue
+         do 4 i=1,nx
+            ud=i-1
+            call trn32(wx2nx(x(i)),y(j)-y(1),wy2ny(z(i,j))
+     $           ,xt,yt,zt,0)
+            call hidvecn(xt,yt,ud)
+    4    continue
     3 continue
       call pltend
       end

@@ -285,6 +285,104 @@ electron flux density there.
 on the object, but takes a value determined by requiring the total ion
 flux to the object to equal the electron flux.
 
+\subsection{Object Subtraction}
+
+More complicated concave-surface and hollow objects can be constructed
+by subtraction of one object from another. When all (relevant) objects
+have been defined by their object lines, a special object line with
+\verb!otype! equal to 89 or 88 indicates subtraction. The type is
+followed by an integer indicating the object (number) from which to
+subtract (the ``additive'' object), an integer indicating how many
+other objects are subtracted from it, N, and then N integers
+indicating the ``subtractive'' objects' numbers O1, O2, ... ON. Thus lines
+\begin{verbatim}
+88, 1, 1, 2
+89, 4, 2, 5, -6
+\end{verbatim}
+indicate respectively that object 1 has one object, namely object 2,
+subtracted from it; while object 4 has two objects, 5 and -6
+subtracted from it. A negative subtractive object means subtract the
+\emph{complement}, i.e.\ the region outside the object, rather than
+the inside.
+\begin{figure}[htp]
+{\tiny
+\begin{verbatim}
+//////////////////////////////// ////////////////////////////////
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~00000000~~~~~~~~~~~/ /~~~~~~~~~~~00000000~~~~~~~~~~~/
+/~~~~~~~~~000111111000~~~~~~~~~/ /~~~~~~~~~000111111000~~~~~~~~~/
+/~~~~~~~~~0111~~~~1110~~~~~~~~~/ /~~~~~~~~~0111~~~~1110~~~~~~~~~/
+/~~~~~~~~0011~~~~~~1100~~~~~~~~/ /~~~~~~~~0011~~~~~~1100~~~~~~~~/
+/~~~~~~~~011~~~~~~~~110~~~~~~~~/ /~~~~~~~~011~~~~~~~~110~~~~~~~~/
+/~~~~~~~~01~~~~~~~~~~10~~~~~~~~/ /~~~~~~~~01~~~~~~~~~~10~~~~~~~~/
+/~~~~~~~~01~~~~~~~~~~10~~~~~~~~/ /~~~~~~~~01~11111111~10~~~~~~~~/
+/~~~~~~~~01~~~~~~~~~~10~~~~~~~~/ /~~~~~~~~01~13333331~10~~~~~~~~/
+/~~~~~~~~01~~~~~~~~~~10~~~~~~~~/ /~~~~~~~~01~13~~~~31~10~~~~~~~~/
+/~~~~~~~~011~~~~~~~~110~~~~~~~~/ /~~~~~~~~01113~~~~31110~~~~~~~~/
+/~~~~~~~~0011~~~~~~1100~~~~~~~~/ /~~~~~~~~00113~~~~31100~~~~~~~~/
+/~~~~~~~~~0111~~~~1110~~~~~~~~~/ /~~~~~~~~~0113~~~~3110~~~~~~~~~/
+/~~~~~~~~~0001~~~~1000~~~~~~~~~/ /~~~~~~~~~0003~~~~3000~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+/~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+//////////////////////////////// ////////////////////////////////
+(a)                              (b)
+\end{verbatim}
+}
+\caption{Illustration of the subtraction of a cylinder extending to
+  half the $32\times32$ domain from a centered sphere. The region in
+  which each boundary node lies, on a plane slice through the domain,
+  is indicated by an integer consisting of the bits set for each
+  object it is inside: 3 means inside 1 and 2. (a) is subtraction 89
+  leaving a hollow sphere and (b) is subtraction 88 leaving a solid
+  sphere with a cylindrical hole. The parts of the cylinder surfaces
+  that are outside the sphere do not create boundary
+  nodes.\label{textgraph}}
+\end{figure}
+
+The difference between \verb!otype! 88 and 89 is that 88 adds what we
+call ``subtractive'' surfaces, while 89 does not, as illustrated in
+Fig.\ \ref{textgraph}. Subtracting 89 an
+object with null boundary conditions (all zeroes) simply removes the
+part of the additive object that lies inside the subtracted
+object. What is left is a hollow thin shell of the additive object's
+surface with one or two holes in it. [Subtracting 89 a non-null object
+adds all of its boundaries everywhere, which is unlikely to be
+wanted.]  Subtracting 88 an object removes all the parts of the
+additive object within the subtracted, and also adds all the bounding
+surfaces of the subtracted that lie inside the additive object. As a
+result, new subtractive surfaces of the object appear where its inside
+has been removed. It has become a solid object with removed parts
+whose inner surfaces are those of the subtracted object. If the
+subtracted object has non-null BCs, then those BCs apply to the new
+subtractive boundaries. They may therefore be different from the BCs
+of the rest of the additive object. If the subtracted object has null
+BCs, then it inherits the BCs of the additive object instead. Then the
+new subtractive boundaries have the same BCs as the rest of the
+resultant object.
+
+No facility (yet) exists for subtracting an object from the
+\emph{complement} of another, i.e.\ for subtracting from a negative
+object. Generally, adding objects achieves nearly the same result from
+the viewpoint of the complementary region. The complementary region is
+usually what we care most about.
+
+Subtraction specifications do not increase the object count
+\verb!ngeomobj!. Compound objects cannot be subtracted from others.
+
 \subsection{Mesh Geometry}
 
 The setting of the mesh spacing in each dimension is specified by
@@ -413,7 +511,7 @@ an integer $n_k$ followed by $n_k$ integer values. So a line is
 schematically
 $99,n1,v_{11},v_{12},...,v_{1,n1},n2,v_{21},v_{22},...,v_{2,n2},...$
 The values $v$ refer to actual objects in the object file in the order
-in which they appear. (Mesh, boundary setting, and boolean lines do
+in which they appear. (Mesh, subtraction, boundary setting, and boolean lines do
 not count as objects but objects of whatever shape, even if their ABC
 values are all zero, do.)  The values $v$ may be positive referring to
 \emph{inside} or negative referring to \emph{outside}. The list of
@@ -439,6 +537,7 @@ particle region is everywhere within the mesh.
 \hline
 Leading Entry & Meaning\\
 \hline
+88,89    & Object subtraction.\\
 91-93    & Mesh number and spacing.\\
 98       & Particle Periodicity.\\
 99       & Boolean of particle region.\\
@@ -466,7 +565,8 @@ Each line of the object file that starts \verb!Arguments:! (if any)
 adds additional command line switches that are parsed \emph{before}
 those that actually appear on the command line.  These switches, like
 those that actually appear on the command line, override other
-settings in the object file (even settings that appear after the line
+settings in the object file (even settings that appear as special
+object lines after the line
 \verb!Arguments: ...!).
 
 \subsection{Code control parameters}
@@ -481,18 +581,18 @@ injected. A fixed number of particles is always present.
 
 \paragraph{-rn....} Set the reinjection number for each step, per
 node, \verb!ninjcomp!. 
-A complement of exactly \verb!ninjcomp! particles per processor is injected
+A total of exactly \verb!ninjcomp! particles per processor is injected
 at each step. The number of particles in the simulation therefore
 might change.
 
 \paragraph{-ri....} Set the rhoinfinity per node, and hence
-ninjcomp. Default 100. 
+\verb!ninjcomp!. Default 100. 
 The value of -ri is converted into \verb!ninjcomp! by \verb!ninjcalc! during
 initialization. The total \verb!rhoinfinity! is \verb!nproc! times the value
 specified. This is the equivalent of -rn but expressed more conveniently.
 
 \paragraph{-rx....} 
-Set the potential relaxation rate per step, \verb!crelax!. Default 0.5.
+Set the potential relaxation rate per step, \verb!crelax!. Default 0.
 The edge potential phirein is used to set the factor chi, which
 adjusts the reinjection rate by the OML factor, and averein which
 increments the injection energy. However, the update of phirein is
@@ -1112,7 +1212,7 @@ generator to where they stood at the end of the saved run.
 number of steps, as follows.
 \begin{itemize}\itemsep=0pt
 \item The current timestep is adjusted for acceleration.
-\item \verb!chargetomesh! generates the final \verb!psum! by deposition of ions.
+%\item \verb!chargetomesh! generates the final \verb!psum! by deposition of ions.
 \item \verb!psum! is reduced from all nodes. \verb!rhoinfinity! is calculated.
 \item \verb!psumtoq! converts psums to charge density, then zeroes \verb!psum!.
 \item The solver is called (\verb!sormpi!) or
@@ -1120,9 +1220,10 @@ number of steps, as follows.
 \item Force contributions are accumulated by \verb!calculateforces!.
 \item Optionally, plotting is done. Optionally checking is done.
 \item The particles are advanced by \verb!padvnc!. Charge deposition
-  of species higher than 1 is integrated into this routine.
+%  of species higher than 1 
+is integrated into this routine.
 \item Fluxes are reduced.
-\item The stencils are updated by \verb!cijdirect!
+\item The stencils are (optionally) updated by \verb!cijdirect!
 \item Running averages are calculated and optionally diagnostic data
   is written. 
 \item On occasion, particle distribution data is written. 
@@ -1211,7 +1312,7 @@ leap-frog combination of kick equal to $-\nabla\phi\;dt$ and drift
 ${\bf v} dt$. With non-zero magnetic field, the Cyclotronic mover is
 used. The instantaneous magnetic acceleration is ${\bf v}\times{\bf
   B}$ but the gyro motion is explicitly represented by a rotation at
-cyclotron frequency $\Omega$ equal to $B$. If $B> 1.e3$ then it is
+cyclotron frequency $\Omega$ equal to $B$. If $B>1?/dt$ then it is
 taken to be infinity; so then the ion motion consists purely of two
 terms: (1) parallel (to $B$) acceleration and drift (2) perpendicular
 drift equal to the perpendicular component of the specified drift velocity.

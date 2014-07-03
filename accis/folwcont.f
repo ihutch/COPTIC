@@ -2,7 +2,7 @@ c Modified Mar 94 to use parabolic interpolation.
 c Aug 94 to use more compact character ppath. Less than 10% slower.
 c Contouring routines using following algorithm.
 c Summary: 
-c 	CONTREC(z,ppath,imax,jmax,cl,nc) - simple shell for elementary call.
+c       CONTREC(z,ppath,imax,jmax,cl,nc) - simple shell for elementary call.
 c Use a rectangular mesh. If nc=0, fit contours, else use cl(nc).
 c
 c       CONTOURL(z,ppath,L,imax,jmax,cl,nc,x,y,consw) - Full call.
@@ -16,8 +16,8 @@ c   1   Vectors x and y determine the unequally spaced arrays.
 c   2   Arrays x and y determine the arbitrary mesh.
 c General call should be initialized by first.
 c
-c	CONSGEN - Searches for contour start and calls confol
-c	CONFOL - Follows the contour.
+c       CONSGEN - Searches for contour start and calls confol
+c       CONFOL - Follows the contour.
 c       MESH2W(xc,yc,ic,x,y,l,consw)
 c         - Transform xc,yc(ic) to the mesh x,y, depending on switch consw.
 c
@@ -97,44 +97,80 @@ c save charsize
       ch=chrshght
 c Interpret switch.
       theconsw=consw- 16*(consw/16)
-      icfil=consw/16 - 32*(consw/32)
+      icfil=consw/16 - 2*(consw/32)
       inocont=consw/32-2*(consw/64)
       itri=consw/64 -  2*(consw/128)
 c Second byte
       istep=consw/256-256*(consw/(256*256))
+c Third byte plus switch
+      ifcol=(consw/65536-256*(consw/(256*65536)))*65536 + theconsw
+c      write(*,*)'consw,theconsw,ifcol,icfil',consw,theconsw,ifcol,icfil
       if(nc.eq.0)then
 c Contour level fitting.
-	 call minmax2(z,L,imax,jmax,minz,maxz)
-	 in=inc
-	 if(int(abs(cl(1))).ne.0) in=abs(cl(1))
-c Get a good spacing that spans the range with no more than 8 cycles of labels.
-c ctic is then a power of 10 times 1,2,4, or 5.
-         call fitrange(minz,maxz,8,nxfac,xfac,ctic,c1st,clast)
-c Determine a good cyc number xcyc.
-	 call fitrange(0.,float(in),8,nxfac,xfac,xcyc,x1st,xlast)
-         cyc=xcyc
-	 call fitrange(c1st+ctic,c1st+2*ctic,cyc+1,
-     $        nxfac,xfac,xtic,x1st,xlast)
+         call minmax2(z,L,imax,jmax,minz,maxz)
+         in=inc
+         if(int(abs(cl(1))).ne.0) in=abs(cl(1))
+         if(.false.)then
+c Obsolete very complicated scheme for label cycle calculation.
+c Get a good spacing that spans the data range with no more than 8
+c cycles of labels.  ctic is then a power of 10 times 1,2,4, or 5.
+            call fitrange(minz,maxz,8,nxfac,xfac,ctic,c1st,clast)
+c         write(*,*)ctic,c1st,clast,x1st,cyc,xcyc,in
+c Determine a good cyc number xcyc that spans the desired number of
+c contours in no more than 8 steps.
+            call fitrange(0.,float(in),8,nxfac,xfac,xcyc,x1st,xlast)
+            cyc=xcyc
+c Find good xtic number that spans ctic in no more than cyc+1 steps.
+            call fitrange(c1st+ctic,c1st+2*ctic,cyc+1,
+     $           nxfac,xfac,xtic,x1st,xlast)
 c         write(*,*)'ctic,c1st,xtic,x1st,cyc,xcyc,in'
 c         write(*,*)ctic,c1st,xtic,x1st,cyc,xcyc,in
 c Round down, ensuring integers are ok, so that these are now commensurate.
-         cyc=1.0001*ctic/xtic
-         xtic=ctic/cyc
-         in=(clast-c1st)/xtic
-         x1st=c1st+ctic-cyc*xtic
-	 cv=maxz-minz
+            cyc=1.0001*ctic/xtic
+            xtic=ctic/cyc
+            in=(clast-c1st)/xtic
+            x1st=c1st+ctic-cyc*xtic
+            cv=maxz-minz
 c         write(*,*)ctic,c1st,xtic,x1st,cyc,xcyc,in
+         else
+c Current fitting of contours and labels code.
+            call fitrange(minz,maxz,in,nxfac,xfac,xtic,x1st,xlast)
+c Start assuming the label is every contour.
+            cyc=1.
+ 201        continue
+            if(abs(xlast-x1st)/(cyc*xtic).gt.10)then
+c If there would be more than 10 labels. Too many. Find the unit ixtic
+               al10=alog10(xtic)
+               ixtic=nint(10.**(al10-nint(al10-.5)))
+c               write(*,*)xtic,xfac,al10,al10-nint(al10-.5),ixtic
+               if(ixtic.eq.4)then
+c If ixtic.eq.4, then increase xtic unit to 5.
+                  xtic=1.25*xtic
+                  goto 201
+               endif
+c Otherwise, increase the number of contours per label cycle.
+               if(cyc.eq.4)then
+                  cyc=5
+               else
+                  cyc=cyc*2
+               endif
+               goto 201
+            endif
+            in=(xlast-x1st)/xtic
+c            write(*,*)xfac,x1st,xtic,cyc
+         endif
       else
-	 in=abs(nc)
+         in=abs(nc)
          cyc=1+in/8
          c1st=cl(1)
-	 if(in.gt.1)then 
+         if(in.gt.1)then 
             cv=abs(cl(in)-cl(1))
             clast=cl(in)
          else
             cv=abs(cl(1))
          endif
       endif
+c At this point we need cyc, x1st, xtic, xlast
       if(lclog)then
          if(nc.eq.0)then
 c Do logarithmic contour coloring fitting
@@ -217,48 +253,48 @@ c                  write(*,*)c1st,clast,ngradcol
       endif
       if(inocont.eq.0)then
       if(nc.lt.0)then
-	 labels=.false.
-	 cyc=1
+         labels=.false.
+         cyc=1
       else
-	 labels=.true.
+         labels=.true.
 c    stored current size earlier
-	 call charsize(.01,.01)
+         call charsize(.01,.01)
 c Decide on the format of the label based on the contour range.
-	 point=2-min(ifix(log10(cv)),2)
+         point=2-min(ifix(log10(cv)),2)
       endif
 c Contour drawing
       do 1 i=1,in
-	 if(nc.ne.0)then
-	    cv=cl(i)
+         if(nc.ne.0)then
+            cv=cl(i)
             idel=-1
             if(i.eq.1)idel=1
             cdel=abs(cl(i+idel)-cl(i))
-	 else
-	    cv=(x1st+i*xtic)
+         else
+            cv=(x1st+i*xtic)
             cdel=xtic
-	 endif
-	 ic=ici
+         endif
+         ic=ici
 c This gave interesting random values. i1st not initialized.
-c	 if((mod(i+i1st,cyc).eq.0).and.labels)then
-	 if((mod(i,cyc).eq.0).and.labels)then
+c        if((mod(i+i1st,cyc).eq.0).and.labels)then
+         if((mod(i,cyc).eq.0).and.labels)then
             ipoint=max(point,1-min(ifix(log10(cdel)+1.e-4),2))
-	    if(ipoint.gt.8)then
-	       write(str2,'(g12.6)')cv
+            if(ipoint.gt.8)then
+               write(str2,'(g12.6)')cv
 c this circumlocution to work around an f2c/powerc bug. 
-		str1=str2
-	       width=12
-	    else
-	       call fwrite(cv,width,ipoint,str1)
-	    endif
-	    if(cv.lt.0)then
-	       str2=str1
-	       str1=' '//str2
-	       width=width+1
-	    endif
-	 else
-	    width=0
-	 endif
-	 call consgen(z,cv,l,imax,jmax,ppath,xc,yc,ic,x,y,theconsw)
+                str1=str2
+               width=12
+            else
+               call fwrite(cv,width,ipoint,str1)
+            endif
+            if(cv.lt.0)then
+               str2=str1
+               str1=' '//str2
+               width=width+1
+            endif
+         else
+            width=0
+         endif
+         call consgen(z,cv,l,imax,jmax,ppath,xc,yc,ic,x,y,ifcol)
     1 continue
       call charsize(cw,ch)
       endif
@@ -270,18 +306,20 @@ c Contour labelling is controlled by the common:
 c common/lablnc/width,str1(*30) giving the label length and string.
 c Calls: Confol, polyline, labeline.
 c*************************************************************************
-      subroutine consgen(z,cv,l,ixmax,iymax,ppath,xc,yc,ic,x,y,consw)
+      subroutine consgen(z,cv,l,ixmax,iymax,ppath,xc,yc,ic,x,y,theconsw)
 c contour searching routine. 9 Aug 92
       real z(l,iymax),cv,x(1),y(1)
       integer l,ixmax,iymax
       character ppath(l,iymax)
       integer ic
       real xc(ic),yc(ic)
-      integer consw
+      integer consw,theconsw
 c Switch determining the type of plot:
-c 	0   Equally spaced arrays. Arguments x and y are not used.
-c	1   Vectors x and y determine the unequally spaced arrays.
+c       0   Equally spaced arrays. Arguments x and y are not used.
+c       1   Vectors x and y determine the unequally spaced arrays.
 c       2   Arrays x and y determine the arbitrary mesh.
+c If the Third byte of theconsw is non-zero it is the gradcolor by
+c which to fill a contour that is closed without encountering the bdy.
       integer i,j,k,kk,icc,ii,kk1
 c labeling common
       integer width
@@ -293,70 +331,84 @@ c labeling common
       data idx/0,1,0,-1,0/
       data idy/-1,0,1,0,-1/
 
+c consw is the lowest byte of the consw
+      consw=theconsw-256*(theconsw/256)
+c fillcolor is the next byte
+      ifcolor=(theconsw/65536-256*(theconsw/(256*65536)))
+c      write(*,*)'theconsw,ifcolor',theconsw,ifcolor
+
 c Search for starting points and call confol.
       icc=ic
 c Initialize the path record.
       do 1 j=1,iymax
-	 do 2 i=1,ixmax
-c	    do 21 k=1,4
-	       ppath(i,j)=char(0)
-c   21	    continue
-    2	 continue
+         do 2 i=1,ixmax
+c           do 21 k=1,4
+               ppath(i,j)=char(0)
+c   21      continue
+    2    continue
     1 continue
 c
 c Search sides
       do 8 kk1=0,1
-	 do 6 kk=0,3
-	    i=is(kk)*(ioffs(kk))+(is(kk)-1)*(ioffs(kk)-1)*(ixmax-1)+1
-	    j=(1-is(kk))*(ioffs(kk))+is(kk)*ioffs(kk)*(iymax-1)+1
-	    iss=is(kk)
-	    do 7 ii=0,is(kk)*ixmax+(1-is(kk))*iymax-2
-	       if(z(i,j)-cv .ge. 0)then
-		  k=kk+kk1
-		  if(k.gt.3)k=k-4
-		  if(z(i+idx(k),j+idy(k))-cv.lt.0)then
-		     itest=ichar(ppath(i,j))/2**k
-		     itest=itest-(itest/2)*2
-		     if(itest.eq.0)then
-c		     if(ichar(ppath(k+1,i,j)).eq.0)then
-			id=k+1
+         do 6 kk=0,3
+            i=is(kk)*(ioffs(kk))+(is(kk)-1)*(ioffs(kk)-1)*(ixmax-1)+1
+            j=(1-is(kk))*(ioffs(kk))+is(kk)*ioffs(kk)*(iymax-1)+1
+            iss=is(kk)
+            do 7 ii=0,is(kk)*ixmax+(1-is(kk))*iymax-2
+               if(z(i,j)-cv .ge. 0)then
+                  k=kk+kk1
+                  if(k.gt.3)k=k-4
+                  if(z(i+idx(k),j+idy(k))-cv.lt.0)then
+                     itest=ichar(ppath(i,j))/2**k
+                     itest=itest-(itest/2)*2
+                     if(itest.eq.0)then
+c                    if(ichar(ppath(k+1,i,j)).eq.0)then
+                        id=k+1
 c Found a new starting point.
-			call confol(z,cv,l,ixmax,iymax,
-     $			  i,j,id,ppath,xc,yc,ic)
-			call mesh2w(xc,yc,ic,x,y,l,consw)
-			call labeline(xc,yc,ic,str1,width)
-			ic=icc
-		     endif
-		  endif
-	       endif
-	       i=iss+i
-	       j=(1-iss)+j
-    7	    continue
-    6	 continue
+                        call confol(z,cv,l,ixmax,iymax,
+     $                    i,j,id,ppath,xc,yc,ic)
+                        call mesh2w(xc,yc,ic,x,y,l,consw)
+                        call labeline(xc,yc,ic,str1,width)
+                        ic=icc
+                     endif
+                  endif
+               endif
+               i=iss+i
+               j=(1-iss)+j
+    7       continue
+    6    continue
     8 continue
 c
 c Search internal points.
       do 3 j=2,iymax-1
       do 4 i=2,ixmax-1
-	 if(z(i,j)-cv .ge. 0)then
+         if(z(i,j)-cv .ge. 0)then
 c This might be a valid starting point. Check adjacent.
-	    do 5 k=0,3
-	       if(z(i+idx(k),j+idy(k))-cv.lt.0)then
-		  itest=ichar(ppath(i,j))/2**k
-		  itest=itest-(itest/2)*2
-		  if(itest.eq.0)then
-c		  if(ichar(ppath(k+1,i,j)).eq.0)then
-		     id=k+1
+            do 5 k=0,3
+               if(z(i+idx(k),j+idy(k))-cv.lt.0)then
+                  itest=ichar(ppath(i,j))/2**k
+                  itest=itest-(itest/2)*2
+                  if(itest.eq.0)then
+c                 if(ichar(ppath(k+1,i,j)).eq.0)then
+                     id=k+1
 c Found a new starting point.
-		     call confol(z,cv,l,ixmax,iymax,
-     $		       i,j,id,ppath,xc,yc,ic)
-		     call mesh2w(xc,yc,ic,x,y,l,consw)
-		     call labeline(xc,yc,ic,str1,width)
-		     ic=icc
-		  endif
-	       endif
-    5	    continue
-	 endif
+                     call confol(z,cv,l,ixmax,iymax,
+     $                 i,j,id,ppath,xc,yc,ic)
+                     call mesh2w(xc,yc,ic,x,y,l,consw)
+                     if(ifcolor.ne.0)then
+c                        call getrgbcolor(icol,ired,igreen,iblue)
+                        icol=igetcolor()
+                        call acgradcolor(ifcolor)
+                        call polyline(xc,yc,ic)
+                        call pathfill()
+                        call color(icol)
+                     endif
+                     call labeline(xc,yc,ic,str1,width)
+                     ic=icc
+                  endif
+               endif
+    5       continue
+         endif
     4 continue
     3 continue
       end
@@ -375,35 +427,35 @@ c On Ouput: xc,yc are in the units of x and y.
 c No scaling.
       if(consw.eq.1)then
 c Use vector forms.
-	 do 1 i=1,abs(ic)
-	    ix=xc(i)
-	    xc(i)=x(ix)+(x(ix+1)-x(ix))*(xc(i)-ix)
-	    iy=yc(i)
-	    yc(i)=y(iy)+(y(iy+1)-y(iy))*(yc(i)-iy)
-    1	 continue
+         do 1 i=1,abs(ic)
+            ix=xc(i)
+            xc(i)=x(ix)+(x(ix+1)-x(ix))*(xc(i)-ix)
+            iy=yc(i)
+            yc(i)=y(iy)+(y(iy+1)-y(iy))*(yc(i)-iy)
+    1    continue
       elseif(consw.eq.2)then
 c  Use array forms.
 c  Mock up array behaviour: x(l,*),y(l,*)
-	 do 2 i=1,abs(ic)
-	    ix=xc(i)
-	    dx=xc(i)-ix
-	    iy=yc(i)
-	    dy=yc(i)-iy
-	    iv=ix+(iy-1)*L
-	    ipx=iv+1
-	    ipy=iv+L
-	    t1=x(iv)+(x(iv+1)-x(iv))*dx
-	    t2=x(ipy)+(x(ipy+1)-x(ipy))*dx
-	    xc(i)=(1.-dy)*t1+dy*t2
-	    t1=y(iv)+(y(iv+L)-y(iv))*dy
-	    t2=y(ipx)+(y(ipx+L)-y(ipx))*dy
-	    yc(i)=(1.-dx)*t1+dx*t2
-    2	 continue
+         do 2 i=1,abs(ic)
+            ix=xc(i)
+            dx=xc(i)-ix
+            iy=yc(i)
+            dy=yc(i)-iy
+            iv=ix+(iy-1)*L
+            ipx=iv+1
+            ipy=iv+L
+            t1=x(iv)+(x(iv+1)-x(iv))*dx
+            t2=x(ipy)+(x(ipy+1)-x(ipy))*dx
+            xc(i)=(1.-dy)*t1+dy*t2
+            t1=y(iv)+(y(iv+L)-y(iv))*dy
+            t2=y(ipx)+(y(ipx+L)-y(ipx))*dy
+            yc(i)=(1.-dx)*t1+dx*t2
+    2    continue
       endif
       end
 c************************************************************************
       subroutine confol(z,cv,l,ixmax,iymax,initx,inity,initd,
-     $	   ppath,xc,yc,i)
+     $     ppath,xc,yc,i)
 c Follow a contour of function z, at value cv. Path marking version.
 c Inputs: function-array, contour value, dimensions: true,used,used.
       real z(l,iymax),cv
@@ -427,9 +479,9 @@ c  (ix+idx(id),iy+idy(id)).
       data idy/-1,0,1,0,-1/
 c Statement functions for interpolation.
 c      xint(id)=(ix+idx(id)*(z(ix,iy)-cv)/
-c     $	     (z(ix,iy)-z(ix+idx(id),iy+idy(id))))
+c     $      (z(ix,iy)-z(ix+idx(id),iy+idy(id))))
 c      yint(id)=(iy+idy(id)*(z(ix,iy)-cv)/
-c     $	     (z(ix,iy)-z(ix+idx(id),iy+idy(id))))
+c     $      (z(ix,iy)-z(ix+idx(id),iy+idy(id))))
 c
       imax=i
       i=0
@@ -440,9 +492,9 @@ c Contour always has z1 (left) gt cv and z2 lt cv.
       z1=z(ix,iy)-cv
       z2=z(ix+idx(id-1),iy+idy(id-1))-cv
       if((z1 .lt. 0).or.(z2 .gt.0).or.(id.gt.4).or.(id.lt.1))then
-	 write(*,*)'CONFOL:Improper input values x,y,idir,z1-cv,z2-cv'
-     $	      ,ix,iy,id,z1,z2
-	 return
+         write(*,*)'CONFOL:Improper input values x,y,idir,z1-cv,z2-cv'
+     $        ,ix,iy,id,z1,z2
+         return
       endif
 c Start of main loop.
     1 continue
@@ -450,7 +502,7 @@ c interpolate the next point.
       i=i+1
 c      write(*,'('' new ix,iy,id,i'',4i4)')ix,iy,id,i
       call nextpt(z,l,ixmax,iymax,cv,
-     $	   ix,iy,idx(id-1),idy(id-1),di)
+     $     ix,iy,idx(id-1),idy(id-1),di)
       xc(i)=ix+idx(id-1)*di
       yc(i)=iy+idy(id-1)*di
 c This is presumably the place to put the function call to document the
@@ -461,48 +513,48 @@ c Path documentation:
 
       itest=ichar(ppath(ix,iy))/2**(id-1)
       if(itest - (itest/2)*2 .eq. 0)
-     $	    ppath(ix,iy)=char(ichar(ppath(ix,iy))+2**(id-1))
+     $      ppath(ix,iy)=char(ichar(ppath(ix,iy))+2**(id-1))
       if(i.eq.imax)then
-	 write(*,*)'CONFOL: Contour length exhausted',imax
+         write(*,*)'CONFOL: Contour length exhausted',imax
 c Path document end
          call acpathdoc(z,cv,l,imax,0.,0.,1)
-	 return
+         return
       endif
       if((i.gt.1).and.(ix.eq.initx).and.(iy.eq.inity).and.
-     $	      (id.eq.initd))then
-c	 write(*,*)'Returned to initial point.',ix,iy
+     $        (id.eq.initd))then
+c        write(*,*)'Returned to initial point.',ix,iy
 c Path document end
          call acpathdoc(z,cv,l,imax,0.,0.,1)
-	 return
+         return
       endif
 c Decide which way to turn
       ixn=ix+idx(id)
       iyn=iy+idy(id)
       if((ixn.lt.1).or.(ixn.gt.ixmax).or.(iyn.lt.1).or.(iyn.gt.iymax))
-     $	   then
-c	 write(*,*)'Moved to edge.'
+     $     then
+c        write(*,*)'Moved to edge.'
 c Path document end
          call acpathdoc(z,cv,l,imax,0.,0.,1)
-	 return
+         return
       endif
       if(z(ixn,iyn)-cv .lt. 0)then
 c Turn left
-	 id=id+1
-	 if(id.gt.4) id = 1
+         id=id+1
+         if(id.gt.4) id = 1
       else
-	 ixn2=ixn+idx(id-1)
-	 iyn2=iyn+idy(id-1)
-	 if(z(ixn2,iyn2)-cv.lt.0)then
+         ixn2=ixn+idx(id-1)
+         iyn2=iyn+idy(id-1)
+         if(z(ixn2,iyn2)-cv.lt.0)then
 c Go straight
-	    ix=ixn
-	    iy=iyn
-	 else
+            ix=ixn
+            iy=iyn
+         else
 c Turn Right
-	    ix=ixn2
-	    iy=iyn2
-	    id=id-1
-	    if(id .lt. 1) id=4
-	 endif
+            ix=ixn2
+            iy=iyn2
+            id=id-1
+            if(id .lt. 1) id=4
+         endif
       endif
       goto 1
       end
@@ -526,18 +578,18 @@ c x+idx,y+idy and x,y must be in the mesh. Other points are checked.
       i=ix-idx
       j=iy-idy
       if(i.lt.1 .or. i.gt.ixm .or. j.lt.1 .or. j.gt.iym) then
-	 ym1=2.*z(ix,iy)-z(ix+idx,iy+idy)
+         ym1=2.*z(ix,iy)-z(ix+idx,iy+idy)
       else
-	 ym1=z(i,j)
+         ym1=z(i,j)
       endif
       y0=z(ix,iy)
       y1=z(ix+idx,iy+idy)
       i=ix+2*idx
       j=iy+2*idy
       if(i.lt.1 .or. i.gt.ixm .or. j.lt.1 .or. j.gt.iym) then
-	 y2=2.*z(ix+idx,iy+idy)-z(ix,iy)
+         y2=2.*z(ix+idx,iy+idy)-z(ix,iy)
       else
-	 y2=z(i,j)
+         y2=z(i,j)
       endif
       call intpara(ym1,y0,y1,y2,cv,di)
       end
@@ -546,21 +598,21 @@ c Parabolic interpolation.
       subroutine intpara(ym1,y0,y1,y2,yv,di)
       real ym1,y0,y1,y2,yv,di
 c  On entry:
-c	ym1-y2	the four points to be interpolated
-c	yv	value to be interpolated
+c       ym1-y2  the four points to be interpolated
+c       yv      value to be interpolated
 c  On exit:
-c	di	fractional index increment at which y(di)=yv.
+c       di      fractional index increment at which y(di)=yv.
       real g,yp,dy,dy1,gpyp
       dy=yv-y0
       dy1=y1-yv
       if(dy1.lt.0)then
-	 if(dy.le.0)goto 10
+         if(dy.le.0)goto 10
       else
-	 if(dy.gt.0)goto 10
+         if(dy.gt.0)goto 10
       endif
       write(*,*)'INTPARA INPUT ERROR: Value not bracketed'
       write(*,'(a,g12.6,a,g12.6,a,i4,/)')
-     $	   ' y0=',y0,' y1=',y1
+     $     ' y0=',y0,' y1=',y1
       return
    10 yp=y1-y0
       g=0.25*(-y2+y1+y0-ym1)
@@ -666,7 +718,7 @@ c         write(*,*)xb,yb
       xgmax=wx2nx(xb)
       ygmax=wy2ny(yb)
       call gaxis(c1,c2,ngpow,first,delta,
-     $	   xgmin,xgmax,ygmin,ygmax,lpara,laxlog)
+     $     xgmin,xgmax,ygmin,ygmax,lpara,laxlog)
       end
 
 

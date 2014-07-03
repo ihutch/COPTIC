@@ -1,4 +1,3 @@
-
 # This makefile assumes the shell is Bash.
 ########################################################################
 # The eventual target:
@@ -167,7 +166,12 @@ smt.out : compiler $(COPTIC) copticgeom.dat
 	@if [ -f T1e0v000P200L1e0z005x05.phi ] ; then mv T1e0v000P200L1e0z005x05.phi prior.phi ; echo "Created prior.phi" ; fi
 	./$(COPTIC)
 	@if [ -f smt.prev ] ;then if [ -f smt.out ] ;then diff smt.prev smt.out ;else touch smt.out ;fi ;fi
-	@if [ -f prior.phi ] && [ -f T1e0v000P200L1e0z005x05.phi ] ; then if ! diff T1e0v000P200L1e0z005x05.phi prior.phi ; then echo "**** RESULT CHANGED" ; rm prior.phi; fi; else echo "File[s] lacking to compare result.\nProbably you've just made coptic for the first time."; fi 
+	@if [ -f prior.phi ] && [ -f T1e0v000P200L1e0z005x05.phi ] ; then \
+if [ `ls -s prior.phi | sed -e "s/[ ].*//"` -ne \
+    `ls -s T1e0v000P200L1e0z005x05.phi | sed -e "s/[ ].*//"` ] ;then \
+ echo "**** SIZE CHANGED. You probably ran a non-standard case just prior." ; \
+else if ! diff T1e0v000P200L1e0z005x05.phi prior.phi ; then \
+echo "**** RESULT CHANGED" ; rm prior.phi; fi; fi; else echo "File[s] lacking to compare result.\nProbably you've just made coptic for the first time."; fi 
 	@if [ "$(G77)" = "gfortran" ] ; then echo "Compiled serial coptic. make mproper; make for MPI version if MPI available." ; fi
 
 # For now we are using a big hammer to ensure libcoptic is clean.
@@ -191,9 +195,9 @@ mpicheck : $(COPTIC)
 
 # Configure compiler. Mostly one long continued bash script.
 compiler : makefile
-	@echo -n Compiler tests. $${G77}
+	@echo Compiler tests. $${G77}
 	@\
- if which $${G77} 2>/dev/null >/dev/null ; then\
+ if which `echo $${G77} | sed -e "s/ .*$$//"` 2>/dev/null >/dev/null ; then\
   GHERE="$${G77}";\
  else\
  if which mpif77 >/dev/null;\

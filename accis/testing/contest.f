@@ -33,7 +33,10 @@ c Put axes, annotations etc on afterward if desired.
       call axlabels('x-index','y-index')
 c 2.General call. x,y not used since last arg zero.
        call pltinit(1.,float(nx),1.,float(ny))
-       call contourl(z,ppath,nx,nx,ny,cl,snl,x,y,0)
+       iconsw=0
+c Test of coloring inside contours:
+c       iconsw=0+65536*200
+       call contourl(z,ppath,nx,nx,ny,cl,snl,x,y,iconsw)
 c How to draw suitably scaled axes if desired:
        call scalewn(x(1,1),x(nx,1),y(1,1),y(1,ny),.false.,.false.)
        call axis

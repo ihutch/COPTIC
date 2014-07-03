@@ -79,22 +79,22 @@ c Separate the coordinate 'nibbles'.
       ylst=ylab+4*ylst+xlst
       if(iud.gt.0)then
 c Continuing vector. Send only the necessary parts.
-	 if(yhi.ne.oyhi)then
-	    i=i+1
-	    outchr(i:i)=char(yhi)
-	 endif
-	 if(ylst.ne.oylst)then
-	    i=i+1
-	    outchr(i:i)=char(ylst)
-	 endif
-	 i=i+1
-	 outchr(i:i)=char(ylow)
-	 if(xhi.ne.oxhi)then
-	    i=i+1
-	    outchr(i:i)=char(xhi)
-	 endif
-	 i=i+1
-	 outchr(i:i)=char(xlow)
+         if(yhi.ne.oyhi)then
+            i=i+1
+            outchr(i:i)=char(yhi)
+         endif
+         if(ylst.ne.oylst)then
+            i=i+1
+            outchr(i:i)=char(ylst)
+         endif
+         i=i+1
+         outchr(i:i)=char(ylow)
+         if(xhi.ne.oxhi)then
+            i=i+1
+            outchr(i:i)=char(xhi)
+         endif
+         i=i+1
+         outchr(i:i)=char(xlow)
          istart=0
       else
 c Start vector.
@@ -103,10 +103,10 @@ c Start vector.
       if(i.ge.74.or.istart.eq.1)then
 c Finish draw and start again, if we are longer than a line or starting.
          write(*,999)outchr(1:i)
-  999	 format(1x,a)
-	 outchr(1:6)=char(29)//char(yhi)//char(ylst)
-     $	      //char(ylow)//char(xhi)//char(xlow)
-	 i=6
+  999    format(1x,a)
+         outchr(1:6)=char(29)//char(yhi)//char(ylst)
+     $        //char(ylow)//char(xhi)//char(xlow)
+         i=6
       endif
 c Update the vector.
       oxhi=xhi
@@ -124,7 +124,7 @@ c But a nonzero color always makes some mark because mask>0. check this!
       if(li.eq.0)then
          mask=0
       elseif(li.eq.8)then
-	 mask=7
+         mask=7
       else
          mask=mod(li,8)
       endif
@@ -207,8 +207,8 @@ c*************************************************************************
 c*************************************************************************
       subroutine accisgradinit(r1,g1,b1,r2,g2,b2)
       integer r1,g1,b1,r2,g2,b2
-      integer i,j,status
-      integer ipixel,red,green,blue;
+      integer i,j
+c      integer ipixel,red,green,blue;
       integer a_gradPixno
       parameter (a_gradPixno=240)
       integer a_gradPix(a_gradPixno)

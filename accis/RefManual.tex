@@ -40,13 +40,21 @@ Win32 graphics driver which need C) so if you can compile your
 fortran program, you can compile the accis routines.
 
 The best way to get into using accis is by example. So I recommend
-looking at the routine plottest.f.
+looking at the routine plottest.f, and others in the directory testing.
 
 \section{Conventions}
 
 For purposes of this summary, the following implicitly indicate types:
-i: integer, c: character, l: logical, all others: real.
-Terminating letter indicates: v: vector (1-d array), a: 2-d array.
+i: integer, c: character, l: logical, all others: real.  Terminating
+letter indicates: v: vector (1-d array), a: 2-d array.  
+
+There are world units, normalized (normal) units, and box units, each
+has a direct scaling to the others. Users can plot in world units
+standard values. Normalized x-units are 0 to 1 across the width of the
+canvas and normal y-units have the same size as x-units and start at 0
+at the bottom, but the top of a landscape canvas doesn't reach 1. Box
+units are fractional distance 0-1 across the plot-region box, in
+either direction.
 
 \section{Automatic plotting, single call plots.}
 
@@ -55,7 +63,8 @@ AUTOPLOT(xv,yv,ilength) Line plot yv versus xv; linear axes.
 
 AUTOMARK(xv,yv,ilength,isym) Plot using symbol isym.
 
-LAUTOPLOT(xv,yv,ilength,lnx,lny) Line plot with logarithmic axis in x or y.
+LAUTOPLOT(xv,yv,ilength,lnx,lny) Line plot with logarithmic axis in x
+or y or both.
 
 LAUTOMARK(xv,yv,ilength,lnx,lny,isym) Symbol plot with logarithmic axis(es).
  
@@ -70,18 +79,26 @@ FITINIT(xmin,xmax,ymin,ymax) same but fitting nice ranges.
 
 ACCISINIT() Shorthand call for PLTINIT(0.,1.,0.,1.).
 
-SCALEWN(xmin,xmax,ymin,ymax,lnx,lny) Set world scaling, possibly log.
+AUTOINIT(xv,yv,ilength) Set up scaling and axes as for AUTOPLOT based
+on the data, but don't actually do the plotting. This is useful if one
+wishes e.g.\  to change the color of the line before it is plotted by
+a call to POLYLINE.
+
+LAUTOINIT(xv,yv,ilength,lnx,lny) Set up possibly logarithmic scaling
+and axes, without drawing.
+
+SCALEWN(xmin,xmax,ymin,ymax,lnx,lny) Set world scaling explicitly, possibly log.
 
 FITSCALE(xmin,xmax,ymin,ymax,lnx,lny) same but fitting nice ranges.
 
 PLTINASPECT(xmin,xmax,ymin,ymax) Initiate graphics. Resize axis region
-to retain aspect ratio of plot. Set world scaling.
+to retain aspect ratio of plot with x,y in the same units. Set world scaling.
 
 AXREGION(xin,xan,yin,yan) Set the axis region in normal units.
 Default: .31,.91,.1,.7
 
-AXPTSET(xfrac,yfrac) Set the axis point (i.e. intersection) at specified
-fraction of the plot region. (Default 0.,0.)
+AXPTSET(xfrac,yfrac) Set the primary axis point (i.e. intersection) at specified
+fraction of the plot region (i.e.\ in box units). (Default 0.,0.)
 
 MULTIFRAME(irows,icolumns,ispace) For subsequent plots (using pltinit),
 plot irows x icolumns plots per page, with label space determined by
@@ -123,22 +140,25 @@ symbol corresponding to 'c' (xi).
 DASHSET(idash) Set dashed line character for polyline. 
 (0:solid, 1:long, 2:short, 3:long/short, 4:dots)
 
-LABELINE(xv,yv,ilength,clabel,ilablen) Draw polyline with embedded label
-of length ilablen. If ilablen.eq.-99 then set the normalized interval
-between labels to xv(1); if xv(1).eq.0 set it to default 0.3.
+LABELINE(xv,yv,ilength,clabel,ilablen) Draw polyline of ilength
+points, with embedded label, clabel, of length ilablen characters. If
+ilablen.eq.-99 then set the normalized interval between labels to
+xv(1); if xv(1).eq.0 set it to default 0.3.
 
 POLYDRAW(xv,yv,ilength,DRAWFN) Draw data marked by symbol defined by
-the routine DRAWFN, a subroutine with 2 real arguments, being the
+the routine DRAWFN, a subroutine accepting 2 real arguments, being the
 normalized x and y position of the symbol center, which draws the symbol.
 Specify EXTERNAL DRAWFN in the calling routine. Built-in routines are
 ACCIRCLE, ACTRID, ACAST, ACX, ACPLUS.
 
 ACGEN(x,y) is a general routine to be passed to POLYDRAW that will draw a
 user-defined symbol without having to define an actual
-function. Instead the subroutine ACGSET(xv,yv,ilength,ifill) is called
+function. Instead the subroutine 
+
+ACGSET(xv,yv,ilength,ifill) is called
 first with arguments giving the symbol vertices in units of the
 charsize, and calling for filling of the symbol if ifill .ne. 0.
-Thereafter acgen generates the sybol specified. Since the width and
+Thereafter acgen generates the symbol specified. Since the width and
 height are scaled by chrswdth and chrshght, aspect-ratio can be scaled
 using charsize().
 
@@ -146,17 +166,19 @@ POLYERRS(xv,yv,errv,ilength,u,d) Draw error bars from yv-d*errv to
 yv+u*errv for all the xv, yv, errv arrays.
 
 STPOLYLINE(xa,ya,ilength,ixstride,iystride),
+
 STPOLYMARK(xa,ya,ilength,ixstride,iystride,isym) Strided versions of
 polyline/mark, in which a total of ilength data points are sampled
 from the arrays xa and ya at strides of ixstride and iystride. These
 allow one to plot data from rows (rather than columns) of a matrix by
 passing the leading dimension of the matrix as the stride. Passing
-strides of 1 gives equivalent sampling to the unstrided versions.
+strides of 1 gives sampling equivalent to the unstrided versions.
 
 \section{Color}
 
 \iftth \special{html:<a href="filltest.f"><img align="right" src="filltest.png"></a>}\fi
-COLOR(icol) Set current color of 0-15. Default 15 black (on white).
+COLOR(icol) Set current discrete color of 0-15. Default 15 black (on
+white). If icol$>$15, then instead call GRADCOLOR(icol-15).
 
 GRADCOLOR(icol) Set current color from a 1-240 color gradient range.
 
@@ -167,7 +189,7 @@ ACCISGRADSET(iredv,igreenv,ibluev,npixel) Set the color gradient with
 arbitrary RGB values from vectors of length npixel.
 
 IGETCOLOR() Integer function.  Get the number of the current
-color. [You have to know if it is a 0-15 or a gradient color].
+color. [0-15 discrete, 16-256 a gradient color].
 
 PATHFILL() Fill the path just drawn, with the current color. A path is
 a set of vectors all drawn with pen down one after the other.
@@ -175,7 +197,7 @@ a set of vectors all drawn with pen down one after the other.
 IDARKBLUE(), IDARKGREEN(),  ISKYBLUE(),  IBRICKRED(),  IPURPLE(),
 IGOLD(),  IGRAY(),  ILIGHTGRAY(),  IBLUE(),  IGREEN(),  ICYAN(),
 IRED(),  IMAGENTA(),  IYELLOW(),  IBLACK(): Integer functions returning
-the 16-color number that gives what their name indicates ($=1-15$).
+the discrete 16-color number that gives what their name indicates ($=1-15$).
 
 GRADTRI(xv,yv,zv,dv,zg0,zg1,ng0,ng1,isw) shade triangle specified by
 vertices xv(3), yv(3)[, zv(3)], with gradient values dv(3). The
@@ -193,6 +215,10 @@ the color gradient. Position of axis is (x1,y1) to (x1,y2) in axis-box
 units. Width of color bar is colwith times axis-box
 width. lpara=.true. says use parallel labels.
 
+agradcolor(icol) set gradient color 0-239.
+
+getrgbcolor(icol,ired,igreen,iblue) get the gradient color RGB
+settings for input number icol 0-239.
 
 \section{Axes}
 
@@ -543,18 +569,41 @@ which causes the animation duration to be multiplied by 2.5
 
 \section{Linking}
 
-The routines are normally compiled and gathered into a library which
-is subsequently linked against. The interface routines are contained
-in vecx.c, vecglx.c, vecwin.c, or the obsolete but occasionally useful
-vec4014.f. Of these driver files, the routines svga, txtmode, vec,
-vecfill, scolor, accisgraddef, acgradcolor, getrgbcolor are public,
-for calling by higher level routines, and possibly the user.
+The routines are normally compiled and gathered into a library
+\verb!libaccis...! which is subsequently linked against. Compiling is
+accomplished by issuing the simple command \verb!$ make!. The makefile
+searches for a fortran compiler and builds the libary if
+successful. If it can't find one, then e.g. \verb!$ make G77=path90!
+tells it the name of the compiler is \verb!path90!. There are various
+other \verb!make! targets that can be found in the Makefile.
+
+The graphical output driver routines are contained in vecx.c,
+vecglx.c, vecwin.c, which require a C compiler, or the obsolete but
+occasionally useful vec4014.f. Of these driver files, the routines
+svga, txtmode, vec, vecfill, scolor, accisgraddef, acgradcolor,
+getrgbcolor are public, for calling by higher level routines, and
+possibly the user.
 
 For X window systems, the X11 driver (vecx.c) requires linking against
 the Xlib library using compiler/linker arguments such as
 -L/usr/X11R6/lib/-lX11.  The OpenGL driver vecglx.c requires in
 addition -lGL and -lGLU. The development versions of the X11 and
 OpenGL packages may be required to provide these.
+
+All the ACCIS code with the exception of the drivers is fortran 77.
+It takes advantage of the ubiquitous essential extensions: long
+variable names and include statements, that make F77 still viable
+today.  By virtue of fortran policy, it is therefore also fully
+compliant with the 1990, 1995, 2003, 2008 etc., fortran standards,
+without modification. However, when it is being called from modern
+(post 77) fortran, it may be advantageous for debugging purposes to
+use explicit interface definitions in the calling program. The file
+\verb!interface.f90! will be generated by \verb!$ make interface.f90!
+and can then be included in fortran code compiled with a F90 (or
+later) compiler. The explicit interface helps the compiler detect
+erroneous argument parameters to subroutine calls. It is not necessary
+for operation of debugged correct code.
+
 
 \end{document}
 

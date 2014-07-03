@@ -10,7 +10,7 @@ c Initialize the plot
 c Ensure loading of block data program.
       external initiald
 
-c	write(*,*)' Entering pltinit with nframe,pfsw',nframe,pfsw
+c       write(*,*)' Entering pltinit with nframe,pfsw',nframe,pfsw
       if(nframe.eq.0)then
 c      First frame only.
 c Update the plot-file state only here to avoid file-writing corruption.
@@ -24,43 +24,43 @@ c  Initialize the screen.
 c         write(*,*)'svga ncolor',ncolor,vmode,scrxpix,scrypix
 c Normal to screen-y scaling factor: just scrxpix for square pixels,
 c GKS scheme uses scrypix=0, n2sy,yoverx already set so omits this.
-	 if(scrypix .gt. 1)then
+         if(scrypix .gt. 1)then
 c Attempt to avoid g95 incompatibility.
-	    n2sy=float(int(scrxpix))
-	    yoverx=float(int(scrypix))/n2sy
-	 endif
-	 if(pfsw .ne. 0) then
+            n2sy=float(int(scrxpix))
+            yoverx=float(int(scrypix))/n2sy
+         endif
+         if(pfsw .ne. 0) then
 c     Initialize buffer and open file on unit 12.
-	    pfilno=pfilno+1
-	    write(str1(5:8),'(i4.4)')pfilno
-	    str1(1:4)='plot'
-	    if(abs(pfsw).eq.1)then
-	       str1(9:11)='.hp'
+            pfilno=pfilno+1
+            write(str1(5:8),'(i4.4)')pfilno
+            str1(1:4)='plot'
+            if(abs(pfsw).eq.1)then
+               str1(9:11)='.hp'
                call inib(12,str1(1:11))
-	    elseif(abs(pfsw).eq.2 .or.abs(pfsw).eq.3)then
-	       str1(9:11)='.ps'
+            elseif(abs(pfsw).eq.2 .or.abs(pfsw).eq.3)then
+               str1(9:11)='.ps'
                call inib(12,str1(1:11))
-	    elseif(abs(pfsw).eq.4.or.abs(pfsw).eq.5)then
+            elseif(abs(pfsw).eq.4.or.abs(pfsw).eq.5)then
 c pgfgraphic driver
-	       str1(9:12)='.pgf'
+               str1(9:12)='.pgf'
                call inib(13,str1(1:12))
-	    endif
+            endif
             psini=2
             if(pfPS.eq.1)call PSfontinit()
-	 endif
+         endif
       endif
 
       if(nrows.ne.0.and.ncolumns.ne.0)then
-	 call mregion
+         call mregion
       endif
 
 c      write(*,*)'Calling scalewn.'
       call scalewn(wxi,wxa,wyi,wya,.false.,.false.)
       if(nrows.ne.0)then
-c	Multiple Frames Code.
-	 call vecn(crsrx,crsry,0)
-	 nframe=nframe+1
-	 if(nframe.eq.nrows*ncolumns)nframe=0
+c       Multiple Frames Code.
+         call vecn(crsrx,crsry,0)
+         nframe=nframe+1
+         if(nframe.eq.nrows*ncolumns)nframe=0
       endif
       call truncf(0.,0.,0.,0.)
 c      write(*,*)'Leaving pltinit.'
@@ -74,8 +74,8 @@ c Wait for return, then switch to text mode
       call truncf(0.,0.,0.,0.)
       if(pfsw.ge.0)call txtmode
       if(nrows.ne.0) then
-	 call ticset(0.,0.,0.,0.,0,0,0,0)
-	 nframe=0
+         call ticset(0.,0.,0.,0.,0,0,0,0)
+         nframe=0
       endif
       end
 c*********************************************************************
@@ -99,8 +99,12 @@ c Set line color. li=15 resets. Plotting translates to dashed etc.
       include 'plotcom.h'
       ncolor=li
 c      write(*,*)' color: updown=',updown
-      call npcolor(li)
-      if(pfsw.ge.0) call scolor(li)
+      if(ncolor.le.15)then
+         call npcolor(li)
+         if(pfsw.ge.0) call scolor(li)
+      else
+         call gradcolor(li-15)
+      endif
       return
       end
 C********************************************************************
@@ -113,22 +117,22 @@ c Set multiple frame parameters.
       ncolumns=icolumns
       multype=itype
       if(nrows.eq.0) then
-	nrows=1
-	ncolumns=1
-	call mregion
- 	call axregion(0.31,0.91,0.1,0.7)
-	nrows=0
+        nrows=1
+        ncolumns=1
+        call mregion
+        call axregion(0.31,0.91,0.1,0.7)
+        nrows=0
         ticnum=6
       endif
       ticnum=7-min(3,2*max(nrows-1,ncolumns-1))
       end
 c*********************************************************************
       subroutine mregion
-c	Multiple Frames Code.
+c       Multiple Frames Code.
       real csl,xsp,ysp,ytop
       include 'plotcom.h'
       csl=1./sqrt(sqrt(float(nrows*ncolumns)))
-C	Gaps for x and y are denoted by bit 0 and 1 of multype.
+C       Gaps for x and y are denoted by bit 0 and 1 of multype.
       ysp=multype/2
       xsp=multype-ysp*2
       ytop=yoverx*0.95
@@ -140,10 +144,10 @@ c also made the xsp 0.22 instead of 0.2
       call ticset(.015*csl,0.15*csl,-.03*csl,-.017*csl,0,0,0,0)
 c      ticnum=7-min(3,2*max(nrows-1,ncolumns-1))
       call axregion(0.1+(nframe/nrows)*(0.88/ncolumns),
-     $	  0.1+(nframe/nrows +(1.-0.22*xsp))*(0.88/ncolumns),
-     $	  ytop*(0.1+0.9*(nrows-nframe+(nframe/nrows)*nrows-1)/nrows),
-     $	  ytop*(0.1+0.9*(nrows-nframe+(nframe/nrows)*nrows-0.2*ysp)
-     $	  /nrows)     )
+     $    0.1+(nframe/nrows +(1.-0.22*xsp))*(0.88/ncolumns),
+     $    ytop*(0.1+0.9*(nrows-nframe+(nframe/nrows)*nrows-1)/nrows),
+     $    ytop*(0.1+0.9*(nrows-nframe+(nframe/nrows)*nrows-0.2*ysp)
+     $    /nrows)     )
       end
 c****************************************************************************
       subroutine setframe(i)
@@ -199,7 +203,7 @@ c Shift to center it.
 c********************************************************************
       function igetcolor()
       include 'plotcom.h'
-      integer getcolor
+      integer igetcolor
       igetcolor=ncolor
       end
 c**************************************************************************

@@ -31,7 +31,7 @@ c      write(*,*)npts,label,nlabel
 c Speed version with no label.
       if(nlabel.eq.0)then
          call polyline(x,y,npts)
-	 return
+         return
       elseif(nlabel.eq.-99)then
          if(x(1).eq.0.) then
             linlen=0.3
@@ -55,9 +55,9 @@ c store current character direction.
       call vecn(wx2nx(x(1)),wy2ny(y(1)),0)
       do 4 i=1,nlab1-1
 c Fix July 99 for G77. Has to be terminated else wstr can't work.
-	 llstr=label(i:i)//char(0)
-	 clen(i)=wstr(llstr)
-c	 write(*,*)llstr(1:1),' ',clen(i)
+         llstr=label(i:i)//char(0)
+         clen(i)=wstr(llstr)
+c        write(*,*)llstr(1:1),' ',clen(i)
     4 continue
       clen(nlab1)=linlen
 c Start with line.
@@ -65,56 +65,56 @@ c Start with line.
 c Draw line
       do 3 i=2,npts
 c We shall bypass vecw and go straight to normal.
-	 nx=wx2nx(x(i))
-	 ny=wy2ny(y(i))
-	 nxs=nx
-	 nys=ny
+         nx=wx2nx(x(i))
+         ny=wy2ny(y(i))
+         nxs=nx
+         nys=ny
 c Lengths of total vector:
-	 cx= crsrx
-	 cy= crsry
-	 dx=nx-cx
-	 dy=ny-cy
-	 vlen=sqrt(dx*dx+dy*dy)
+         cx= crsrx
+         cy= crsry
+         dx=nx-cx
+         dy=ny-cy
+         vlen=sqrt(dx*dx+dy*dy)
 c Partial length remaining:
-	 plen=vlen
-c	    if(vlen.eq.0)return
+         plen=vlen
+c           if(vlen.eq.0)return
 c Distance to end of segment(or character)
-    1	 dlen=(clen(j)-curdist)
-	 if(plen.gt.dlen)then
+    1    dlen=(clen(j)-curdist)
+         if(plen.gt.dlen)then
 c Vector longer than this segment. Write segment and iterate.
-	    curdist=0.
-	    plen=plen-dlen
-	    theta=atan2(dy,dx)
-	    chrscos=cos(theta)
-	    chrssin=sin(theta)
-	    if(j.ne.nlab1)then
-	       if(clen(j).gt.0)then
-		  llstr(lstr:lstr)=label(j:j)
-		  llstr(lstr+1:lstr+1)=char(0)
-		  call drcstr(llstr)
-		  lstr=1
-	       else
+            curdist=0.
+            plen=plen-dlen
+            theta=atan2(dy,dx)
+            chrscos=cos(theta)
+            chrssin=sin(theta)
+            if(j.ne.nlab1)then
+               if(clen(j).gt.0)then
+                  llstr(lstr:lstr)=label(j:j)
+                  llstr(lstr+1:lstr+1)=char(0)
+                  call drcstr(llstr)
+                  lstr=1
+               else
 c Store zero length characters. May be controls.
-		  llstr(lstr:lstr)=label(j:j)
-		  lstr=lstr+1
-	       endif
-	    else
-	       flen=dlen/vlen
-	       nx= crsrx+dx*flen
-	       ny= crsry+dy*flen
+                  llstr(lstr:lstr)=label(j:j)
+                  lstr=lstr+1
+               endif
+            else
+               flen=dlen/vlen
+               nx= crsrx+dx*flen
+               ny= crsry+dy*flen
                call vecn(nx,ny,iline)
-	    endif
-	    j=j+1
-	    if(j.gt.nlab1)j=1
-	    goto 1
-	 elseif(j.eq.nlab1)then
+            endif
+            j=j+1
+            if(j.gt.nlab1)j=1
+            goto 1
+         elseif(j.eq.nlab1)then
 c Vector ends before segment. If this is the line segment draw to end
 c of vector and quit. Else do nothing.
-	    curdist=plen+curdist
-	    nx=nxs
-	    ny=nys
+            curdist=plen+curdist
+            nx=nxs
+            ny=nys
             call vecn(nx,ny,iline)
-	 endif
+         endif
     3 continue
       chrscos=cc
       chrssin=cs
@@ -131,10 +131,10 @@ c
 c      ymin=0
 c      ymax=0
 c      do 1 i=1,imax
-c	 x(i)=i
-c	 y(i)=sin(3.*i/float(imax))
-c	 if(y(i).gt.ymax)ymax=y(i)
-c	 if(y(i).lt.ymin)ymin=y(i)
+c        x(i)=i
+c        y(i)=sin(3.*i/float(imax))
+c        if(y(i).gt.ymax)ymax=y(i)
+c        if(y(i).lt.ymin)ymin=y(i)
 c    1 continue
 c    2 write(*,*)'Enter Label (CR) length'
 c      read(*,'(a)')label

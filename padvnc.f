@@ -628,7 +628,7 @@ c If particle is relocated by periodicity, advance nrein.
 c meshcom provides ixnp, xn, the mesh spacings. (+ndims)
       include 'ndimsdecl.f'
       include 'meshcom.f'
-      real xi(2*ndims)
+      real xi(3*ndims)
       integer ixp(ndims)
       real xfrac(ndims)
       parameter (ndimsx2=ndims*2)

@@ -43,8 +43,8 @@ c Workspace size is problematic.
 c Contour levels
       real cl(30)
 c Local variables:
-      integer icontour,iweb,iback
-      integer isw,jsw
+      integer icontour,iweb
+      integer jsw
       integer iclipping
       integer idpa(2)
       character*(10) cxlab,cylab
@@ -55,8 +55,7 @@ c Local variables:
       data ltellslice/.true./
       data iclipping/0/jsw/0/
 c Tell that we are looking from the top by default.
-      data ze1/1./icontour/1/iweb/1/iback/0/
-      data cs/.707/sn/.707/
+      data ze1/1./icontour/1/iweb/1/
       save n1
 
       if(idfix.lt.0)then
@@ -423,15 +422,13 @@ c Local variables:
       real xpl(3),xnl(3)
       integer idtx(5)
       real tx(5)
-      integer icontour,iweb,iback
+      integer icontour,iweb
       integer isw,jsw,imode,itype,ifileno
-      character*(10) cxlab,cylab
       character*(30) form1
       logical lfirst,lsideplot,larrow
       data lfirst/.true./lsideplot/.false./larrow/.false./
 c Tell that we are looking from the top by default.
-      data ze1/1./icontour/1/iweb/1/iback/0/
-      data cs/.707/sn/.707/imode/0/itype/0/
+      data ze1/1./icontour/1/iweb/1/
       data xpl/0.,0.,0./xnl/1.,0.,0./ifileno/0/
 
       ierr=1

@@ -5,29 +5,29 @@ c Set various attribute of axis tics and labels.
       include 'plotcom.h'
       if(xlen.eq.0..and.ylen.eq.0..and.xoff.eq.0..and.yoff.eq.0.)then
 c Default tics
-	 xticlen=0.015
-	 yticlen=0.015
-	 xticoff=-.03
-	 yticoff=-.02
+         xticlen=0.015
+         yticlen=0.015
+         xticoff=-.03
+         yticoff=-.02
       else
 c Set tics
-	 xticlen=xlen
-	 yticlen=ylen
-	 xticoff=xoff
-	 yticoff=yoff
+         xticlen=xlen
+         yticlen=ylen
+         xticoff=xoff
+         yticoff=yoff
       endif
       if((nxw.eq.0).and.(nxp.eq.0).and.(nyw.eq.0).and.(nyp.eq.0))then
 c Default labels
-	 nxlabw=4
-	 nxlabp=1
-	 nylabw=4
-	 nylabp=1
+         nxlabw=4
+         nxlabp=1
+         nylabw=4
+         nylabp=1
       else
 c Set labels
-	 nxlabw=nxw
-	 nxlabp=nxp
-	 nylabw=nyw
-	 nylabp=nyp
+         nxlabw=nxw
+         nxlabp=nxp
+         nylabw=nyw
+         nylabp=nyp
       endif
       end
 c*****************************************************************/

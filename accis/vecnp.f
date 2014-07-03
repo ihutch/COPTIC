@@ -40,34 +40,34 @@ c Absolute form
       ply=pldy
       if(abs(pfsw).eq.2.or.abs(pfsw).eq.3)then
 c Postscript section
-	 if(updown.ne.ud)then
+         if(updown.ne.ud)then
 c Not sure in PS.
-	    if(ud.ne.1.and.updown.ne.99)call abufwrt(endpair,ne,ipsunit)
-c	    if(ud.ne.1)call abufwrt(endpair,ne,ipsunit)
-	    updown=ud
-	 endif
+            if(ud.ne.1.and.updown.ne.99)call abufwrt(endpair,ne,ipsunit)
+c           if(ud.ne.1)call abufwrt(endpair,ne,ipsunit)
+            updown=ud
+         endif
 c ud=2 signals pen-up but don't draw this position.
          if(ud.eq.2)return
          if(ud.eq.3)then
             updown=99
             return
          endif
-	 call ibufwrt(pldx,ipsunit)
-	 call abufwrt(spc,ns,ipsunit)
-	 call ibufwrt(pldy,ipsunit)
-	 call abufwrt(spc,ns,ipsunit)
-	 if(ud.eq.1)then
-	    call abufwrt(pd,nd,ipsunit)
-	 else
-	    call abufwrt(pu,nd,ipsunit)
-	 endif
+         call ibufwrt(pldx,ipsunit)
+         call abufwrt(spc,ns,ipsunit)
+         call ibufwrt(pldy,ipsunit)
+         call abufwrt(spc,ns,ipsunit)
+         if(ud.eq.1)then
+            call abufwrt(pd,nd,ipsunit)
+         else
+            call abufwrt(pu,nd,ipsunit)
+         endif
       elseif(abs(pfsw).eq.4.or.abs(pfsw).eq.5)then
 c pgfgraphics
-	 if(updown.ne.ud)then
-	    if(ud.ne.1 .and. updown.ne.99)write(ipgunit,*)only(1:ns)
+         if(updown.ne.ud)then
+            if(ud.ne.1 .and. updown.ne.99)write(ipgunit,*)only(1:ns)
      $           ,'\pgfusepath{stroke}'
-	    updown=ud
-	 endif
+            updown=ud
+         endif
          if(ud.eq.2)return
          if(ud.eq.3)updown=99
          if(ud.eq.1)then
@@ -79,21 +79,21 @@ c pgfgraphics
          endif
       else
 c PCL
-	 if(ud.ne.updown)then
-	    updown=ud
-	    if(ud.eq.1)then
-	       call abufwrt(pd,nd,ipsunit)
-	    elseif(ud.eq.0)then
-	       call abufwrt(pu,nu,ipsunit)
+         if(ud.ne.updown)then
+            updown=ud
+            if(ud.eq.1)then
+               call abufwrt(pd,nd,ipsunit)
+            elseif(ud.eq.0)then
+               call abufwrt(pu,nu,ipsunit)
             else
                return
-	    endif
-	 else 
-	    call abufwrt(endpair,ne,ipsunit)
-	 endif
-	 call ibufwrt(pldx,ipsunit)
-	 call abufwrt(spc,ns,ipsunit)
-	 call ibufwrt(pldy,ipsunit)
+            endif
+         else 
+            call abufwrt(endpair,ne,ipsunit)
+         endif
+         call ibufwrt(pldx,ipsunit)
+         call abufwrt(spc,ns,ipsunit)
+         call ibufwrt(pldy,ipsunit)
       endif
       return
       end
@@ -122,45 +122,45 @@ c an error condition exists.
       sblen=1
       if(abs(pfsw).eq.1)then
 c PCL
-	 pu=';PU'
-	 nu=3
-	 pd=';PD'
-	 nd=3
-	 spc=','
-	 ns=1
-	 endpair=','
-	 ne=1
-	 postlude=';PG'//char(26)
-	 no=4
-	 prelude= '   ;SP1;PU0,0;PR;'
+         pu=';PU'
+         nu=3
+         pd=';PD'
+         nd=3
+         spc=','
+         ns=1
+         endpair=','
+         ne=1
+         postlude=';PG'//char(26)
+         no=4
+         prelude= '   ;SP1;PU0,0;PR;'
 c        move plot pen to (0,0), switch to relative plotting.
-	 nr=17
-	 call abufwrt(prelude,nr,iunit)
+         nr=17
+         call abufwrt(prelude,nr,iunit)
          updown=99
       elseif(abs(pfsw).eq.2 .or.abs(pfsw).eq.3)then
 c PS
-	 pu='M '
-	 nu=2
-	 pd='D '
-	 nd=2
-	 spc=' '
-	 ns=1
-	 endpair='ST '
-	 ne=3
-	 if(abs(pfsw).eq.3)then
-	    postlude='grestore'
-	    no=8
-	 elseif(abs(pfsw).eq.2)then
-	    postlude='showpage grestore'
-	    no=17
-	 endif
+         pu='M '
+         nu=2
+         pd='D '
+         nd=2
+         spc=' '
+         ns=1
+         endpair='ST '
+         ne=3
+         if(abs(pfsw).eq.3)then
+            postlude='grestore'
+            no=8
+         elseif(abs(pfsw).eq.2)then
+            postlude='showpage grestore'
+            no=17
+         endif
          call psheader(iunit,pfsw)
-	 if(abs(pfsw).eq.2)then
+         if(abs(pfsw).eq.2)then
 c Landscape, PS'.
-	    write(iunit,*)' 8000  0 translate 90 rotate 0 0 MT'
+            write(iunit,*)' 8000  0 translate 90 rotate 0 0 MT'
             write(iunit,'(a)')'%%EndProlog'
             write(iunit,'(a)')'%%PageOrientation: Landscape'
-	 elseif(abs(pfsw).eq.3)then
+         elseif(abs(pfsw).eq.3)then
             write(iunit,*)' 0.8 dup scale'
          endif
          updown=0
@@ -290,6 +290,7 @@ c*******************************************************************
 
       character*60 string 
 c      write(*,*)'gradcolor',i
+      ncolor=i+15
       if(pfsw.ge.0) call acgradcolor(i)
       if(abs(pfsw).ne.0)then
          call getrgbcolor(i,ired,igreen,iblue)
@@ -465,8 +466,8 @@ c Write the color change commands to the plot file.
 
 c      write(*,*)'Color changing',li,pfsw,' ',colorname(li+1)
       if(pfsw.ne.0) then
-	 updown=99
-	 if(abs(pfsw).eq.2.or.abs(pfsw).eq.3)
+         updown=99
+         if(abs(pfsw).eq.2.or.abs(pfsw).eq.3)
      $        call abufwrt(' ST',3,ipsunit)
          if(abs(pfsw).eq.4.or.abs(pfsw).eq.5)then
 c PGF
@@ -495,16 +496,16 @@ c*************************************************************************
 c Add a minimum length integer i to the line buffer for unit iunit
       integer i,iunit,iw
       character*80 str
-	 call iwrite(i,iw,str)
-	 call abufwrt(str,iw,iunit)
+         call iwrite(i,iw,str)
+         call abufwrt(str,iw,iunit)
       end
 c*************************************************************************
       subroutine fbufwrt(r,ip,iunit)
 c Add a minimum length real (fx.ip) i to the line buffer for unit iunit
       integer iw,ip,iunit
       character*80 str
-	 call fwrite(r,iw,ip,str)
-	 call abufwrt(str,iw,iunit)
+         call fwrite(r,iw,ip,str)
+         call abufwrt(str,iw,iunit)
       end
 c*************************************************************************
       subroutine abufwrt(str,la,iunit)
@@ -655,11 +656,11 @@ c      save ca
       data ca(01732:01743)/'SP15 0 0 MT '/
       data ca(01744:01745)/crlf/
 
-	 if(abs(pfsw).eq.3)then
-	    ca(00026:00053)='%%BoundingBox: 30 30 620 480'
-	 elseif(abs(pfsw).eq.2)then
-	    ca(00026:00053)='%%BoundingBox: 28 28 575 762'
-	 endif
+         if(abs(pfsw).eq.3)then
+            ca(00026:00053)='%%BoundingBox: 30 30 620 480'
+         elseif(abs(pfsw).eq.2)then
+            ca(00026:00053)='%%BoundingBox: 28 28 575 762'
+         endif
       call lnswrt(iunit,ca,1745,'\',2)
 c ' Done
       end

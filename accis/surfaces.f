@@ -15,7 +15,7 @@ c bit1=1 use the first 5 elements of work for the directional vector.
 c Eye obtained from file eye.dat, or default if none exists.
       integer iLx, nx,ny,isw
       real x(iLx,*),y(iLx,*),z(iLx,ny),work((iLx+2)*(ny+2))
-      integer icorner,colw,cola
+      integer colw,cola
       real x2,y2,z2
       real zmin,zmax
       real d(5)
@@ -76,7 +76,7 @@ c            write(*,*)'Calling surf1dr3'
       if(cola.ne.0) call color(cola)
       if(isw.ge.0)then
 c Draw axes.
-	 call axproj(igetcorner())
+         call axproj(igetcorner())
       endif
       end
 c********************************************************************
@@ -103,8 +103,7 @@ c Facets are drawn from furthest to nearest to give correct projection.
       integer isw
       real d(5)
 
-      integer id1,id2,ud,kx,ky,icorner
-      real d1start,d1end,d1step,z1,x2,y2,z2
+      real x2,y2,z2
       real dout,ddone
       parameter (dout=2.e32,ddone=1.e32)
       real xp(5),yp(5),zp(5),zz(5)
@@ -233,8 +232,7 @@ c    d(1-3) gives direction d(4-5) gives distance limits.
       integer isw
       real d(5)
 
-      integer id1,id2,ud,kx,ky,icorner
-      real d1start,d1end,d1step,z1,x2,y2,z2
+      real x2,y2,z2
       real dout,ddone
       parameter (dout=2.e32,ddone=1.e32)
       real xp(5),yp(5),zp(5)

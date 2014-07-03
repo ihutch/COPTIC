@@ -40,9 +40,9 @@ c Set the scaling.
       elseif(abs(level).eq.2)then
          ihd=0
          ixy=2
-c Set the scaling.	 call minmax2(z,iLx,nx,ny,zmin,zmax)
-	 call minmax2(x,iLx,nx,ny,xmin,xmax)
-	 call minmax2(y,iLx,nx,ny,ymin,ymax)
+c Set the scaling.       call minmax2(z,iLx,nx,ny,zmin,zmax)
+         call minmax2(x,iLx,nx,ny,xmin,xmax)
+         call minmax2(y,iLx,nx,ny,ymin,ymax)
       endif
 c Set the top and bottom horizons.
       call hidinit(0.,1.)
@@ -71,7 +71,7 @@ c Draw the web
 c Draw cube.
          call cubed(igetcubecorner())
 c Draw axes.
-	 call axproj(igetcorner())
+         call axproj(igetcorner())
       endif
       end
 c********************************************************************
@@ -91,16 +91,16 @@ c
 c Set the web order, choose the nearest corner to eye.
       do 20 id1=1,4
 c This seems to be erroneous when x or y is decreasing.
-	 kx=1+mod(id1/2,2)*(nx-1)
-	 ky=1+((id1-1)/2)*(ny-1)
+         kx=1+mod(id1/2,2)*(nx-1)
+         ky=1+((id1-1)/2)*(ny-1)
          xw=x(kx,ky)
          yw=y(kx,ky)
          call wxyz2nxyz(xw,yw,0.,xn,yn,zn)
-	 call trn32(xn,yn,zn,x2,y2,z2,0)
-	 if(id1.eq.1 .or. z2.lt.z1) then
-	    z1=z2
-	    icorner=id1
-	 endif
+         call trn32(xn,yn,zn,x2,y2,z2,0)
+         if(id1.eq.1 .or. z2.lt.z1) then
+            z1=z2
+            icorner=id1
+         endif
    20 continue
       
 c Draw
@@ -109,20 +109,20 @@ c Draw
       d1step=1
       if(icorner.eq.2 .or. icorner.eq.3) then
 c                 Reverse the outer diagonal loop-order.
-	 d1start=d1end
-	 d1end=1
-	 d1step=-1
+         d1start=d1end
+         d1end=1
+         d1step=-1
       endif
       do 1 id1=d1start,d1end,d1step
-	 ud=0
-	 do 2 id2=-min(id1,2*ny-1-id1),min(id1,2*nx-1-id1)
-	    kx=(id1+id2)/2 +1
-	    ky=(id1-id2)/2 +1
-	    if(icorner.eq.2 .or. icorner.eq.4) ky=ny+1-ky
+         ud=0
+         do 2 id2=-min(id1,2*ny-1-id1),min(id1,2*nx-1-id1)
+            kx=(id1+id2)/2 +1
+            ky=(id1-id2)/2 +1
+            if(icorner.eq.2 .or. icorner.eq.4) ky=ny+1-ky
 c                   reverse the y-order.
-	    call vec3w(x(kx,ky),y(kx,ky),z(kx,ky),ud)
-	    ud=1
-    2	 continue
+            call vec3w(x(kx,ky),y(kx,ky),z(kx,ky),ud)
+            ud=1
+    2    continue
     1 continue
       end
 
@@ -143,17 +143,17 @@ c      include 'plotcom.h'
 c
 c Set the web order, choose the nearest corner to eye.
       do 20 id1=1,4
-	 kx=1+mod(id1/2,2)*(nx-1)
-	 ky=1+((id1-1)/2)*(ny-1) 
+         kx=1+mod(id1/2,2)*(nx-1)
+         ky=1+((id1-1)/2)*(ny-1) 
          xw=x(kx)
          yw=y(ky)
          call wxyz2nxyz(xw,yw,0.,xn,yn,zn)
-	 call trn32(xn,yn,zn,x2,y2,z2,0)
-c	 call trn32(x(kx(id1)),y(ky(id1)),0.,x2,y2,z2,0)
-	 if(id1.eq.1 .or. z2.lt.z1) then
-	    z1=z2
-	    icorner=id1
-	 endif
+         call trn32(xn,yn,zn,x2,y2,z2,0)
+c        call trn32(x(kx(id1)),y(ky(id1)),0.,x2,y2,z2,0)
+         if(id1.eq.1 .or. z2.lt.z1) then
+            z1=z2
+            icorner=id1
+         endif
    20 continue
 c      write(*,*) 'icorner=',icorner,z1
 c Draw
@@ -162,20 +162,20 @@ c Draw
       d1step=1
       if(icorner.eq.2 .or. icorner.eq.3) then
 c                 Reverse the outer diagonal loop-order.
-	 d1start=d1end
-	 d1end=1
-	 d1step=-1
+         d1start=d1end
+         d1end=1
+         d1step=-1
       endif
       do 1 id1=d1start,d1end,d1step
-	 ud=0
+         ud=0
          do 2 id2=-min(id1,2*ny-1-id1),min(id1,2*nx-1-id1)
-	    kxi=(id1+id2)/2 +1
-	    kyi=(id1-id2)/2 +1
-	    if(icorner.eq.2 .or. icorner.eq.4) kyi=ny+1-kyi
+            kxi=(id1+id2)/2 +1
+            kyi=(id1-id2)/2 +1
+            if(icorner.eq.2 .or. icorner.eq.4) kyi=ny+1-kyi
 c                   reverse the y-order.
-	    call vec3w(x(kxi),y(kyi),z(kxi,kyi),ud)
-	    ud=1
-    2	 continue
+            call vec3w(x(kxi),y(kyi),z(kxi,kyi),ud)
+            ud=1
+    2    continue
     1 continue
       end
 c***************************************************************************
@@ -196,43 +196,43 @@ c      common/hideln/ytop,ybot,...
       save
 
       if(ud.eq.0)then
-	 call vecn(x2,y2,0)
-	 x1=x2
-	 y1=y2
-	 lmidl=.false.
-	 return
+         call vecn(x2,y2,0)
+         x1=x2
+         y1=y2
+         lmidl=.false.
+         return
       endif
 
       if((x2-x1).ne.0.)then
-	 xo=x1
-	 yo=y1
+         xo=x1
+         yo=y1
 c Grid points just inside the x1 - x2 range, not outside frame.
-	 if(x2.ge.x1)then
-	    ix1=max(int(x1*(ngrid-1)),0) +1
-	    ix2=min(int(x2*(ngrid-1)),ngrid)
-	    signd=1
-	 else
-	    signd=-1
-	    ix1=min(int(x1*(ngrid-1)),ngrid)
-	    ix2=max(int(x2*(ngrid-1)),0)+1
-	 endif
-	 dx=1./(ngrid-1)
-	 dydx=(y2-y1)/(x2-x1)
+         if(x2.ge.x1)then
+            ix1=max(int(x1*(ngrid-1)),0) +1
+            ix2=min(int(x2*(ngrid-1)),ngrid)
+            signd=1
+         else
+            signd=-1
+            ix1=min(int(x1*(ngrid-1)),ngrid)
+            ix2=max(int(x2*(ngrid-1)),0)+1
+         endif
+         dx=1./(ngrid-1)
+         dydx=(y2-y1)/(x2-x1)
          icount=0
-	 do ix=ix1,ix2,signd
+         do ix=ix1,ix2,signd
             icount=icount+1
 c  Do over Grid-position:
-	    x=dx*ix
-	    y=y1+(x-x1)*dydx
-	    nstate=0
-	    if(y.gt.ytop(ix))then
-	       nstate=1
-	       ytop(ix)=y
-	    endif
-	    if(y.lt.ybot(ix))then
-	       nstate=2
-	       ybot(ix)=y
-	    endif
+            x=dx*ix
+            y=y1+(x-x1)*dydx
+            nstate=0
+            if(y.gt.ytop(ix))then
+               nstate=1
+               ytop(ix)=y
+            endif
+            if(y.lt.ybot(ix))then
+               nstate=2
+               ybot(ix)=y
+            endif
 c If previous call was not a moveto if(lmidl)then
 c Finishing and starting segments.
             if(nstate.eq.0.and.lmidl)then
@@ -269,9 +269,9 @@ c Drawing below. If previously was not, draw start.
                   call vecn(x,y,1)
                endif
             endif
-	    istate=nstate
-	    xo=x
-	    yo=y
+            istate=nstate
+            xo=x
+            yo=y
 c Set lmidl true only if we have been through this loop at least once. 
 c Otherwise, starting beyond already draw xtop/bot can give spurious 
 c start lines after the first vector. 
@@ -300,8 +300,8 @@ c***************************************************************************
       include 'hidcom.h'
       integer i
       do 1 i=1,ngrid
-	 ytop(i)=top
-	 ybot(i)=bot
+         ytop(i)=top
+         ybot(i)=bot
     1 continue
       end
 

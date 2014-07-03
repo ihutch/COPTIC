@@ -7,7 +7,7 @@ c      real xcbc2,ycbc2,scbx3,scby3,scbx3,fixedn
 c      integer ihiding
 c      common/world3/xcbc2,ycbc2,scbx3,scby3,scbz3,
 c     $ wx3min,wx3max,w3nx,wy3min,wy3max,w3ny,wz3min,wz3max,w3nz,
-c     $	   fixedn,ihiding
+c     $    fixedn,ihiding
       real x,y,z
       integer iud
       real x2,y2,z2
@@ -61,18 +61,18 @@ c***********************************************************************
       include 'plotcom.h'
       include 'world3.h'
       if(wx3max.eq.wx3min)then
-	 wx3max=wx3min+1.
-	 write(*,*)'W2SCL3: wxmin=wxmax error.',wx3max
+         wx3max=wx3min+1.
+         write(*,*)'W2SCL3: wxmin=wxmax error.',wx3max
       endif
       w3nx=scbx3*2./(wx3max-wx3min)
       if(wy3max.eq.wy3min)then
-	 wy3max=wy3min+1.
-	 write(*,*)'W2SCL3: wymin=wymax error.',wy3max
+         wy3max=wy3min+1.
+         write(*,*)'W2SCL3: wymin=wymax error.',wy3max
       endif
       w3ny=scby3*2./(wy3max-wy3min)
       if(wz3max.eq.wz3min)then
-	 wz3max=wz3min+1.
-	 write(*,*)'W2SCL3: wzmin=wzmax error.',wx3max
+         wz3max=wz3min+1.
+         write(*,*)'W2SCL3: wzmin=wzmax error.',wx3max
       endif
       w3nz=scbz3*2./(wz3max-wz3min)
       end
@@ -224,37 +224,37 @@ c Chop the top bits off icorner
       ic=-sign((mod(abs(icorner)+1,4)+1),icorner)
 c      write(*,*)ic
       do 2 i=-1,1,2
-	 call hdprset(-3,i*scbz3)
-	 call vecn(-scbx3,-scby3,0)
-	 do 3 j=1,4
-	    kx=-1+mod((j+1)/2,2)*2
-	    ky=-1+mod((j/2),2)*2
-	    iu=1
+         call hdprset(-3,i*scbz3)
+         call vecn(-scbx3,-scby3,0)
+         do 3 j=1,4
+            kx=-1+mod((j+1)/2,2)*2
+            ky=-1+mod((j/2),2)*2
+            iu=1
             if(icorner.ne.0)then
-	    if(i*ic.gt.0)then
-	       if(j.eq.abs(ic).or.j.eq.(mod((abs(ic)+2),4)+1))then
-		  iu=0
-	       endif
-	    endif
+            if(i*ic.gt.0)then
+               if(j.eq.abs(ic).or.j.eq.(mod((abs(ic)+2),4)+1))then
+                  iu=0
+               endif
             endif
-	    call vecn(kx*scbx3,ky*scby3,iu)
-    3	 continue
+            endif
+            call vecn(kx*scbx3,ky*scby3,iu)
+    3    continue
     2 continue
       ic=abs(icorner)
       do 1 i=-1,1,2
-	 call hdprset(-1,i*scbx3)
-	 call vecn(scby3,-scbz3,0)
-	 if((ic.eq.1.and.i.eq.1).or.(ic.eq.2.and.i.eq.-1))then
-c	 call hidvecn(scby3,scbz3,1)
-	 else
-	    call vecn(scby3,scbz3,1)
-	 endif
-	 call vecn(-scby3,scbz3,0)
-	 if((ic.eq.3.and.i.eq.-1).or.(ic.eq.4.and.i.eq.1))then
-c	 call hidvecn(-scby3,-scbz3,1)
-	 else
-	    call vecn(-scby3,-scbz3,1)
-	 endif
+         call hdprset(-1,i*scbx3)
+         call vecn(scby3,-scbz3,0)
+         if((ic.eq.1.and.i.eq.1).or.(ic.eq.2.and.i.eq.-1))then
+c        call hidvecn(scby3,scbz3,1)
+         else
+            call vecn(scby3,scbz3,1)
+         endif
+         call vecn(-scby3,scbz3,0)
+         if((ic.eq.3.and.i.eq.-1).or.(ic.eq.4.and.i.eq.1))then
+c        call hidvecn(-scby3,-scbz3,1)
+         else
+            call vecn(-scby3,-scbz3,1)
+         endif
     1 continue
       call hdprset(0,0.)
 c      write(*,*)'cubed ending pfsw=',pfsw
@@ -300,65 +300,65 @@ c Draw y-axis - to + if corner 1 unflipped, or 2, or 3 flipped.
 c Else + to -. Parallel labels if 1fl,2un,3fl,4un. 
 c Ticrev if perp and 2 or 4
 c At -scbx3 if 1 or 4, else +
-	 call hdprset(-3,-scbz3)
-	 ltem=(flip.eqv.(mod(ica,2).eq.1))
-	 if(.not.ltem.and.(ica.eq.4.or.ica.eq.2))call ticrev()
-	 if(ica.eq.2 .or.(ica.eq.1.and..not.flip)
-     $		 .or.(ica.eq.3.and.flip))then
-	    call gaxis(wy3min,wy3max,ngpow,0.,0.,
-     $	 ixc(ica)*scbx3,ixc(ica)*scbx3,-scby3, scby3,
+         call hdprset(-3,-scbz3)
+         ltem=(flip.eqv.(mod(ica,2).eq.1))
+         if(.not.ltem.and.(ica.eq.4.or.ica.eq.2))call ticrev()
+         if(ica.eq.2 .or.(ica.eq.1.and..not.flip)
+     $           .or.(ica.eq.3.and.flip))then
+            call gaxis(wy3min,wy3max,ngpow,0.,0.,
+     $   ixc(ica)*scbx3,ixc(ica)*scbx3,-scby3, scby3,
      $   ltem,.false.)
-	 else
-	    call gaxis(wy3max,wy3min,ngpow,0.,0.,
-     $	 ixc(ica)*scbx3,ixc(ica)*scbx3, scby3,-scby3,
+         else
+            call gaxis(wy3max,wy3min,ngpow,0.,0.,
+     $   ixc(ica)*scbx3,ixc(ica)*scbx3, scby3,-scby3,
      $   ltem,.false.)
-	 endif
-	 if(.not.ltem.and.(ica.eq.4.or.ica.eq.2))call ticrev()
+         endif
+         if(.not.ltem.and.(ica.eq.4.or.ica.eq.2))call ticrev()
       else
-	 if(ixc(ica).eq.1)then
+         if(ixc(ica).eq.1)then
 c corner 2 or 3 
 c Vertical. Draw y axis from - to + , as an x-axis
-	    call hdprset(-1,scbx3)
-	    call gaxis(wy3min,wy3max,ngpow,0.,0.,
-     $	   -scby3,scby3,-scbz3,-scbz3,.true.,.false.)
-	 else
+            call hdprset(-1,scbx3)
+            call gaxis(wy3min,wy3max,ngpow,0.,0.,
+     $     -scby3,scby3,-scbz3,-scbz3,.true.,.false.)
+         else
 c corner 1 or 4 Draw y axis from + to - , as a y-axis
-	 call hdprset(-4,-scbx3)
-	 call gaxis(wy3max,wy3min,ngpow,0.,0.,
-     $	   -scbz3,-scbz3,scby3,-scby3,.true.,.false.)
-	 endif
+         call hdprset(-4,-scbx3)
+         call gaxis(wy3max,wy3min,ngpow,0.,0.,
+     $     -scbz3,-scbz3,scby3,-scby3,.true.,.false.)
+         endif
       endif
       if(xhoriz)then
 c Draw x-axis - to + if corner 1, or 2fl, or 4 un.
 c Else + to -. Parallel labels if 1un,2fl,3un,4fl. 
 c Ticrev if perp and 1 or 3
 c At -scby3 if 1 or 2, else +
-	 call hdprset(-3,-scbz3)
-	 ltem=(flip.neqv.(mod(ica,2).eq.1))
-	 if(.not.ltem.and.(ica.eq.3.or.ica.eq.1))call ticrev()
-	 if(ica.eq.1 .or.(ica.eq.4.and..not.flip)
-     $		 .or.(ica.eq.2.and.flip))then
-	    call gaxis(wx3min,wx3max,ngpow,0.,0.,
-     $	 -scbx3, scbx3,iyc(ica)*scby3,iyc(ica)*scby3,
+         call hdprset(-3,-scbz3)
+         ltem=(flip.neqv.(mod(ica,2).eq.1))
+         if(.not.ltem.and.(ica.eq.3.or.ica.eq.1))call ticrev()
+         if(ica.eq.1 .or.(ica.eq.4.and..not.flip)
+     $           .or.(ica.eq.2.and.flip))then
+            call gaxis(wx3min,wx3max,ngpow,0.,0.,
+     $   -scbx3, scbx3,iyc(ica)*scby3,iyc(ica)*scby3,
      $   ltem,.false.)
-	 else
-	    call gaxis(wx3max,wx3min,ngpow,0.,0.,
-     $	  scbx3,-scbx3,iyc(ica)*scby3,iyc(ica)*scby3,
+         else
+            call gaxis(wx3max,wx3min,ngpow,0.,0.,
+     $    scbx3,-scbx3,iyc(ica)*scby3,iyc(ica)*scby3,
      $   ltem,.false.)
-	 endif
-	 if(.not.ltem.and.(ica.eq.3.or.ica.eq.1))call ticrev()
+         endif
+         if(.not.ltem.and.(ica.eq.3.or.ica.eq.1))call ticrev()
       else
-	 if(ica.le.2)then
+         if(ica.le.2)then
 c corner 1 or 2 draw x-axis - to + as an x-axis
-	 call hdprset(-5,-scby3)
-	 call gaxis(wx3min,wx3max,ngpow,0.,0.,
-     $	   -scbx3,scbx3,-scbz3,-scbz3,.true.,.false.)
-	 else
+         call hdprset(-5,-scby3)
+         call gaxis(wx3min,wx3max,ngpow,0.,0.,
+     $     -scbx3,scbx3,-scbz3,-scbz3,.true.,.false.)
+         else
 c corner 3 or 4 draw x-axis + to - as a y-axis
-	 call hdprset(-2,scby3)
-	 call gaxis(wx3max,wx3min,ngpow,0.,0.,
-     $	   -scbz3,-scbz3,scbx3,-scbx3,.true.,.false.)
-	 endif
+         call hdprset(-2,scby3)
+         call gaxis(wx3max,wx3min,ngpow,0.,0.,
+     $     -scbz3,-scbz3,scbx3,-scbx3,.true.,.false.)
+         endif
       endif
 c z- axis.
       i2=1
@@ -368,29 +368,29 @@ c z- axis.
       i1=ica
       if(flip)i1=i1-1
       if(i1.ne.1.and.i1.ne.3)then
-	 fixd=i2*scbx3
-	 if(i1.eq.2)then
-	    call hdprset(-1,fixd)
-	    call gaxis(wz3min,wz3max,ngpow,0.,0.
-     $	   ,-scby3,-scby3,-scbz3,scbz3,.false.,.false.)
-	 else
-c	 i1=0 or 4.
-	    call hdprset(-4,fixd)
-	    call gaxis(wz3min,wz3max,ngpow,0.,0.
-     $	   ,-scbz3,scbz3,scby3,scby3,.false.,.false.)
-	 endif
+         fixd=i2*scbx3
+         if(i1.eq.2)then
+            call hdprset(-1,fixd)
+            call gaxis(wz3min,wz3max,ngpow,0.,0.
+     $     ,-scby3,-scby3,-scbz3,scbz3,.false.,.false.)
+         else
+c        i1=0 or 4.
+            call hdprset(-4,fixd)
+            call gaxis(wz3min,wz3max,ngpow,0.,0.
+     $     ,-scbz3,scbz3,scby3,scby3,.false.,.false.)
+         endif
       else
-	 fixd=i2*scby3
-	 if(i1.eq.1)then
-	    call hdprset(-5,fixd)
-	    call gaxis(wz3min,wz3max,ngpow,0.,0.
-     $	   ,-scbx3,-scbx3,-scbz3,scbz3,.false.,.false.)
-	 else
-c	 i1=3
-	    call hdprset(-2,fixd)
-	    call gaxis(wz3min,wz3max,ngpow,0.,0.
-     $	   ,-scbz3,scbz3,scbx3,scbx3,.false.,.false.)
-	 endif
+         fixd=i2*scby3
+         if(i1.eq.1)then
+            call hdprset(-5,fixd)
+            call gaxis(wz3min,wz3max,ngpow,0.,0.
+     $     ,-scbx3,-scbx3,-scbz3,scbz3,.false.,.false.)
+         else
+c        i1=3
+            call hdprset(-2,fixd)
+            call gaxis(wz3min,wz3max,ngpow,0.,0.
+     $     ,-scbz3,scbz3,scbx3,scbx3,.false.,.false.)
+         endif
       endif
       call hdprset(0,0.)
       end
@@ -442,9 +442,9 @@ c      call geteye(x2,y2,z2)
 c      write(*,*)'x2,y2,z2',x2,y2,z2,mod(icorner,2)
 c If appropriate tell axproj to flip labels.
       if(abs(x2).gt.abs(y2).eqv.(mod(icorner,2).ne.0))
-     $	   icorner=icorner+16
+     $     icorner=icorner+16
 c If appropriate use vertical labels
-c	 if(z2*z2.lt.x2*x2) icorner=icorner+32
+c        if(z2*z2.lt.x2*x2) icorner=icorner+32
 c Trying for better results.
       xy2i=min(x2**2,y2**2)
       if(z2*z2.lt.xy2i+.2*y2**2) icorner=icorner+32

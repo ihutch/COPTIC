@@ -21,7 +21,8 @@ c Gradients of the abc coefficients.
       parameter (ocgrad=offc+1,obgrad=ocgrad+3,oagrad=obgrad+3)
 c Total
       parameter (odata=oagrad+2)
-c The parallelopiped data structure in ppcom.f consists of
+c-------------------------------------------------------------------
+c The parallelopiped data structure consists of
 c 1 pp_orig : origin x_0 (3) which points to ocenter
 c 4 pp_vec : 3 (covariant) vectors v_p equal half the edges.(3x3)
 c 13 pp_contra : 3 contravariant vectors v^q such that v_p.v^q =
@@ -37,8 +38,22 @@ c [i-k refers to cartesian components, p-r to pp basis.]
       parameter (pp_vec=pp_orig+ndims)
       parameter (pp_contra=pp_vec+ndims*ndims)
       parameter (pp_total=pp_contra+ndims*ndims-1)
+c-------------------------------------------------------------------
+c Surface-of-revolution data structure
+c base is the lower end of axis, apex is upper end
+c dir is direction such that zvalue=dir.(position-base)
+c npair is number of (z,r) pairs, not greater than 6 currently.
+c pairs is start of the (z,r) pairs.
+      integer sr_base,sr_apex,sr_dir,sr_npair,sr_pairs
+      parameter (sr_base=ocenter)
+      parameter (sr_apex=sr_base+ndims)
+      parameter (sr_dir=sr_base+2*ndims)
+      parameter (sr_npair=sr_base+3*ndims)
+      parameter (sr_pairs=sr_npair+1)
+c-------------------------------------------------------------------
+c Where the data is actually stored:
       real obj_geom(odata,ngeomobjmax)
-c
+c-------------------------------------------------------------------
 c Mapping from obj_geom object number to nf_flux object (many->fewer)
 c Zero indicates no flux tracking for this object.
       integer nf_map(ngeomobjmax)
@@ -54,8 +69,17 @@ c Has the particle region got an enclosed region
       logical lboundp
 c What is the reinjection scheme?
       character*50 rjscheme
+c Subtractive object information. 
+c Number of subtractive objects for this object:
+      integer normv(ngeomobjmax)
+c Object number and sign of objects to subtract.
+      integer ormv(ngeomobjmax,ngeomobjmax)
+c
       common /objgeomcom/ngeomobj,obj_geom,nf_map
-     $     ,ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
+     $     ,ibool_part,ifield_mask,iptch_mask,lboundp
+     $     ,normv,ormv
+     $     ,rjscheme
+c-------------------------------------------------------------------
 c-------------------------------------------------------------------
 c Data that describes the flux to positions on the objects:
       integer nf_quant,nf_obj,nf_maxsteps,nf_datasize,nf_posdim

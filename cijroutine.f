@@ -263,17 +263,17 @@ c The only way this should happen is by the use of SVD on an inappropriate
 c set of box intersections that represents multiple planes crossing the
 c box. 
 c It might also be a bug or mesh clash.
-c                        write(*,*)'Warning: Box Recut ',npoints
-c     $                       ,i,ipa(i),oi_cij
-c     $                       ,(indi(kk),kk=1,ndims),f1
-c     $                       ,' Adjust mesh!'
-c     $                       ,(ipa(kk),kk=1,ndims)
-c     $                       ,f0,f1,ftot
-c     $                       ,(1./fn(kk),kk=1,ndims)
-c     $                      ,idob_cij(iflag_cij,oi_cij)
+                        write(*,*)'Warning: Box Recut ',npoints
+     $                       ,i,ipa(i),oi_cij
+     $                       ,(indi(kk),kk=1,ndims),f1
+     $                       ,' Adjust mesh!'
+     $                       ,(ipa(kk),kk=1,ndims)
+     $                       ,f0,f1,ftot
+     $                       ,(1./fn(kk),kk=1,ndims)
+     $                      ,idob_cij(iflag_cij,oi_cij)
                         error=error+1
 c Call boxedge with diagnostics
-c                        call boxedge(ndims,ipa,indi,fn,npoints,1)
+                        call boxedge(ndims,ipa,indi,fn,npoints,1)
 c But set it not equal to 1, so we know it was set.
 c                        dob_cij(ioad,oi_cij)=1.001
 c                        dob_cij(ioad,oi_cij)=f1
@@ -285,7 +285,6 @@ c                        dob_cij(ioad,oi_cij)=f1
             endif
          endif
       enddo
-
 
 c Diagnostics sample -----------------------------------
 

@@ -35,8 +35,8 @@ c  Draw xaxis using the general axis routine.
       endif
       if(tog.eq.1)call ticlabtog()
       nxfac=0
-	 call gaxis(wxmin,wxmax,nxfac,first,delta, 
-     $	   wx2nx(wxmin),wx2nx(wxmax),naypt,naypt,.true.,lxlog)
+         call gaxis(wxmin,wxmax,nxfac,first,delta, 
+     $     wx2nx(wxmin),wx2nx(wxmax),naypt,naypt,.true.,lxlog)
       if(tog.eq.1)call ticlabtog()
       end
 c*********************************************************************
@@ -54,13 +54,13 @@ c  Draw yaxis using the general axis routine.
       endif
       if(tog.eq.1)call ticlabtog()
       nyfac=0
-	 call gaxis(wymin,wymax,nyfac,first,delta,
-     $	   naxpt,naxpt,wy2ny(wymin),wy2ny(wymax),.false.,lylog)
+         call gaxis(wymin,wymax,nyfac,first,delta,
+     $     naxpt,naxpt,wy2ny(wymin),wy2ny(wymax),.false.,lylog)
       if(tog.eq.1)call ticlabtog()
       end
 c*********************************************************************
       subroutine gaxis(amin,amax,ngpow,first,delta,
-     $	   xgmin,xgmax,ygmin,ygmax,lpara,laxlog)
+     $     xgmin,xgmax,ygmin,ygmax,lpara,laxlog)
       real amin,amax,first,delta,xgmin,xgmax,ygmin,ygmax
       integer ngpow
       logical lpara,laxlog
@@ -70,7 +70,7 @@ c ngpow               :  power of ten for axis (label)
 c first,delta         :  Set tic points. Auto if delta=0.
 c xgmin/max,ygmin/max :  normal cordinates of axis ends
 c lpara               :  labels parallel to axis (.true.)
-c laxlog	      :  log axis (true).
+c laxlog              :  log axis (true).
       real gw,dx,dy,dl,axcos,axsin,lfac,ams,tcos,tsin
       integer i
       include 'plotcom.h'
@@ -90,22 +90,22 @@ c
       axsin=ygmax-ygmin
       dl=sqrt(axcos*axcos+axsin*axsin)
       if(dl.eq.0) then 
-	call txtmode
-	write(*,*) ' GAXIS error. Axis ends coincide. '
-	write(*,*)' ygmin=',ygmin,' ygmax',ygmax,' wymin',wymin,
-     $	     ' wymax',wymax
-	write(*,*)' xgmin=',xgmin,' xgmax',xgmax,' wxmin',wxmin,
-     $	     ' wxmax',wxmax
-	stop ' '
+        call txtmode
+        write(*,*) ' GAXIS error. Axis ends coincide. '
+        write(*,*)' ygmin=',ygmin,' ygmax',ygmax,' wymin',wymin,
+     $       ' wymax',wymax
+        write(*,*)' xgmin=',xgmin,' xgmax',xgmax,' wxmin',wxmin,
+     $       ' wxmax',wxmax
+        stop ' '
       endif
       axcos=axcos/dl
       axsin=axsin/dl
       if(lpara)then
-	 tcos=-axsin
-	 tsin=axcos
+         tcos=-axsin
+         tsin=axcos
       else
-	 tcos=axsin
-	 tsin=-axcos
+         tcos=axsin
+         tsin=-axcos
       endif
       ams=sign(1.,(amax-amin))
       xdelta=delta
@@ -117,75 +117,75 @@ c
 
       if(laxlog)then
 C logarithmic
-	 if(xdelta.eq.0)then
+         if(xdelta.eq.0)then
 c Standard labelling.
-	    xdelta=2.
-	    x1st=0.
-	 endif
+            xdelta=2.
+            x1st=0.
+         endif
 c  Log axes: Put labeled ticks at powers of ten, and ten*x1st, 
 c      and unlabeled at ten*(n*xdelta) for n integer,
 c      within the range of the axes.
 c      Typical choices: x1st=5,xdelta=1 ; x1st=2,xdelta=2 ; x1st=0,xdelta=2.
-	 dy=log10(aax/ain)
-	 dx=(xgmax-xgmin)/dy
-	 dy=(ygmax-ygmin)/dy
-	 if(ain.gt.aax)then
-	    x10=ain
-	    ain=aax
-	    aax=x10
-	 endif
-	 if(ain.le.0.) stop ' GAXIS error: Log axis end negative.'
-	 do 1 indx=nint(log10(ain)-.49999),nint(log10(aax)+.49999)
-	    x10=10.**indx
-	    gw=x10
-	    if(gw.ge.(.9999*ain) .and. gw.le.(1.0001*aax))then
-	       call gtic(gw,2,xgnlog(gw),ygnlog(gw)
-     $		    ,tcos,tsin,1.,0.,lpara)
-	    endif
-	    gw=x10*x1st
-	    if(gw.ge.ain .and. gw.le.aax)then
-	       call gtic(gw,3,xgnlog(gw),ygnlog(gw)
-     $		    ,tcos,tsin,1.,0.,lpara)
-	    endif
-	    do 2 ixm=1,100
+         dy=log10(aax/ain)
+         dx=(xgmax-xgmin)/dy
+         dy=(ygmax-ygmin)/dy
+         if(ain.gt.aax)then
+            x10=ain
+            ain=aax
+            aax=x10
+         endif
+         if(ain.le.0.) stop ' GAXIS error: Log axis end negative.'
+         do 1 indx=nint(log10(ain)-.49999),nint(log10(aax)+.49999)
+            x10=10.**indx
+            gw=x10
+            if(gw.ge.(.9999*ain) .and. gw.le.(1.0001*aax))then
+               call gtic(gw,2,xgnlog(gw),ygnlog(gw)
+     $              ,tcos,tsin,1.,0.,lpara)
+            endif
+            gw=x10*x1st
+            if(gw.ge.ain .and. gw.le.aax)then
+               call gtic(gw,3,xgnlog(gw),ygnlog(gw)
+     $              ,tcos,tsin,1.,0.,lpara)
+            endif
+            do 2 ixm=1,100
                xm=ixm*xdelta
                if(xm.gt.9.9999)goto 1
-	       gw=x10*xm
-	       if(gw.ge.ain .and. gw.lt.aax) then
-		  call gtic(gw,0,xgnlog(gw),ygnlog(gw)
-     $		       ,tcos,tsin,1.,0.,lpara)
-	       endif
-    2	    continue
-    1	 continue
-	 call vecn(xgmin,ygmin,0)
-	 call vecn(xgmax,ygmax,1)
+               gw=x10*xm
+               if(gw.ge.ain .and. gw.lt.aax) then
+                  call gtic(gw,0,xgnlog(gw),ygnlog(gw)
+     $                 ,tcos,tsin,1.,0.,lpara)
+               endif
+    2       continue
+    1    continue
+         call vecn(xgmin,ygmin,0)
+         call vecn(xgmax,ygmax,1)
 
       else
 c Linear
-	 if(xdelta.eq.0)then
+         if(xdelta.eq.0)then
 C Autoscale
             if(dl.lt.chrswdth*3*ticnum)then
 c Axis is too short for comfort. Change ticnum
                iticnum=max(1,int(dl/(chrswdth*3)))
 c               write(*,*)'Resetting ticnum',iticnum
             endif
-	    call fitrange(ain,aax,iticnum,
-     $	         nxfac,xpow,xdelta,x1st,xlast)
+            call fitrange(ain,aax,iticnum,
+     $           nxfac,xpow,xdelta,x1st,xlast)
 c Changed to -1 May 2002 for more satisfactory labeling.
-	    if(.not.(nxfac.gt.2.or.nxfac.lt.-1)) then
-	       nxfac=0
-	       xpow=1.
-	    endif
-	    ngpow=nxfac
-	    x1st=x1st/xpow
-	    xdelta=xdelta/xpow
-	    ain=ain/xpow
-	    aax=aax/xpow
-	 endif
+            if(.not.(nxfac.gt.2.or.nxfac.lt.-1)) then
+               nxfac=0
+               xpow=1.
+            endif
+            ngpow=nxfac
+            x1st=x1st/xpow
+            xdelta=xdelta/xpow
+            ain=ain/xpow
+            aax=aax/xpow
+         endif
 c  Linear axes: Put ticks at first+n*delta for n integral only within axis.
-	 dx=(xgmax-xgmin)/(aax-ain)
-	 dy=(ygmax-ygmin)/(aax-ain)
-	 gw=x1st+ xdelta*nint(.4999+(ain-x1st)/xdelta)
+         dx=(xgmax-xgmin)/(aax-ain)
+         dy=(ygmax-ygmin)/(aax-ain)
+         gw=x1st+ xdelta*nint(.4999+(ain-x1st)/xdelta)
 c If needed increase decimal places in tic.
          ipoint=nint(log10(abs(x1st)+1.)-.49999)
      $        -nint(log10(abs(xdelta))-.49999)
@@ -215,7 +215,7 @@ c Start earlier so as to fill in minor tics prior to xfirst:
             gwm=gw-ams*abs(xdelta)
          endif
 c Iterate over major tics.
-	 do 4 i=1,40
+         do 4 i=1,40
             if(lminor)then
 c gw is being incremented from amin to amax.
                gw1=gw+ams*abs(xdelta)
@@ -230,38 +230,38 @@ c Minor tics
                   goto 6
                endif
             endif
-	    if((gw-(aax+0.0001*(aax-ain)))*ams.gt.0.)goto 5
+            if((gw-(aax+0.0001*(aax-ain)))*ams.gt.0.)goto 5
 c This ought not to be necessary, I think
-c	    if((gw-(ain-0.0001*(aax-ain)))*ams.lt.0.)goto 5
-	    if(ngpow.eq.0)then
-	       call gtic(gw,1,xgmin+dx*(gw-ain),ygmin+dy*(gw-ain)
-     $		    ,tcos,tsin,axcos,axsin,lpara)
-	    else
-	       if(lpara)then
- 		lfac=.11*(chrswdth/0.015)*0.6/dl
-		else
-		lfac=.03*(chrshght/0.015)/dl
-		endif
-	       if((gw-((1.-lfac)*aax+lfac*ain))*ams.lt.0.) then
-		  call gtic(gw,1,xgmin+dx*(gw-ain),ygmin+dy*(gw-ain)
-     $		       ,tcos,tsin,axcos,axsin,lpara)
-	       else
-		  call gtic(gw,4,xgmin+dx*(gw-ain),ygmin+dy*(gw-ain),
-     $		       tcos,tsin,axcos,axsin,lpara)
-	       endif
-	    endif
-	    gw=gw+ams*abs(xdelta)
+c           if((gw-(ain-0.0001*(aax-ain)))*ams.lt.0.)goto 5
+            if(ngpow.eq.0)then
+               call gtic(gw,1,xgmin+dx*(gw-ain),ygmin+dy*(gw-ain)
+     $              ,tcos,tsin,axcos,axsin,lpara)
+            else
+               if(lpara)then
+                lfac=.11*(chrswdth/0.015)*0.6/dl
+                else
+                lfac=.03*(chrshght/0.015)/dl
+                endif
+               if((gw-((1.-lfac)*aax+lfac*ain))*ams.lt.0.) then
+                  call gtic(gw,1,xgmin+dx*(gw-ain),ygmin+dy*(gw-ain)
+     $                 ,tcos,tsin,axcos,axsin,lpara)
+               else
+                  call gtic(gw,4,xgmin+dx*(gw-ain),ygmin+dy*(gw-ain),
+     $                 tcos,tsin,axcos,axsin,lpara)
+               endif
+            endif
+            gw=gw+ams*abs(xdelta)
             gwm=gw
-    4	 continue
-    5	 continue
+    4    continue
+    5    continue
          if(ipoint.gt.1)then
 c     reset tic label places.
             nxlabp=inlabp
          endif
-	 if(ngpow.ne.0.and.nxlabw.gt.0)then
-	    call powlabel(ngpow,xgmax,ygmax,tcos,tsin,
-     $		       axcos,axsin,lpara)
-	 endif
+         if(ngpow.ne.0.and.nxlabw.gt.0)then
+            call powlabel(ngpow,xgmax,ygmax,tcos,tsin,
+     $                 axcos,axsin,lpara)
+         endif
       endif
       call vecn(xgmin,ygmin,0)
       call vecn(xgmax,ygmax,1)
@@ -288,15 +288,15 @@ c Put a power of ten label at xg,yg offset etc.
 c      ticlab='!AX!@10' //char(0)
       ticlab='!AX!@10'//label //char(0)
       if(lpara)then
-	 chrscos=axcos
-	 chrssin=axsin
-	 px=px+tcos*xticoff
-	 py=py+tsin*xticoff
+         chrscos=axcos
+         chrssin=axsin
+         px=px+tcos*xticoff
+         py=py+tsin*xticoff
       else
-	 chrscos=tcos
-	 chrssin=tsin
-	 px=px+tcos*(yticoff-chrswdth)
-	 py=py+tsin*(yticoff-chrswdth)
+         chrscos=tcos
+         chrssin=tsin
+         px=px+tcos*(yticoff-chrswdth)
+         py=py+tsin*(yticoff-chrswdth)
       endif
       if(yticoff.le.0)then
          call jdrwstr(px,py,ticlab,-0.3)
@@ -321,33 +321,33 @@ c axcos,axsin  axis angle
 c lpara  tic label parallel to axis.
       include 'plotcom.h'
 c commons:      nxlabw   le 0 switches off the labels.
-c		nxlabp   number of decimal places in labels.
-c		xticlen  can reverse tics if negative (also length).
+c               nxlabp   number of decimal places in labels.
+c               xticlen  can reverse tics if negative (also length).
       character*80 ticlab,label
       real cc,cs
       integer nl,lablength,labp
 
       call vecn(xg,yg,0)
       if(lab.eq.0)then
-	 call vecn(xg+tcos*.6*xticlen,yg+tsin*.6*xticlen,1)
-	 return
+         call vecn(xg+tcos*.6*xticlen,yg+tsin*.6*xticlen,1)
+         return
       endif
       if(lab.eq.1)then
-	 labp=nxlabp
-	 call fwrite(gw,lablength,labp,ticlab)
-	 ticlab(lablength+1:lablength+1)=char(0)
+         labp=nxlabp
+         call fwrite(gw,lablength,labp,ticlab)
+         ticlab(lablength+1:lablength+1)=char(0)
       elseif(lab.eq.2)then
-	 nl=nint(-.49999+log10(gw))
-	 call iwrite(nl,lablength,label)
-	 label(lablength+1:lablength+3)= char(28) // 'u'// char(0)
-	 ticlab='10' // char(28) // 'u'// label(1:lablength+3)
+         nl=nint(-.49999+log10(gw))
+         call iwrite(nl,lablength,label)
+         label(lablength+1:lablength+3)= char(28) // 'u'// char(0)
+         ticlab='10' // char(28) // 'u'// label(1:lablength+3)
       elseif(lab.eq.3)then
 c Circumlocution to avoid mingw/wine bug.
          temp=gw/(10.**(nint(-.49999+log10(gw))))
-	 call fwrite(temp,lablength,0,ticlab)
+         call fwrite(temp,lablength,0,ticlab)
       elseif(lab.eq.4)then
-	 call vecn(xg+tcos*xticlen,yg+tsin*xticlen,1)
-	 return
+         call vecn(xg+tcos*xticlen,yg+tsin*xticlen,1)
+         return
       endif
       call vecn(xg+tcos*xticlen,yg+tsin*xticlen,1)
 c label:
@@ -355,13 +355,13 @@ c label:
       cc=chrscos
       cs=chrssin
       if(lpara)then
-	 chrscos=axcos
-	 chrssin=axsin
-	 call jdrwstr(xg+tcos*xticoff,yg+tsin*xticoff,ticlab,0.)
+         chrscos=axcos
+         chrssin=axsin
+         call jdrwstr(xg+tcos*xticoff,yg+tsin*xticoff,ticlab,0.)
       else
-	 chrscos=tcos
-	 chrssin=tsin
-	 call jdrwstr(xg+tcos*yticoff,yg+tsin*yticoff,ticlab,
+         chrscos=tcos
+         chrssin=tsin
+         call jdrwstr(xg+tcos*yticoff,yg+tsin*yticoff,ticlab,
      $   yticoff/abs(yticoff))
       endif
       chrscos=cc
@@ -378,11 +378,11 @@ c  All tic shifts must be explicit.
       real first,delta
       include 'plotcom.h'
       real wx2nx
-      integer nxfac,tog
+      integer nxfac
       delta=0
       nxfac=0
-	 call gaxis(wxmin*xi,wxmax*xa,nxfac,first,delta, 
-     $	   wx2nx(wxmin),wx2nx(wxmax),naypt,naypt,.true.,lxlog)
+         call gaxis(wxmin*xi,wxmax*xa,nxfac,first,delta, 
+     $     wx2nx(wxmin),wx2nx(wxmax),naypt,naypt,.true.,lxlog)
       end
 c*********************************************************************
       subroutine altyaxis(yi,ya)
@@ -395,8 +395,8 @@ c  Arguments are the factors to scale the axis ends.
       integer nyfac
       delta=0
       nyfac=0
-	 call gaxis(wymin*yi,wymax*ya,nyfac,first,delta,
-     $	   naxpt,naxpt,wy2ny(wymin),wy2ny(wymax),.false.,lylog)
+         call gaxis(wymin*yi,wymax*ya,nyfac,first,delta,
+     $     naxpt,naxpt,wy2ny(wymin),wy2ny(wymax),.false.,lylog)
       end
 c*********************************************************************
       subroutine togminor()

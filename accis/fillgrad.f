@@ -26,7 +26,7 @@ c isw=3, color contour by direction d, and 3-D perspect (needs setup).
       integer ng0,ng1,isw
 
       real h(3),hmin,hmax,xp(5),yp(5),zp(5)
-      integer id(3),imin,imax,l,ll,lmin,lmax
+      integer id(3),imin,imax,ll,lmin,lmax
       logical labs
 
       include 'plotcom.h'

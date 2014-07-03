@@ -11725,3 +11725,209 @@ commit
 
 Remove dependence on randf.f by moving gasdev to ranlux and other stuff
 to average.f. git rm randf.f
+
+commit
+
+Fix bug in makefile associated with preset G77.
+
+1 July 2014
+
+Subtraction of objects controlling potental.
+--------------------------------------------
+
+We want to be able to construct more complicated objects, especially ones
+with reentrant holes, using subtraction. This has not yet been done.
+The boolean for the particle region doesn't control boundary conditions.
+
+The logic of object Boundary Condition specification appears to be this.
+
+An object can be additive, subtractive, or null. 
+We have currently implemented additive and null objects.
+
+Null objects A-B=C=0 do nothing to potential boundary conditions.
+They are just surfaces which can measure fluxes.
+
+Additive objects set boundary conditions, normally Robin. A,B,C.
+There is at present some ambiguity about what happens if the surfaces
+of more than one additive object lie between two mesh nodes. Eventually
+that ought to be systematized.
+
+Subtractive objects do not possess their own boundary conditions. Instead,
+they serve to reduce the effective volume of an additive object. The 
+regions of the additive object that are inside the subtractive object are
+removed. As a result:
+
+1) Surfaces of the additive object that lie within the subtractive object
+are removed and exert no boundary influence. Call such surfaces subtractED.
+
+2) Surfaces of the subtractive object that lie within the additive object
+become surfaces of the additive object and acquire its boundary condition.
+Call such surfaces subtractIVE.
+
+These appear sufficient for objects with uniform boundary conditions. More
+complications will arise if non-uniform conditions are required.
+
+It appears that this logic can be implemented in the routine potlsect.
+
+Currently for any mesh leg, it cycles through each object in sequence.
+If it finds an intersection, fraction is set non-unity. Then the 
+conditions(3) are calculated and the routine returns. Consequently
+only the first object that crosses the leg is accounted for. In effect
+that's the systematization of multiple object crossings: the earliest
+object is the only one that counts.
+
+Clearly we've got to implement more logic here, to remove subtractED
+surfaces that lie within subtracted regions and to add subtractIVE
+surfaces inside additive regions. 
+
+I suppose it will be helpful if every additive object has a list of
+associated subtractive objects. Then when an intersection is found, we
+can test if it's to be subtracted. It may also be helpful to be able
+to specify whether the inside or the outside of a subtractive object
+is subtracted. That's one bit for each. I think that information ought
+to be associated with the additive object from which it is
+subtracted. If this approach is followed, a subtractive object need
+actually be no different from any other object. Sounds as if what is
+needed for each (additive) object is
+1) The number of subtractive objects associated: normv
+2) For i=1,normv the object number and sign of subtracted objects.
+
+Implemented the mechanisms to set the association.
+
+There's a problem with boxedge. It finds new fractions not found by 
+the original potlsect calls when subtracting is used. This is a bit 
+surprising because boxedge uses potlsect. Tracked down the bug to 
+an error in the new code position calculation. Seems gone now.
+
+We now have subtractED surfaces working not yet subtractIVE.
+
+2 Jul 2014
+
+One way to implement subtractive surfaces is simply to assign the additive
+surface's condition to the subtractive object and declare that the 
+subtractive object is additive with the complement of the additive object
+subtracted from it. There are then four options I could imagine:
+
+1) The subtracted object does not add subtractive surfaces; instead it
+just hollows out the original object leaving a shell with holes.
+
+2) The subtracted object adds all its usual surfaces and removes the
+contained additive object's surfaces.
+
+3) The subtracted object acquires the conditions of the additive and
+generates subtractive surfaces with those conditions.
+
+4) The subtracted object has its own conditions and applies them to the
+subtractive surfaces. 
+
+We have to be careful of overloading the parameters. Can a subtractive
+object be also an ordinary object? Not if it has the complement of the 
+additive object subtracted. How do we indicate not to add subtractive
+surfaces? Perhaps use a different type number. If so then the options above
+correspond to 
+
+1) Type number 89. Subtractive boundary conditions input as null. Left.
+2) Type number 89. Subtractive BCs input non-null. Left.
+3) Type number 88. Null BC input. BCs set to additive object's. 
+   Subtraction set to complement of additive object.
+4) Type number 88. Non-Null BC input. BCs left alone.
+   Subtraction set to complement of additive object.
+
+These require that the subtraction input line occur AFTER all object lines.
+Implemented. Seems to work. 
+
+There is a difference in the region textplot between 3 and 4. It is to
+do with the setting of the ifield_mask. With 3 the subtractive object
+is masked out. With 4 it is not. I'm not sure which is best. ifield_mask
+is relevant to padvnc and getfield interpolation. Need to think.
+When doing gradlocalregion, the iregion passed has been masked by ifield_mask
+Generally null objects are masked out of consideration to prevent doing
+spurious extrapolation across null-object boundaries. That probably ought
+to be the case for all subtractive objects since generally they will
+have surfaces that are irrelevant but in the particle region where the
+field is needed. If, however, subtractive objects are universally
+field-masked, then near the subtractive surfaces they introduce, there
+will not be extrapolation when perhaps there should. The test in 
+gradlocal region is between iregion and idob_cij(iregion_cij,.). Therefore
+presumably the most important thing is that these be consistent.
+It may therefore be that it makes little difference. I observe that
+
+I get a different result from runs with subtraction of null and subtraction
+of a BC identical to the additive object, 3,4. So there is something different
+happening. 
+
+However, phi files are the same with or without the extra command:
+               ifield_mask=IBSET(ifield_mask,isoc-1)
+
+But somehow subtracting an explicit BC is different from subtracting a
+null BC even if BC values end up the same.  Somewhat puzzling. I can't
+reproduce this difference. I find identity between Explicit and Implied.
+
+Go carefully. There are two different reference files given.phi zeromasked.phi
+   	      	      diff given.phi	      diff zeromasked.phi
+
+No IBSET Implicit	      differ		      don't
+No IBSET Explicit	      don't		      differ
+IBSET Implic	      	      don't		      differ
+IBSET Explic		      don't		      differ
+
+Thus the final answer is that there is a difference between implicit and
+explicit if the extra command is absent, but not if it is present.
+Leave it present for now. Implicit subtractive objects are not masked,
+they are included in the iregion_masked calculation.
+
+Some tests with different cylinders and spheres show that there are
+sometimes No good vertices errors when the subtracting object is nearly
+tangent to the additive object. That might be worth trying to fix.
+It might be affected by the above IBSET command.
+
+Cube test tickles small bug in zero volume cube test. Fixed.
+
+Update the RefManual. I realize there's a puzzle with particle absorption
+for a hollow subtract 89 object. Need a new absorption condition, since
+particles travel everywhere, but are only absorbed by the shell.
+
+3 July 2014
+
+More general objects, surfaces of revolution. 
+---------------------------------------------
+
+In general these are not too hard to implement without flux collection.
+The hard part is flux collection tracking and storage. 
+
+If we consider the revolution of a piece-wise linear polyline about an
+axis, then there is a natural division of the flux surface by line-element.
+Then presumably equal spacing of revolution angle would be the obvious
+orthogonal division. It might more generally be possible to divide each
+line element into a number of equal-length sections.
+
+A convex object of revolution can be considered composed of a monotonically
+increasing set of values of the axial coordinate, z, at which the radial 
+coordinate, r, is specified. It could be specified by two positions
+x_0 and x_1, which are the ends of the axis, and some number of point pairs
+(z_f,r) denoting the axial position as a fraction of x_1-x_0 and the radius.
+
+Determination of whether a point is inside would proceed by 
+(1) Finding z. If 0<z<1 (2) Finding the corresponding r. (3) Is rp<r?
+Probably if the number of segments is small, bisection interpolation 
+would be fast enough to find r.
+
+Cones have two segments (one node). Truncated cone 3 segments.
+
+Currently the largest object is a pp, which has a total of 7x3=21 reals in
+its obj_geom structure.
+The revolution data structure for polylines etc would most likely be 
+Base. Base point="center" x_0. 3 reals.
+Apex. Other end of axis. x_1. Needed to construct r. 3 reals
+Dir. Normalized vector direction such that z=Dir.(x-x_0). 3 reals
+N (number of line segments, zero for unused?) 1 integer.
+(N-1)*2 nodes. The values of (z,r) for non-ends. Or maybe even with ends.
+If we wished to store this in 21 reals we would have 21-10=11 for pairs.
+That would allow up to N=6. Might be enough for most purposes.
+
+There is a bigger task for storing flux data, which is to discover the
+intersection of a line between two postions with the surface of revolution.
+
+Added data structure references to 3dcom.f
+
+commit

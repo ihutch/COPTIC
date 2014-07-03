@@ -24,45 +24,45 @@ c Segments alternate pen down, pen up.
       if(npts.le.0) return
       call vecw(x(1),y(1),0)
       do 3 i=2,npts
-	 if(.not.ldash) then
-	    call vecw(x(i),y(i),1)
-	 else
+         if(.not.ldash) then
+            call vecw(x(i),y(i),1)
+         else
 c We shall bypass vecw and go straight to normal.
-	    nx=wx2nx(x(i))
-	    ny=wy2ny(y(i))
+            nx=wx2nx(x(i))
+            ny=wy2ny(y(i))
 c Lengths of total vector:
-	    cx=nx
-	    cy=ny
-	    dx=nx- crsrx
-	    dy=ny- crsry
-	    vlen=sqrt(DX*DX+DY*DY)
+            cx=nx
+            cy=ny
+            dx=nx- crsrx
+            dy=ny- crsry
+            vlen=sqrt(DX*DX+DY*DY)
 c Partial length remaining:
-	    plen=vlen
-	    if(vlen.eq.0)return
+            plen=vlen
+            if(vlen.eq.0)return
 c Distance to end of segment
     1       dlen=(dashlen(jmask)-dashdist)
-	    if(plen.gt.dlen)then
+            if(plen.gt.dlen)then
 c Vector longer than this segment. Draw segment and iterate.
-	       dashdist=0
-	       plen=plen-dlen
-	       flen=dlen/vlen
-	       nx= crsrx+dx*flen
-	       ny= crsry+dy*flen
-	       cud=dashmask(jmask)
-c	       call optvecn(nx,ny,cud)
-	       call vecn(nx,ny,cud)
-	       jmask=mod(jmask,MASKNO)+1
-	       goto 1
-	    else
+               dashdist=0
+               plen=plen-dlen
+               flen=dlen/vlen
+               nx= crsrx+dx*flen
+               ny= crsry+dy*flen
+               cud=dashmask(jmask)
+c              call optvecn(nx,ny,cud)
+               call vecn(nx,ny,cud)
+               jmask=mod(jmask,MASKNO)+1
+               goto 1
+            else
 c Vector ends before segment. Draw to end of vector and quit.
-	       dashdist=plen+dashdist
-	       nx=cx
-	       ny=cy
-	       cud=dashmask(jmask)
-c	       call optvecn(nx,ny,cud)
-	       call vecn(nx,ny,cud)
-	    endif
-	 endif
+               dashdist=plen+dashdist
+               nx=cx
+               ny=cy
+               cud=dashmask(jmask)
+c              call optvecn(nx,ny,cud)
+               call vecn(nx,ny,cud)
+            endif
+         endif
     3 continue
       end
 C********************************************************************
@@ -79,68 +79,68 @@ c Set some line styles. 0 solid (dashing off).
       common/dashline/ldash,dashlen,dashdist,dashmask,jmask
       save
       if(i.eq.0)then
-	 ldash=.false.
-	 return
+         ldash=.false.
+         return
       elseif(i.eq.1)then
 c Long dashes.
-	 dashlen(1)=.03
-	 dashlen(2)=.03
-	 dashlen(3)=.03
-	 dashlen(4)=.03
+         dashlen(1)=.03
+         dashlen(2)=.03
+         dashlen(3)=.03
+         dashlen(4)=.03
       elseif(i.eq.2)then
 c Short dashes.
-	 dashlen(1)=.01
-	 dashlen(2)=.01
-	 dashlen(3)=.01
-	 dashlen(4)=.01
+         dashlen(1)=.01
+         dashlen(2)=.01
+         dashlen(3)=.01
+         dashlen(4)=.01
       elseif(i.eq.3)then
 c Long/Short.
-	 dashlen(1)=.03
-	 dashlen(2)=.01
-	 dashlen(3)=.01
-	 dashlen(4)=.01
+         dashlen(1)=.03
+         dashlen(2)=.01
+         dashlen(3)=.01
+         dashlen(4)=.01
       elseif(i.eq.4)then
 c 'Dots'.
-	 dashlen(1)=.002
-	 dashlen(2)=.01
-	 dashlen(3)=.002
-	 dashlen(4)=.01
+         dashlen(1)=.002
+         dashlen(2)=.01
+         dashlen(3)=.002
+         dashlen(4)=.01
       elseif(i.eq.5)then
 c 'Medium/dot'.
-	 dashlen(1)=.02
-	 dashlen(2)=.01
-	 dashlen(3)=.002
-	 dashlen(4)=.01
+         dashlen(1)=.02
+         dashlen(2)=.01
+         dashlen(3)=.002
+         dashlen(4)=.01
       elseif(i.eq.6)then
 c 'Long Dashes short breaks'.
-	 dashlen(1)=.03
-	 dashlen(2)=.01
-	 dashlen(3)=.03
-	 dashlen(4)=.01
+         dashlen(1)=.03
+         dashlen(2)=.01
+         dashlen(3)=.03
+         dashlen(4)=.01
       elseif(i.eq.7)then
 c 'Medium Dashes short breaks'.
-	 dashlen(1)=.02
-	 dashlen(2)=.005
-	 dashlen(3)=.02
-	 dashlen(4)=.005
+         dashlen(1)=.02
+         dashlen(2)=.005
+         dashlen(3)=.02
+         dashlen(4)=.005
       elseif(i.eq.8)then
 c 'Short Dashes shorter breaks'.
-	 dashlen(1)=.01
-	 dashlen(2)=.005
-	 dashlen(3)=.01
-	 dashlen(4)=.005
+         dashlen(1)=.01
+         dashlen(2)=.005
+         dashlen(3)=.01
+         dashlen(4)=.005
       elseif(i.eq.9)then
 c 'Dot short'.
-	 dashlen(1)=.002
-	 dashlen(2)=.005
-	 dashlen(3)=.01
-	 dashlen(4)=.01
+         dashlen(1)=.002
+         dashlen(2)=.005
+         dashlen(3)=.01
+         dashlen(4)=.01
       elseif(i.eq.10)then
 c 'Long/Short breaks'.
-	 dashlen(1)=.02
-	 dashlen(2)=.005
-	 dashlen(3)=.02
-	 dashlen(4)=.02
+         dashlen(1)=.02
+         dashlen(2)=.005
+         dashlen(3)=.02
+         dashlen(4)=.02
       endif
       dashdist=1.e-6
       jmask=1
@@ -159,27 +159,27 @@ c         mark='!A3'//char(0)
 c  That does not quite align well. Better not to mix thinkgs up.
       if(nmark.lt.10)then
          pfPS=0
-	 mark=char(nmark+176)//char(0)
+         mark=char(nmark+176)//char(0)
       elseif(nmark.eq.10)then
-	 mark='+'//char(0)
+         mark='+'//char(0)
       elseif(nmark.eq.11)then
-	 mark='!AX'//char(0)
+         mark='!AX'//char(0)
       elseif(nmark.eq.12)then
-	 mark='!A*'//char(0)
+         mark='!A*'//char(0)
       elseif(nmark.eq.13)then
-	 mark='!A-'//char(0)
+         mark='!A-'//char(0)
       elseif(nmark.eq.15)then
-	 mark='!A'//char(48)//char(0)
+         mark='!A'//char(48)//char(0)
       else
-	 mark=char(nmark)//char(0)
+         mark=char(nmark)//char(0)
       endif
       do 1 i=1,nx
-	 xp=wx2nx(x(i))
-	 yp=wy2ny(y(i))
+         xp=wx2nx(x(i))
+         yp=wy2ny(y(i))
       if(nmark.eq.14)then
          call actrid(xp,yp)
       else
-	 call jdrwstr(xp,yp,mark,0.)
+         call jdrwstr(xp,yp,mark,0.)
       endif
     1 continue
       pfPS=ipf
@@ -190,8 +190,8 @@ c Plot error bars from y to y+err.
       integer nx,i
       real x(*),y(*),err(*)
       do 1 i=1,nx
-	 call vecw(x(i),y(i),0)
-	 call vecw(x(i),y(i)+err(i),1)
+         call vecw(x(i),y(i),0)
+         call vecw(x(i),y(i)+err(i),1)
     1 continue
       end
 C********************************************************************
@@ -210,8 +210,8 @@ c Plot error bars from y-ym*err to y+yp*err.
          yn=wy2ny(y(i)+yp*err(i))
          call vecn(xn-.2*chrswdth,yn,0)
          call vecn(xn+.2*chrswdth,yn,1)
-	 call vecw(x(i),y(i)-ym*err(i),0)
-	 call vecw(x(i),y(i)+yp*err(i),1)
+         call vecw(x(i),y(i)-ym*err(i),0)
+         call vecw(x(i),y(i)+yp*err(i),1)
     1 continue
       end
 c******************************************************************
@@ -257,8 +257,8 @@ C********************************************************************
       real x(*),y(*),xp,yp,wx2nx,wy2ny
       external drawfn
       do 1 i=1,nx
-	 xp=wx2nx(x(i))
-	 yp=wy2ny(y(i))
+         xp=wx2nx(x(i))
+         yp=wy2ny(y(i))
          call drawfn(xp,yp)
     1 continue
       end
@@ -383,8 +383,7 @@ c Dashed line version.
       include 'world3.h'
 c Dashed line code
       real nx,ny,nz
-      real vlen,dx,dy,dz,cx,cy,cz,plen,flen,dlen
-      real wx2nx, wy2ny
+      real vlen,dx,dy,cx,cy,plen,flen,dlen
       integer cud
 
 c dashlen is the arc length in normalized units of the the ith line
@@ -400,48 +399,48 @@ c Segments alternate pen down, pen up.
       if(npts.le.0) return
       call vec3w(x(1),y(1),z(1),0)
       do 3 i=2,npts
-	 if(.not.ldash) then
-	    call vec3w(x(i),y(i),z(i),1)
+         if(.not.ldash) then
+            call vec3w(x(i),y(i),z(i),1)
 c            call wxyz2nxyz(x(i),y(i),z(i),nx,ny,nz)
 c            call trn32(nx,ny,nz,x2,y2,z2,0)
 c            call optvecn(x2+xcbc2,y2+ycbc2,1)
-	 else
+         else
 c We shall bypass vecw and go straight to normal.
             call wxyz2nxyz(x(i),y(i),z(i),nx,ny,nz)
             call trn32(nx,ny,nz,x2,y2,z2,0)
 c Lengths of total vector:
-	    cx=x2+xcbc2
-	    cy=y2+ycbc2
-	    dx=cx- crsrx
-	    dy=cy- crsry
-	    vlen=sqrt(dx*dx+dy*dy)
+            cx=x2+xcbc2
+            cy=y2+ycbc2
+            dx=cx- crsrx
+            dy=cy- crsry
+            vlen=sqrt(dx*dx+dy*dy)
 c Partial length remaining:
-	    plen=vlen
-	    if(vlen.eq.0)return
+            plen=vlen
+            if(vlen.eq.0)return
 c Distance to end of segment
     1       dlen=(dashlen(jmask)-dashdist)
-	    if(plen.gt.dlen)then
+            if(plen.gt.dlen)then
 c Vector longer than this segment. Draw segment and iterate.
-	       dashdist=0
-	       plen=plen-dlen
-	       flen=dlen/vlen
-	       nx= crsrx+dx*flen
-	       ny= crsry+dy*flen
-	       cud=dashmask(jmask)
-	       call optvecn(nx,ny,cud)
-c	       call vecn(nx,ny,cud)
-	       jmask=mod(jmask,MASKNO)+1
-	       goto 1
-	    else
+               dashdist=0
+               plen=plen-dlen
+               flen=dlen/vlen
+               nx= crsrx+dx*flen
+               ny= crsry+dy*flen
+               cud=dashmask(jmask)
+               call optvecn(nx,ny,cud)
+c              call vecn(nx,ny,cud)
+               jmask=mod(jmask,MASKNO)+1
+               goto 1
+            else
 c Vector ends before segment. Draw to end of vector and quit.
-	       dashdist=plen+dashdist
-	       nx=cx
-	       ny=cy
-	       cud=dashmask(jmask)
-	       call optvecn(nx,ny,cud)
-c	       call vecn(nx,ny,cud)
-	    endif
-	 endif
+               dashdist=plen+dashdist
+               nx=cx
+               ny=cy
+               cud=dashmask(jmask)
+               call optvecn(nx,ny,cud)
+c              call vecn(nx,ny,cud)
+            endif
+         endif
     3 continue
       end
 C********************************************************************
@@ -457,19 +456,19 @@ c         mark='!A3'//char(0)
 c  That does not quite align well. Better not to mix thinkgs up.
       if(nmark.lt.10)then
          pfPS=0
-	 mark=char(nmark+176)//char(0)
+         mark=char(nmark+176)//char(0)
       elseif(nmark.eq.10)then
-	 mark='+'//char(0)
+         mark='+'//char(0)
       elseif(nmark.eq.11)then
-	 mark='!AX'//char(0)
+         mark='!AX'//char(0)
       elseif(nmark.eq.12)then
-	 mark='!A*'//char(0)
+         mark='!A*'//char(0)
       elseif(nmark.eq.13)then
-	 mark='!A-'//char(0)
+         mark='!A-'//char(0)
       elseif(nmark.eq.15)then
-	 mark='!A'//char(48)//char(0)
+         mark='!A'//char(48)//char(0)
       else
-	 mark=char(nmark)//char(0)
+         mark=char(nmark)//char(0)
       endif
       do 1 i=1,nx
          call wxyz2nxyz(x(i),y(i),z(i),xp,yp,zp)
@@ -479,7 +478,7 @@ c  That does not quite align well. Better not to mix thinkgs up.
       if(nmark.eq.14)then
          call actrid(cx,cy)
       else
-	 call jdrwstr(cx,cy,mark,0.)
+         call jdrwstr(cx,cy,mark,0.)
       endif
     1 continue
       pfPS=ipf
@@ -540,45 +539,45 @@ c Segments alternate pen down, pen up.
       if(npts.le.0) return
       call vecw(x(1),y(1),0)
       do 3 i=2,npts
-	 if(.not.ldash) then
-	    call vecw(x(1+nstx*(i-1)),y(1+nsty*(i-1)),1)
-	 else
+         if(.not.ldash) then
+            call vecw(x(1+nstx*(i-1)),y(1+nsty*(i-1)),1)
+         else
 c We shall bypass vecw and go straight to normal.
-	    nx=wx2nx(x(1+nstx*(i-1)))
-	    ny=wy2ny(y(1+nsty*(i-1)))
+            nx=wx2nx(x(1+nstx*(i-1)))
+            ny=wy2ny(y(1+nsty*(i-1)))
 c Lengths of total vector:
-	    cx=nx
-	    cy=ny
-	    dx=nx- crsrx
-	    dy=ny- crsry
-	    vlen=sqrt(DX*DX+DY*DY)
+            cx=nx
+            cy=ny
+            dx=nx- crsrx
+            dy=ny- crsry
+            vlen=sqrt(DX*DX+DY*DY)
 c Partial length remaining:
-	    plen=vlen
-	    if(vlen.eq.0)return
+            plen=vlen
+            if(vlen.eq.0)return
 c Distance to end of segment
     1       dlen=(dashlen(jmask)-dashdist)
-	    if(plen.gt.dlen)then
+            if(plen.gt.dlen)then
 c Vector longer than this segment. Draw segment and iterate.
-	       dashdist=0
-	       plen=plen-dlen
-	       flen=dlen/vlen
-	       nx= crsrx+dx*flen
-	       ny= crsry+dy*flen
-	       cud=dashmask(jmask)
-c	       call optvecn(nx,ny,cud)
-	       call vecn(nx,ny,cud)
-	       jmask=mod(jmask,MASKNO)+1
-	       goto 1
-	    else
+               dashdist=0
+               plen=plen-dlen
+               flen=dlen/vlen
+               nx= crsrx+dx*flen
+               ny= crsry+dy*flen
+               cud=dashmask(jmask)
+c              call optvecn(nx,ny,cud)
+               call vecn(nx,ny,cud)
+               jmask=mod(jmask,MASKNO)+1
+               goto 1
+            else
 c Vector ends before segment. Draw to end of vector and quit.
-	       dashdist=plen+dashdist
-	       nx=cx
-	       ny=cy
-	       cud=dashmask(jmask)
-c	       call optvecn(nx,ny,cud)
-	       call vecn(nx,ny,cud)
-	    endif
-	 endif
+               dashdist=plen+dashdist
+               nx=cx
+               ny=cy
+               cud=dashmask(jmask)
+c              call optvecn(nx,ny,cud)
+               call vecn(nx,ny,cud)
+            endif
+         endif
     3 continue
       end
 C********************************************************************
@@ -595,27 +594,27 @@ c         mark='!A3'//char(0)
 c  That does not quite align well. Better not to mix thinkgs up.
       if(nmark.lt.10)then
          pfPS=0
-	 mark=char(nmark+176)//char(0)
+         mark=char(nmark+176)//char(0)
       elseif(nmark.eq.10)then
-	 mark='+'//char(0)
+         mark='+'//char(0)
       elseif(nmark.eq.11)then
-	 mark='!AX'//char(0)
+         mark='!AX'//char(0)
       elseif(nmark.eq.12)then
-	 mark='!A*'//char(0)
+         mark='!A*'//char(0)
       elseif(nmark.eq.13)then
-	 mark='!A-'//char(0)
+         mark='!A-'//char(0)
       elseif(nmark.eq.15)then
-	 mark='!A'//char(48)//char(0)
+         mark='!A'//char(48)//char(0)
       else
-	 mark=char(nmark)//char(0)
+         mark=char(nmark)//char(0)
       endif
       do 1 i=1,nx
-	 xp=wx2nx(x(1+nstx*(i-1)))
-	 yp=wy2ny(y(1+nsty*(i-1)))
+         xp=wx2nx(x(1+nstx*(i-1)))
+         yp=wy2ny(y(1+nsty*(i-1)))
       if(nmark.eq.14)then
          call actrid(xp,yp)
       else
-	 call jdrwstr(xp,yp,mark,0.)
+         call jdrwstr(xp,yp,mark,0.)
       endif
     1 continue
       pfPS=ipf

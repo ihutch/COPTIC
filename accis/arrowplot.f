@@ -113,15 +113,14 @@ c Feather size parallel, perp, frac of length (2).
 c If barbperp is negative, read two additional parameters at the end.
 c nangle (1) the number of barbs. isw a further switch.
 c 
-
-      integer ibase,ipoint,ibarb,ifeath
+      integer ngp
       parameter (ibx=1,iby=2,ibz=3,ipx=4,ipy=5,ipz=6,ibba=7,ibbe=8,
      $     ifa=9,ife=10,ina=11,isw=12,ngp=isw)
       integer nanglemax
       parameter (nanglemax=32)
       real arrow(ngp)
-      real v1(3),v2(3),v3(3)
-      real avec(3),aperp(3),avnorm(3),across(3),alamb(3)
+      real v1(3)
+      real avec(3),aperp(3),across(3),alamb(3)
       integer nangle
       real shaftfrac
       integer nalong
@@ -287,13 +286,12 @@ c
       implicit none
       integer nalen,nbb,nangle,isw
       real path(3,nalen),bbl,bbw,tr
-      integer ibase,ipoint,ibarb,ifeath
 
 c Local Storage
       integer nanglemax,nalong,iaj
       parameter (nanglemax=32,nalong=1000)
-      real v1(3),v2(3),v3(3)
-      real avec(3),aperp(3),avnorm(3),across(3),alamb(3)
+      real v1(3)
+      real avec(3),aperp(3),across(3),alamb(3)
       real shaftcoords(nalong,nanglemax,3)
       real xshaft(nalong,nanglemax),yshaft(nalong,nanglemax)
      $     ,zshaft(nalong,nanglemax)
