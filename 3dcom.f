@@ -44,15 +44,18 @@ c base is the lower end of axis, apex is upper end
 c dir is direction such that zvalue=dir.(position-base)
 c npair is number of (z,r) pairs, not greater than 6 currently.
 c pairs is start of the (z,r) pairs.
-      integer sr_base,sr_apex,sr_dir,sr_npair,sr_pairs
+      integer sr_base,sr_apex,sr_dir,sr_npair,sr_npmax,sr_vlen
       parameter (sr_base=ocenter)
       parameter (sr_apex=sr_base+ndims)
       parameter (sr_dir=sr_base+2*ndims)
       parameter (sr_npair=sr_base+3*ndims)
-      parameter (sr_pairs=sr_npair+1)
+c Allowed max number of pairs. Resulting vector length
+      parameter (sr_npmax=18,sr_vlen=sr_npmax+2)
 c-------------------------------------------------------------------
 c Where the data is actually stored:
       real obj_geom(odata,ngeomobjmax)
+      real srvnz(sr_vlen,ngeomobjmax)
+      real srvnr(sr_vlen,ngeomobjmax)
 c-------------------------------------------------------------------
 c Mapping from obj_geom object number to nf_flux object (many->fewer)
 c Zero indicates no flux tracking for this object.
@@ -77,7 +80,7 @@ c Object number and sign of objects to subtract.
 c
       common /objgeomcom/ngeomobj,obj_geom,nf_map
      $     ,ibool_part,ifield_mask,iptch_mask,lboundp
-     $     ,normv,ormv
+     $     ,normv,ormv,srvnz,srvnr
      $     ,rjscheme
 c-------------------------------------------------------------------
 c-------------------------------------------------------------------

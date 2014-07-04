@@ -272,6 +272,67 @@ c      write(*,*)'cylusect return',ijbin,fraction
       end
 c*********************************************************************
 c*********************************************************************
+      subroutine srvfsect(nsdim,xp1,xp2,iobj,ijbin,sd,fraction)
+c Given a general object iobj. Find the point of intersection of the
+c line joining xp1,xp2, with it, and determine the ijbin to which it is
+c therefore assigned, and the direction it is crossed (sd=+1 means
+c inward from 1 to 2). Fractional distance xp1->xp2 is returned.
+
+c This version uses only inside_geom and bisection to find the point
+c of intersection. 
+
+      integer nsdim,iobj,ijbin
+      real xp1(nsdim),xp2(nsdim),sd,fraction
+c Local storage
+      include 'ndimsdecl.f'
+      real xm(ndims)
+
+      ins1=inside_geom(ndims,xp1,iobj)
+      ins2=inside_geom(ndims,xp2,iobj)
+      fu=1.
+      fl=0.
+      if(ins1.eq.ins2)then
+c Endpoints on same side.
+C         write(*,*)'srvfsect error: root not bracketed.'
+c We need some sort of check on double intersection.
+c Perhaps this could be iterated:
+         fraction=0.5
+         do i=1,ndims
+            xm(i)=xp1(i)+(xp2(i)-xp1(i))*fraction
+         enddo
+         ins=inside_geom(ndims,xm,iobj)
+         if(ins.ne.ins1)then 
+c Double crossing. Choose solution closest to fraction=0.
+            fu=fraction
+            fl=0.
+         else
+            sd=0.
+            fraction=1.
+            return
+         endif
+      endif
+c Bisection, bipolar on value of inside_geom, to find fraction.
+c Iterate to accuracy of 2^16. Fairly costly.
+      do k=1,16
+         fraction=(fu+fl)*0.5
+         do i=1,ndims
+            xm(i)=xp1(i)+(xp2(i)-xp1(i))*fraction
+         enddo
+         ins=inside_geom(ndims,xm,iobj)
+         if(ins.ne.ins1)then
+            fu=fraction
+         else
+            fl=fraction
+         endif
+      enddo
+c Now fraction should be the intersection point.
+      if(ins1.eq.0)then
+         sd=1.
+      else
+         sd=-1
+      endif
+      end
+c*********************************************************************
       subroutine sphereinterp(nsdim,ida,xp1,xp2,xc,rc,f1,f2,sd,C,D)
 c Given two different nsdim dimensioned vectors xp1,xp2,and a sphere
 c center xc radius rc, find the intersection of the line joining x1,x2,
@@ -545,3 +606,23 @@ c Index in order theta,z
       endif
 c      write(*,'(6f8.4,3i3)')xp1,xp2,ir,it,iz
       end
+c********************************************************************
+      subroutine segmentcross(x11,x12,x21,x22,f1,f2)
+c Given two pairs of points in 2-D, find the intersection of the 
+c line joining the first pair with that joining the second pair. 
+c Return as fractions of the distances along the lines
+      real x11(2),x12(2),x21(2),x22(2),f1,f2
+c Distances of each point from the opposite line      
+      pd21=(x12(2)-x11(2))*(x21(1)-x11(1))
+     $     -(x12(1)-x11(1))*(x21(2)-x11(2))
+      pd22=(x12(2)-x11(2))*(x22(1)-x11(1))
+     $     -(x12(1)-x11(1))*(x22(2)-x11(2))
+      pd11=(x22(2)-x21(2))*(x11(1)-x21(1))
+     $     -(x22(1)-x21(1))*(x11(2)-x21(2))
+      pd12=(x22(2)-x21(2))*(x12(1)-x21(1))
+     $     -(x22(1)-x21(1))*(x12(2)-x21(2))
+c Hence fractional intersect positions:
+      f2=(0.-pd21)/(pd22-pd21)
+      f1=(0.-pd11)/(pd12-pd11)
+      end
+c********************************************************************

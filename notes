@@ -11915,19 +11915,49 @@ would be fast enough to find r.
 Cones have two segments (one node). Truncated cone 3 segments.
 
 Currently the largest object is a pp, which has a total of 7x3=21 reals in
-its obj_geom structure.
+its obj_geom structure, this is after the ABC specification.
 The revolution data structure for polylines etc would most likely be 
 Base. Base point="center" x_0. 3 reals.
 Apex. Other end of axis. x_1. Needed to construct r. 3 reals
 Dir. Normalized vector direction such that z=Dir.(x-x_0). 3 reals
 N (number of line segments, zero for unused?) 1 integer.
-(N-1)*2 nodes. The values of (z,r) for non-ends. Or maybe even with ends.
-If we wished to store this in 21 reals we would have 21-10=11 for pairs.
-That would allow up to N=6. Might be enough for most purposes.
+Then we need to put the z and r into separate arrays so they can
+be solved for inside_geom. Currently I've allocated new arrays for them
+since I was running out of space.
 
 There is a bigger task for storing flux data, which is to discover the
 intersection of a line between two postions with the surface of revolution.
 
 Added data structure references to 3dcom.f
+
+commit
+
+Implement corrected structures. Implement initialization and inside_geom
+detection for surface of revolution. Have not yet done the fsect for it.
+So potlsect ought not yet to work. 
+
+fsect needs to determine the point of intersection of a line between two
+points and the object surface. It could use some of the inside_geom
+code to find the segment of each point, and then test just the
+line segments between those for each point. I wonder if we have a
+generic test of intersection of two finite line segments? Probably not,
+because that's a 2-D construct, not a 3-D construct.
+Wrote a subroutine to return the fractional distances for two line segs.
+
+This is insufficient however. Intersection of a 3-D segment with a surface
+of revolution is non-linear because of possible angle differences at the
+segment ends. There might be more than one intersection. 
+
+Implemented a srvfsect function based only on inside_geom and bisection.
+It seems to work pretty well, and fast enough not to be problematic.
+Although I developed a sophisticated root searcher for cases where
+the root is not bracketed by the original points, that does not seem to be
+necessary. There may be some intersections that I miss, but presumably
+only in regions where there are dimensions smaller than the mesh spacing,
+where resolution is impossible anyway. Intelligent choice of mesh alignment
+can minimize any inaccuracy (e.g. choose odd number of points if axis is
+at center of grid).
+
+I think I have surfaces of revolution working.
 
 commit

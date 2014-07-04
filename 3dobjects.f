@@ -51,8 +51,8 @@ c**********************************************************************
      $     ,' is masked.'
       write(*,*)'otype indicates how to use the line. Higher bytes'
      $     ,' of otype indicate specials.'
-      write(*,*)'byte-1: 1 Spheroid, 2 Cuboid, 3 Cylinder, 4 Parallel'
-     $     ,'opiped, 5 General cylinder'
+      write(*,*)'byte-1: 1 Spheroid, 2 Cuboid, 3 Cylinder, 4 Parallelopi
+     $ped, ',' 5 General cylinder,',' 6 Surface of Revolution'
       write(*,'(2a)')'Extra data for more complex objects and'
      $     ,' to specify flux accumulation.'
       write(*,*)'For Cylinder, center(3), radii(3), iaxial=number'
@@ -61,6 +61,8 @@ c**********************************************************************
      $     ,' Then vec2(3), vec3(3).'
       write(*,*)'Non-aligned Cylinder, center(3), axial-vector(3),'
      $     ,' reference-vector(3), radius.'
+      write(*,*)'S-of-R, Base(3), Apex(3), n-pairs<7(1), zr-pairs'
+     $     ,'(2n).' 
       write(*,*)'Flux accumulation (follows geometry): ofluxtype,'
      $     ,'ofn1,ofn2[,ofn3].'
       write(*,*)' Indicates number-of-flux-types, sizes of uniform '
@@ -68,7 +70,7 @@ c**********************************************************************
       write(*,*)' Sphere needs 2 arrays (cos(th),psi).'
      $     ,' Cylinder 3 (r,th,z) arrays.'
       write(*,*)' Cuboid (x,y,z) arrays. '
-     $     ,'Pllelopiped (1,2,3) arrays.'
+     $     ,'Pllelopiped (1,2,3) arrays. SoR not done.'
       write(*,*)'byte-1: 99 Boolean particle region,  91-3 Set mesh in'
      $     ,' dimension 1-3.'
       write(*,*)'byte-2: 1(x256) Special boundary phi=0 instead of '
@@ -163,7 +165,7 @@ c      read(cline,*,err=901)nd
       if(myid.eq.0)write(*,'(a,a50)')'Reading objects from file: '
      $     ,filename
       if(myid.eq.0)write(*,*)'Object Descr   type',
-     $     '       (BCs)              (center)              (radii)'
+     $     '       (BCs)              (center)            (radii)'
 c Loop over lines of the input file.
  1    iline=iline+1
       read(1,'(a)',end=902)cline
@@ -183,8 +185,10 @@ c Use only lower byte.
          write(*,*)'More objects than can be managed in ',ngeomobjmax
          goto 901
       endif
+c Start of type choices
       if(type.eq.1.)then
-c Read the geometry definition variables and then the flux counts.
+c------------------------------------------------
+c Sphere Read the geometry definition variables and flux counts.
          read(cline,*,err=901,end=801)
      $        (obj_geom(k,ngeomobj),k=1,oradius+nd-1)
      $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn2)
@@ -194,9 +198,8 @@ c Sphere has just one facet and we must make n3=1 too:
          obj_geom(ofn3,ngeomobj)=1
          obj_geom(offc,ngeomobj)=1
          if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
-c         if(myid.eq.0 .and. obj_geom(ofluxtype,ngeomobj).ne.0)
-c     $        write(*,821)(obj_geom(k,ngeomobj),k=ofluxtype,ofn2)
       elseif(type.eq.2.)then
+c------------------------------------------------
 c Cuboid has 6 facets and uses numbering in three coordinates:
          read(cline,*,err=901,end=802)
      $        (obj_geom(k,ngeomobj),k=1,oradius+nd-1)
@@ -212,6 +215,7 @@ c Cuboid has 6 facets and uses numbering in three coordinates:
             enddo
          endif
       elseif(type.eq.3.)then
+c------------------------------------------------
 c Cylinder
          read(cline,*,err=901,end=803)
      $        (obj_geom(k,ngeomobj),k=1,ocylaxis)
@@ -228,6 +232,7 @@ c 3 facets.
          endif
          if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.4.)then
+c------------------------------------------------
 c Parallelopiped also serves as general cuboid.
          read(cline,*,err=901,end=804)
      $        (obj_geom(k,ngeomobj),k=1,oradius+nd*nd-1)
@@ -237,11 +242,11 @@ c     $        (obj_geom(k,ngeomobj),k=1,odata)
  804     if(myid.eq.0)write(*,820)ngeomobj,
      $        ' Pllelopiped '
          obj_geom(offc,ngeomobj)=2*nd
-c         call plleloinit(obj_geom(1,ngeomobj))
          call plleloinit(ngeomobj)
          if(myid.eq.0)write(*,822)(obj_geom(k,ngeomobj),
      $        k=1,1+nd*(1+nd)+3)
       elseif(type.eq.5)then
+c------------------------------------------------
 c Non-aligned cylinder
          read(cline,*,err=901,end=805)
      $        (obj_geom(k,ngeomobj),k=1,ocylrad)
@@ -256,7 +261,32 @@ c Non-aligned cylinder
          endif
          if(myid.eq.0)write(*,822)(obj_geom(k,ngeomobj),k=1,1+4*nd+1)
          call cylinit(obj_geom(1,ngeomobj))
+      elseif(type.eq.6)then
+c------------------------------------------------
+c Surface of revolution
+c      if(myid.eq.0)write(*,*)'Object Descr   type',
+c     $     '       (BCs)            (base)           (apex)'
+         read(cline,*,err=901,end=806)
+     $        (obj_geom(k,ngeomobj),k=1,sr_dir-1)
+     $        ,npair
+     $        ,(srvnz(k,ngeomobj),srvnr(k,ngeomobj),k=2,npair+1)
+ 806     if(myid.eq.0)write(*,820)ngeomobj,' Surf-of-Revln'
+         obj_geom(sr_npair,ngeomobj)=npair
+         if(npair.gt.sr_npmax)then
+            write(*,*)' Too many pairs specified',npair
+            stop
+         endif
+         call srvinit(ngeomobj)
+         if(myid.eq.0)then
+            write(*,822)(obj_geom(k,ngeomobj),k=1,sr_dir-1)
+            write(*,820)npair,' line-pairs,dir(3):'
+            write(*,'(16f6.2)')(srvnz(k,ngeomobj)
+     $           ,srvnr(k,ngeomobj),k=2,npair+1)
+     $           ,(obj_geom(k,ngeomobj),k=sr_dir,sr_dir+ndims-1)
+         endif
+c         stop
       elseif(type.eq.99)then
+c------------------------------------------------
 c Specify the particle region.
          read(cline,*,err=901,end=899)idumtype,ibool_part
  899     if(myid.eq.0)write(*,898)
@@ -272,6 +302,7 @@ c Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1
       elseif(type.gt.90.and.type.le.90+ndims)then
+c------------------------------------------------
 c Mesh specification for a particular dimension. 
          id=int(type-90)
          ist=0
@@ -302,6 +333,7 @@ c Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1
       elseif(type.ge.100.and.type.lt.100+2*ndims+1)then
+c------------------------------------------------
 c Face boundary conditions.
          id=int(type)-100
          if(iCFcount.eq.0)then
@@ -321,6 +353,7 @@ c Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1         
       elseif(type.gt.110.and.type.lt.110+ndims)then
+c------------------------------------------------
 c Periodic boundary condition on this dimension
          if(iCFcount.eq.0)then
 c Reset all if this is the first face call.
@@ -340,6 +373,8 @@ c Reset all if this is the first face call.
 c Don't count this as an object.
          ngeomobj=ngeomobj-1
       elseif(type.eq.89.or.type.eq.88)then
+c------------------------------------------------
+c Subtraction
          read(cline,*,err=901,end=881)idumtype,iassoc,normv(iassoc)
      $        ,(ormv(k,iassoc),k=1,normv(iassoc))
          if(myid.eq.0)write(*,*)ngeomobj,' Subtracting association',type
@@ -375,6 +410,8 @@ c Set subtractive boundary conditions equal to additive
          enddo
          endif
       endif
+c End of type choices
+c------------------------------------------------
 c If this is a null boundary condition clear the relevant bit.
       if(obj_geom(oabc,ngeomobj).eq.0.
      $     .and. obj_geom(oabc+1,ngeomobj).eq.0.
@@ -531,6 +568,42 @@ c normalize
       enddo
 
       end
+c****************************************************************
+      subroutine srvinit(iobj)
+c Initialize Surface of Revolution direction vector from base and apex.
+c Is is a vector in direction apex-base whose length is such that
+c dir.(apex-base)=1. So it is (apex-base)/|apex-base|^2.
+      include 'ndimsdecl.f'
+      include '3dcom.f'
+      r2=0.
+      do j=1,ndims
+         jdir=sr_dir+j-1
+         dif=obj_geom(sr_apex+j-1,iobj)-obj_geom(sr_base+j-1,iobj)
+         obj_geom(jdir,iobj)=dif
+         r2=r2+dif**2
+      enddo
+      do j=1,ndims
+         jdir=sr_dir+j-1
+         obj_geom(jdir,iobj)=obj_geom(jdir,iobj)/r2
+      enddo
+c Insert the base and apex into the z,r pair arrays.
+      srvnz(1,iobj)=0.
+      srvnr(1,iobj)=0.
+      j=2+int(obj_geom(sr_npair,iobj))
+      srvnz(j,iobj)=1.
+      srvnr(j,iobj)=0.
+c Check other z values for consistency.
+      z=0.
+      do i=2,j-1
+         z1=srvnz(i,iobj)
+         if(z1.le.z.or.z1.ge.1.)then
+            write(*,*)'z values must be monotonic 0.<z<1.'
+     $           ,(srvnz(k,iobj),k=1,j)
+            stop
+         endif
+         z=z1
+      enddo
+      end
 c**********************************************************************
       function insideall(mdims,x)
 c For an ndims-dimensional point x, return the integer insideall
@@ -589,14 +662,17 @@ c is outside or inside object number i. Return 0 for non-existent object.
 c Common object geometric data.
       include 'ndimsdecl.f'
       include '3dcom.f'
-      
+      external interp
+
       inside_geom=0
       if(i.gt.ngeomobj) return
 
       itype=int(obj_geom(otype,i))
 c Use only bottom 8 bits:
       itype=itype-256*(itype/256)
+c Start of inside type choices
       if(itype.eq.1)then
+c------------------------------------------------
 c Coordinate-Aligned Spheroid data : center(ndims), semi-axes(ndims) 
          r2=0
          do k=1,ndims
@@ -605,6 +681,7 @@ c Coordinate-Aligned Spheroid data : center(ndims), semi-axes(ndims)
          enddo
          if(r2.lt.1.)inside_geom=1
       elseif(itype.eq.2)then
+c------------------------------------------------
 c Coordinate-Aligned Cuboid data:
          do k=1,ndims
             xk=x(k)-obj_geom(ocenter-1+k,i)
@@ -612,6 +689,7 @@ c Coordinate-Aligned Cuboid data:
          enddo
          inside_geom=1
       elseif(itype.eq.3)then
+c------------------------------------------------
 c Coordinate-Aligned Cylinder data:  Center(ndims), Semi-axes(ndims), 
 c Axial coordinate. (Signed Axial 1/2 length 
 c = semi-axis of the axial coordinate).
@@ -627,6 +705,7 @@ c = semi-axis of the axial coordinate).
 c         write(*,*)'Cyl. ic=',ic,' r2=',r2,' x=',x
          if(r2.lt.1.)inside_geom=1
       elseif(itype.eq.4)then
+c------------------------------------------------
 c General Cuboid is equivalent to General Parallelopiped
 c "center(ndims)", vectors(ndims,ndims), contravariants.
          do k=1,ndims
@@ -639,6 +718,7 @@ c "center(ndims)", vectors(ndims,ndims), contravariants.
          enddo
          inside_geom=1
       elseif(itype.eq.5)then
+c------------------------------------------------
 c Non-aligned cylinder
          r2=0.
          do k=1,ndims
@@ -655,6 +735,28 @@ c radius:
          enddo
 c         write(*,*)r2
          if(abs(r2).lt.1.)inside_geom=1
+      elseif(itype.eq.6)then
+c------------------------------------------------
+c Surface of revolution.
+         r2=0.
+         z=0
+         do j=1,ndims
+            z=z+obj_geom(sr_dir+j-1,i)*(x(j)-obj_geom(sr_base+j-1,i))
+         enddo
+         if(z.lt.0.or.z.gt.1)return
+         do j=1,ndims
+            r2=r2+(x(j)-obj_geom(sr_base+j-1,i)-z*
+     $           (obj_geom(sr_apex+j-1,i)-obj_geom(sr_base+j-1,i)))**2
+         enddo
+c Find the z-real-index 
+         nq=int(obj_geom(sr_npair,i))+2
+c         write(*,*)obj_geom(sr_npair,i),(srvnz(k,i),k=1
+c     $        ,obj_geom(sr_npair,i)+2),z
+         iz=interp(srvnz(1,i),nq,z,zind)
+         if(iz.le.0)write(*,*)'inside_geom SoR interp failure'
+c Then find the r value for this z-index.
+         r=srvnr(iz,i)+(zind-iz)*(srvnr(iz+1,i)-srvnr(iz,i))
+         if(r2.lt.r**2)inside_geom=1
       endif
 
       end
@@ -849,6 +951,8 @@ c     I don't think this ever actually happens, but we'll see.
             elseif(itype.eq.5)then
 c Non-aligned cylinder.
                call cylgfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+            elseif(itype.eq.6)then
+               call srvfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
             else
                write(*,*)"Unknown object type",obj_geom(otype,i),
      $              " in potlsect"
