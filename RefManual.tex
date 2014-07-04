@@ -94,26 +94,23 @@ mentioned below.
 \verb!obj_geom(otype,iobj)! of every object line is an integer which
 determines the type of line this is, what sort of object or other
 entity it refers to. The first byte specifies the object type and the
-second byte further qualifies it. Five types of normal object are
-defined (so far): 1 spheroid, 2 (coordinate-aligned) cuboid, 3
-(coordinate-aligned) cylinder, 4 Parallelopiped, 5 General
-(non-aligned) cylinder. They are specified with \emph{required}
-subsequent values
-as follows:
+second byte further qualifies it. The parameters are specified with
+\emph{required} subsequent values as follows:
 
-\paragraph{Spheroid}: position of center and three radii in the
+\paragraph{1 Spheroid}: position of center and three radii in the
 direction of the coordinate axes.
 
-\paragraph{Cuboid}: center and three half-side-lengths, so that the
-cube extends in each coordinate direction from center minus
-half-side-length to center plus half-side-length.
+\paragraph{2 Cuboid (coordinate aligned)}: center and three
+half-side-lengths, so that the cube extends in each coordinate
+direction from center minus half-side-length to center plus
+half-side-length.
 
-\paragraph{Cylinder (coordinate aligned)}: center, three ``radii''
+\paragraph{3 Cylinder (coordinate aligned)}: center, three ``radii''
 along the respective coordinates, axis-number specifying the
 coordinate along which the cylinder's axis is aligned. For this
 direction the ``radius'' is the cylinder's half-length.
 
-\paragraph{Parallelopiped}: center ${\bf x}_c$, and three vectors
+\paragraph{4 Parallelopiped}: center ${\bf x}_c$, and three vectors
 ${\bf v}_k$ specifying the
 direction and half-length of the parallelopiped's edges. The volume
 consists of those points whose vectorial position can be expressed as
@@ -125,39 +122,34 @@ $c_k$ satisfying $-1\le c_k \le 1$. A non-aligned cuboid (for example)
 is a
 particular case of the parallelopiped. 
 
-\paragraph{Cylinder (non-aligned)}: center, axis-vector specifying the
+\paragraph{5 Cylinder (non-aligned)}: center, axis-vector specifying the
 direction and half-length of the cylinder's axis, reference-vector
 whose direction perpendicular to the axis-vector specifies the
 direction from which angles in the cylinder are to be measured, and
 radius. (This specifies only circular cross-section cylinders.)
 
+\paragraph{6 Surface-of-Revolution (monotonic convex)}: base,
+apex position-vectors specifying the axis of revolution and the start and end
+points of the surface; \verb!npair! the number of subsequent (r,z)
+pairs; then \verb!npair! pairs of cylindrical coordinates relative to
+the specified axis consisting of axial z-positions (expressed as a
+fractional distance between base and apex) and corresponding radial
+r-values at each z. The z (fractional) values must be monotonic
+between 0 and 1.
+
+\paragraph{7 Surface-of-Revolution (general)}: base, apex specifying
+axis of revolution; \verb!npair! the number of subsequent (r,z) pairs;
+then \verb!npair! pairs of fractional z-positions (between base and
+apex) and corresponding r-values at each z. The difference is that all
+the points of the surface must be specified as pairs; the z positions
+don't have to be monotonic and may extend beyond the axis ends; and
+the surface must be closed unless both ends are on the axis-line (r=0).
+
 \bigskip
 For each object, the boundary conditions to be applied in the form 
 $$A\phi + B \hat{\bf n}.\nabla\phi + C =0$$
 are specified immediately after the type. If all of $A,B,C$ are zero,
-then no potential boundary condition is applied on this object. The data
-positions in the input file for different objects are specified in
-Table \ref{geomtable}. The parameters that refer to the positions are
-indicated in the first column. Each line in the table refers to
-multiple numbers.
-\begin{table}[htp]
-\caption{Position of geometric data in object file for different objects.\label{geomtable}}
-\begin{tabular}{|l|l|l|l|l|l|}
-\hline
-  Byte-1: & 1& 2& 3& 4& 5\\
-  Object: & Spheroid& Cuboid& Cylinder& Parallelopiped& General
-  Cylinder\\
-\hline
-\verb!oabc! 2-4 & ABC  & ABC  & ABC  & ABC  & ABC 
-\\
-\verb!ocenter! 5-7 & Center& Center& Center& Center& Center\\
-\verb!oradius! 8-10 & Radii& ${1\over2}$-Sides&
-Radii&  vector-1& Axis-vector\\
-\verb!ocylaxis! 11-16 & & & Axis number& vector-2,3& Ref-vector, radius\\ 
-\hline
-\end{tabular}
-\end{table}
-
+then no potential boundary condition is applied on this object.
 
 Examples of lines of each of these types are given in the following
 extract suitably formatted to represent possible input lines.
@@ -177,6 +169,13 @@ extract suitably formatted to represent possible input lines.
 # Cylinder (Non-aligned)
 #type=5  A, B, C,     Center      Axial-vec  Ref-vec   Radius
 5,       1.,0.,1.,  2.,-2.,-2.,   1.,0.,1.,  1.,0.,0.,  1. ,
+# Surface of Revolution (monotonic convex)
+#type=6 A,B,C,   Base     Apex   Npair rz-Pairs (Npair in total)
+6       1,0,1, 0.,0.,-2, 0.,0.,2, 4,      1.,.01 .5,.4, .5,.7, .2,.9
+# Surface of Revolution (general) (chosen to give same result)
+#type=7 A,B,C,   Base     Apex   Npair rz-Pairs (Npair in total)
+7       1,0,1, 0.,0.,-2, 0.,0.,2, 6, 0,0, 1.,.01 .5,.4, .5,.7, .2,.9, 0,1
+
 \end{verbatim}
 
 \subsection{Flux accumulation}
@@ -808,14 +807,20 @@ Debugging switches for testing
 These are required only for rather sophisticated use of COPTIC, and
 should be understood by reference to the source and comments. In
 brief, \verb!-gt! gives text representations of region and volumes
-slices. \verb!-gi! is for debugging reinjection. \verb!-gp! and
-\verb!-gd! cause plotting slices of potential and density at an
-optionally specified step interval, which can be useful to verify both
-the grid and the initial evolution of the parameters. \verb!-gc! sets
-the objects to display initially through its bits, which can be useful
-in combination with \verb!-gr! in visualizing the representation of
-objects near the origin. \verb!-gf! sets the
-flux quantity to be plotted in graphics emitted after the final step.
+slices and does plots of slices through the mesh of the disallowed
+particle region and the test initial potential solve. It is helpful
+for visualizing the objects specified. \verb!-gi! is for debugging
+reinjection. \verb!-gp! and \verb!-gd! cause plotting slices of
+potential and density at an optionally specified step interval, which
+can be useful to verify both the grid and the initial evolution of the
+parameters. \verb!-gc! sets through its bits the objects to display in
+wire-frame fashion initially (so -gc1023 displays the first 9 objects)
+It can be useful in combination with \verb!-gr! in visualizing the
+representation of objects near the origin. \verb!-gf!  sets the flux
+quantity to be plotted in 3-D graphics emitted after the final
+step. It will only show objects that have flux collection turned
+on. \verb!-gw! specifies non-standard switch settings to the
+\verb!-gf! plots.
 
 \section{Data Structures}
 
@@ -1023,6 +1028,29 @@ pointers to the positions of different values within the array
       parameter (odata=oagrad+2)
       real obj_geom(odata,ngeomobjmax)
 \end{verbatim}
+ The data
+positions in the input file for different objects are specified in
+Table \ref{geomtable}. The parameters that refer to the positions are
+indicated in the first column. Each line in the table refers to
+multiple numbers.
+\begin{table}[htp]
+\caption{Position of geometric data in object file for different objects.\label{geomtable}}
+\begin{tabular}{|l|l|l|l|l|l|}
+\hline
+  Byte-1: & 1& 2& 3& 4& 5\\
+  Object: & Spheroid& Cuboid& Cylinder& Parallelopiped& General
+  Cylinder\\
+\hline
+\verb!oabc! 2-4 & ABC  & ABC  & ABC  & ABC  & ABC 
+\\
+\verb!ocenter! 5-7 & Center& Center& Center& Center& Center\\
+\verb!oradius! 8-10 & Radii& ${1\over2}$-Sides&
+Radii&  vector-1& Axis-vector\\
+\verb!ocylaxis! 11-16 & & & Axis number& vector-2,3& Ref-vector, radius\\ 
+\hline
+\end{tabular}
+\end{table}
+
 In addition, the flux accumulation number of object \verb!iobj! is
 given in \verb!nf_map(iob)!.
 \begin{verbatim}
@@ -1036,6 +1064,7 @@ given in \verb!nf_map(iob)!.
       common /objgeomcom/ngeomobj,obj_geom,nf_map
      $     ,ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
 \end{verbatim}
+
 The particle region boolean is stored as an integer array. An integer
 masks the objects to indicate which have no consequences for the
 potential. A point-charge mask indicates which objects are point

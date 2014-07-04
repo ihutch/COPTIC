@@ -11961,3 +11961,38 @@ at center of grid).
 I think I have surfaces of revolution working.
 
 commit
+
+4 Jul 2014
+
+More general surfaces of revolution
+-----------------------------------
+
+So far what is implemented is convex surfaces of revolution in which
+the (z,r) pairs are monotonic in z. However, since the intersection 
+code is based purely upon inside_geom, it seems relatively easy to 
+implement more general surfaces of revolution which might be concave.
+The difference is that we can't determine insideness based upon the
+comparison of rp with r(z). Instead, we have to calculate (rp,zp) and
+then determine the number of intersections of the line joining p to an
+outside point, po, with the 2-D contour to be revolved. If that number
+is odd then it's inside. Code for determining this sort of question is
+in ES2D. The wall (piecewise linear contour) must either be closed
+or else have both ends at r=0. (In the latter case an implied closing
+segment along r=0 need not be tested for intersections.) It does not
+seem implausible that doing the general wall intersection test would
+be as quick as the current search for z and interpolation.
+
+Implemented type 7 general surface of revolution. This isn't quite
+right yet because I add in the ends of the axial vector to the wall.
+That's not right. Still for speed comparisons it is fine. I find
+that type 6 is about 15% faster than type 7 in the calculation of
+cijroutine which is dominated by potlsect and inside_geom. The difference
+is hardly significant.
+
+Made type 7 require the entire wall to be specified. To perform the
+same as type 6 it requires two additional pairs to be specified:
+0.,0. at start and 1.,0. at end. 
+
+Update RefManual
+
+commit

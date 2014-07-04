@@ -261,27 +261,25 @@ c Non-aligned cylinder
          endif
          if(myid.eq.0)write(*,822)(obj_geom(k,ngeomobj),k=1,1+4*nd+1)
          call cylinit(obj_geom(1,ngeomobj))
-      elseif(type.eq.6)then
+      elseif(type.eq.6.or.type.eq.7)then
 c------------------------------------------------
 c Surface of revolution
-c      if(myid.eq.0)write(*,*)'Object Descr   type',
-c     $     '       (BCs)            (base)           (apex)'
          read(cline,*,err=901,end=806)
      $        (obj_geom(k,ngeomobj),k=1,sr_dir-1)
      $        ,npair
-     $        ,(srvnz(k,ngeomobj),srvnr(k,ngeomobj),k=2,npair+1)
+     $        ,(srvnr(k,ngeomobj),srvnz(k,ngeomobj),k=2,npair+1)
  806     if(myid.eq.0)write(*,820)ngeomobj,' Surf-of-Revln'
          obj_geom(sr_npair,ngeomobj)=npair
          if(npair.gt.sr_npmax)then
             write(*,*)' Too many pairs specified',npair
             stop
          endif
-         call srvinit(ngeomobj)
+         call srvinit(ngeomobj,type)            
          if(myid.eq.0)then
             write(*,822)(obj_geom(k,ngeomobj),k=1,sr_dir-1)
-            write(*,820)npair,' line-pairs,dir(3):'
-            write(*,'(16f6.2)')(srvnz(k,ngeomobj)
-     $           ,srvnr(k,ngeomobj),k=2,npair+1)
+            write(*,820)npair,' rz-pairs,dir(3):'
+            write(*,'(16f6.2)')(srvnr(k,ngeomobj)
+     $           ,srvnz(k,ngeomobj),k=2,npair+1)
      $           ,(obj_geom(k,ngeomobj),k=sr_dir,sr_dir+ndims-1)
          endif
 c         stop
@@ -569,7 +567,7 @@ c normalize
 
       end
 c****************************************************************
-      subroutine srvinit(iobj)
+      subroutine srvinit(iobj,type)
 c Initialize Surface of Revolution direction vector from base and apex.
 c Is is a vector in direction apex-base whose length is such that
 c dir.(apex-base)=1. So it is (apex-base)/|apex-base|^2.
@@ -586,23 +584,38 @@ c dir.(apex-base)=1. So it is (apex-base)/|apex-base|^2.
          jdir=sr_dir+j-1
          obj_geom(jdir,iobj)=obj_geom(jdir,iobj)/r2
       enddo
+      if(type.eq.6.)then
 c Insert the base and apex into the z,r pair arrays.
-      srvnz(1,iobj)=0.
-      srvnr(1,iobj)=0.
-      j=2+int(obj_geom(sr_npair,iobj))
-      srvnz(j,iobj)=1.
-      srvnr(j,iobj)=0.
+         srvnz(1,iobj)=0.
+         srvnr(1,iobj)=0.
+         j=2+int(obj_geom(sr_npair,iobj))
+         srvnz(j,iobj)=1.
+         srvnr(j,iobj)=0.
 c Check other z values for consistency.
-      z=0.
-      do i=2,j-1
-         z1=srvnz(i,iobj)
-         if(z1.le.z.or.z1.ge.1.)then
-            write(*,*)'z values must be monotonic 0.<z<1.'
-     $           ,(srvnz(k,iobj),k=1,j)
+         z=0.
+         do i=2,j-1
+            z1=srvnz(i,iobj)
+            if(z1.le.z.or.z1.ge.1.)then
+               write(*,*)'z values must be monotonic 0.<z<1.'
+     $              ,(srvnz(k,iobj),k=1,j)
+               stop
+            endif
+            z=z1
+         enddo
+      else
+c type 7 reads the entire wall. Shuffle in.
+         do i=1,obj_geom(sr_npair,ngeomobj)
+            srvnz(i,iobj)=srvnz(i+1,iobj)
+            srvnr(i,iobj)=srvnr(i+1,iobj)
+         enddo
+c Inconsistent if not closed and either end not on axis
+         if((srvnz(1,iobj).ne.srvnz(i-1,iobj).or.
+     $        srvnr(1,iobj).ne.srvnr(i-1,iobj)).and.
+     $        (srvnr(1,iobj).ne.0..or.srvnr(i-1,iobj).ne.0.))then
+            write(*,*)'rz-contour not closed and ends not on axis'
             stop
          endif
-         z=z1
-      enddo
+      endif
       end
 c**********************************************************************
       function insideall(mdims,x)
@@ -737,7 +750,10 @@ c         write(*,*)r2
          if(abs(r2).lt.1.)inside_geom=1
       elseif(itype.eq.6)then
 c------------------------------------------------
-c Surface of revolution.
+c Surface of revolution. Monotonic z.
+c This proves to be about 10% faster than the general version 7,
+c on a surface with one pair or 15% with 4 pairs, with a run whose
+c time is dominated by cijroutine.
          r2=0.
          z=0
          do j=1,ndims
@@ -757,6 +773,23 @@ c     $        ,obj_geom(sr_npair,i)+2),z
 c Then find the r value for this z-index.
          r=srvnr(iz,i)+(zind-iz)*(srvnr(iz+1,i)-srvnr(iz,i))
          if(r2.lt.r**2)inside_geom=1
+      elseif(itype.eq.7)then
+c------------------------------------------------
+c Surface of revolution. General.
+         r=0.
+         z=0
+         do j=1,ndims
+            z=z+obj_geom(sr_dir+j-1,i)*(x(j)-obj_geom(sr_base+j-1,i))
+         enddo
+         if(z.lt.0.or.z.gt.1)return
+         do j=1,ndims
+            r=r+(x(j)-obj_geom(sr_base+j-1,i)-z*
+     $           (obj_geom(sr_apex+j-1,i)-obj_geom(sr_base+j-1,i)))**2
+         enddo
+         r=sqrt(r)
+         csect=w2sect(r,z,1.e5,0.,srvnr(1,i),srvnz(1,i)
+     $        ,int(obj_geom(sr_npair,i)),fsect,psect)
+         if(mod(csect,2).eq.1)inside_geom=1
       endif
 
       end
@@ -952,6 +985,8 @@ c     I don't think this ever actually happens, but we'll see.
 c Non-aligned cylinder.
                call cylgfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
             elseif(itype.eq.6)then
+               call srvfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+            elseif(itype.eq.7)then
                call srvfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
             else
                write(*,*)"Unknown object type",obj_geom(otype,i),
@@ -1193,3 +1228,73 @@ c Contra coefficients are obtained by dotting with contra vectors
          xcontra(i)=xcl(i)
       enddo
       end
+C**********************************************************************     
+      real function w2sect(r1,z1,r2,z2,rwall,zwall,nwall,fsect,psect)
+c Find intersection between line joining two points and a wall. 2-D.
+c     
+c On input    
+c     (r1,z1) and (r2,z2) are two points
+c     rwall, zwall a possibly open piecewise-linear contour with length
+c     nwall
+
+c On output 
+c     w2sect is the total number of intersections with segment 1->2
+c     fsect the smallest fractional distance along 1->2 of an intersection.
+c     psect the wall fractional index of this intersection.
+c     fsect, psect =-1 if w2sect=0. 
+
+c  Find the intersection of the line joining the two points and the
+c  wall. Return the number of intersections w2sect. If w2sect.ne.0
+c  find the fractional distance between rz1, rz2 of the intersection
+c  closest to r1,z1: fsect, and the wall index to which the intersection
+c  closest to r1,z1 corresponds, including the fractional distance along
+c  the intersecting section, psect. (Otherwise they are both -1).
+
+      real rwall(nwall),zwall(nwall)
+c     
+c     Coefficients of equation of line connecting two points:
+      a=+(z1-z2)
+      b=-(r1-r2)
+      c= r1*z2-r2*z1
+c     
+c     For each wall segment, determine if it intersects the
+c     line. The test for intersection is based on the fact that the
+c     endpoints of each segment must lie on opposite sides of the equation
+c     describing the line of the other segment.
+c     
+      icount=0
+      psect=-1
+      fsect=-1
+c a large number
+      valmin=1.e30
+      val2=a*rwall(1)+b*zwall(1)+c
+      do 10 i=1,nwall-1
+         val1=val2
+         val2=a*rwall(i+1)+b*zwall(i+1)+c
+         if (((val1.le.0.).and.(val2.gt.0)).or.
+     &        ((val1.gt.0).and.(val2.le.0))) then
+            aprime=+(zwall(i+1)-zwall(i))
+            bprime=-(rwall(i+1)-rwall(i))
+            cprime= rwall(i+1)*zwall(i)-rwall(i)*zwall(i+1)
+            val3=aprime*r1+bprime*z1+cprime
+            val4=aprime*r2+bprime*z2+cprime
+c     Prescribe that the second end of the line R2,Z2 does not count if it is
+c     exactly on the boundary but the first end always does. 
+            if (((val3.le.0.).and.(val4.gt.0)).or.
+     &           ((val3.ge.0).and.(val4.lt.0))) then
+c     section for intersecting wall sections
+               icount=icount+1
+               f=val3/(val3-val4)
+               if(abs(f).lt.valmin)then
+                  valmin=abs(f)
+                  fsect=f
+                  psect=i+ val1/(val1-val2)
+               endif
+            endif
+         endif
+ 10   continue
+      w2sect=icount
+      return
+      end
+C
+C*******************************************************************
