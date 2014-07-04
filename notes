@@ -11996,3 +11996,80 @@ same as type 6 it requires two additional pairs to be specified:
 Update RefManual
 
 commit
+
+Failed various geometry tests (with very slow performance). 
+geometry/baresheath2.cks:
+geometry/baresheath.cks:
+geometry/geommany.cks:
+geometry/geomtest.cks:
+geometry/uniform128.cks:
+geometry/uniform4.cks:
+geometry/uniform.cks:
+geometry/uniformelec.cks:
+geometry/uniformonly.cks:
+Tried to backtrack but then found that the current version does not 
+behave consistently. Got errors only on 
+baresheath2, geommany, geomtest Weird!
+make mproper, make, make geometry. Errors only in geommany,geomtest.
+This is a bit worrying. Non deterministic results imply a big problem
+such as hidden non-initialization or overruns.
+make mproper, make, make geometry. Errors only in geommany,geomtest.
+Ok. Now I see that the .cks are only from today except for geommany and
+geomtest. That's the reason for differences.
+When I checkout a different branch, I don't get the corresponding .cks
+files into the geometry directory. Why? Same is true of accis. Weird!
+
+If I delete the cks files then git checkout does not actually check them
+out. Instead it tells me they are missing and I need to 
+git checkout --files geometry/*.cks to get them.
+Now got all July 4th files.
+make, make geometry. Errors only in geommany. Wild!
+git log geometry/geommany.cks shows that it was last logged on
+commit fc53702be6d595386a25aae76f92eaffebd4b391
+Author: Ian Hutchinson <ihutch@mit.edu>
+Date:   Thu Jun 26 10:57:33 2014 -0400
+
+    Removed ran1 usage (but not yet all the code) from whole base
+Also geommany.dat was last logged May 15th. Therefore it does seem
+that we've got a strange result and maybe a change in the current build.
+Checkout the above fc53 build. make mproper; make;
+make geometry/geommany.cks:. No differences.
+checkout master make mproper; make; make geometry/geommany.cks. Failed.
+
+Conclusion: geommany is behaving differently. But its the only one really.
+Checkout cbd173c99a14a4d47b6175edcaa54ecc64bd24be Failed.
+476db44fa8ef4690f1f0ab63b1fbbb8ea812a25b	  No differences.
+1e036dd12f37836f8c1681270903feef6217c352	  No differences.
+cbd173c99a14a4d47b6175edcaa54ecc64bd24be	  Failed.
+The last two are adjacent
+commit cbd173c99a14a4d47b6175edcaa54ecc64bd24be
+Author: Ian Hutchinson <ihutch@mit.edu>
+Date:   Thu Jul 3 09:35:00 2014 -0400
+
+    Completion of object subtraction code and start of surface of revolution
+    
+    Subtractive objects appear to be working as expected. RefManual updated.
+
+commit 1e036dd12f37836f8c1681270903feef6217c352
+Author: Ian Hutchinson <ihutch@mit.edu>
+Date:   Sat Jun 28 18:18:37 2014 -0400
+
+    Remove randf.f, moving gasdev to ranlux.f and others to average.f
+
+Evidently the object subtraction code was the point where geommany lost
+its cks.
+Look at git diff between these commits. There are a number in the object
+areas. There is also a major change in accis involving large numbers
+of files.
+Checkout in copticdebug the 1e036 version.
+Copy the 3dobjects.f file to coptic. make. Then no differences.
+Conclusion. It's a change in the 3dobjects.f that caused the change
+in geommany.
+Checkout cbd17 in debug. Failed.
+cp prior 3dobjects.f make current. OK.
+
+Found the change to be in the section near
+Sphere outward normal. It used to be in error. Therefore the Failed ought
+to be ignored and .cks fixed.
+
+Redo make geometry with current build. Everything is really ok. 
