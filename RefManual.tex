@@ -126,24 +126,31 @@ particular case of the parallelopiped.
 direction and half-length of the cylinder's axis, reference-vector
 whose direction perpendicular to the axis-vector specifies the
 direction from which angles in the cylinder are to be measured, and
-radius. (This specifies only circular cross-section cylinders.)
+radius. (This specifies only circular cross-section cylinders. It is a
+special case of a surface of revolution below, but with slightly
+easier entry and slightly faster performance.)
 
-\paragraph{6 Surface-of-Revolution (monotonic convex)}: base,
-apex position-vectors specifying the axis of revolution and the start and end
-points of the surface; \verb!npair! the number of subsequent (r,z)
+\paragraph{6 Surface-of-Revolution (monotonic convex)}: base, apex
+position-vectors specifying the axis of revolution and the start and
+end points of the surface; reference-vector whose component
+perpendicular to axis gives the first coordinate direction in a
+right-handed cartesian system of which the axis is the third
+direction; radius-size being the length of unit radius in the radial
+point specification; \verb!npair! the number of subsequent (r,z)
 pairs; then \verb!npair! pairs of cylindrical coordinates relative to
 the specified axis consisting of axial z-positions (expressed as a
 fractional distance between base and apex) and corresponding radial
-r-values at each z. The z (fractional) values must be monotonic
-between 0 and 1.
+r-values (normalized by radius-size) at each z. The z (fractional)
+values must be monotonic between 0 and 1.
 
 \paragraph{7 Surface-of-Revolution (general)}: base, apex specifying
-axis of revolution; \verb!npair! the number of subsequent (r,z) pairs;
-then \verb!npair! pairs of fractional z-positions (between base and
-apex) and corresponding r-values at each z. The difference is that all
-the points of the surface must be specified as pairs; the z positions
-don't have to be monotonic and may extend beyond the axis ends; and
-the surface must be closed unless both ends are on the axis-line (r=0).
+axis of revolution; reference-vector; radius-size; \verb!npair! the
+number of subsequent (r,z) pairs; then \verb!npair! pairs of
+fractional z-positions (between base and apex) and corresponding
+r-values at each z. The difference (from 6) is that all the points of the
+surface must be specified as pairs; the z positions don't have to be
+monotonic and may extend beyond the axis ends; and the surface must be
+closed unless both ends are on the axis-line (r=0).
 
 \bigskip
 For each object, the boundary conditions to be applied in the form 
@@ -170,11 +177,11 @@ extract suitably formatted to represent possible input lines.
 #type=5  A, B, C,     Center      Axial-vec  Ref-vec   Radius
 5,       1.,0.,1.,  2.,-2.,-2.,   1.,0.,1.,  1.,0.,0.,  1. ,
 # Surface of Revolution (monotonic convex)
-#type=6 A,B,C,   Base     Apex   Npair rz-Pairs (Npair in total)
-6       1,0,1, 0.,0.,-2, 0.,0.,2, 4,      1.,.01 .5,.4, .5,.7, .2,.9
+#type=6 A,B,C,   Base     Apex   Ref-Vec Rad Npair rz-Pairs (Npair in total)
+6       1 0 1, 0. 0. -2, 0. 0. 2, 1 0 0, 1.,  4, 1. .01, .5 .4, .5 .7, .2 .9
 # Surface of Revolution (general) (chosen to give same result)
-#type=7 A,B,C,   Base     Apex   Npair rz-Pairs (Npair in total)
-7       1,0,1, 0.,0.,-2, 0.,0.,2, 6, 0,0, 1.,.01 .5,.4, .5,.7, .2,.9, 0,1
+#type=7 A,B,C,  Base  Apex Ref-Vec R Npair rz-Pairs (Npair in total)
+6      1 0 1, 0 0 -2, 0 0 2, 1 0 0, 1,6,0 0, 1 .01, .5 .4, .5 .7, .2 .9, 0 1
 
 \end{verbatim}
 
@@ -222,12 +229,24 @@ respectively. For example.
 5, 1.,0.,1., 2.,-2.,-2., 1.,0.,1.,  1.,0.,0.,  1. ,    4,     2,3,4
 \end{verbatim}
 
-The three or four numbers specifying the surface facets are appended
-immediately after the geometry specification, on the same line of the
-object file. They are stored in adjacent locations
+The numbers specifying the fluxes and surface facet divisions are
+appended immediately after the geometry specification, on the same
+line of the object file. For simple objects, there are three or four
+numbers and they are stored in adjacent locations
 \verb!obj_geom(i,iobj)! with \verb!i!  equal to \verb!ofluxtype!,
 \verb!ofn1!, \verb!ofn2![, \verb!ofn3!].  [To leave room for other
-  information, \verb!ofluxtype! is defined equal to \verb!oradius+18!.]
+information, \verb!ofluxtype!  is defined equal to \verb!oradius+19!.]
+For surfaces of revolution, in addition to the fluxes and the
+theta-divisions there are integers for each of the segments of the
+contour of revolution, indicating into how many facets each is
+divided. These specifications follow the (r,z) pairs that specify the
+contour. All must be on the \emph{same unbroken} line in the
+input file. For example a general contour with 5 pairs has 4 segments:
+\begin{verbatim}
+# General Surface of Revolution
+#   ABC    Center... Npair... Fluxes th, n1,n2,n3,n4
+7, 1 0 2, 0 0 0, ...  5   ...   1,   5,  4  4  10 1 
+\end{verbatim}
 
 Total flux to the object is always separately accumulated regardless
 of the optional specification.  Therefore, it is not necessary to

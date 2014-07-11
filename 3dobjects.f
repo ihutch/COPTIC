@@ -61,8 +61,8 @@ c**********************************************************************
      $     ,' Then vec2(3), vec3(3).'
       write(*,*)'Non-aligned Cylinder, center(3), axial-vector(3),'
      $     ,' reference-vector(3), radius.'
-      write(*,*)'S-of-R, Base(3), Apex(3), n-pairs<7(1), zr-pairs'
-     $     ,'(2n).' 
+      write(*,*)'S-of-R, Base(3), Apex(3), ref-vec(3), radius,'
+     $     ,' n-pairs(1), zr-pairs(2n).' 
       write(*,*)'Flux accumulation (follows geometry): ofluxtype,'
      $     ,'ofn1,ofn2[,ofn3].'
       write(*,*)' Indicates number-of-flux-types, sizes of uniform '
@@ -263,26 +263,39 @@ c Non-aligned cylinder
          call cylinit(obj_geom(1,ngeomobj))
       elseif(type.eq.6.or.type.eq.7)then
 c------------------------------------------------
-c Surface of revolution
+c Surface of revolution. Now like cylinder except for Base/Apex
+         do k=1,sr_vlen
+            isrvdiv(k,ngeomobj)=0
+         enddo
+         obj_geom(ofluxtype,ngeomobj)=0
+         isrnpair=0
+c Try to read the base,apex,npair,r,z;fluxtype,ntheta,div
+c For type 6 there is one more div than pair, for type 7 one less.
          read(cline,*,err=901,end=806)
-     $        (obj_geom(k,ngeomobj),k=1,sr_dir-1)
-     $        ,npair
-     $        ,(srvnr(k,ngeomobj),srvnz(k,ngeomobj),k=2,npair+1)
+     $        (obj_geom(k,ngeomobj),k=1,ocylrad)
+     $        ,isrnpair
+     $        ,(srvnr(k,ngeomobj),srvnz(k,ngeomobj),k=2,isrnpair+1)
+     $        ,obj_geom(ofluxtype,ngeomobj),obj_geom(ofn1,ngeomobj)
+     $        ,(isrvdiv(k,ngeomobj),k=1,isrnpair+1)
  806     if(myid.eq.0)write(*,820)ngeomobj,' Surf-of-Revln'
-         obj_geom(sr_npair,ngeomobj)=npair
-         if(npair.gt.sr_npmax)then
-            write(*,*)' Too many pairs specified',npair
+         obj_geom(sr_npair,ngeomobj)=isrnpair
+c         write(*,*)obj_geom(sr_npair,ngeomobj),
+c     $        obj_geom(ofluxtype,ngeomobj),obj_geom(ofn1,ngeomobj)
+c     $        ,(isrvdiv(k,ngeomobj),k=1,isrnpair+1)
+c Make the sr_npair equal to the number of segment ends.
+         if(type.eq.6)obj_geom(sr_npair,ngeomobj)=isrnpair+2
+c         write(*,*)'npair',obj_geom(sr_npair,ngeomobj)
+         if(isrnpair.le.0.or.isrnpair.gt.sr_vlen-2.and.myid.eq.0)then
+            write(*,*)' Impossible number of pairs specified',isrnpair
             stop
          endif
-         call srvinit(ngeomobj,type)            
+         call srvinit(ngeomobj,type,myid)         
          if(myid.eq.0)then
-            write(*,822)(obj_geom(k,ngeomobj),k=1,sr_dir-1)
-            write(*,820)npair,' rz-pairs,dir(3):'
+            write(*,822)(obj_geom(k,ngeomobj),k=1,sr_apex+2)
+            write(*,'(a,i2,a,$)')' rz-pairs',isrnpair,':'
             write(*,'(16f6.2)')(srvnr(k,ngeomobj)
-     $           ,srvnz(k,ngeomobj),k=2,npair+1)
-     $           ,(obj_geom(k,ngeomobj),k=sr_dir,sr_dir+ndims-1)
+     $           ,srvnz(k,ngeomobj),k=2,isrnpair+1)
          endif
-c         stop
       elseif(type.eq.99)then
 c------------------------------------------------
 c Specify the particle region.
@@ -464,9 +477,20 @@ c****************************************************************
       subroutine cylinit(objg)
 c Initialize the non-aligned cylinder contravariant vectors
 c They are such that they yield the covariant coefficients relative
-c to a unit cylinder. They are in the order vb,vg,va.
-c Where vb is the component of u perpendicular to va, and vg is the 
-c cross product of u and va.
+c to a unit cylinder.
+c There are two input vectors (that are overwritten on return): 
+c    v the axis (ovec), and 
+c    u the ref-vec (ovec+ndims), plus
+c    r the single scalar radius (ovec+2*ndims=ocylrad)
+c The contravariant vectors are in the order vb,vg,va, (ocontra...)
+c where vb gives the component of u perpendicular to va, vg is the 
+c cross product of va and u, and va is the axial vector v/|v|^2.
+c Consequently, vacontra.x=projected length in axial direction, in units
+c of the length of v.
+c Also the other two contra vector are normalized so that they yield 
+c the length in units of the radius, when dotted into a vector.
+c Finally the ovec storage positions are overwritten with
+c covariant vectors equal to contra/|contra|^2.
       include 'ndimsdecl.f'
       include '3dcom.f'
       real objg(odata)
@@ -514,6 +538,10 @@ c v x u
          c2mag=c2mag+objg(ocontra+ndims+i-1)**2
          c3mag=c3mag+objg(ocontra+2*ndims+i-1)**2
       enddo
+c Now ocontra=vb/(|vb|*r), vg/(|vg|r), va/|va^2|
+c The covariant vectors are needed for reconstruction in fluxexamine.
+c They are such that \sum_j (x.contra^j) covar_j = x, which is true
+c for orthogonal vectors when covar = contra/|contra|^2.
       do i=1,ndims
          objg(ovec+i-1)=objg(ocontra+i-1)/c1mag
          objg(ovec+ndims+i-1)=objg(ocontra+ndims+i-1)/c2mag
@@ -567,28 +595,14 @@ c normalize
 
       end
 c****************************************************************
-      subroutine srvinit(iobj,type)
-c Initialize Surface of Revolution direction vector from base and apex.
-c Is is a vector in direction apex-base whose length is such that
-c dir.(apex-base)=1. So it is (apex-base)/|apex-base|^2.
+      subroutine srvinit(iobj,type,myid)
       include 'ndimsdecl.f'
       include '3dcom.f'
-      r2=0.
-      do j=1,ndims
-         jdir=sr_dir+j-1
-         dif=obj_geom(sr_apex+j-1,iobj)-obj_geom(sr_base+j-1,iobj)
-         obj_geom(jdir,iobj)=dif
-         r2=r2+dif**2
-      enddo
-      do j=1,ndims
-         jdir=sr_dir+j-1
-         obj_geom(jdir,iobj)=obj_geom(jdir,iobj)/r2
-      enddo
       if(type.eq.6.)then
 c Insert the base and apex into the z,r pair arrays.
          srvnz(1,iobj)=0.
          srvnr(1,iobj)=0.
-         j=2+int(obj_geom(sr_npair,iobj))
+         j=int(obj_geom(sr_npair,iobj))
          srvnz(j,iobj)=1.
          srvnr(j,iobj)=0.
 c Check other z values for consistency.
@@ -604,7 +618,7 @@ c Check other z values for consistency.
          enddo
       else
 c type 7 reads the entire wall. Shuffle in.
-         do i=1,obj_geom(sr_npair,ngeomobj)
+         do i=1,obj_geom(sr_npair,iobj)
             srvnz(i,iobj)=srvnz(i+1,iobj)
             srvnr(i,iobj)=srvnr(i+1,iobj)
          enddo
@@ -615,6 +629,38 @@ c Inconsistent if not closed and either end not on axis
             write(*,*)'rz-contour not closed and ends not on axis'
             stop
          endif
+      endif
+      do j=1,ndims
+c Convert the apex into apex-base and call it ovec
+c ovec is actually the same as sr_apex
+         obj_geom(ovec+j-1,iobj)=obj_geom(sr_apex+j-1,iobj)
+     $        -obj_geom(sr_base+j-1,iobj)
+      enddo
+c Initialize Surface of Revolution contravariant vectors E.g. the axial
+c ovec whose length is such that axial.(apex-base)=1. So it is
+c (apex-base)/|apex-base|^2. See cylinit for fuller description.
+      call cylinit(obj_geom(1,iobj))
+
+c Flux accounting requires all relevant facets have non-zero div 
+c number. By this point there is one less facet than npair.
+      if(obj_geom(ofluxtype,iobj).ne.0)then
+         if(obj_geom(ofn1,iobj).le.0)goto 1
+         do i=1,obj_geom(sr_npair,iobj)-1
+            if(isrvdiv(i,iobj).le.0)goto 1
+         enddo
+c Here if all is well.
+         return
+ 1       continue
+c Else There's an inadequacy in the flux collection specification
+         if(myid.eq.0)then
+            write(*,*
+     $           )'Flux specification for object'
+     $           ,iobj,' is in error.',int(obj_geom(ofluxtype,iobj))
+     $           ,int(obj_geom(ofn1,iobj)),',',
+     $           (isrvdiv(i,iobj),i=1,obj_geom(sr_npair,iobj)-1)
+            write(*,'(a,$)')' Flux turned off'
+         endif
+         obj_geom(ofluxtype,iobj)=0
       endif
       end
 c**********************************************************************
@@ -757,19 +803,26 @@ c time is dominated by cijroutine.
          r2=0.
          z=0
          do j=1,ndims
-            z=z+obj_geom(sr_dir+j-1,i)*(x(j)-obj_geom(sr_base+j-1,i))
+            z=z+obj_geom(sr_va+j-1,i)*(x(j)-obj_geom(sr_base+j-1,i))
          enddo
          if(z.lt.0.or.z.gt.1)return
+c Subtract from position z times axial vector-> cylindrical radius
          do j=1,ndims
             r2=r2+(x(j)-obj_geom(sr_base+j-1,i)-z*
-     $           (obj_geom(sr_apex+j-1,i)-obj_geom(sr_base+j-1,i)))**2
+c     $           (obj_geom(ovec+j-1,i)))**2
+c Using cylinit it has been moved to 
+     $           (obj_geom(ovec+2*ndims+j-1,i)))**2
          enddo
 c Find the z-real-index 
-         nq=int(obj_geom(sr_npair,i))+2
+         nq=int(obj_geom(sr_npair,i))
 c         write(*,*)obj_geom(sr_npair,i),(srvnz(k,i),k=1
-c     $        ,obj_geom(sr_npair,i)+2),z
+c     $        ,obj_geom(sr_npair,i)),z
          iz=interp(srvnz(1,i),nq,z,zind)
-         if(iz.le.0)write(*,*)'inside_geom SoR interp failure'
+         if(iz.le.0)then
+            write(*,*)'inside_geom SoR interp failure'
+            write(*,*)nq,z,zind,iz
+            stop
+         endif
 c Then find the r value for this z-index.
          r=srvnr(iz,i)+(zind-iz)*(srvnr(iz+1,i)-srvnr(iz,i))
          if(r2.lt.r**2)inside_geom=1
@@ -779,12 +832,14 @@ c Surface of revolution. General.
          r=0.
          z=0
          do j=1,ndims
-            z=z+obj_geom(sr_dir+j-1,i)*(x(j)-obj_geom(sr_base+j-1,i))
+            z=z+obj_geom(sr_va+j-1,i)*(x(j)-obj_geom(sr_base+j-1,i))
          enddo
          if(z.lt.0.or.z.gt.1)return
          do j=1,ndims
             r=r+(x(j)-obj_geom(sr_base+j-1,i)-z*
-     $           (obj_geom(sr_apex+j-1,i)-obj_geom(sr_base+j-1,i)))**2
+c     $           (obj_geom(ovec+j-1,i)))**2
+c Using cylinit it has been moved to 
+     $           (obj_geom(ovec+2*ndims+j-1,i)))**2
          enddo
          r=sqrt(r)
          csect=w2sect(r,z,1.e5,0.,srvnr(1,i),srvnz(1,i)

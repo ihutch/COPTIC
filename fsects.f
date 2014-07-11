@@ -494,7 +494,8 @@ c First, return if both points are beyond the same axial end.
       if((z1.gt.1. .and. z2.gt.1.).or.
      $     (-z1.gt.1. .and. -z2.gt.1))return
       sds=0.
-c Find the intersection (if any) with the circular surface.
+c Find the intersection (if any) with the circular surface in the plane
+c perpendicular to direction ida (projected along ida).
       call sphereinterp(nsdim,ida,xp1,xp2,
      $     xc,rc,fn(1),fn(2),sds,d1,d2)
       if(sds.ne.0)then

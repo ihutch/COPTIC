@@ -614,7 +614,7 @@ c      write(*,*)'ucrhoset return',irptch
 
 c***********************************************************************
       subroutine partlocate(xi,ixp,xfrac,iregion,linmesh)
-c Locate the particle numbered i (from common partcom) 
+c Locate the particle xi
 c in the mesh (from common meshcom).
 c Return the integer cell-base coordinates in ixp(ndims)
 c Return the fractions of cell width at which located in xfrac(ndims)

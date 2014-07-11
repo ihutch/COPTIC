@@ -132,6 +132,21 @@ c Three facets in the order bottom side top.
                   nfluxes=nfluxes+
      $                 int(obj_geom(ofn1,i))*int(obj_geom(ofn2,i))
 c                  write(*,*)nfluxes,(nf_faceind(j,mf_obj,k),k=1,3)
+               elseif(itype.eq.6.or.itype.eq.7)then
+c Surface of revolution 
+c has only theta (ofn1) and one multifaceted face.
+c sr_npair-1 is the number of facets. isrvdiv the divisions of each.
+                  write(*,*)'Surface of Revolution flux initialization'
+                  nfluxes=0
+                  ntheta=int(obj_geom(ofn1,i))
+                  nf_dimlens(j,mf_obj,1)=ntheta
+                  nr=0
+                  do kk=1,obj_geom(sr_npair,i)-1
+                     nr=nr+isrvdiv(kk,i)
+                     nfluxes=nfluxes+isrvdiv(kk,i)*ntheta
+                  enddo
+                  nf_dimlens(j,mf_obj,2)=nr
+c                  stop
                else
                   write(*,*)'Unknown object in fluxdatainit. Quit.'
                   stop
@@ -176,7 +191,6 @@ c Zero to silence incorrect warnings.
       i=2
       j=2
       nf_address(1,1,1-nf_posdim)=1
-c      do k=1-nf_posdim,nf_maxsteps+2
       do k=1-nf_posdim,nf_nsteps+2
          if(k.gt.1-nf_posdim)
      $        nf_address(1,1,k)=nf_address(1,1,k-1)+numobj
@@ -387,9 +401,73 @@ c z
                         z=zc+zr*(-1.+2.*(i2-0.5)/nf_dimlens(j,io,3))
                         ff_data(nf_address(j,io,nf_pz)+ip-1
      $                       +nf_faceind(j,io,2))=z
-                        
-
                      enddo
+                  enddo
+               enddo
+            elseif(itype.eq.6 .or. itype.eq.7)then
+c Surface of revolution ------------------------------
+               write(*,*)'Flux positions for Surface of Revolution'
+c Each line segment is a truncated cone with ofn1 and isrvdiv
+c equal divisions. The areas of the subsegments are to be equal. 
+c For a segment with ends (rb,zb),(rt,zt), the total area is 
+c A=\pi (rt+rb)\sqrt{(rt-rb)^2+(zt-zb)^2}. Equal area means
+c equal division in r^2, so when dividing into m=0,1,...,N positions
+c we should take rm^2=rb^2+(rt^2-rb^2)*m/N 
+c and corresponding distance fraction fm=(rm-rb)/(rt-rb).
+c The total array of points lying at the end of subsegments can be
+c considered to be 0,((f_mn,m=1,N_n),n=1,npair-1). The m=0 point
+c of all but the first segment is the m=N_n of the previous.
+c The total array of area centroids is ((f_(m-1/2)n,m=1,N),n=1,npair-1)
+c These fractions are the positions we must store. We must also store
+c the areas, which are just A/N_n/ntheta.
+c Do in usual order even though there can't be different arrangements
+c for different flux types.
+               do j=1,mf_quant(io)
+c The unnormalized zscale needs to replace this temporary fix:
+                  zscale=1. 
+c Contour positions:
+                  i0=0
+                  do i3=1,sr_npair-1
+                  rb=srvnr(i3,i)
+                  rt=srvnr(i3+1,i)
+                  rdiff=rt-rb
+                  zdiff=(srvnr(i3+1,i)-srvnz(i3,i))*zscale
+c Areas are equal through segments. Needs to be scaled.
+                  area=3.1415927*(rb+rt)*sqrt(rdiff**2+zdiff**2)
+     $                 /isrvdiv(i3,i)
+                  do i2=1,isrvdiv(i3,i)
+                     i0=i0+1
+c Calculate contour fractional index:
+c for end of subsegment
+                     fr=float(i2)/isrvdiv(i3,i)
+                     if(abs(rdiff).gt.1.e-5*rb)then
+                        rm2=rb**2*(1-fr)+rt**2*fr
+                        fm=(sqrt(rm2)-rb)/(rt-rb)
+                     else
+                        fm=fr
+                     endif
+                     pm=fm+i3
+c for centroid of subsegment
+                     fr=(i2-0.5)/isrvdiv(i3,i)
+                     if(abs(rdiff).gt.1.e-5*rb)then
+                        rm2=rb**2*(1-fr)+rt**2*fr
+                        fm=(sqrt(rm2)-rb)/(rt-rb)
+                     else
+                        fm=fr
+                     endif
+                     cm=fm+i3
+c Theta positions:
+                     do i1=1,nf_dimlens(j,io,1)
+                        ip=i1+(i0-1)*int(nf_dimlens(j,io,1))
+c Centroid frac index, theta, end frac, area
+                        t=3.1415927*
+     $                       (-1.+2.*(i2-0.5)/nf_dimlens(j,io,1))
+                        ff_data(nf_address(j,io,nf_p1)+ip-1)=cm
+                        ff_data(nf_address(j,io,nf_p2)+ip-1)=t
+                        ff_data(nf_address(j,io,nf_p3)+ip-1)=pm
+                        ff_data(nf_address(j,io,nf_p4)+ip-1)=area
+                     enddo
+                  enddo
                   enddo
                enddo
             else
@@ -455,6 +533,7 @@ c Determine (all) the objects crossed and call objsect for each.
             write(*,*)'xpart,r=',(xi(k),k=1,6),r,ireg
             write(*,*)'xp1',(xi(k)-dtpos*xi(k+3),k=1,3),r1
             ltlyerr=.true.
+            stop
             return
          elseif(ierr.eq.-1)then
 c This Pass-through should not happen because tallyexit is not called
@@ -520,6 +599,8 @@ c         write(*,*)'Returning from pllel',ndims,x1,x1,iobj,ijbin,sd
       elseif(itype.eq.5)then
 c Non-aligned cylinder
          call cylgfsect(ndims,x1,x2,iobj,ijbin,sd,fraction)
+      elseif(itype.eq.6.or.itype.eq.7)then
+         call srvfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
       else
 c         write(*,*)'Unknown object in objsect'
 c Unknown object type.

@@ -1,4 +1,24 @@
 c Common data containing the object geometry information. 
+c Here are the addressing structures:
+c type   1sphr   2cube   3cyl     4ppd  5gcyl  6SoR  7SoR
+c 1     otype    otype  otype    otype  otype  otype  otype  
+c 2     oabc     oabc   oabc     oabc   oabc   oabc   oabc
+c 5     ocenter                 pp_orig           base
+c 8     oradius  sides  oradius pp_vec  ovec   apex->ovec
+c 11    ocylaxis                        RefVec   RefVec
+c 14                                    ocylrad  ocylrad
+c 17                    ocontra pp_contra        ocontra
+c 20
+c 23
+c 26                                             sr_npair
+c 27    ofluxtype
+c 28-30  ofn1-3   omag
+c 31    offc
+c 32-4  ocgrad
+c 35-8  obgrad
+c 39-41 oagrad
+c 43    odata=total length
+
 c Each object, i < 31 has: type, data(odata).
       integer ngeomobjmax,odata,ngeomobj
       parameter (ngeomobjmax=31)
@@ -11,7 +31,8 @@ c parallelopiped vectors start at oradius, contravariant +9
 c Flux indices.
       integer ofluxtype,ofn1,ofn2,ofn3,offc,omag
 c FluxType is really the number of quantities.
-      parameter (ofluxtype=ocontra+9)
+c      parameter (ofluxtype=ocontra+9)
+      parameter (ofluxtype=ocontra+10)
 c Dimensions in up to 3 directions. 
       parameter (ofn1=ofluxtype+1,ofn2=ofluxtype+2,ofn3=ofluxtype+3)
 c Other references. offc->number of facets (calculated from type).
@@ -42,20 +63,23 @@ c-------------------------------------------------------------------
 c Surface-of-revolution data structure
 c base is the lower end of axis, apex is upper end
 c dir is direction such that zvalue=dir.(position-base)
-c npair is number of (z,r) pairs, not greater than 6 currently.
-c pairs is start of the (z,r) pairs.
-      integer sr_base,sr_apex,sr_dir,sr_npair,sr_npmax,sr_vlen
+c npair is number of (z,r) pairs.
+      integer sr_base,sr_apex,sr_va,sr_npair,sr_vlen
       parameter (sr_base=ocenter)
-      parameter (sr_apex=sr_base+ndims)
-      parameter (sr_dir=sr_base+2*ndims)
-      parameter (sr_npair=sr_base+3*ndims)
-c Allowed max number of pairs. Resulting vector length
-      parameter (sr_npmax=18,sr_vlen=sr_npmax+2)
+      parameter (sr_apex=oradius)
+      parameter (sr_va=ocontra+2*ndims)
+      parameter (sr_npair=ocontra+3*ndims)
 c-------------------------------------------------------------------
-c Where the data is actually stored:
-      real obj_geom(odata,ngeomobjmax)
+      integer isrnpair
+c Allowed max number of pairs. Resulting vector length
+      parameter (sr_vlen=20)
+c Extra data for surfaces of revolution.
       real srvnz(sr_vlen,ngeomobjmax)
       real srvnr(sr_vlen,ngeomobjmax)
+c Number of flux divisions of each segment of the Surf of Rev.
+      integer isrvdiv(sr_vlen,ngeomobjmax)
+c Where the data is actually stored:
+      real obj_geom(odata,ngeomobjmax)
 c-------------------------------------------------------------------
 c Mapping from obj_geom object number to nf_flux object (many->fewer)
 c Zero indicates no flux tracking for this object.
@@ -80,7 +104,7 @@ c Object number and sign of objects to subtract.
 c
       common /objgeomcom/ngeomobj,obj_geom,nf_map
      $     ,ibool_part,ifield_mask,iptch_mask,lboundp
-     $     ,normv,ormv,srvnz,srvnr
+     $     ,normv,ormv,srvnz,srvnr,isrvdiv,isrnpair
      $     ,rjscheme
 c-------------------------------------------------------------------
 c-------------------------------------------------------------------
