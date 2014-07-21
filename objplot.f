@@ -493,6 +493,260 @@ c Transform to world
 
       end
 c********************************************************************
+c*********************************************************************
+      subroutine srvplot(iq,objg,iobj,ioswin)
+c Plot divided faces of a convex surface of revolution object objg
+c iosw determines the nature of the plot
+c 0: Color code according to position.
+c 1:            according to average flux already in nf_step+1
+c 2:            according to average flux-density already in nf_step+2
+
+      include 'ndimsdecl.f'
+      include '3dcom.f'
+      parameter (nadef=20,nzdef=5,pi=3.141593)
+      parameter (ncorn=5)
+      real rface(ncorn,ndimsmax)
+      real xe(ndimsmax),xcontra(ndimsmax)
+      real objg(odata)
+      logical lfw
+      integer wp(ncorn),wc(ncorn)
+      data wp/1,0,0,1,1/wc/0,0,1,1,0/
+      ifobj=nf_map(iobj)
+      iosw=ioswin
+      if(ifobj.eq.0)iosw=0
+      iav=nf_address(iq,ifobj,nf_step+iosw)
+      call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
+      if(fmin.gt.0.)fmin=0.
+
+      ism1=1
+      ism2=1
+c Use angle position arrays compatible with flux array but not too coarse.
+c Unlike cylinders, theta is the first dimension. objg(ofn1) is div-No.
+      if(objg(ofn1).gt.nadef)then
+         nangle=int(objg(ofn1))
+      elseif(objg(ofn1).gt.0)then
+         nangle=int(objg(ofn1))*nint(float(nadef)/objg(ofn1))
+         ism2=nint(float(nadef)/objg(ofn1))
+      else
+         nangle=nadef
+      endif
+c The axial coordinate
+      ia=3
+c Discover perspective, eye position in world coords:
+      call trn32(x,y,z,xe(1),xe(2),xe(3),-1)
+      call nxyz2wxyz(xe(1),xe(2),xe(3),xe(1),xe(2),xe(3))
+c Transform to unit cylinder coordinates.
+      call world3contra(ndims,xe,xe,iobj)
+c The azimuthal (yx) angle of the eye
+      thetae=atan2(xe(mod(ia+1,3)+1),xe(mod(ia,3)+1))
+c The opposite theta angle
+      thetao=mod((thetae+pi),2.*pi)
+c Therefore the angles/indices to start the coloring from:
+c Flux accumulation is (zero based):
+      fto=(nangle*(thetao/(2.*pi)+0.5))
+      ito=int(fto)
+      itp=nint(fto)-ito
+
+c Draw in axial order from furthest to nearest.
+      if(xe(ia).gt.0.)then
+         irz1=0
+         irz2=objg(sr_npair)-2
+         irzd=1
+      else
+         irz1=objg(sr_npair)-2
+         irz2=0
+         irzd=-1
+      endif
+c      write(*,*)'sr_npair',objg(sr_npair),irz1,irz2
+c Do over line segments: faces.
+      do irz=irz1,irz2,irzd
+         rb=objg(opr+irz)
+         rt=objg(opr+irz+1)
+         zb=objg(opz+irz)
+         zt=objg(opz+irz+1)
+         nz=objg(opdiv+irz)
+c         write(*,*)'irz,zb,zt,rb,rt',irz,zb,zt,rb,rt
+c Draw single curved surface. Generalization of cylinder round face.
+      do it=1,nangle
+         isign=2*mod(it+itp,2)-1
+         i=mod(isign*(it/2)+ito+nangle,nangle)+1
+         t1=2.*pi*(i-1)/nangle-pi
+         t2=2.*pi* i   /nangle-pi
+         itc=int(objg(ofn1)*(t1/(2.*pi)+0.500001))
+c Do over axial facets equally spaced in r^2 running from rb^2 to rt^2
+         r2=rb
+         r22=rb**2
+         z2=zb
+         dr2=(rt**2-rb**2)/nz
+         dzdr=(zt-zb)/(rt-rb)
+         dz=(zt-zb)/nz
+         do j=1,nz
+            r21=r22
+            r22=(r21+dr2)
+            r1=r2
+            r2=sqrt(r22)
+            z1=z2
+            if(abs(dr2).ne.0.)then
+               z2=zb+ (r2-rb)*dzdr
+            else
+               z2=zb+ j*dz
+            endif
+c            write(*,*)irz,j,r1,r2,r21,r22
+c Find the positions of the corners
+            do k=1,ncorn
+               ids=mod(1+ia-2,ndims)+1
+               xcontra(ids)=wc(k)*z1+(1-wc(k))*z2
+               r=wc(k)*r1+(1-wc(k))*r2
+               ids=mod(2+ia-2,ndims)+1
+               xcontra(ids)=r*cos(wp(k)*t1+(1-wp(k))*t2)
+               ids=mod(3+ia-2,ndims)+1
+               xcontra(ids)=r*sin(wp(k)*t1+(1-wp(k))*t2)
+c Transform back from unit-cyl to world coordinates
+               call contra3world(ndims,xcontra,xcontra,iobj)
+               do m=1,ndims
+                  rface(k,m)=xcontra(m)
+               enddo
+            enddo
+            lfw=(mod(i-1+ism2,ism2).eq.ism2/2)
+c            write(*,*)'Facecolor',irz,it,i,j,itc+1,isign
+            call facecolor(iosw,irz,itc+1,j,iobj,iav,rface
+     $           ,fmin,fmax,2,lfw,isign)               
+         enddo
+      enddo
+      enddo
+
+      end
+c*********************************************************************
+      subroutine srvgplot(iq,objg,iobj,ioswin)
+c Plot divided faces of a general surface of revolution object objg
+c iosw determines the nature of the plot
+c 0: Color code according to position.
+c 1:            according to average flux already in nf_step+1
+c 2:            according to average flux-density already in nf_step+2
+
+      include 'ndimsdecl.f'
+      include '3dcom.f'
+      parameter (nadef=20,nzdef=5,pi=3.141593)
+      parameter (ncorn=5)
+      real rface(ncorn,ndimsmax)
+      real xe(ndimsmax),xcontra(ndimsmax)
+      real objg(odata)
+      real rp(sr_vlen),zp(sr_vlen)
+      integer iorder(sr_vlen)
+      logical lfw
+      integer wp(ncorn),wc(ncorn)
+      data wp/1,0,0,1,1/wc/0,0,1,1,0/
+
+      ifobj=nf_map(iobj)
+      iosw=ioswin
+      if(ifobj.eq.0)iosw=0
+      iav=nf_address(iq,ifobj,nf_step+iosw)
+      call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
+      if(fmin.gt.0.)fmin=0.
+
+      ism1=1
+      ism2=1
+c Use angle position arrays compatible with flux array but not too coarse.
+c Unlike cylinders, theta is the first dimension. objg(ofn1) is div-No.
+      if(objg(ofn1).gt.nadef)then
+         nangle=int(objg(ofn1))
+      elseif(objg(ofn1).gt.0)then
+         nangle=int(objg(ofn1))*nint(float(nadef)/objg(ofn1))
+         ism2=nint(float(nadef)/objg(ofn1))
+      else
+         nangle=nadef
+      endif
+c The axial coordinate
+      ia=3
+c Discover perspective, eye position in world coords:
+      call trn32(x,y,z,xe(1),xe(2),xe(3),-1)
+      call nxyz2wxyz(xe(1),xe(2),xe(3),xe(1),xe(2),xe(3))
+c Transform to unit cylinder coordinates.
+      call world3contra(ndims,xe,xe,iobj)
+c The azimuthal (yx) angle of the eye
+      thetae=atan2(xe(mod(ia+1,3)+1),xe(mod(ia,3)+1))
+c The opposite theta angle
+      thetao=mod((thetae+pi),2.*pi)
+c Therefore the angles/indices to start the coloring from:
+c Flux accumulation is (zero based):
+      fto=(nangle*(thetao/(2.*pi)+0.5))
+      ito=int(fto)
+      itp=nint(fto)-ito
+
+c Draw single curved surface. Generalization of cylinder round face.
+      do it=1,nangle
+         isign=2*mod(it+itp,2)-1
+         i=mod(isign*(it/2)+ito+nangle,nangle)+1
+         t1=2.*pi*(i-1)/nangle-pi
+         t2=2.*pi* i   /nangle-pi
+         itc=int(objg(ofn1)*(t1/(2.*pi)+0.500001))
+
+c Here's where we decide the order of drawing for rz facets.  
+c Project eye onto chosen theta-plane.
+         ta=(t1+t2)/2.
+         re=(cos(ta)*xe(mod(ia,3)+1)+sin(ta)*xe(mod(ia+1,3)+1))
+         ze=xe(ia)
+c Subtract it from the contour vertexes, putting them into the rp/zp.
+         np=objg(sr_npair)
+         do irz=1,np
+            rp(irz)=objg(opr+irz-1)-re
+            zp(irz)=objg(opz+irz-1)-ze
+         enddo
+c Sort the order of faces into iorder, so that face=iorder(i)
+         call faceorder(np,rp,zp,iorder)
+c         write(*,*)np,' iorder',(iorder(irz),irz=1,np-1)
+         do i=1,objg(sr_npair)-1
+            irz=iorder(i)-1
+            rb=objg(opr+irz)
+            rt=objg(opr+irz+1)
+            zb=objg(opz+irz)
+            zt=objg(opz+irz+1)
+            nz=objg(opdiv+irz)
+c         write(*,*)'irz,zb,zt,rb,rt',irz,zb,zt,rb,rt
+c Do over axial facets equally spaced in r^2 running from rb^2 to rt^2
+            r2=rb
+            r22=rb**2
+            z2=zb
+            dr2=(rt**2-rb**2)/nz
+            dzdr=(zt-zb)/(rt-rb)
+            dz=(zt-zb)/nz
+            do j=1,nz
+               r21=r22
+               r22=(r21+dr2)
+               r1=r2
+               r2=sqrt(r22)
+               z1=z2
+               if(abs(dr2).ne.0.)then
+                  z2=zb+ (r2-rb)*dzdr
+               else
+                  z2=zb+ j*dz
+               endif
+c            write(*,*)irz,j,r1,r2,r21,r22
+c Find the positions of the corners
+               do k=1,ncorn
+                  ids=mod(1+ia-2,ndims)+1
+                  xcontra(ids)=wc(k)*z1+(1-wc(k))*z2
+                  r=wc(k)*r1+(1-wc(k))*r2
+                  ids=mod(2+ia-2,ndims)+1
+                  xcontra(ids)=r*cos(wp(k)*t1+(1-wp(k))*t2)
+                  ids=mod(3+ia-2,ndims)+1
+                  xcontra(ids)=r*sin(wp(k)*t1+(1-wp(k))*t2)
+c Transform back from unit-cyl to world coordinates
+                  call contra3world(ndims,xcontra,xcontra,iobj)
+                  do m=1,ndims
+                     rface(k,m)=xcontra(m)
+                  enddo
+               enddo
+               lfw=(mod(i-1+ism2,ism2).eq.ism2/2)
+c            write(*,*)'Facecolor',irz,it,i,j,itc+1,isign
+               call facecolor(iosw,irz,itc+1,j,iobj,iav,rface
+     $              ,fmin,fmax,2,lfw,isign)               
+            enddo
+         enddo
+      enddo
+
+      end
+c********************************************************************
       subroutine pllelplot(iq,objg,iobj,ioswin)
 c Plot divided faces of parallelopiped object objg.
 c iosw determines the nature of the plot
@@ -630,12 +884,16 @@ c Coloring just by position
          itype=int(obj_geom(otype,iobj))-256*(int(obj_geom(otype,iobj))
      $        /256)
          if(itype.eq.1)then
-c Treatment for spheres.
+c Treatment for sphere.
             icolor=mod(k3-1+mod(k2,2),7)+7*mod(k2,2)+1
-c            write(*,*)k2,k3,icolor
-         elseif(itype.eq.3)then
-c Cylinders
+         elseif(itype.eq.3.or.itype.eq.5)then
+c Cylinder
             icolor=mod(k2-1+mod(k3,2),7)+7*mod(k3,2)+1
+         elseif(itype.eq.6.or.itype.eq.7)then
+c Surface of Revolution
+            icolor=mod(k3,2)+mod(imin-1+mod(k2,2),7)+7*mod(imin,2)+1
+c            write(*,*)imin,k2,k3,' icolor=',icolor
+c            write(*,*)(rface(ik,3),ik=1,ncorn)
          else
             icolor=(imin+mod(k2+k3,2)*8)
          endif
@@ -770,6 +1028,11 @@ c      endif
                call pllelplot(iq,obj_geom(1,iobj),iobj,iosw)
             elseif(itype.eq.5)then
                call cylgplot(iq,obj_geom(1,iobj),iobj,iosw)
+            elseif(itype.eq.6.or.itype.eq.7)then
+c               write(*,*)'Calling srvplot',iq,iobj,iosw
+c srvplot works for monotonic surface of revolution.
+c srvgplot work for both.
+               call srvgplot(iq,obj_geom(1,iobj),iobj,iosw)
             endif
          endif
       enddo
@@ -839,7 +1102,120 @@ c         write(*,*)'objplotting',ik,iobj,itype,iobjmask
                call pllelplot(iq,obj_geom(1,iobj),iobj,iosw)
             elseif(itype.eq.5)then
                call cylgplot(iq,obj_geom(1,iobj),iobj,iosw)
+            elseif(itype.eq.6.or.itype.eq.7)then
+               call srvgplot(iq,obj_geom(1,iobj),iobj,iosw)
             endif
          endif
       enddo
       end
+c*************************************************************************
+c Given a piecewise linear closed contour in 2-D, a polygon,
+c with vertices x(n), y(n), last vertex = first vertex, n-1 sides,
+c order the faces of the polygon from farthest to nearest on the basis
+c of their view from the origin. A face (side) 1 is farther than face 2
+c if some rays from from 1 (to origin) encounter face 2. 
+c Faces are "equal" distance if neither 1 nor two is farther, for example
+c if they are disjoint and no rays from either encounter the other. 
+c **********************************************************************
+c This version uses selection sorting to sort the integers referring to
+c the face number so that iorder(1:n-1) runs through them in order from
+c furthest to nearest. n is the number of vertices, n-1 the number of sides.
+c The faces then should be colored in the order iorder(1:n-1).
+      subroutine faceorder(n,x,y,iorder)
+      integer n
+      real x(n),y(n)
+      integer iorder(n)
+      integer imin
+
+      do i=1,n
+         iorder(i)=i
+      enddo
+c j is the face we are testing against the others.
+      do j=1,n-2
+         imin=j
+c iorder(i) is the face we are testing against.
+         do i=j+1,n-1
+c If face iorder(i) is further than face imin, choose it the minimum.
+            itf=ifacefarther(x(iorder(i)),y(iorder(i))
+     $           ,x(iorder(imin)),y(iorder(imin)))
+c            write(*,*)j,i,imin,' iorder(i),iorder(imin),itf',iorder(i)
+c     $           ,iorder(imin),itf
+            if(itf.eq.1)then
+c We have found a surface that is further 
+c               write(*,*)'Surface',i,' is further than',imin
+               imin=i
+            endif
+         enddo
+         if(imin.ne.j)then
+c Swap the slots j and imin.
+            itemp=iorder(j)
+            iorder(j)=iorder(imin)
+            iorder(imin)=itemp
+         endif
+      enddo
+      end
+c***********************************************************************
+      integer function ifacefarther(x1,y1,x2,y2)
+c Determine whether face (line segment) 1 is farther than face 2 from
+c the origin, if so, return 1, if closer -1, else 0.
+c Farther means there is some ray from origin to a point on 1 that 
+c intersects 2 first.
+      real x1(2),y1(2),x2(2),y2(2)
+      real pi,twopi
+      parameter (pi=3.1415926,twopi=2*3.1415926)
+      ifacefarther=0
+      theta11=atan2(y1(1),x1(1))
+      theta12=atan2(y1(2),x1(2))
+      theta21=atan2(y2(1),x2(1))
+      theta22=atan2(y2(2),x2(2))
+      if(abs(theta12-theta11).gt.pi.or.abs(theta22-theta21).gt.pi)then
+c Adjust cut of theta not to be crossed.
+         theta11=mod(theta11+twopi,twopi)
+         theta12=mod(theta12+twopi,twopi)
+         theta21=mod(theta21+twopi,twopi)
+         theta22=mod(theta22+twopi,twopi)
+      endif
+
+c      write(*,*)'thetas',theta11,theta12,theta21,theta22
+      if((theta21-theta11)*(theta12-theta21).gt.0)then
+c Use 21 [21 lies between 11 and 12] or 22 if 21 is on the 1-side.
+         dx=(x1(2)-x1(1))
+         dy=(y1(2)-y1(1))
+         side0=dx*(-y1(1))-dy*(-x1(1))
+         side=dx*(y2(1)-y1(1))-dy*(x2(1)-x1(1))
+         if(side.eq.0)side=dx*(y2(2)-y1(1))-dy*(x2(2)-x1(1))
+      elseif((theta22-theta11)*(theta12-theta22).gt.0)then
+c Use 22 [lies between 11 and 12] or else 21 if side=0
+         dx=(x1(2)-x1(1))
+         dy=(y1(2)-y1(1))
+         side0=dx*(-y1(1))-dy*(-x1(1))
+         side=dx*(y2(2)-y1(1))-dy*(x2(2)-x1(1))
+         if(side.eq.0)side=dx*(y2(1)-y1(1))-dy*(x2(1)-x1(1))
+      elseif((theta11-theta21)*(theta22-theta11).gt.0)then
+c Use 11 [lies between 21 and 22 ] or 12
+         dx=(x2(2)-x2(1))
+         dy=(y2(2)-y2(1))
+         side0=dx*(-y2(1))-dy*(-x2(1))
+         side=dx*(y1(1)-y2(1))-dy*(x1(1)-x2(1))
+         if(side.eq.0)side=dx*(y1(2)-y2(1))-dy*(x1(2)-x2(1))
+         side=-side
+      elseif((theta12-theta21)*(theta22-theta12).gt.0)then
+c Use 12 [lies between 21 and 22 ] or 11
+         dx=(x2(2)-x2(1))
+         dy=(y2(2)-y2(1))
+         side0=dx*(-y2(1))-dy*(-x2(1))
+         side=dx*(y1(2)-y2(1))-dy*(x1(2)-x2(1))
+         if(side.eq.0)side=dx*(y1(1)-y2(1))-dy*(x1(1)-x2(1))
+         side=-side
+      else
+c Must be disjoint
+         return
+      endif
+c      write(*,*)'dx,dy,side0,side,x1,y1',dx,dy,side0,side,x1,y1
+      if(side*side0.le.0)then
+         ifacefarther=-1
+      else
+         ifacefarther=1
+      endif
+      end
+c********************************************************************

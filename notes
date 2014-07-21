@@ -12202,3 +12202,94 @@ Added a non-aligned cylinder to geomcyl.dat and updated the cks.
 Added a new geomSoR.dat file to geometry.
 
 commit.
+
+Trying to decide the best way to track flux for general surface of 
+revolution. It may be easiest to think in terms of the plotting.
+
+Think about cylgplot (in objplot.f). The way it works
+is by constructing a set of facets possibly smaller than the actual
+collection areas. For this purpose it uses ofn1-3. The number of 
+divisions in r,th,z. The then draws the invisible end, circular face,
+and visible end, separately. This is done as follows
+For each angle i to nangle, chosen to start from nearest to eye
+  for each r j to nr,
+    for each corner k to 5
+      get the three contravariant components xcontra
+      call contra3world to make them world.
+      set rface(k,:) to this position.
+    call facecolor to color the face (and do vtk output)
+
+   call facecolor(iosw,2+ie,j,itc+1,iobj,iav,rface,fmin
+     $           ,fmax,1,lfw,isign) 
+   subroutine facecolor(iosw,imin,k2,k3,iobj,iav,rface,fmin,fmax
+     $     ,i2,lfw,isign)
+c imin is the face index (1,2 or 3 for a cylinder) 2+ie
+c i2 is the dimension-index of the first facet index 1
+c k2,k3 are the indexes of the facet within the face. j,itc+1
+c iav is the address of the start of the face within ff_data.
+c Coloring by flux does this:
+         ijbin=(k2-1)+nf_dimlens(nf_flux,ifobj,i2)*(k3-1)
+     $        +nf_faceind(nf_flux,ifobj,imin)
+         iadd=ijbin+iav
+Thus each facet has just two indices 
+and each face needs the extra information
+ nf_dimlens(nf_flux,ifobj,i2), nf_faceind(nf_flux,ifobj,imin)
+ how many facet divisions    , start of this face
+
+The generalization appears to be that each line segment defines a face.
+Theta (instead of r) could be chosen as the first facet index. This
+would avoid having to know the dimlens different for all line segments.
+These nf_values would have to be entered by fluxinit. However, there
+are then not enough nf_faceind() slots to give the start of every face.
+Basically this quantity is the cumulative number of facets. Its third
+allocated dimension is 2*ndims. That would limit it to 6 faces, which 
+is the number for a cube. It could be increased, I suppose. It is far
+smaller than nf_address, whose last dimension is nstepsmax, 
+so it won't have any impact on code size. Might as well bite the bullet.
+Set to sr_vlen-1. Now we have enough. So the above call for SoR
+should have imin the face index 1-19, i2=1 (the theta dimension), 
+k2,k3 the theta and r2 indexes, iav start of face in ff_data. Looks
+straightforward.
+
+Start to write the monotonic SoR version of fluxplot. 
+We also need to write the srv parameters into the flux file in order
+that they are available. (Not yet done).
+Decided to incorporate the srv parameters into the obj_geom structure.
+Done. Removed the srvnr,z,div data. Now incorporated into obj_geom.
+Adjusted flux write and read to accommodate new odata length and to
+grandfather versions earlier than 5. Now all parameters are available.
+
+Implemented coloring of Surface of Revolution just by facet, and debugged.
+I think we therefore have the positional information correctly stored,
+recovered and interpreted now for the monotonic SoR. The general SOR
+needs a reordering of the face order in which drawing occurs --- at 
+least for the drawing version; it would not matter for vtk writing.
+
+Order of drawing for general SoR. 
+Based on thinking about a torus:
+ Start at the furthest theta (from eye).
+   Start at the furthest rz position and draw all faces in sequence 
+ Iterate theta.
+Started with srvgplot which is simply srvplot with the theta and rz
+iterations reversed in order. That just works. 
+Now I need a torus to see how badly it works.
+
+21 Jul 2014
+
+Completed development of a sorting algorithm based on tests for closeness
+see note book. 
+
+c Seems that the standard insertion sort does not work for faces that
+c are disjoint. It assumes that if face x is greater than face y, then
+c all the faces ordered earlier than y are less than x, but that's not
+c true if there's a face z that is disjoint from y and happens to have
+c been ordered earlier as a random choice.
+
+c I think that selection sort would solve this problem, at the cost of 
+c some extra effort. 
+
+c Discovered another problem with the ambiguity of theta modulo 2\pi.
+
+Installed into objplot srvgplot for general surface of revolution.
+After correcting some of the calling parameters, it works! Both for
+general and for convex surfaces.

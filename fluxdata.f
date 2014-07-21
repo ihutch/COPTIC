@@ -133,18 +133,20 @@ c Three facets in the order bottom side top.
      $                 int(obj_geom(ofn1,i))*int(obj_geom(ofn2,i))
 c                  write(*,*)nfluxes,(nf_faceind(j,mf_obj,k),k=1,3)
                elseif(itype.eq.6.or.itype.eq.7)then
-c Surface of revolution 
-c has only theta (ofn1) and one multifaceted face.
-c sr_npair-1 is the number of facets. isrvdiv the divisions of each.
+c Surface of revolution has theta (ofn1) 
+c and each face (up to sr_vlen-1) is a line segment rotated.
+c sr_npair-1 is the number of faces. opdiv the divisions of each.
                   write(*,*)'Surface of Revolution flux initialization'
                   nfluxes=0
                   ntheta=int(obj_geom(ofn1,i))
                   nf_dimlens(j,mf_obj,1)=ntheta
                   nr=0
                   do kk=1,obj_geom(sr_npair,i)-1
-                     nr=nr+isrvdiv(kk,i)
-                     nfluxes=nfluxes+isrvdiv(kk,i)*ntheta
+                     nf_faceind(j,mf_obj,kk)=nfluxes
+                     nr=nr+obj_geom(opdiv+kk-1,i)
+                     nfluxes=nfluxes+obj_geom(opdiv+kk-1,i)*ntheta
                   enddo
+c dimlens of r is the total number of r-divisions of all facets.
                   nf_dimlens(j,mf_obj,2)=nr
 c                  stop
                else
@@ -407,7 +409,7 @@ c z
             elseif(itype.eq.6 .or. itype.eq.7)then
 c Surface of revolution ------------------------------
                write(*,*)'Flux positions for Surface of Revolution'
-c Each line segment is a truncated cone with ofn1 and isrvdiv
+c Each line segment is a truncated cone with ofn1 and opdiv
 c equal divisions. The areas of the subsegments are to be equal. 
 c For a segment with ends (rb,zb),(rt,zt), the total area is 
 c A=\pi (rt+rb)\sqrt{(rt-rb)^2+(zt-zb)^2}. Equal area means
@@ -428,18 +430,18 @@ c The unnormalized zscale needs to replace this temporary fix:
 c Contour positions:
                   i0=0
                   do i3=1,sr_npair-1
-                  rb=srvnr(i3,i)
-                  rt=srvnr(i3+1,i)
+                  rb=obj_geom(opr+i3-1,i)
+                  rt=obj_geom(opr+i3,i)
                   rdiff=rt-rb
-                  zdiff=(srvnr(i3+1,i)-srvnz(i3,i))*zscale
+                  zdiff=(obj_geom(opz+i3,i)-obj_geom(opz+i3-1,i))*zscale
 c Areas are equal through segments. Needs to be scaled.
                   area=3.1415927*(rb+rt)*sqrt(rdiff**2+zdiff**2)
-     $                 /isrvdiv(i3,i)
-                  do i2=1,isrvdiv(i3,i)
+     $                 /obj_geom(opdiv+i3-1,i)
+                  do i2=1,obj_geom(opdiv+i3-1,i)
                      i0=i0+1
 c Calculate contour fractional index:
 c for end of subsegment
-                     fr=float(i2)/isrvdiv(i3,i)
+                     fr=float(i2)/obj_geom(opdiv+i3-1,i)
                      if(abs(rdiff).gt.1.e-5*rb)then
                         rm2=rb**2*(1-fr)+rt**2*fr
                         fm=(sqrt(rm2)-rb)/(rt-rb)
@@ -448,7 +450,7 @@ c for end of subsegment
                      endif
                      pm=fm+i3
 c for centroid of subsegment
-                     fr=(i2-0.5)/isrvdiv(i3,i)
+                     fr=(i2-0.5)/obj_geom(opdiv+i3-1,i)
                      if(abs(rdiff).gt.1.e-5*rb)then
                         rm2=rb**2*(1-fr)+rt**2*fr
                         fm=(sqrt(rm2)-rb)/(rt-rb)
@@ -914,7 +916,7 @@ c     np=nbcat(name,'.flx')
       call nbcat(name,'.flx')
 c      write(*,*)name
       write(charout,51)debyelen,Ti,vd,rs,phip
- 51   format('debyelen,Ti,vd,rs,phip:',5f10.4,' Version: 4')
+ 51   format('debyelen,Ti,vd,rs,phip:',5f10.4,' Version: 5')
 
 c      write(*,*)'mf_obj=',mf_obj,nf_step,mf_quant(1)
 
@@ -1003,6 +1005,9 @@ c Figure out the version:
          read(23)debyelen,Ti,vd,rs,phip ,colntime,subcycle,vneutral
      $        ,fcollided,dropaccel,Tneutral,Eneutral
       endif
+      ndlen=odata
+c Earlier version data length was shorter.
+      if(iversion.lt.5)ndlen=42
       read(23)nf_step,mf_quant,mf_obj,(nf_geommap(j),j=1,mf_obj)
 c      write(*,*)'geommap',(nf_geommap(j),j=1,mf_obj)
       read(23)(ff_rho(k),k=1,nf_step)
@@ -1036,10 +1041,10 @@ c      write(*,*)'Datalen',ndatalen
       endif
 c Object data:
       read(23)ngeomobj
-      read(23)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
+      read(23)((obj_geom(j,k),j=1,ndlen),nf_map(k),k=1,ngeomobj)
       read(23)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
 c      write(*,*)'Object data for',ngeomobj,' objects:'
-c      write(*,*)((obj_geom(j,k),j=1,odata),nf_map(k),k=1,ngeomobj)
+c      write(*,*)((obj_geom(j,k),j=1,ndlen),nf_map(k),k=1,ngeomobj)
 c      write(*,*)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
 c Intersection data:
       read(23)sc_ipt

@@ -18,6 +18,9 @@ c 32-4  ocgrad
 c 35-8  obgrad
 c 39-41 oagrad
 c 43    odata=total length
+c 44                                             opz
+c 44+sr_vlen                                     opr
+c 44+2*sr_vlen                                   opdiv
 
 c Each object, i < 31 has: type, data(odata).
       integer ngeomobjmax,odata,ngeomobj
@@ -40,8 +43,14 @@ c Other references. offc->number of facets (calculated from type).
 c Gradients of the abc coefficients.
       integer oagrad,obgrad,ocgrad
       parameter (ocgrad=offc+1,obgrad=ocgrad+3,oagrad=obgrad+3)
+c Surface of Revolution data pointers
+c Allowed max number of pairs. Resulting vector length
+      integer sr_vlen
+      parameter (sr_vlen=20)
+      integer opz,opr,opdiv
+      parameter (opz=oagrad+ndims,opr=opz+sr_vlen,opdiv=opr+sr_vlen)
 c Total
-      parameter (odata=oagrad+2)
+      parameter (odata=opdiv+sr_vlen-1)
 c-------------------------------------------------------------------
 c The parallelopiped data structure consists of
 c 1 pp_orig : origin x_0 (3) which points to ocenter
@@ -64,20 +73,14 @@ c Surface-of-revolution data structure
 c base is the lower end of axis, apex is upper end
 c dir is direction such that zvalue=dir.(position-base)
 c npair is number of (z,r) pairs.
-      integer sr_base,sr_apex,sr_va,sr_npair,sr_vlen
+      integer sr_base,sr_apex,sr_va,sr_npair
       parameter (sr_base=ocenter)
       parameter (sr_apex=oradius)
       parameter (sr_va=ocontra+2*ndims)
       parameter (sr_npair=ocontra+3*ndims)
 c-------------------------------------------------------------------
       integer isrnpair
-c Allowed max number of pairs. Resulting vector length
-      parameter (sr_vlen=20)
-c Extra data for surfaces of revolution.
-      real srvnz(sr_vlen,ngeomobjmax)
-      real srvnr(sr_vlen,ngeomobjmax)
-c Number of flux divisions of each segment of the Surf of Rev.
-      integer isrvdiv(sr_vlen,ngeomobjmax)
+c------------------------------------------------------------------
 c Where the data is actually stored:
       real obj_geom(odata,ngeomobjmax)
 c-------------------------------------------------------------------
@@ -104,8 +107,7 @@ c Object number and sign of objects to subtract.
 c
       common /objgeomcom/ngeomobj,obj_geom,nf_map
      $     ,ibool_part,ifield_mask,iptch_mask,lboundp
-     $     ,normv,ormv,srvnz,srvnr,isrvdiv,isrnpair
-     $     ,rjscheme
+     $     ,normv,ormv,isrnpair,rjscheme
 c-------------------------------------------------------------------
 c-------------------------------------------------------------------
 c Data that describes the flux to positions on the objects:
@@ -134,7 +136,8 @@ c The number of positions at which this quantity is measured:
 c The dimensional structure of these: nf_posno = prod nf_dimlens
       integer nf_dimlens(nf_quant,nf_obj,ndimsmax)
 c The offset index to the start of cube faces
-      integer nf_faceind(nf_quant,nf_obj,2*ndimsmax)
+c      integer nf_faceind(nf_quant,nf_obj,2*ndimsmax)
+      integer nf_faceind(nf_quant,nf_obj,sr_vlen-1)
 c Reverse mapping to the geomobj number from nf_obj number
       integer nf_geommap(nf_obj)
 c The address of the data-start for the quantity, obj, step.

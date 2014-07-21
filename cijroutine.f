@@ -268,9 +268,10 @@ c It might also be a bug or mesh clash.
      $                       ,(indi(kk),kk=1,ndims),f1
      $                       ,' Adjust mesh!'
      $                       ,(ipa(kk),kk=1,ndims)
-     $                       ,f0,f1,ftot
-     $                       ,(1./fn(kk),kk=1,ndims)
-     $                      ,idob_cij(iflag_cij,oi_cij)
+c Silenced temporarily a lot of diagnostic messages.
+c     $                       ,f0,f1,ftot
+c     $                       ,(1./fn(kk),kk=1,ndims)
+c     $                      ,idob_cij(iflag_cij,oi_cij)
                         error=error+1
 c Call boxedge with diagnostics
                         call boxedge(ndims,ipa,indi,fn,npoints,1)
@@ -474,9 +475,9 @@ c            idiag=idiag+1
                xf(npoints,j)=icp(j)
             enddo
             xf(npoints,i)=fraction
-            if(idiag.gt.0)write(*,*)'Intersection fraction=',fraction
-     $           ,i,il,iw,(indl(j),j=1,ndims),' x='
-     $           ,(xf(npoints,j),j=1,ndims)
+c            if(idiag.gt.0)write(*,*)'Intersection fraction=',fraction
+c     $           ,i,il,iw,(indl(j),j=1,ndims),' x='
+c     $           ,(xf(npoints,j),j=1,ndims)
          endif
 c =================================================
 c End of active level iteration.
@@ -508,11 +509,11 @@ c =================================================
 c return solution of af.as=bs=1, which is fn=1/fractions.
             call SVDsol(fn,ndims,bs,npoints,afs,V,W,mpoints,mdims)
             if(idiag.gt.0) then
-               write(*,'(12f6.3)')((xf(k1,k2),k2=1,ndims),k1=1,npoints)
-               write(*,*)
-     $              npoints,' svdsol ',
-     $              ((afs(j,k1),j=1,npoints),k1=1,ndims)
-               write(*,*)'1/fn=',(1./fn(k1),k1=1,ndims)
+c               write(*,'(12f6.3)')((xf(k1,k2),k2=1,ndims),k1=1,npoints)
+c               write(*,*)
+c     $              npoints,' svdsol ',
+c     $              ((afs(j,k1),j=1,npoints),k1=1,ndims)
+c               write(*,*)'1/fn=',(1./fn(k1),k1=1,ndims)
             endif
          endif
 c =================================================

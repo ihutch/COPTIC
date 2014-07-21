@@ -265,7 +265,7 @@ c Non-aligned cylinder
 c------------------------------------------------
 c Surface of revolution. Now like cylinder except for Base/Apex
          do k=1,sr_vlen
-            isrvdiv(k,ngeomobj)=0
+            obj_geom(opdiv+k-1,ngeomobj)=0
          enddo
          obj_geom(ofluxtype,ngeomobj)=0
          isrnpair=0
@@ -274,14 +274,12 @@ c For type 6 there is one more div than pair, for type 7 one less.
          read(cline,*,err=901,end=806)
      $        (obj_geom(k,ngeomobj),k=1,ocylrad)
      $        ,isrnpair
-     $        ,(srvnr(k,ngeomobj),srvnz(k,ngeomobj),k=2,isrnpair+1)
+     $        ,(obj_geom(opr+k-1,ngeomobj),
+     $        obj_geom(opz+k-1,ngeomobj),k=2,isrnpair+1)
      $        ,obj_geom(ofluxtype,ngeomobj),obj_geom(ofn1,ngeomobj)
-     $        ,(isrvdiv(k,ngeomobj),k=1,isrnpair+1)
+     $        ,(obj_geom(opdiv+k-1,ngeomobj),k=1,isrnpair+1)
  806     if(myid.eq.0)write(*,820)ngeomobj,' Surf-of-Revln'
          obj_geom(sr_npair,ngeomobj)=isrnpair
-c         write(*,*)obj_geom(sr_npair,ngeomobj),
-c     $        obj_geom(ofluxtype,ngeomobj),obj_geom(ofn1,ngeomobj)
-c     $        ,(isrvdiv(k,ngeomobj),k=1,isrnpair+1)
 c Make the sr_npair equal to the number of segment ends.
          if(type.eq.6)obj_geom(sr_npair,ngeomobj)=isrnpair+2
 c         write(*,*)'npair',obj_geom(sr_npair,ngeomobj)
@@ -293,8 +291,10 @@ c         write(*,*)'npair',obj_geom(sr_npair,ngeomobj)
          if(myid.eq.0)then
             write(*,822)(obj_geom(k,ngeomobj),k=1,sr_apex+2)
             write(*,'(a,i2,a,$)')' rz-pairs',isrnpair,':'
-            write(*,'(16f6.2)')(srvnr(k,ngeomobj)
-     $           ,srvnz(k,ngeomobj),k=2,isrnpair+1)
+            write(*,'(16f6.2)')(obj_geom(opr+k-1,ngeomobj)
+     $           ,obj_geom(opz+k-1,ngeomobj),k=2,isrnpair+1)
+            write(*,'(16f6.2)')(
+     $           obj_geom(opdiv+k-1,ngeomobj),k=1,isrnpair+1)
          endif
       elseif(type.eq.99)then
 c------------------------------------------------
@@ -600,18 +600,18 @@ c****************************************************************
       include '3dcom.f'
       if(type.eq.6.)then
 c Insert the base and apex into the z,r pair arrays.
-         srvnz(1,iobj)=0.
-         srvnr(1,iobj)=0.
+         obj_geom(opz,iobj)=0.
+         obj_geom(opr,iobj)=0.
          j=int(obj_geom(sr_npair,iobj))
-         srvnz(j,iobj)=1.
-         srvnr(j,iobj)=0.
+         obj_geom(opz+j-1,iobj)=1.
+         obj_geom(opr+j-1,iobj)=0.
 c Check other z values for consistency.
          z=0.
          do i=2,j-1
-            z1=srvnz(i,iobj)
+            z1=obj_geom(opz+i-1,iobj)
             if(z1.le.z.or.z1.ge.1.)then
                write(*,*)'z values must be monotonic 0.<z<1.'
-     $              ,(srvnz(k,iobj),k=1,j)
+     $              ,(obj_geom(opz+k-1,iobj),k=1,j)
                stop
             endif
             z=z1
@@ -619,17 +619,19 @@ c Check other z values for consistency.
       else
 c type 7 reads the entire wall. Shuffle in.
          do i=1,obj_geom(sr_npair,iobj)
-            srvnz(i,iobj)=srvnz(i+1,iobj)
-            srvnr(i,iobj)=srvnr(i+1,iobj)
+            obj_geom(opz+i-1,iobj)=obj_geom(opz+i,iobj)
+            obj_geom(opr+i-1,iobj)=obj_geom(opr+i,iobj)
          enddo
 c Inconsistent if not closed and either end not on axis
-         if((srvnz(1,iobj).ne.srvnz(i-1,iobj).or.
-     $        srvnr(1,iobj).ne.srvnr(i-1,iobj)).and.
-     $        (srvnr(1,iobj).ne.0..or.srvnr(i-1,iobj).ne.0.))then
+         if((obj_geom(opz,iobj).ne.obj_geom(opz+i-2,iobj).or.
+     $        obj_geom(opr,iobj).ne.obj_geom(opr+i-2,iobj)).and.
+     $        (obj_geom(opr,iobj).ne.0..or.obj_geom(opr+i-2,iobj).ne.0.)
+     $        )then
             write(*,*)'rz-contour not closed and ends not on axis'
             stop
          endif
       endif
+
       do j=1,ndims
 c Convert the apex into apex-base and call it ovec
 c ovec is actually the same as sr_apex
@@ -646,7 +648,7 @@ c number. By this point there is one less facet than npair.
       if(obj_geom(ofluxtype,iobj).ne.0)then
          if(obj_geom(ofn1,iobj).le.0)goto 1
          do i=1,obj_geom(sr_npair,iobj)-1
-            if(isrvdiv(i,iobj).le.0)goto 1
+            if(obj_geom(opdiv+i-1,iobj).le.0)goto 1
          enddo
 c Here if all is well.
          return
@@ -657,7 +659,7 @@ c Else There's an inadequacy in the flux collection specification
      $           )'Flux specification for object'
      $           ,iobj,' is in error.',int(obj_geom(ofluxtype,iobj))
      $           ,int(obj_geom(ofn1,iobj)),',',
-     $           (isrvdiv(i,iobj),i=1,obj_geom(sr_npair,iobj)-1)
+     $         (obj_geom(opdiv+i-1,iobj),i=1,obj_geom(sr_npair,iobj)-1)
             write(*,'(a,$)')' Flux turned off'
          endif
          obj_geom(ofluxtype,iobj)=0
@@ -815,16 +817,15 @@ c Using cylinit it has been moved to
          enddo
 c Find the z-real-index 
          nq=int(obj_geom(sr_npair,i))
-c         write(*,*)obj_geom(sr_npair,i),(srvnz(k,i),k=1
-c     $        ,obj_geom(sr_npair,i)),z
-         iz=interp(srvnz(1,i),nq,z,zind)
+         iz=interp(obj_geom(opz,i),nq,z,zind)
          if(iz.le.0)then
             write(*,*)'inside_geom SoR interp failure'
             write(*,*)nq,z,zind,iz
             stop
          endif
 c Then find the r value for this z-index.
-         r=srvnr(iz,i)+(zind-iz)*(srvnr(iz+1,i)-srvnr(iz,i))
+         r=obj_geom(opr+iz-1,i)+(zind-iz)
+     $        *(obj_geom(opr+iz,i)-obj_geom(opr+iz-1,i))
          if(r2.lt.r**2)inside_geom=1
       elseif(itype.eq.7)then
 c------------------------------------------------
@@ -842,7 +843,7 @@ c Using cylinit it has been moved to
      $           (obj_geom(ovec+2*ndims+j-1,i)))**2
          enddo
          r=sqrt(r)
-         csect=w2sect(r,z,1.e5,0.,srvnr(1,i),srvnz(1,i)
+         csect=w2sect(r,z,1.e5,0.,obj_geom(opr,i),obj_geom(opz,i)
      $        ,int(obj_geom(sr_npair,i)),fsect,psect)
          if(mod(csect,2).eq.1)inside_geom=1
       endif
