@@ -12209,7 +12209,7 @@ revolution. It may be easiest to think in terms of the plotting.
 Think about cylgplot (in objplot.f). The way it works
 is by constructing a set of facets possibly smaller than the actual
 collection areas. For this purpose it uses ofn1-3. The number of 
-divisions in r,th,z. The then draws the invisible end, circular face,
+divisions in r,th,z. It then draws the invisible end, circular face,
 and visible end, separately. This is done as follows
 For each angle i to nangle, chosen to start from nearest to eye
   for each r j to nr,
@@ -12293,3 +12293,26 @@ c Discovered another problem with the ambiguity of theta modulo 2\pi.
 Installed into objplot srvgplot for general surface of revolution.
 After correcting some of the calling parameters, it works! Both for
 general and for convex surfaces.
+
+commit
+
+Now we need to implement the ijbin calculation for surfaces of revolution.
+And then the full flux tracking. This is how facecolor accesses the ijbin
+c Coloring by flux
+         ijbin=(k2-1)+nf_dimlens(nf_flux,ifobj,i2)*(k3-1)
+     $        +nf_faceind(nf_flux,ifobj,imin)
+         iadd=ijbin+iav
+         ff=ff_data(iadd)
+We pass  k2=itc+1 where
+         t1=2.*pi*(i-1)/nangle-pi
+         itc=int(objg(ofn1)*(t1/(2.*pi)+0.500001))
+i.e.             No of thetaflux * t1/(2*pi) 
+          =NoTFlux*(i-1)/nangle= NoTFlux*Theta/2pi.
+
+srvfsect uses bisection to find the intersection. Once having done that,
+we can calculate the angle and wall position from the final position.
+
+22 Jul 14
+Remove the pp_ and sr_ structures and make everying the ostructure.
+Run make geometry. Ok.
+Commit.

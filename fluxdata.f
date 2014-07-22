@@ -134,14 +134,14 @@ c Three facets in the order bottom side top.
 c                  write(*,*)nfluxes,(nf_faceind(j,mf_obj,k),k=1,3)
                elseif(itype.eq.6.or.itype.eq.7)then
 c Surface of revolution has theta (ofn1) 
-c and each face (up to sr_vlen-1) is a line segment rotated.
-c sr_npair-1 is the number of faces. opdiv the divisions of each.
+c and each face (up to ovlen-1) is a line segment rotated.
+c onpair-1 is the number of faces. opdiv the divisions of each.
                   write(*,*)'Surface of Revolution flux initialization'
                   nfluxes=0
                   ntheta=int(obj_geom(ofn1,i))
                   nf_dimlens(j,mf_obj,1)=ntheta
                   nr=0
-                  do kk=1,obj_geom(sr_npair,i)-1
+                  do kk=1,obj_geom(onpair,i)-1
                      nf_faceind(j,mf_obj,kk)=nfluxes
                      nr=nr+obj_geom(opdiv+kk-1,i)
                      nfluxes=nfluxes+obj_geom(opdiv+kk-1,i)*ntheta
@@ -283,8 +283,8 @@ c     $                    ,nf_faceind(j,io,k)
 c     $                    ,nf_dimlens(j,io,k2),nf_dimlens(j,io,k3)
                      if(itype.eq.4)then
 c Structure position of start of covariant vectors
-                        i1=pp_vec+ndims*(k2-1)
-                        i2=pp_vec+ndims*(k3-1)
+                        i1=ovec+ndims*(k2-1)
+                        i2=ovec+ndims*(k3-1)
 c face area equals magnitude of cross product. 
 c 3d assumption for convenience.
                         ar2= (obj_geom(i1+1,i)*obj_geom(i2+2,i)
@@ -429,7 +429,7 @@ c The unnormalized zscale needs to replace this temporary fix:
                   zscale=1. 
 c Contour positions:
                   i0=0
-                  do i3=1,sr_npair-1
+                  do i3=1,onpair-1
                   rb=obj_geom(opr+i3-1,i)
                   rt=obj_geom(opr+i3,i)
                   rdiff=rt-rb
@@ -716,7 +716,7 @@ c Cartesian coordinates.
 c            xc=objg(ii)
             xc=obj_geom(ii,iobj)
 c xn1, xn2 are the contravariant coordinates with respect to the center.
-            ji=(pp_contra+ndims*(j-1)+i-1)
+            ji=(ocontra+ndims*(j-1)+i-1)
 c            write(*,*)'ji',ji
             xn(j)=xn(j)+(xp(i)-xc)*obj_geom(ji,iobj)
          enddo

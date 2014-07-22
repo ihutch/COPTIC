@@ -550,14 +550,14 @@ c Flux accumulation is (zero based):
 c Draw in axial order from furthest to nearest.
       if(xe(ia).gt.0.)then
          irz1=0
-         irz2=objg(sr_npair)-2
+         irz2=objg(onpair)-2
          irzd=1
       else
-         irz1=objg(sr_npair)-2
+         irz1=objg(onpair)-2
          irz2=0
          irzd=-1
       endif
-c      write(*,*)'sr_npair',objg(sr_npair),irz1,irz2
+c      write(*,*)'onpair',objg(onpair),irz1,irz2
 c Do over line segments: faces.
       do irz=irz1,irz2,irzd
          rb=objg(opr+irz)
@@ -631,8 +631,8 @@ c 2:            according to average flux-density already in nf_step+2
       real rface(ncorn,ndimsmax)
       real xe(ndimsmax),xcontra(ndimsmax)
       real objg(odata)
-      real rp(sr_vlen),zp(sr_vlen)
-      integer iorder(sr_vlen)
+      real rp(ovlen),zp(ovlen)
+      integer iorder(ovlen)
       logical lfw
       integer wp(ncorn),wc(ncorn)
       data wp/1,0,0,1,1/wc/0,0,1,1,0/
@@ -661,7 +661,7 @@ c The axial coordinate
 c Discover perspective, eye position in world coords:
       call trn32(x,y,z,xe(1),xe(2),xe(3),-1)
       call nxyz2wxyz(xe(1),xe(2),xe(3),xe(1),xe(2),xe(3))
-c Transform to unit cylinder coordinates.
+c Transform to unit coordinates.
       call world3contra(ndims,xe,xe,iobj)
 c The azimuthal (yx) angle of the eye
       thetae=atan2(xe(mod(ia+1,3)+1),xe(mod(ia,3)+1))
@@ -687,7 +687,7 @@ c Project eye onto chosen theta-plane.
          re=(cos(ta)*xe(mod(ia,3)+1)+sin(ta)*xe(mod(ia+1,3)+1))
          ze=xe(ia)
 c Subtract it from the contour vertexes, putting them into the rp/zp.
-         np=objg(sr_npair)
+         np=objg(onpair)
          do irz=1,np
             rp(irz)=objg(opr+irz-1)-re
             zp(irz)=objg(opz+irz-1)-ze
@@ -695,7 +695,7 @@ c Subtract it from the contour vertexes, putting them into the rp/zp.
 c Sort the order of faces into iorder, so that face=iorder(i)
          call faceorder(np,rp,zp,iorder)
 c         write(*,*)np,' iorder',(iorder(irz),irz=1,np-1)
-         do i=1,objg(sr_npair)-1
+         do i=1,objg(onpair)-1
             irz=iorder(i)-1
             rb=objg(opr+irz)
             rt=objg(opr+irz+1)
@@ -782,7 +782,7 @@ c Transform eye position into fractional cube position.
       call pllelfrac(xe,xn,iobj)
 c The starting fixed point is opposite signs from returned xn.
 c So the first three center vectors have values equal to minus
-c the sign of xn times the three pp_vectors. 
+c the sign of xn times the three ovectors. 
       do iv=1,ndims
 c Fix zero flux meshes:
          objn1(iv-1)=objg(ofn1+iv-1)
@@ -797,8 +797,8 @@ c Face Dimension index:
 c Face index:
          imin=iv+ndims*(1+iov(iv))/2
          do id=1,ndims
-            rfc(id)=objg(pp_orig+id-1)
-     $           +iov(iv)*objg(pp_vec+(iv-1)*ndims+id-1)
+            rfc(id)=objg(ocenter+id-1)
+     $           +iov(iv)*objg(ovec+(iv-1)*ndims+id-1)
          enddo
          iov(iv)=-iov(iv)
          i1=mod(1+is-2,ndims)+1
@@ -818,7 +818,7 @@ c xi's run from (1-N)+-1 to (N-1)+-1 /N
                      rface(ic,id)=rfc(id)
                      do ivv=1,ndims
                         rface(ic,id)=rface(ic,id)
-     $                       +xi(ivv)*objg(pp_vec+(ivv-1)*ndims+id-1)
+     $                       +xi(ivv)*objg(ovec+(ivv-1)*ndims+id-1)
                      enddo
                   enddo
                enddo

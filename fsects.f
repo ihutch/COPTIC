@@ -182,7 +182,7 @@ c Cartesian coordinates.
             ii=(ocenter+i-1)
             xc=obj_geom(ii,iobj)
 c xn1, xn2 are the contravariant coordinates with respect to the center.
-            ji=(pp_contra+ndims*(j-1)+i-1)
+            ji=(ocontra+ndims*(j-1)+i-1)
 c            write(*,*)'ji',ji
             xn1(j)=xn1(j)+(xp1(i)-xc)*obj_geom(ji,iobj)
             xn2(j)=xn2(j)+(xp2(i)-xc)*obj_geom(ji,iobj)
@@ -253,7 +253,7 @@ c Contravariant projections.
 c i refers to the Cartesian coordinates.
             xc=obj_geom(ocenter+i-1,iobj)
 c xn1, xn2 are the contravariant coordinates with respect to the center.
-            ji=(pp_contra+ndims*(j-1)+i-1)
+            ji=(ocontra+ndims*(j-1)+i-1)
 c            write(*,*)'ji',ji
             xn1(j)=xn1(j)+(xp1(i)-xc)*obj_geom(ji,iobj)
             xn2(j)=xn2(j)+(xp2(i)-xc)*obj_geom(ji,iobj)
@@ -285,7 +285,7 @@ c of intersection.
       real xp1(nsdim),xp2(nsdim),sd,fraction
 c Local storage
       include 'ndimsdecl.f'
-      real xm(ndims)
+      real xm(ndims),xmp(ndims)
 
       ins1=inside_geom(ndims,xp1,iobj)
       ins2=inside_geom(ndims,xp2,iobj)
@@ -326,6 +326,13 @@ c Iterate to accuracy of 2^16. Fairly costly.
          endif
       enddo
 c Now fraction should be the intersection point.
+
+c Find the wall position by calling w2sect with adjacent positions.
+      if(ins.ne.ins1)fu=f1
+      do i=1,ndims
+            xmp(i)=xp1(i)+(xp2(i)-xp1(i))*fu
+      enddo
+
       if(ins1.eq.0)then
          sd=1.
       else

@@ -264,7 +264,7 @@ c Non-aligned cylinder
       elseif(type.eq.6.or.type.eq.7)then
 c------------------------------------------------
 c Surface of revolution. Now like cylinder except for Base/Apex
-         do k=1,sr_vlen
+         do k=1,ovlen
             obj_geom(opdiv+k-1,ngeomobj)=0
          enddo
          obj_geom(ofluxtype,ngeomobj)=0
@@ -279,17 +279,17 @@ c For type 6 there is one more div than pair, for type 7 one less.
      $        ,obj_geom(ofluxtype,ngeomobj),obj_geom(ofn1,ngeomobj)
      $        ,(obj_geom(opdiv+k-1,ngeomobj),k=1,isrnpair+1)
  806     if(myid.eq.0)write(*,820)ngeomobj,' Surf-of-Revln'
-         obj_geom(sr_npair,ngeomobj)=isrnpair
-c Make the sr_npair equal to the number of segment ends.
-         if(type.eq.6)obj_geom(sr_npair,ngeomobj)=isrnpair+2
-c         write(*,*)'npair',obj_geom(sr_npair,ngeomobj)
-         if(isrnpair.le.0.or.isrnpair.gt.sr_vlen-2.and.myid.eq.0)then
+         obj_geom(onpair,ngeomobj)=isrnpair
+c Make the onpair equal to the number of segment ends.
+         if(type.eq.6)obj_geom(onpair,ngeomobj)=isrnpair+2
+c         write(*,*)'npair',obj_geom(onpair,ngeomobj)
+         if(isrnpair.le.0.or.isrnpair.gt.ovlen-2.and.myid.eq.0)then
             write(*,*)' Impossible number of pairs specified',isrnpair
             stop
          endif
          call srvinit(ngeomobj,type,myid)         
          if(myid.eq.0)then
-            write(*,822)(obj_geom(k,ngeomobj),k=1,sr_apex+2)
+            write(*,822)(obj_geom(k,ngeomobj),k=1,oapex+2)
             write(*,'(a,i2,a,$)')' rz-pairs',isrnpair,':'
             write(*,'(16f6.2)')(obj_geom(opr+k-1,ngeomobj)
      $           ,obj_geom(opz+k-1,ngeomobj),k=2,isrnpair+1)
@@ -554,18 +554,18 @@ c      stop
       end
 c****************************************************************
       subroutine plleloinit(iobj)
-c Initialize the iobj pp_structure by calculating the contravariant 
+c Initialize the iobj by calculating the contravariant 
 c vectors from the covariant vectors.
       include 'ndimsdecl.f'
       include '3dcom.f'
 
       triple=0.
       do j=1,ndims
-         jpv=pp_vec+(j-1)*ndims-1
+         jpv=ovec+(j-1)*ndims-1
 c Other vectors:
-         jpv2=pp_vec+mod(j,ndims)*ndims-1
-         jpv3=pp_vec+mod(j+1,ndims)*ndims-1
-         jpc=pp_contra+(j-1)*ndims-1
+         jpv2=ovec+mod(j,ndims)*ndims-1
+         jpv3=ovec+mod(j+1,ndims)*ndims-1
+         jpc=ocontra+(j-1)*ndims-1
 c Set obj_geom(jpc..,iobj) equal to the cross product between the other
 c vectors.
          do i=1,ndims
@@ -602,7 +602,7 @@ c****************************************************************
 c Insert the base and apex into the z,r pair arrays.
          obj_geom(opz,iobj)=0.
          obj_geom(opr,iobj)=0.
-         j=int(obj_geom(sr_npair,iobj))
+         j=int(obj_geom(onpair,iobj))
          obj_geom(opz+j-1,iobj)=1.
          obj_geom(opr+j-1,iobj)=0.
 c Check other z values for consistency.
@@ -618,7 +618,7 @@ c Check other z values for consistency.
          enddo
       else
 c type 7 reads the entire wall. Shuffle in.
-         do i=1,obj_geom(sr_npair,iobj)
+         do i=1,obj_geom(onpair,iobj)
             obj_geom(opz+i-1,iobj)=obj_geom(opz+i,iobj)
             obj_geom(opr+i-1,iobj)=obj_geom(opr+i,iobj)
          enddo
@@ -634,9 +634,9 @@ c Inconsistent if not closed and either end not on axis
 
       do j=1,ndims
 c Convert the apex into apex-base and call it ovec
-c ovec is actually the same as sr_apex
-         obj_geom(ovec+j-1,iobj)=obj_geom(sr_apex+j-1,iobj)
-     $        -obj_geom(sr_base+j-1,iobj)
+c ovec is actually the same as oapex
+         obj_geom(ovec+j-1,iobj)=obj_geom(oapex+j-1,iobj)
+     $        -obj_geom(obase+j-1,iobj)
       enddo
 c Initialize Surface of Revolution contravariant vectors E.g. the axial
 c ovec whose length is such that axial.(apex-base)=1. So it is
@@ -647,7 +647,7 @@ c Flux accounting requires all relevant facets have non-zero div
 c number. By this point there is one less facet than npair.
       if(obj_geom(ofluxtype,iobj).ne.0)then
          if(obj_geom(ofn1,iobj).le.0)goto 1
-         do i=1,obj_geom(sr_npair,iobj)-1
+         do i=1,obj_geom(onpair,iobj)-1
             if(obj_geom(opdiv+i-1,iobj).le.0)goto 1
          enddo
 c Here if all is well.
@@ -659,7 +659,7 @@ c Else There's an inadequacy in the flux collection specification
      $           )'Flux specification for object'
      $           ,iobj,' is in error.',int(obj_geom(ofluxtype,iobj))
      $           ,int(obj_geom(ofn1,iobj)),',',
-     $         (obj_geom(opdiv+i-1,iobj),i=1,obj_geom(sr_npair,iobj)-1)
+     $         (obj_geom(opdiv+i-1,iobj),i=1,obj_geom(onpair,iobj)-1)
             write(*,'(a,$)')' Flux turned off'
          endif
          obj_geom(ofluxtype,iobj)=0
@@ -805,18 +805,18 @@ c time is dominated by cijroutine.
          r2=0.
          z=0
          do j=1,ndims
-            z=z+obj_geom(sr_va+j-1,i)*(x(j)-obj_geom(sr_base+j-1,i))
+            z=z+obj_geom(ovax+j-1,i)*(x(j)-obj_geom(obase+j-1,i))
          enddo
          if(z.lt.0.or.z.gt.1)return
 c Subtract from position z times axial vector-> cylindrical radius
          do j=1,ndims
-            r2=r2+(x(j)-obj_geom(sr_base+j-1,i)-z*
+            r2=r2+(x(j)-obj_geom(obase+j-1,i)-z*
 c     $           (obj_geom(ovec+j-1,i)))**2
 c Using cylinit it has been moved to 
      $           (obj_geom(ovec+2*ndims+j-1,i)))**2
          enddo
 c Find the z-real-index 
-         nq=int(obj_geom(sr_npair,i))
+         nq=int(obj_geom(onpair,i))
          iz=interp(obj_geom(opz,i),nq,z,zind)
          if(iz.le.0)then
             write(*,*)'inside_geom SoR interp failure'
@@ -833,18 +833,18 @@ c Surface of revolution. General.
          r=0.
          z=0
          do j=1,ndims
-            z=z+obj_geom(sr_va+j-1,i)*(x(j)-obj_geom(sr_base+j-1,i))
+            z=z+obj_geom(ovax+j-1,i)*(x(j)-obj_geom(obase+j-1,i))
          enddo
          if(z.lt.0.or.z.gt.1)return
          do j=1,ndims
-            r=r+(x(j)-obj_geom(sr_base+j-1,i)-z*
+            r=r+(x(j)-obj_geom(obase+j-1,i)-z*
 c     $           (obj_geom(ovec+j-1,i)))**2
 c Using cylinit it has been moved to 
      $           (obj_geom(ovec+2*ndims+j-1,i)))**2
          enddo
          r=sqrt(r)
          csect=w2sect(r,z,1.e5,0.,obj_geom(opr,i),obj_geom(opz,i)
-     $        ,int(obj_geom(sr_npair,i)),fsect,psect)
+     $        ,int(obj_geom(onpair,i)),fsect,psect)
          if(mod(csect,2).eq.1)inside_geom=1
       endif
 

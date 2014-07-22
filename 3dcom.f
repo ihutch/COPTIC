@@ -3,14 +3,14 @@ c Here are the addressing structures:
 c type   1sphr   2cube   3cyl     4ppd  5gcyl  6SoR  7SoR
 c 1     otype    otype  otype    otype  otype  otype  otype  
 c 2     oabc     oabc   oabc     oabc   oabc   oabc   oabc
-c 5     ocenter                 pp_orig           base
-c 8     oradius  sides  oradius pp_vec  ovec   apex->ovec
+c 5     ocenter                 ocenter           obase
+c 8     oradius  sides  oradius ovec  ovec   oapex->ovec
 c 11    ocylaxis                        RefVec   RefVec
 c 14                                    ocylrad  ocylrad
-c 17                    ocontra pp_contra        ocontra
+c 17                    ocontra ocontra        ocontra
 c 20
-c 23
-c 26                                             sr_npair
+c 23                                             ovax
+c 26                                             onpair
 c 27    ofluxtype
 c 28-30  ofn1-3   omag
 c 31    offc
@@ -19,8 +19,8 @@ c 35-8  obgrad
 c 39-41 oagrad
 c 43    odata=total length
 c 44                                             opz
-c 44+sr_vlen                                     opr
-c 44+2*sr_vlen                                   opdiv
+c 44+ovlen                                       opr
+c 44+2*ovlen                                     opdiv
 
 c Each object, i < 31 has: type, data(odata).
       integer ngeomobjmax,odata,ngeomobj
@@ -43,43 +43,34 @@ c Other references. offc->number of facets (calculated from type).
 c Gradients of the abc coefficients.
       integer oagrad,obgrad,ocgrad
       parameter (ocgrad=offc+1,obgrad=ocgrad+3,oagrad=obgrad+3)
+c-------------------------------------------------------------------
+c Surface-of-revolution data structure
+c base is the lower end of axis, apex is upper end
+c npair is number of (z,r) pairs.
+      integer obase,oapex,ovax,onpair
+      parameter (obase=ocenter,oapex=oradius)
+      parameter (ovax=ocontra+2*ndims,onpair=ocontra+3*ndims)
 c Surface of Revolution data pointers
 c Allowed max number of pairs. Resulting vector length
-      integer sr_vlen
-      parameter (sr_vlen=20)
+      integer ovlen
+      parameter (ovlen=20)
       integer opz,opr,opdiv
-      parameter (opz=oagrad+ndims,opr=opz+sr_vlen,opdiv=opr+sr_vlen)
+      parameter (opz=oagrad+ndims,opr=opz+ovlen,opdiv=opr+ovlen)
 c Total
-      parameter (odata=opdiv+sr_vlen-1)
+      parameter (odata=opdiv+ovlen-1)
+      integer isrnpair
 c-------------------------------------------------------------------
-c The parallelopiped data structure consists of
-c 1 pp_orig : origin x_0 (3) which points to ocenter
-c 4 pp_vec : 3 (covariant) vectors v_p equal half the edges.(3x3)
-c 13 pp_contra : 3 contravariant vectors v^q such that v_p.v^q =
+c The parallelopiped (and other) data structure consists of
+c 1 origin x_0 (3) ocenter
+c 4 ovec : 3 (covariant) vectors v_p equal half the edges.(3x3)
+c 13 ocontra : 3 contravariant vectors v^q such that v_p.v^q =
 c \delta_{pq} (3x3)
-c A pp_total of 21 reals (in 3-D), of which the last 9 can be calculated
+c 21 reals (in 3-D), of which the last 9 can be calculated
 c from the first 12, but must have been set prior to the call. 
 c A point is inside the pp if |Sum_i(x_i-xc_i).v^p_i|<1 for all p.
 c A point is on the surface if, in addition, equality holds in at least
 c one of the (6) relations. 
 c [i-k refers to cartesian components, p-r to pp basis.] 
-      integer pp_orig,pp_vec,pp_contra,pp_total
-      parameter (pp_orig=ocenter)
-      parameter (pp_vec=pp_orig+ndims)
-      parameter (pp_contra=pp_vec+ndims*ndims)
-      parameter (pp_total=pp_contra+ndims*ndims-1)
-c-------------------------------------------------------------------
-c Surface-of-revolution data structure
-c base is the lower end of axis, apex is upper end
-c dir is direction such that zvalue=dir.(position-base)
-c npair is number of (z,r) pairs.
-      integer sr_base,sr_apex,sr_va,sr_npair
-      parameter (sr_base=ocenter)
-      parameter (sr_apex=oradius)
-      parameter (sr_va=ocontra+2*ndims)
-      parameter (sr_npair=ocontra+3*ndims)
-c-------------------------------------------------------------------
-      integer isrnpair
 c------------------------------------------------------------------
 c Where the data is actually stored:
       real obj_geom(odata,ngeomobjmax)
@@ -137,7 +128,7 @@ c The dimensional structure of these: nf_posno = prod nf_dimlens
       integer nf_dimlens(nf_quant,nf_obj,ndimsmax)
 c The offset index to the start of cube faces
 c      integer nf_faceind(nf_quant,nf_obj,2*ndimsmax)
-      integer nf_faceind(nf_quant,nf_obj,sr_vlen-1)
+      integer nf_faceind(nf_quant,nf_obj,ovlen-1)
 c Reverse mapping to the geomobj number from nf_obj number
       integer nf_geommap(nf_obj)
 c The address of the data-start for the quantity, obj, step.
