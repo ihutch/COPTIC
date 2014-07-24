@@ -5,8 +5,8 @@ c 1     otype    otype  otype    otype  otype  otype  otype
 c 2     oabc     oabc   oabc     oabc   oabc   oabc   oabc
 c 5     ocenter                 ocenter           obase
 c 8     oradius  sides  oradius ovec  ovec   oapex->ovec
-c 11    ocylaxis                        RefVec   RefVec
-c 14                                    ocylrad  ocylrad
+c 11    ocylaxis                        RefVec   RefVec oco2
+c 14                                    ocylrad  ocylrad oco3
 c 17                    ocontra ocontra        ocontra
 c 20
 c 23                                             ovax

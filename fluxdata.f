@@ -136,7 +136,7 @@ c                  write(*,*)nfluxes,(nf_faceind(j,mf_obj,k),k=1,3)
 c Surface of revolution has theta (ofn1) 
 c and each face (up to ovlen-1) is a line segment rotated.
 c onpair-1 is the number of faces. opdiv the divisions of each.
-                  write(*,*)'Surface of Revolution flux initialization'
+c                  write(*,*)'Surface of Revolution flux initialization'
                   nfluxes=0
                   ntheta=int(obj_geom(ofn1,i))
                   nf_dimlens(j,mf_obj,1)=ntheta
@@ -432,11 +432,14 @@ c z and r directions, from object-normalized to world.
                   rscale=0.
                   zscale=0.
                   do kk=1,ndims
-                     zscale=zscale+obj_geom(ovec+ndims*(kk)-1,i)**2
-                     rscale=rscale+obj_geom(ovec+ndims*(kk-1),i)**2
+c                     zscale=zscale+obj_geom(ovec+ndims*(kk)-1,i)**2
+c                     rscale=rscale+obj_geom(ovec+ndims*(kk-1),i)**2
+                     zscale=zscale+obj_geom(ovec+2*ndims+kk-1,i)**2
+                     rscale=rscale+obj_geom(ovec+kk-1,i)**2
                   enddo
                   zscale=sqrt(zscale)
                   rscale=sqrt(rscale)
+                  write(*,*)'rscale,zscale=',rscale,zscale
 c Contour positions:
                   i0=0
                   do i3=1,obj_geom(onpair,i)-1

@@ -12344,3 +12344,14 @@ It shows approximately equal fluxes. But not equal flux densities.
 There's clearly something wrong with the area calculations.
 That was found to be caused by not having completed the area scaling
 by the zscale and rscale parameters. Completing fixes it.
+
+commit
+
+Discovered an error in world3contra that meant it would not do round
+trip calculations (and was not doing calculations properly). Fixing
+that stops the problems with no intersection found. It might also 
+remove the need for the rather elaborate search strategy for finding
+the psect. I don't know what errors this introduced in prior 
+calculations. 
+
+commit.

@@ -838,7 +838,6 @@ c------------------------------------------------
 c Surface of revolution. General.
          r=0.
          z=0.
-c Multiplies/squares: 3+3(2)=9.
          do j=1,ndims
             z=z+obj_geom(ovax+j-1,i)*(x(j)-obj_geom(obase+j-1,i))
          enddo
@@ -1235,17 +1234,17 @@ c      write(*,'(''Set obj_geom(oabc,'',i2,'')='',3f8.4)')
 c     $     iobject,(obj_geom((oabc+i),iobject),i=0,2)
       end
 c****************************************************************
-c> Convert from contravariant coefficients to world cartesian.
-c> Covariant and Contravariant vectors are stored in obj_geom(...,iobj)
-c> xcontra and xw can be the same storage positions if desired.
+c Convert from contravariant coefficients to world cartesian.
+c Covariant and Contravariant vectors are stored in obj_geom(...,iobj)
+c xcontra and xw can be the same storage positions if desired.
       subroutine contra3world(mdims,xcontra,xw,iobj)
-c> Number of dimensions. 
+c Number of dimensions. 
       integer mdims
-c> Object number
+c Object number
       integer iobj
-c> World coordinates
+c World coordinates
       real xw(mdims)
-c> Contravariant coordinates
+c Contravariant coordinates
       real xcontra(mdims)
       include 'ndimsdecl.f'
       include '3dcom.f'
@@ -1257,6 +1256,7 @@ c Contra
          do j=1,ndims
             xwl(i)=xwl(i)
      $           +xcontra(j)*obj_geom(ovec+ndims*(j-1)+i-1,iobj)
+c            write(*,*)i,j,obj_geom(ovec+ndims*(j-1)+i-1,iobj),xcontra(j)
          enddo
       enddo
       do i=1,ndims
@@ -1275,16 +1275,20 @@ c xcontra and xw can overlap, if aligned.
       real xd(ndims),xcl(ndims)
 
       do j=1,ndims
-         xcl(j)=0.
-      enddo
 c Cartesian world relative to center
+         xd(j)=xw(j)-obj_geom(ocenter+j-1,iobj)
+      enddo
       do i=1,ndims
-         xd(i)=xw(i)-obj_geom(ocenter+i-1,iobj)
+         xcl(i)=0.
 c Contra coefficients are obtained by dotting with contra vectors
          do j=1,ndims
-            xcl(j)=xcl(j)
-     $           +xd(i)*obj_geom(ocontra+ndims*(j-1)+i-1,iobj)
+            xcl(i)=xcl(i)
+     $           +xd(j)*obj_geom(ocontra+ndims*(i-1)+j-1,iobj)
+c            write(*,*)i,j,obj_geom(ocontra+ndims*(j-1)+i-1,iobj)
+c     $           ,xd(i)
          enddo
+      enddo
+      do i=1,ndims
          xcontra(i)=xcl(i)
       enddo
       end

@@ -304,6 +304,7 @@ c Perhaps this could be iterated:
          ins=inside_geom(ndims,xm,iobj)
          if(ins.ne.ins1)then 
 c Double crossing. Choose solution closest to fraction=0.
+c            write(*,*)'Double crossing fixed.'
             fu=fraction
             fl=0.
          else
@@ -330,16 +331,24 @@ c Iterate to accuracy of 2^16. Fairly costly.
 c Now fraction should be the intersection point.
 
 c Its theta value is based on contravariant coordinates:
+c      call rztell(xm,iobj)
+c      write(*,*)xm
       call world3contra(ndims,xm,xm,iobj)
       theta=atan2(xm(2),xm(1))
       zm=xm(ndims)
       rm=sqrt(xm(1)**2+xm(2)**2)
+c      write(*,*)'rm,zm',rm,zm
+c      write(*,*)xm
+c      call contra3world(ndims,xm,xm,iobj)
+c      write(*,*)xm
+c      call world3contra(ndims,xm,xm,iobj)
 
-
+c      stop
+c      return
 c Find the wall position by calling w2sect with adjacent positions.
 c Construct a short chord in the same order as xp1,xp2, that brackets
 c the solution already found.
-      delta=.01
+      delta=.1
       do i=1,ndims
          xc1(i)=xp1(i)+(xp2(i)-xp1(i))*(fraction-delta)
          xc2(i)=xp1(i)+(xp2(i)-xp1(i))*(fraction+delta)
@@ -355,11 +364,30 @@ c Find the r,z normalized coordinates of the positions.
       isect=w2sect(r1,z1,r2,z2,obj_geom(opr,iobj)
      $     ,obj_geom(opz,iobj),int(obj_geom(onpair,iobj)),fsect,psect)
       if(isect.eq.0)then
+c This should not happen.
          write(*,*)'No intersection in srvsect',isect,psect
-         write(*,*)r1,r2,z1,z2
-         write(*,*)fraction,fu,fl,ins1,ins2,ins
+         write(*,*)'r1,r2,z1,z2',r1,r2,z1,z2
+c         write(*,*)'onpair',int(obj_geom(onpair,iobj))
+         write(*,*)fraction,fu,fl,ins1,ins2,ins,rm,zm
          write(*,*)xc1,xc2
          write(*,*)xp1,xp2
+c         write(*,*)(obj_geom(opr+i,iobj),obj_geom(opz+i,iobj),i=0
+c     $        ,int(obj_geom(onpair,iobj))-1)
+c         write(*,*)inside_geom(ndims,xp1,iobj)
+c     $        ,inside_geom(ndims,xp2,iobj)
+         call rztell(xp1,iobj)
+         call rztell(xp2,iobj)
+         do i=1,ndims
+            xm(i)=xp1(i)+(xp2(i)-xp1(i))*fraction
+         enddo
+         call rztell(xm,iobj)
+         call world3contra(ndims,xm,xm,iobj)
+         write(*,*)sqrt(xm(1)**2+xm(2)**2),xm(3)
+         write(*,'(3f8.4)')(obj_geom(ovec+k-1,iobj),k=1,18)
+         do i=1,ndims
+            xm(i)=xp1(i)+(xp2(i)-xp1(i))*fl
+         enddo
+         call rztell(xm,iobj)
          stop
       endif
 c Calculate ijbin.
@@ -716,3 +744,25 @@ c Hence fractional intersect positions:
       f1=(0.-pd11)/(pd12-pd11)
       end
 c********************************************************************
+      subroutine rztell(x,i)
+c Common object geometric data.
+      include 'ndimsdecl.f'
+      include '3dcom.f'
+      real x(ndims)
+c Tell the fractional position in a 
+c Surface of revolution. General code from inside_geom
+      r=0.
+      z=0.
+      do j=1,ndims
+         z=z+obj_geom(ovax+j-1,i)*(x(j)-obj_geom(obase+j-1,i))
+      enddo
+      do j=1,ndims
+         r=r+( x(j)-obj_geom(obase+j-1,i)
+     $        -z*(obj_geom(ovec+2*ndims+j-1,i)) )**2
+      enddo
+      r=sqrt(r)
+      write(*,*)'rztell',r,z,w2sect(r,z,1.e5,0.,obj_geom(opr,i)
+     $     ,obj_geom(opz,i),int(obj_geom(onpair,i)),fsect,psect)
+c     $     ,obj_geom(ovax+3-1,i),obj_geom(ovec+2*ndims+3-1,i)
+c      write(*,'(3f8.4)')(obj_geom(ovec+k-1,i),k=1,18)
+      end
