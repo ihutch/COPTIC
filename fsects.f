@@ -273,7 +273,7 @@ c      write(*,*)'cylusect return',ijbin,fraction
 c*********************************************************************
 c*********************************************************************
       subroutine srvfsect(nsdim,xp1,xp2,iobj,ijbin,sd,fraction)
-c Given a general object iobj. Find the point of intersection of the
+c Given a general SoR object iobj. Find the point of intersection of the
 c line joining xp1,xp2, with it, and determine the ijbin to which it is
 c therefore assigned, and the direction it is crossed (sd=+1 means
 c inward from 1 to 2). Fractional distance xp1->xp2 is returned.
@@ -285,7 +285,8 @@ c of intersection.
       real xp1(nsdim),xp2(nsdim),sd,fraction
 c Local storage
       include 'ndimsdecl.f'
-      real xm(ndims),xmp(ndims)
+      include '3dcom.f'
+      real xm(ndims),xc1(ndims),xc2(ndims),rm
 
       ins1=inside_geom(ndims,xp1,iobj)
       ins2=inside_geom(ndims,xp2,iobj)
@@ -293,7 +294,7 @@ c Local storage
       fl=0.
       if(ins1.eq.ins2)then
 c Endpoints on same side.
-C         write(*,*)'srvfsect error: root not bracketed.'
+c         write(*,*)'srvfsect error: root not bracketed.',iobj,xp1,xp2
 c We need some sort of check on double intersection.
 c Perhaps this could be iterated:
          fraction=0.5
@@ -313,7 +314,8 @@ c Double crossing. Choose solution closest to fraction=0.
       endif
 c Bisection, bipolar on value of inside_geom, to find fraction.
 c Iterate to accuracy of 2^16. Fairly costly.
-      do k=1,16
+      niter=16
+      do k=1,niter
          fraction=(fu+fl)*0.5
          do i=1,ndims
             xm(i)=xp1(i)+(xp2(i)-xp1(i))*fraction
@@ -327,11 +329,91 @@ c Iterate to accuracy of 2^16. Fairly costly.
       enddo
 c Now fraction should be the intersection point.
 
+c Its theta value is based on contravariant coordinates:
+      call world3contra(ndims,xm,xm,iobj)
+      theta=atan2(xm(2),xm(1))
+      zm=xm(ndims)
+      rm=sqrt(xm(1)**2+xm(2)**2)
+
+
 c Find the wall position by calling w2sect with adjacent positions.
-      if(ins.ne.ins1)fu=f1
+c Construct a short chord in the same order as xp1,xp2, that brackets
+c the solution already found.
+      delta=.01
       do i=1,ndims
-            xmp(i)=xp1(i)+(xp2(i)-xp1(i))*fu
+         xc1(i)=xp1(i)+(xp2(i)-xp1(i))*(fraction-delta)
+         xc2(i)=xp1(i)+(xp2(i)-xp1(i))*(fraction+delta)
       enddo
+c Transform to contravariant components.
+      call world3contra(ndims,xc1,xc1,iobj)
+      call world3contra(ndims,xc2,xc2,iobj)
+c Find the r,z normalized coordinates of the positions.
+      r1=sqrt(xc1(1)**2+xc1(2)**2)
+      r2=sqrt(xc2(1)**2+xc2(2)**2)
+      z1=xc1(ndims)
+      z2=xc2(ndims)
+      isect=w2sect(r1,z1,r2,z2,obj_geom(opr,iobj)
+     $     ,obj_geom(opz,iobj),int(obj_geom(onpair,iobj)),fsect,psect)
+      if(isect.eq.0)then
+         write(*,*)'No intersection in srvsect',isect,psect
+         write(*,*)r1,r2,z1,z2
+         write(*,*)fraction,fu,fl,ins1,ins2,ins
+         write(*,*)xc1,xc2
+         write(*,*)xp1,xp2
+         stop
+      endif
+c Calculate ijbin.
+c Theta index is N_theta*(theta/2pi+0.5). k2-1
+c Non-negative &< N_theta is enforced by slight pi overestimate.
+      itc=obj_geom(ofn1,iobj)*(theta/(2.*3.141593)+0.5)
+
+c Decide the irz index based upon wall position. The face is the integer
+c part of psect. The facet is based upon equal r^2 division of face.
+c See objplot for the principles.
+c The face:
+      irz=int(psect)
+c Should we use the psect fraction? 
+c Prior rm,zm are not always consistent. 
+c But the interpolation is not linear.
+c      frz=psect-int(psect)
+c      rm=rb+(rt-rb)*frz
+c      zm=zb+(zt-zb)*frz
+      rb=obj_geom(opr+irz-1,iobj)
+      rt=obj_geom(opr+irz,iobj)
+      zb=obj_geom(opz+irz-1,iobj)
+      zt=obj_geom(opz+irz,iobj)
+      nz=obj_geom(opdiv+irz-1,iobj)
+      if((rb-rm)*(rm-rt)*(rt-rb)**2.lt.0
+     $     .or. (zb-zm)*(zm-zt)*(zt-zb)**2.lt.0)then
+         write(*,*)
+         write(*,*)'Puzzling Values for',isect,irz,psect,iobj
+         write(*,*)'rb,rm,rt,zb,zm,zt',rb,rm,rt,zb,zm,zt
+         write(*,'(20f7.3)')(obj_geom(opr+k,iobj),k=0
+     $        ,int(obj_geom(onpair,iobj))-1)
+         write(*,'(20f7.3)')(obj_geom(opz+k,iobj),k=0
+     $        ,int(obj_geom(onpair,iobj))-1)
+c         stop
+      endif
+      dr2=(rt**2-rb**2)/nz
+c The facet number: k3-1
+      if(abs(dr2).ne.0.)then
+         ifct=int((rm**2-rb**2)/dr2)
+      else
+         ifct=int((nz)*(zm-zb)/(zt-zb))
+      endif
+      if(ifct.lt.0)ifct=0
+      if(ifct.gt.nz-1)ifct=nz-1
+      ifobj=nf_map(iobj)
+c      if(ijbin.eq.-1)then
+      if(.false.)then
+         write(*,*)'nt,npr,nz',obj_geom(ofn1,iobj),obj_geom(onpair,iobj)
+     $        ,nz,' itc,irz,ifct,ijbin',itc,irz,ifct,(itc)
+     $        +nf_dimlens(nf_flux,ifobj,1)*(ifct)+nf_faceind(nf_flux
+     $        ,ifobj,irz)
+      endif      
+      ijbin=(itc)+nf_dimlens(nf_flux,ifobj,1)*(ifct)
+     $        +nf_faceind(nf_flux,ifobj,irz)
+
 
       if(ins1.eq.0)then
          sd=1.

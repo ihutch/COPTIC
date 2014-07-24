@@ -142,6 +142,7 @@ c onpair-1 is the number of faces. opdiv the divisions of each.
                   nf_dimlens(j,mf_obj,1)=ntheta
                   nr=0
                   do kk=1,obj_geom(onpair,i)-1
+c faceind is the offset of each face.
                      nf_faceind(j,mf_obj,kk)=nfluxes
                      nr=nr+obj_geom(opdiv+kk-1,i)
                      nfluxes=nfluxes+obj_geom(opdiv+kk-1,i)*ntheta
@@ -602,7 +603,9 @@ c         write(*,*)'Returning from pllel',ndims,x1,x1,iobj,ijbin,sd
 c Non-aligned cylinder
          call cylgfsect(ndims,x1,x2,iobj,ijbin,sd,fraction)
       elseif(itype.eq.6.or.itype.eq.7)then
-         call srvfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+         ijbin=-1
+         call srvfsect(ndims,x1,x2,iobj,ijbin,sd,fraction)
+c         write(*,*)'Objsect srvfsect',fraction,sd,ijbin
       else
 c         write(*,*)'Unknown object in objsect'
 c Unknown object type.

@@ -292,9 +292,9 @@ c         write(*,*)'npair',obj_geom(onpair,ngeomobj)
             write(*,822)(obj_geom(k,ngeomobj),k=1,oapex+2)
             write(*,'(a,i2,a,$)')' rz-pairs',isrnpair,':'
             write(*,'(16f6.2)')(obj_geom(opr+k-1,ngeomobj)
-     $           ,obj_geom(opz+k-1,ngeomobj),k=2,isrnpair+1)
-            write(*,'(16f6.2)')(
-     $           obj_geom(opdiv+k-1,ngeomobj),k=1,isrnpair+1)
+     $           ,obj_geom(opz+k-1,ngeomobj),k=1,isrnpair)
+            write(*,'(a,16f6.2)')' Face divisions',(
+     $           obj_geom(opdiv+k-1,ngeomobj),k=1,isrnpair-1)
          endif
       elseif(type.eq.99)then
 c------------------------------------------------
@@ -831,21 +831,19 @@ c Then find the r value for this z-index.
 c------------------------------------------------
 c Surface of revolution. General.
          r=0.
-         z=0
+         z=0.
+c Multiplies/squares: 3+3(2)=9.
          do j=1,ndims
             z=z+obj_geom(ovax+j-1,i)*(x(j)-obj_geom(obase+j-1,i))
          enddo
-         if(z.lt.0.or.z.gt.1)return
          do j=1,ndims
             r=r+(x(j)-obj_geom(obase+j-1,i)-z*
-c     $           (obj_geom(ovec+j-1,i)))**2
-c Using cylinit it has been moved to 
      $           (obj_geom(ovec+2*ndims+j-1,i)))**2
          enddo
          r=sqrt(r)
-         csect=w2sect(r,z,1.e5,0.,obj_geom(opr,i),obj_geom(opz,i)
+         isect=w2sect(r,z,1.e5,0.,obj_geom(opr,i),obj_geom(opz,i)
      $        ,int(obj_geom(onpair,i)),fsect,psect)
-         if(mod(csect,2).eq.1)inside_geom=1
+         if(mod(isect,2).eq.1)inside_geom=1
       endif
 
       end

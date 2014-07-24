@@ -12298,7 +12298,8 @@ commit
 
 Now we need to implement the ijbin calculation for surfaces of revolution.
 And then the full flux tracking. This is how facecolor accesses the ijbin
-c Coloring by flux
+c Coloring by flux. For cyl, i2=2 but we need srv i2=1, imin=irz.
+
          ijbin=(k2-1)+nf_dimlens(nf_flux,ifobj,i2)*(k3-1)
      $        +nf_faceind(nf_flux,ifobj,imin)
          iadd=ijbin+iav
@@ -12316,3 +12317,21 @@ we can calculate the angle and wall position from the final position.
 Remove the pp_ and sr_ structures and make everying the ostructure.
 Run make geometry. Ok.
 Commit.
+
+Work on ijbin calculation. 
+
+23 July 14
+
+Got an ijbin calculation in srvgfsect working. It counts ijbin in the 
+order theta,ifct,irz, which is what I designed. Using the -gw257 switch
+one can see the intersections in sensible places. However, the face
+labelling from objplot does not agree with it. Therefore ijbin is not
+being correctly calculated in it. Changed the inputs to facecolor
+to correctly offset irz and to put i2=1. Now I can see the intercepts 
+appearing in correctly labelled facets.
+
+Fix the objplot so that it puts back the gradlegend. Now all is working
+except perhaps the areas. Need to think how to test whether the flux
+density is working sensibly.
+
+commit.

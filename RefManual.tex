@@ -247,6 +247,10 @@ input file. For example a general contour with 5 pairs has 4 segments:
 #   ABC    Center... Npair... Fluxes th, n1,n2,n3,n4
 7, 1 0 2, 0 0 0, ...  5   ...   1,   5,  4  4  10 1 
 \end{verbatim}
+Note that a type 6 surface of revolution has one \emph{more} segment
+than specified point pairs (because the base and apex ends of the
+axial vector are added), while a type 7 surface of revolution has one
+\emph{less} segment than specified point pairs.
 
 Total flux to the object is always separately accumulated regardless
 of the optional specification.  Therefore, it is not necessary to

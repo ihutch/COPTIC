@@ -109,7 +109,7 @@ c            write(*,*)'Calling facecolor',iosw
       enddo
       end
 c*********************************************************************
-      subroutine cubeplot(iq,objg,iobj,ioswin)
+      subroutine cubeplot(iq,objg,iobj,ioswin,fmin,fmax)
 c Plot faces of cube object on an already set up 3D scene.
 c iosw determines the nature of the plot
 c 0: Color code according to position.
@@ -182,7 +182,7 @@ c Set the corner offsets for this face, is.
       enddo
       end
 c*********************************************************************
-      subroutine cylplot(iq,objg,iobj,ioswin)
+      subroutine cylplot(iq,objg,iobj,ioswin,fmin,fmax)
 c Plot divided faces of cylinder object objg.
 c iosw determines the nature of the plot
 c 0: Color code according to position.
@@ -334,7 +334,7 @@ c The eye is at angle running from minus-pi to plus-pi.
 
       end
 c*********************************************************************
-      subroutine cylgplot(iq,objg,iobj,ioswin)
+      subroutine cylgplot(iq,objg,iobj,ioswin,fmin,fmax)
 c Plot divided faces of non-aligned cylinder object objg.
 c iosw determines the nature of the plot
 c 0: Color code according to position.
@@ -494,7 +494,7 @@ c Transform to world
       end
 c********************************************************************
 c*********************************************************************
-      subroutine srvplot(iq,objg,iobj,ioswin)
+      subroutine srvplot(iq,objg,iobj,ioswin,fmin,fmax)
 c Plot divided faces of a convex surface of revolution object objg
 c iosw determines the nature of the plot
 c 0: Color code according to position.
@@ -607,17 +607,19 @@ c Transform back from unit-cyl to world coordinates
                   rface(k,m)=xcontra(m)
                enddo
             enddo
-            lfw=(mod(i-1+ism2,ism2).eq.ism2/2)
+            lfw=(mod(it-1+ism2,ism2).eq.ism2/2)
 c            write(*,*)'Facecolor',irz,it,i,j,itc+1,isign
             call facecolor(iosw,irz,itc+1,j,iobj,iav,rface
-     $           ,fmin,fmax,2,lfw,isign)               
+c     $           ,fmin,fmax,2,lfw,isign)               
+c probably:
+     $           ,fmin,fmax,1,lfw,isign)               
          enddo
       enddo
       enddo
 
       end
 c*********************************************************************
-      subroutine srvgplot(iq,objg,iobj,ioswin)
+      subroutine srvgplot(iq,objg,iobj,ioswin,fmin,fmax)
 c Plot divided faces of a general surface of revolution object objg
 c iosw determines the nature of the plot
 c 0: Color code according to position.
@@ -696,12 +698,12 @@ c Sort the order of faces into iorder, so that face=iorder(i)
          call faceorder(np,rp,zp,iorder)
 c         write(*,*)np,' iorder',(iorder(irz),irz=1,np-1)
          do i=1,objg(onpair)-1
-            irz=iorder(i)-1
-            rb=objg(opr+irz)
-            rt=objg(opr+irz+1)
-            zb=objg(opz+irz)
-            zt=objg(opz+irz+1)
-            nz=objg(opdiv+irz)
+            irz=iorder(i)
+            rb=objg(opr+irz-1)
+            rt=objg(opr+irz)
+            zb=objg(opz+irz-1)
+            zt=objg(opz+irz)
+            nz=objg(opdiv+irz-1)
 c         write(*,*)'irz,zb,zt,rb,rt',irz,zb,zt,rb,rt
 c Do over axial facets equally spaced in r^2 running from rb^2 to rt^2
             r2=rb
@@ -737,17 +739,16 @@ c Transform back from unit-cyl to world coordinates
                      rface(k,m)=xcontra(m)
                   enddo
                enddo
-               lfw=(mod(i-1+ism2,ism2).eq.ism2/2)
-c            write(*,*)'Facecolor',irz,it,i,j,itc+1,isign
+               lfw=(mod(it-1+ism2,ism2).eq.ism2/2)
                call facecolor(iosw,irz,itc+1,j,iobj,iav,rface
-     $              ,fmin,fmax,2,lfw,isign)               
+     $              ,fmin,fmax,1,lfw,isign)               
             enddo
          enddo
       enddo
 
       end
 c********************************************************************
-      subroutine pllelplot(iq,objg,iobj,ioswin)
+      subroutine pllelplot(iq,objg,iobj,ioswin,fmin,fmax)
 c Plot divided faces of parallelopiped object objg.
 c iosw determines the nature of the plot
 c 0: Color code according to position.
@@ -905,7 +906,7 @@ c            write(*,*)(rface(ik,3),ik=1,ncorn)
       if(iosw.ne.0.and. lfw)then
          call iwrite(ijbin,iw,string)
          string(iw+1:iw+1)=' '
-         call fwrite(ff,iw,2,string(iw+2:iw+2))
+         call fwrite(ff,iw,2,string(iw+2:))
          call vec3w((rface(4,1)+rface(2,1))/2.
      $        ,(rface(4,2)+rface(2,2))/2.
      $        ,(rface(4,3)+rface(2,3))/2.,0)
@@ -960,7 +961,7 @@ c rv gives the Window size, cv the center of the view.
       real cv(ndimsmax)
       integer index(ngeomobjmax)
       real zta(ngeomobjmax)
-      character*10 string
+      character*100 string
       data iprinting/0/
 
       ipint=ioswin/256
@@ -1010,32 +1011,36 @@ c         write(*,*)'objplotting',ik,iobj,itype,iobjmask
          if(iobjmask.ne.1 .and. 0.lt.iq.and.iq.le.mf_quant(iobj))then
             if(itype.eq.1.)then
                call sphereplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
-c This legend was removed from sphereplot to enable vtkwriting to
-c use that routine without additional complexity.
-c      if(iosw.ne.0)then
-c         call gradlegend(fmin,fmax,-.35,0.,-.35,.7,-.1,.false.)
-c         string='Flux: iosw='
-c         call iwrite(iosw,iwd,string(12:))
-c         call jdrwstr(.05,.6,string,1.)
-c      endif
-
-
             elseif(itype.eq.2.)then
-               call cubeplot(iq,obj_geom(1,iobj),iobj,iosw)
+               call cubeplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             elseif(itype.eq.3.)then
-               call cylplot(iq,obj_geom(1,iobj),iobj,iosw)
+               call cylplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             elseif(itype.eq.4.)then
-               call pllelplot(iq,obj_geom(1,iobj),iobj,iosw)
+               call pllelplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             elseif(itype.eq.5)then
-               call cylgplot(iq,obj_geom(1,iobj),iobj,iosw)
+               call cylgplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             elseif(itype.eq.6.or.itype.eq.7)then
-c               write(*,*)'Calling srvplot',iq,iobj,iosw
 c srvplot works for monotonic surface of revolution.
 c srvgplot work for both.
-               call srvgplot(iq,obj_geom(1,iobj),iobj,iosw)
+               call srvgplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             endif
          endif
       enddo
+c This legend was removed from sphereplot to enable vtkwriting to
+c use that routine without additional complexity.
+      if(iosw.ne.0)then
+         call gradlegend(fmin,fmax,-.35,0.,-.35,.7,-.1,.false.)
+         if(iosw.eq.0)then
+            string='Position '
+         elseif(iosw.eq.1)then
+            string='Flux '
+         elseif(iosw.eq.2)then
+            string='Flux-density '
+         endif
+c         call iwrite(iosw,iwd,string(lentrim(string)+1:))
+         call termchar(string)
+         call jdrwstr(.05,.6,string,1.)
+      endif
       if(ipint.eq.1)then
 c Plot intersections
       call charsize(.008,.008)
@@ -1095,15 +1100,15 @@ c         write(*,*)'objplotting',ik,iobj,itype,iobjmask
             if(itype.eq.1.)then
                call sphereplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             elseif(itype.eq.2.)then
-               call cubeplot(iq,obj_geom(1,iobj),iobj,iosw)
+               call cubeplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             elseif(itype.eq.3.)then
-               call cylplot(iq,obj_geom(1,iobj),iobj,iosw)
+               call cylplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             elseif(itype.eq.4.)then
-               call pllelplot(iq,obj_geom(1,iobj),iobj,iosw)
+               call pllelplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             elseif(itype.eq.5)then
-               call cylgplot(iq,obj_geom(1,iobj),iobj,iosw)
+               call cylgplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             elseif(itype.eq.6.or.itype.eq.7)then
-               call srvgplot(iq,obj_geom(1,iobj),iobj,iosw)
+               call srvgplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             endif
          endif
       enddo
