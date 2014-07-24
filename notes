@@ -12335,3 +12335,12 @@ except perhaps the areas. Need to think how to test whether the flux
 density is working sensibly.
 
 commit.
+
+24 July 14
+
+Constructed a spherelike object type 6 SOR with equal area faces.
+Actually equally spaced in cos(theta) (z).
+It shows approximately equal fluxes. But not equal flux densities.
+There's clearly something wrong with the area calculations.
+That was found to be caused by not having completed the area scaling
+by the zscale and rscale parameters. Completing fixes it.

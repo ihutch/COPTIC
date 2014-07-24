@@ -426,18 +426,28 @@ c the areas, which are just A/N_n/ntheta.
 c Do in usual order even though there can't be different arrangements
 c for different flux types.
                do j=1,mf_quant(io)
-c The unnormalized zscale needs to replace this temporary fix:
-                  zscale=1. 
+
+c The covariant vectors' length defines the scale factor in the 
+c z and r directions, from object-normalized to world.
+                  rscale=0.
+                  zscale=0.
+                  do kk=1,ndims
+                     zscale=zscale+obj_geom(ovec+ndims*(kk)-1,i)**2
+                     rscale=rscale+obj_geom(ovec+ndims*(kk-1),i)**2
+                  enddo
+                  zscale=sqrt(zscale)
+                  rscale=sqrt(rscale)
 c Contour positions:
                   i0=0
-                  do i3=1,onpair-1
-                  rb=obj_geom(opr+i3-1,i)
-                  rt=obj_geom(opr+i3,i)
+                  do i3=1,obj_geom(onpair,i)-1
+                  rb=obj_geom(opr+i3-1,i)*rscale
+                  rt=obj_geom(opr+i3,i)*rscale
                   rdiff=rt-rb
                   zdiff=(obj_geom(opz+i3,i)-obj_geom(opz+i3-1,i))*zscale
 c Areas are equal through segments. Needs to be scaled.
                   area=3.1415927*(rb+rt)*sqrt(rdiff**2+zdiff**2)
      $                 /obj_geom(opdiv+i3-1,i)
+                  write(*,*)'area=',area,rb,rt,zdiff,rscale,zscale
                   do i2=1,obj_geom(opdiv+i3-1,i)
                      i0=i0+1
 c Calculate contour fractional index:

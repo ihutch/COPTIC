@@ -278,7 +278,10 @@ c For type 6 there is one more div than pair, for type 7 one less.
      $        obj_geom(opz+k-1,ngeomobj),k=2,isrnpair+1)
      $        ,obj_geom(ofluxtype,ngeomobj),obj_geom(ofn1,ngeomobj)
      $        ,(obj_geom(opdiv+k-1,ngeomobj),k=1,isrnpair+1)
- 806     if(myid.eq.0)write(*,820)ngeomobj,' Surf-of-Revln'
+ 806     if(myid.eq.0)then
+            write(*,820)ngeomobj,' Surf-of-Revln'
+            write(*,822)(obj_geom(k,ngeomobj),k=1,oapex+2)
+         endif
          obj_geom(onpair,ngeomobj)=isrnpair
 c Make the onpair equal to the number of segment ends.
          if(type.eq.6)obj_geom(onpair,ngeomobj)=isrnpair+2
@@ -289,12 +292,14 @@ c         write(*,*)'npair',obj_geom(onpair,ngeomobj)
          endif
          call srvinit(ngeomobj,type,myid)         
          if(myid.eq.0)then
-            write(*,822)(obj_geom(k,ngeomobj),k=1,oapex+2)
-            write(*,'(a,i2,a,$)')' rz-pairs',isrnpair,':'
-            write(*,'(16f6.2)')(obj_geom(opr+k-1,ngeomobj)
-     $           ,obj_geom(opz+k-1,ngeomobj),k=1,isrnpair)
-            write(*,'(a,16f6.2)')' Face divisions',(
-     $           obj_geom(opdiv+k-1,ngeomobj),k=1,isrnpair-1)
+            np=obj_geom(onpair,ngeomobj)
+            write(*,'(a,i3,i3,a)')' rz-pairs',isrnpair,np,':'
+            write(*,'(10f7.2)')(obj_geom(opr+k-1,ngeomobj)
+     $           ,obj_geom(opz+k-1,ngeomobj),k=1,np)
+            if(obj_geom(ofluxtype,ngeomobj).gt.0)then
+               write(*,'(a,20i3)')' Face divisions'
+     $              ,(int(obj_geom(opdiv+k-1,ngeomobj)),k=1,np-1)
+            endif
          endif
       elseif(type.eq.99)then
 c------------------------------------------------
@@ -638,6 +643,7 @@ c ovec is actually the same as oapex
          obj_geom(ovec+j-1,iobj)=obj_geom(oapex+j-1,iobj)
      $        -obj_geom(obase+j-1,iobj)
       enddo
+
 c Initialize Surface of Revolution contravariant vectors E.g. the axial
 c ovec whose length is such that axial.(apex-base)=1. So it is
 c (apex-base)/|apex-base|^2. See cylinit for fuller description.
@@ -655,12 +661,12 @@ c Here if all is well.
  1       continue
 c Else There's an inadequacy in the flux collection specification
          if(myid.eq.0)then
-            write(*,*
-     $           )'Flux specification for object'
-     $           ,iobj,' is in error.',int(obj_geom(ofluxtype,iobj))
+            write(*,*)'Flux specification for object' ,iobj
+     $           ,' is in ERROR at division',i
+            write(*,*)int(obj_geom(ofluxtype,iobj))
      $           ,int(obj_geom(ofn1,iobj)),',',
      $         (obj_geom(opdiv+i-1,iobj),i=1,obj_geom(onpair,iobj)-1)
-            write(*,'(a,$)')' Flux turned off'
+     $           ,' Flux turned off.'
          endif
          obj_geom(ofluxtype,iobj)=0
       endif
