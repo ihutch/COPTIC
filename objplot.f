@@ -1008,7 +1008,9 @@ c Do drawing in order
          itype=int(obj_geom(otype,iobj))-256*(int(obj_geom(otype,iobj))
      $        /256)
 c         write(*,*)'objplotting',ik,iobj,itype,iobjmask
-         if(iobjmask.ne.1 .and. 0.lt.iq.and.iq.le.mf_quant(iobj))then
+c     $        ,iq,mf_quant(nf_map(iobj))
+         if(iobjmask.ne.1)then
+c     $        .and. 0.lt.iq.and.iq.le.mf_quant(nf_map(iobj)))then
             if(itype.eq.1.)then
                call sphereplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             elseif(itype.eq.2.)then

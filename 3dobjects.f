@@ -126,7 +126,7 @@ c Read the geometric data about objects from the file filename
       character*(*) filename
       integer myid
       integer ifull(*)
-      character*256 cline
+      character*512 cline
       include 'ndimsdecl.f'
       include '3dcom.f'
       include 'meshcom.f'

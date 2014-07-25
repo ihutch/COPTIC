@@ -424,8 +424,9 @@ FORT_INT *px, *py, *ud;
     py1=py2;
     px2 = *px;
     py2 = *py;
-/*     printf("px %.0f, py %.0f\n",px2,py2); */
-    if( *ud > 0) {
+/*     printf("px %.0f, py %.0f\n",px2,py2);
+    if( *ud > 0) { */
+    if( *ud == 1) { 
       glBegin(GL_LINES);
       glVertex2f(px1,py1);
       glVertex2f(px2,py2);

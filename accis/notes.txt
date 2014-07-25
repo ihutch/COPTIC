@@ -846,3 +846,44 @@ The contour autofitting does not work satisfactorily. And I don't
 really understand either how it is supposed to work or why it
 doesn't. 
 Rewrote a more rational algorithm.
+
+
+25 Jul 2014
+
+Found that printing of slicing is broken. 
+Also found that hidtest X display is broken with vecx driver, in
+what appears to be a similar way.
+It's not the control interface because it happens just with pltend.
+The bug dates back before we were under git control.
+
+When called with ud >1 vecx did not draw, but vecglx did. 
+Changing to >0 makes them behave the same, and display correctly.
+hidvecn makes calls to vecn with ud=2. These were not displaying.
+However, the error lay in hidvecn calling with higher ud. Later
+usage has preempted those numbers for special behaviour as follows.
+
+Now the problem of PS lies in these calls too. Inside vecnp ud=2
+is documented as a call to raise the pen without drawing. However,
+doing that is the cause of the omission. If ud=2 is treated exactly
+as ud=1, then hidtest gives decent psplots. Where did this come from?
+I suspect something to do with pgfgraphics driving. Also there's
+a call in the prtend routine. Which is just to flush buffers.
+
+My guess: I've added these extra meanings, not realizing that hidvecn
+sometimes called with ud > 1. If that's right then ud should never be
+>1 in hidvecn. Leave the others alone.
+
+Change
+         call vecn(xp,yp,istate)
+to
+         call vecn(xp,yp,min(istate,1)) in hidvecn. 
+Yes that is enough to fix these issues.
+
+But then, perhaps the change to vecx.c is incorrect.
+It causes a line connection to the cube in cubed. I think it comes
+from prtend. Instead vecglx ought to omit draws with ud>1.
+
+Summary. There were two related bugs. 
+1. hidvecn calling vecn with ud>1. Not allowed now because now used.
+2. vecglx drawing vectors with ud>1. Again, incorrect.
+Both corrected.

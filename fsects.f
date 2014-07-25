@@ -331,20 +331,11 @@ c Iterate to accuracy of 2^16. Fairly costly.
 c Now fraction should be the intersection point.
 
 c Its theta value is based on contravariant coordinates:
-c      call rztell(xm,iobj)
-c      write(*,*)xm
       call world3contra(ndims,xm,xm,iobj)
       theta=atan2(xm(2),xm(1))
       zm=xm(ndims)
       rm=sqrt(xm(1)**2+xm(2)**2)
-c      write(*,*)'rm,zm',rm,zm
-c      write(*,*)xm
-c      call contra3world(ndims,xm,xm,iobj)
-c      write(*,*)xm
-c      call world3contra(ndims,xm,xm,iobj)
 
-c      stop
-c      return
 c Find the wall position by calling w2sect with adjacent positions.
 c Construct a short chord in the same order as xp1,xp2, that brackets
 c the solution already found.
@@ -364,7 +355,7 @@ c Find the r,z normalized coordinates of the positions.
       isect=w2sect(r1,z1,r2,z2,obj_geom(opr,iobj)
      $     ,obj_geom(opz,iobj),int(obj_geom(onpair,iobj)),fsect,psect)
       if(isect.eq.0)then
-c This should not happen.
+c This should not happen. And diagnostics should be cleared up eventually.
          write(*,*)'No intersection in srvsect',isect,psect
          write(*,*)'r1,r2,z1,z2',r1,r2,z1,z2
 c         write(*,*)'onpair',int(obj_geom(onpair,iobj))
@@ -400,19 +391,17 @@ c part of psect. The facet is based upon equal r^2 division of face.
 c See objplot for the principles.
 c The face:
       irz=int(psect)
-c Should we use the psect fraction? 
-c Prior rm,zm are not always consistent. 
-c But the interpolation is not linear. No.
-c      frz=psect-int(psect)
-c      rm=rb+(rt-rb)*frz
-c      zm=zb+(zt-zb)*frz
+c The ends of the segment chosen.
       rb=obj_geom(opr+irz-1,iobj)
       rt=obj_geom(opr+irz,iobj)
       zb=obj_geom(opz+irz-1,iobj)
       zt=obj_geom(opz+irz,iobj)
       nz=obj_geom(opdiv+irz-1,iobj)
-      if((rb-rm)*(rm-rt)*(rt-rb)**2.lt.0
-     $     .or. (zb-zm)*(zm-zt)*(zt-zb)**2.lt.0)then
+c This test sometimes fails very near the end of a segment, leading to
+c benign application of a crossing to an adjacent segment. If it fails
+c by a larger amount. Worry!
+      if((rb-rm)*(rm-rt)*abs(rt-rb).lt.-1.e-6
+     $     .or. (zb-zm)*(zm-zt)*abs(zt-zb).lt.-1.e-6)then
          write(*,*)
          write(*,*)'Puzzling Values for',isect,irz,psect,iobj
          write(*,*)'rb,rm,rt,zb,zm,zt',rb,rm,rt,zb,zm,zt
@@ -420,7 +409,6 @@ c      zm=zb+(zt-zb)*frz
      $        ,int(obj_geom(onpair,iobj))-1)
          write(*,'(20f7.3)')(obj_geom(opz+k,iobj),k=0
      $        ,int(obj_geom(onpair,iobj))-1)
-c         stop
       endif
       dr2=(rt**2-rb**2)/nz
 c The facet number: k3-1
@@ -432,13 +420,6 @@ c The facet number: k3-1
       if(ifct.lt.0)ifct=0
       if(ifct.gt.nz-1)ifct=nz-1
       ifobj=nf_map(iobj)
-c      if(ijbin.eq.-1)then
-c      if(.false.)then
-c         write(*,*)'nt,npr,nz',obj_geom(ofn1,iobj),obj_geom(onpair,iobj)
-c     $        ,nz,' itc,irz,ifct,ijbin',itc,irz,ifct,(itc)
-c     $        +nf_dimlens(nf_flux,ifobj,1)*(ifct)+nf_faceind(nf_flux
-c     $        ,ifobj,irz)
-c      endif      
       ijbin=(itc)+nf_dimlens(nf_flux,ifobj,1)*(ifct)
      $        +nf_faceind(nf_flux,ifobj,irz)
 

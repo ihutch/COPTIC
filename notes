@@ -12377,3 +12377,7 @@ Rearranged storage to accommodate this. Implemented storage and scaling
 in inside_geom. This fixes the No intersection errors. Things look good.
 
 commit.
+
+Add geomCyl and geomSoR to geometry. Remove a couple of duplicative cases.
+
+commit.

@@ -250,9 +250,9 @@ c we need an immediate turn off of the pfsw. This is fixed by calling
 c pfset before pltend. On entry, pltend sees pfsw as negative, so does
 c not pause. The last thing pltend does is set the pfsw from
 c the pfnextsw set by pfset to zero.
-         call pfset(0)
+c         call pfset(0)
          call prtend()
-c         write(*,*)'Terminating sliceweb ips=',ips,pfsw
+         write(*,*)'Terminating sliceweb ips=',ips,pfsw
          ips=0
       endif
 
@@ -435,6 +435,7 @@ c Tell that we are looking from the top by default.
       imv=1
       itri=0
       icl=0
+      imode=0
       if(ifixpt(1).lt.0)then
          larrow=.not.larrow
          ifixpt(1)=-ifixpt(1)
@@ -778,7 +779,7 @@ c         write(*,*)'Plane crossing control'
      $        ' up/down, <-/-> arrows change slice.'
          write(*,*) ' d: changes <-/-> dimension controlled.',
      $        ' s:rescale. p:plot-to-file.'
-         write(*,*)' modes: 1: linerotate. 0: object-rotate.'
+         write(*,*)' mode control: 1: line-rotate. 0: object-rotate.'
          write(*,*)
      $        ' toggles: t smooth color; l labels; g sideplot;'
      $        ,' j slice type.'

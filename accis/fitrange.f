@@ -105,7 +105,6 @@ c             lying outside the range (xmin,xmax).
       xtic=span/ntics
       nsfac=nint(log10(0.099999*abs(xtic))+0.500001)
       sfac=10.**nsfac
-c      write(*,*)'xtic,nsfac,sfac',xtic,nsfac,sfac
       xtic=abs(xtic)/sfac
       if(xtic.lt.1.)then
          write(*,'('' Fitrange error 1. xtic='',f16.7)')xtic
@@ -126,9 +125,7 @@ c Choose the increment
             n2=anint((xmin+span)/xt-0.49999)
             n1=anint(xmin/xt+0.49999)
             atr=abs((n2-n1)*xt)
-c            if(iret.eq.1)write(*,'(2i3,4f7.3,3i4)')i,incpos(i),atr,xt
-c     $           ,sfac,fspan,n1,n2,ntics
-            if(iret.eq.1)write(*,*)i,incpos(i),atr,xt
+            if(iret.eq.1)write(*,'(2i3,4f7.3,3i4)')i,incpos(i),atr,xt
      $           ,sfac,fspan,n1,n2,ntics
 c            if(atr.lt.fspan .and. abs(n2-n1).le.ntics)then
             if(atr.lt.fspan .and. abs(n2-n1).le.ntics
@@ -139,9 +136,8 @@ c            if(atr.lt.fspan .and. abs(n2-n1).le.ntics)then
             endif
          enddo
          if(ichoice.eq.0 .and. iret.eq.0)then
-            write(*,*)'Fitrange choice error,ichoice,nsfac,sfac,xmin,xma
-     $x,span,ntics,xtic'
-            write(*,*)ichoice,nsfac,sfac,xmin,xmax,span,ntics,xtic
+            write(*,*)'Fitrange choice error',ichoice,nsfac
+     $        ,sfac,xmin,xmax,span,ntics,xtic
             write(*,*)'i,incpos(i),atr,xt,sfac,fspan,n1,n2,ntics'
             iret=1
             goto 201

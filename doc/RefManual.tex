@@ -1,7 +1,8 @@
 \documentclass[12pt]{article}
-\usepackage{fullpage}
+\usepackage[margin=1in]{geometry}
 \usepackage{hyperref}
 \usepackage{verbatim}
+\usepackage{graphicx}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \def\sentence#1{\par\noindent\textbf{#1}}
@@ -150,7 +151,9 @@ fractional z-positions (between base and apex) and corresponding
 r-values at each z. The difference (from 6) is that all the points of the
 surface must be specified as pairs; the z positions don't have to be
 monotonic and may extend beyond the axis ends; and the surface must be
-closed unless both ends are on the axis-line (r=0).
+closed unless both ends are on the axis-line (r=0). [The maximum number
+of pairs permitted for a surface of revolution is specified by
+\verb!ovlen!, normally 20.]
 
 \bigskip
 For each object, the boundary conditions to be applied in the form 
@@ -160,6 +163,7 @@ then no potential boundary condition is applied on this object.
 
 Examples of lines of each of these types are given in the following
 extract suitably formatted to represent possible input lines.
+
 \begin{verbatim}
 # Spheroid
 #type=1  A, B, C ,    Center,      Radii
@@ -181,7 +185,7 @@ extract suitably formatted to represent possible input lines.
 6       1 0 1, 0. 0. -2, 0. 0. 2, 1 0 0, 1.,  4, 1. .01, .5 .4, .5 .7, .2 .9
 # Surface of Revolution (general) (chosen to give same result)
 #type=7 A,B,C,  Base  Apex Ref-Vec R Npair rz-Pairs (Npair in total)
-6      1 0 1, 0 0 -2, 0 0 2, 1 0 0, 1,6,0 0, 1 .01, .5 .4, .5 .7, .2 .9, 0 1
+7      1 0 1, 0 0 -2, 0 0 2, 1 0 0, 1,6,0 0, 1 .01, .5 .4, .5 .7, .2 .9, 0 1
 
 \end{verbatim}
 
@@ -235,7 +239,7 @@ line of the object file. For simple objects, there are three or four
 numbers and they are stored in adjacent locations
 \verb!obj_geom(i,iobj)! with \verb!i!  equal to \verb!ofluxtype!,
 \verb!ofn1!, \verb!ofn2![, \verb!ofn3!].  [To leave room for other
-information, \verb!ofluxtype!  is defined equal to \verb!oradius+19!.]
+information, \verb!ofluxtype!  is defined equal to \verb!oradius+20!.]
 For surfaces of revolution, in addition to the fluxes and the
 theta-divisions there are integers for each of the segments of the
 contour of revolution, indicating into how many facets each is
@@ -327,7 +331,7 @@ subtracted from it. A negative subtractive object means subtract the
 \emph{complement}, i.e.\ the region outside the object, rather than
 the inside.
 \begin{figure}[htp]
-{\tiny
+\begin{minipage}{0.5\linewidth}{\tiny
 \begin{verbatim}
 //////////////////////////////// ////////////////////////////////
 /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
@@ -363,7 +367,10 @@ the inside.
 //////////////////////////////// ////////////////////////////////
 (a)                              (b)
 \end{verbatim}
-}
+}\end{minipage}
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{subtract}\hskip -1cm (c)
+\end{minipage}
 \caption{Illustration of the subtraction of a cylinder extending to
   half the $32\times32$ domain from a centered sphere. The region in
   which each boundary node lies, on a plane slice through the domain,
@@ -371,8 +378,9 @@ the inside.
   object it is inside: 3 means inside 1 and 2. (a) is subtraction 89
   leaving a hollow sphere and (b) is subtraction 88 leaving a solid
   sphere with a cylindrical hole. The parts of the cylinder surfaces
-  that are outside the sphere do not create boundary
-  nodes.\label{textgraph}}
+  that are outside the sphere do not create boundary nodes. In (c) is a
+  rendering of the potential when charge density in
+  negligible, as rendered by COPTIC using the switch -gt.\label{textgraph}}
 \end{figure}
 
 The difference between \verb!otype! 88 and 89 is that 88 adds what we
@@ -395,6 +403,7 @@ of the rest of the additive object. If the subtracted object has null
 BCs, then it inherits the BCs of the additive object instead. Then the
 new subtractive boundaries have the same BCs as the rest of the
 resultant object.
+
 
 No facility (yet) exists for subtracting an object from the
 \emph{complement} of another, i.e.\ for subtracting from a negative
@@ -832,19 +841,38 @@ These are required only for rather sophisticated use of COPTIC, and
 should be understood by reference to the source and comments. In
 brief, \verb!-gt! gives text representations of region and volumes
 slices and does plots of slices through the mesh of the disallowed
-particle region and the test initial potential solve. It is helpful
-for visualizing the objects specified. \verb!-gi! is for debugging
+particle region and the test initial potential solve. See Fig.\
+\ref{textgraph}. It is helpful for visualizing the mesh and the areas
+affected by objects. \verb!-gi! is for debugging
 reinjection. \verb!-gp! and \verb!-gd! cause plotting slices of
 potential and density at an optionally specified step interval, which
 can be useful to verify both the grid and the initial evolution of the
-parameters. \verb!-gc! sets through its bits the objects to display in
-wire-frame fashion initially (so -gc1023 displays the first 9 objects)
-It can be useful in combination with \verb!-gr! in visualizing the
-representation of objects near the origin. \verb!-gf!  sets the flux
-quantity to be plotted in 3-D graphics emitted after the final
-step. It will only show objects that have flux collection turned
-on. \verb!-gw! specifies non-standard switch settings to the
-\verb!-gf! plots.
+parameters. Their displays are similar to Fig.\ \ref{textgraph}(c),
+and all allow navigating to different slices, rotating the view and
+detailed inspection. \verb!-gc! sets through its bits the objects to
+display in wire-frame fashion initially (so -gc1023 displays the first
+9 objects). It can be useful (possibly in combination with \verb!-gr!) tp
+visualize the representation of objects near the origin. See Fig.\
+\ref{manyobj}. 
+\begin{figure}[htp]
+  \centering
+  \includegraphics[width=3in]{manyobj}
+  \caption{Rendering of a 3-D view of a case with numerous objects of
+    different types using switch -gc.\label{manyobj}}
+\end{figure}
+
+\verb!-gf!  sets the flux quantity to be plotted in 3-D graphics
+emitted after the final step. Objects that do not have flux collection
+turned on are displayed with their faces colored simply to
+differentiate them. Fig.\ \ref{manyflux} illustrates this. \verb!-gw! specifies non-standard switch settings
+to the \verb!-gf! plots.
+\begin{figure}[htp]
+  \centering
+  \includegraphics[width=4in]{manyflux}
+  \caption{Rendering of the fluxes to faces of different objects using
+    switch -gf.\label{manyflux}}
+\end{figure}
+
 
 \section{Data Structures}
 
@@ -1538,6 +1566,8 @@ The subdirectory \verb!analysis! contains routines that read back the
 data files written and display them in various ways. They are in the
 form of main programs with names like \verb!diagexamine!,
 \verb!fluxexamine!, \verb!denexamine!, \verb!phiexamine!. 
+They can do the sorts of plots that have already been illustrated,
+plus many other things.
 
 The routine \verb!phiexamine! can optionally write out the data it
 reads in (which might equally well be other mesh-defined quantities

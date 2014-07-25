@@ -280,7 +280,8 @@ c start lines after the first vector.
 c End of vector. Finish it.
          xp=x2
          yp=y2
-         call vecn(xp,yp,istate)
+c         call vecn(xp,yp,istate)
+         call vecn(xp,yp,min(istate,1))
 c         if(icount.eq.0)call trihere(xp,yp,.005)
       else
 c         write(*,*)'hid xpoints coincide'
