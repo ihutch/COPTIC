@@ -409,7 +409,7 @@ c z
                enddo
             elseif(itype.eq.6 .or. itype.eq.7)then
 c Surface of revolution ------------------------------
-               write(*,*)'Flux positions for Surface of Revolution'
+c               write(*,*)'Flux positions for Surface of Revolution',i
 c Each line segment is a truncated cone with ofn1 and opdiv
 c equal divisions. The areas of the subsegments are to be equal. 
 c For a segment with ends (rb,zb),(rt,zt), the total area is 
@@ -429,17 +429,14 @@ c for different flux types.
 
 c The covariant vectors' length defines the scale factor in the 
 c z and r directions, from object-normalized to world.
-                  rscale=0.
+c The rscale is already stored.
                   zscale=0.
                   do kk=1,ndims
-c                     zscale=zscale+obj_geom(ovec+ndims*(kk)-1,i)**2
-c                     rscale=rscale+obj_geom(ovec+ndims*(kk-1),i)**2
                      zscale=zscale+obj_geom(ovec+2*ndims+kk-1,i)**2
-                     rscale=rscale+obj_geom(ovec+kk-1,i)**2
                   enddo
                   zscale=sqrt(zscale)
-                  rscale=sqrt(rscale)
-                  write(*,*)'rscale,zscale=',rscale,zscale
+                  rscale=obj_geom(orscale,i)
+c                  write(*,*)'rscale,zscale,=',rscale,zscale
 c Contour positions:
                   i0=0
                   do i3=1,obj_geom(onpair,i)-1
@@ -450,7 +447,7 @@ c Contour positions:
 c Areas are equal through segments. Needs to be scaled.
                   area=3.1415927*(rb+rt)*sqrt(rdiff**2+zdiff**2)
      $                 /obj_geom(opdiv+i3-1,i)
-                  write(*,*)'area=',area,rb,rt,zdiff,rscale,zscale
+c                  write(*,*)'area=',area,rb,rt,zdiff,rscale,zscale
                   do i2=1,obj_geom(opdiv+i3-1,i)
                      i0=i0+1
 c Calculate contour fractional index:

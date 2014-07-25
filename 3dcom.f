@@ -5,22 +5,23 @@ c 1     otype    otype  otype    otype  otype  otype  otype
 c 2     oabc     oabc   oabc     oabc   oabc   oabc   oabc
 c 5     ocenter                 ocenter           obase
 c 8     oradius  sides  oradius ovec  ovec   oapex->ovec
-c 11    ocylaxis                        RefVec   RefVec oco2
-c 14                                    ocylrad  ocylrad oco3
-c 17                    ocontra ocontra        ocontra
-c 20
-c 23                                             ovax
-c 26                                             onpair
-c 27    ofluxtype
-c 28-30  ofn1-3   omag
-c 31    offc
-c 32-4  ocgrad
-c 35-8  obgrad
+c 11    ocylaxis                        RefVec   RefVec  [oco2]
+c 14                                    ocylrad  ocylrad [oco3]
+c 17                    ocontra ocontra          ocontra
+c 20                                             [ocontra2]
+c 23                                             ovax[=ocontra3]
+c 26                                             orscale
+c 27                                             onpair
+c 28    ofluxtype
+c 29-31  ofn1-3   omag
+c 32    offc
+c 33-5  ocgrad
+c 36-8  obgrad
 c 39-41 oagrad
-c 43    odata=total length
-c 44                                             opz
-c 44+ovlen                                       opr
-c 44+2*ovlen                                     opdiv
+c 42                                             opz
+c 42+ovlen                                       opr
+c 42+2*ovlen                                     opdiv
+c 42+3*ovlen-1    odata=total length=101
 
 c Each object, i < 31 has: type, data(odata).
       integer ngeomobjmax,odata,ngeomobj
@@ -34,8 +35,7 @@ c parallelopiped vectors start at oradius, contravariant +9
 c Flux indices.
       integer ofluxtype,ofn1,ofn2,ofn3,offc,omag
 c FluxType is really the number of quantities.
-c      parameter (ofluxtype=ocontra+9)
-      parameter (ofluxtype=ocontra+10)
+      parameter (ofluxtype=ocontra+11)
 c Dimensions in up to 3 directions. 
       parameter (ofn1=ofluxtype+1,ofn2=ofluxtype+2,ofn3=ofluxtype+3)
 c Other references. offc->number of facets (calculated from type).
@@ -47,9 +47,10 @@ c-------------------------------------------------------------------
 c Surface-of-revolution data structure
 c base is the lower end of axis, apex is upper end
 c npair is number of (z,r) pairs.
-      integer obase,oapex,ovax,onpair
+      integer obase,oapex,ovax,onpair,orscale
       parameter (obase=ocenter,oapex=oradius)
-      parameter (ovax=ocontra+2*ndims,onpair=ocontra+3*ndims)
+      parameter (ovax=ocontra+2*ndims,onpair=ocontra+3*ndims+1)
+      parameter (orscale=ocontra+3*ndims)
 c Surface of Revolution data pointers
 c Allowed max number of pairs. Resulting vector length
       integer ovlen

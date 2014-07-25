@@ -348,7 +348,7 @@ c      return
 c Find the wall position by calling w2sect with adjacent positions.
 c Construct a short chord in the same order as xp1,xp2, that brackets
 c the solution already found.
-      delta=.1
+      delta=.01
       do i=1,ndims
          xc1(i)=xp1(i)+(xp2(i)-xp1(i))*(fraction-delta)
          xc2(i)=xp1(i)+(xp2(i)-xp1(i))*(fraction+delta)
@@ -402,7 +402,7 @@ c The face:
       irz=int(psect)
 c Should we use the psect fraction? 
 c Prior rm,zm are not always consistent. 
-c But the interpolation is not linear.
+c But the interpolation is not linear. No.
 c      frz=psect-int(psect)
 c      rm=rb+(rt-rb)*frz
 c      zm=zb+(zt-zb)*frz
@@ -433,15 +433,14 @@ c The facet number: k3-1
       if(ifct.gt.nz-1)ifct=nz-1
       ifobj=nf_map(iobj)
 c      if(ijbin.eq.-1)then
-      if(.false.)then
-         write(*,*)'nt,npr,nz',obj_geom(ofn1,iobj),obj_geom(onpair,iobj)
-     $        ,nz,' itc,irz,ifct,ijbin',itc,irz,ifct,(itc)
-     $        +nf_dimlens(nf_flux,ifobj,1)*(ifct)+nf_faceind(nf_flux
-     $        ,ifobj,irz)
-      endif      
+c      if(.false.)then
+c         write(*,*)'nt,npr,nz',obj_geom(ofn1,iobj),obj_geom(onpair,iobj)
+c     $        ,nz,' itc,irz,ifct,ijbin',itc,irz,ifct,(itc)
+c     $        +nf_dimlens(nf_flux,ifobj,1)*(ifct)+nf_faceind(nf_flux
+c     $        ,ifobj,irz)
+c      endif      
       ijbin=(itc)+nf_dimlens(nf_flux,ifobj,1)*(ifct)
      $        +nf_faceind(nf_flux,ifobj,irz)
-
 
       if(ins1.eq.0)then
          sd=1.
@@ -760,7 +759,7 @@ c Surface of revolution. General code from inside_geom
          r=r+( x(j)-obj_geom(obase+j-1,i)
      $        -z*(obj_geom(ovec+2*ndims+j-1,i)) )**2
       enddo
-      r=sqrt(r)
+      r=sqrt(r)/obj_geom(orscale,i)
       write(*,*)'rztell',r,z,w2sect(r,z,1.e5,0.,obj_geom(opr,i)
      $     ,obj_geom(opz,i),int(obj_geom(onpair,i)),fsect,psect)
 c     $     ,obj_geom(ovax+3-1,i),obj_geom(ovec+2*ndims+3-1,i)

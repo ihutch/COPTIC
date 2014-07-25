@@ -501,6 +501,10 @@ c covariant vectors equal to contra/|contra|^2.
       real objg(odata)
 
       radius=objg(ovec+2*ndims)
+c Save the radial scale.
+      objg(orscale)=radius
+c      write(*,*)'Cylinit radius=',radius,' opz=',opz,' odata=',odata
+c     $     ,'ofluxtype=',ofluxtype
       vamag=0.
       umag=0.
       uv=0.
@@ -817,8 +821,6 @@ c time is dominated by cijroutine.
 c Subtract from position z times axial vector-> cylindrical radius
          do j=1,ndims
             r2=r2+(x(j)-obj_geom(obase+j-1,i)-z*
-c     $           (obj_geom(ovec+j-1,i)))**2
-c Using cylinit it has been moved to 
      $           (obj_geom(ovec+2*ndims+j-1,i)))**2
          enddo
 c Find the z-real-index 
@@ -829,9 +831,10 @@ c Find the z-real-index
             write(*,*)nq,z,zind,iz
             stop
          endif
-c Then find the r value for this z-index.
+c Then find the r-value for this z-index scaled to world coordinates.
          r=obj_geom(opr+iz-1,i)+(zind-iz)
      $        *(obj_geom(opr+iz,i)-obj_geom(opr+iz-1,i))
+     $        *obj_geom(orscale,i)
          if(r2.lt.r**2)inside_geom=1
       elseif(itype.eq.7)then
 c------------------------------------------------
@@ -845,7 +848,7 @@ c Surface of revolution. General.
             r=r+(x(j)-obj_geom(obase+j-1,i)-z*
      $           (obj_geom(ovec+2*ndims+j-1,i)))**2
          enddo
-         r=sqrt(r)
+         r=sqrt(r)/obj_geom(orscale,i)
          isect=w2sect(r,z,1.e5,0.,obj_geom(opr,i),obj_geom(opz,i)
      $        ,int(obj_geom(onpair,i)),fsect,psect)
          if(mod(isect,2).eq.1)inside_geom=1

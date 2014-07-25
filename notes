@@ -12355,3 +12355,25 @@ the psect. I don't know what errors this introduced in prior
 calculations. 
 
 commit.
+
+25 July 14
+
+Need to sort out the rscale question. 
+The radius comes in at ocylrad. It denotes the size in world units of
+a radius of one in contravariant coordinates. Positioninit currently
+gets it from the contravariant vector length. What happens in 3dobjects
+is that cylinit uses the radius to scale the two perpendicular contra
+vectors. This then does propagate to positioninit. 
+
+However, if we change the radius to be anything except 1 we get No
+intersection errors. So we don't have it accounted for in all the right
+places. I suspect this is because the inside_geom calculation does not
+use the contravariant vectors, but does its own subtraction. That doesn't
+correct for this factor. Even though the radius (rscale) is implicitly
+in the contra vectors, it is problematic to have to calculate them
+from it. Too slow. It must be stored. 
+
+Rearranged storage to accommodate this. Implemented storage and scaling
+in inside_geom. This fixes the No intersection errors. Things look good.
+
+commit.
