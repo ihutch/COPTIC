@@ -1,16 +1,9 @@
 #
 # Surface of Revolution Object, 
-#       ABC,    Base,   Apex,   Ref, Radius, Npair, Pairs
-6    1 0 1, 0. 0. -2, .7 0. 2., 1 0 0, 1, 4, 1. .01, .5 .4, .5 .7, .2 .9, 1.,3,2,2,2,2,2
-# It seems impossible to avoid recuts for a tilted object like this
+#     ABC,    Base,   Apex,   Ref, Radius,Npair, Pairs
+6  1 0 1, 0. 0. -2, .0 0. 2.5, 1 0 0, 1, 4, 1. .01, .5 .4, .5 .7, .2 .9, 1.,4,2,1,2,1,2
 
-# Equivalent type 7 without flux collection
-#7  1,0,1, 0.,0.,-2, 0.7,0.,2., 1 0 0, 1, 6, 0,0, 1.,.01 .5,.4,.5,.7,.2,.9,0,1
-
-# When flux is specified for a SoR, entries following the position pairs
-# Are ofluxtype (number of fluxes), ntheta, and then ndiv(i=1,npair+1)
-# the number of surface facets into each line segment is divided, for each
-# line segment.
+7 1 0 2, 2. 2. 0., 2. 3. 1., 1 0 0, 1.5, 3, 0. 0., 1. .5, 0. 1., 1 4,1,1,1
 
 # Boolean that specifies the particle region 99, n1, n1*values, n2, ... 0:
 # Each nk values are ored together. The groups are anded.
