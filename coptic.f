@@ -656,7 +656,7 @@ c Reduce the data from nodes.
             call ptdiagreduce()
             if(lmyidhead)then 
                if(2*(idistp/2)-4*(idistp/4).ne.0)
-     $              call pltsubdist(5,9,9,vlimit,xnewlim,cellvol)
+     $              call pltsubdist(5,9,9,vlimit,xnewlim,cellvol,1,3)
                diagfilename=' '
                call nameconstruct(diagfilename)
                if(nsteps.gt.9999)then

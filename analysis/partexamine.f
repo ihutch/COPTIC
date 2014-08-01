@@ -24,6 +24,7 @@ c Velocity limits
       integer ibinary
       integer ivtk,ip3index,ip,icentering(2*ndimsmax)
       integer ivardims(2*ndimsmax),ivardims_alloc(2*ndimsmax)
+      integer ndfirst,ndlast
       external ip3index
       data axnames/'x','y','z'/ 
       character*200 ivarnames(2*ndimsmax)
@@ -33,6 +34,8 @@ c silence warnings:
       zp(1,1,1)=0.
 
 c Defaults
+      ndfirst=1
+      ndlast=3
       do id=1,ndimsmax
 c Use very big xlimits by default to include whole domain
 c They are then reset by the accumulation itself.
@@ -46,7 +49,7 @@ c Overlapping vlimits make limitdeterm the usual setting method.
       enddo
 
       call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc,ivtk
-     $     ,ispecies)
+     $     ,ispecies,ndfirst,ndlast)
       do id=1,ndimsmax
 c Needed initialization removed from partacinit.
          xmeshstart(id)=min(-5.,xlimit(1,id))
@@ -289,12 +292,13 @@ c Plot the subdistributions at a particular cell.
       icell=isuds(1)/2+1
       jcell=isuds(2)/2+1
       kcell=isuds(3)/2+1
-      call pltsubdist(icell,jcell,kcell,vlimit,xnewlim,cellvol)
+      call pltsubdist(icell,jcell,kcell,vlimit,xnewlim,cellvol
+     $     ,ndfirst,ndlast)
       endif                   
       end
 c*************************************************************
       subroutine partexamargs(xlimit,vlimit
-     $           ,iuin,cellvol,Bdirs,ldoc,ivtk,ispecies)
+     $           ,iuin,cellvol,Bdirs,ldoc,ivtk,ispecies,ndfirst,ndlast)
       include 'examdecl.f'
       include '../ptaccom.f'
       real xlimit(2,3),vlimit(2,3),Bdirs(4)
@@ -310,8 +314,9 @@ c I think unused here 26 May 12. But I'm not sure.
 
       do i=1,3
          iuin(i)=9
-c convenient default field:
-         Bdirs(i)=2-i
+c Default field/projection direction:
+         Bdirs(i)=0
+         if(i.eq.3)Bdirs(i)=1
       enddo
 c Use cellvol=0. by default.
       cellvol=0.
@@ -365,6 +370,8 @@ c Deal with arguments
                ldoc=.true.
             elseif(argument(1:3).eq.'-sp')then
                ispecies=ispecies+1
+            elseif(argument(1:2).eq.'-d')then
+               read(argument(3:),*,err=201)ndfirst,ndlast
             endif
             if(argument(1:13).eq.'--objfilename')
      $        read(argument(14:),'(a)',err=201)objfilename
@@ -388,17 +395,21 @@ c Help text
  302  format(a,4f8.3)
  303  format(a,5i5)
       write(*,301)'Usage: partexamine [switches] <partfile> (no ext)'
-      write(*,301)' --objfile<filename>  set name of object data file.'
-     $     //' [copticgeom.dat'
-      write(*,301)' -x -y -z<fff,fff>  set position range. [ -5,5'
-      write(*,301)' -u -v -w<fff,fff>  set velocity range. [ -5,5'
+      write(*,302)' -x -y -z<fff,fff>  set position range. [',
+     $     xlimit(1,1),xlimit(2,1)
+      write(*,302)' -u -v -w<fff,fff>  set velocity range. ['
+     $     ,vlimit(1,1),vlimit(2,1)
       write(*,303)' -b<nx,ny,nz>  set spatial block range. [',iuin
       write(*,302)' -p[bx,by,bz]  project [in direction]   [',Bdirs
-      write(*,301)' -f   set name of partfile.'
-      write(*,301)' -q   output diagnostics of file reading'
-      write(*,301)' -sp  increment species number to examine'
+c      write(*,301)' -f   set name of partfile.'
+      write(*,'(a,$)')' -d<i,i> Set first,last v-index'
+      write(*,303)' to plot [',ndfirst,ndlast
+      write(*,301)' -sp     Increment species number to examine'
+      write(*,301)' -q      Output diagnostics of file reading'
+      write(*,301)' --objfile<filename>  set name of object data file.'
+     $     //' [copticgeom.dat'
+      write(*,301)' -vtk    Output distribution function vtk files.'
       write(*,301)' -h -?   Print usage.'
-      write(*,301)' -vtk   Output distribution function vtk files.'
       call exit(0)
  202  continue
       if(lentrim(partfilename).lt.5)then

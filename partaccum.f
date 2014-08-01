@@ -611,9 +611,10 @@ c      write(*,'(2f10.4)')((vdiag(i,j),fv(i,j),i=1,5),j=1,ndimsmax)
 c******************************************************************
 c 3-D only code.
       subroutine pltsubdist(icellin,jcellin,kcellin,vlimit,xnewlim
-     $     ,cellvol)
+     $     ,cellvol,ndfirst,ndlast)
       implicit none
       integer icellin,jcellin,kcellin
+      integer ndfirst,ndlast
       include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'partcom.f'
@@ -634,15 +635,16 @@ c Distributions in ptaccom.f
       integer jicell,jjcell,jkcell,ii,jj,kk,ip3,idw
       integer iup,isw
       real xylim(4)
-      integer ndfirst,ndlast,ips,itrace
+      integer ips,itrace
       logical loverplot
-      data ndfirst/3/ndlast/3/ips/0/itrace/0/loverplot/.false./
+c      data ndfirst/3/ndlast/3/
+      data ips/0/itrace/0/loverplot/.false./
       data idw/0/
       data iup/1/jicell/0/jjcell/0/jkcell/0/
 c------------------------------------------
       if(ndims.ne.3)then
          write(*,*)'Skipping pltsubdist 3-D only code for ndims=',ndims
-         write(*,*)'But it might work ok if cellvol and xnewlime are ok'
+         write(*,*)'But it might work ok if cellvol and xnewlim are ok'
          return
       endif
       isw=0
