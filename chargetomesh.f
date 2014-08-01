@@ -76,14 +76,14 @@ c               write(*,*)'ii,iu,iinc,fac',ii,iu,iinc,fac
             if(ndiags.gt.0)then
 c Do something with diagnostics. 
 c Assumption here is diags1 n, diags2-4 v, diags5-7 v^2.
-               diagsum(1+iinc)=diagsum(1+iinc)+fac
+c Make the density always positive by using abs(fac).
+               diagsum(1+iinc)=diagsum(1+iinc)+abs(fac)
                do k=1,ndiags-1
 c Six moments. 3 for v and 3 for v^2.
                   temp=x_part(ndims+1+mod(k-1,ndims),i)
                   if(k.gt.ndims)temp=temp*temp
-                  diagsum(1+iinc+k*iLs(ndims+1))=
-     $                 diagsum(1+iinc+k*iLs(ndims+1))+
-     $                 fac*temp
+                  kindex=1+iinc+k*iLs(ndims+1)
+                  diagsum(kindex)=diagsum(kindex)+fac*temp
                enddo
             endif
          enddo
