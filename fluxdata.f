@@ -517,9 +517,6 @@ c considered to have left the particle region, so it will be discarded.
       include 'partcom.f'
       include '3dcom.f'
 
-c To start with, we do nothing for higher species:
-c      if(ispecies.gt.1)return
-
 c      if(ispecies.ge.2)write(*,*)'Tallying',ispecies
 
       idiff=abs(idiffreg)

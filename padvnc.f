@@ -39,7 +39,7 @@ c Local storage
       integer ixp(ndims)
       real Efield(ndims),adfield(ndims)
       real xfrac(ndims)
-c      real xg(ndims),xc(ndims)
+      real xprior(ndims)
       logical linmesh
       logical lcollided,ltlyerr
       save adfield
@@ -271,6 +271,10 @@ c But correcting the collisional force appropriately.
             endif
          endif
 c Move ----------------
+c Save prior position.
+         do id=1,ndims
+            xprior(id)=x_part(id,i)
+         enddo
          if(abs(theta).lt.thetamax)then
             call moveparticle(x_part(1,i),ndims,Bt*eoverms(ispecies)
      $        ,Efield,Bfield,vperp,dtpos,i-iicparta(ispecies))
@@ -296,6 +300,7 @@ c Treat collided particle at (partial) step end
 c---------------------------------
 c If we crossed a boundary, do tallying.
          ltlyerr=.false.
+c This test is probably too susceptible to pass-through.
          if(inewregion.ne.iregion)
 c Integer exclusive or ieor bitwise is the correct way.
      $        call tallyexit(x_part(1,i),ieor(inewregion,iregion)

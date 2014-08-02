@@ -432,7 +432,7 @@ c The facet number: k3-1
 c*********************************************************************
       subroutine sphereinterp(nsdim,ida,xp1,xp2,xc,rc,f1,f2,sd,C,D)
 c Given two different nsdim dimensioned vectors xp1,xp2,and a sphere
-c center xc radius rc, find the intersection of the line joining x1,x2,
+c center xc radii rc, find the intersection of the line joining x1,x2,
 c with the sphere and return it as the value of the fraction f1 of
 c x1->x2 to which this corresponds, chosen always positive if possible, 
 c and closest to 0. The other intersection fraction in f2.

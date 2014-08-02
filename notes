@@ -12381,3 +12381,33 @@ commit.
 Add geomCyl and geomSoR to geometry. Remove a couple of duplicative cases.
 
 commit.
+
+1 Aug 2014
+
+Running some ISP geometry cases with electrons. I see unaccountable
+leakage of electrons into regions where there ought to be essentially
+zero density.  It seems likely that this is caused by the electrons
+crossing the boundary in one step. Shortening the steps does seem to
+reduce the leakage. Increasing dt increases it. I thus think that
+something more robust than just detection of a change in the
+inside_all is necessary for telling when an orbit crosses a surface.
+
+I think this never showed up so much before because now that I have general
+surface of revolution, such as a hollow cylinder I'm using here, it is much
+more likely that a particle can step through the object and out the other
+side. (Also of course electrons take bigger steps.)
+
+I have a notion that the criterion ought to be changed from merely changing
+the inside-object code, to examining the step and seeing if it encounters
+an object. In principle this would require a routine to tell chord 
+intersections with objects.
+
+Start to construct icross_geom that will find the number of crossings.
+Still needs work. Haven't finished cylinder implementation.
+Haven't started SoR implementation. Haven't tested any.
+
+Scaling r with z approach to SoR.
+
+Split 3dobjects into two with the second half becoming intersects.f
+
+commit though we haven't tested any of the new icross-geom code.
