@@ -297,14 +297,15 @@ c If we crossed a boundary, do tallying.
          ltlyerr=.false.
 c This test is probably too susceptible to pass-through.
 c         if(inewregion.ne.iregion)then
+c Integer exclusive or ieor bitwise using regions.
+c            call tallyexit(x_part(1,i),ieor(inewregion,iregion)
+c     $        ,ltlyerr,dtpos,ispecies)
 c So replaced with discovery of all the objects this step crosses.
          icross=icrossall(xprior,x_part(1,i))
          if(icross.ne.0)then
-c Integer exclusive or ieor bitwise using regions.
-c            call tallyexit(x_part(1,i),ieor(inewregion,iregion)
-            call tallyexit(x_part(1,i),icross
-     $        ,ltlyerr,dtpos,ispecies)
+            call tallyexit(x_part(1,i),icross,ltlyerr,dtpos,ispecies)
          elseif(inewregion.ne.iregion)then
+c Eventually this safety test should be removed.
             write(*,*)'WARNING: Undetected region transition:i,irg,inew'
             write(*,*)i,iregion
      $           ,inewregion,icross,xprior,(x_part(k,i),k=1,ndims)
@@ -316,12 +317,13 @@ c         if(ltlyerr .or. .not.linmesh .or.
 c     $        .not.linregion(ibool_part,ndims,x_part(1,i)))then
          if(.not.linmesh.or.leaveregion(ibool_part,ndims,xprior
      $        ,x_part(1,i),icross,fractions).gt.0)then
-            if(linmesh.and.inewregion.eq.iregion)
-     $           write(*,*)'PASS THROUGH',i,ltlyerr,iregion
-     $           ,inewregion,linmesh,icross,fractions(1),
-     $           leaveregion(ibool_part,ndims,xprior
-     $        ,x_part(1,i),icross,fractions)
-c We left the mesh or region.
+c  We left the mesh or region. Test if this was a trapped passthrough.
+           if(linmesh.and.inewregion.eq.iregion)npassthrough
+     $           =npassthrough+1
+c            write(*,*)'PASS THROUGH',i,ltlyerr
+c     $           ,iregion,inewregion,linmesh,icross,fractions(1)
+c     $           ,leaveregion(ibool_part,ndims,xprior,x_part(1,i),icross
+c     $           ,fractions)
             if(ninjcompa(ispecies).eq.0
      $           .or. nrein.lt.ninjcompa(ispecies))goto 200
 c Reinject because we haven't exhausted complement. 

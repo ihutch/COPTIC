@@ -12459,4 +12459,23 @@ solves the problem.
 
 5 Aug
 Fixed various bugs till we seem to have all geometry tests running.
-However many of them now have differences in the cks.
+However, many of them now have differences in the cks.
+
+commit
+
+time ./coptic geomSphSoR.dat -ni1000000 -s30
+
+New user    0m48.611s
+Old user    0m43.587s
+
+There is a 10% cost addition in moving to the new intersection-based code.
+Using a fairly expensive object 
+#     ABC,    Base,   Apex,   Ref, Radius,Npair, Pairs
+6  1 0 2, 0. 0. -1, .0 0. 1, 1 0 0, 1.,7, 0.661 0.125,  0.866 0.250,  0.968 0.375,  1.000 0.500,  0.968 0.625,  0.866 0.750,  0.661 0.875, 1, 4, 1,1,1,1,1,1,1,1
+
+Rationalized passthrough simply to count and then report.
+geometry/geomcube.dat is a test that has many, because of sharp edges.
+
+Removed all geometry/*.cks files and regenerated them.
+
+commit

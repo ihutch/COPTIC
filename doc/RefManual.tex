@@ -1560,6 +1560,13 @@ also writes the fluxes (\verb!.flx! via \verb!writefluxfile! in file
 files. Each write routine is accompanied by a read routine to read the
 data back into the same structures from which it was written.
 
+A peculiarity in the ion density for Boltzmann electrons is that it is
+non-zero inside objects that exclude particles. The reason is that the
+ion density is artificially set to equal the electron density at the 
+potential of the object so that the Poisson solver finds uniform
+potential inside the object. In other words, the ion density ensures
+zero charge density inside objects.
+
 \subsection{Postprocessing and data examination}
 
 The subdirectory \verb!analysis! contains routines that read back the

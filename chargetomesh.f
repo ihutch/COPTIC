@@ -197,7 +197,8 @@ c Set the density
 c This is outside the region. 
          if(volumes(ind).ge.1.e30)then
 c And all point-charge regions.
-c Compensate the electron density.
+c Compensate the electron density, ignoring any psum because that arise
+c only from deposition at points just outside the region.
             if(.not.u(ind).lt.1.e20)then
                write(*,*)'psumtoq error',indi,rho(ind),u(ind),ind
             endif

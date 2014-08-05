@@ -314,4 +314,144 @@ c*****************************************************************
 
       end
 c******************************************************************
+c************************************************************************
+      subroutine reportprogress(nf_step,nsteps,nsubc,ndropped)
+c Output parameter development to stdout.
+      implicit none
+      integer nf_step,nsteps,nsubc,ndropped
+      include 'ndimsdecl.f'
+      include 'partcom.f'
+      integer k
+      real fluxdiag
+      external fluxdiag
+
+c write out flux to object 1.
+            write(*,'(f6.3,''| '',$)')fluxdiag()
+            if(nspecies.gt.1)then
+               write(*,*)(k,nparta(k),k=1,nspecies)
+            else
+               if(mod(nf_step,5).eq.0)write(*,*)
+            endif
+            if(mod(nf_step,(nsteps/25+1)*5).eq.0)then
+ 100           write(*,*)'nrein   n_part  ioc_part  rhoinf    dt'
+     $              ,'   passthrus'
+               write(*,'(i6,i9,i9,f9.2,f9.4,i6)')
+     $              nrein,n_part,ioc_part,rhoinf,dt,npassthrough
+               npassthrough=0
+               if(nsubc.ne.0)write(*,'(''Subcycled:'',i5,$)')nsubc
+               if(ndropped.ne.0)then
+c Report dropped ions because of excessive acceleration.
+                  write(*,'(a,i5,a,f8.3)'
+     $             )' dropped-ion period-total:',ndropped
+     $                 ,'  per step average:'
+     $                 ,float(ndropped/((nsteps/25+1)*5))
+                  ndropped=0
+               else
+                  write(*,*)
+               endif
+            endif
+            end
+c************************************************************************
+      subroutine periodicwrite(ifull,iuds,iLs,diagsum,uave,lmyidhead
+     $     ,ndiags,ndiagmax,nf_step,nsteps,idistp,vlimit
+     $     ,xnewlim,cellvol,ibset,idcount)
+c Periodic reduction, reporting, and writing of information on the 
+c state of the simulation.
+      implicit none
+      integer ndiags,ndiagmax,nf_step,nsteps,idistp,ibset,idcount
+      logical lmyidhead
+      real cellvol
+      include 'ndimsdecl.f'
+      include 'partcom.f'
+      integer ifull(ndims),iuds(ndims),iLs(ndims+1)
+      real diagsum(ifull(1),ifull(2),ifull(3),ndiagmax+1,nspeciesmax)
+      real uave(ifull(1),ifull(2),ifull(3))
+      real xlimit(2,ndimsmax),vlimit(2,ndimsmax)
+      real xnewlim(2,ndimsmax)
+
+c Local variables:
+      character*100 diagfilename,argument
+      integer ipin,idiag,ispecies
+      integer lentrim
+      external lentrim
+
+      if(ndiags.gt.0)then
+c Reduce the data
+         do ispecies=1,nspecies
+            call diagreduce(diagsum(1,1,1,1,ispecies),ndims,ifull
+     $           ,iuds,iLs,ndiags)
+            call diagperiod(diagsum(1,1,1,1,ispecies),ifull,iuds
+     $           ,iLs,ndiags)
+c Do any other processing? Here or later?
+c Write the ave potential into the ndiags+1 slot of diagsum (by adding
+c to the previously zeroed values).
+            ipin=0
+            call mditeradd(diagsum(1,1,1,ndiags+1,ispecies),ndims
+     $           ,ifull,iuds,ipin,uave)
+            if(lmyidhead)then
+c If I'm the head, write it.
+               if(ispecies.eq.1)write(*,'(a,i3,a,$)')'Diags',ndiags
+     $              ,' species'
+               write(*,'(a,i1,$)')' ',ispecies
+               if(ispecies.eq.nspecies)write(*,*)
+               if(ispecies.eq.1)then
+                  if(nsteps.gt.9999)then
+                     write(argument,'(''.dia'',i5.5)')nf_step
+                  else
+                     write(argument,'(''.dia'',i4.4)')nf_step
+                  endif
+               else
+                  if(nsteps.gt.9999)then
+                     write(argument,'(''.d'',i1.1,''a'',i5.5)')
+     $                 ispecies,nf_step
+                  else
+                     write(argument,'(''.d'',i1.1,''a'',i4.4)')
+     $                 ispecies,nf_step
+                  endif
+               endif
+               diagfilename=' '
+               call namewrite(diagfilename,ifull,iuds,ndiags+1
+     $              ,diagsum(1,1,1,1,ispecies),argument)
+            endif
+c Now reinit diagsum
+            do idiag=1,ndiags+1
+               call mditerset(diagsum(1,1,1,idiag,ispecies),ndims
+     $              ,ifull,iuds,0,0.)
+            enddo
+         enddo
+      endif
+      if(idistp.ne.0)then
+c Particle distribution diagnostics
+         if(idcount.ne.0)then
+c Not for the first time, print or plot.
+c Reduce the data from nodes.
+            call ptdiagreduce()
+            if(lmyidhead)then 
+               if(2*(idistp/2)-4*(idistp/4).ne.0)
+     $              call pltsubdist(5,9,9,vlimit,xnewlim,cellvol,1,3)
+               diagfilename=' '
+               call nameconstruct(diagfilename)
+               if(nsteps.gt.9999)then
+                  write(diagfilename(lentrim(diagfilename)+1:)
+     $                 ,'(''.pex'',i5.5)')nf_step
+               else
+                  write(diagfilename(lentrim(diagfilename)+1:)
+     $                 ,'(''.pex'',i4.4)')nf_step
+               endif
+               if(idistp-2*(idistp/2).ne.0)
+     $              call distwrite(xlimit,vlimit,xnewlim,
+     $              diagfilename,cellvol)
+            endif
+c (Re)initialize the accumulation
+            ibset=1
+            call fvxinit(xnewlim,cellvol,ibset)
+            call partacinit(vlimit)
+c Unless we want fsv to accumulate all the particle counts, it also
+c ought to be reinitialized here. (partexamine expects this.)
+            call fsvzero()
+         endif
+         idcount=idcount+1
+      endif
+      
+      end
 c******************************************************************

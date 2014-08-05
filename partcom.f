@@ -33,6 +33,8 @@ c Number of independent processors
       integer numprocs
 c Number of reinjections at each step (if non-zero)
       integer ninjcompa(nspeciesmax)
+c Number of object passthroughs since last reset
+      integer npassthrough
 c Rho at infinity per processor, relevant only in setup.
       real ripernode
 c Factor by which we relax the rhoinf calculation. 1 immediate, 0 never.
@@ -49,7 +51,7 @@ c Whether not all directions of particles are periodic
      $     ,(ioc_part,iocparta(1)),(ninjcomp,ninjcompa(1))
       common/particles/x_part,nspecies
      $     ,nparta,iicparta,iocparta,ninjcompa,numratioa
-     $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs
+     $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs,npassthrough
      $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp
      $     ,caverein,chi,notseparable
 

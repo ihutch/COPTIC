@@ -239,6 +239,14 @@ c The following ought to be consistent with 3dcom.f
       parameter (ibmax=100) 
       real xx(3)
       
+c it is the object currently whose crossing is being examined
+c ic represents the crossed objects by its bits
+c i points to the boolean slot containing current block length 
+c n is current block length
+c io is increment position being examined within block 
+c inblock says the crossing object is in this block 
+c icit is the number of crossings of it
+c ic is the current crossing being examined
       it=0
       ic=icross
       leaveregion=0
@@ -700,7 +708,7 @@ c     section for intersecting wall sections
 c
 c**********************************************************************
       function icrossall(x1,x2)
-c For two mdims-dimensional point x1,x2, return the integer icrossall
+c For two ndims-dimensional point x1,x2, return the integer icrossall
 c consisting of bits i=0-30 that are zero or one according to whether
 c the line x1-x2 crosses object i.
 c Common object geometric data.
@@ -724,9 +732,7 @@ c Place the intersect fractions in f.
 c Common object geometric data.
       include 'ndimsdecl.f'
       real x1(ndims),x2(ndims)
-
       real f(*)
-
       include '3dcom.f'
       real xn1(ndims),xn2(ndims)
       external interp
