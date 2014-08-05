@@ -22,7 +22,7 @@ c      if(nsdim.ne.nds)stop 'Wrong dimension number in spherefsect'
       infobj=nf_map(iobj)
       fraction=1.
       ida=0
-      call sphereinterp(nsdim,ida,xp1,xp2,
+      call spheresect(nsdim,ida,xp1,xp2,
      $     obj_geom(ocenter,iobj),obj_geom(oradius,iobj),fraction
      $     ,f2,sd,C,D)
       if(sd.eq.0 .or. fraction-1..ge.tiny .or. fraction.lt.0.)then
@@ -33,7 +33,7 @@ c surface. Then we get a sd problem message.
          sd=0.
          return
       endif
-c      write(*,*)'sphereinterp',fraction,f2,sd
+c      write(*,*)'spheresect',fraction,f2,sd
 c This code decides which of the nf_posno for this object
 c to update corresponding to this crossing, and then update it.
 c Calculate normalized intersection coordinates.
@@ -134,9 +134,9 @@ c Package from here by converting into normalized position
       enddo
 c And calling the unit-cube version.
       if(inside.eq.0)then
-         call cubeexplt(nsdim,xn1,xn2,ijbin,iobj,fraction)
+         call cubeusect(nsdim,xn1,xn2,ijbin,iobj,fraction)
       else
-         call cubeexplt(nsdim,xn2,xn1,ijbin,iobj,fraction)
+         call cubeusect(nsdim,xn2,xn1,ijbin,iobj,fraction)
          fraction=1.-fraction
       endif
 c Code Diagnostic:
@@ -161,7 +161,7 @@ c these two planes, i.e. contravariant coefficients <1. We define the
 c facets of the cube to be the faces (planes) in the following order:
 c +v_1,+v_2,+v_3,-v_1,-v_2,-v_3. 
 c Then within each face the facet indices are in cyclic order. But that
-c is determined by the cubeexplt code.
+c is determined by the cubeusect code.
       integer nsdim,iobj,ijbin
       include 'ndimsdecl.f'
       real xp1(nsdim),xp2(nsdim)
@@ -194,11 +194,11 @@ c ins1,2 indicate inside (0) or outside (1) for each point.
 c In direction sd
       sd=2*ins1-1.
 c And calling the unit-cube version.
-c      write(*,*)'Calling cubeexplt',xn1,xn2
+c      write(*,*)'Calling cubeusect',xn1,xn2
       if(ins1.eq.0 .and. ins2.eq.1)then
-         call cubeexplt(nsdim,xn1,xn2,ijbin,iobj,fraction)
+         call cubeusect(nsdim,xn1,xn2,ijbin,iobj,fraction)
       elseif(ins2.eq.0 .and. ins1.eq.1)then
-         call cubeexplt(nsdim,xn2,xn1,ijbin,iobj,fraction)
+         call cubeusect(nsdim,xn2,xn1,ijbin,iobj,fraction)
          fraction=1.-fraction
       else
          fraction=1.
@@ -430,18 +430,18 @@ c The facet number: k3-1
       endif
       end
 c*********************************************************************
-      subroutine sphereinterp(nsdim,ida,xp1,xp2,xc,rc,f1,f2,sd,C,D)
+      subroutine spheresect(nsdim,ida,xp1,xp2,xc,rc,f1,f2,sd,C,D)
 c Given two different nsdim dimensioned vectors xp1,xp2,and a sphere
 c center xc radii rc, find the intersection of the line joining x1,x2,
 c with the sphere and return it as the value of the fraction f1 of
-c x1->x2 to which this corresponds, chosen always positive if possible, 
-c and closest to 0. The other intersection fraction in f2.
-c Also return the direction of crossing in sd, and the fractional
-c radial distance^2 outside the sphere of the two points in C and D. 
-c (positive means inward from x1 to x2). If there is no intersection,
-c return fraction=1., sd=0.  If ida is non-zero then form the radius
-c only over the other dimensions.  In that case the subsurface (circle)
-c is the figure whose intersection is sought.
+c x1->x2 to which this corresponds, chosen always positive if possible,
+c and closest to 0. The other intersection fraction in f2.  Also return
+c the direction of crossing in sd, and the fractional radial distance^2
+c outside the sphere of the two points in C and D.  (positive means
+c inward from x1 to x2). If there is no intersection even of the
+c extrapolated line, return fraction=1., sd=0.  If ida is non-zero then
+c form the radius only over the other dimensions.  In that case the
+c subsurface (circle) is the figure whose intersection is sought.
       integer nsdim,ida
       real xp1(nsdim),xp2(nsdim),xc(nsdim),rc(nsdim)
       real sd,f1,f2,C,D
@@ -491,7 +491,7 @@ c         write(*,*)'Sphere-crossing discriminant negative.',A,B,C
       endif
       end
 c***********************************************************************
-      subroutine cubeexplt(nsdim,xp1,xp2,ijbin,iobj,fmin)
+      subroutine cubeusect(nsdim,xp1,xp2,ijbin,iobj,fmin)
 c For a unit cube, center 0 radii 1, find the intersection of line
 c xp1,xp2 with it and return the relevant flux index ijbin.
 c xp1 must be always inside the cube.
@@ -554,7 +554,7 @@ c Now we have ibin equal to the face-position index, and ibstep equal
 c to the face-position size. Add the face-offset for imin. This is
 c tricky for unequal sized faces. So we need to have stored it. 
       ijbin=ibin+nf_faceind(nf_flux,infobj,imin)
-      if(idebug.eq.1)write(*,*)'Ending cubeexplt',ijbin
+      if(idebug.eq.1)write(*,*)'Ending cubeusect',ijbin
      $     ,nf_faceind(nf_flux,infobj,imin),imin
 c That's it.
       end
@@ -593,7 +593,7 @@ c First, return if both points are beyond the same axial end.
       sds=0.
 c Find the intersection (if any) with the circular surface in the plane
 c perpendicular to direction ida (projected along ida).
-      call sphereinterp(nsdim,ida,xp1,xp2,
+      call spheresect(nsdim,ida,xp1,xp2,
      $     xc,rc,fn(1),fn(2),sds,d1,d2)
       if(sds.ne.0)then
 c Directions are both taken to be that of the closest. 

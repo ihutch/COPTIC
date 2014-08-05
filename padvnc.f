@@ -35,6 +35,7 @@ c Lowest particle to print debugging data for.
       real thetamax
       parameter (thetamax=1.)
 c Local storage
+      real fractions(10)
       parameter (fieldtoolarge=1.e12)
       integer ixp(ndims)
       real Efield(ndims),adfield(ndims)
@@ -283,12 +284,6 @@ c Save prior position.
      $           ,Efield,Bfield,vperp,dtpos,i-iicparta(ispecies))
          endif
          dtdone=dtdone+dtpos
-c         if(ispecies.eq.2.and.abs(x_part(ndims+2,i)).gt.0.001
-c     $        .and.i.lt.131000)then
-c Test if we have a non-zero vy.
-c            write(*,*)'Aftermove vynonzero',i,theta
-c            write(*,*)(x_part(k,i),k=1,6)
-c         endif
 c ---------------- End Particle Advance -------------
 c ---------------- Special Conditions -------------
          if(lcollided)then
@@ -301,13 +296,31 @@ c---------------------------------
 c If we crossed a boundary, do tallying.
          ltlyerr=.false.
 c This test is probably too susceptible to pass-through.
-         if(inewregion.ne.iregion)
-c Integer exclusive or ieor bitwise is the correct way.
-     $        call tallyexit(x_part(1,i),ieor(inewregion,iregion)
+c         if(inewregion.ne.iregion)then
+c So replaced with discovery of all the objects this step crosses.
+         icross=icrossall(xprior,x_part(1,i))
+         if(icross.ne.0)then
+c Integer exclusive or ieor bitwise using regions.
+c            call tallyexit(x_part(1,i),ieor(inewregion,iregion)
+            call tallyexit(x_part(1,i),icross
      $        ,ltlyerr,dtpos,ispecies)
+         elseif(inewregion.ne.iregion)then
+            write(*,*)'WARNING: Undetected region transition:i,irg,inew'
+            write(*,*)i,iregion
+     $           ,inewregion,icross,xprior,(x_part(k,i),k=1,ndims)
+            icr=icross_geom(xprior,x_part(1,i),i,fractions)
+            write(*,*)icr,(fractions(k),k=1,2)
+         endif
 c------------ Possible Reinjection ----------
-         if(ltlyerr .or. .not.linmesh .or.
-     $        .not.linregion(ibool_part,ndims,x_part(1,i)))then
+c         if(ltlyerr .or. .not.linmesh .or.
+c     $        .not.linregion(ibool_part,ndims,x_part(1,i)))then
+         if(.not.linmesh.or.leaveregion(ibool_part,ndims,xprior
+     $        ,x_part(1,i),icross,fractions).gt.0)then
+            if(linmesh.and.inewregion.eq.iregion)
+     $           write(*,*)'PASS THROUGH',i,ltlyerr,iregion
+     $           ,inewregion,linmesh,icross,fractions(1),
+     $           leaveregion(ibool_part,ndims,xprior
+     $        ,x_part(1,i),icross,fractions)
 c We left the mesh or region.
             if(ninjcompa(ispecies).eq.0
      $           .or. nrein.lt.ninjcompa(ispecies))goto 200

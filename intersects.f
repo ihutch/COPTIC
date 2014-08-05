@@ -218,6 +218,89 @@ c Special case for zero particle boolean.
  10   linregion=lt2
       end
 c************************************************************
+      integer function leaveregion(ibool,ndims,x1,x2,icross,f)
+c Return non-zero if we left the region in passing from x1 to x2.
+c leaveregion is equal to the object whose intersection was detected.
+c On entry f(*) must have sufficient length for multiple crossings.
+c On exit f(1) contains the leaving intersection fraction detected.
+c icross has bits nonzero for objects possibly crossed, so zero bits
+c mask out tests. 
+c A boolean block is violated iff there is a crossing of one object
+c that occurs outside all the other booleans of the block. If any 
+c boolean block is violated, then the ray leaves the region. Thus 
+c for each crossing, for each block that contains the object crossed,
+c check intersection for being inside all the other objects in the block.
+c If there is none that it is inside, then it is a leaving intersection.
+      integer ndims,ibool(*),icross
+      real x1(ndims),x2(ndims)
+      real f(*)
+c The following ought to be consistent with 3dcom.f
+      integer ibmax
+      parameter (ibmax=100) 
+      real xx(3)
+      
+      it=0
+      ic=icross
+      leaveregion=0
+ 1    if(ic.eq.0)goto 5
+      icb2=ic/2
+      it=it+1
+      if((ic-2*icb2).ne.0)then
+c Check this non-zero crossing against the entire boolean.
+         i=1
+ 2       n=ibool(i)
+         if(n.eq.0)goto 3
+         inblock=0
+         do io=1,n
+c Search for this object within the block.
+            iobj=ibool(i+io)
+            if(abs(iobj).eq.it)then
+               inblock=1               
+            endif
+         enddo
+         if(inblock.ne.0)then
+c This object is in this block. Test whether intersection is in others.
+c Get back the position of the intersection(s) in f
+            icit=icross_geom(x1,x2,it,f)
+            do ic=1,icit
+c Find the position of the intersection.
+            do k=1,ndims
+               xx(k)=x1(k)+(x2(k)-x1(k))*f(ic)
+            enddo
+            do io=1,n
+               iobj=ibool(i+io)
+               if(abs(iobj).ne.it)then
+                 is=inside_geom(ndims,xx,abs(iobj))
+                 if(iobj.gt.0 .and. is.eq.1 .or.
+     $                iobj.lt.0 .and. is.eq.0)then
+c Intersection is inside one of the other objects of block. 
+c It therefore doesn't count as a leaving. Break to next intersection.
+                    goto 4
+                 endif
+               endif
+            enddo
+c Here when we have an intersection that is a real crossing.
+c We crossed the particle region boundary here.
+            f(1)=f(ic)
+            leaveregion=it
+            return
+ 4          continue
+            enddo
+         endif
+c We found this block to be clean of leaving. Go to next bool block.
+         i=i+n+1
+c         write(*,*)it,ic,icb2,icit,i,n
+c         write(*,*)(ibool(k),k=1,10)
+         goto 2
+      endif
+ 3    ic=icb2
+c Iterate to next object crossed.
+      goto 1
+c Finished.
+ 5    continue
+      end
+
+c************************************************************
 c Return whether the particle region specified by ibool has any
 c enclosed regions (regions inside an object. If it does, then
 c cartesian reinjection is not correct. 
@@ -615,20 +698,41 @@ c     section for intersecting wall sections
       return
       end
 c
+c**********************************************************************
+      function icrossall(x1,x2)
+c For two mdims-dimensional point x1,x2, return the integer icrossall
+c consisting of bits i=0-30 that are zero or one according to whether
+c the line x1-x2 crosses object i.
+c Common object geometric data.
+      include 'ndimsdecl.f'
+      real x1(ndims),x2(ndims)
+      include '3dcom.f'
+      real f(10)
+c
+      icrossall=0
+      do i=ngeomobj,1,-1
+         icrossall=2*icrossall
+         if(icross_geom(x1,x2,i,f).ne.0)icrossall=icrossall+1
+      enddo
+      end
 c*****************************************************************
-      integer function icross_geom(x1,x2,i)
+      integer function icross_geom(x1,x2,i,f)
 c Return the number of intersections that the straight line from x1 to x2
 c makes with the object i. Return 0 for a non-existent object.
+c Place the intersect fractions in f.
       integer i
 c Common object geometric data.
       include 'ndimsdecl.f'
       real x1(ndims),x2(ndims)
+
+      real f(*)
 
       include '3dcom.f'
       real xn1(ndims),xn2(ndims)
       external interp
 
       icross_geom=0
+c      write(*,*)'icross_geom',i,ngeomobj
       if(i.gt.ngeomobj) return
 
       itype=int(obj_geom(otype,i))
@@ -638,13 +742,13 @@ c Start of type choices
       if(itype.eq.1)then
 c------------------------------------------------
 c Coordinate-Aligned Spheroid data : center(ndims), semi-axes(ndims)
-         call sphereinterp(ndims,0,x1,x2,obj_geom(ocenter,i)
-     $        ,obj_geom(oradius,i),f1,f2,sd,C,D)
+         call spheresect(ndims,0,x1,x2,obj_geom(ocenter,i)
+     $        ,obj_geom(oradius,i),f(1),f(2),sd,C,D)
          if(sd.eq.0)return
 c No intersection.
-         if(f1.gt.1. .or. f1.lt.0.)return
+         if(f(1).gt.1. .or. f(1).lt.0.)return
 c Nearest intersection is beyond the segment.
-         if(f2.gt.1. .or. f2.lt.0.)then
+         if(f(2).gt.1. .or. f(2).lt.0.)then
             icross_geom=1
          else
             icross_geom=2
@@ -659,7 +763,7 @@ c Normalize
             xn2(k)=(x2(k)-obj_geom(ocenter-1+k,i))
      $           /obj_geom(oradius-1+k,i)
          enddo
-         call cubenormsect(xn1,xn2,icross_geom)
+         call cubenormsect(xn1,xn2,icross_geom,f)
       elseif(itype.eq.3)then
 c------------------------------------------------
 c Coordinate-Aligned Cylinder data:  Center(ndims), Semi-axes(ndims), 
@@ -674,7 +778,7 @@ c Normalize
             xn2(kn)=(x2(k)-obj_geom(ocenter+k-1,i))
      $           /obj_geom(oradius-1+k,i)
          enddo
-         call cylnormsect(xn1,xn2,icross_geom)
+         call cylnormsect(xn1,xn2,icross_geom,f)
       elseif(itype.eq.4)then
 c------------------------------------------------
 c General Cuboid is equivalent to General Parallelopiped
@@ -692,71 +796,59 @@ c               xn2(k)=xn2(k)+(x2(j)-obj_geom(ocenter+j-1,i))
 c     $              *obj_geom(ocontra+ndims*(k-1)+j-1,i)
 c            enddo
 c         enddo
-         call cubenormsect(xn1,xn2,icross_geom)
+         call cubenormsect(xn1,xn2,icross_geom,f)
       elseif(itype.eq.5)then
 c------------------------------------------------
 c Non-aligned cylinder
          call world3contra(ndims,x1,xn1,i)
          call world3contra(ndims,x2,xn2,i)
 c If need be, use the explicit code from previous case for speed.
-         call cylnormsect(xn1,xn2,icross_geom)
+         call cylnormsect(xn1,xn2,icross_geom,f)
+c         write(*,*)'cylnormsect return',i,icross_geom,(f(k),k=1,3)
       elseif(itype.eq.6.or.itype.eq.7)then
 c------------------------------------------------
 c Surface of revolution. General. Scale to contravariant components.
-c Then use svrnormsect.
+c Then use svrsect. It is normalized to reference dimensions, but
+c the SoR parameters call for renormalizations internal to srvsect.
          call world3contra(ndims,x1,xn1,i)
          call world3contra(ndims,x2,xn2,i)
-         call srvnormsect(xn1,xn2,i,icross_geom)
+         call srvsect(xn1,xn2,i,icross_geom,f)
       endif
 
       end
 C*******************************************************************
-      subroutine cubenormsect(xn1,xn2,icross_geom)
+      subroutine cubenormsect(xn1,xn2,icross_geom,f)
 c Find the number of intersections of the line segment from xn1 to xn2
 c with the centered normalized cube of half-side length 1.
       include 'ndimsdecl.f'
-c Count the number of cube ranges each point is outside.
-      k1=0
-      k2=0
-      do k=1,ndims
-         if(abs(xn1(k)).ge.1.)k1=k1+1
-         if(abs(xn2(k)).ge.1.)k2=k2+1
-c Break if we've found two outside.
-         if(k1.ne.0.and.k2.ne.0)goto 21
-      enddo
-c Not both are outside
-      if(k1.eq.0)then
-         if(k2.eq.0)then
-c 1,2 both inside
-            icross_geom=0
-         else
-c 1 inside 2 outside
-            icross_geom=1
-         endif
-      else
-c 2 inside 1 outside
-         icross_geom=1
-      endif
-      return
- 21   continue
-c 1,2 both outside. Zero or 2 crossings. Further tests needed.
+      real xn1(ndims),xn2(ndims)
+      real f(*)
+      icross_geom=0
 c Find intersection(s) with bounding planes. If any lies inside
 c the square defined by the orthogonal planes, there's an intersection.
-c In that case, there are two intersections total. 
       do k=1,ndims
          xd=xn2(k)-xn1(k)
          if(xd.ne.0)then
 c It is possible the line intersects planes of constant k-coordinate.
             do j=-1,1,2
-               f=(j-xn1(k))/xd
-               if(f.ge.0.and.f.le.1.)then
+               fr=(j-xn1(k))/xd
+               if(fr.ge.0.and.fr.le.1.)then
 c Intersects this plane. Test whether other dimensions are inside
                   do i=mod(k,ndims)+1,mod(k+ndims-2,ndims)+1
-                     xi=xn1(i)+f*(xn2(i)-xn1(i))
+                     xi=xn1(i)+fr*(xn2(i)-xn1(i))
                      if(abs(xi).gt.1)goto 22
                   enddo
-c Intersection is inside all other planes. So there is >=1, hence 2.
-                  icross_geom=2
+c Intersection is inside all other planes. It counts. Put it into the
+c right place in the list of fs, i.e. with the lowest positive first.
+                  icross_geom=icross_geom+1
+                  do jj=icross_geom,2,-1
+                     if(f(jj-1).gt.fr)then
+                        f(jj)=f(jj-1)
+                     else
+                        goto 21
+                     endif
+ 21                  f(jj)=fr
+                  enddo
                   return
                endif
 c Intersection is not inside all others. Invalid.
@@ -764,168 +856,233 @@ c Intersection is not inside all others. Invalid.
             enddo
          endif
       enddo
-c Failed to find an intersection of two outside points.
-      icross_geom=0
 
       end
 c*********************************************************************
-      subroutine cylnormsect(xn1,xn2,icross_geom)
+      subroutine cylnormsect(xn1,xn2,icross_geom,f)
 c Find the number of intersections of the line segment joining xn1,xn2,
 c with the unit (half-length and radius) cylinder.
       include 'ndimsdecl.f'
       integer icross_geom
       real xn1(ndims),xn2(ndims)
       real zero(ndims),one(ndims)
+      real f(*)
       data zero/ndims*0./one/ndims*1/
 
+      icross_geom=0
+c      write(*,*)'Cylnormsect entry',xn1,xn2
 c On entry xn1,2 are the coordinates relative to the unit cylinder.
       z1=xn1(ndims)
       z2=xn2(ndims)
+c Test if both off same end, to avoid extra work.
+      if(z1.gt.1. .and. z2.gt.1. .or. z1.lt.-1..and.z2.lt.-1)then
+         return
+      endif
       r1=sqrt(xn1(1)**2+xn1(2)**2)
       r2=sqrt(xn2(1)**2+xn2(2)**2)
-      k1=0
-      if(abs(z1).gt.1.)k1=k1+1
-      if(abs(r1).gt.1.)k1=k1+1
-      k2=0
-      if(abs(z2).gt.1.)k2=k2+1
-      if(abs(r2).gt.1.)k2=k2+1
-      if(k1.eq.0.or.k2.eq.0)then
-c Not both are outside
-         if(k1.eq.0)then
-            if(k2.eq.0)then
+      if(abs(z1).lt.1. .and. abs(z2).lt.1.
+     $     .and.abs(r1).lt.1. .and. abs(r2).lt.1.)then
 c 1,2 both inside
-               icross_geom=0
-            else
-c 1 inside 2 outside
-               icross_geom=1
-            endif
-         else
-c 2 inside 1 outside
-            icross_geom=1
-         endif
-      else
-c Both outside. Need more interpolation.
-c z-faces:         
-         ida=3
-         xd=xn2(ndims)-xn1(ndims)
-         if(xd.ne.0)xd=1.e-20
-         do j=-1,1,2
-            f=(j-xn1(ndims))/xd
-            if(f.ge.0.and.f.le.1.)then
+         return
+      endif
+c Not both inside. Need more interpolation.
+c z-faces:
+      ida=3
+      iend=0
+      xd=z2-z1
+      if(abs(xd).lt.1.e-20)xd=1.e-20
+      do j=-1,1,2
+         fr=(j-z1)/xd
+c            write(*,*)'xd, fr', xd,fr
+         if(fr.ge.0.and.fr.le.1.)then
 c Intersects this plane. Test whether r at intersect is inside
-               r2=0.
-               do i=mod(ida,ndims)+1,mod(ida+ndims-2,ndims)+1
-                  r2=r2+(xn1(i)+f*(xn2(i)-xn1(i)))**2
-               enddo
-               if(r2.gt.1.)goto 32
-c Intersection is inside circle. So there is >=1, hence 2.
-               icross_geom=2
-               return
-            endif
- 32         continue
-         enddo
-c No z-face intersections. Find the intersection (if any) with the
-c curved surface by projecting along ida and testing a circle
+            r=0.
+            do i=mod(ida,ndims)+1,mod(ida+ndims-2,ndims)+1
+               r=r+(xn1(i)+fr*(xn2(i)-xn1(i)))**2
+            enddo
+c            write(*,*)'Plane',j,' r^2=',r
+            if(r.gt.1.)goto 32
+c Intersection is inside circle. It counts.
+            iend=iend+1
+            f(iend)=fr
+         endif
+ 32      continue
+      enddo
+      icross_geom=iend
+      if(icross_geom.ne.2)then
+c Still looking. Find the intersection (if any) with the
+c Curved surface by projecting along ida and testing a circle
 c of center 0 and radius 1.
-         call sphereinterp(ndims,ida,xn1,xn2,zero,one,f1,f2,sd,C,D)
-         if(sd.ne.0)then
-c The projected chord intersects the circle. At relevant z?
-c Only need to test one intersection, because 1=>2, since no ends.
-            zx1=xn1(ndims)+f1*(xn2(ndims)-xn1(ndims))
-            if(zx1.lt.1. .and. zx1.gt.0.)then
-               icross_geom=2
-            else
-c Intersections with circle are off the z-ends. 
-               icross_geom=0
+c         write(*,*)'Calling spheresect'
+         call spheresect(ndims,ida,xn1,xn2,zero,one,f(1),f(2),sd,C,D)
+         do j=1,2
+            if(f(j).ge.0.and.f(j).lt.1.)then
+c The intersection j is on the circle. At relevant z?
+               zx=xn1(ndims)+f(j)*(xn2(ndims)-xn1(ndims))
+c               write(*,*)'j,zx,f(j)',j,zx,f(j)
+               if(zx.lt.1. .and. zx.gt.-1.)then
+                  icross_geom=icross_geom+1
+               endif
             endif
-         else
-            icross_geom=0
+         enddo
+         if(iend.eq.1)then
+c Put back the end intersection in the correct order.
+            if(fr.lt.f(1))then
+               f(2)=f(1)
+               f(1)=fr
+            else
+               f(2)=fr
+            endif
          endif
       endif
       end
 c*********************************************************************
-      subroutine srvnormsect(xp1,xp2,iobj,icross_geom)
+      subroutine srvsect(xp1,xp2,iobj,icross_geom,f)
 c Given a general SoR object iobj. Count the number of intersections of
 c the line joining points xn1,xn2 (contravariant components) with
-c it. This version uses r-scaling, not iteration.
+c it. This version uses explicit cone intersection, not iteration.
 
       integer iobj
 c Local storage
       include 'ndimsdecl.f'
       real xp1(ndims),xp2(ndims)
+      real f(*)
       include '3dcom.f'
-      real xn1(ndims),xn2(ndims)
+      real xn1(ndims),xn2(ndims),xr(ndims)
       equivalence (xn1(ndims),z1),(xn2(ndims),z2)
-      real zero(ndims),one(ndims)
-      data zero/ndims*0./one/ndims*1/
+      real zero(ndims)
+      data zero/ndims*0./
 
       icross_geom=0
-      zp1=xp1(ndims)
-      rp1=sqrt(xn1(1)**2+xn1(2)**2)
-      zp2=xp2(ndims)
-      rp2=sqrt(xn2(1)**2+xn2(2)**2)
-
+      do i=1,ndims
+         xn1(i)=xp1(i)
+         xn2(i)=xp2(i)
+      enddo
+c      write(*,*)'srvsect',xp1,xp2
+c      write(*,*)z1,z2
 c For each SoR-segment find if the line xp1-xp2 intersects it.
-c We scale the radius proportional to the end radii of the SoR-segment.
-c Then the scaled test is essentially a straight cylinder intersection.
-
+c Order the two wall positions increasing.
       do i=1,int(obj_geom(onpair,iobj))-1
-         rw1=obj_geom(opr+i-1,iobj)
-         zw1=obj_geom(opz+i-1,iobj)
-         rw2=obj_geom(opr+i,iobj)
-         zw2=obj_geom(opz+i,iobj)
-         zd=(zw2-zw1)/2.
-         zc=(zw2+zw1)/2.
+         if(obj_geom(opz+i,iobj).ge.obj_geom(opz+i-1,iobj))then
+            rw1=obj_geom(opr+i-1,iobj)
+            zw1=obj_geom(opz+i-1,iobj)
+            rw2=obj_geom(opr+i,iobj)
+            zw2=obj_geom(opz+i,iobj)
+         else
+            rw2=obj_geom(opr+i-1,iobj)
+            zw2=obj_geom(opz+i-1,iobj)
+            rw1=obj_geom(opr+i,iobj)
+            zw1=obj_geom(opz+i,iobj)
+         endif
+         zd=zw2-zw1
+         rd=rw2-rw1
          rc=(rw2+rw1)/2.
-         if(abs(zd).gt.1.e-8*rc)then
-c Standard surface can be scaled to unit cylinder. 
-c Get point positions relative to unit cylinder.
-            z1=(zp1-zc)/zd
-            z2=(zp2-zc)/zd
-            if(z1.gt.1. .and. z2.gt.1. .or.
-     $           z1.lt.-1. .and. z2.lt.-1.)then
+         if((z1.lt.zw1).and.(z2.lt.zw1).or.(z1.gt.zw2).and.(z2.gt.zw2))
+     $        then
 c Non intersecting: points both off the same end of segment.
 c Hopefully this case is the dominant one and quick. Continue to next.
-               goto 1
-            else
-c Scale points to linear cone segment ends
-               rd=(rw2-rw1)/2.
-               rs1=rc+z1*rd
-               if(abs(rs1).lt.1.e20)rs1=1.e20
-               xn1(1)=xp1(1)/rs1
-               xn1(2)=xp1(2)/rs1
-               rs2=rc+z2*rd
-               if(abs(rs2).lt.1.e20)rs2=1.e20
-               xn2(1)=xp2(1)/rs2
-               xn2(2)=xp2(2)/rs2
-c Now find intersections with straight unit radius cylinder by projection. 
-c Only the round surface matters.
-               ida=3
-               call sphereinterp(ndims,ida,xn1,xn2,zero,one,f1,f2,sd,C
-     $              ,D)
-               if(sd.ne.0)then
-                  zx1=z1+f1*(z2-z1)
-                  if(zx1.le.1. .and. zx1.gt.0.)then
-                     icross_geom=icross_geom+1
-                  endif
-                  zx2=z1+f2*(z2-z1)
-                  if(zx2.le.1. .and. zx2.gt.0.)then
-                     icross_geom=icross_geom+1
-                  endif
-               endif
-            endif
-         else
-c Degenerate Plane surface with identical z. Alternate treatment, unscaled.
-            f=(zw1-zp1)/(zp2-zp1)
-            if(f.gt.0. .and. f.lt.1.)then
-               r=sqrt((xp1(1)+f*(xp2(1)-xp1(1)))**2
-     $              +(xp1(2)+f*(xp2(2)-xp1(2)))**2)
+c               write(*,*)'Both off end',z1,z2
+         elseif(abs(zd).lt.1.e-8*rc)then
+c Degenerate: disc identical z. Alternate treatment, unscaled.
+            fr=(zw1-z1)/(z2-z1)
+            if(fr.gt.0. .and. fr.lt.1.)then
+               r=sqrt((xp1(1)+fr*(xp2(1)-xp1(1)))**2
+     $              +(xp1(2)+fr*(xp2(2)-xp1(2)))**2)
                if(r.gt.min(rw1,rw2) .and. r.le.max(rw1,rw2))then
                   icross_geom=icross_geom+1
                endif
             endif
+         else
+            sd=0.
+            if(abs(rd).lt.1.e-8*rc)then
+c Degenerate: cylinder. Use cylinder code.
+c               write(*,*)'Cylinder approximation'
+               if(abs(zd).gt.1.e-8*rc)then
+                  do k=1,ndims-1
+                     xr(k)=rc
+                  enddo
+                  xr(ndims)=1.
+c Find intersections with curved surface by projection. In direction 3.
+                  call spheresect(ndims,3,xn1,xn2,zero,xr,f(1),f(2),sd,C
+     $                 ,D)
+               endif
+            else
+c Standard cone. zscale=dz/dr.
+               dzdr=zd/rd
+c Vertex position
+               zx=zw1-rw1*dzdr
+c Scale z to the unit cone.
+               z1=(z1-zx)/dzdr
+               z2=(z2-zx)/dzdr
+               call conesect(xn1,xn2,f(1),f(2),sd)
+c Restore zs for next cone, and world calculation.
+               z1=xp1(ndims)
+               z2=xp2(ndims)
+            endif
+            if(sd.ne.0.)then
+            if(f(1).ge.0. .and. f(1).lt.1.)then
+               zx1=z1+f(1)*(z2-z1)
+               if(zx1.lt.zw2 .and. zx1.ge.zw1)then
+                  icross_geom=icross_geom+1
+               endif
+            endif
+            if(f(2).ge.0. .and. f(2).lt.1.)then
+               zx2=z1+f(2)*(z2-z1)
+               if(zx2.lt.zw2 .and. zx2.ge.zw1)then
+                  icross_geom=icross_geom+1
+               endif
+            endif
+            endif
          endif
- 1       continue
       enddo
       end
-C*********************************************************************
+c*********************************************************************
+      subroutine conesect(xp1,xp2,f1,f2,sd)
+c Find the fractional intersection points of the line joining xp1 to xp2
+c with the unit cone x^2+y^2=z^2. If xd=xp2-xp1, then the solution of
+c the intersection is x=xp1+f*xd, with Af^2+2Bf+C=0. Where
+c A=xd^2+yd^2-zd^2, B=xd.xp1+yd.yp1-zd.zp1, C=xp1^2+yp1^2-zp1^2 So f=
+c (-B^2 +- sqrt(B^2-AC) )/A Return f=1 for no intersection. f1 should
+c be always positive if possible, and closest to zero. sd=1 if point 1
+c is outside, meaning r1>z1 (C>0), and the first-f crossing is
+c inward. sd=-1 if the first crossing is outward. sd=0 if there are no
+c crossings even of the extrapolated line.
+      integer ndims
+      parameter (ndims=3)
+      real xp1(ndims),xp2(ndims),f1,f2,sd
+      real xd(ndims)
+
+      do i=1,ndims
+         xd(i)=xp2(i)-xp1(i)
+      enddo
+      A=xd(1)**2+xd(2)**2-xd(3)**2
+      B=xd(1)*xp1(1)+xd(2)*xp1(2)-xd(3)*xp1(3)
+      C=xp1(1)**2+xp1(2)**2-xp1(3)**2
+      disc=B**2-A*C
+      if(disc.lt.0)then
+c No intersections.
+         f1=1.
+         f2=1.
+         sd=0.
+      elseif(A.eq.0)then
+c One intersection
+         f1=-0.5*C/B
+         f2=1.
+         sd=sign(1.,C)
+      else
+c Two intersections.
+         disc=sqrt(disc)
+         if( (A.gt.0. .and. C.gt.0. .and. B.lt.0) .or.
+     $        (A.lt.0. .and.(C.ge.0. .or. B.le.0)) )then
+c Can take minus sign and still get positive for A>0.
+            f1=(-B-disc)/A
+            f2=(-B+disc)/A
+         else
+c Can take plus sign and still get positive for A<0.
+            f1=(-B+disc)/A
+            f2=(-B-disc)/A
+         endif
+         sd=sign(1.,C)
+      endif
+      end
+c********************************************************************

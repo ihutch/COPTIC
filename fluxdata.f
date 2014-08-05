@@ -545,13 +545,6 @@ c Determine (all) the objects crossed and call objsect for each.
             ltlyerr=.true.
             stop
             return
-         elseif(ierr.eq.-1)then
-c This Pass-through should not happen because tallyexit is not called
-c unless the region is changed. But leave for error detection.
-            write(*,*)'idiffreg,i,iobj=',idiffreg,i,iobj
-            write(*,'(a,6f10.5)')'xp2',(xi(k),k=1,6)
-            write(*,'(a,6f10.5)')'xp1',(xi(k)-dtpos*xi(k+3)
-     $           ,k=1,3)
          endif
       endif
       idp=idp/2
@@ -647,8 +640,10 @@ c Do the bin adding in a subroutine.
       call binadding(xi,infobj,sd,ijbin,ispecies)
 
       if(ijbin2.ne.-1)then
-c This should not happen.
-         write(*,*)'Pass-through j,ijbin2,infobj=',j,ijbin2,infobj
+c This happens only if we pass through (a sphere). Then we should
+c Correct the count by passing out again. 
+c         write(*,*)'Pass-through ijbin2,infobj=',ijbin2,infobj
+         call binadding(xi,infobj,-sd,ijbin2,ispecies)
          ierr=-1
       endif
       end

@@ -12411,3 +12411,52 @@ Scaling r with z approach to SoR.
 Split 3dobjects into two with the second half becoming intersects.f
 
 commit though we haven't tested any of the new icross-geom code.
+
+Plan for testing. 
+We need to use the coptic infrastructure for specifying and setting 
+up the objects. Then we might be able to use actual orbits for testing
+or else we might want to use individual chords and icross_geom manually.
+
+4 Aug 2014
+
+Finished off icross_geom code.
+There are some particles that cross incorrectly.
+
+Compare speed with and without icrossall test on standard cubic (sphere)
+case with -ni1000000 -s30
+without: user    0m41.131s
+with     user    0m43.555s
+
+Cost negligible!. There are perhaps 10 particles per step showing uncaught
+crossings. They all show two radii just above 1. That's correct.
+
+Compare geomSphSoR.dat -s20. Type 6 SOR with 7 npairs representing sphere.
+without  user    0m29.878s
+with     user    0m32.742s
+Small. Not quite so negligible but nothing to worry about.
+
+Swap the role of insideall and icrossall.
+Had then to implement a new routine leaveregion. It detects the exit
+from the particle region accounting for booleans, based on examining
+crossings between xprior and xnow, rather than on the now region being
+different than prior. Thus it detects passage through an object and back
+out the other side. It all seems consistent with the previous critieria
+for simple object blocks (no compound particle region). It also does not
+seem to cost significantly more, because of course it is not called unless
+we detect a crossing with icrossall. Need to test with compound objects.
+(Mind you, the old code was hardly so tested.)
+
+Now testing on geometry files.
+baresheath.cks ok
+geomcube.cks fails
+geomcubic.cks fails
+geomcyl crashes with Undetected region transition.
+
+There's still a lot of work to do! Start with Undetected region.
+This seems to arise from the special orbit starting just on the 
+surface of an object. Yes, moving it so it doesn't exactly coincide
+solves the problem.
+
+5 Aug
+Fixed various bugs till we seem to have all geometry tests running.
+However many of them now have differences in the cks.
