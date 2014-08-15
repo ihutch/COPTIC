@@ -155,6 +155,8 @@ c Reached the end.
 c*****************************************************************
 c Use the generalized scalar mult call to set values
       subroutine mditerset(u,ndims,ifull,iused,ipin,v)
+      real u(*)
+      integer ifull(*),iused(*)
       call mditermults(u,ndims,ifull,iused,ipin,0.,v)
       end
 c******************************************************************

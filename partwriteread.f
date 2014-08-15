@@ -333,7 +333,7 @@ c write out flux to object 1.
                if(mod(nf_step,5).eq.0)write(*,*)
             endif
             if(mod(nf_step,(nsteps/25+1)*5).eq.0)then
- 100           write(*,*)'nrein   n_part  ioc_part  rhoinf    dt'
+               write(*,*)'nrein   n_part  ioc_part  rhoinf    dt'
      $              ,'   passthrus'
                write(*,'(i6,i9,i9,f9.2,f9.4,i6)')
      $              nrein,n_part,ioc_part,rhoinf,dt,npassthrough

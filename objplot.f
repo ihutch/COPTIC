@@ -550,10 +550,10 @@ c Flux accumulation is (zero based):
 c Draw in axial order from furthest to nearest.
       if(xe(ia).gt.0.)then
          irz1=0
-         irz2=objg(onpair)-2
+         irz2=int(objg(onpair))-2
          irzd=1
       else
-         irz1=objg(onpair)-2
+         irz1=int(objg(onpair))-2
          irz2=0
          irzd=-1
       endif
@@ -564,7 +564,7 @@ c Do over line segments: faces.
          rt=objg(opr+irz+1)
          zb=objg(opz+irz)
          zt=objg(opz+irz+1)
-         nz=objg(opdiv+irz)
+         nz=int(objg(opdiv+irz))
 c         write(*,*)'irz,zb,zt,rb,rt',irz,zb,zt,rb,rt
 c Draw single curved surface. Generalization of cylinder round face.
       do it=1,nangle
@@ -689,7 +689,7 @@ c Project eye onto chosen theta-plane.
          re=(cos(ta)*xe(mod(ia,3)+1)+sin(ta)*xe(mod(ia+1,3)+1))
          ze=xe(ia)
 c Subtract it from the contour vertexes, putting them into the rp/zp.
-         np=objg(onpair)
+         np=int(objg(onpair))
          do irz=1,np
             rp(irz)=objg(opr+irz-1)-re
             zp(irz)=objg(opz+irz-1)-ze
@@ -697,13 +697,13 @@ c Subtract it from the contour vertexes, putting them into the rp/zp.
 c Sort the order of faces into iorder, so that face=iorder(i)
          call faceorder(np,rp,zp,iorder)
 c         write(*,*)np,' iorder',(iorder(irz),irz=1,np-1)
-         do i=1,objg(onpair)-1
+         do i=1,int(objg(onpair)-1)
             irz=iorder(i)
             rb=objg(opr+irz-1)
             rt=objg(opr+irz)
             zb=objg(opz+irz-1)
             zt=objg(opz+irz)
-            nz=objg(opdiv+irz-1)
+            nz=int(objg(opdiv+irz-1))
 c         write(*,*)'irz,zb,zt,rb,rt',irz,zb,zt,rb,rt
 c Do over axial facets equally spaced in r^2 running from rb^2 to rt^2
             r2=rb

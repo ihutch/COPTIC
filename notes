@@ -12500,3 +12500,34 @@ steps, and because one was not using them for the potential calculation
 still avoid instability. Or perhaps there's a sum of Boltzmann and particle
 electrons with appropriate balance. Then when we reach the steady state we
 transition to using the electrons for charge balance. 
+
+15 Aug 2014
+
+Discovered some pointers to the time differences with gfortran and g77
+on X1. Back on tp400 
+mpif77 	       	     real    0m35.406s
+mpif77 -f77=g77      real    0m17.262s
+gfortran -O3	     real    0m16.280s
+gfortran 	     real    0m35.377s
+g77		     real    0m34.851s
+g77 -O3		     real    0m17.211s
+g77 -O1		     real    0m19.991s
+gfortran -O1	     real    0m18.274s
+
+Clearly the difference is somehow that mpif77 -f77=g77 is optimizing,
+but mpif77 is not. However, there is no sign from mpif77 -show that this
+is the case:
+[tp400 coptic]$ mpif77 -f77=g77 -show
+g77 -I/usr/local/include -L/usr/local/lib -L/usr/local/lib -lmpich -lopa -lpthread -lpthread -lrt
+
+This is different from X1 where the -O2 flag is included. mpif77 has changed.
+Seems that there is some code in the makefile that might be responsible.
+mpif77 -f77=g77 -O3 -funroll-loops -finline-functions	 real    0m16.110s
+gfortran -O3 -funroll-loops -finline-functions		 real    0m16.229s
+indistinguishable.
+
+Adjusting the compiler. If mpif77 is allowed to choose gfortran  
+clean compile takes 
+mpif77 	      	    real    0m19.266s
+mpif77 -f77=g77     real    0m12.350s
+There's some penalty when developing.

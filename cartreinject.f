@@ -767,8 +767,8 @@ c
 
 c I don't understand the purpose of this trap: 23 Apr 2014
 c      if(ninjcompa(ispecies).le.0)ninjcompa(ispecies)=1
-            nparta(ispecies)=ripn*volume
-     $           / numratioa(ispecies)
+            nparta(ispecies)=int(ripn*volume
+     $           / numratioa(ispecies))
 
 c      write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp'
 c      write(*,*) ispecies,ripn,dtin,cfactor,flux

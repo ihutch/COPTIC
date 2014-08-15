@@ -134,7 +134,7 @@ C     ..
          call GOSOBL(qrn)
          w=1.
          do id=1,ndims
-            p=qrn(id)
+            p=real(qrn(id))
 c            p=rand()
             x(id)=xp(id)*p+xm(id)*(1-p)
             f=x(id)-xi(id)

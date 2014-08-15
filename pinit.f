@@ -249,7 +249,7 @@ c Return a random velocity from the (precalculated) distribution heap.
       integer nc,i
 
       call ranlux(ra,1)
-      nc=ncdist*ra
+      nc=int(ncdist*ra)
       do i=1,ndims
          v(i)=v_col(i,nc)
       enddo
@@ -370,7 +370,7 @@ c Iterate over adjustments to Eneutral.
       ttic=dt0
 c--------------------------------------------
 c Start of a new orbit
- 2    continue 
+c 2    continue 
 c Inject from neutral distribution
       v2=delta*Ti
       do i=1,ndims

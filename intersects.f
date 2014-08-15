@@ -172,8 +172,8 @@ c Surface of revolution. General.
      $           (obj_geom(ovec+2*ndims+j-1,i)))**2
          enddo
          r=sqrt(r)/obj_geom(orscale,i)
-         isect=w2sect(r,z,1.e5,0.,obj_geom(opr,i),obj_geom(opz,i)
-     $        ,int(obj_geom(onpair,i)),fsect,psect)
+         isect=int(w2sect(r,z,1.e5,0.,obj_geom(opr,i),obj_geom(opz,i)
+     $        ,int(obj_geom(onpair,i)),fsect,psect))
          if(mod(isect,2).eq.1)inside_geom=1
       endif
 

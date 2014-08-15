@@ -292,7 +292,7 @@ c         write(*,*)'npair',obj_geom(onpair,ngeomobj)
          endif
          call srvinit(ngeomobj,type,myid)         
          if(myid.eq.0)then
-            np=obj_geom(onpair,ngeomobj)
+            np=int(obj_geom(onpair,ngeomobj))
             write(*,'(a,i3,i3,a)')' rz-pairs',isrnpair,np,':'
             write(*,'(10f7.2)')(obj_geom(opr+k-1,ngeomobj)
      $           ,obj_geom(opz+k-1,ngeomobj),k=1,np)

@@ -39,25 +39,25 @@ else
    else
 # Wanted vecx but could not have it:
      ACCISDRV=accis
-     LIBRARIES = $(LIBPATH) -l$(ACCISDRV)
+     LIBRARIES=$(LIBPATH) -l$(ACCISDRV)
      VECX:=vec4014
    endif
  else
 # VECX not vec4014 or vecx
    ifeq ("$(TESTGL)","")
      ACCISDRV=accisX
-     GLULIBS= -lGL -lGLU
-     LIBRARIES = $(LIBPATH) -l$(ACCISDRV) -lXt -lX11 $(GLULIBS)
+     GLULIBS=-lGL -lGLU
+     LIBRARIES=$(LIBPATH) -l$(ACCISDRV) -lXt -lX11 $(GLULIBS)
      VECX=vecglx
    else
     ifeq ("$(TESTX11)","")
      ACCISDRV=accisX
      GLULIBS=
-     LIBRARIES = $(LIBPATH) -l$(ACCISDRV) -lXt -lX11 $(GLULIBS)
+     LIBRARIES=$(LIBPATH) -l$(ACCISDRV) -lXt -lX11 $(GLULIBS)
      VECX=vecx
     else
      ACCISDRV=accis
-     LIBRARIES = $(LIBPATH) -l$(ACCISDRV)
+     LIBRARIES=$(LIBPATH) -l$(ACCISDRV)
      VECX:=vec4014
     endif
    endif
@@ -79,55 +79,63 @@ ifeq ("$(G77)","")
 #		override G77=mpif77
 #	endif
 endif
-# In g77 -Wno-globals silences spurious type messages on reduce.f
-# This is unrecognized by gfortran. For which no-unused is better.
-ifeq ("$(G77)","mpif77 -f77=g77")	
-  NGW=-Wno-globals
-endif
-ifeq ("$(findstring gfortran,$(G77))","")
-else
-  NGW=-Wno-unused	
-endif
 # export this so it is inherited by sub-makes.
 export G77
+##########################################################################
+#OPTIMIZE=-O3 -funroll-loops -finline-functions
+OPTIMIZE=-O3
+COMPILE-SWITCHES =-Wall $(OPTIMIZE) -I.
+#COMPILE-SWITCHES =-Wall   $(OPTIMIZE) -I. -g -fbounds-check
+##########################################################################
+# Decide on various compiler options based on compiler name.
+# -fno-bounds-check is not recognized reliably except by g77
+# In g77 -Wno-globals silences spurious type messages on reduce.f
+# This is unrecognized by gfortran. no-unused-dummy... is better.
+ifeq ("$(findstring g77,$(G77))","")
+ NOBOUNDS=$(COMPILE-SWITCHES)
+ ifeq ("$(findstring mpif77,$(G77))","")
+  ifeq ("$(findstring gfortran,$(G77))","")
+  else
+# Allow unused dummy arguments to be warned with plain gfortran
+    NGW=
+  endif
+ else
+  ifeq ("$(findstring gfortran,$(shell mpif77 -show))","")
+  else
+    NGW=-Wno-unused-dummy-argument
+# Not now needed -Wno-conversion 
+  endif
+ endif
+else
+  NGW=-Wno-globals
+  NOBOUNDS=$(COMPILE-SWITCHES) -fno-bounds-check
+endif
+NOGLOBALS:=$(COMPILE-SWITCHES) $(NGW)
 ##########################################################################
 # A couple of special compile/link cases, not usually used.
 GFINAL=gcc-4.1 -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
 GCURR=gcc -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
-#OPTIMIZE=-O3 -funroll-loops -finline-functions
-OPTIMIZE=
-COMPILE-SWITCHES=-I.
-ifeq ("$(G77)","mpif77 -f77=g77")	
-  COMPILE-SWITCHES = -Wall $(OPTIMIZE) -I.
-  OPTIMIZE=-O3
-endif	
-#COMPILE-SWITCHES = -Wall   $(OPTIMIZE) -I. -g -fbounds-check
-##COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -g -I.
-# Noboundscheck switches are not compatible with e.g. pathscale compiler:
-ifeq ($(findstring g77,"$(G77)"),g77)
-	NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
-else
-	NOBOUNDS= $(COMPILE-SWITCHES)
-endif
-NOGLOBALS= $(COMPILE-SWITCHES) $(NGW)
-##########################################################################
 ##########################################################################
 FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate.o padvnc.o chargetomesh.o slicesect.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o cmdline.o fsects.o bdyshare.o toms659.o ranlux.o intersects.o
-ifeq ("$(findstring mpi,"$(G77)")","")
-# non MPI compiler (e.g. gfortran) is used
-       MPIOBJECTS:=dummyreduce.o nonmpibbdy.o
+ifeq ("$(G77)","")
+# First time through with undefined compiler don't define MPIOBJECTS.
 else
-       MPIOBJECTS:=reduce.o mpibbdy.o
+ ifeq ("$(findstring mpi,"$(G77)")","")
+# non MPI compiler (e.g. gfortran) is used
+       MPIOBJECTS=dummyreduce.o nonmpibbdy.o
+ else
+       MPIOBJECTS=reduce.o mpibbdy.o
+ endif
 endif
 SPECIALOBJECTS=bdyroutine.o faddu.o getfield.o interpolations.o 
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
-SOLOBJECTS= cijroutine.o mditerate.o mpibbdy.o sormpi.o sorrelaxgen.o meshconstruct.o getfield.o interpolations.o cijplot.o phisoluplot.o slicesect.o 3dobjects.o bdysetsol.o faddu.o fsects.o cmdline.o bdyshare.o
-REGULAROBJECTS= $(MPIOBJECTS) $(FIXEDOBJECTS) ${REINJECT} 
+SOLOBJECTS=cijroutine.o mditerate.o mpibbdy.o sormpi.o sorrelaxgen.o meshconstruct.o getfield.o interpolations.o cijplot.o phisoluplot.o slicesect.o 3dobjects.o bdysetsol.o faddu.o fsects.o cmdline.o bdyshare.o
+REGULAROBJECTS=$(MPIOBJECTS) $(FIXEDOBJECTS) ${REINJECT} 
 OBJECTS=$(SPECIALOBJECTS) $(REGULAROBJECTS)
 HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f creincom.f ptaccom.f colncom.f griddecl.f ptchcom.f mditcom.f sectcom.f plascom.f slpcom.f myidcom.f facebcom.f cdistcom.f ndimsdecl.f reincom.f
 # Nothing in root directory now depends on  examdecl.f
-SOLHEADERS= bbdydecl.f meshcom.f objcom.f 3dcom.f accis/world3.h 
+SOLHEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f accis/world3.h 
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 ##########################################################################
 # If this rule does not seem to recognize the file you are trying to make,
@@ -137,10 +145,10 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 # prerequisites exist.
 
 % : %.f  makefile libcoptic.a $(ACCISLIB)
-	$(G77)  -o $* $(NOGLOBALS) $(PROFILING) $*.f libcoptic.a $(LIBRARIES)
+	$(G77) -o $* $(NOGLOBALS) $(PROFILING) $*.f libcoptic.a $(LIBRARIES)
 
 %.o : %.f makefile $(HEADERS)
-	$(G77)  -c $(NOGLOBALS) $(PROFILING) $*.f
+	$(G77) -c $(NOGLOBALS) $(PROFILING) $*.f
 
 %.o : %.c makefile
 	cc -c $(PROFILING) $*.c
@@ -194,6 +202,7 @@ mpicheck : $(COPTIC)
 	mv mpicheck.out mpicheck.prev
 
 # Configure compiler. Mostly one long continued bash script.
+# Currently not forcing f77=g77 by default.
 compiler : makefile
 	@echo Compiler tests. $${G77}
 	@\
@@ -202,11 +211,11 @@ compiler : makefile
  else\
  if which mpif77 >/dev/null;\
  then echo -n " MPI system. "; GHERE=mpif77;\
-  if which g77 >/dev/null ; then\
-    if [ -z "`mpif77 --version | grep Portland`" ] ; then\
-	 echo -n " Force g77. "; GHERE="mpif77 -f77=g77";\
-    fi\
-  fi\
+#  if which g77 >/dev/null ; then\
+#    if [ -z "`mpif77 --version | grep Portland`" ] ; then\
+#	 echo -n " Force g77. "; GHERE="mpif77 -f77=g77";\
+#    fi\
+#  fi\
  else echo -n " Not MPI System. ";\
   if which g77 >/dev/null ; then\
      GHERE="g77";\
@@ -241,10 +250,10 @@ streamunset :
 # We make one of these the first thing in objects to force the header
 # dependence to be reported, not just ignored by make on pattern rule.
 interpolations.o : interpolations.f compiler makefile $(HEADERS)
-	$(G77)  -c $(NOBOUNDS) $(PROFILING) $*.f
+	$(G77) -c $(NOBOUNDS) $(NGW) $(PROFILING) $*.f
 
 getfield.o : getfield.f compiler makefile $(HEADERS)
-	$(G77)  -c $(NOBOUNDS) $(PROFILING) $*.f
+	$(G77) -c $(NOBOUNDS) $(NGW) $(PROFILING) $*.f
 
 reduce.o : reduce.f compiler makefile $(HEADERS)
 	$(G77) -c $(NOGLOBALS) $(PROFILING) $*.f

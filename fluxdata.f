@@ -144,8 +144,8 @@ c                  write(*,*)'Surface of Revolution flux initialization'
                   do kk=1,int(obj_geom(onpair,i)-1)
 c faceind is the offset of each face.
                      nf_faceind(j,mf_obj,kk)=nfluxes
-                     nr=nr+obj_geom(opdiv+kk-1,i)
-                     nfluxes=nfluxes+obj_geom(opdiv+kk-1,i)*ntheta
+                     nr=nr+int(obj_geom(opdiv+kk-1,i))
+                     nfluxes=nfluxes+int(obj_geom(opdiv+kk-1,i))*ntheta
                   enddo
 c dimlens of r is the total number of r-divisions of all facets.
                   nf_dimlens(j,mf_obj,2)=nr

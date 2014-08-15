@@ -352,8 +352,8 @@ c Find the r,z normalized coordinates of the positions.
       r2=sqrt(xc2(1)**2+xc2(2)**2)
       z1=xc1(ndims)
       z2=xc2(ndims)
-      isect=w2sect(r1,z1,r2,z2,obj_geom(opr,iobj)
-     $     ,obj_geom(opz,iobj),int(obj_geom(onpair,iobj)),fsect,psect)
+      isect=int(w2sect(r1,z1,r2,z2,obj_geom(opr,iobj)
+     $     ,obj_geom(opz,iobj),int(obj_geom(onpair,iobj)),fsect,psect))
       if(isect.eq.0)then
 c This should not happen. And diagnostics should be cleared up eventually.
          write(*,*)'No intersection in srvsect',isect,psect
@@ -384,7 +384,7 @@ c     $        ,inside_geom(ndims,xp2,iobj)
 c Calculate ijbin.
 c Theta index is N_theta*(theta/2pi+0.5). k2-1
 c Non-negative &< N_theta is enforced by slight pi overestimate.
-      itc=obj_geom(ofn1,iobj)*(theta/(2.*3.141593)+0.5)
+      itc=int(obj_geom(ofn1,iobj)*(theta/(2.*3.141593)+0.5))
 
 c Decide the irz index based upon wall position. The face is the integer
 c part of psect. The facet is based upon equal r^2 division of face.
@@ -396,7 +396,7 @@ c The ends of the segment chosen.
       rt=obj_geom(opr+irz,iobj)
       zb=obj_geom(opz+irz-1,iobj)
       zt=obj_geom(opz+irz,iobj)
-      nz=obj_geom(opdiv+irz-1,iobj)
+      nz=int(obj_geom(opdiv+irz-1,iobj))
 c This test sometimes fails very near the end of a segment, leading to
 c benign application of a crossing to an adjacent segment. If it fails
 c by a larger amount. Worry!
