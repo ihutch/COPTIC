@@ -1644,10 +1644,7 @@ operating system that has fortran and C compilers. It is built by
 issuing the command \verb!$ make! in the directory \verb!coptic!. The
 code is written in FORTRAN 77 (plus standard extensions such as long
 variable names). It can therefore be built by older compilers such as
-\verb!g77!, as well as more modern FORTRAN 95 compilers. In fact it
-often runs faster by factors of up to 3 when compiled with \verb!g77!
-than with \verb!gfortran! for example, which is the reason why the
-default compiler is \verb!mpif77 -f77=g77!.
+\verb!g77!, as well as more modern FORTRAN 95 compilers.
 
 The fortran compiler can be specified on the make command line or in
 the environment by setting the value of \verb!G77!: for example,
