@@ -129,10 +129,10 @@ c Defeat writing to the PS file. For text when using hard fonts.
       real nx,ny
       integer ud
       include 'plotcom.h'
-      pfin=pfsw
+      ipfin=pfsw
       pfsw=0
       call vecn(nx,ny,ud)
-      pfsw=pfin
+      pfsw=ipfin
       end
 c***********************************************************************
       subroutine abufstring(string,iunit)

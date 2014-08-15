@@ -285,8 +285,8 @@ c Put a power of ten label at xg,yg offset etc.
       cs=chrssin
       call iwrite(ngpow,lablength,ticlab)
       label='!u' // ticlab(1:lablength)// '!u' // char(0)
-c      ticlab='!AX!@10' //char(0)
-      ticlab='!AX!@10'//label //char(0)
+c The following specification silences warnings.
+      ticlab='!AX!@10'//label(1:73)
       if(lpara)then
          chrscos=axcos
          chrssin=axsin

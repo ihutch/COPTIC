@@ -137,7 +137,7 @@ c
 
       ncolor=igetcolor()
       if(arrow(ibbe).lt.0)then
-         nangle=arrow(ina)
+         nangle=int(arrow(ina))
          iw=int(arrow(isw))
       endif
       amag=0.

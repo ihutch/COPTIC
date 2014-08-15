@@ -418,7 +418,6 @@ c Write eye.
       write(2,*)x2,y2,z2
       close(2)
  99   continue
- 98   continue
       end
 c********************************************************************
 c Return the nearest corner to eye in standard convention.

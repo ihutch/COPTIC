@@ -17,6 +17,11 @@ C********************************************************************
 c Switch to graphics mode Tek 4010/14.
       subroutine svga(scrxpix,scrypix,vmode,ncolor)
       integer scrxpix,scrypix,vmode,ncolor
+c Silence warnings
+      j=scrxpix
+      j=scrypix
+      j=vmode
+      j=ncolor
       accis_nodisplay=1;
 c Enter Tek mode. Modified for Xterm.
       write(*,'(1x,a)')char(27)//'[?38h'
@@ -28,7 +33,6 @@ c Clear screen twice seems to do the trick for Kermit.
       write(*,*)'                                 '
 c Extra clear screen for non Kermit.
       write(*,'(1x,a)')char(12)
-      return
       end
 C********************************************************************
       subroutine txtmode
@@ -164,7 +168,7 @@ c********** Use a gradient color out of 240 *************************
       common /a_grad/a_gradPix,a_gradred,a_gradgreen,a_gradblue
      $     ,a_grad_inited
       external a_grad_data
-
+      j=li
       if(a_grad_inited.eq.0) call accisgraddef()
       end
 c***********************************************************************
@@ -219,21 +223,21 @@ c      integer ipixel,red,green,blue;
       common /a_grad/a_gradPix,a_gradred,a_gradgreen,a_gradblue
      $     ,a_grad_inited
       do i=0,a_gradPixno-1,1
-         j=(i*r2+(a_gradPixno-1-i)*r1)/(a_gradPixno-1.)
+         j=(i*r2+(a_gradPixno-1-i)*r1)/(a_gradPixno-1)
          if(j.lt.0)then
             j=0 
          elseif(j.gt.65535) then
             j=65535
          endif
          a_gradred(i)=j
-         j=(i*g2+(a_gradPixno-1-i)*g1)/(a_gradPixno-1.)
+         j=(i*g2+(a_gradPixno-1-i)*g1)/(a_gradPixno-1)
          if(j.lt.0)then
             j=0 
          elseif(j.gt.65535) then
             j=65535
          endif
          a_gradgreen(i)=j
-         j=(i*b2+(a_gradPixno-1-i)*b1)/(a_gradPixno-1.)
+         j=(i*b2+(a_gradPixno-1-i)*b1)/(a_gradPixno-1)
          if(j.lt.0)then
             j=0 
          elseif(j.gt.65535) then
@@ -274,13 +278,21 @@ c Limiting the range to 0-65535, warning if the pixel number is not right.
 c***********************************************************************
 c Dummy
       integer function igradtri(x,y,z,h,i3d)
+c Silence warnings
+      r=x
+      r=y
+      r=z
+      r=h
+      i=i3d
       igradtri=0
       end
 c**********************************************************************
 c Dummy
       subroutine usleep(usecs)
+      r=usecs
       end
 c**********************************************************************
 c Dummy
       subroutine noeye3d(value)
+      r=value
       end

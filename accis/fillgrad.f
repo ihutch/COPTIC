@@ -120,7 +120,7 @@ c Arithmetic trick to find the third index:
       id(3)=6-(imin+imax)
       hmid=h(id(3))
 
-      ll=hmin-1
+      ll=int(hmin-1)
 c If we exceed the range, the gl behaves differently
 c if we use these settings.
 c         write(*,*)'Color range does not intersect triangle.'
@@ -199,7 +199,6 @@ c            call polyline(xp,yp,np)
          xp(3)=xp(2)
          yp(3)=yp(2)
          zp(3)=zp(2)
- 2       continue
       enddo
 c restore plot switch in case turned off.
       pfsw=ipfsw
@@ -326,14 +325,11 @@ c Unfortunately because of gs weighting, green has to be above red.
       do i=1,ngcol
          r=float(i-1)/(ngcol-1)
          ramp=r*t+(1-r)*b
-         green(i)
-     $        =sineon(ramp-0.5,.2)*65535
-         red(i)
-     $        =sineon(ramp-.25,.2)
-     $        *(sineon(ramp-.5,-.2)+sineon(ramp-.85,.15))
-     $        *65535
-         blue(i)=(sineon(ramp-.15,-.2)+0.7*sineon(ramp-.75,.25)+0.3
-     $        *sineon(ramp-.6,.2))*(sineon(ramp-.05,.05))*65535
+         green(i)=int(sineon(ramp-0.5,.2)*65535)
+         red(i)=int(sineon(ramp-.25,.2)
+     $        *(sineon(ramp-.5,-.2)+sineon(ramp-.85,.15))*65535)
+         blue(i)=int((sineon(ramp-.15,-.2)+0.7*sineon(ramp-.75,.25)+0.3
+     $        *sineon(ramp-.6,.2))*(sineon(ramp-.05,.05))*65535)
       enddo
 
       call accisgradset(red,green,blue,ngcol)

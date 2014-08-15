@@ -991,7 +991,7 @@ c               write(*,*)'Both off end',z1,z2
          elseif(abs(zd).lt.1.e-8*rc)then
 c Degenerate: disc identical z. Alternate treatment, unscaled.
             fr=(zw1-z1)/(z2-z1)
-            if(fr.gt.0. .and. fr.lt.1.)then
+            if(fr.ge.0. .and. fr.lt.1.)then
                r=sqrt((xp1(1)+fr*(xp2(1)-xp1(1)))**2
      $              +(xp1(2)+fr*(xp2(2)-xp1(2)))**2)
                if(r.gt.min(rw1,rw2) .and. r.le.max(rw1,rw2))then

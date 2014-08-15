@@ -83,7 +83,7 @@ c Use g format if too long.
          return
       endif
 c Else standard minimum f.point
-      iax=abs(xx)
+      iax=int(abs(xx))
       if(abs(xx)-iax.gt.0.5)iax=iax+1
       width=0
       do 2 i=1,point

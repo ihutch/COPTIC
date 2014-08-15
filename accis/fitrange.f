@@ -122,8 +122,8 @@ c Choose the increment
          do i=1,npos
             xt=incpos(i)*sfac
             xt=sign(xt,span)
-            n2=anint((xmin+span)/xt-0.49999)
-            n1=anint(xmin/xt+0.49999)
+            n2=nint((xmin+span)/xt-0.49999)
+            n1=nint(xmin/xt+0.49999)
             atr=abs((n2-n1)*xt)
             if(iret.eq.1)write(*,'(2i3,4f7.3,3i4)')i,incpos(i),atr,xt
      $           ,sfac,fspan,n1,n2,ntics

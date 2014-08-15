@@ -237,8 +237,8 @@ c        sx=x2*scrxpix
 c        sy=scrypix-y2*n2sy
       endif
 c standard call.
-      sx=(px*scrxpix)
-      sy=(scrypix-py*n2sy)
+      sx=int(px*scrxpix)
+      sy=int(scrypix-py*n2sy)
 c         write(*,*)'scrxpix,scrypix',scrxpix,scrypix
 c         write(*,*)'sx,sy,n2sy,px,py',sx,sy,n2sy,px,py
       end

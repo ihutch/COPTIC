@@ -375,8 +375,15 @@ c         endif
 c This situation is benign and not an error if we have a region that
 c happens not to cover the entire mesh edge. So don't stop, retry.
 c            write(*,*)'Reinject out of region',i,iregion,xfrac
-c            stop
-            goto 200
+            if(ninjcompa(ispecies).eq.0
+     $           .or. nrein.lt.ninjcompa(ispecies))then
+               nrein=nrein+ilaunch
+               goto 200
+            else
+c We've exhausted the injection complement, so don't keep trying.
+               x_part(iflag,i)=0
+               goto 400
+            endif
          endif
          call ranlux(ra,1)
          dtpos=(dtpos+dtremain)*ra

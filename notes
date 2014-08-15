@@ -12479,3 +12479,24 @@ geometry/geomcube.dat is a test that has many, because of sharp edges.
 Removed all geometry/*.cks files and regenerated them.
 
 commit
+
+ISP running on sceptic machine shows we are now excluding the electrons
+that were previously leaking in. There are other problems with the nearness
+of the boundaries and strong field.
+
+There are several early undetected region transition errors I should
+probably look into. They appear to be the special particle for each node.
+These arose from the disc case of srvsect which had incompatible z tests
+that excluded particle exactly on the disc. Fixed.
+
+ISP really needs a way to start up faster. However, one can't just enhance
+the step size in an electron simulation, because it makes it unstable. 
+Perhaps one could run a Boltzmann case initially, with much bigger steps
+of course, and then introduce the electrons when that has settled down.
+Is there are sensible way to turn fluid (Boltzmann) electrons into particles?
+
+One might be able to track electrons with large (but perhaps ramping down)
+steps, and because one was not using them for the potential calculation
+still avoid instability. Or perhaps there's a sum of Boltzmann and particle
+electrons with appropriate balance. Then when we reach the steady state we
+transition to using the electrons for charge balance. 

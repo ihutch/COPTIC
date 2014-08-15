@@ -190,7 +190,7 @@ c Calculate height of centroid.
                zcol=zcol+z(imin+icx(ic),jmin+icy(ic))
             enddo
             zcol=zcol/4.
-            icolor=(240*(zcol-zmin))/(zmax-zmin)
+            icolor=int((240*(zcol-zmin))/(zmax-zmin))
             call gradcolor(icolor)
             call poly3line(xp,yp,zp,5)
             call pathfill()
@@ -297,7 +297,7 @@ c Calculate height of centroid.
                zcol=zcol+z(imin+icx(ic),jmin+icy(ic))
             enddo
             zcol=zcol/4.
-            icolor=(240*(zcol-zmin))/(zmax-zmin)
+            icolor=int((240*(zcol-zmin))/(zmax-zmin))
             call gradcolor(icolor)
             call poly3line(xp,yp,zp,5)
             call pathfill()

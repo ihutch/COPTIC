@@ -775,7 +775,7 @@ c         write(*,*)'Plane crossing control'
       if(isw.eq.ichar('t'))itri=mod(itri+1,2)
       if(isw.eq.ichar('l'))icl=-icl
       if(isw.eq.ichar('h'))then
- 20      write(*,*)' ======== Slice contouring interface:',
+         write(*,*)' ======== Slice contouring interface:',
      $        ' up/down, <-/-> arrows change slice.'
          write(*,*) ' d: changes <-/-> dimension controlled.',
      $        ' s:rescale. p:plot-to-file.'
@@ -807,7 +807,7 @@ c Rotating and shifting of lineout.
       endif
 c End of user interface.
 c------------------------------------
-      if(imode.eq.1)call line3out(ifull,iuds,u,ixnp,xn,xpl,xnl,np,tp,up
+      if(imode.eq.1)call line3out(ifull,u,ixnp,xn,xpl,xnl,np,tp,up
      $     ,ierr)
 c         write(*,*)xpl,xnl
 c         write(*,'(2f10.4)')(tp(k),up(k),k=1,np)
@@ -975,9 +975,8 @@ c         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
 c******************************************************************
 c Obtain a line profile through a quantity u on n-dimensional space.
 c ndims is fixed as 3 in this version.
-      subroutine line3out(ifull,iuds,u,ixnp,xn,xpl,xnl,np,tp,up,ierr)
+      subroutine line3out(ifull,u,ixnp,xn,xpl,xnl,np,tp,up,ierr)
 c ifull(ndims) full dimensions of u
-c iuds(ndims)  used dimensions of u
 c Node positions are given by vectors laminated into xn, whose
 c starts for dimensions id are at ixnp(id)+1. 
 c Line passes through point xpl with cartesian direction xnl.
@@ -987,7 +986,7 @@ c tp, up  values of line parameter and u returned along the line.
 c ierr non-zero on error.
       integer ndims
       parameter (ndims=3)
-      integer ifull(ndims),iuds(ndims)
+      integer ifull(ndims)
       real u(ifull(1),ifull(2),ifull(3))
       integer ixnp(ndims+1)
       real xn(*)
@@ -1042,8 +1041,8 @@ c For each point in the lineout
 c Find the interpolated u value. First tell what box we are in.
          do id=1,ndims
             xp=xpl(id)+tp(i)*xnl(id)
-            ip(id)=accinterp(xn(ixnp(id)+1),ixnp(id+1)-ixnp(id),
-     $           xp,pf(id))
+            ip(id)=int(accinterp(xn(ixnp(id)+1),ixnp(id+1)-ixnp(id),
+     $           xp,pf(id)))
             if(ip(id).eq.0)then
                write(*,*)'Line profile error. Outside box.',id
      $           ,ixnp(id)+1,ixnp(id+1)-ixnp(id),xp,pf(id)

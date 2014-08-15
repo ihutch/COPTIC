@@ -391,8 +391,12 @@ c Don't count this as an object.
       elseif(type.eq.89.or.type.eq.88)then
 c------------------------------------------------
 c Subtraction
-         read(cline,*,err=901,end=881)idumtype,iassoc,normv(iassoc)
+         read(cline,*,err=901,end=883)idumtype,iassoc,normv(iassoc)
      $        ,(ormv(k,iassoc),k=1,normv(iassoc))
+         goto 884
+ 883     write(*,*)'Error reading subtraction line',cline
+         stop
+ 884     continue
          if(myid.eq.0)write(*,*)ngeomobj,' Subtracting association',type
      $        ,iassoc,normv(iassoc),(ormv(k,iassoc),k=1,normv(iassoc))
 c Don't count this line as an object.
@@ -628,7 +632,7 @@ c Check other z values for consistency.
          enddo
       else
 c type 7 reads the entire wall. Shuffle in.
-         do i=1,obj_geom(onpair,iobj)
+         do i=1,int(obj_geom(onpair,iobj))
             obj_geom(opz+i-1,iobj)=obj_geom(opz+i,iobj)
             obj_geom(opr+i-1,iobj)=obj_geom(opr+i,iobj)
          enddo
@@ -658,7 +662,7 @@ c Flux accounting requires all relevant facets have non-zero div
 c number. By this point there is one less facet than npair.
       if(obj_geom(ofluxtype,iobj).ne.0)then
          if(obj_geom(ofn1,iobj).le.0)goto 1
-         do i=1,obj_geom(onpair,iobj)-1
+         do i=1,int(obj_geom(onpair,iobj)-1)
             if(obj_geom(opdiv+i-1,iobj).le.0)goto 1
          enddo
 c Here if all is well.
@@ -668,10 +672,9 @@ c Else There's an inadequacy in the flux collection specification
          if(myid.eq.0)then
             write(*,*)'Flux specification for object' ,iobj
      $           ,' is in ERROR at division',i
-            write(*,*)int(obj_geom(ofluxtype,iobj))
-     $           ,int(obj_geom(ofn1,iobj)),',',
-     $         (obj_geom(opdiv+i-1,iobj),i=1,obj_geom(onpair,iobj)-1)
-     $           ,' Flux turned off.'
+            write(*,*)int(obj_geom(ofluxtype,iobj)) ,int(obj_geom(ofn1
+     $           ,iobj)),',', (obj_geom(opdiv+i-1,iobj),i=1
+     $           ,int(obj_geom(onpair,iobj)-1)) ,' Flux turned off.'
          endif
          obj_geom(ofluxtype,iobj)=0
       endif

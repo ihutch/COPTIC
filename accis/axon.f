@@ -32,7 +32,7 @@ c Set axon scaling
       endif
       call fitrange(y(1),y(ny),7,nyfac,ypscl,ydelta,y1st,ylast)
       if(nyfac.le.2.and.nyfac.ge.0)then
-         nyfac=0.
+         nyfac=0
          ypscl=1.
       endif
       if(xfrac.gt.0)then

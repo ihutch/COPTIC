@@ -52,8 +52,7 @@ c                 if(zd1*zd2)2100,9,10
                   elseif(zd1*zd2.gt.0.)then
                      goto 10
                   endif
-c    9            if(zd2)2100,11,2100
-    9             if(zd2.ne.0)then 
+                  if(zd2.ne.0)then 
                      goto 2100
                   else
                      goto 11

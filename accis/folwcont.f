@@ -57,8 +57,7 @@ c 2 Aug 92 Labelled contouring. Feb 93.
 c 1 Jan 2001 coloring by height.
 c Plot should be initialized first.
       integer l,imax,jmax,nc
-c I here lie about the number of elements cl has to prevent bounds check
-      real z(l,jmax),x(l),y(l),cl(100)
+      real z(l,jmax),x(l),y(l),cl(*)
       character ppath(l,jmax)
       integer consw
 c Switch consw determines the type of plot. Lower nibble
@@ -109,7 +108,7 @@ c      write(*,*)'consw,theconsw,ifcol,icfil',consw,theconsw,ifcol,icfil
 c Contour level fitting.
          call minmax2(z,L,imax,jmax,minz,maxz)
          in=inc
-         if(int(abs(cl(1))).ne.0) in=abs(cl(1))
+         if(int(abs(cl(1))).ne.0) in=int(abs(cl(1)))
          if(.false.)then
 c Obsolete very complicated scheme for label cycle calculation.
 c Get a good spacing that spans the data range with no more than 8
@@ -119,16 +118,16 @@ c         write(*,*)ctic,c1st,clast,x1st,cyc,xcyc,in
 c Determine a good cyc number xcyc that spans the desired number of
 c contours in no more than 8 steps.
             call fitrange(0.,float(in),8,nxfac,xfac,xcyc,x1st,xlast)
-            cyc=xcyc
+            cyc=int(xcyc)
 c Find good xtic number that spans ctic in no more than cyc+1 steps.
             call fitrange(c1st+ctic,c1st+2*ctic,cyc+1,
      $           nxfac,xfac,xtic,x1st,xlast)
 c         write(*,*)'ctic,c1st,xtic,x1st,cyc,xcyc,in'
 c         write(*,*)ctic,c1st,xtic,x1st,cyc,xcyc,in
 c Round down, ensuring integers are ok, so that these are now commensurate.
-            cyc=1.0001*ctic/xtic
+            cyc=int(1.0001*ctic/xtic)
             xtic=ctic/cyc
-            in=(clast-c1st)/xtic
+            in=int((clast-c1st)/xtic)
             x1st=c1st+ctic-cyc*xtic
             cv=maxz-minz
 c         write(*,*)ctic,c1st,xtic,x1st,cyc,xcyc,in
@@ -136,7 +135,7 @@ c         write(*,*)ctic,c1st,xtic,x1st,cyc,xcyc,in
 c Current fitting of contours and labels code.
             call fitrange(minz,maxz,in,nxfac,xfac,xtic,x1st,xlast)
 c Start assuming the label is every contour.
-            cyc=1.
+            cyc=1
  201        continue
             if(abs(xlast-x1st)/(cyc*xtic).gt.10)then
 c If there would be more than 10 labels. Too many. Find the unit ixtic
@@ -156,7 +155,7 @@ c Otherwise, increase the number of contours per label cycle.
                endif
                goto 201
             endif
-            in=(xlast-x1st)/xtic
+            in=int((xlast-x1st)/xtic)
 c            write(*,*)xfac,x1st,xtic,cyc
          endif
       else
@@ -288,7 +287,7 @@ c this circumlocution to work around an f2c/powerc bug.
             endif
             if(cv.lt.0)then
                str2=str1
-               str1=' '//str2
+               str1=' '//str2(1:29)
                width=width+1
             endif
          else
@@ -428,18 +427,18 @@ c No scaling.
       if(consw.eq.1)then
 c Use vector forms.
          do 1 i=1,abs(ic)
-            ix=xc(i)
+            ix=int(xc(i))
             xc(i)=x(ix)+(x(ix+1)-x(ix))*(xc(i)-ix)
-            iy=yc(i)
+            iy=int(yc(i))
             yc(i)=y(iy)+(y(iy+1)-y(iy))*(yc(i)-iy)
     1    continue
       elseif(consw.eq.2)then
 c  Use array forms.
 c  Mock up array behaviour: x(l,*),y(l,*)
          do 2 i=1,abs(ic)
-            ix=xc(i)
+            ix=int(xc(i))
             dx=xc(i)-ix
-            iy=yc(i)
+            iy=int(yc(i))
             dy=yc(i)-iy
             iv=ix+(iy-1)*L
             ipx=iv+1
@@ -509,7 +508,7 @@ c This is presumably the place to put the function call to document the
 c track followed. At the moment, all we are doing is storing the point
 c in xc,yc. 
 c Path documentation:
-      call acpathdoc(z,cv,l,imax,xc,yc,i)
+      call acpathdoc(z,cv,l,imax,xc(1),yc(1),i)
 
       itest=ichar(ppath(ix,iy))/2**(id-1)
       if(itest - (itest/2)*2 .eq. 0)
@@ -562,6 +561,15 @@ c**************************************************************************
 c Dummy acpathdoc must be replaced by explicitly linked version if
 c path documentation is actually desired.
       subroutine acpathdoc(z,cv,l,imax,xc,yc,i)
+c Silence annoying warnings
+      real z(*)
+      r=z(1)
+      r=cv
+      j=l
+      j=imax
+      r=xc
+      r=yc
+      j=i
       end
 c**************************************************************************
       subroutine  nextpt(z,l,ixm,iym,cv,ix,iy,idx,idy,di)

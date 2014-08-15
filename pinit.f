@@ -189,7 +189,7 @@ c Zero the overflow slots' flag
      $           iocparta(ispecies)-iicparta(ispecies)+1,ntries
  101        format(' Initialized species',i2,i4,'x',i7
      $           ,' ntries=',i7,$)
-            if(nspecies.gt.0)write(*,*)'Slots'
+            if(nspecies.gt.0)write(*,'(a,3i8)')' Slots'
      $           ,iicparta(ispecies),iocparta(ispecies)
      $           ,ninjcompa(ispecies)
          endif

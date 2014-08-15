@@ -141,7 +141,7 @@ c                  write(*,*)'Surface of Revolution flux initialization'
                   ntheta=int(obj_geom(ofn1,i))
                   nf_dimlens(j,mf_obj,1)=ntheta
                   nr=0
-                  do kk=1,obj_geom(onpair,i)-1
+                  do kk=1,int(obj_geom(onpair,i)-1)
 c faceind is the offset of each face.
                      nf_faceind(j,mf_obj,kk)=nfluxes
                      nr=nr+obj_geom(opdiv+kk-1,i)
@@ -439,7 +439,7 @@ c The rscale is already stored.
 c                  write(*,*)'rscale,zscale,=',rscale,zscale
 c Contour positions:
                   i0=0
-                  do i3=1,obj_geom(onpair,i)-1
+                  do i3=1,int(obj_geom(onpair,i)-1)
                   rb=obj_geom(opr+i3-1,i)*rscale
                   rt=obj_geom(opr+i3,i)*rscale
                   rdiff=rt-rb
@@ -448,7 +448,7 @@ c Areas are equal through segments. Needs to be scaled.
                   area=3.1415927*(rb+rt)*sqrt(rdiff**2+zdiff**2)
      $                 /obj_geom(opdiv+i3-1,i)
 c                  write(*,*)'area=',area,rb,rt,zdiff,rscale,zscale
-                  do i2=1,obj_geom(opdiv+i3-1,i)
+                  do i2=1,int(obj_geom(opdiv+i3-1,i))
                      i0=i0+1
 c Calculate contour fractional index:
 c for end of subsegment
@@ -869,7 +869,7 @@ c      write(*,*)'tot,rinf,tdur,n2',tot,rinf,tdur,n1,n2
 c From here on is non-general and is mostly for testing.
       write(*,'(a,i3,a,i3,a,i5,i5,a,f9.2)')' Average flux quant',iq
      $     ,', object',ifobj,', over steps',n1,n2,', per unit time:',tot
-      write(*,*)'rhoinf:',rinf,' Total:',nint(tot*tdur)
+      write(*,'(a,f9.4,a,i8,a)')' rhoinf:',rinf,' Total:',nint(tot*tdur)
      $     ,'  Average collected per step by posn:'
       write(*,'(10f8.2)')(ff_data(iav+i),i=1,nf_posno(iq,ifobj))
       fluxdensity=tot/(4.*3.14159)/rinf
