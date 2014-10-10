@@ -9,7 +9,7 @@ c Encapsulation of parameter setting.
      $     ,objfilename ,lextfield ,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline ,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps)
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp)
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps
@@ -19,7 +19,7 @@ c Encapsulation of parameter setting.
      $     ,lextfield,LPF(ndims),lnotallp,ldistshow
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,vneutral,debyelen,extfield,slpD
-     $     ,Tneutral,Enfrac,colpow
+     $     ,Tneutral,Enfrac,colpow,boltzamp
       real Bfield(ndims),Bt,CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
@@ -89,6 +89,7 @@ c         crelax=1.*Ts(nspecies)/(1.+Ts(nspecies))
          rcij=0
          iobpsw=1
          ldistshow=.false.
+         boltzamp=0.
 c Boundary condition switch and value. 0=> logarithmic.
          islp=0
          slpD=0.
@@ -252,7 +253,10 @@ c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
      $        read(argument(8:),*,err=201)ninjcomp
          if(argument(1:3).eq.'-rn')
      $        read(argument(4:),*,err=201)ninjcomp
-         if(argument(1:3).eq.'-sp')then
+         if(argument(1:4).eq.'-spb')then
+c Boltzamp setting
+            read(argument(5:),*,err=201)boltzamp
+         elseif(argument(1:3).eq.'-sp')then
             if(nspecies+1.gt.nspeciesmax)then
                write(*,*)'***Disallowed more species than available'
      $              ,nspecies+1,nspeciesmax
@@ -534,6 +538,7 @@ c Help text
       write(*,302)' -Ef   set Ext v-drive fraction   [',Enfrac
       write(*,302)' -cp   set v-power coln freq      [',colpow
       write(*,308)' -sp   add a particle species     [',nspecies
+      write(*,302)' -spb  extra Boltzmann fraction   [',boltzamp
       write(*,307)' -zm   set Z/mass ratio           ['
      $     ,(eoverms(ispecies),ispecies=1,nspecies)
       write(*,308)' -nr   set species number ratio   ['

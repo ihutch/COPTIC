@@ -128,6 +128,8 @@ c Second bit of ictlh indicates if there's additional term.
       if(mod(ictlh,2).ne.0)then
          laddu=.true.
       else
+c Plain Poisson convergence with electrons is often slower.
+         mi_sor=mi_sor*2
          laddu=.false.
       endif
 c      write(*,*)'laddu=',laddu

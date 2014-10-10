@@ -74,17 +74,7 @@ c Deal with command-line arguments; not all valid here.
      $     ,objfilename ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps)
-c      call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
-c     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-c     $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
-c     $     ,colntime,dt,bdt,subcycle,dropaccel,eoverm,Bfield,Bt,ninjcomp
-c     $     ,nsteps,nf_maxsteps,vneutral,vd,ndiags,ndiagmax,debyelen,Ti
-c     $     ,iwstep,idistp,lrestart,restartpath,extfield,objfilename
-c     $     ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin,iCFcount,LPF
-c     $     ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow,idims,argline
-c     $     ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies,nspeciesmax
-c     $     ,numratioa)
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp)
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
 c Geometry and boundary information. Read in.

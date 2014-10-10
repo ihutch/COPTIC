@@ -53,8 +53,8 @@ c Face boundary data
       include 'facebcom.f'
 
       external bdyshare,bdyset,faddu,cijroutine,cijedge,psumtoq
-     $     ,quasineutral,fnodensity
-      real faddu,fnodensity
+     $     ,quasineutral,faddlin
+      real faddu,faddlin
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
       character*100 restartpath
@@ -141,7 +141,7 @@ c First time this routine just sets defaults and the object file name.
      $     ,objfilename ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps)
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp)
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -155,7 +155,7 @@ c Second time: deal with any other command line parameters.
      $     ,objfilename ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps)
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp)
       if(ierr.ne.0)stop
 c The double call enables cmdline switches to override objfile settings.
 c-----------------------------------------------------------------
@@ -444,10 +444,16 @@ c Solve for the new potential:
             call bdyslope0(ndims,ifull,iuds,cij,u,q)
          else
             if(nspecies.gt.1)then
-c               call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
-c     $              ,fnodensity,ictl,ierr,myid,idims)
-               call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
+               if(boltzamp.ne.0)then
+c Use some fraction of linearized Boltzmann electron response.
+c To damp long wavelength oscillations.
+                  call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
+     $              ,faddlin,ictl,ierr,myid,idims)
+               else
+c Turn off use of faddu by ictl-2
+                  call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
      $              ,faddu,ictl-2,ierr,myid,idims)
+               endif
             else
                call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
      $              ,faddu,ictl,ierr,myid,idims)

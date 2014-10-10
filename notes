@@ -12531,3 +12531,19 @@ clean compile takes
 mpif77 	      	    real    0m19.266s
 mpif77 -f77=g77     real    0m12.350s
 There's some penalty when developing.
+
+10 Oct 14
+
+Added a switch to allow a fractional extra Boltzmann species. It is only
+implemented when there is more than one species. We specify a fractional
+extra species which behaves with linearized Boltzmann-like response.
+That is, the extra function is faddu = boltzamp*u. 
+
+This has the effect of damping out long wavelength modes in runs where
+the Debyelength is small compared with the domain sized. I think it might
+also serve the purpose of enabling faster equilibration initially. Then
+ramp down the Boltzmann amplitude. I think there is still a limitation
+on the timestep size that will handicap acceleration at the start. 
+
+When lambda_{de} is 1, the timestep must be shorter than approximately 
+0.01 for stability.

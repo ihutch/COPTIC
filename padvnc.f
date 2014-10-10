@@ -650,7 +650,7 @@ c Return whether the particle is in the mesh in linmesh.
 c Store the mesh position into upper ndims of xi.
 c If particle is relocated by periodicity, advance nrein.
 
-      integer i,iregion
+      integer k,iregion
       logical linmesh
 c meshcom provides ixnp, xn, the mesh spacings. (+ndims)
       include 'ndimsdecl.f'
@@ -690,10 +690,12 @@ c end on it. The length is between end mid-cell positions.
                if(.not.(xm.gt.1.5.and.xm.lt.fisz))then
 c It's conceivable that a particle might move more than one period,
 c in which case correction won't work. Don't repeat. Instead, just
-c give up and call it lost but flag the problem. 
-                  write(*,*)'Failed partperiod correct',i,id,ix,xm
-     $                 ,xgridlen
+c give up and call it lost but announce the problem. 
+                  write(*,'(a,2i2,3f10.4)')
+     $                 ' Particle crosses >meshlength',id,ix
+     $                 ,(xi(k),k=1,ndims)
                   linmesh=.false.
+                  goto 2
                else
 c If every dimension is periodic, increment nrein. (Otherwise not)
                   if(.not.lnotallp)nrein=nrein+1
@@ -712,8 +714,9 @@ c Because we must not allow exactly on boundaries.
 c specific particle test
 c         if(i.eq.2298489) write(*,*)i,isz,ix,xm,linmesh
       enddo
+ 2    continue
       iregion=insideall(ndims,xi(1))
-      
+      return
       end
 c********************************************************************
       subroutine postcollide(xi,tisq,iregion)
