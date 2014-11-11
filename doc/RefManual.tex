@@ -19,14 +19,14 @@
   code.  It moves ions in three dimensions of space and time (6
   phase-space dimensions) and simultaneously calculates the
   self-consistent potential in the presence of neutralizing electrons
-  governed by a thermal Boltzmann factor. Objects of various shapes on
-  which boundary conditions can be specified can be placed in the
-  computational domain, and can be used to define the plasma
-  domain. The code is substantially self-documenting through comments,
-  but the manual ought to assist a newcomer with fuller
-  explanations. To run the code, the material of sections \ref{infile}
-  and \ref{cmdline} are sufficient. Subsequent sections describe the
-  structure of the code and how it works.
+  governed by a thermal Boltzmann factor, or particle
+  electrons. Objects of various shapes on which boundary conditions
+  can be specified can be placed in the computational domain, and can
+  be used to define the plasma domain. The code is substantially
+  self-documenting through comments, but the manual ought to assist a
+  newcomer with fuller explanations. To run the code, the material of
+  sections \ref{infile} and \ref{cmdline} are sufficient. Subsequent
+  sections describe the structure of the code and how it works.
 \end{abstract}
 
 
@@ -76,6 +76,13 @@ this ability is that the name of the object file cannot be set in the
 object file!
 
 \subsection{Object Lines}
+
+Objects in coptic are represented by a ``constructive geometry''
+approach. That is, they are composed of a small number of simple
+shapes that can be added or subtracted rather than by general objects
+with arbitrary numbers of faces, vertices, etc. The major advantage of
+the constructive approach is that it is easy and quick to determine
+whether any arbitrary position is inside or outside the object(s).
 
 \paragraph{The format} of an object line is a sequence of numbers
 separated by standard fortran separators (blanks, commas, or
@@ -692,7 +699,7 @@ no density gradient parallel to the magnetic field or if there is no
 magnetic field.
 
 \paragraph{-sp} Add a particle species. Thereafter particle parameters
-refer to the new species.
+refer to the new species. Normally the second species is electrons.
 
 \paragraph{-zm...} Set the charge-to-mass ratio. Default 1 ions -1836
 electrons.
@@ -705,6 +712,18 @@ number of steps of this species per ion step is equal to the
 number-ratio, so the number of depositions of electrons and ions is
 equal (for the background).  Setting -nr1 uses equal numbers of
 particles and no substepping.
+
+\paragraph{-spb...} Add an extra Boltzmann fraction $f_b$
+(\verb!boltzamp!). This applies only when both electrons and ions are
+being modelled as particles (more than one particle species is
+present). It is physically equivalent to adding an additional species
+whose density is equal to $f_be\phi/T_e$. That is, like linearized
+Boltzmann electrons neutralized by an equal background density of
+immobile positive charge. It is implemented through the function
+\verb!faddlin!. The addition helps to stabilize long-wave-length
+fluctuations in regions that are much larger than the Debye
+length. The fraction required is of order the ratio of the Debye
+length to the domain size, when this is small.
 
 
 \subsubsection*{Neutrals, Collisions, Magnetic Field}
@@ -719,7 +738,7 @@ particles and no substepping.
 background ions and neutrals (vd-vn) that is driven by an external
 electric field Eneutral not expressed as the gradient of phi.
 
-\paragraph{-cp....} Set the power of (total) velocity that the
+\paragraph{-cp....} Set the power of (total) speed that the
 collision frequency is proportional to. Thus \verb!-cp0.! is constant
 collision frequency and \verb!-cp1.! is constant cross-section. The
 thermal spread of the neutrals is only approximately accounted for in
@@ -851,7 +870,7 @@ parameters. Their displays are similar to Fig.\ \ref{textgraph}(c),
 and all allow navigating to different slices, rotating the view and
 detailed inspection. \verb!-gc! sets through its bits the objects to
 display in wire-frame fashion initially (so -gc1023 displays the first
-9 objects). It can be useful (possibly in combination with \verb!-gr!) tp
+9 objects). It can be useful (possibly in combination with \verb!-gr!) to
 visualize the representation of objects near the origin. See Fig.\
 \ref{manyobj}. 
 \begin{figure}[htp]
@@ -1026,7 +1045,8 @@ not in common, using length parameters defined in file \verb!griddecl.f!.
 \end{verbatim}
 The potential and charge are \verb!u, q!. The volumes of the cells
 whose centers are at the nodes are calculated once using routines from
-\verb!volint.f! and stored in \verb!volumes!. 
+\verb!volint.f! and stored in \verb!volumes!. The allocation sizes can
+convenently be adjusted using the script \verb!setdimens!
 
 The stencil information is calculated by \verb!cijroutine! and stored
 in \verb!cij!. Its first index references the stencil coefficients in
@@ -1393,10 +1413,13 @@ leap-frog combination of kick equal to $-\nabla\phi\;dt$ and drift
 ${\bf v} dt$. With non-zero magnetic field, the Cyclotronic mover is
 used. The instantaneous magnetic acceleration is ${\bf v}\times{\bf
   B}$ but the gyro motion is explicitly represented by a rotation at
-cyclotron frequency $\Omega$ equal to $B$. If $B>1?/dt$ then it is
-taken to be infinity; so then the ion motion consists purely of two
+cyclotron frequency $\Omega$ equal to $B$. If $B$ is sufficiently
+large that the angle of rotation in a step is greater than
+\verb!thetamax! (generally 1), then instead ions are treated by a
+drift approximation. The ion motion consists purely of two
 terms: (1) parallel (to $B$) acceleration and drift (2) perpendicular
-drift equal to the perpendicular component of the specified drift velocity.
+drift equal to the perpendicular component of the specified drift
+velocity plus the explicit $E\times B$ drift.
 
 The
 acceleration (kick) step is taken to have a duration equal to the mean
@@ -1644,7 +1667,7 @@ operating system that has fortran and C compilers. It is built by
 issuing the command \verb!$ make! in the directory \verb!coptic!. The
 code is written in FORTRAN 77 (plus standard extensions such as long
 variable names). It can therefore be built by older compilers such as
-\verb!g77!, as well as more modern FORTRAN 95 compilers.
+\verb!g77!, as well as more modern FORTRAN 95 (and later) compilers.
 
 The fortran compiler can be specified on the make command line or in
 the environment by setting the value of \verb!G77!: for example,
@@ -1663,7 +1686,7 @@ COPTIC includes a full-scale graphics library for the purpose of
 providing debugging displays and other real-time graphics that are
 helpful to understand its progress. The library is distributed in the
 directory \verb!accis!. The graphics drivers require the code to be
-linked either with the X11 libraries \verb!libX11! and \verb!libXt! or
+linked with the X11 library \verb!libX11! and for the OpenGL driver
 with the OpenGL libraries \verb!libGL! and \verb!libGLU!. The default
 is to use OpenGL if available. In many modern linux distributions, the
 required libraries for linking are not found unless the

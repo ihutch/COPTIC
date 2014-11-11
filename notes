@@ -10833,7 +10833,7 @@ Have to    git merge --abort  then can repeat
 Remove some plotting commands from sphereplot to prevent additional
 complexity. Then only faceplot has links to vtkwriting and vtkcom.f
 
-
+========================================================================
 Summary for Calendar Year 2013 of code developments
 
 Fixes to Eneutral and Enfraction.
@@ -10851,7 +10851,7 @@ Major tidy up of cartreinject associated with gradients.
 Implement setdimens script.
 Fixed small grid error in red-black iteration so it works for grids
 as short as 3. (One point plus two boundaries).
-
+========================================================================
 
 11 Jan 14
 
@@ -12547,3 +12547,15 @@ on the timestep size that will handicap acceleration at the start.
 
 When lambda_{de} is 1, the timestep must be shorter than approximately 
 0.01 for stability.
+
+My guess about stability is that there is some minimum fraction of electron
+response that is Boltzmann that will stabilize large steps. Effectively
+Boltzmann electrons are implicit and particle electrons are explicit.
+However, it appears the fraction of Boltzmann for stabilization may be
+approximately 1.
+
+10 Nov 14
+Discovered that the unformatted binary file format of gfortran is the same
+as pathscale. Therefore my previous problems were just g77. A big benefit
+of moving to gfortran is therefore compatibility of output files and 
+analysis routines.

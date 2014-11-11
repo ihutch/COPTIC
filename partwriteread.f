@@ -210,7 +210,9 @@ c File name:
       character*(130) charout
 
       open(23,file=name,status='old',form='unformatted',err=101)
+      write(*,*)'Opened',name
       read(23)charout
+c      write(*,'(2a)')'Charout=',charout(1:lentrim(charout))
       irst=istrstr(charout,'ixnlength')
       if(irst.ne.0)then
 c String contains ixnlength value. Get it and check it.
@@ -222,7 +224,6 @@ c String contains ixnlength value. Get it and check it.
             stop 'array3read fatal'
          endif
       endif
-c      write(*,'(2a)')'Charout=',charout(1:lentrim(charout))
 c      write(*,*)charout(irst+9:)
       read(23)debyelen,Ti,vd,rs,phip
       read(23)ixnp,xn
