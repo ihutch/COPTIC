@@ -12559,3 +12559,12 @@ Discovered that the unformatted binary file format of gfortran is the same
 as pathscale. Therefore my previous problems were just g77. A big benefit
 of moving to gfortran is therefore compatibility of output files and 
 analysis routines.
+
+24 Nov 14
+Fix bug in objplot commented out using rs. 
+
+git push.
+
+Unfortunately I discover that g77 won't accept the include file for the
+arguments of the cmdline call. So put back the explicit arguments.
+Left the include as part of sortest. Perhaps that will fix my problems.

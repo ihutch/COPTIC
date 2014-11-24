@@ -1,3 +1,4 @@
+      call copticcmdline
      $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,nparta,numprocs,ripernode,crelax,ickst
