@@ -12568,3 +12568,37 @@ git push.
 Unfortunately I discover that g77 won't accept the include file for the
 arguments of the cmdline call. So put back the explicit arguments.
 Left the include as part of sortest. Perhaps that will fix my problems.
+
+Find that there are many cks differences. They seem to go back quite a way.
+
+Checkout abd9cc1fc424453e251163792203691c65bd8ef9 11 July 14
+make mproper; make; make geometry Failed some: 
+geometry/baresheath2.cks:
+geometry/baresheath.cks:
+geometry/uniform128.cks:
+geometry/uniform4.cks:
+geometry/uniform.cks:
+geometry/uniformelec.cks:
+geometry/uniformonly.cks:
+
+checkout f2879ac9c1c077c1c4c7d89c206005607f0626ad  5 Aug when cks were 
+remade. We still have fails:
+geometry/baresheath.cks:
+geometry/uniform128.cks:
+geometry/uniform4.cks:
+geometry/uniform.cks:
+geometry/uniformelec.cks:
+
+I don't understand these unreliable results. I don't seem to have the make
+file set up right. But in any case I can't verify a time at which all the
+geometry tests were right.
+
+Resetting all the .cks files one does
+rm geometry/*.cks
+for file in geometry/*.dat; do make ${file%dat}cks; done
+Then make geometry is up to date.
+Do make mproper; make; make geometry and we get no differences.
+
+Tried to implement an automatic GeometryTests target in the makefile
+that is invoked if compiler or makefile is newer. This might help me
+avoid the problem of these unknown cks differences. 

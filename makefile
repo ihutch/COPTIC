@@ -157,14 +157,14 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 # Ensure we are using a standard allocated array size.
 # Run coptic on the dat file. If it works and gives phi output, sum it.
 # Compare with the old cks file and see if it's the same.
-%.cks : %.dat $(COPTIC)
-	./setdimens 64 64 128
-	rm -f T*.phi
-	./${COPTIC} $*.dat
+%.cks : %.dat $(COPTIC)	
+	@./setdimens 64 64 128 >makegeom.log
+	@rm -f T*.phi
+	@./${COPTIC} $*.dat >>makegeom.log
 	@if [ -f T*.phi ] ; then sum T*.phi >checksum ; else echo NO .phi FILE GENERATED; ls T*.phi 2>/dev/null; exit 1; fi
-	@if diff checksum $*.cks >diffout 2>&1; then echo; echo "        Case $*.cks: OK. No differences"; touch $*.cks; else cat diffout; echo '******** Failed geometry test on $*.cks *********'; echo "$*.cks:" >> GeometryTests; cat diffout >> GeometryTests; fi; rm -f diffout checksum
-	@if [ -f $*.cks ] ; then echo ; else echo "******** $*.cks not present. Creating it."; sum T*.phi >$*.cks; fi
-	@echo -----------------------------------------------------------------
+	@if diff checksum $*.cks >diffout 2>&1; then echo "        Case $*.cks: OK. No differences" >&2; touch $*.cks; else cat diffout; echo '******** Failed geometry test on $*.cks *********' >&2; echo "$*.cks:" >> GeometryTests; cat diffout >> GeometryTests; fi; rm -f diffout checksum
+	@if [ -f $*.cks ] ; then echo >/dev/null ; else echo "******** $*.cks not present. Creating it."; sum T*.phi >$*.cks; fi
+#	@echo -----------------------------------------------------------------
 
 ##########################################
 # Default target compiler must always be the first dependency.
@@ -181,6 +181,8 @@ if [ `ls -s prior.phi | sed -e "s/[ ].*//"` -ne \
 else if ! diff T1e0v000P200L1e0z005x05.phi prior.phi ; then \
 echo "**** RESULT CHANGED" ; rm prior.phi; fi; fi; else echo "File[s] lacking to compare result.\nProbably you've just made coptic for the first time."; fi 
 	@if [ "$(G77)" = "gfortran" ] ; then echo "Compiled serial coptic. make mproper; make for MPI version if MPI available." ; fi
+	@echo Entering background geometry tests loop. Continue regardless.
+	@make GeometryTests
 
 # For now we are using a big hammer to ensure libcoptic is clean.
 libcoptic.a : compiler makefile $(OBJECTS) $(UTILITIES)
@@ -211,11 +213,6 @@ compiler : makefile
  else\
  if which mpif77 >/dev/null;\
  then echo -n " MPI system. "; GHERE=mpif77;\
-#  if which g77 >/dev/null ; then\
-#    if [ -z "`mpif77 --version | grep Portland`" ] ; then\
-#	 echo -n " Force g77. "; GHERE="mpif77 -f77=g77";\
-#    fi\
-#  fi\
  else echo -n " Not MPI System. ";\
   if which g77 >/dev/null ; then\
      GHERE="g77";\
@@ -302,6 +299,10 @@ geometry : geometry/*.cks
 	rm -f T1*
 	date >>GeometryTests
 	cat GeometryTests
+
+GeometryTests : compiler makefile
+	make geometry &
+
 #####################################################
 clean :
 	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.* *.ps *.aux *.log *.out *.toc *.prev *.tlg *.synctex.gz ftnchek.output libcoptic.a storedgeom.dat
