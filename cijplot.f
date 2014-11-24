@@ -61,7 +61,7 @@ c      call setcube(.2,.2,.2,.5,.4)
       call pltinit(0.,1.,0.,1.)
       call scale3(xmeshstart(1),xmeshend(1),xmeshstart(2),xmeshend(2),
      $     xmeshstart(3),xmeshend(3))
-c      call scale3(-rs,rs,-rs,rs,-rs,rs)
+      if(rs.ne.0)call scale3(-rs,rs,-rs,rs,-rs,rs)
       call trn32(0.,0.,0.,x2,y2,z2,1)
       xb=0
       yb=0

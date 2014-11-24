@@ -132,30 +132,14 @@ c Otherwise could have been hidden in sormpi and pass back numprocs.
 c--------------------------------------------------------------
 c Deal with command-line arguments and geometry/object file.
 c First time this routine just sets defaults and the object file name.
-      call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
-     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-     $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
-     $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
-     $     ,ninjcomp ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax
-     $     ,debyelen,Ti ,iwstep ,idistp,lrestart,restartpath,extfield
-     $     ,objfilename ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin
-     $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
-     $     ,idims,argline ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp)
+      call copticcmdline
+      include 'cmdargs.f'
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
 c Second time: deal with any other command line parameters.
-      call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
-     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-     $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
-     $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
-     $     ,ninjcomp ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax
-     $     ,debyelen,Ti ,iwstep ,idistp,lrestart,restartpath,extfield
-     $     ,objfilename ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin
-     $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
-     $     ,idims,argline ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp)
+      call copticcmdline
+      include 'cmdargs.f'
       if(ierr.ne.0)stop
 c The double call enables cmdline switches to override objfile settings.
 c-----------------------------------------------------------------
@@ -274,6 +258,7 @@ c The following requires include objcom.f
 c Plot objects 0,1 and 2 (bits)
          if(iobpl.ne.0.and.lmyidhead)then
             if(rcij.eq.0.)rcij=rs
+            write(*,*)'cijplot',rcij
             call cijplot(ifull,iuds,cij,rcij,iobpl)
           endif
       endif

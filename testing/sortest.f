@@ -65,16 +65,8 @@ c Otherwise could have been hidden in sormpi and pass back numprocs.
       if(idebug.gt.0)write(*,*)'numprocs,myid',numprocs,myid
 c--------------------------------------------------------------
 c Deal with command-line arguments; not all valid here.
-      call copticcmdline(lmyidhead,ltestplot,iobpl,iobpsw,rcij
-     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-     $     ,thetain,nth,iavesteps,n_part,numprocs,ripernode,crelax,ickst
-     $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
-     $     ,ninjcomp ,nsteps ,nf_maxsteps,vneutral,vd,ndiags,ndiagmax
-     $     ,debyelen,Ti ,iwstep ,idistp,lrestart,restartpath,extfield
-     $     ,objfilename ,lextfield ,vpar,vperp,ndims,islp,slpD,CFin
-     $     ,iCFcount,LPF ,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
-     $     ,idims,argline ,vdrift,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp)
+      call copticcmdline
+      include '../cmdargs.f'
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
 c Geometry and boundary information. Read in.
