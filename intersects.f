@@ -310,8 +310,9 @@ c Finished.
 
 c************************************************************
 c Return whether the particle region specified by ibool has any
-c enclosed regions (regions inside an object. If it does, then
-c cartesian reinjection is not correct. 
+c "enclosed regions". An enclosed region is one which consists only of
+c the inside of its objects ORed together. If it does, then cartesian
+c reinjection is not correct.
       logical function lbounded(ibool,ifmask)
 c ibool structure: n1, n1*values, n2, n2*values, ... ,0
       integer ibool(*)
@@ -320,14 +321,18 @@ c ibool structure: n1, n1*values, n2, n2*values, ... ,0
 c  linregion = Prod_1^nj Sum_1^ni inside(bool(ni,nj))
 c where inside(n) is true if n is +/-ve and x is inside/outside |n|. 
       ltemp=.false.
-c Special case for zero particle boolean.
-      if(ibool(1).eq.0)goto 10
       i=1
-      n1=ibool(i)+i
- 1    if(i.lt.n1)then
+ 1    nb=ibool(i)
+      n1=nb+i
+c      write(*,*)'lbounded outer',i,nb,n1
+      if(nb.eq.0)goto 10
+      ltemp=.true.
+ 2    continue
+      if(i.lt.n1)then
 c Reading objects for group ending at n1-1
-        i=i+1
+         i=i+1
          ib=ibool(i)
+c         write(*,*)'lbounded',i,ib,ltemp
 c Trap subtle object error.
          if(ibits(ifmask,abs(ib)-1,1).eq.0)then
             if(ib.gt.0)then
@@ -342,15 +347,15 @@ c Trap subtle object error.
      $              ,'non-field-object',ib
             endif
          endif
-         if(ib.gt.0)then
-c A positive ib value defines inside object.
-            ltemp=.true.
+         if(ib.lt.0)then
+c A positive ib value defines inside object. If there are any outsides
+c in this compound, it is not enclosed.
+            ltemp=.false.
          endif
-         goto 1
+         goto 2
       else
          i=i+1
-         n1=i+ibool(i)
-         if(i.lt.n1)goto 1
+         goto 1
       endif
  10   lbounded=ltemp
 c(ibool(k),k=1,16),
