@@ -12194,7 +12194,7 @@ works, with exactly the cylinit code. I have not changed the way r is
 used or gone to using 2 separate perpendicular vectors. (But I could.)
 
 Ok now we have a rationalized SoR code consistent with cyl. Not yet
-flux tracking on SoR thoug.
+flux tracking on SoR though.
 
 make geometry. OK.
 
@@ -12602,3 +12602,138 @@ Do make mproper; make; make geometry and we get no differences.
 Tried to implement an automatic GeometryTests target in the makefile
 that is invoked if compiler or makefile is newer. This might help me
 avoid the problem of these unknown cks differences. 
+
+Fix object plotting nonappearance in fluxexamine by adding an accisflush
+call before eye3d. Improve the control possibilities of the -gc wiremesh
+plotting to allow parts of the mesh to be cut off.
+
+26 Nov 14
+
+Clarified some descriptions of position data in fluxexamine.
+
+We do not seem to have correct accounting for the flux through the
+cubes in geomrecess.dat. It ought to add up to zero. It
+doesn't. Therefore I'm looking into it some more. The tallyexit is now
+triggered by icross_geom. Which looks for all crossings.  It uses
+cubenormsect which gets all the crossings.  However, tallyexit instead
+calls objsect which calls cubefsect.  cubefsect has a short cut in it
+that ignores cases that are both outside the cube, based on
+inside_geom tests. Actually this shortcut seems necessary since the
+call of cubeusect says it must have one end within the cube.  This
+loginc seems to be erroneous in the general application of
+objsect. cubefsect is also called by potlsect, which is used for
+setting cij. In that context the shortcut probably makes
+sense. objsect is called nowhere except by tallyexit. The fsect routines
+appear to be useful only for potlsect where the chords are along the
+legs of the mesh.
+
+Moved potlsect to fsects.f where it logically belongs. Now there's
+nothing in intersects.f that calls the fsects.f routines. There remain
+the objsect calls of fsect routines in fluxdata.f. But those appear to
+be logically inadequate and ought to be replaced. The crucial thing
+that cubefsect does is to return the ijbin. That's what is needed for
+the tallying. Nothing in intersects.f calculates ijbin now. What I
+need is a replacement that calculates ijbin in general based on
+possibly multiple intersections and does the appropriate tallying.
+
+cubeusect is where the restriction to inside/outside occurs and the 
+calculation of ijbin. What we need is a more general version of cubeusect
+that removes the restriction and returns more general ijbin information
+about possible multiple intersections. cubeusect works by finding the 
+crossings of six planes and choosing the one with minimum fraction from
+xp1. That seems to be where the need for it to be inside arises.
+The generalization I need is that we should find the intersection with
+each bounding plane that lies within the others (as cubenormsect does).
+Then for each find the ijbin for that. For a cube there are at most 2
+since it is not reentrant. The determination of ijbin works by finding
+the fractional position relative to the planes in the other dimensions
+and multiplying by the number of facets in those other dimensions.
+That should be encapsulated. Did that. Quite easy, but only for the
+cube like cases.
+
+Now implemented alternative test for intersection like cube normsect.
+This does not quite give exactly the same result from diagnostics.
+I don't quite understand why. Removed the minimization test. There are
+then lots more evaluations of ijbin. This transition is not quite completed
+we now need to properly account for multiple intersections. Probably 
+we need tests to insure there are no more than 2. 
+
+Since potlsect uses the fact that the minimum fraction is returned by
+cylusect, there is a bit of of a problem with the rework to make it
+consistent with the prior version. cylnormsect does the necessary sorting
+too. Perhaps I ought to use that.
+
+I notice there is a bug in cylnormsect in the sorting. Seems it is not
+done correctly. Fixed but not specifically tested. Encapsulate into
+a little routine insertsorted. We could then use that for cubefsect.
+Now I see there is another logic error in cubenormsect that it can only
+return at most one intersection. Actually spherenormsect was already
+fixed to deal with multiple intersections, in objsect. But not the other
+shapes.
+
+cubenormsect is called only in intersects.f by icross-geom.
+cubeusect is called only in fsects.d by cubefsect and pllelofsect.
+cubefsect is called only in fluxdata.f by objsect and in fsects.f by potlsect.
+
+Using geometry/geomcube now shows gaps in the edge mesh, which are fixed
+by swapping back to cubefsect0. Fixed by ensuring fmin is set.
+Now gives identical phi.
+
+Ensure that in the files cijroutine and fluxdata that call potlsect
+and objsect, the ijbins are allocated arrays so storage is available for
+multiple intersections. This is fine. However there are issues to do 
+with rank mismatches if we make potlsects's declaration ijbin(*).
+My hope is that we can make a gradual transition making some sects
+arrays and leaving others as is. Rank mismatches prevents this within
+the file fsects. So made all declarations of ijbin that need it into
+arrays in file fsects.
+
+Separate cubeusect and ijbincube into two calls so one does not call
+the other. No. That doesn't work because of the need for the face
+information. So add the imin as a return from cubeusect. Has to be an
+array.
+
+Start to modify objsect to call cubeusect and ijbincube directly.
+Comparing with cubefsect, I see that the intersection points are all
+the same within rounding as the cubefsect, but there are more found by
+cubeusect (as expected).
+
+Running isecttest geometry/geomcube.dat
+I find that cubenormsect is in error finding the intersections. 
+Fix that after some effort. This same error was present in the new
+cubeusect and probably explains the incorrect results.
+
+Tested and debugged insertsorted[2].
+
+Now for cubes:
+objsect uses cubeusect, but does not yet account for all intersections.
+potlsect uses cubefsect which calls cubeusect (and ijbincube). 
+icross-geom uses cubenormsect (twice) which is independent.
+I could presumably get rid of cubenormsect at this stage if I wished,
+provided cubeusect really agrees. However, cubeusect requires extra
+array for imin.
+
+cubeusect does not use iobj or ijbin and they could be removed from 
+the argument list. Did that. Now cubeusect and cubenormsect are 
+functionally equivalent except for the extra imin argument and sort
+that cubeusect has. 
+ 
+Found that there are some funky xn1,xn2 orders in fsects that ought to
+be checked in their usage.
+
+cubefsect is now used only for potlsect, not by objsect in fluxdata.f.
+ijbin is not used in potlsect, and need not be calculated by
+cubefsect.
+
+I am now evolving toward a situation where (at least for cubes) the 
+fsects.f code like cubefsect becomes highly simplified since it is 
+only needed for potlsect. But there is a separate routine ijbincube
+that calculates the facet number of an intersection. It requires the
+face (imin) to be returned by prior cubeusect. It would be nice to 
+do away with cubefsect entirely. Make the potlsect cube section
+an explicit of the simplified cubefsect. Now we've removed cubefsect.
+
+I do not think ijbin needs to be an array. So I ought to reverse that
+change.
+
+commit

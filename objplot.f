@@ -142,23 +142,28 @@ c Get the point and eye position. Make into world units.
 c Transform eye position into fractional cube position.      
 c The starting fixed point is opposite signs from returned xn.
       do iv=1,ndims
-c Fix zero flux meshes:
+c The divisions in different face directions:
          objn1(iv-1)=objg(ofn1+iv-1)
+c Fix zero flux meshes:
          if(objn1(iv-1).eq.0.)objn1(iv-1)=1.
+c The face sign to start with (furthest away):
          iov(iv)=int(-sign(1.,xe(iv)-objg(ocenter+iv-1)))
       enddo
 c Now ordered.
 c      write(*,*)(objg(k),k=1,4*ndims),objg(ocenter),objg(oradius)
       do is=1,2*ndims
+c Face normal direction:
          iv=mod(is-1,ndims)+1
-c Face index:
+c Face index iv+ 0 or ndims depending on sign iov:
          imin=iv+ndims*(1+iov(iv))/2
          do id=1,ndims
+c Set the center position of the face rfc(1:3)
             rfc(id)=objg(ocenter+id-1)
             if(id.eq.iv)rfc(id)=rfc(id)+iov(iv)*objg(oradius+id-1)
          enddo
          iov(iv)=-iov(iv)
 c         write(*,*)'Face center',rfc
+c The indices of objn1 (divisions) for this face
          i1=mod(1+is-2,ndims)+1
          i2=mod(2+is-2,ndims)+1
          i3=mod(3+is-2,ndims)+1
@@ -1060,6 +1065,7 @@ c         write(*,*)i,(x_sc(k,1,i),k=1,3)
 
 c User interface:
       iprinting=0
+      call accisflush()
       call eye3d(isw)
       call rotatezoom(isw)
       if(isw.eq.ichar('p'))iprinting=mod(iprinting+1,2)

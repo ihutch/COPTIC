@@ -25,6 +25,9 @@ c      character*40 mystring
          return
       endif
 
+      ixud=iuds(1)
+      iyud=iuds(2)
+      izud=iuds(3)
 c If iosw > 0, then wireframe the objects corresponding to its bits.
 c If iosw < 0, plot the sticks as well as the wireframes.
 c If iosw = 0, plot only sticks for everything.
@@ -82,9 +85,9 @@ c      call cubed(icorner)
 
       if(istick.eq.0) goto 52
 c Stick drawing.
-      do i=1,iuds(1)
-         do j=1,iuds(2)
-            do k=1,iuds(3)
+      do i=1,ixud
+         do j=1,iyud
+            do k=1,izud
                iobj=int(cij(2*ndims+1,i,j,k))
                if(iobj.ne.0)then
 c Draw joins from the point to the fraction distance.
@@ -132,15 +135,17 @@ c     Wireframe drawing.
 c      write(mystring,'(a)')'Object Mask:'
 c      call iwrite(mysw/2,ilen,mystring(13:))
 c      call jdrwstr(.1,.1,mystring,1.)
-      do i=1,iuds(1)
-         do j=1,iuds(2)
-            do k=1,iuds(3)
+      do i=1,ixud
+         do j=1,iyud
+            do k=1,izud
                iobj=int(cij(2*ndims+1,i,j,k))
                iobjcode=idob_cij(iinter_cij,iobj)
                if(iobj.ne.0.and.iobjcode.ge.0)then
                isob=int(mysw/2**iobjcode-(mysw/2**(iobjcode+1))*2)
-c               write(*,*)iobj,iobjcode,isob,mysw
-               if(iobjcode.ne.igetcolor())call color(iobjcode)
+               if(iobjcode.ne.igetcolor().and.iobjcode.ne.0)then
+c                  write(*,*)'Calling color',iobj,iobjcode,isob,mysw
+                  call color(iobjcode)
+               endif
                if(isob.ne.0)then
 c Origin point
                   xx(1)=xn(ixnp(1)+i)
@@ -229,6 +234,41 @@ c User interface:
       if(isw.eq.0.or.isw.eq.ichar('q'))goto 55
       if(isw.eq.ichar('r').or.isw.eq.ichar('e'))irotating=1
       if(isw.eq.ichar('p'))iprinting=mod(iprinting+1,2)
+      if(isw.eq.ichar('h'))then
+         write(*,*)'r,e: rotate;  p:print;  1,2,3: halve region;  ',
+     $        'x,y,z: shrink region;  ','a,b,c: grow region'
+      endif
+      if(isw.eq.ichar('1'))then
+         if(ixud.eq.iuds(1))then
+            ixud=ixud/2
+         else
+            ixud=iuds(1)
+         endif
+      elseif(isw.eq.ichar('2'))then
+         if(iyud.eq.iuds(2))then
+            iyud=iyud/2
+         else
+            iyud=iuds(2)
+         endif
+      elseif(isw.eq.ichar('3'))then
+         if(izud.eq.iuds(3))then
+            izud=izud/2
+         else
+            izud=iuds(3)
+         endif
+      elseif(isw.eq.ichar('a').and.ixud.lt.iuds(1))then
+         ixud=ixud+1
+      elseif(isw.eq.ichar('b').and.iyud.lt.iuds(2))then
+         iyud=iyud+1
+      elseif(isw.eq.ichar('c').and.izud.lt.iuds(3))then
+         izud=izud+1
+      elseif(isw.eq.ichar('x').and.ixud.gt.1)then
+         ixud=ixud-1
+      elseif(isw.eq.ichar('y').and.iyud.gt.1)then
+         iyud=iyud-1
+      elseif(isw.eq.ichar('z').and.izud.gt.1)then
+         izud=izud-1
+      endif
       if(irotating.gt.0)then
 c Get back current eye position xe1 etc.
          call asleep(5000)

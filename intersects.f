@@ -362,227 +362,6 @@ c(ibool(k),k=1,16),
 c      write(*,*)' lbounded=',lbounded
       end
 
-c************************************************************
-      subroutine potlsect(id,ipm,mdims,indi,fraction,conditions,dp,
-     $     iobjno,ijbin)
-
-c In dimension id, direction ipm, 
-c from mesh point at indi(ndims) (zero-based indices, C-style),
-c find any intersection of the mesh leg from this point to its neighbor
-c with a bounding surface. Return the "fraction" of the leg at which
-c the intersection occurs (1 if no intersection), the "conditions" at
-c the intersection (irrelevant if fraction=1), the +ve length
-c in computational units of the full leg in dp, and the object number
-c in iobjno
-      integer id,ipm,mdims,iobjno,ijbin
-      integer indi(mdims)
-      real fraction,dp
-      real conditions(3)
-c Equivalence: c1,c2,c3==a,b,c
-c The boundary conditions are in the form c1\psi + c2\psi^\prime + c3
-c =0.  Where ci=conditions(i).  Thus a fixed potential is (e.g.) c1=1
-c c3=-\psi.  A fixed gradient is (e.g.) c2=1 c3=-\psi^\prime. 
-c If c1=c2=c3=0 then no BC is applied and this object is skipped.
-c
-c In multiple dimensions, if the condition is placed on the gradient
-c normal to the surface, in direction n, then for axis direction i
-c (assuming an orthogonal set) the value of c2 should become c2_i =
-c B/(n.e_i) where e_i is the unit vector in the axis direction.
-c
-c [If n.e_i=0 this is a pathological intersection.  The mesh leg is
-c tangential to the surface, and a normal-gradient BC is irrelevant.
-c Therefore, a fraction of 1 should be returned.]
-c
-c If the surface conditions include non-zero c2, then it is not possible
-c to apply the same BC to both sides, without a discontinuity arising.
-c Continuity alone should be applied on the other (inactive) side of the
-c surface.  A negative value of c2 is used to indicate that just the
-c appropriate continuity condition is to be applied, but c1,c2,c3,
-c should all be returned with the magnitudes that are applied to the
-c active side of the surface, with consistently reversed
-c signs. (e.g. a=1, b=1, c=-2 -> a=-1, b=-1, c=2)
-c
-c A fraction of 1 causes all the bounding conditions to be ignored.
-      include 'ndimsdecl.f'
-      include 'meshcom.f'
-      include '3dcom.f'
-c      integer debug
-      save numreports
-      data numreports/0/
-
-      real xx(ndims),xd(ndims)
-      real xp1(ndims),xp2(ndims)
-c Default no intersection.
-      fraction=1
-c      debug=0
-c      if(iobjno.gt.100)debug=iobjno-100
-c Silence warnings.
-      istype=0
-      iobjno=0
-
-c-------------------------------------------------------------
-c Store the xp1 and xp2 positions of the point and its neighbor
-c so we are in a position to call the flux routines.
-      do i=1,ndims
-         ix1=indi(i)+ixnp(i)+1
-         xp1(i)=xn(ix1)
-         xp2(i)=xn(ix1)
-         if(i.eq.id)then
-            ix2=ix1+ipm
-            xp2(i)=xn(ix2)
-            dp=abs(xp2(i)-xp1(i))
-         endif
-      enddo
-c-------------------------------------------------------------
-c Process data stored in obj_geom.
-      do i=1,ngeomobj
-         if(obj_geom(oabc,i).ne.0. .or. obj_geom(oabc+1,i).ne.0. .or.
-     $        obj_geom(oabc+2,i).ne.0.)then
-c Only for non-null BCs
-c Find the fractional intersection point if any.
-c            if(debug.gt.0)fraction=101
-            itype=int(obj_geom(otype,i))
-            istype=itype/256
-            itype=itype-256*istype
-            if(itype.eq.1)then
-c First implemented just for spheres.
-               call spherefsect(ndims,xp1,xp2,i,ijbin,sd,fraction
-     $              ,ijbin2)
-            elseif(itype.eq.2)then
-c Coordinate-aligned cuboid.               
-               call cubefsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
-            elseif(itype.eq.3)then
-c Coordinate aligned cylinder.
-               call cylfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
-            elseif(itype.eq.4)then
-c Parallelopiped.
-               call pllelofsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
-c     I don't think this ever actually happens, but we'll see.
-               if(fraction.gt.1.or.fraction.lt.0.)then
-                  write(*,*)'***********pllelofsect fraction',fraction
-                  fraction=1.
-               endif
-            elseif(itype.eq.5)then
-c Non-aligned cylinder.
-               call cylgfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
-            elseif(itype.eq.6)then
-               call srvfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
-            elseif(itype.eq.7)then
-               call srvfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
-            else
-               write(*,*)"Unknown object type",obj_geom(otype,i),
-     $              " in potlsect"
-            endif
-         else
-c Null BC. Ignore.
-            fraction=1.
-         endif
-
-c Now we have decided the fraction for this object. Test if there's
-c some subtraction for this object
-         if(fraction.ne.1. .and. normv(i).ne.0)then
-            if(numreports.lt.1)then
-               write(*,*)'Subtraction from obj',i,'; total',normv(i)
-     $           ,' objects subtracted:',(ormv(k,i),k=1,normv(i))
-c     $              ,' indi',indi
-c     $              ,' ipm',ipm
-               numreports=numreports+1
-            endif
-c If this intersection is subtracted, exclude by setting fraction=1.
-c Construct the intersection.
-            do k=1,ndims
-               xx(k)=xp1(k)+fraction*(xp2(k)-xp1(k))
-            enddo
-c Test if +-inside objects.
-            do k=1,normv(i)
-               isubtr=abs(ormv(k,i))
-               inout=sign(1,ormv(k,i))
-               inout=inout*(2*inside_geom(ndims,xx,isubtr)-1)
-               if(inout.eq.1)then
-c                  write(*,*)'Removed',indi,i,k,xx,fraction
-                  fraction=1.
-               endif
-            enddo
-c Ad hoc diagnostics
-c            if(xx(1)**2+xx(2)**2.lt.1.)then
-c               ii=inside_geom(ndims,xx,2)
-c               write(*,*)'Unremoved',i,(ormv(k,i),ii,k=1,normv(i)),xx
-c     $              ,fraction
-c            endif
-         endif
-
-         if(fraction.ne.1.)then
-c Default:
-            projection=0.
-            conditions(1)=obj_geom(oabc,i)
-            conditions(2)=obj_geom(oabc+1,i)
-            conditions(3)=obj_geom(oabc+2,i)
-c            write(*,'(a,$)')'Setting conditions. '
-            if(istype.eq.3)then
-c            if(.false.)then
-c Gradient of conditions exists. Calculate the local conditions.
-               do k=1,ndims
-                  xi=(xp1(k)-obj_geom(ocenter+k-1,i))*(1.-fraction)
-     $                 +(xp2(k)-obj_geom(ocenter+k-1,i))*fraction
-                  do ic=1,3
-c gradients are in reverse order
-                     conditions(ic)=conditions(ic)
-     $                    +xi*obj_geom(oagrad+k-1-(ic-1)*ndims,i)
-                  enddo
-               enddo
-c               write(*,*)'Gradient. cond=',conditions,i
-            endif
-            if(conditions(2).ne.0)then
-c Derivative term present. Calculate the projection:
-c    Calculate Coordinates of crossing
-c Unnecessarily complicated:
-c               do idi=1,ndims
-c    Address of mesh point. 
-c                  ix=indi(idi)+ixnp(idi)+1
-c                  xx(idi)=xn(ix)
-c This needs to be generalized for other objects.
-c                  if(idi.eq.id)
-c     $                 xx(idi)=xx(idi)+fraction*(xn(ix+ipm)-xn(ix))
-c    Component of outward vector = Sphere outward normal.
-c                  xd(idi)=xx(idi)-obj_geom(ocenter+idi-1,i)
-c               enddo
-               do k=1,ndims
-                  xx(k)=xp1(k)+fraction*xp2(k)
-c    Component of outward vector = Sphere outward normal.
-                  xd(k)=xx(k)-obj_geom(ocenter+k-1,i)
-               enddo
-c    Signed projection cosine:
-               projection=ipm*(xd(id)/obj_geom(oradius,i))
-               if(projection.eq.0.)then
-                  fraction=1.
-               else
-c I'm a bit nervous about when conditions are negative. Is this right?
-c    Continuity works for both directions.
-                  conditions(1)=sign(conditions(1),projection)
-                  conditions(2)=conditions(2)/projection
-                  conditions(3)=sign(conditions(3),projection)
-c Special Zero outside, rather than continuity alternative
-                  if(int(obj_geom(otype,i))/256.eq.1
-     $                 .and. projection.lt.0.)then
-                     conditions(1)=1.
-                     conditions(2)=0.
-                     conditions(3)=0.
-                  endif
-               endif
-            endif
-c            write(*,*)'ABC,projection',(obj_geom(oabc+k,i),k=0,2)
-c     $           ,projection,conditions
-            iobjno=i
-            return
-         endif
-      enddo
-c----------------------------------------------------------
-c Default return for no intersection.
-c Address of mesh point. 
-      ix=indi(id)+ixnp(id)+1
-      dp=abs(xn(ix+ipm)-xn(ix))
-      end
-c****************************************************************
 c****************************************************************
 c Convert from contravariant coefficients to world cartesian.
 c Covariant and Contravariant vectors are stored in obj_geom(...,iobj)
@@ -830,11 +609,15 @@ c the SoR parameters call for renormalizations internal to srvsect.
 C*******************************************************************
       subroutine cubenormsect(xn1,xn2,icross_geom,f)
 c Find the number of intersections of the line segment from xn1 to xn2
-c with the centered normalized cube of half-side length 1.
+c with the centered normalized cube of half-side length 1. This code
+c ought to be equivalent to cubeusect except that it does not require 
+c the plane on which the intersections occur to be tracked and so lacks
+c cubeusect's last parameter. It also searches planes in different order.
       include 'ndimsdecl.f'
       real xn1(ndims),xn2(ndims)
       real f(*)
       icross_geom=0
+      f(1)=1.
 c Find intersection(s) with bounding planes. If any lies inside
 c the square defined by the orthogonal planes, there's an intersection.
       do k=1,ndims
@@ -845,29 +628,41 @@ c It is possible the line intersects planes of constant k-coordinate.
                fr=(j-xn1(k))/xd
                if(fr.ge.0.and.fr.le.1.)then
 c Intersects this plane. Test whether other dimensions are inside
-                  do i=mod(k,ndims)+1,mod(k+ndims-2,ndims)+1
+                  do ii=1,ndims-1
+                     i=mod(k+ii-1,ndims)+1
                      xi=xn1(i)+fr*(xn2(i)-xn1(i))
                      if(abs(xi).gt.1)goto 22
+c This prevents duplicates when the intersection is at an edge:
+                     if(icross_geom.ge.1.and.fr.eq.f(icross_geom))goto
+     $                    22
                   enddo
 c Intersection is inside all other planes. It counts. Put it into the
 c right place in the list of fs, i.e. with the lowest positive first.
-                  icross_geom=icross_geom+1
-                  do jj=icross_geom,2,-1
-                     if(f(jj-1).gt.fr)then
-                        f(jj)=f(jj-1)
-                     else
-                        goto 21
-                     endif
- 21                  f(jj)=fr
-                  enddo
-                  return
+                  call insertsorted(icross_geom,f,fr)
                endif
 c Intersection is not inside all others. Invalid.
  22            continue
             enddo
          endif
       enddo
-
+      end
+c*********************************************************************
+      subroutine insertsorted(n,f,fnew)
+c Increment n and insert the value fnew into the ordered list f(*) of n
+c increasing values. 
+      integer n
+      real fnew,f(*)
+      n=n+1
+      do i=n,2,-1
+         if(f(i-1).gt.fnew)then
+            f(i)=f(i-1)
+         else
+            f(i)=fnew
+            goto 1
+         endif
+      enddo
+      f(1)=fnew
+ 1    continue
       end
 c*********************************************************************
       subroutine cylnormsect(xn1,xn2,icross_geom,f)

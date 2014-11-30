@@ -29,6 +29,7 @@ c-----------------------------------------------------
       integer ipa(ndims)
       real fn(ndims)
       integer istart
+      integer ijbin(ovlen)
       data istart/0/
 
 c Silence unused warnings :
@@ -63,7 +64,7 @@ c For each direction in this dimension,
             ipm=1-2*(i-1)
 c Determine whether this is a boundary point: adjacent a fraction ne 1.
             call potlsect(id,ipm,ndims,indi,
-     $           fraction(i),conditions(1,i),dpm(i),iobjno,ijbin)
+     $           fraction(i),conditions(1,i),dpm(i),iobjno,ijbin(1))
             if(fraction(i).lt.1. .and. fraction(i).ge.0.)then
                ifound=ifound+1
 c Start object data for this point if not already started.
@@ -76,7 +77,7 @@ c If this object's a,b,c depends on flux, start extra info.
 c Start chained extra data.
                      ichain=1
 c                     write(*,*)'Chaining',ipoint,(indi(kw),kw=1,ndims)
-c     $                    ,id,i,iobjno,ijbin,cij(icij)
+c     $                    ,id,i,iobjno,ijbin(1),cij(icij)
 c First time, initialize the pointer
                      idob_cij(iextra_cij,oi_cij)=oi_cij+ichain
 c and initialize the data for all directions
@@ -86,7 +87,7 @@ c and initialize the data for all directions
                   endif
 c Set the data for this direction.          
                   idob_cij(ioad,oi_cij+ichain)=iobjno
-                  idob_cij(ioad+1,oi_cij+ichain)=ijbin
+                  idob_cij(ioad+1,oi_cij+ichain)=ijbin(1)
 c ioad+2 is set below from coef/a                 
                endif
 c---------------
@@ -412,6 +413,8 @@ c      real af(mdims,mdims),
       real bs(mpoints),V(mdims,mdims),W(mdims)
 c Number of points found
       integer npoints
+c Unfortunately ovlen is not available here. So as a kludge, using ndims.
+      integer ijbin(ndims)
 
       idiag=idin
       npoints=0
@@ -466,7 +469,7 @@ c Local indices and fractions of this edge start.
 c Look for intersection along this edge.
 c      if(idiag.ge.5)write(*,'(a,i2,$)')'Calling potlsect '
          call potlsect(i,ipm(i),ndims,indl,fraction,conditions,dpm
-     $        ,iobjno,ijbin)
+     $        ,iobjno,ijbin(1))
 c      if(idiag.ge.5)write(*,'(a,$)')'Returned'
          if(fraction.ne.1. .and. npoints.lt.mpoints)then
 c            idiag=idiag+1
@@ -993,6 +996,7 @@ c The total areas and flux counts of all flux-tracked objects
       real totarea(nf_obj),totflux(nf_obj)
 c Probably this ought to be set up in a common. But for now:
       integer iavemax
+      integer ijbin(ovlen)
       data iavemax/50/      
 
 c Calculate the current step's totals for use in floating cases.
@@ -1054,17 +1058,17 @@ c-------------
                   if(i2type.eq.4)then
 c                     write(*,*)'Insulating',ifobj
 c Address the flux data
-                     ijbin=idob_cij(ioad+1,oisor+ichain)
+                     ijbin(1)=idob_cij(ioad+1,oisor+ichain)
 c Pull the area of this facet into here
-                     iaddress=ijbin+nf_address(nf_flux,ifobj,nf_pa)
+                     iaddress=ijbin(1)+nf_address(nf_flux,ifobj,nf_pa)
                      area=ff_data(iaddress)
 c Pull the flux for this timestep and this facet.
-                     flux=ff_data(ijbin
+                     flux=ff_data(ijbin(1)
      $                    +nf_address(nf_flux,ifobj,nf_step))
 c Calculate new potential
                      if(flux.lt.0.)then
-                        write(*,*)'phiofcount flux negative',flux,ijbin
-     $                       ,area,ifobj
+                        write(*,*)'phiofcount flux negative',flux
+     $                       ,ijbin(1),area,ifobj
                         flux=0.
                      endif
                      cnew=-a*phiofcount(flux,area)
@@ -1080,7 +1084,7 @@ c Smooth over nave steps.
                   nave=min(nf_step,iavemax)
                   cold=a*dob_cij(ioad+2,oisor)
                   c=(cold*(nave-1)+cnew)/nave
-c         if(oisor.lt.20)write(*,*)'cijupdate',nf_step,iobj,ijbin
+c         if(oisor.lt.20)write(*,*)'cijupdate',nf_step,iobj,ijbin(1)
 c     $                 ,cold,cnew,c
 c or test that it gives the same answer from the old value.
 c                  c=cold

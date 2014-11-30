@@ -397,8 +397,10 @@ c Subtraction
  883     write(*,*)'Error reading subtraction line',cline
          stop
  884     continue
-         if(myid.eq.0)write(*,*)ngeomobj,' Subtracting association',type
-     $        ,iassoc,normv(iassoc),(ormv(k,iassoc),k=1,normv(iassoc))
+         if(myid.eq.0)write(*,'(i2,a,f5.0,20i3)')
+     $        ngeomobj,
+     $        ' Subtract',type ,iassoc,normv(iassoc)
+     $        ,(ormv(k,iassoc),k=1,normv(iassoc))
 c Don't count this line as an object.
          ngeomobj=ngeomobj-1
          if(iassoc.gt.ngeomobj)stop
@@ -424,9 +426,13 @@ c Set subtractive boundary conditions equal to additive
                enddo
                ifield_mask=IBSET(ifield_mask,isoc-1)
             endif
-            if(myid.eq.0)write(*,*)'  Set subtractive surfaces',isoc
-     $           ,normv(isoc),(ormv(ii,isoc),ii=1,normv(isoc))
-     $           ,(obj_geom(oabc+ii-1,isoc),ii=1,3*ndims)
+c Write only for debugging.
+            if(.false. .and. myid.eq.0)then
+               write(*,'(a,i3,i2,10i3)')
+     $              '  Setting subtractive surfaces',isoc,normv(isoc),
+     $              (ormv(ii,isoc),ii=1,normv(isoc))
+c     $           ,(obj_geom(oabc+ii-1,isoc),ii=1,3*ndims)
+            endif
          enddo
          endif
       endif

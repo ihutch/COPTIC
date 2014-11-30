@@ -182,7 +182,7 @@ else if ! diff T1e0v000P200L1e0z005x05.phi prior.phi ; then \
 echo "**** RESULT CHANGED" ; rm prior.phi; fi; fi; else echo "File[s] lacking to compare result.\nProbably you've just made coptic for the first time."; fi 
 	@if [ "$(G77)" = "gfortran" ] ; then echo "Compiled serial coptic. make mproper; make for MPI version if MPI available." ; fi
 	@echo Entering background geometry tests loop. Continue regardless.
-	@make GeometryTests
+	@make GeometryTests >/dev/null
 
 # For now we are using a big hammer to ensure libcoptic is clean.
 libcoptic.a : compiler makefile $(OBJECTS) $(UTILITIES)
@@ -300,8 +300,9 @@ geometry : geometry/*.cks
 	date >>GeometryTests
 	cat GeometryTests
 
-GeometryTests : compiler makefile
-	make geometry &
+# Use compiler (which depends on makefile) as a test of major updates
+GeometryTests : compiler
+	@make geometry >/dev/null &
 
 #####################################################
 clean :

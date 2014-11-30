@@ -17,6 +17,14 @@ C      real traceave(ntr)
       real avetotal(ndims),avecoln(ndims),avesq(ndims)
       real rp,yrange,cv(ndims)
       intrinsic ibclr,btest
+      character*10 typetext(5)
+      character poslabel(4,5)
+      integer objnumtotext(7)
+      data objnumtotext/1,2,3,5,3,4,4/
+      data poslabel/'c','p','0','A','x','y','z','A','r','t','z','A'
+     $     ,'r','t','z','A','1','2','3','A'/
+      data typetext/'Sphere ','Cuboid ','Cylinder ','SurfRev '
+     $     ,'Pllelopp '/
       data iplot/1/iprint/1/ivprn/0/iquiet/1/
       data ifmask/1023/iomask/0/
       data idimf/3/
@@ -76,9 +84,9 @@ c            read(argument(3:),'(i5)')iquiet
          endif
          if(argument(1:2).eq.'-i')
      $        read(argument(3:),'(i5)')iosw
-         if(argument(1:3).eq.'-om')
-     $        read(argument(4:),'(i5)')iomask
-         if(argument(1:2).eq.'-o')then
+         if(argument(1:3).eq.'-om')then
+            read(argument(4:),'(i5)')iomask
+         elseif(argument(1:2).eq.'-o')then
             read(argument(3:),'(i5)')ims
 c set to mask out all objects if we are starting anew:            
 c            if(iomask.eq.0)iomask=2*(2**30-1)+1
@@ -107,12 +115,8 @@ c Give informational messages.
       write(*,*)'File:',filename(1:lentrim(filename)) 
       write(*,*)'debyelen,Ti,vd,rs,phip,colntime,subcycle,vneut',
      $     ',fcold,dropac,Tneut,Eneut'
-      write(*,*)debyelen,Ti,vd,rs,phip ,colntime,subcycle,vneutral
-     $     ,fcollided,dropaccel,Tneutral,Eneutral
-
-c      write(*,*)'found',ff_data(nf_address(nf_flux,1,-1)+1-1)
-c     $     ,nf_address(nf_flux,1,-1)
-
+      write(*,'(12f6.2)')debyelen,Ti,vd,rs,phip ,colntime,subcycle
+     $     ,vneutral,fcollided,dropaccel,Tneutral,Eneutral
       if(ivprn.eq.0)then
       write(*,*)'   No. objects,   No. steps, dt,   No. quantities(obj)'
          write(*,'(i12,i12,f10.4,20i3)')mf_obj,nf_step,ff_dt(nf_step),
@@ -120,19 +124,28 @@ c     $     ,nf_address(nf_flux,1,-1)
 c      write(*,*) 'Posn and first 2 step addresses ',
 c     $     (((nf_address(i,j,k),i=1,mf_quant(j)),' ,'
 c     $     ,j=1,mf_obj),k=1-nf_posdim,2),'...'
-
 c      write(*,*)'geommap for objects',mf_obj,(nf_geommap(k),k=1,mf_obj)
       endif
 
 c For all the objects being flux tracked.
       do k=1,mf_obj
+         itype=int(obj_geom(otype,nf_geommap(k)))
+         itexttype=objnumtotext(itype)
          if(k.eq.iprint)then
             if(mf_quant(k).ge.1)then
                write(*,'(a,i3,a,3i4,a,i3)') 'Position data for '
-     $              ,nf_posdim,' flux-indices. nf_dimlens='
+     $              ,nf_posdim,' flux-indices: x,y,z,A. nf_dimlens='
      $              ,(nf_dimlens(1,k,kd),kd=1,nf_posdim-1),' Object',k
-               write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i
-     $              -1),i=1,nf_posno(1,k)),j=1,nf_posdim)
+               write(*,'(a,i2,a)')'Object type',itype
+     $              ,' '//typetext(itexttype)
+c Write out the position data hopefully comprehensibly.
+               do j=1,nf_posdim
+                  write(*,*)poslabel(j,itexttype)
+                  write(*,'(10f8.4)')(ff_data(nf_address(nf_flux,k,1-j)
+     $                 +i-1),i=1,nf_posno(1,k))
+               enddo
+c               write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i
+c     $              -1),i=1,nf_posno(1,k)),j=1,nf_posdim)
             endif
             do kk=max(nf_step/istep,1),nf_step,max(nf_step/istep,1)
                if(mf_quant(k).ge.1)then
@@ -202,13 +215,15 @@ c            write(*,*)i,nf_npart(i)
 c Plots if 
       if(rp.ne.0.)write(*,'(a,f10.4,a,f10.4)')
      $     'Radius',rp,' Potential',phip
-      if(ivprn.eq.0)write(*,*)'   Field,       part,       press,'
+      if(ivprn.eq.0.and.ifmask.ne.0)write(*,'(2a,2i5)')
+     $     '   Field,       part,       press,'
      $     ,'     collision,    total,  steps ave',n1,n2
       nplot=0
       do k=1,mf_obj
          imk=ifmask/2**(k-1)
          imk=imk-2*(imk/2)
-         write(*,*)'ifmask=',ifmask,' k=',k,' imk=',imk
+c         write(*,*)'ifmask=',ifmask,' k=',k,' imk=',imk
+         if(ifmask.eq.0)goto 50
 
          do j=1,ndims
             avefield(j)=0.
@@ -338,14 +353,14 @@ c v printing this object
          endif
 
       enddo
+ 50   continue
 
-c      write(*,*)'iomask=',iomask,' iosw=',iosw,' iplot=',iplot
+      write(*,*)'iomask=',iomask,' iosw=',iosw,' iplot=',iplot
 
-      if(iplot.ne.0 .and.vtkflag.eq.0)then
+      if(iplot.ne.0.and.vtkflag.eq.0.and.iosw.ge.0.and.iosw.lt.3)then
          call pltend()
-c         if(iplot.eq.1)
-         write(*,*)'abs(iplot),rview,cv,iosw,iomask',abs(iplot),rview,cv
-     $        ,iosw,iomask
+c         write(*,*)'abs(iplot),rview,cv,iosw,iomask',abs(iplot),rview,cv
+c     $        ,iosw,iomask
          call objplot(abs(iplot),rview,cv,iosw,iomask)
       endif
 
@@ -362,19 +377,22 @@ c Read more arguments if there are any.
       write(*,*)'-q suppress all plots.'
       write(*,*)'-w set object whose data is to be written, or none.'
       write(*,*)'-m mask objects whose force is to be plotted'
+     $     ,' -m0 none.'
       write(*,*)'-v mask objects whose force vs v is to be printed.'
      $     ,' No other printing.'
       write(*,*)'-r set 3-D size of plot window'
       write(*,*)'-cff,ff,ff set 3-D center of plot window'
       write(*,*)'-i set iosw for objplot:'
-     $     ,' Coloring 0 position, 1 flux, 2 flux-density.'
+     $     ,' Color 0 position, 1 flux, 2 flux-density. Else none.'
       write(*,*)'-oiii add object iii to 3D objects to plot'
      $     ,' (first time masking all others).'
       write(*,*)'-omiii set full mask of 3D objects not to plot.'
+     $     ,' (Use -i9 for no plot.)'
       write(*,*)'-f<id> set dimension whose force to plot'
       write(*,*)'-b<nb> set boxcar average range +-nb.'
       write(*,*)'-yfff set range of force plot'
       write(*,*)'-vtkiii outputs a vtk file every nf_step/iii steps'
+      write(*,*)'Turn off plots progressively: -p-1 -m0 -i9 -q'
 
       end
 c********************************************************************
