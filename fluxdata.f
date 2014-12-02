@@ -589,37 +589,25 @@ c Use only bottom 8 bits:
       itype=itype-256*(itype/256)
 
       if(itype.eq.1)then
-c         if(.false.)then
-c Sphere intersection Old. Return the bin number and direction ijbin,sd.
-c         call spherefsect(ndims,x1,xi,iobj,ijbin,sd,fraction,ijbin2)
-c         call binadding(xi,infobj,sd,ijbin,ispecies)
-c         if(ijbin2.ne.-1)then
-c This happens only if we pass through (a sphere). Then we should
-c Correct the count by passing out again. 
-c         write(*,*)'Pass-through ijbin2,infobj=',ijbin2,infobj
-c            call binadding(xi,infobj,-sd,ijbin2,ispecies)
-c            ierr=-1
-c         endif
-c         else
-c New Sphere code. ida=0 means use all ndims dimensions (not cyl).
-            ida=0
-            call spheresect(ndims,ida,x1,xi,obj_geom(ocenter,iobj)
-     $           ,obj_geom(oradius,iobj),fraction,f2,sd,C,D)
-            if(sd.eq.0 .or. fraction-1..gt.0. .or. fraction.lt.0.)then
-               fraction=1.
-               sd=0.
-            else
+c New Sphere code ----------------. 
+c ida=0 means use all ndims dimensions (not cyl).
+         ida=0
+         call spheresect(ndims,ida,x1,xi,obj_geom(ocenter,iobj)
+     $        ,obj_geom(oradius,iobj),fraction,f2,sd,C,D)
+         if(sd.eq.0 .or. fraction-1..gt.0. .or. fraction.lt.0.)then
+            fraction=1.
+            sd=0.
+         else
 c This code decides which of the nf_posno for this object
 c to update corresponding to this crossing, and then update it.
 c Calculate normalized intersection coordinates.
-               call ijbinsphere(iobj,fraction,x1,xi,ijbin)
+            call ijbinsphere(iobj,fraction,x1,xi,ijbin)
+            call binadding(xi,infobj,sd,ijbin,ispecies)
+            if(f2.gt.0. .and. f2.lt.1.)then
+               call ijbinsphere(iobj,f2,x1,xi,ijbin)
                call binadding(xi,infobj,sd,ijbin,ispecies)
-               if(f2.gt.0. .and. f2.lt.1.)then
-                  call ijbinsphere(iobj,f2,x1,xi,ijbin)
-                  call binadding(xi,infobj,sd,ijbin,ispecies)
-               endif
             endif
-c         endif
+         endif
       elseif(itype.eq.2)then
 c Cube intersection --------------- new code:
 c Normalize to unit cube
@@ -650,10 +638,24 @@ c Cylinder ----------------
          call cylfsect(ndims,x1,xi,iobj,ijbin,sd,fraction)
          call binadding(xi,infobj,sd,ijbin,ispecies)
       elseif(itype.eq.4)then
-c Parallelopiped intersection.
-         call pllelofsect(ndims,x1,xi,iobj,ijbin,sd,fraction)
-         
-         call binadding(xi,infobj,sd,ijbin,ispecies)
+c Parallelopiped ------------------------
+         call xp2contra(iobj,x1,xi,xn1,xn2,ins1,ins2)
+         call cubeusect(xn1,xn2,nsect,fmin,imin)
+         fraction=fmin(1)
+c         do i=1,min(nsect,1)
+         do i=1,nsect
+            if(fmin(i).le.fmax)then
+c First crossing is inward if ins1 is 0.
+               sd=-(2.*ins1-1.)
+c But second crossing is opposite. 
+               if(i.gt.1)then
+                  sd=-sd
+                  write(*,*)'Multiple Crossing',i,sd
+               endif
+               call ijbincube(iobj,imin(i),fmin(i),xn1,xn2,ijbin,idebug)
+               call binadding(xi,infobj,sd,ijbin,ispecies)
+            endif
+        enddo
       elseif(itype.eq.5)then
 c Non-aligned cylinder
          call cylgfsect(ndims,x1,xi,iobj,ijbin,sd,fraction)

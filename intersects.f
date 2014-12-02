@@ -455,8 +455,6 @@ c Contra coefficients are obtained by dotting with contra vectors
          do j=1,ndims
             xcl(i)=xcl(i)
      $           +xd(j)*obj_geom(ocontra+ndims*(i-1)+j-1,iobj)
-c            write(*,*)i,j,obj_geom(ocontra+ndims*(j-1)+i-1,iobj)
-c     $           ,xd(i)
          enddo
       enddo
       do i=1,ndims

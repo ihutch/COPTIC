@@ -12783,3 +12783,12 @@ and discount fractions which exceed it. Seems to work.
 Now working on spherefsect. Encapsulate the ijbin calculation into its
 own routine. Done. Replace spherefsect in fluxdata.f objsect by the
 equivalent calls. Done.
+
+Commit. We need to track some of these changes.
+b2155a858e8474c355640874db76e5bcdd39cf61
+
+Now replace spherefsect in potlsect. That makes it now unused. Remove.
+Remove now unused cubefsect.
+Perform the same replacement on pllelofsect. Multiple crossings make
+the new code fluxes different. Crosschecked by switching them off
+and getting the old result. So correct. pllelofsect removed.
