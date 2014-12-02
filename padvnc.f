@@ -42,7 +42,7 @@ c Local storage
       real xfrac(ndims)
       real xprior(ndims)
       logical linmesh
-      logical lcollided,ltlyerr
+      logical lcollided,ltlyerr,leftregion
       save adfield
 
 c Make this always last to use the checks.
@@ -293,37 +293,25 @@ c Treat collided particle at (partial) step end
          endif
          call partlocate(x_part(1,i),ixp,xfrac,inewregion,linmesh)
 c---------------------------------
-c If we crossed a boundary, do tallying.
+c If we crossed an object boundary, do tallying.
          ltlyerr=.false.
-c This test is probably too susceptible to pass-through.
-c         if(inewregion.ne.iregion)then
-c Integer exclusive or ieor bitwise using regions.
-c            call tallyexit(x_part(1,i),ieor(inewregion,iregion)
-c     $        ,ltlyerr,dtpos,ispecies)
-c So replaced with discovery of all the objects this step crosses.
+c Discovery of all the objects this step crosses.
          icross=icrossall(xprior,x_part(1,i))
+         leftregion=.false.
          if(icross.ne.0)then
-            call tallyexit(x_part(1,i),icross,ltlyerr,dtpos,ispecies)
-         elseif(inewregion.ne.iregion)then
-c Eventually this safety test should be removed.
-            write(*,*)'WARNING: Undetected region transition:i,irg,inew'
-            write(*,*)i,iregion
-     $           ,inewregion,icross,xprior,(x_part(k,i),k=1,ndims)
-            icr=icross_geom(xprior,x_part(1,i),i,fractions)
-            write(*,*)icr,(fractions(k),k=1,2)
+c Since we crossed objects we might have leftregion:
+            leftregion=leaveregion(ibool_part,ndims,xprior,x_part(1,i)
+     $           ,icross,fractions).gt.0
+c Here we tell tallyexit not to go past fractions(1) because that is the
+c end of this step.
+            call tallyexit(xprior,x_part(1,i),icross,ltlyerr,ispecies
+     $           ,fractions(1))
          endif
 c------------ Possible Reinjection ----------
-c         if(ltlyerr .or. .not.linmesh .or.
-c     $        .not.linregion(ibool_part,ndims,x_part(1,i)))then
-         if(.not.linmesh.or.leaveregion(ibool_part,ndims,xprior
-     $        ,x_part(1,i),icross,fractions).gt.0)then
+         if(.not.linmesh.or.leftregion)then
 c  We left the mesh or region. Test if this was a trapped passthrough.
            if(linmesh.and.inewregion.eq.iregion)npassthrough
      $           =npassthrough+1
-c            write(*,*)'PASS THROUGH',i,ltlyerr
-c     $           ,iregion,inewregion,linmesh,icross,fractions(1)
-c     $           ,leaveregion(ibool_part,ndims,xprior,x_part(1,i),icross
-c     $           ,fractions)
             if(ninjcompa(ispecies).eq.0
      $           .or. nrein.lt.ninjcompa(ispecies))goto 200
 c Reinject because we haven't exhausted complement. 

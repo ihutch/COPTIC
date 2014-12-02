@@ -10,7 +10,7 @@ c the intersection occurs (1 if no intersection), the "conditions" at
 c the intersection (irrelevant if fraction=1), the +ve length
 c in computational units of the full leg in dp, and the object number
 c in iobjno
-      integer id,ipm,mdims,iobjno,ijbin(*)
+      integer id,ipm,mdims,iobjno,ijbin
       integer indi(mdims)
       real fraction,dp
       real conditions(3)
@@ -88,7 +88,7 @@ c First implemented just for spheres.
      $              ,ijbin2)
             elseif(itype.eq.2)then
 c Coordinate-aligned cuboid.               
-c Convert into normalized position
+c Convert into normalized position for object i.
                do j=1,ndims
                   xn1(j)=(xp1(j)-obj_geom(ocenter+j-1,i))
      $                 /obj_geom(oradius+j-1,i)
@@ -97,7 +97,6 @@ c Convert into normalized position
                enddo
                call cubeusect(xn1,xn2,nsect,fmin,imin)
                fraction=fmin(1)
-c               call cubefsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
             elseif(itype.eq.3)then
 c Coordinate aligned cylinder.
                call cylfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
@@ -243,22 +242,22 @@ c the fractional position between xp1 and xp2 in frac.
       include 'ndimsdecl.f'
       integer nsdim
       real xp1(nsdim),xp2(nsdim)
-      integer iobj,ijbin(1),ijbin2
+      integer iobj,ijbin,ijbin2
       real sd,fraction
       real tiny,onemtiny
       parameter (tiny=1.e-5,onemtiny=1.-2.*tiny)
       include '3dcom.f'
 c 3D here. Used to use nds parameter
-      real x12(ndimsmax)
+c      real x12(ndimsmax)
 
 c      if(nsdim.ne.nds)stop 'Wrong dimension number in spherefsect'
       infobj=nf_map(iobj)
       fraction=1.
       ida=0
-      call spheresect(nsdim,ida,xp1,xp2,
-     $     obj_geom(ocenter,iobj),obj_geom(oradius,iobj),fraction
-     $     ,f2,sd,C,D)
-      if(sd.eq.0 .or. fraction-1..ge.tiny .or. fraction.lt.0.)then
+      call spheresect(nsdim,ida,xp1,xp2,obj_geom(ocenter,iobj)
+     $     ,obj_geom(oradius,iobj),fraction ,f2,sd,C,D)
+c      if(sd.eq.0 .or. fraction-1..ge.tiny .or. fraction.lt.0.)then
+      if(sd.eq.0 .or. fraction-1..gt.0. .or. fraction.lt.0.)then
 c This section can be triggered inappropriately if rounding causes
 c fraction to be >=1 when really the point is just outside or on the 
 c surface. Then we get a sd problem message.
@@ -266,15 +265,44 @@ c surface. Then we get a sd problem message.
          sd=0.
          return
       endif
-c      write(*,*)'spheresect',fraction,f2,sd
 c This code decides which of the nf_posno for this object
 c to update corresponding to this crossing, and then update it.
 c Calculate normalized intersection coordinates.
-      do i=1,nsdim
+      call ijbinsphere(iobj,fraction,xp1,xp2,ijbin)
+      if(f2.gt.0. .and. f2.lt.1.)then
+         call ijbinsphere(iobj,f2,xp1,xp2,ijbin2)
+      else
+         ijbin2=-1
+      endif
+
+      end
+c*********************************************************************
+      subroutine ijbinsphere(iobj,fraction,xp1,xp2,ijbin)
+c Given the fractional distance between xp1 and xp2, fraction, which is the
+c crossing point. Index the face position using information in
+c obj_geom(ofn,iobj):
+c This code decides which of the nf_posno for this object to update
+c corresponding to this crossing.
+      implicit none
+      include 'ndimsdecl.f'
+      include '3dcom.f'
+      integer iobj,ijbin
+      real fraction,xp1(ndims),xp2(ndims)
+
+      real tiny,onemtiny
+      parameter (tiny=1.e-5,onemtiny=1.-2.*tiny)
+      real x12(ndims),psi
+      integer i
+      integer infobj,ibin,jbin
+
+      infobj=nf_map(iobj)
+c Calculate normalized intersection coordinates.
+      do i=1,ndims
          x12(i)=((1.-fraction)*xp1(i)+fraction*xp2(i)
      $        -obj_geom(ocenter+i-1,iobj))
      $        /obj_geom(oradius+i-1,iobj)
       enddo
+
 c Bin by cos(theta)=x12(3) uniform grid in first nf_dimension. 
 c ibin runs from 0 to N-1 cos = -1 to 1.
       ibin=int(nf_dimlens(nf_flux,infobj,1)*(onemtiny*x12(3)+1.)*0.5)
@@ -282,108 +310,15 @@ c ibin runs from 0 to N-1 cos = -1 to 1.
 c jbin runs from 0 to N-1 psi = -pi to pi.
       jbin=int(nf_dimlens(nf_flux,infobj,2)
      $     *(0.999999*psi/3.1415926+1.)*0.5)
-      ijbin(1)=ibin+jbin*nf_dimlens(nf_flux,infobj,1)
-      if(ijbin(1).gt.nf_posno(1,infobj))then
+      ijbin=ibin+jbin*nf_dimlens(nf_flux,infobj,1)
+      if(ijbin.gt.nf_posno(1,infobj))then
          write(*,*)'ijbin error in spherefsect'
-         write(*,*)infobj,ijbin(1),nf_posno(1,infobj),ibin,jbin
+         write(*,*)infobj,ijbin,nf_posno(1,infobj),ibin,jbin
      $        ,nf_dimlens(nf_flux,infobj,1),nf_dimlens(nf_flux,infobj,2)
      $        ,x12(3),obj_geom(ocenter+2,iobj),xp1(3),xp2(3)
      $        ,fraction
       endif
- 
-      if(f2.gt.0. .and. f2.lt.1.)then
-c Step passes right through the sphere.
-c Calculate normalized intersection coordinates. For f2.
-         do i=1,nsdim
-            x12(i)=((1.-f2)*xp1(i)+f2*xp2(i)
-     $           -obj_geom(ocenter+i-1,iobj))
-     $           /obj_geom(oradius+i-1,iobj)
-         enddo
-c Bin by cos(theta)=x12(3) uniform grid in first nf_dimension. 
-c ibin runs from 0 to N-1 cos = -1 to 1.
-         ibin=int(nf_dimlens(nf_flux,infobj,1)*(onemtiny*x12(3)+1.)*0.5)
-         psi=atan2(x12(2),x12(1))
-c jbin runs from 0 to N-1 psi = -pi to pi.
-         jbin=int(nf_dimlens(nf_flux,infobj,2)
-     $        *(0.999999*psi/3.1415926+1.)*0.5)
-         ijbin2=ibin+jbin*nf_dimlens(nf_flux,infobj,1)
-         if(ijbin2.gt.nf_posno(1,infobj))then
-            write(*,*)'ijbin2 error in spherefsect'
-            write(*,*)infobj,ijbin2,nf_posno(1,infobj),ibin,jbin
-     $           ,nf_dimlens(nf_flux,infobj,1),nf_dimlens(nf_flux,infobj
-     $           ,2) ,x12(3),obj_geom(ocenter+2,iobj),xp1(3),xp2(3) ,f2
-         endif
-      else
-         ijbin2=-1
-      endif
 
-      end
-c*********************************************************************
-      subroutine cubefsect2(nsdim,xp1,xp2,iobj,ijbin,sd,fraction)
-c Given a coordinate-aligned cube object iobj. Find the point of
-c intersection of the line joining xp1,xp2, with it, and determine the
-c ijbin to which it is therefore assigned, and the direction it is
-c crossed (sd=+1 means inward from 1 to 2). 
-c Intersection fractional distance from xp1 to xp2 returned.
-
-c The cube is specified by center and radii!=0 (to faces.) which define
-c two planes (\pm rc) in each coordinate. Inside corresponds to between
-c these two planes, i.e. x-xc < |rc|. We define the facets of the cube
-c to be the faces (planes) in the following order:
-c +rc_1,+rc_2,+rc_3,-rc_1,-rc_2,-rc_3 which is the order of the
-c coefficients of the adjacent vectors. 
-
-c This old version finds the nearest intersection to xp1 if xp1 is inside
-c the object or to xp2 if xp1 is outside (and xp2 inside). This does not
-c seem to be necessary and the simpler version below is used.
-
-      include 'ndimsdecl.f'
-      integer nsdim,iobj
-      integer ijbin(1)
-      real xp1(ndims),xp2(ndims)
-      real sd
-      include '3dcom.f'
-      real fmin(ovlen)
-      integer imin(ovlen)
-      real xn1(ndims),xn2(ndims)
-      sd=0.
-      ig1=inside_geom(ndims,xp1,iobj)
-      ig2=inside_geom(ndims,xp2,iobj)
-      if(ig1.eq.1 .and. ig2.eq.0)then
-c xp1 inside & 2 outside
-         inside=0
-      elseif(ig2.eq.1 .and. ig1.eq.0)then
-c xp2 inside & 1 outside
-         inside=1
-      else
-c Both inside or outside. (Used to be neither inside). Any intersection
-c will be disallowed. This means we cut off any such edges of the
-c cube. But actually for coordinate-aligned cube there are no
-c problematic non-normal intersections.
-         fraction=1.
-         return
-      endif
-c In direction sd
-      sd=2*inside-1.
-c Package from here by converting into normalized position
-      do i=1,ndims
-         xn1(i)=(xp1(i)-obj_geom(ocenter+i-1,iobj))
-     $        /obj_geom(oradius+i-1,iobj)
-         xn2(i)=(xp2(i)-obj_geom(ocenter+i-1,iobj))
-     $        /obj_geom(oradius+i-1,iobj)
-      enddo
-c And calling the unit-cube version.
-      idebug=0
-      if(inside.eq.0)then
-         call cubeusect(xn1,xn2,nsect,fmin,imin)
-c         call ijbincube(iobj,imin(1),fmin(1),xn1,xn2,ijbin,idebug)
-         fraction=fmin(1)
-      else
-         call cubeusect(xn2,xn1,nsect,fmin,imin)
-c         call ijbincube(iobj,imin(1),fmin(1),xn1,xn2,ijbin,idebug)
-         fraction=fmin(1)
-         fraction=1.-fraction
-      endif
       end
 c*********************************************************************
       subroutine cubefsect(nsdim,xp1,xp2,iobj,ijbin,sd,fraction)
@@ -437,7 +372,7 @@ c facets of the cube to be the faces (planes) in the following order:
 c +v_1,+v_2,+v_3,-v_1,-v_2,-v_3. 
 c Then within each face the facet indices are in cyclic order. But that
 c is determined by the cubeusect code.
-      integer nsdim,iobj,ijbin(1)
+      integer nsdim,iobj,ijbin
       include 'ndimsdecl.f'
       real xp1(nsdim),xp2(nsdim)
       real sd
@@ -471,14 +406,13 @@ c ins1,2 indicate inside (0) or outside (1) for each point.
 c In direction sd
       sd=2*ins1-1.
 c And calling the unit-cube version.
-c      write(*,*)'Calling cubeusect',xn1,xn2
       if(ins1.eq.0 .and. ins2.eq.1)then
          call cubeusect(xn2,xn1,nsect,fmin,imin)
-c         call ijbincube(iobj,imin(1),fmin(1),xn1,xn2,ijbin,idebug)
+         call ijbincube(iobj,imin(1),fmin(1),xn1,xn2,ijbin,idebug)
          fraction=fmin(1)
       elseif(ins2.eq.0 .and. ins1.eq.1)then
          call cubeusect(xn2,xn1,nsect,fmin,imin)
-c         call ijbincube(iobj,imin(1),fmin(1),xn1,xn2,ijbin,idebug)
+         call ijbincube(iobj,imin(1),fmin(1),xn1,xn2,ijbin,idebug)
          fraction=fmin(1)
          fraction=1.-fraction
       else
@@ -489,7 +423,7 @@ c         call ijbincube(iobj,imin(1),fmin(1),xn1,xn2,ijbin,idebug)
 c*********************************************************************
       subroutine cylfsect(nsdim,xp1,xp2,iobj,ijbin,sdmin,fmin)
 c Master routine for calling cylusect after normalization of cyl.
-      integer nsdim,iobj,ijbin(1)
+      integer nsdim,iobj,ijbin
       include 'ndimsdecl.f'
       real xp1(nsdim),xp2(nsdim)
       real sdmin
@@ -518,7 +452,7 @@ c When the position relative to the center is dotted into the contra
 c variant vector it yields the coordinate relative to the unit cylinder,
 c whose third component is the axial direction. 
 
-      integer nsdim,iobj,ijbin(1)
+      integer nsdim,iobj,ijbin
       include 'ndimsdecl.f'
       real xp1(nsdim),xp2(nsdim)
       real sd
@@ -562,7 +496,7 @@ c inward from 1 to 2). Fractional distance xp1->xp2 is returned.
 c This version uses only inside_geom and bisection to find the point
 c of intersection. 
 
-      integer nsdim,iobj,ijbin(1)
+      integer nsdim,iobj,ijbin
       real xp1(nsdim),xp2(nsdim),sd,fraction
 c Local storage
       include 'ndimsdecl.f'
@@ -701,7 +635,7 @@ c The facet number: k3-1
       if(ifct.lt.0)ifct=0
       if(ifct.gt.nz-1)ifct=nz-1
       ifobj=nf_map(iobj)
-      ijbin(1)=(itc)+nf_dimlens(nf_flux,ifobj,1)*(ifct)
+      ijbin=(itc)+nf_dimlens(nf_flux,ifobj,1)*(ifct)
      $        +nf_faceind(nf_flux,ifobj,irz)
 
       if(ins1.eq.0)then
@@ -777,7 +711,7 @@ c For a unit cube, center 0 radii 1, find the intersection(s) of line
 c xp1,xp2 with it, and the face that it intersects.
       include 'ndimsdecl.f'
       real xp1(ndims),xp2(ndims)
-c      integer ijbin(1),iobj
+c      integer ijbin,iobj
       include '3dcom.f'
       real fmin(ovlen)
       integer imin(ovlen)
@@ -788,7 +722,6 @@ c      integer ijbin(1),iobj
       imin(1)=0
       nsect=0
       fn=1.
-c      fmin=100.
       do i=1,2*ndims
          im=mod(i-1,ndims)+1
 c First half of the i's are negative. Second half positive.
@@ -810,6 +743,8 @@ c This is sorted:
             call insertsorted2(nsect,fmin,fn,imin,i)
  1          continue
          endif
+c This escape prevents (unobserved) pathological third intersections.
+         if(nsect.ge.2)return
       enddo
       end
 c*******************************************************************
@@ -821,7 +756,7 @@ c obj_geom(ofn.,iobj):
       implicit none
       include 'ndimsdecl.f'
       include '3dcom.f'
-      integer iobj,idebug,imin,ijbin(1)
+      integer iobj,idebug,imin,ijbin
       real fmin,xp1(ndims),xp2(ndims)
       integer infobj,ibstep,ibin,k,i
       real xk,xcr
@@ -849,8 +784,8 @@ c This has xcr run from 0 to 1 as xk goes from -1. to +1. :
 c Now we have ibin equal to the face-position index, and ibstep equal
 c to the face-position size. Add the face-offset for imin. This is
 c tricky for unequal sized faces. So we need to have stored it. 
-      ijbin(1)=ibin+nf_faceind(nf_flux,infobj,imin)
-      if(idebug.eq.1)write(*,'(a,3i4)')'Ending cubeusect',ijbin(1)
+      ijbin=ibin+nf_faceind(nf_flux,infobj,imin)
+      if(idebug.eq.1)write(*,'(a,3i4)')'Ending cubeusect',ijbin
      $     ,nf_faceind(nf_flux,infobj,imin),imin
 c That's it.
       end
@@ -864,7 +799,7 @@ c is the axial direction.
 c The facets of the cylinder are the end faces -xr +xr, and the curved
 c side boundary. 3 altogether.  The order of faces is bottom, side, top.
       
-      integer nsdim,iobj,ijbin(1)
+      integer nsdim,iobj,ijbin
       include 'ndimsdecl.f'
       real xp1(nsdim),xp2(nsdim)
       real sdmin
@@ -975,12 +910,12 @@ c     $     ,r2,theta,z,x12,fmin,imin
 c End blocks are of size nr x nt, and the curved is nt x nz.
 c 3-D only here. 
       infobj=nf_map(iobj)
-      ijbin(1)=0
+      ijbin=0
       if(imin.ne.0)then
 c Ends
          if(imin.eq.1)then
 c offset by (nr+nz)*nt
-            ijbin(1)=(nf_dimlens(nf_flux,infobj,1)
+            ijbin=(nf_dimlens(nf_flux,infobj,1)
      $           +nf_dimlens(nf_flux,infobj,3))
      $           *nf_dimlens(nf_flux,infobj,2)
          endif
@@ -988,16 +923,16 @@ c Uniform mesh in r^2 normalized.
          ir=int(nf_dimlens(nf_flux,infobj,1)*(0.999999*r2))
          it=int(nf_dimlens(nf_flux,infobj,2)
      $     *(theta/3.1415927+1.)*0.5)
-         ijbin(1)=ijbin(1)+ir+it*nf_dimlens(nf_flux,infobj,1)
+         ijbin=ijbin+ir+it*nf_dimlens(nf_flux,infobj,1)
       else
 c Side. Offset to this facet nr*nt:
-         ijbin(1)=nf_dimlens(nf_flux,infobj,1)*nf_dimlens(nf_flux,infobj
+         ijbin=nf_dimlens(nf_flux,infobj,1)*nf_dimlens(nf_flux,infobj
      $        ,2)
          it=int(nf_dimlens(nf_flux,infobj,2)
      $     *(theta/3.1415927+1.)*0.5)
          iz=int(nf_dimlens(nf_flux,infobj,3)*(0.999999*z+1.)*0.5)
 c Index in order theta,z
-         ijbin(1)=ijbin(1)+it+iz*nf_dimlens(nf_flux,infobj,2)
+         ijbin=ijbin+it+iz*nf_dimlens(nf_flux,infobj,2)
       endif
 c      write(*,'(6f8.4,3i3)')xp1,xp2,ir,it,iz
       end

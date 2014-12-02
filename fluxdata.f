@@ -499,15 +499,15 @@ c     $     ,nf_address(1,1,11)-1)
 
       end
 c******************************************************************
-      subroutine tallyexit(xi,idiffreg,ltlyerr,dtpos,ispecies)
+      subroutine tallyexit(xprior,xi,idiffreg,ltlyerr,ispecies,fmax)
 c Document the exit of this particle just happened. 
 c Assign the exit to a specific object, and bin on object.
 c (If it is a mapped object, decided by objsect.)      
 c On entry
+c        xprior is particle prior position
 c        xi is particle position/velocity etc, 
-c        idiffreg WAS the xor between its region and previous.
-c        Now idiffreg is changed to be all the objects the step crosses.
-c        dtpos is the time step duration that brought us here.
+c        idiffreg is all the objects the step crosses.
+c        fmax is the maximum considered step fraction.
 c On exit ltlyerr is true if an error occurred else unchanged.
 c Normally, returning an error will cause this particle to be
 c considered to have left the particle region, so it will be discarded.
@@ -515,6 +515,7 @@ c considered to have left the particle region, so it will be discarded.
       logical ltlyerr
       include 'ndimsdecl.f'
       real xi(3*ndims)
+      real xprior(ndims)
       include 'partcom.f'
       include '3dcom.f'
 
@@ -528,7 +529,7 @@ c Determine (all) the objects crossed and call objsect for each.
       iobj=iobj+1
       idiff=idiff/2
       if(idp.ne.idiff*2)then
-         call objsect(xi,iobj,ierr,dtpos,ispecies)
+         call objsect(xprior,xi,iobj,ierr,ispecies,fmax)
          if(ierr.gt.0)then
 c There's a serious error. Give info and stop
             ireg=insideall(ndims,xi(1))
@@ -536,14 +537,13 @@ c There's a serious error. Give info and stop
             r1=0.
             do id=1,3
                r=r+xi(id)**2
-               r1=r1+(xi(id)-dtpos*xi(id+3))**2
             enddo
             r=sqrt(r)
             r1=sqrt(r1)
             write(*,*)'Tallyexit error',ierr,i,iobj,idiffreg
             if(ierr.eq.99)write(*,*)'Unknown object type.'
             write(*,*)'xpart,r=',(xi(k),k=1,6),r,ireg
-            write(*,*)'xp1',(xi(k)-dtpos*xi(k+3),k=1,3),r1
+            write(*,*)'xp1',(xprior(k),k=1,3),r1
             ltlyerr=.true.
             stop
             return
@@ -555,79 +555,114 @@ c There's a serious error. Give info and stop
       end
 c******************************************************************
 c****************************************************************
-      subroutine objsect(xi,iobj,ierr,dtpos,ispecies)
-c Find the intersection of the last step of particle xi (length dtpos)
-c with object iobj, and update the positioned-fluxes accordingly.  ierr
-c is returned: 0 good. 1 no intersection. 99 unknown object.
+      subroutine objsect(x1,xi,iobj,ierr,ispecies,fmax)
+c Find the intersection of the last step of particle xi from x1
+c with object iobj, and update the positioned-fluxes accordingly.
+c fmax is the maximum position fraction that should be counted.
+c It prevents counting intersections after leaving the region.
+c  ierr is returned: 0 good. 1 no intersection. 99 unknown object.
 c
       include 'ndimsdecl.f'
       real xi(3*ndims)
+      real x1(ndims)
       include '3dcom.f'
       include 'partcom.f'
       include 'sectcom.f'
 
-      real x1(ndims),x2(ndims),xn1(ndims),xn2(ndims)
+      real xn1(ndims),xn2(ndims)
       integer isc
-      integer ijbin(ovlen)
+      integer ijbin
       integer imin(ovlen)
       real fmin(ovlen)
 
       data isc/0/
 
       ierr=0
-      ijbin2=-1
-
 c Do nothing for untracked objects and report no error.
-      if(nf_map(iobj).eq.0)return
       infobj=nf_map(iobj)
+      if(infobj.eq.0)return
       if(mf_quant(infobj).eq.0)return
 
+      ijbin2=-1
       itype=int(obj_geom(otype,iobj))
 c Use only bottom 8 bits:
       itype=itype-256*(itype/256)
 
-c Get the positions:
-      do i=1,ndims
-         x1(i)=xi(i)-dtpos*xi(i+3)
-         x2(i)=xi(i)
-      enddo
       if(itype.eq.1)then
-c Sphere intersection. Return the bin number and direction ijbin,sd.
-         call spherefsect(ndims,x1,x2,iobj,ijbin,sd,fraction,ijbin2)
+c         if(.false.)then
+c Sphere intersection Old. Return the bin number and direction ijbin,sd.
+c         call spherefsect(ndims,x1,xi,iobj,ijbin,sd,fraction,ijbin2)
+c         call binadding(xi,infobj,sd,ijbin,ispecies)
+c         if(ijbin2.ne.-1)then
+c This happens only if we pass through (a sphere). Then we should
+c Correct the count by passing out again. 
+c         write(*,*)'Pass-through ijbin2,infobj=',ijbin2,infobj
+c            call binadding(xi,infobj,-sd,ijbin2,ispecies)
+c            ierr=-1
+c         endif
+c         else
+c New Sphere code. ida=0 means use all ndims dimensions (not cyl).
+            ida=0
+            call spheresect(ndims,ida,x1,xi,obj_geom(ocenter,iobj)
+     $           ,obj_geom(oradius,iobj),fraction,f2,sd,C,D)
+            if(sd.eq.0 .or. fraction-1..gt.0. .or. fraction.lt.0.)then
+               fraction=1.
+               sd=0.
+            else
+c This code decides which of the nf_posno for this object
+c to update corresponding to this crossing, and then update it.
+c Calculate normalized intersection coordinates.
+               call ijbinsphere(iobj,fraction,x1,xi,ijbin)
+               call binadding(xi,infobj,sd,ijbin,ispecies)
+               if(f2.gt.0. .and. f2.lt.1.)then
+                  call ijbinsphere(iobj,f2,x1,xi,ijbin)
+                  call binadding(xi,infobj,sd,ijbin,ispecies)
+               endif
+            endif
+c         endif
       elseif(itype.eq.2)then
-c Cube intersection new code:
+c Cube intersection --------------- new code:
 c Normalize to unit cube
          do i=1,ndims
             xn1(i)=(x1(i)-obj_geom(ocenter+i-1,iobj))
      $           /obj_geom(oradius+i-1,iobj)
-            xn2(i)=(x2(i)-obj_geom(ocenter+i-1,iobj))
+            xn2(i)=(xi(i)-obj_geom(ocenter+i-1,iobj))
      $           /obj_geom(oradius+i-1,iobj)
          enddo
          call cubeusect(xn1,xn2,nsect,fmin,imin)
+         fraction=fmin(1)
+         if(nsect.gt.1)write(*,*)'nsect multiple',nsect,fmin(1),fmin(2)
 c The first is the minimum fraction from 1 to 2. But really we need
 c to account for all intersections.
-         fraction=fmin(1)
-         sd=-1.
-         if(abs(xn1(mod(imin(1)-1,ndims)+1)).gt.1.)sd=1.
-         call ijbincube(iobj,imin(1),fmin(1),xn1,xn2,ijbin,idebug)
-c Old Cube intersection. Return the bin number and direction ijbin,sd.
-c         call cubefsect(ndims,x1,x2,iobj,ijbin,sd,fraction)
-c         if(fraction.ne.1)write(*,*)'Different?',fraction-fmin(1),sd
+         do i=1,nsect
+            if(fmin(i).le.fmax)then
+               sd=-1.
+c If xn1 is outside, then first crossing is inwards sd=1
+               if(abs(xn1(mod(imin(i)-1,ndims)+1)).gt.1.)sd=1.
+c But second crossing is outward. 
+               if(i.eq.2)sd=-sd
+               call ijbincube(iobj,imin(i),fmin(i),xn1,xn2,ijbin,idebug)
+               call binadding(xi,infobj,sd,ijbin,ispecies)
+            endif
+        enddo
       elseif(itype.eq.3)then
-c Cylinder
-         call cylfsect(ndims,x1,x2,iobj,ijbin,sd,fraction)
+c Cylinder ----------------
+         call cylfsect(ndims,x1,xi,iobj,ijbin,sd,fraction)
+         call binadding(xi,infobj,sd,ijbin,ispecies)
       elseif(itype.eq.4)then
 c Parallelopiped intersection.
-c         write(*,*)'Calling pllel',ndims,x1,x1,iobj
-         call pllelofsect(ndims,x1,x2,iobj,ijbin,sd,fraction)
-c         write(*,*)'Returning from pllel',ndims,x1,x1,iobj,ijbin,sd
+         call pllelofsect(ndims,x1,xi,iobj,ijbin,sd,fraction)
+         
+         call binadding(xi,infobj,sd,ijbin,ispecies)
       elseif(itype.eq.5)then
 c Non-aligned cylinder
-         call cylgfsect(ndims,x1,x2,iobj,ijbin,sd,fraction)
+         call cylgfsect(ndims,x1,xi,iobj,ijbin,sd,fraction)
+         call binadding(xi,infobj,sd,ijbin,ispecies)
       elseif(itype.eq.6.or.itype.eq.7)then
-         ijbin(1)=-1
-         call srvfsect(ndims,x1,x2,iobj,ijbin,sd,fraction)
+         ijbin=-1
+         call srvfsect(ndims,x1,xi,iobj,ijbin,sd,fraction)
 c         write(*,*)'Objsect srvfsect',fraction,sd,ijbin
+         call binadding(xi,infobj,sd,ijbin,ispecies)
       else
 c         write(*,*)'Unknown object in objsect'
 c Unknown object type.
@@ -651,23 +686,16 @@ c Saving the x1 and intersection for diagnostics.
 c Count up to total intersections. Then store cyclically. 
       isc=mod(isc,sc_npts)+1
       iob_sc(isc)=iobj
-      ibin_sc(isc)=ijbin(1)
+      ibin_sc(isc)=ijbin
 c      write(*,*)'Saving intersection',isc,iobj,ijbin
       do i=1,ndims
          x_sc(i,1,isc)=x1(i)
-         x_sc(i,2,isc)=x1(i)*(1.-fraction)+x2(i)*fraction
+         x_sc(i,2,isc)=x1(i)*(1.-fraction)+xi(i)*fraction
       enddo
 c------------------------------
-c Do the bin adding in a subroutine.
-      call binadding(xi,infobj,sd,ijbin(1),ispecies)
+c Do the bin adding in a subroutine. Moved to individuals.
+c      call binadding(xi,infobj,sd,ijbin,ispecies)
 
-      if(ijbin2.ne.-1)then
-c This happens only if we pass through (a sphere). Then we should
-c Correct the count by passing out again. 
-c         write(*,*)'Pass-through ijbin2,infobj=',ijbin2,infobj
-         call binadding(xi,infobj,-sd,ijbin2,ispecies)
-         ierr=-1
-      endif
       end
 c*******************************************************************
       subroutine binadding(xi,infobj,sd,ijbin,ispecies)

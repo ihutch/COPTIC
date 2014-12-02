@@ -12675,6 +12675,8 @@ cubenormsect is called only in intersects.f by icross-geom.
 cubeusect is called only in fsects.d by cubefsect and pllelofsect.
 cubefsect is called only in fluxdata.f by objsect and in fsects.f by potlsect.
 
+29 Nov 14
+
 Using geometry/geomcube now shows gaps in the edge mesh, which are fixed
 by swapping back to cubefsect0. Fixed by ensuring fmin is set.
 Now gives identical phi.
@@ -12734,6 +12736,50 @@ do away with cubefsect entirely. Make the potlsect cube section
 an explicit of the simplified cubefsect. Now we've removed cubefsect.
 
 I do not think ijbin needs to be an array. So I ought to reverse that
-change.
+change. Not yet done.
 
-commit
+commit  a2249ac36e4edb299da7922e2531f92700e7fec1
+
+30 Nov 14
+
+Add restriction to only 2 intesections in cube.
+Now we need to code the handling of multiple intersections in the
+objsect code in fluxdata. Seem to have done that.
+
+Now we need to sort out the logic of tallyexit and leaveregion. 
+Tallyexit needs to tally only those crossings that occur prior to
+leaving the region.
+
+leaveregion appears to have a shortcoming in that it examines the objects
+of the boolean block in the order of their index. It chooses as the 
+relevant crossing the first that it finds. That might not correspond to
+the lowest fractional value. It depends on the object order. 
+
+Modified it to sort in order. 
+
+2 Dec 14 
+
+Observed in ./coptic geometry/geomcube.dat -gf1 -gw256 a step to face
+23 that crosses twice. In the diagnostics that is explicable. Adjusted
+fraction in objsect so that it ends at the first crossing and can see
+that happen. However, then the face number is incorrect. 
+This reveals a problem in objsect. It is that if the region excludes 
+the object then we should tally only the first crossing, whereas if
+not, then we should tally all crossings. How do we tell?
+
+First clean up tallyexit by passing xprior rather than recalculating it.
+Then remove dtpos from tallyexit and objsect. No make changes.
+Remove separate x1,x2 from objsect by using x1,xi passed.
+
+One possibility for fixing the tallying is that leaveregion _changes_
+the final particle position if it leaves the region to end at a place
+just outside the place where it leaves the region. That means resetting
+xi to correspond to a fraction a tiny bit larger. Unfortunately that 
+does not work because ijbin is then found incorrectly for a radius that
+ends up being exactly 1. This is because the number of intersections
+drops to zero. So instead just pass fmax to tallyexit and objsect,
+and discount fractions which exceed it. Seems to work.
+
+Now working on spherefsect. Encapsulate the ijbin calculation into its
+own routine. Done. Replace spherefsect in fluxdata.f objsect by the
+equivalent calls. Done.

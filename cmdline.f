@@ -589,6 +589,7 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
      $     ' final distribution. [',ifplot
       write(*,301)' -gw   set objplot sw. [+256:intercepts]'//
      $     ' Shade by 1:flux 2:flux-density[',iobpsw
+      write(*,301)' To plot intersections with objects use -gf and -gw'
       write(*,301)' -gc   set wireframe [& stencils(-)] mask.'//
      $     ' objects<->bits. [',iobpl
       write(*,302)' -gr   set override view scale (box size)'//

@@ -221,22 +221,34 @@ c************************************************************
       integer function leaveregion(ibool,ndims,x1,x2,icross,f)
 c Return non-zero if we left the region in passing from x1 to x2.
 c leaveregion is equal to the object whose intersection was detected.
-c On entry f(*) must have sufficient length for multiple crossings.
-c On exit f(1) contains the leaving intersection fraction detected.
-c icross has bits nonzero for objects possibly crossed, so zero bits
-c mask out tests. 
+c
+c On entry 
+c    icross has bits nonzero for objects possibly crossed, so zero bits
+c      mask out tests. 
+c    ibool contains the boolean defining the region.
+c    f(*) must have sufficient length to accept multiple crossings.
+c
+c On exit 
+c    f(1) contains the minimum leaving intersection fraction detected
+c       or 1 if no intersections.
+c    f contains in increasing order all the intersection fractions.
+c    x2 is changed to be the position just past fraction f(1).
+
 c A boolean block is violated iff there is a crossing of one object
 c that occurs outside all the other booleans of the block. If any 
 c boolean block is violated, then the ray leaves the region. Thus 
 c for each crossing, for each block that contains the object crossed,
 c check intersection for being inside all the other objects in the block.
 c If there is none that it is inside, then it is a leaving intersection.
+c We need to find the lowest crossing fraction (nearest to x1).
       integer ndims,ibool(*),icross
       real x1(ndims),x2(ndims)
       real f(*)
 c The following ought to be consistent with 3dcom.f
       integer ibmax
       parameter (ibmax=100) 
+      real fobs(ibmax)
+      integer iobs(ibmax)
       real xx(3)
       
 c it is the object currently whose crossing is being examined
@@ -250,6 +262,9 @@ c ic is the current crossing being examined
       it=0
       ic=icross
       leaveregion=0
+      nleave=0
+c      iobs(1)=0
+      f(1)=1.
  1    if(ic.eq.0)goto 5
       icb2=ic/2
       it=it+1
@@ -268,31 +283,38 @@ c Search for this object within the block.
          enddo
          if(inblock.ne.0)then
 c This object is in this block. Test whether intersection is in others.
-c Get back the position of the intersection(s) in f
-            icit=icross_geom(x1,x2,it,f)
+c Get back the position of the intersection(s) in fobs
+            icit=icross_geom(x1,x2,it,fobs)
+c            write(*,*)'it,fobs',it,(fobs(j),j=1,icit)
             do ic=1,icit
 c Find the position of the intersection.
-            do k=1,ndims
-               xx(k)=x1(k)+(x2(k)-x1(k))*f(ic)
-            enddo
-            do io=1,n
-               iobj=ibool(i+io)
-               if(abs(iobj).ne.it)then
-                 is=inside_geom(ndims,xx,abs(iobj))
-                 if(iobj.gt.0 .and. is.eq.1 .or.
-     $                iobj.lt.0 .and. is.eq.0)then
+               do k=1,ndims
+                  xx(k)=x1(k)+(x2(k)-x1(k))*fobs(ic)
+               enddo
+               do io=1,n
+                  iobj=ibool(i+io)
+                  if(abs(iobj).ne.it)then
+                     is=inside_geom(ndims,xx,abs(iobj))
+                     if(iobj.gt.0 .and. is.eq.1 .or.
+     $                    iobj.lt.0 .and. is.eq.0)then
 c Intersection is inside one of the other objects of block. 
 c It therefore doesn't count as a leaving. Break to next intersection.
-                    goto 4
-                 endif
-               endif
-            enddo
+                        goto 4
+                     endif
+                  endif
+               enddo
 c Here when we have an intersection that is a real crossing.
 c We crossed the particle region boundary here.
-            f(1)=f(ic)
-            leaveregion=it
-            return
- 4          continue
+c Insert the fraction and the object number into stack ordered by fraction.
+               call insertsorted2(nleave,f,fobs(ic),iobs,it)
+c In order to find all leavings and choose the minimum fraction we mustnt
+c return here. The next three statements revert to prior algorithm which
+c agrees with earlier calculations for make test.
+c               f(1)=fobs(ic)
+c               leaveregion=it
+c               return
+c               write(*,*)'Would have left',f(1),it,icit
+ 4             continue
             enddo
          endif
 c We found this block to be clean of leaving. Go to next bool block.
@@ -304,8 +326,28 @@ c         write(*,*)(ibool(k),k=1,10)
  3    ic=icb2
 c Iterate to next object crossed.
       goto 1
-c Finished.
+c Finished. f(i) 
  5    continue
+      if(f(1).ne.1.)then
+         if(.false.)then
+c Reset final position
+         fr=f(1)+3.e-6
+         r=0.
+         do i=1,ndims
+            x2(i)=fr*x2(i)+(1.-fr)*x1(i)
+            r=r+x2(i)**2
+         enddo
+         write(*,*)fr,f(1),x2,r
+         icross2=icrossall(x1,x2)
+         icit=icross_geom(x1,x2,1,fobs)
+         write(*,*)'New,fobs',icit,(fobs(j),j=1,icit)
+         if(icross.ne.icross2)then
+            write(*,*)nleave,(f(i),i=1,nleave)
+            write(*,*)'Cross difference',icross,icross2
+         endif
+         endif
+         leaveregion=iobs(1)
+      endif
       end
 
 c************************************************************
