@@ -100,7 +100,21 @@ c Convert into normalized position for object i.
                fraction=fmin(1)
             elseif(itype.eq.3)then
 c Coordinate aligned cylinder.
-               call cylfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+               if(.true.)then
+c Convert to normalized
+                  ida=int(obj_geom(ocylaxis,i))
+                  do j=1,ndims
+                     ii=mod(j-ida+2,ndims)+1
+                     xn1(ii)=(xp1(j)-obj_geom(ocenter+j-1,i))
+     $                    /obj_geom(oradius+i-1,i)
+                     xn2(ii)=(xp2(j)-obj_geom(ocenter+j-1,i))
+     $                    /obj_geom(oradius+i-1,i)
+                  enddo
+                  call cylusect(xn1,xn2,i,nsect,fmin,ids)
+                  fraction=fmin(1)
+               else
+c                  call cylfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+               endif
             elseif(itype.eq.4)then
 c Parallelopiped.
                call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)
@@ -108,7 +122,13 @@ c Parallelopiped.
                fraction=fmin(1)
             elseif(itype.eq.5)then
 c Non-aligned cylinder.
-               call cylgfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+               if(.true.)then
+                  call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)         
+                  call cylusect(xn1,xn2,i,nsect,fmin,ids)
+                  fraction=fmin(1)
+               else
+c                  call cylgfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+               endif
             elseif(itype.eq.6)then
                call srvfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
             elseif(itype.eq.7)then
@@ -272,72 +292,6 @@ c            write(*,*)'ji',ji
          if(abs(xn2(j)).ge.1.)ins2=0
       enddo
       end
-c*********************************************************************
-      subroutine cylfsect(nsdim,xp1,xp2,iobj,ijbin,sdmin,fmin)
-c Master routine for calling cylusect after normalization of cyl.
-      integer nsdim,iobj,ijbin
-      include 'ndimsdecl.f'
-      real xp1(nsdim),xp2(nsdim)
-      real sdmin
-      include '3dcom.f'
-      real xn1(ndims),xn2(ndims)
-
-      ida=int(obj_geom(ocylaxis,iobj))
-      do i=1,ndims
-         ii=mod(i-ida+2,ndims)+1
-         xn1(ii)=(xp1(i)-obj_geom(ocenter+i-1,iobj))
-     $        /obj_geom(oradius+i-1,iobj)
-         xn2(ii)=(xp2(i)-obj_geom(ocenter+i-1,iobj))
-     $        /obj_geom(oradius+i-1,iobj)
-      enddo
-      call cylusect(nsdim,xn1,xn2,iobj,ijbin,sdmin,fmin)
-      end
-c*********************************************************************
-      subroutine cylgfsect(nsdim,xp1,xp2,iobj,ijbin,sd,fraction)
-c Given a general cylinder object iobj. Find the point
-c of intersection of the line joining xp1,xp2, with it, and determine
-c the ijbin to which it is therefore assigned, and the direction it is
-c crossed (sd=+1 means inward from 1 to 2).
-
-c The object is specified by center and three contravariant vectors.
-c When the position relative to the center is dotted into the contra
-c variant vector it yields the coordinate relative to the unit cylinder,
-c whose third component is the axial direction. 
-
-      integer nsdim,iobj,ijbin
-      include 'ndimsdecl.f'
-      real xp1(nsdim),xp2(nsdim)
-      real sd
-      include '3dcom.f'
-      real xn1(ndims),xn2(ndims)
-
-c j refers to transformed coordinates in which it is unit cyl
-      do j=1,ndims
-         xn1(j)=0.
-         xn2(j)=0.
-c Contravariant projections.
-         do i=1,nsdim
-c i refers to the Cartesian coordinates.
-            xc=obj_geom(ocenter+i-1,iobj)
-c xn1, xn2 are the contravariant coordinates with respect to the center.
-            ji=(ocontra+ndims*(j-1)+i-1)
-c            write(*,*)'ji',ji
-            xn1(j)=xn1(j)+(xp1(i)-xc)*obj_geom(ji,iobj)
-            xn2(j)=xn2(j)+(xp2(i)-xc)*obj_geom(ji,iobj)
-         enddo
-      enddo
-c Now xn1,2 are the coordinates relative to the unit cylinder.      
-      fraction=1.
-c Shortcut
-      z1=xn1(ndims)
-      z2=xn2(ndims)
-      if((z1.ge.1..and.z2.ge.1).or.(z1.le.-1..and.z2.le.-1.))return
-c Call the unit-cylinder code.
-      call cylusect(nsdim,xn1,xn2,iobj,ijbin,sd,fraction)
-c      write(*,*)'cylusect return',ijbin,fraction
-
-      end
-c*********************************************************************
 c*********************************************************************
       subroutine srvfsect(nsdim,xp1,xp2,iobj,ijbin,sd,fraction)
 c Given a general SoR object iobj. Find the point of intersection of the
@@ -506,7 +460,7 @@ c and closest to 0. The other intersection fraction in f2.  Also return
 c the direction of crossing in sd, and the fractional radial distance^2
 c outside the sphere of the two points in C and D.  (positive means
 c inward from x1 to x2). If there is no intersection even of the
-c extrapolated line, return fraction=1., sd=0.  If ida is non-zero then
+c extrapolated line, return f1=1., sd=0.  If ida is non-zero then
 c form the radius only over the other dimensions.  In that case the
 c subsurface (circle) is the figure whose intersection is sought.
       integer nsdim,ida
@@ -686,125 +640,36 @@ c tricky for unequal sized faces. So we need to have stored it.
 c That's it.
       end
 c*********************************************************************
-      subroutine cylusect(nsdim,xp1,xp2,iobj,ijbin,sdmin,fmin)
-c Find the point of intersection of the line joining xp1,xp2, with the
-c UNIT cylinder, and determine the ijbin to which it is therefore
-c assigned, and the direction it is crossed (sdmin=+1 means inward from
-c 1 to 2). The 1-axis is where theta is measured from and the 3-axis
-c is the axial direction.
-c The facets of the cylinder are the end faces -xr +xr, and the curved
-c side boundary. 3 altogether.  The order of faces is bottom, side, top.
-      
-      integer nsdim,iobj,ijbin
+      subroutine ijbincyl(iobj,ids,fmin,xp1,xp2,ijbin)
+c Given the fractional distance between xp1 and xp2, fmin, which is the
+c crossing point and ids the face-index ids of this crossing. Index
+c within the face on equal spaced grid whose numbers have been read into
+c obj_geom(ofn.,iobj). Return ijbin index.
+      implicit none
       include 'ndimsdecl.f'
-      real xp1(nsdim),xp2(nsdim)
-      real sdmin
       include '3dcom.f'
-c 3D here.
-      parameter (nds=3)
-      real x12(nds)
-      real fn(4),zrf(4),sdf(4)
-      real xc(nds),rc(nds)
-      data xc/0.,0.,0./rc/1.,1.,1./
+      integer iobj,ids,ijbin
+      real fmin,xp1(ndims),xp2(ndims)
+      integer infobj,k,i,ir,it,iz,ida
+      real x12(ndims),z,theta,r2
 
-      if(nsdim.ne.nds)stop 'Wrong dimension number in cylusect'
       ida=3
-c First, return if both points are beyond the same axial end.
-      z1=xp1(ida)
-      z2=xp2(ida)
-      xd=z2-z1
-      fmin=1.
-      sdmin=0.
-      if((z1.gt.1. .and. z2.gt.1.).or.
-     $     (-z1.gt.1. .and. -z2.gt.1))return
-      sds=0.
-c Find the intersection (if any) with the circular surface in the plane
-c perpendicular to direction ida (projected along ida).
-      call spheresect(nsdim,ida,xp1,xp2,
-     $     xc,rc,fn(1),fn(2),sds,d1,d2)
-      if(sds.ne.0)then
-c Directions are both taken to be that of the closest. 
-c A bit inconsistent but probably ok. 
-         sdf(1)=sds
-         sdf(2)=sds
-         zrf(1)=(1.-fn(1))*xp1(ida)+fn(1)*xp2(ida)
-         zrf(2)=(1.-fn(2))*xp1(ida)+fn(2)*xp2(ida)
-      else
-c No radial intersections
-         zrf(1)=2.
-         zrf(2)=2.
-      endif
-c Find the axial intersection fractions with the end planes.
-      if(xd.ne.0)then
-         fn(3)=(1.-z1)/xd
-         sdf(3)=-1.
-         if(z1.gt.1.)sdf(3)=1.
-         fn(4)=(-1.-z1)/xd
-         sdf(4)=-1.
-         if(z1.lt.-1.)sdf(4)=1.
-         zrf(3)=0.
-         zrf(4)=0.
-         do k=1,nsdim
-            if(k.ne.ida)then
-               xkg1=(1.-fn(3))*xp1(k)+fn(3)*xp2(k)
-               zrf(3)=zrf(3)+xkg1**2
-               xkg2=(1.-fn(4))*xp1(k)+fn(4)*xp2(k)
-               zrf(4)=zrf(4)+xkg2**2
-            endif
-         enddo
-      else
-c Pure radial difference. No end-intersections anywhere.
-         zrf(3)=2.
-         zrf(4)=2.
-      endif
-c Now we have 4 possible fractions fn(4). Two or none of those
-c are true. Truth is determined by abs(zrf(k))<=1. Choose closest.
-      fmin=10.
-      kmin=0
-      do k=1,4
-         if(abs(zrf(k)).le.1)then
-            if(fn(k).ge.0. .and. fn(k).lt.fmin)then
-               kmin=k 
-               fmin=fn(k)
-            endif
-         endif
-      enddo
-      if(fmin.gt.1.)then
-c No crossing
-         sdmin=0.
-         fmin=1.
-         return
-      else
-         sdmin=sdf(kmin)
-         if(kmin.le.2)then
-c radial crossing
-            ids=0
-         else
-c axial crossing
-            ids=-1
-            zida=(1.-fmin)*z1+fmin*z2
-            if(zida.gt.0.)ids=1
-         endif
-      endif
-
-c Now the minimum fraction is in fmin, which is the crossing point.
-c ids contains the face-index of this crossing. -1,0, or +1.
 c Calculate normalized intersection coordinates.
-      do i=1,nsdim
+      do i=1,ndims
          x12(i)=(1.-fmin)*xp1(i)+fmin*xp2(i)
       enddo
 c Calculate r,theta,z (normalized) relative to the ida direction as z.
       z=x12(ida)
-      theta=atan2(x12(mod(ida+1,nsdim)+1),x12(mod(ida,nsdim)+1))
+      theta=atan2(x12(mod(ida+1,ndims)+1),x12(mod(ida,ndims)+1))
       r2=0.
-      do i=1,nsdim-1
-         k=mod(ida+i-1,nsdim)+1
+      do i=1,ndims-1
+         k=mod(ida+i-1,ndims)+1
          r2=r2+x12(k)**2
       enddo
-c      write(*,'(a,7f7.4,3i3)')'r2,theta,z,x12,fmin,ids'
-c     $     ,r2,theta,z,x12,fmin,ids
+c      write(*,'(a,7f7.4,3i3)')'r2,theta,z,x12,fmin,ids(1)'
+c     $     ,r2,theta,z,x12,fmin,ids(1)
 c End blocks are of size nr x nt, and the curved is nt x nz.
-c 3-D only here. 
+
       infobj=nf_map(iobj)
       ijbin=0
       if(ids.ne.0)then
@@ -831,6 +696,93 @@ c Index in order theta,z
          ijbin=ijbin+it+iz*nf_dimlens(nf_flux,infobj,2)
       endif
 c      write(*,'(6f8.4,3i3)')xp1,xp2,ir,it,iz
+      end
+c*********************************************************************
+      subroutine cylusect(xp1,xp2,iobj,nsect,fmin,ids)
+c Find the point of intersection of the line joining xp1,xp2, with the
+c UNIT cylinder The 1-axis is where theta is measured from and the 3-axis
+c is the axial direction.
+c The facets of the cylinder are the end faces -xr +xr, and the curved
+c side boundary. 3 altogether.  The order of faces is bottom, side, top.
+      
+      integer iobj,ijbin
+      include 'ndimsdecl.f'
+      real xp1(ndims),xp2(ndims)
+      include '3dcom.f'
+      real fmin(ovlen)
+      integer ids(ovlen)
+c 3D here.
+      parameter (nds=3)
+c      real x12(nds)
+      real fn(4),zrf(4)
+      integer isdf(4)
+      real xc(nds),rc(nds)
+      data xc/0.,0.,0./rc/1.,1.,1./
+
+      ida=3
+      nsect=0
+c First, return if both points are beyond the same axial end.
+      z1=xp1(ida)
+      z2=xp2(ida)
+      xd=z2-z1
+      fmin(1)=1.
+      if((z1.gt.1. .and. z2.gt.1.).or.
+     $     (-z1.gt.1. .and. -z2.gt.1))return
+      sds=0.
+c Find the intersection (if any) with the circular surface in the plane
+c perpendicular to direction ida (projected along ida).
+      call spheresect(ndims,ida,xp1,xp2,
+     $     xc,rc,fn(1),fn(2),sds,d1,d2)
+      if(sds.ne.0)then
+c There is at least one intersection with the circle. Find where.
+         isdf(1)=0
+         isdf(2)=0
+         zrf(1)=(1.-fn(1))*xp1(ida)+fn(1)*xp2(ida)
+         zrf(2)=(1.-fn(2))*xp1(ida)+fn(2)*xp2(ida)
+      else
+c No radial intersections
+         zrf(1)=2.
+         zrf(2)=2.
+      endif
+c Find the axial intersection fractions with the end planes
+c and their radial positions.
+      if(xd.ne.0)then
+         fn(3)=(1.-z1)/xd
+         isdf(3)=1
+         fn(4)=(-1.-z1)/xd
+         isdf(4)=-1
+         zrf(3)=0.
+         zrf(4)=0.
+         do k=1,ndims
+            if(k.ne.ida)then
+               xkg1=(1.-fn(3))*xp1(k)+fn(3)*xp2(k)
+               zrf(3)=zrf(3)+xkg1**2
+               xkg2=(1.-fn(4))*xp1(k)+fn(4)*xp2(k)
+               zrf(4)=zrf(4)+xkg2**2
+            endif
+         enddo
+      else
+c Pure radial difference. No end-intersections anywhere.
+         zrf(3)=2.
+         zrf(4)=2.
+      endif
+c Now we have 4 possible fractions fn(4). Up to 2 of those
+c are true. Truth is determined by abs(zrf(k))<=1. and 0.<=fn<1.
+c The corresponding face numbers are in isdf.
+c New version.
+      nsect=0
+      do k=1,4
+         if(abs(zrf(k)).le.1. .and. fn(k).ge.0..and.fn(k).lt.1.)then
+            call insertsorted2(nsect,fmin,fn(k),ids,isdf(k))
+         endif
+      enddo
+      if(nsect.gt.2)then
+         write(*,*)'cylusect too many intersections!',nsect
+         write(*,*)fn
+         write(*,*)zrf
+         stop
+      endif
+c         if(fmin(1).ne.1.)write(*,*)(fmin(k),k=1,4)
       end
 c********************************************************************
       subroutine segmentcross(x11,x12,x21,x22,f1,f2)

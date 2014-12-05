@@ -573,7 +573,10 @@ c
       integer isc
       integer ijbin
       integer imin(ovlen)
+      real fraction
       real fmin(ovlen)
+c This does not seem to work as expected:
+c      equivalence (fraction,fmin(1))
 
       data isc/0/
 
@@ -635,8 +638,25 @@ c But second crossing is outward.
         enddo
       elseif(itype.eq.3)then
 c Cylinder ----------------
-         call cylfsect(ndims,x1,xi,iobj,ijbin,sd,fraction)
-         call binadding(xi,infobj,sd,ijbin,ispecies)
+         ida=int(obj_geom(ocylaxis,iobj))
+         do i=1,ndims
+            ii=mod(i-ida+2,ndims)+1
+            xn1(ii)=(x1(i)-obj_geom(ocenter+i-1,iobj))
+     $           /obj_geom(oradius+i-1,iobj)
+            xn2(ii)=(xi(i)-obj_geom(ocenter+i-1,iobj))
+     $           /obj_geom(oradius+i-1,iobj)
+         enddo
+         call cylusect(xn1,xn2,iobj,nsect,fmin,imin)
+         fraction=fmin(1)
+         do i=1,1
+            if(fmin(i).le.fmax)then
+c Need to decide sd correctly
+               sd=-1.
+               if(inside_geom(ndims,x1,iobj).eq.0)sd=1.
+               call ijbincyl(iobj,imin(i),fmin(i),xn1,xn2,ijbin)
+               call binadding(xi,infobj,sd,ijbin,ispecies)
+            endif
+         enddo
       elseif(itype.eq.4)then
 c Parallelopiped ------------------------
          call xp2contra(iobj,x1,xi,xn1,xn2,ins1,ins2)
@@ -650,17 +670,28 @@ c First crossing is inward if ins1 is 0.
 c But second crossing is opposite. 
                if(i.gt.1)then
                   sd=-sd
-                  write(*,*)'Multiple Crossing',i,sd
+c                  write(*,*)'Multiple Crossing',i,sd
                endif
                call ijbincube(iobj,imin(i),fmin(i),xn1,xn2,ijbin,idebug)
                call binadding(xi,infobj,sd,ijbin,ispecies)
             endif
         enddo
       elseif(itype.eq.5)then
-c Non-aligned cylinder
-         call cylgfsect(ndims,x1,xi,iobj,ijbin,sd,fraction)
-         call binadding(xi,infobj,sd,ijbin,ispecies)
+c Non-aligned cylinder ---------------------------------
+         call xp2contra(iobj,x1,xi,xn1,xn2,ins1,ins2)         
+         call cylusect(xn1,xn2,iobj,nsect,fmin,imin)
+         fraction=fmin(1)
+         do i=1,1
+            if(fmin(i).le.fmax)then
+c Need to decide sd correctly.
+               sd=-1.
+               if(inside_geom(ndims,x1,iobj).eq.0)sd=1.
+               call ijbincyl(iobj,imin(i),fmin(i),xn1,xn2,ijbin)
+               call binadding(xi,infobj,sd,ijbin,ispecies)
+            endif
+         enddo
       elseif(itype.eq.6.or.itype.eq.7)then
+c Surface of revolution -------------------------------
          ijbin=-1
          call srvfsect(ndims,x1,xi,iobj,ijbin,sd,fraction)
 c         write(*,*)'Objsect srvfsect',fraction,sd,ijbin
@@ -669,15 +700,6 @@ c         write(*,*)'Objsect srvfsect',fraction,sd,ijbin
 c         write(*,*)'Unknown object in objsect'
 c Unknown object type.
          ierr=99
-         return
-      endif
-      if(abs(sd).ne.1.)then
-c One end seems on exactly the boundary. Don't count this intersection.
-         if(fraction.ne.1.)then
-c There's a worse problem. Report the error.
-            write(*,*)'sd fraction,type,No',sd,fraction,itype,iobj
-            ierr=1
-         endif
          return
       endif
 c------------------------------
@@ -695,9 +717,6 @@ c      write(*,*)'Saving intersection',isc,iobj,ijbin
          x_sc(i,2,isc)=x1(i)*(1.-fraction)+xi(i)*fraction
       enddo
 c------------------------------
-c Do the bin adding in a subroutine. Moved to individuals.
-c      call binadding(xi,infobj,sd,ijbin,ispecies)
-
       end
 c*******************************************************************
       subroutine binadding(xi,infobj,sd,ijbin,ispecies)
@@ -884,14 +903,17 @@ c Check step numbers for rationality.
          ff_data(iav+i)=0.
          ff_data(iavd+i)=0.
       enddo
-c Sum the data over steps.
+c Sum the data over steps. 
       tot=0
+c Sum the absolute count over steps
+      atot=0
       do i=1,nf_posno(iq,ifobj)
          do is=n1,n2
             ff_data(iav+i)=ff_data(iav+i)
      $           +ff_data(nf_address(iq,ifobj,is)+i-1)
          enddo
          tot=tot+ff_data(iav+i)
+         atot=atot+abs(ff_data(iav+i))
          ff_data(iav+i)=ff_data(iav+i)/(n2-n1+1)
 c Get the area and divide to give the flux density.
          area=ff_data(iaa+i)
@@ -923,7 +945,8 @@ c      write(*,*)'tot,rinf,tdur,n2',tot,rinf,tdur,n1,n2
 c From here on is non-general and is mostly for testing.
       write(*,'(a,i3,a,i3,a,i5,i5,a,f9.2)')' Average flux quant',iq
      $     ,', object',ifobj,', over steps',n1,n2,', per unit time:',tot
-      write(*,'(a,f9.4,a,i8,a)')' rhoinf:',rinf,' Total:',nint(tot*tdur)
+      write(*,'(a,f9.4,a,i7,a,i7,a)')' rhoinf:',rinf,' Total:',nint(tot
+     $     *tdur),' Abs',nint(atot)
      $     ,'  Average collected per step by posn:'
       write(*,'(10f8.2)')(ff_data(iav+i),i=1,nf_posno(iq,ifobj))
       fluxdensity=tot/(4.*3.14159)/rinf

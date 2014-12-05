@@ -12620,7 +12620,7 @@ calls objsect which calls cubefsect.  cubefsect has a short cut in it
 that ignores cases that are both outside the cube, based on
 inside_geom tests. Actually this shortcut seems necessary since the
 call of cubeusect says it must have one end within the cube.  This
-loginc seems to be erroneous in the general application of
+logic seems to be erroneous in the general application of
 objsect. cubefsect is also called by potlsect, which is used for
 setting cij. In that context the shortcut probably makes
 sense. objsect is called nowhere except by tallyexit. The fsect routines
@@ -12792,3 +12792,53 @@ Remove now unused cubefsect.
 Perform the same replacement on pllelofsect. Multiple crossings make
 the new code fluxes different. Crosschecked by switching them off
 and getting the old result. So correct. pllelofsect removed.
+
+commit
+
+Ran ./coptic -s200 geometry/geomppiped.dat
+and found that the flux tended to zero on average as it should for this
+non-absorbing object. There are of course substantial fluctuations.
+Looking at the floating potential is a reasonable way to see the small
+total flux.
+
+I think this now ought to be able to tell if the cubes on the edge of
+a cylinder are sensible.
+
+make geometry fails geomcube, geomcubic, geommany, geompiped, geomSoR,
+geomtest. Most of those are expected. (Maybe not geomcubic,SoR)
+Remove .cks files. Recreate.
+
+4 Dec 14
+
+Replace the explicit contravariant normalization in cylgfsect by 
+xp2contra. Gives the same result. Since this code returns ins1 and ins2
+zero if we are outside the _unit cube_ then they zeroes indicate outside
+the unit cylinder too. But 1s do not necessarily indicate inside the 
+unit cylinder.
+
+Rework fsects.f and fluxdata.f to remove cylfsect cylgfsect.
+
+Now everything is done by calling cylusect direction. We must change 
+cylusect to produce a sorted list of multiple crossings, and the faces
+associated with them, like cubeusect. 
+
+Remove nsdim from the argument list of cylusect.
+Separated the ijbincyl part of the code into its own routine.
+Removed cylgfsect, cylfsect.
+Removed ijbincyl from cylusect so it is only called explicitly and only
+by objsect in fluxdata.f
+Not quite finished inside cylusect setting the ordered faces, etc.
+Also not decided sd direction in objsect. Fixed that.
+Removed unused sd(min) from cylusect argument list.
+Got new cylusect version with sorted fmin going.
+Removed bits of old one. 
+
+Found a bit of a problem with objsect and whether sd has been set correctly
+or not. Cyl code needs a value of sd set. But if so, then so should the
+cube code, but it's not broken, apparently. That was a test in objsect
+that no longer makes sense and is removed.
+
+I think we now have the cylinder code migrated over to use the new approach.
+However, I have not examined the intersects for rationality.
+
+commit.
