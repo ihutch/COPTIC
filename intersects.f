@@ -250,16 +250,18 @@ c The following ought to be consistent with 3dcom.f
       real fobs(ibmax)
       integer iobs(ibmax)
       real xx(3)
+      logical linregion
       
 c it is the object currently whose crossing is being examined
 c ic represents the crossed objects by its bits
-c i points to the boolean slot containing current block length 
-c n is current block length
+c ibl points to the boolean slot containing current block length 
+c nbl is current block length
 c io is increment position being examined within block 
 c inblock says the crossing object is in this block 
 c icit is the number of crossings of it
 c ic is the current crossing being examined
-      it=0
+      idebug=0
+ 99   it=0
       ic=icross
       leaveregion=0
       nleave=0
@@ -270,29 +272,33 @@ c      iobs(1)=0
       it=it+1
       if((ic-2*icb2).ne.0)then
 c Check this non-zero crossing against the entire boolean.
-         i=1
- 2       n=ibool(i)
-         if(n.eq.0)goto 3
+         ibl=1
+ 2       nbl=ibool(ibl)
+         if(nbl.eq.0)goto 3
          inblock=0
-         do io=1,n
+         do io=1,nbl
 c Search for this object within the block.
-            iobj=ibool(i+io)
+            iobj=ibool(ibl+io)
             if(abs(iobj).eq.it)then
                inblock=1               
+               if(idebug.ne.0)write(*,*)'inblock',ibl,nbl,iobj,ic,it
             endif
          enddo
          if(inblock.ne.0)then
 c This object is in this block. Test whether intersection is in others.
 c Get back the position of the intersection(s) in fobs
             icit=icross_geom(x1,x2,it,fobs)
-c            write(*,*)'it,fobs',it,(fobs(j),j=1,icit)
+            if(idebug.ne.0)then
+               write(*,*)'it,icit,fobs',it,icit,(fobs(j),j=1,icit)
+               write(*,'(a,6f7.3)')'x1,x2',(x1(j),x2(j),j=1,ndims)
+            endif
             do ic=1,icit
 c Find the position of the intersection.
                do k=1,ndims
                   xx(k)=x1(k)+(x2(k)-x1(k))*fobs(ic)
                enddo
-               do io=1,n
-                  iobj=ibool(i+io)
+               do io=1,nbl
+                  iobj=ibool(ibl+io)
                   if(abs(iobj).ne.it)then
                      is=inside_geom(ndims,xx,abs(iobj))
                      if(iobj.gt.0 .and. is.eq.1 .or.
@@ -318,8 +324,8 @@ c               write(*,*)'Would have left',f(1),it,icit
             enddo
          endif
 c We found this block to be clean of leaving. Go to next bool block.
-         i=i+n+1
-c         write(*,*)it,ic,icb2,icit,i,n
+         ibl=ibl+nbl+1
+c         write(*,*)it,ic,icb2,icit,ibl,n
 c         write(*,*)(ibool(k),k=1,10)
          goto 2
       endif
@@ -329,25 +335,23 @@ c Iterate to next object crossed.
 c Finished. f(i) 
  5    continue
       if(f(1).ne.1.)then
-         if(.false.)then
-c Reset final position
-         fr=f(1)+3.e-6
-         r=0.
-         do i=1,ndims
-            x2(i)=fr*x2(i)+(1.-fr)*x1(i)
-            r=r+x2(i)**2
-         enddo
-         write(*,*)fr,f(1),x2,r
-         icross2=icrossall(x1,x2)
-         icit=icross_geom(x1,x2,1,fobs)
-         write(*,*)'New,fobs',icit,(fobs(j),j=1,icit)
-         if(icross.ne.icross2)then
-            write(*,*)nleave,(f(i),i=1,nleave)
-            write(*,*)'Cross difference',icross,icross2
-         endif
-         endif
          leaveregion=iobs(1)
       endif
+c Test for leakage. Not normally used. 
+      if(.false.)then
+      if(.not.linregion(ibool,ndims,x2).and.leaveregion.eq.0)then
+         if(idebug.ne.1)then
+            write(*,*)'Leaveregion error',icross,ibl,nbl
+            write(*,*)'ibool',(ibool(i),i=1,5)
+            write(*,*)nleave,(f(i),i=1,nleave)
+c Repeat with diagnostics.
+            idebug=1
+            goto 99
+         endif
+      endif
+      if(idebug.eq.1)stop
+      endif
+
       end
 
 c************************************************************
@@ -374,13 +378,15 @@ c      write(*,*)'lbounded outer',i,nb,n1
 c Reading objects for group ending at n1-1
          i=i+1
          ib=ibool(i)
-c         write(*,*)'lbounded',i,ib,ltemp
+c         write(*,*)'lbounded',i,ib,ltemp,ibits(ifmask,abs(ib)-1,1)
 c Trap subtle object error.
-         if(ibits(ifmask,abs(ib)-1,1).eq.0)then
+c It's not clear that this is logically correct.
+c Nonphysically we could banish particles from a non-field-boundary.
+         if(.false..and.ibits(ifmask,abs(ib)-1,1).eq.0)then
             if(ib.gt.0)then
-               write(*,*)'Particle region boolean error.'
+               write(*,'(a,6i4,a)')' Particle region boolean error.'
      $              ,(ibool(k),k=1,6),' ...'
-               write(*,*)'Specified non-field-boundary object',ib
+               write(*,*)'Specified non-field-boundary object',i,ib
                call reportfieldmask()
                write(*,*)'You must fix the object file. Aborting ...'
                stop
@@ -532,7 +538,7 @@ c     section for intersecting wall sections
 c
 c**********************************************************************
       function icrossall(x1,x2)
-c For two ndims-dimensional point x1,x2, return the integer icrossall
+c For two ndims-dimensional points x1,x2, return the integer icrossall
 c consisting of bits i=0-30 that are zero or one according to whether
 c the line x1-x2 crosses object i.
 c Common object geometric data.
@@ -559,6 +565,7 @@ c Common object geometric data.
       real f(*)
       include '3dcom.f'
       real xn1(ndims),xn2(ndims)
+      integer ids(ovlen)
       external interp
 
       icross_geom=0
@@ -602,13 +609,14 @@ c = semi-axis of the axial coordinate).
 c Normalize
          ic=int(obj_geom(ocylaxis,i))
          do k=1,ndims
-            kn=mod(2+k-ic,3)+1
+            kn=mod(2+k-ic,ndims)+1
             xn1(kn)=(x1(k)-obj_geom(ocenter+k-1,i))
      $           /obj_geom(oradius-1+k,i)
             xn2(kn)=(x2(k)-obj_geom(ocenter+k-1,i))
      $           /obj_geom(oradius-1+k,i)
          enddo
-         call cylnormsect(xn1,xn2,icross_geom,f)
+         call cylusect(xn1,xn2,i,icross_geom,f,ids)
+c         call cylnormsect(xn1,xn2,icross_geom,f)
       elseif(itype.eq.4)then
 c------------------------------------------------
 c General Cuboid is equivalent to General Parallelopiped
@@ -632,9 +640,8 @@ c------------------------------------------------
 c Non-aligned cylinder
          call world3contra(ndims,x1,xn1,i)
          call world3contra(ndims,x2,xn2,i)
-c If need be, use the explicit code from previous case for speed.
-         call cylnormsect(xn1,xn2,icross_geom,f)
-c         write(*,*)'cylnormsect return',i,icross_geom,(f(k),k=1,3)
+         call cylusect(xn1,xn2,i,icross_geom,f,ids)
+c         call cylnormsect(xn1,xn2,icross_geom,f)
       elseif(itype.eq.6.or.itype.eq.7)then
 c------------------------------------------------
 c Surface of revolution. General. Scale to contravariant components.
@@ -708,6 +715,11 @@ c*********************************************************************
       subroutine cylnormsect(xn1,xn2,icross_geom,f)
 c Find the number of intersections of the line segment joining xn1,xn2,
 c with the unit (half-length and radius) cylinder.
+
+c This code is logically incorrect and now not used anywhere. The problem
+c is that the use of f() for ends is overwritten by the spheresect
+c search.
+
       include 'ndimsdecl.f'
       integer icross_geom
       real xn1(ndims),xn2(ndims)
@@ -724,6 +736,7 @@ c Test if both off same end, to avoid extra work.
       if(z1.gt.1. .and. z2.gt.1. .or. z1.lt.-1..and.z2.lt.-1)then
          return
       endif
+c The square roots here are not necessary. Nor the abs(r..).
       r1=sqrt(xn1(1)**2+xn1(2)**2)
       r2=sqrt(xn2(1)**2+xn2(2)**2)
       if(abs(z1).lt.1. .and. abs(z2).lt.1.
@@ -739,7 +752,7 @@ c z-faces:
       if(abs(xd).lt.1.e-20)xd=1.e-20
       do j=-1,1,2
          fr=(j-z1)/xd
-c            write(*,*)'xd, fr', xd,fr
+         write(*,*)'xd, fr', xd,fr,iend+1
          if(fr.ge.0.and.fr.le.1.)then
 c Intersects this plane. Test whether r at intersect is inside
             r=0.
@@ -773,6 +786,7 @@ c               write(*,*)'j,zx,f(j)',j,zx,f(j)
          enddo
          if(iend.eq.1)then
 c Put back the end intersection in the correct order.
+            write(*,*)'fr,f(1)',fr,f(1)
             if(fr.lt.f(1))then
                f(2)=f(1)
                f(1)=fr

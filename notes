@@ -12842,3 +12842,77 @@ I think we now have the cylinder code migrated over to use the new approach.
 However, I have not examined the intersects for rationality.
 
 commit.
+
+Ran isecttest. Looks ok.
+Looked at some intersection plots and could not see any problems.
+
+srvsect has not yet been migrated.
+
+geomrecess.dat gives nsect multiple messages as it should.
+However, the flux cancellation does not look very good. I'm not convinced
+it is working. Ideas: does fmax prevent proper accounting? We need some 
+more diagnosis. Found that sd was not being set correctly 
+Rationalized the sd setting process. Now we are really getting zero
+for separated cubes (no subtraction) even with large step size.
+
+Eventually getting back to geomrecess we now see something that is not
+so obviously wrong.
+
+Discovered that the cij setting is wrong. Appears not to be transforming
+the cylinder to normalized coordinates correctly. Yes. Found the error
+and corrected. 
+
+Slimming down the cube thickness I start to get substantial imbalance
+again. Taking away the cylinder and boolean restores reasonable balance.
+Especially with substantial drift.
+With cylinder but no boolean. x-cubes (2 and 3)
+   10.44    1.06    4.06  -13.81   -0.31   -1.31
+    3.44    0.38    2.44   -3.56   -0.44   -1.25
+With boolean we get some fmin>max indicators and 
+   -8.69   -1.38    0.62   17.56   -1.69   -1.38
+   19.75   -1.44    0.12  -14.12   -1.00   -1.31
+Running longer cases it's completely clear there's an imbalance. And it's
+there for all the cubes. 
+The imbalance is there for bigger cubes but maybe not quite as bad.
+
+Trying some cubeincube tests. Can't see a big inconsistency. Perhaps
+it is the complicated boolean that causes problems, or perhaps it's
+the cylinder. 
+
+Introduced a boolean difference between two cubes, plus a third very thin
+measuring cube that I can move around. This seems to show all is well
+with a cube subtracting a rectangular hole out of another cube. The net
+flux through the subtracting cube is close to zero. The plane measures
+what it should when near the other surfaces.
+
+Swapping the main object for a cylinder instead of a cube gives a substantial
+error in the flux across the bottom of the subtractive cube. All objects
+are non-boundary potential setting. There appear to be fluxes to the
+measuring plane well inside the particle inclusion region. I don't
+understand what denexamine shows. I need to understand whether/why there
+are particles in the non-boolean region.
+
+6 Dec 14
+
+The way to diagnose just the particle density is to use diagexamine which
+doesn't have all the compensating Boltzmann electron compensations.
+The density is zero inside but the cellcount is not. The reason is that
+the density is normalized by volumes and for zero volumes is put to zero.
+So look at the cellcount.
+
+Cellcount is zero inside cube. Not inside the cylinder. Clearly there is
+a leakage problem. 
+It does not seem to be present for a simple non-subtracted geomcyl.
+
+Confirm with 64^3 mesh. Definite leakage with cylinder and
+subtraction. Not present for cube. Not present without subtraction.
+
+Can confirm the particle leakage with a diagnostic in padvnc.
+Looks as if the leakage is a failure of leaveregion, since it appears
+that icross is nonzero for the particles entering the non-region and
+becoming leaked. Found a logical error in cylnormsect.
+Replaced cylnormset with cylusect. This makes the leakage go away. 
+
+I believe it is fixed, but I'm leaving in padvnc the leakage test.
+
+The geomrecess results now look pretty plausible. No sign of leakage.

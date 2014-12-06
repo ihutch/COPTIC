@@ -556,7 +556,7 @@ c There's a serious error. Give info and stop
 c******************************************************************
 c****************************************************************
       subroutine objsect(x1,xi,iobj,ierr,ispecies,fmax)
-c Find the intersection of the last step of particle xi from x1
+c Find the intersection of the step of particle xi from x1
 c with object iobj, and update the positioned-fluxes accordingly.
 c fmax is the maximum position fraction that should be counted.
 c It prevents counting intersections after leaving the region.
@@ -576,7 +576,7 @@ c
       real fraction
       real fmin(ovlen)
 c This does not seem to work as expected:
-c      equivalence (fraction,fmin(1))
+      equivalence (fraction,fmin(1))
 
       data isc/0/
 
@@ -590,6 +590,9 @@ c Do nothing for untracked objects and report no error.
       itype=int(obj_geom(otype,iobj))
 c Use only bottom 8 bits:
       itype=itype-256*(itype/256)
+c sd1 is 1 if x1 is outside this object, else -1.
+      sd1=1.-2.*inside_geom(ndims,x1,iobj)
+c      write(*,*)'sd1=',sd1
 
       if(itype.eq.1)then
 c New Sphere code ----------------. 
@@ -621,19 +624,19 @@ c Normalize to unit cube
      $           /obj_geom(oradius+i-1,iobj)
          enddo
          call cubeusect(xn1,xn2,nsect,fmin,imin)
-         fraction=fmin(1)
-         if(nsect.gt.1)write(*,*)'nsect multiple',nsect,fmin(1),fmin(2)
+c         fraction=fmin(1)
+c         if(nsect.gt.1)write(*,*)'nsect multiple',nsect,fmin(1),fmin(2)
 c The first is the minimum fraction from 1 to 2. But really we need
 c to account for all intersections.
          do i=1,nsect
+c Crossings alternate direction with initial direction given by sd1
+            sd=sd1*(-1)**(i-1)
             if(fmin(i).le.fmax)then
-               sd=-1.
-c If xn1 is outside, then first crossing is inwards sd=1
-               if(abs(xn1(mod(imin(i)-1,ndims)+1)).gt.1.)sd=1.
-c But second crossing is outward. 
-               if(i.eq.2)sd=-sd
                call ijbincube(iobj,imin(i),fmin(i),xn1,xn2,ijbin,idebug)
                call binadding(xi,infobj,sd,ijbin,ispecies)
+            else
+c               write(*,'(a,i2,2f10.6,f5.1)')'fmin>fmax',i,fmin(i),fmax
+c     $              ,sd
             endif
         enddo
       elseif(itype.eq.3)then
@@ -647,12 +650,11 @@ c Cylinder ----------------
      $           /obj_geom(oradius+i-1,iobj)
          enddo
          call cylusect(xn1,xn2,iobj,nsect,fmin,imin)
-         fraction=fmin(1)
-         do i=1,1
+c         fraction=fmin(1)
+         do i=1,nsect
             if(fmin(i).le.fmax)then
 c Need to decide sd correctly
-               sd=-1.
-               if(inside_geom(ndims,x1,iobj).eq.0)sd=1.
+               sd=sd1*(-1)**(i-1)
                call ijbincyl(iobj,imin(i),fmin(i),xn1,xn2,ijbin)
                call binadding(xi,infobj,sd,ijbin,ispecies)
             endif
@@ -661,17 +663,14 @@ c Need to decide sd correctly
 c Parallelopiped ------------------------
          call xp2contra(iobj,x1,xi,xn1,xn2,ins1,ins2)
          call cubeusect(xn1,xn2,nsect,fmin,imin)
-         fraction=fmin(1)
+c         fraction=fmin(1)
 c         do i=1,min(nsect,1)
          do i=1,nsect
             if(fmin(i).le.fmax)then
 c First crossing is inward if ins1 is 0.
-               sd=-(2.*ins1-1.)
-c But second crossing is opposite. 
-               if(i.gt.1)then
-                  sd=-sd
-c                  write(*,*)'Multiple Crossing',i,sd
-               endif
+c               sd=-(2.*ins1-1.)
+               sd=sd1*(-1)**(i-1)
+               if(inside_geom(ndims,x1,iobj).eq.0)sd=1.
                call ijbincube(iobj,imin(i),fmin(i),xn1,xn2,ijbin,idebug)
                call binadding(xi,infobj,sd,ijbin,ispecies)
             endif
@@ -680,12 +679,10 @@ c                  write(*,*)'Multiple Crossing',i,sd
 c Non-aligned cylinder ---------------------------------
          call xp2contra(iobj,x1,xi,xn1,xn2,ins1,ins2)         
          call cylusect(xn1,xn2,iobj,nsect,fmin,imin)
-         fraction=fmin(1)
-         do i=1,1
+c         fraction=fmin(1)
+         do i=1,nsect
             if(fmin(i).le.fmax)then
-c Need to decide sd correctly.
-               sd=-1.
-               if(inside_geom(ndims,x1,iobj).eq.0)sd=1.
+               sd=sd1*(-1)**(i-1)
                call ijbincyl(iobj,imin(i),fmin(i),xn1,xn2,ijbin)
                call binadding(xi,infobj,sd,ijbin,ispecies)
             endif
@@ -711,7 +708,7 @@ c Count up to total intersections. Then store cyclically.
       isc=mod(isc,sc_npts)+1
       iob_sc(isc)=iobj
       ibin_sc(isc)=ijbin
-c      write(*,*)'Saving intersection',isc,iobj,ijbin
+c      write(*,*)'Saving first intersection',isc,iobj,ijbin
       do i=1,ndims
          x_sc(i,1,isc)=x1(i)
          x_sc(i,2,isc)=x1(i)*(1.-fraction)+xi(i)*fraction

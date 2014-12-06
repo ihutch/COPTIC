@@ -42,7 +42,7 @@ c Local storage
       real xfrac(ndims)
       real xprior(ndims)
       logical linmesh
-      logical lcollided,ltlyerr,leftregion
+      logical lcollided,ltlyerr
       save adfield
 
 c Make this always last to use the checks.
@@ -297,18 +297,24 @@ c If we crossed an object boundary, do tallying.
          ltlyerr=.false.
 c Discovery of all the objects this step crosses.
          icross=icrossall(xprior,x_part(1,i))
-         leftregion=.false.
+         leftregion=0
          if(icross.ne.0)then
 c Since we crossed objects we might have leftregion:
             leftregion=leaveregion(ibool_part,ndims,xprior,x_part(1,i)
-     $           ,icross,fractions).gt.0
+     $           ,icross,fractions)
 c Here we tell tallyexit not to go past fractions(1) because that is the
 c end of this step.
             call tallyexit(xprior,x_part(1,i),icross,ltlyerr,ispecies
      $           ,fractions(1))
          endif
+c Diagnostic for leakage. Remove when convinced it is fixed:
+         if(.not.linregion(ibool_part,ndims,x_part(1,i))
+     $        .and..not.leftregion.ne.0)then
+            write(*,'(a,i8,6f8.3,i4)')'Particle leakage',i,(x_part(kk,i)
+     $           ,kk=1,6),icross
+         endif
 c------------ Possible Reinjection ----------
-         if(.not.linmesh.or.leftregion)then
+         if(.not.linmesh.or.leftregion.ne.0)then
 c  We left the mesh or region. Test if this was a trapped passthrough.
            if(linmesh.and.inewregion.eq.iregion)npassthrough
      $           =npassthrough+1
