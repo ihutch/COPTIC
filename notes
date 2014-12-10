@@ -12916,3 +12916,97 @@ Replaced cylnormset with cylusect. This makes the leakage go away.
 I believe it is fixed, but I'm leaving in padvnc the leakage test.
 
 The geomrecess results now look pretty plausible. No sign of leakage.
+
+commit. push.
+
+Replace cubenormsect with cubeusect in icross_geom. So now cubenormsect
+is not used.
+
+Work on srvsect to try to use it for everything: make it return ids,
+use insertsorted2 rather than incrementing icross_geom. Seems still to 
+work. Encapsulate ijbinsrv. Beware that from fsects, the chord ends
+are in world-units, non-normalized.
+
+Started to implement in fluxdata objsect routine. There are a few differences
+between srvsect and srvfsect. Some rounding errors are to be expected, 
+but there are a few cases that srvfsect does not find and sets fraction 
+to be 1. These all seem to have two fmins. sd is set differently of course.
+
+It would be good to understand these differences because they might not
+be benign. 
+If sd is allowed set by srvfsect. Then we get the same floating potential
+as before. That is presumably because the binadding adds nothing if sd
+is zero from srvfsect.
+Restricting fmin to le fmax does not make any change of floating, and does
+not prevent the sd recalculation from changing things.
+Removing srvfsect entirely gives the same result as calculating sd 
+in objsect. Thus it is only the sd difference from srvfsect that is
+changing the floating potential. 
+Built a diagnostic plot for the srvsect intersections. 
+Seems to show that crossings are being correctly detected.
+The crossings that srvfsect misses appear to be real and ought to be 
+counted.
+
+Basically I think that fluxdata.f has completed its transition to
+operation without srvfsect.eaa
+
+10 Dec 14
+
+Replacing srvfsect with srvsect in potlsect causes various errors. 
+Getpotential and Getfield errors and very slow volume calculation from type 6, 
+and Getfield no good vertices from type 7. 
+
+The getpotential errors are type 2 which means fillinlin was used. 4 or 6
+is the value of imissing. 
+
+All these seem like problems to do with finding no or few vertices. I
+assume that this problem arises because srvsect is so much better at
+finding intersections than srvfsect.
+
+However, the Used No of pointers:       32768  of       32768  points.
+makes things look worse. There's something very bad with the setup.
+Confirmed using -gt.
+
+Things are not good with srvsect in potlsect. Theres a bug.
+Yes. f(1) needs to be 1. for potlsect, when there's no intersect.
+
+Fixing that I get
+Used No of pointers:        6595  of       32768  points.
+which is more sensible.
+No more getpotential errors. However, still some Getfield No good errors.
+Put in zero field fallback for this so calculation completes. Then:
+srvsect:
+ Flux density*r^2, normalized to rhoinf  0.358004034    
+ Floating potential=  -3.86594462    
+srvfsect:
+ Flux density*r^2, normalized to rhoinf  0.381870955    
+ Floating potential=  -3.80140615    
+Looks as if the results could be compatible.
+At the very least we now see that using srvsect we have a useful test case
+for developing better No good vertices code.
+
+It turns out that the no good vertices reports are arising from not 
+excluding the particles from region 2. If the boolean excludes 2 as 
+well, they go away. Things are therefore not terribly bad.
+
+The fallback of putting the No good getfield value to zero is actually
+physically reasonable since No good occurs for highly reentrant regions
+surrounded by genuine boundary conditions. If the BC is a fixed potential
+then it is reasonable to approximate the field as zero. 
+
+That leads me to think that perhaps one ought to consider setting the 
+field from the difference in the boundary conditions. That would be one
+option. Another might be to use the potential on the other side of the
+boundary even though it isn't in the region. There are several options.
+One might even imagine detecting what the BC type on the boundary is
+and making a decision based on that. But getfield doesn't have much
+information.
+
+Summary. 
+
+We now have srvfsect removed from usage. 
+The geometry test gives some No good vertices when particles are not excluded
+from inside object 2.
+The fallback for No good vertices has been changed to set the field to zero.
+This is a reasonable choice for cases where the point under consideration
+is inside a narrow reentrant area with fixed potential. 

@@ -264,11 +264,11 @@ c The only way this should happen is by the use of SVD on an inappropriate
 c set of box intersections that represents multiple planes crossing the
 c box. 
 c It might also be a bug or mesh clash.
-                        write(*,*)'Warning: Box Recut ',npoints
-     $                       ,i,ipa(i),oi_cij
-     $                       ,(indi(kk),kk=1,ndims),f1
-     $                       ,' Adjust mesh!'
-     $                       ,(ipa(kk),kk=1,ndims)
+                        if(error.eq.0)write(*,*)
+     $         'cijroutine     npoint, id oi_cij indi    f1. Mesh?'
+                        write(*,'(a,2i3,i5,3i4,f6.3,a)')
+     $                       'Warning: Box Recut ',npoints,i*ipa(i)
+     $                       ,oi_cij,(indi(kk) ,kk=1 ,ndims),f1
 c Silenced temporarily a lot of diagnostic messages.
 c     $                       ,f0,f1,ftot
 c     $                       ,(1./fn(kk),kk=1,ndims)

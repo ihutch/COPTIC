@@ -27,8 +27,7 @@ c The field region of the point is known and passed.
 c Value will be rubbish if xff<1. or xff>nmesh because arrays will be
 c overrun.
 
-      subroutine getfield(cij,u,iuinc,xn,idf
-     $     ,xff,iregion,field)
+      subroutine getfield(cij,u,iuinc,xn,idf,xff,iregion,field)
 
       include 'ndimsdecl.f'
 c Pointers and potential array with origin at the box corner.
@@ -298,8 +297,11 @@ c Field is minus the potential gradient.
          write(*,'(''Getfield No good vertices. Region'',i3'//
      $        ','' Direction'',i2,'' Fracs'',3f8.4)')
      $        iregion,idf,xff
-c This flags a problem to the calling routine.
-         field=1.e13
+c This flags a problem to the calling routine. padvnc stops.
+c         field=1.e13
+c This instead gives a field of zero as a complete hack fallback but it
+c allows the calculation to continue.
+         field=0.
 c Here we should look around for a point that really is in the region,
 c since the whole box is not, and use that as the base node with 
 c fractions greater than 1. However, this pathological case only 

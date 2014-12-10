@@ -123,9 +123,15 @@ c Non-aligned cylinder.
                call cylusect(xn1,xn2,i,nsect,fmin,ids)
                fraction=fmin(1)
             elseif(itype.eq.6)then
-               call srvfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+c               call srvfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+               call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)
+               call srvsect(xn1,xn2,i,nsect,fmin,ids)
+               fraction=fmin(1)
             elseif(itype.eq.7)then
-               call srvfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+c               call srvfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
+               call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)
+               call srvsect(xn1,xn2,i,nsect,fmin,ids)
+               fraction=fmin(1)
             else
                write(*,*)"Unknown object type",obj_geom(otype,i),
      $              " in potlsect"
@@ -291,9 +297,10 @@ c Given a general SoR object iobj. Find the point of intersection of the
 c line joining xp1,xp2, with it, and determine the ijbin to which it is
 c therefore assigned, and the direction it is crossed (sd=+1 means
 c inward from 1 to 2). Fractional distance xp1->xp2 is returned.
+c xp1,xp2 here are world, not contra. Have to be transformed for comparison.
 
 c This version uses only inside_geom and bisection to find the point
-c of intersection. 
+c of intersection. It is not now used.
 
       integer nsdim,iobj,ijbin
       real xp1(nsdim),xp2(nsdim),sd,fraction
@@ -395,34 +402,64 @@ c     $        ,inside_geom(ndims,xp2,iobj)
          call rztell(xm,iobj)
          stop
       endif
-c Calculate ijbin.
-c Theta index is N_theta*(theta/2pi+0.5). k2-1
-c Non-negative &< N_theta is enforced by slight pi overestimate.
-      itc=int(obj_geom(ofn1,iobj)*(theta/(2.*3.141593)+0.5))
 
+c Calculate ijbin.
 c Decide the irz index based upon wall position. The face is the integer
 c part of psect. The facet is based upon equal r^2 division of face.
 c See objplot for the principles.
 c The face:
       irz=int(psect)
+c Encapsulated world units.
+      call ijbinsrv(iobj,irz,fraction,xp1,xp2,ijbin)
+
+      if(ins1.eq.0)then
+         sd=1.
+      else
+         sd=-1
+      endif
+      end
+c*********************************************************************
+      subroutine ijbinsrv(iobj,ids,fraction,xp1,xp2,ijbin)
+c Given the two world (non-normalized) points, xp1,xp2, the fraction
+c between them and the face index ids, of object iobj, get the facet
+c index ijbin.
+      implicit none
+      include 'ndimsdecl.f'
+      include '3dcom.f'
+      integer iobj,ijbin,ids
+      real fraction,xp1(ndims),xp2(ndims)
+
+      real xm(ndims),theta,zm,rm,rb,rt,zb,zt,dr2
+      integer i,nz,ifobj,itc,k,ifct
+
+      do i=1,ndims
+         xm(i)=xp1(i)+(xp2(i)-xp1(i))*fraction
+      enddo
+      call world3contra(ndims,xm,xm,iobj)
+      theta=atan2(xm(2),xm(1))
+      zm=xm(ndims)
+      rm=sqrt(xm(1)**2+xm(2)**2)
+      itc=int(obj_geom(ofn1,iobj)*(theta/(2.*3.141593)+0.5))
+
 c The ends of the segment chosen.
-      rb=obj_geom(opr+irz-1,iobj)
-      rt=obj_geom(opr+irz,iobj)
-      zb=obj_geom(opz+irz-1,iobj)
-      zt=obj_geom(opz+irz,iobj)
-      nz=int(obj_geom(opdiv+irz-1,iobj))
+      rb=obj_geom(opr+ids-1,iobj)
+      rt=obj_geom(opr+ids,iobj)
+      zb=obj_geom(opz+ids-1,iobj)
+      zt=obj_geom(opz+ids,iobj)
+      nz=int(obj_geom(opdiv+ids-1,iobj))
 c This test sometimes fails very near the end of a segment, leading to
 c benign application of a crossing to an adjacent segment. If it fails
 c by a larger amount. Worry!
       if((rb-rm)*(rm-rt)*abs(rt-rb).lt.-1.e-6
      $     .or. (zb-zm)*(zm-zt)*abs(zt-zb).lt.-1.e-6)then
          write(*,*)
-         write(*,*)'Puzzling Values for',isect,irz,psect,iobj
+         write(*,*)'Puzzling Values for',ids,iobj
          write(*,*)'rb,rm,rt,zb,zm,zt',rb,rm,rt,zb,zm,zt
          write(*,'(20f7.3)')(obj_geom(opr+k,iobj),k=0
      $        ,int(obj_geom(onpair,iobj))-1)
          write(*,'(20f7.3)')(obj_geom(opz+k,iobj),k=0
      $        ,int(obj_geom(onpair,iobj))-1)
+         stop
       endif
       dr2=(rt**2-rb**2)/nz
 c The facet number: k3-1
@@ -435,13 +472,8 @@ c The facet number: k3-1
       if(ifct.gt.nz-1)ifct=nz-1
       ifobj=nf_map(iobj)
       ijbin=(itc)+nf_dimlens(nf_flux,ifobj,1)*(ifct)
-     $        +nf_faceind(nf_flux,ifobj,irz)
-
-      if(ins1.eq.0)then
-         sd=1.
-      else
-         sd=-1
-      endif
+     $        +nf_faceind(nf_flux,ifobj,ids)
+      
       end
 c*********************************************************************
       subroutine spheresect(nsdim,ida,xp1,xp2,xc,rc,f1,f2,sd,C,D)
@@ -510,13 +542,10 @@ c For a unit cube, center 0 radii 1, find the intersection(s) of line
 c xp1,xp2 with it, and the face that it intersects.
       include 'ndimsdecl.f'
       real xp1(ndims),xp2(ndims)
-c      integer ijbin,iobj
       include '3dcom.f'
       real fmin(ovlen)
       integer ids(ovlen)
-      integer idebug
 
-      idebug=1
       fmin(1)=1.
       ids(1)=0
       nsect=0

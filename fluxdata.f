@@ -577,6 +577,7 @@ c
       real fmin(ovlen)
 c This does not seem to work as expected:
       equivalence (fraction,fmin(1))
+      
 
       data isc/0/
 
@@ -624,7 +625,6 @@ c Normalize to unit cube
      $           /obj_geom(oradius+i-1,iobj)
          enddo
          call cubeusect(xn1,xn2,nsect,fmin,imin)
-c         fraction=fmin(1)
 c         if(nsect.gt.1)write(*,*)'nsect multiple',nsect,fmin(1),fmin(2)
 c The first is the minimum fraction from 1 to 2. But really we need
 c to account for all intersections.
@@ -650,7 +650,6 @@ c Cylinder ----------------
      $           /obj_geom(oradius+i-1,iobj)
          enddo
          call cylusect(xn1,xn2,iobj,nsect,fmin,imin)
-c         fraction=fmin(1)
          do i=1,nsect
             if(fmin(i).le.fmax)then
 c Need to decide sd correctly
@@ -663,7 +662,6 @@ c Need to decide sd correctly
 c Parallelopiped ------------------------
          call xp2contra(iobj,x1,xi,xn1,xn2,ins1,ins2)
          call cubeusect(xn1,xn2,nsect,fmin,imin)
-c         fraction=fmin(1)
 c         do i=1,min(nsect,1)
          do i=1,nsect
             if(fmin(i).le.fmax)then
@@ -679,7 +677,6 @@ c               sd=-(2.*ins1-1.)
 c Non-aligned cylinder ---------------------------------
          call xp2contra(iobj,x1,xi,xn1,xn2,ins1,ins2)         
          call cylusect(xn1,xn2,iobj,nsect,fmin,imin)
-c         fraction=fmin(1)
          do i=1,nsect
             if(fmin(i).le.fmax)then
                sd=sd1*(-1)**(i-1)
@@ -690,9 +687,22 @@ c         fraction=fmin(1)
       elseif(itype.eq.6.or.itype.eq.7)then
 c Surface of revolution -------------------------------
          ijbin=-1
-         call srvfsect(ndims,x1,xi,iobj,ijbin,sd,fraction)
-c         write(*,*)'Objsect srvfsect',fraction,sd,ijbin
-         call binadding(xi,infobj,sd,ijbin,ispecies)
+         call xp2contra(iobj,x1,xi,xn1,xn2,ins1,ins2)
+         call srvsect(xn1,xn2,iobj,nsect,fmin,imin)
+c         call srvfsect(ndims,x1,xi,iobj,ijalt,sd,frac)
+c         fraction=frac
+         if(.false.)then
+            write(*,*)'nsect,fmin,frac',nsect,fmin(1),fmin(2),frac
+            write(*,*)'ijalt,ijbin,sds',ijalt,ijbin,sd,sd1
+            call srvsectplot(iobj,xn1,xn2,fmin)
+         endif
+         do i=1,nsect
+            if(fmin(i).le.fmax)then
+               sd=sd1*(-1)**(i-1)
+               call ijbinsrv(iobj,imin(i),fmin(i),x1,xi,ijbin)
+               call binadding(xi,infobj,sd,ijbin,ispecies)
+            endif
+         enddo
       else
 c         write(*,*)'Unknown object in objsect'
 c Unknown object type.
@@ -773,6 +783,62 @@ c Normalized to rhoinf, assuming 1/eoverm is equal to the mass.
 
       end
 c*******************************************************************
+      subroutine srvsectplot(iobj,xn1,xn2,fmin)
+      include 'ndimsdecl.f'
+      include '3dcom.f'
+c      include 'partcom.f'
+c      include 'sectcom.f'
+
+      real xn1(ndims),xn2(ndims)
+c      integer imin(ovlen)
+      real fmin(ovlen)
+      integer na
+      parameter (na=20)
+      real ra(na),za(na),xf(ndims)
+      
+      call autoplot(obj_geom(opr,iobj),obj_geom(opz,iobj),
+     $     int(obj_geom(onpair,iobj)))
+      do i=1,int(obj_geom(onpair,iobj))-1
+c The ends of the segment chosen.
+         rb=obj_geom(opr+i-1,iobj)
+         rt=obj_geom(opr+i,iobj)
+         zb=obj_geom(opz+i-1,iobj)
+         zt=obj_geom(opz+i,iobj)
+         nz=int(obj_geom(opdiv+i-1,iobj))
+         dr2=(rt**2-rb**2)/nz
+c          ifct=int((rm**2-rb**2)/dr2)
+         do j=1,nz
+            rm=sqrt((j-1.)*dr2+rb**2)
+            if(abs(dr2).gt.1.e-6)then
+               fr=(rm-rb)/(rt-rb)
+            else
+               fr=(j-1.)/(nz)
+            endif
+            zm=zb*(1-fr)+zt*fr
+            call polymark(rm,zm,1,j+1)
+         enddo
+      enddo
+      do kk=1,2
+         do i=1,na
+            if(kk.eq.2)then
+               fa=fmin(1)+(fmin(2)-fmin(1))*(i-1.)/(na-1.)
+            else
+               fa=(i-1.)/(na-1.)
+            endif
+            do k=1,ndims
+               xf(k)=xn1(k)*(1.-fa)+xn2(k)*fa
+            enddo
+            ra(i)=sqrt(xf(1)**2+xf(2)**2)
+            za(i)=xf(3)
+         enddo
+         call color(1+(kk-1)*5)
+         call dashset(0)
+         if(kk.eq.1)call polymark(ra,za,1,1)
+         call polyline(ra,za,na)
+         call color(15)
+      enddo
+      call pltend()
+      end
 c*******************************************************************
       subroutine pllelfrac(xp,xn,iobj)
 c For input point xp(ndims) return the normalized position relative to
