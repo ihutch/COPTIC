@@ -496,6 +496,7 @@ c
 c Prevent a singularity if the vectors coincide.
       A=1.e-25
       B=0.
+      dot=0.
       C=-1.
       D=-1.
 c x1 and x2 are the coordinates in system in which sphere 
@@ -509,6 +510,7 @@ c has center 0 and radius 1.
          x1=(xp1(i)-xci)/rci
          x2=(xp2(i)-xci)/rci
          A=A+(x2-x1)**2
+c         dot=dot+x2*x1
          B=B+x1*(x2-x1)
          C=C+x1**2
          D=D+x2**2
@@ -516,6 +518,8 @@ c has center 0 and radius 1.
 c Crossing direction from x1 to intersection
       sd=sign(1.,C)
       disc=B*B-A*C
+c Symmetric discriminant calculation:
+c      disc=dot**2-(C+1.)*(D+1.)+A
       if(disc.ge.0.)then
          disc=sqrt(disc)
 c (A always positive)
@@ -606,9 +610,9 @@ c First shortcut, return if both points are beyond the same axial end.
       z2=xp2(ida)
       if((z1.gt.1. .and. z2.gt.1.).or.
      $     (-z1.gt.1. .and. -z2.gt.1))return
-      r1=(xp1(1)**2+xp1(2)**2)
-      r2=(xp2(1)**2+xp2(2)**2)
-c Second shortcut, if both points are inside cylinder return.
+      r1=(xp1(1)**2+xp1(2)**2)+1.e-5
+      r2=(xp2(1)**2+xp2(2)**2)+1.e-5
+c Second shortcut, if both points are inside cylinder, return.
       if(r1.lt.1..and.r2.lt.1..and.abs(z1).lt.1..and.abs(z2).lt.1.)
      $     return
       xd=z2-z1

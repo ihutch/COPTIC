@@ -1008,7 +1008,7 @@ c      write(*,*)'tot,rinf,tdur,n2',tot,rinf,tdur,n1,n2
 c From here on is non-general and is mostly for testing.
       write(*,'(a,i3,a,i3,a,i5,i5,a,f9.2)')' Average flux quant',iq
      $     ,', object',ifobj,', over steps',n1,n2,', per unit time:',tot
-      write(*,'(a,f9.4,a,i7,a,i7,a)')' rhoinf:',rinf,' Total:',nint(tot
+      write(*,'(a,f9.2,a,i7,a,i7,a)')' rhoinf:',rinf,' Total:',nint(tot
      $     *tdur),' Abs',nint(atot)
      $     ,'  Average collected per step by posn:'
       write(*,'(10f8.2)')(ff_data(iav+i),i=1,nf_posno(iq,ifobj))

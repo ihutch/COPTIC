@@ -13,6 +13,7 @@ c 1-d plotting arrays.
       real z1d(na_m),u1d(na_m),dene1d(na_m),deni1d(na_m)
       character*20 mname(ndiagmax+1)
 
+      real mcell
       logical lvtk
       character*70 xtitle,ytitle
       integer iuphi(3),iurs(3),isrs(3)
@@ -33,8 +34,8 @@ c 1-d plotting arrays.
       ipp=0
 c      pscale=3.
 c 
-      call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk)
-c      write(*,*)'ifull',ifull
+      call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
+     $     ,mcell)
       i1=1
       ied=ndiagmax
       call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
@@ -107,7 +108,7 @@ c But as of 4 Dec 2013 the ndiags is phi, so don't normalize that.
          do k=1,iuds(3)
             do j=1,iuds(2)
                do i=1,iuds(1)
-                  if(abs(diagsum(i,j,k,1)).gt.0.)then
+                  if(abs(diagsum(i,j,k,1)).gt.mcell+1.e-5)then
                      diagsum(i,j,k,id)=diagsum(i,j,k,id)/diagsum(i,j,k
      $                    ,1)
                   else
@@ -371,8 +372,9 @@ c     $     ,diagsum(1,1,1,2),vp)
 
 c*************************************************************
       subroutine diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle
-     $     ,lvtk)
+     $     ,lvtk,mcell)
       integer iunp,isingle,i1d
+      real mcell
       character*70 xtitle,ytitle
       logical lvtk
       include 'examdecl.f'
@@ -390,6 +392,7 @@ c Defaults
       denfilename=' '
       ytitle=' '
       xtitle=' '
+      mcell=5.
 
 c Deal with arguments
       if(iargc().eq.0) goto 201
@@ -416,6 +419,8 @@ c Deal with arguments
             if(argument(1:2).eq.'-f')ipp=1
             if(argument(1:2).eq.'-a')
      $           read(argument(3:),*,err=201)i1d
+            if(argument(1:2).eq.'-m')
+     $           read(argument(3:),*,err=201)mcell
             if(argument(1:2).eq.'-h')goto 203
             if(argument(1:2).eq.'-?')goto 203
             if(argument(1:2).eq.'-w')then
@@ -439,20 +444,21 @@ c Help text
       write(*,*)' Plot diagnostics from file'
       write(*,*)' If additional parameter file is set,'
      $     ,' do arrow plot of velocity on it.'
-      write(*,301)' -p   set name of additional parameter file.'
+      write(*,301)' -p<name>   set name of additional parameter file.'
      $     //' (Given <=twice: phi, den.)'
-      write(*,301)' -ly   set label of parameter. -lx label of xaxis'
-      write(*,301)' -d   set single diagnostic to be examined.[',isingle
-      write(*,301)' -a   set dimension number for average profile[',i1d
-      write(*,301)' -o   write out the profiles[',iwr
+      write(*,301)' -ly  set label of parameter. -lx label of xaxis'
+      write(*,301)' -d   set single diagnostic to be examined [',isingle
+      write(*,301)' -a   set dimension number for ave profile [',i1d
+      write(*,301)' -o   write out the profiles               [',iwr
+      write(*,301)' -f   plot potential profile (if -p given) [',ipp
+      write(*,301)' -u   plot un-normalized diagnostics       [',iunp
+      write(*,301)' -m<f>  set minimum non-zero cell count    [',mcell
       write(*,*)'-w<name> toggle vtk file writing,'
      $     ,' optionally name the vector[',lvtk,' '
      $     ,fluxfilename(1:lentrim(fluxfilename))
-      write(*,301)' -f   plot potential profile (if -p given)[',ipp
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [copticgeom.dat'
-      write(*,301)' -u   plot un-normalized diagnostics.[',iunp
-      write(*,301)' -h -?   Print usage.'
+      write(*,301)' -h -?  Print usage and current switch values.'
       call exit(0)
  202  continue
       if(lentrim(diagfilename).lt.5)goto 203

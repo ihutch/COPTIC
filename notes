@@ -13010,3 +13010,33 @@ from inside object 2.
 The fallback for No good vertices has been changed to set the field to zero.
 This is a reasonable choice for cases where the point under consideration
 is inside a narrow reentrant area with fixed potential. 
+
+18 Dec 2014
+
+In a big run with 32 processors we see a handful of particle leakage
+events. A nice way to diagnose them is using the velocity in diagexamine.
+At least one of them is through the side of the cylinder away from all
+other objects. Therefore it implies there is a way for a cylinder to
+leak. It seems likely that this issue arises in spheresect (as applied
+to a cylinder). Ideally for a point that happens to be exactly on the
+cylinder, one would want the routine to yield an intersection once for
+either the step to it or the step from it. I'm not sure the code does
+that. B and C become zero with corresponding points on the sphere.
+I might have to construct a testing routine that examines the results
+of adjacent steps that happen to be right on the cylinder. I think in 
+order to leak there needs to be a situation where neither step indicates
+intersection.
+
+Cylusect examines sds and if non-zero the return value of f1 and f2,
+which must be >=0. and <1. to count. The order of returns is irrelevant. 
+
+I wonder whether the radial shortcut is the reason. Perhaps there's a
+way that the first point is to spheresect's view exactly on the cylinder
+but to the radius calculation is a tiny bit inside. Remove that possibility
+by making the radial test just outside the cylinder.
+
+Add control of minimum cell count -m switch to diagexamine.
+I think this ought to be a float not an integer. It's not quite right.
+Add a small amount to it to avoid divide by zero.
+
+Commit.
