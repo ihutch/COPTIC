@@ -13040,3 +13040,42 @@ I think this ought to be a float not an integer. It's not quite right.
 Add a small amount to it to avoid divide by zero.
 
 Commit.
+
+Using the new diagexamine code on the loki 90 and 45 runs. I see there
+are leaked particles on both. So the tweak on the spheresect has not
+prevented leakage. It's only a couple of particles, but it would be 
+really nice to stop it entirely. The radial shortcut was not the (only)
+problem.
+
+Try the following change:
+c         if(C.gt.0. .and. B.lt.0) then
+c Discrim<|B|. Can take minus sign and still get positive. 
+         if(C.ge.0. .and. B.lt.0) then
+c Discrim<=|B|. Can take minus sign and still get non-negative. 
+It ought to yield an intersection when the particle starts on the sphere
+and moves inward. Previously that was excluded.
+
+Built testing/spheresecttest
+There appear to be various problems with systematic steps around the
+sphere. Although the above is probably a step in the right direction,
+there are still peculiarities near the sphere that this testing 
+reveals. These are not easy to sort out as long as the code is 
+asymmetric between the two ends. That's built in, since f=1 indicates
+no intersection, but there are other inconsistencies between the C
+value and the f values. Some fs are zero without C being exactly zero.
+On outward going steps, this leads to wrong ordering with zero being
+f2.
+
+The problem appears to be if C is extremely small, then the
+discriminent becomes =B and the f becomes zero, even when C is
+negative. That can be prevented by an explict test for fdiff=0
+perhaps. But maybe there's a way that f can be obtained more
+accurately when C or D is small by an expansion.
+
+Rewrote spheresect in a totally symmetric way solving for the
+parametric position wrt the centroid, then adding 0.5. Also using
+only the f values to decide the sorting. It then seems to perform
+much better on the spheresecttest provided halfmin is taken as
+exactly 0.5. Also the sumtol can be taken to essentially zero, 
+since we seem now to have exactly complementary results from swapping
+xp1 and xp2. I think it is fixed.

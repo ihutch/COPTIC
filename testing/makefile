@@ -11,7 +11,7 @@ ifeq ("$(VECX)","vecglx")
 endif
 ######################################################################
 # An option setting might override default compiler.
-G77=mpif77 -f77=g77 
+G77=mpif77
 #G77=mpif77
 # For loki:
 #G77=/opt/mvapich2.gbe/path/bin/mpif90

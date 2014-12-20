@@ -492,11 +492,11 @@ c subsurface (circle) is the figure whose intersection is sought.
       real xp1(nsdim),xp2(nsdim),xc(nsdim),rc(nsdim)
       real sd,f1,f2,C,D
 c
-      real x1,x2,A,B
+      real x1,x2,A,B,E,disc,f3
 c Prevent a singularity if the vectors coincide.
       A=1.e-25
       B=0.
-      dot=0.
+      E=-4.
       C=-1.
       D=-1.
 c x1 and x2 are the coordinates in system in which sphere 
@@ -510,34 +510,42 @@ c has center 0 and radius 1.
          x1=(xp1(i)-xci)/rci
          x2=(xp2(i)-xci)/rci
          A=A+(x2-x1)**2
-c         dot=dot+x2*x1
-         B=B+x1*(x2-x1)
+         B=B+(x1+x2)*(x2-x1)
+         E=E+(x1+x2)**2
          C=C+x1**2
          D=D+x2**2
       enddo
+      B=B*0.5
+      E=E*0.25
 c Crossing direction from x1 to intersection
       sd=sign(1.,C)
-      disc=B*B-A*C
 c Symmetric discriminant calculation:
-c      disc=dot**2-(C+1.)*(D+1.)+A
+      disc=B*B-A*E
       if(disc.ge.0.)then
          disc=sqrt(disc)
-c (A always positive)
-         if(C.gt.0. .and. B.lt.0) then
-c Discrim<|B|. Can take minus sign and still get positive. 
-            f1=(-B-disc)/A
-            f2=(-B+disc)/A
+c With different discriminant we need a different test for sign.
+c Most negative f
+         f1=(-B-disc)/A+0.5
+         if(f1.ge.0.)then
+            f2=(-B+disc)/A+0.5
          else
-c If B positive or C negative must use plus sign. 
-            f1=(-B+disc)/A
-            f2=(-B-disc)/A
+c f1 negative
+            f3=(-B+disc)/A+0.5
+            if(f3.ge.0..or.f3.le.f2)then
+               f2=f1
+               f1=f3
+            else
+               f2=f3
+            endif
          endif
+c Fix cases where xp1 exactly on sphere to have correct direction.
+         if(f1.eq.0.and.C.lt.1.e-5.and.f2.lt.0.)sd=-sign(1.,D)
       else
 c         write(*,*)'Sphere-crossing discriminant negative.',A,B,C
          sd=0.
          f1=1.
          f2=1.
-         return
+c         return
       endif
       end
 c***********************************************************************
