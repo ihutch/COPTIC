@@ -942,6 +942,9 @@ c which is ff_data(iav+i)
       n1=n1in
       n2=n2in
       iq=abs(iquant)
+c Interrogate the second byte. If non-zero then don't print.
+      inoprint=iq/256
+      iq=iq-256*inoprint
 c If quantity asked for is not available, do nothing.
       if(iq.gt.mf_quant(ifobj).or.iq.eq.0)then
 c         write(*,*)'No such quantity',ifobj,mf_quant(ifobj),iq
@@ -1005,21 +1008,24 @@ c      write(*,*)'tot,rinf,tdur,n2',tot,rinf,tdur,n1,n2
       tot=tot/tdur
       rinf=rinf/tdur
 
-c From here on is non-general and is mostly for testing.
-      write(*,'(a,i3,a,i3,a,i5,i5,a,f9.2)')' Average flux quant',iq
-     $     ,', object',ifobj,', over steps',n1,n2,', per unit time:',tot
-      write(*,'(a,f9.2,a,i7,a,i7,a)')' rhoinf:',rinf,' Total:',nint(tot
-     $     *tdur),' Abs',nint(atot)
-     $     ,'  Average collected per step by posn:'
-      write(*,'(10f8.2)')(ff_data(iav+i),i=1,nf_posno(iq,ifobj))
-      fluxdensity=tot/(4.*3.14159)/rinf
-      write(*,*)'Flux density*r^2, normalized to rhoinf'
-     $     ,fluxdensity
+c From here on is mostly for testing.
+      if(inoprint.eq.0)then
+         write(*,'(a,i3,a,i3,a,i5,i5,a,f9.2)')' Average flux quant',iq
+     $        ,', object',ifobj,', over steps',n1,n2,', per unit time:'
+     $        ,tot
+         write(*,'(a,f9.2,a,i7,a,i7,a)')' rhoinf:',rinf,' Total:'
+     $        ,nint(tot*tdur),' Abs',nint(atot)
+     $        ,'  Average collected per step by posn:'
+         write(*,'(10f8.2)')(ff_data(iav+i),i=1,nf_posno(iq,ifobj))
+         fluxdensity=tot/(4.*3.14159)/rinf
+         write(*,*)'Flux density*r^2, normalized to rhoinf'
+     $        ,fluxdensity
 c      write(*,*)'Sectcom ipt=',sc_ipt
-      eovermlocal=1.
-      flogfac=0.5*alog(2.*3.1415926*eovermlocal/1836.)
-      phifloat=alog(fluxdensity)+flogfac
-      write(*,*)'Floating potential=',phifloat
+         eovermlocal=1.
+         flogfac=0.5*alog(2.*3.1415926*eovermlocal/1836.)
+         phifloat=alog(fluxdensity)+flogfac
+         write(*,*)'Floating potential=',phifloat
+      endif
 
       if(iquant.gt.0)then
          write(string,'(''Object '',i3,'' Quantity'',i3)')
@@ -1137,7 +1143,7 @@ c Figure out the version:
       if(charout(iend-9:iend-3).eq.'Version')then
          read(charout(iend-1:iend),*)iversion
          if(ierr.ne.0)write(*,*)'Flux file version',iversion
-         ierr=0
+c         ierr=0
       else
          iversion=0
       endif
@@ -1190,6 +1196,7 @@ c Object data:
       read(23)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
 c      write(*,*)'Object data for',ngeomobj,' objects:'
 c      write(*,*)((obj_geom(j,k),j=1,ndlen),nf_map(k),k=1,ngeomobj)
+c      write(*,*)((obj_geom(j,k),j=1,8),nf_map(k),k=1,ngeomobj)
 c      write(*,*)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
 c Intersection data:
       read(23)sc_ipt
@@ -1201,7 +1208,8 @@ c n_part data
          read(23,end=105)nf_species
          read(23,end=105)((if_quant(j,k),kf_quant(j,k),j=1,mf_obj),k=1
      $        ,nf_species)
-         write(*,*)'Flux reading: nf_species=',nf_species,
+         if(ierr.ne.0)write(*,'(a,i3,a,i3,a,i3)')
+     $        'Flux reading: nf_species=',nf_species,
      $        ' Quantity start',(if_quant(1,k),k=1,nf_species),
      $        ' Quantity count',(kf_quant(1,k),k=1,nf_species)
       endif
@@ -1242,3 +1250,133 @@ c      ierr=0
       ierr=1
       end
 c*********************************************************************
+c*********************************************************************
+      integer function ijbinindex(infobj,iface,i1,i2,i3)
+c Given the face and indexes within it, return the ijbin address
+c of the flux entry.
+c On entry
+c      infobj is the object in flux collection index
+c      iface is the face number of this object 1-6 cubes. -1,0,+1 cyl.
+c      i1, i2, [i3] are the face indexes within it. 
+c On exit
+c      ijbinindex is the address requested. Or -1 if error.
+c For spheres,   itype=1 there is just one face and two angles i1,i2
+c     cubes,     itype=2,4:  6 faces, three indices i1,i2,i3
+c     cylinders, itype=3,5:  3 faces, three indices ir,it,iz
+c For SurfRef,   itype=6,7:  npair+-1 faces, 2 indices each: it,irz
+c In reality, only two indices are required for each facet.
+c However, it seems less confusing to provide cartesian or r,theta,z 
+c indices for cubes or cylinders respectively.
+c Thus, for x-faces or circular faces e.g., only i2,i3 matter.
+      implicit none
+      integer iobj,iface,i1,i2,i3,ijbin
+      include 'ndimsdecl.f'
+      include '3dcom.f'
+      integer ii(3),i,k,ibstep,infobj,itype
+
+      ijbinindex=-1
+      ijbin=0
+      if(infobj.le.0.or.infobj.gt.mf_obj)then
+         write(*,*)'ijbinindex incorrect infobj',infobj
+         return
+      endif
+      iobj=nf_geommap(infobj)
+      itype=int(obj_geom(otype,iobj))
+c      write(*,*)'ijbinindex',iobj,itype,(obj_geom(k,iobj),k=1,12)
+      if(itype.eq.1)then
+c sphere ----------------------
+         if(i1.gt.nf_dimlens(nf_flux,infobj,1).or.
+     $       i2.gt.nf_dimlens(nf_flux,infobj,2))then
+            write(*,'(a,i2,a,2i4)')'ijbinindex sphere asked too big'
+     $           ,infobj,' i1,i2=',i1,i2
+            return
+         endif
+         ijbin=i1-1+(i2-1)*nf_dimlens(nf_flux,infobj,1)
+      elseif(itype.eq.2.or.itype.eq.4)then
+c cube ------------------------
+         ii(1)=i1
+         ii(2)=i2
+         ii(3)=i3
+         ibstep=1
+         if(iface.le.0.or.iface.gt.6)then
+            write(*,*)'Incorrect cube face',iface
+            return
+         endif
+         do i=1,ndims-1
+            k=mod(mod(iface-1,3)+1+i-1,ndims)+1
+            if(ii(k).gt.nf_dimlens(nf_flux,infobj,k))then
+               write(*,'(a,i2,a,i1,a,i5)')
+     $              'ijbinindex cube asked too big. Object=',infobj
+     $              ,' i',k,'=',ii(k)
+               return
+            endif
+            ijbin=ijbin+ibstep*(ii(k)-1)
+            ibstep=ibstep*nf_dimlens(nf_flux,infobj,k)
+         enddo
+         ijbin=ijbin+nf_faceind(nf_flux,infobj,iface)
+c         write(*,*)'ijbin',ijbin
+      elseif(itype.eq.3.or.itype.eq.5)then
+c cylinder---------------------
+c iface -1,0,+1 -> 1,2,3
+         ijbin=nf_faceind(nf_flux,infobj,iface+2)
+         if(iface.eq.0)then
+c Index in order theta,z
+            if(i2.gt.nf_dimlens(nf_flux,infobj,2).or.
+     $           i3.gt.nf_dimlens(nf_flux,infobj,3))then
+               write(*,*)'ijbinindex cyl index too big',infobj,i2,i3
+            endif
+            ijbin=ijbin+i2-1+(i3-1)*nf_dimlens(nf_flux,infobj,2)
+         elseif(abs(iface).eq.1)then
+c Index in order r,theta
+            if(i1.gt.nf_dimlens(nf_flux,infobj,1).or.
+     $           i2.gt.nf_dimlens(nf_flux,infobj,2))then
+               write(*,*)'ijbinindex end index too big',infobj,i1,i2
+            endif
+            ijbin=ijbin+(i1-1)+(i2-1)*nf_dimlens(nf_flux,infobj,1)
+         else
+            write(*,*)'Wrong ijbinindex cylinder face number',iface
+            return
+         endif
+         
+      elseif(itype.eq.6.or.itype.eq.7)then
+c SoRevolution ------------------------------
+c Need test for indexes sensible. Not done.
+         ijbin=(i1-1)+nf_dimlens(nf_flux,infobj,1)*(i2-1)
+     $        +nf_faceind(nf_flux,infobj,iface)
+      endif
+
+      ijbinindex=ijbin
+
+      end
+c********************************************************************
+      real function getfluxdenave(iquant,ifobj,iface,i1,i2,i3)
+c Return the flux density of quantity iquant on object ifobj
+c face iface, at facet indices i1,i2,i3
+      include 'ndimsdecl.f'
+      include '3dcom.f'
+      ijbin=ijbinindex(ifobj,iface,i1,i2,i3)
+      if(ijbin.ne.-1.)then
+         iavd=nf_address(iquant,ifobj,nf_step+2)
+     $        +ijbin
+         getfluxdenave=ff_data(iavd)
+      else
+         getfluxdenave=0.
+      endif
+
+      end
+c********************************************************************
+      real function getfluxave(iquant,ifobj,iface,i1,i2,i3)
+c Return the flux density of quantity iquant on object ifobj
+c face iface, at facet indices i1,i2,i3
+      include 'ndimsdecl.f'
+      include '3dcom.f'
+      ijbin=ijbinindex(ifobj,iface,i1,i2,i3)
+      if(ijbin.ne.-1.)then
+c      write(*,*)'getfluxave',iquant,ifobj,iface,i1,i2,i3,ijbin
+         iavd=nf_address(iquant,ifobj,nf_step+1)
+     $        +ijbin
+         getfluxave=ff_data(iavd)
+      else
+         getfluxave=0.
+      endif
+      end

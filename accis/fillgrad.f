@@ -31,6 +31,9 @@ c isw=3, color contour by direction d, and 3-D perspect (needs setup).
 
       include 'plotcom.h'
 
+      imin=1
+      imax=1
+      dn=0.
       ipfsw=pfsw
 c Stepping resolution is in second byte.
       istep=isw/256

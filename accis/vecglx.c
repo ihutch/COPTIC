@@ -186,11 +186,10 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
   int x_size,y_size,x_off,y_off,gravity;
   accis_nodisplay=0;
   *ncolor=15;
+  *vmode=88;
   if(second == 0) {
   /* Call fortran routine to get arguments into accis_ globals*/
     getcmdargs_();
-    /* Obsolete compatibility settings */
-    *vmode=88;
     if( (accis_display = XOpenDisplay(NULL)) == NULL) {
         printf("\n\tcannot connect to X server\n\n");
         exit(0); 

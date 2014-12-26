@@ -123,12 +123,10 @@ c Non-aligned cylinder.
                call cylusect(xn1,xn2,i,nsect,fmin,ids)
                fraction=fmin(1)
             elseif(itype.eq.6)then
-c               call srvfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
                call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)
                call srvsect(xn1,xn2,i,nsect,fmin,ids)
                fraction=fmin(1)
             elseif(itype.eq.7)then
-c               call srvfsect(ndims,xp1,xp2,i,ijbin,sd,fraction)
                call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)
                call srvsect(xn1,xn2,i,nsect,fmin,ids)
                fraction=fmin(1)
@@ -753,8 +751,6 @@ c cyclic index following the face index. So on face 1 or 4 the other
 c two indices on the face are 2,3. But on face 2,5 they are 3,1.
          k=mod(mod(ids-1,3)+1+i-1,ndims)+1
          xk=(1.-fmin)*xp1(k)+fmin*xp2(k)
-c Not sure that this is the best order for the plane. Think! :
-c         xcr=(1.-xk)*.5
 c This has xcr run from 0 to 1 as xk goes from -1. to +1. :
          xcr=(1.+xk)*.5
          if(idebug.eq.1)write(*,'(i2,f7.2,i5,i5,'',''$)')k,xcr
@@ -895,4 +891,3 @@ c increasing values, and also jnew in j-list with same sort.
  1    continue
 c      write(*,*)'insertsorted',n,(f(k),j(k),k=1,n)
       end
-c*********************************************************************

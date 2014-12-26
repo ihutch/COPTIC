@@ -96,9 +96,10 @@ c else this is a nonzero, and if we have already found a zero
 c then skip and determine the bottom of the polyline.
                               kl=kl+1
                               kb=mod(kl+2,4)+1
+                              call polyline(xp(kb),yp(kb),3)
                            endif
  2300                   continue
-                        call polyline(xp(kb),yp(kb),3)
+c                        call polyline(xp(kb),yp(kb),3)
                            endif
 
                      elseif(kp.eq.4) then

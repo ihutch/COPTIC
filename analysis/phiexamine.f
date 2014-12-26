@@ -1,5 +1,6 @@
       program phiexamine
 
+      include '../accis/plotcom.h'
       include 'examdecl.f'
 
 c nr ought to be adjustable below to the coarseness of the mesh.
@@ -112,8 +113,16 @@ c 3-D examination of the array.
          call sliceGcont(ifull,iuds,u,na_m,zp,
      $        ixnp,xn,ifix,'potential:'//'!Af!@',dum,dum)
       endif
+
+
       iplot=2
 c Default spherical r plot.
+      if(ixnp(2).ne.32)then
+         iplot=0
+         write(*,*)'Non-standard mesh length.',ixnp(2)
+     $        ,' No radial plot'
+         goto 1
+      endif
       do k=1,ndims-1
          if(xn(ixnp(k+1)).ne.xn(ixnp(k+2)))then 
             if(k.eq.1)then
@@ -127,7 +136,6 @@ c               write(*,*)'Unequal y-z mesh dimensions. r-z plot.'
          endif
       enddo
  1    continue
-      
 c%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       if(iplot.eq.2)then
 c r-theta spherical plots 
@@ -364,8 +372,7 @@ c Draw arrows every 4,4, points.
             call arrowplot(vrz(1,1,2),vrz(1,1,3),vmax*100,nr+1,nr,na_k
      $           ,rval(1),xn(ixnp(3)+1),isw2,4,4)
          endif
-
- 3    call pltend()
+ 3       call pltend()
       endif
 c Now we want to find the r-position of the peak potential at each
 c z. 

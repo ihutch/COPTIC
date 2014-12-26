@@ -254,6 +254,7 @@ c                  write(*,*)c1st,clast,ngradcol
       if(nc.lt.0)then
          labels=.false.
          cyc=1
+         point=0
       else
          labels=.true.
 c    stored current size earlier

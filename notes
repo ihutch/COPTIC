@@ -13079,3 +13079,52 @@ much better on the spheresecttest provided halfmin is taken as
 exactly 0.5. Also the sumtol can be taken to essentially zero, 
 since we seem now to have exactly complementary results from swapping
 xp1 and xp2. I think it is fixed.
+
+21 Dec 14
+Sorting out fluxexamine.
+There are several different types of plot.
+
+1. Spatially summed flux number for time evolution.
+2. Time averaged flux.
+Those by default happen for all the objects. They are emitted by the
+code in fluxdata.f, governed by positive passed flux quantity. 
+Inside fluxexamine, iplot=this flux quantity.
+
+3. No of particles vs time
+This is turned off only by -q iquiet. Unfortunately, -q also turns off
+flux averaging by setting iplot=0. That's what I want to stop.
+I do so by changing the switch to set -i-9 and -p-1 as well as iquiet.
+
+4. Force-3. 
+This is turned off by iplot zero. But then iquant=0 turns off
+the flux averaging. So that's incompatible. It is also skipped if
+this object is masked. So that's the way to mask out those plots.
+However, masking avoids printing the forces. So we don't do this under
+-q. In fact the plots are plotted in that case, but no pltend is called
+so the plot just flashes past and you hardly notice it. 
+
+5. 3-D flux plot of objects colored.
+This is performed by objplot. It can be turned off by -i-9. Which sets
+iosw outside the plot range. 
+
+If we want the fluxexamine code to be able to emit no printing except
+for some values that it chooses, there's a problem. It is that fluxaverage
+always prints the averages. However, probably we should not sweat that.
+Just print out what we want later. (And look inside fluxaverage for how
+to access the data.)
+
+22 Dec 14
+
+Implement ijbinindex function that can be passed object, iface, i1,i2,i3
+and returns the ijbin. Implement -g switch which uses this to print out
+the value of a facet. Multiple such switches can be given.
+
+24 Dec 14
+
+Phiexamine tickles a new bug in accis. It is that if color setting is
+called in the form of (e.g.) accisgradset. That calls accisinit if
+the display has not already been inited. Then vmode is not passed back
+to the fortran side and pltend() thinks it is called improperly.
+Fix by making all calls to svga set vmode.
+
+commit

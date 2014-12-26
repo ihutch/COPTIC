@@ -36,6 +36,7 @@ c Return the index of the minimum value of vector.
         real vector(ilen)
         real aamin
         aamin=0
+        indmin=0
         do 1 i=1,ilen
                 if(aamin.gt.vector(i))then
                         aamin=vector(i)
@@ -50,6 +51,7 @@ c Return the index of the maximum value of vector.
         real vector(ilen)
         real aamax
         aamax=0
+        indmax=0
         do 1 i=1,ilen
                 if(aamax.lt.vector(i))then
                         aamax=vector(i)

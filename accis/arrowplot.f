@@ -135,6 +135,7 @@ c
      $     ,(zshaft,shaftcoords(1,1,3))
       data nangle/4/shaftfrac/.4/
 
+      iw=0
       ncolor=igetcolor()
       if(arrow(ibbe).lt.0)then
          nangle=int(arrow(ina))

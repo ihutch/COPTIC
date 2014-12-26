@@ -85,6 +85,7 @@ c Statement functions for scaling.
 c      xgnlin(gw)=xgmin+dx*(gw-ain)
 c      ygnlin(gw)=ygmin+dy*(gw-ain)
 c
+      inlabp=0
       iticnum=ticnum
       axcos=xgmax-xgmin
       axsin=ygmax-ygmin

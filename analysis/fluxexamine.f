@@ -16,6 +16,8 @@ C      real traceave(ntr)
       real avefield(ndims),avepress(ndims),avepart(ndims)
       real avetotal(ndims),avecoln(ndims),avesq(ndims)
       real rp,yrange,cv(ndims)
+      parameter (ngets=10,ngetpar=6,nfget=ngets*ngetpar)
+      integer ifluxget(ngets,ngetpar)
       intrinsic ibclr,btest
       character*10 typetext(5)
       character poslabel(4,5)
@@ -29,6 +31,8 @@ C      real traceave(ntr)
       data ifmask/1023/iomask/0/
       data idimf/3/
       data rp/0./cv/ndims*0./
+      data ifluxget/nfget*0./
+      external getfluxdenave,getfluxden
 
       fn1=0.5
       fn2=1.
@@ -40,6 +44,8 @@ C      real traceave(ntr)
       ivtk=0
       istep=5
       vtkflag=0
+      nget=0
+      ipinit=0
 
       filename='T1e0v000r05P02L1e0.flx'
  11   continue
@@ -59,9 +65,23 @@ c iplot is the quantity number to plot and average.
          if(argument(1:2).eq.'-p')
      $        read(argument(3:),'(i5)')iplot
          if(argument(1:2).eq.'-q')then
-            iplot=0
+            iplot=-257
+c            ifmask=0
+            iosw=-99
             iquiet=0
+c Tell not to initialize the force plots:
+            ipinit=1
 c            read(argument(3:),'(i5)')iquiet
+         elseif(argument(1:2).eq.'-g')then
+            nget=nget+1
+            read(argument(3:),*,end=301,err=301)
+     $           (ifluxget(nget,k),k=1,ngetpar)
+            goto 302
+ 301        write(*,'(a,10i4)')'Error reading fluxget data',nget
+     $           ,(ifluxget(nget,k),k=1,ngetpar)
+            nget=nget-1
+            stop
+ 302        continue
          endif
          if(argument(1:2).eq.'-w')
      $        read(argument(3:),'(i5)')iprint
@@ -112,7 +132,7 @@ c Give informational messages.
       endif
       call readfluxfile(filename,ierr)
 
-      write(*,*)'File:',filename(1:lentrim(filename)) 
+c      write(*,*)'File:',filename(1:lentrim(filename)) 
       write(*,*)'debyelen,Ti,vd,rs,phip,colntime,subcycle,vneut',
      $     ',fcold,dropac,Tneut,Eneut'
       write(*,'(12f6.2)')debyelen,Ti,vd,rs,phip ,colntime,subcycle
@@ -183,6 +203,22 @@ c            write(*,*)'Plotting',k,mf_quant(k),iplot
             call fluxave(n1,n2,k,iplot,rhoinf)
 c         endif
       enddo
+c Section for writing out average flux to specified facets.
+      write(*,*)'   dt=',ff_dt(nf_step),'   rhoinf=',rhoinf
+      do i=1,nget
+         if(i.eq.1)write(*,*)'get,iq,iob,fc,i1,i2,i3,fluxden, flux'
+     $        ,'    fluxden/dt/rhoinf'
+         fluxden=getfluxdenave(ifluxget(i,1),nf_map(ifluxget(i,2))
+     $        ,ifluxget(i,3),ifluxget(i,4),ifluxget(i,5)
+     $        ,ifluxget(i,6))
+         flux=getfluxave(ifluxget(i,1),nf_map(ifluxget(i,2))
+     $        ,ifluxget(i,3),ifluxget(i,4),ifluxget(i,5)
+     $        ,ifluxget(i,6))
+
+         write(*,'(i4,6i3,2f10.2,f10.4)')i, (ifluxget(i,k),k=1,ngetpar)
+     $        ,fluxden,flux,fluxden/ff_dt(nf_step)/rhoinf
+      enddo
+
 
       if(iquiet.ne.0)then
          write(*,*)'Doing npart plot',nf_step,ff_rho(1),ff_rho(nf_step)
@@ -287,7 +323,8 @@ c               stop
          enddo
          avecharge=avecharge/float(iavenum)
          if(iplot.ne.0)then
-            if(k.eq.1)then
+         if(imk.ne.0)then
+            if(ipinit.eq.0)then
                if(yrange.eq.0.)yrange=2.*avesq(idimf)
                call pltinit(1.,float(nf_step)
      $              ,-yrange,1.5*yrange)
@@ -295,8 +332,8 @@ c               stop
                call iwrite(idimf,iwr,argument)
                call axlabels('step','Force-'//argument)
                call winset(.true.)
+               ipinit=ipinit+1
             endif
-         if(imk.ne.0)then
             nplot=nplot+1
             call color(k)
             call dashset(4)
@@ -355,7 +392,7 @@ c v printing this object
       enddo
  50   continue
 
-      write(*,*)'iomask=',iomask,' iosw=',iosw,' iplot=',iplot
+c      write(*,*)'iomask=',iomask,' iosw=',iosw,' iplot=',iplot
 
       if(iplot.ne.0.and.vtkflag.eq.0.and.iosw.ge.0.and.iosw.lt.3)then
          call pltend()
@@ -375,11 +412,13 @@ c Read more arguments if there are any.
       write(*,*)'-p set quantity to average and plot.'
      $     ,' Default -p1. Non-positive no initial plots'
       write(*,*)'-q suppress all plots.'
-      write(*,*)'-w set object whose data is to be written, or none.'
+      write(*,*)'-w set object whose read-back data is to be written,',
+     $     ' or none.'
       write(*,*)'-m mask objects whose force is to be plotted'
      $     ,' -m0 none.'
       write(*,*)'-v mask objects whose force vs v is to be printed.'
      $     ,' No other printing.'
+      write(*,*)'  -v1024 masks out first 10 and stops force print.'
       write(*,*)'-r set 3-D size of plot window'
       write(*,*)'-cff,ff,ff set 3-D center of plot window'
       write(*,*)'-i set iosw for objplot:'
@@ -392,7 +431,10 @@ c Read more arguments if there are any.
       write(*,*)'-b<nb> set boxcar average range +-nb.'
       write(*,*)'-yfff set range of force plot'
       write(*,*)'-vtkiii outputs a vtk file every nf_step/iii steps'
+      write(*,*)'-g<i,j,k,l,m,n> specify a facet to print average'
+     $     ,' iquant,iobj,iface,i1,i2,i3'
       write(*,*)'Turn off plots progressively: -p-1 -m0 -i9 -q'
+      write(*,*)'Turn off print progressively: -w0 -v1024 -p256 ' 
 
       end
 c********************************************************************

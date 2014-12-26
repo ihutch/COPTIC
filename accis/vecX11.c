@@ -188,11 +188,10 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
 
   accis_nodisplay=0;
   *ncolor=15;
+  *vmode=88;
   if(second == 0) {
   /* Call fortran routine to get arguments into accis_ globals*/
     getcmdargs_();
-   /* Obsolete compatibility settings */
-    *vmode=88;
 
 /* Start of Xlib setup calls ******************/
     if( (accis_display = XOpenDisplay(NULL)) == NULL) {

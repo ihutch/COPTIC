@@ -436,6 +436,7 @@ c Tell that we are looking from the top by default.
       itri=0
       icl=0
       imode=0
+      itype=0
       if(ifixpt(1).lt.0)then
          larrow=.not.larrow
          ifixpt(1)=-ifixpt(1)
