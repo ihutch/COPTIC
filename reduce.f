@@ -71,6 +71,7 @@ c Reduce also the nrein and phirein.
       call MPI_ALLREDUCE(MPI_IN_PLACE,phirein,1,MPI_REAL,MPI_SUM,
      $     MPI_COMM_WORLD,ierr)
       phirein=phirein/numprocs
+c      write(*,*)'numprocs,phirein',numprocs,phirein
 
       end
 

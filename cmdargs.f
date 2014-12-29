@@ -1,7 +1,7 @@
       call copticcmdline
      $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-     $     ,thetain,nth,iavesteps,nparta,numprocs,ripernode,crelax,ickst
+     $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
      $     ,ninjcomp,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax
      $     ,debyelen,Ts,iwstep,idistp,lrestart,restartpath,extfield

@@ -723,7 +723,6 @@ c*********************************************************************
       subroutine ninjcalc(dtin)
 c Given ripernode, decide the number of reinjections per step ninjcomp
 c for average edge potential. This is only called at initialization.
-c No time-averaging for now.
 c Particle information
       include 'ndimsdecl.f'
       include 'plascom.f'
@@ -771,18 +770,15 @@ c     $           / numratioa(ispecies)
 c      write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp'
 c      write(*,*) ispecies,ripn,dtin,cfactor,flux
 c     $     ,nparta(ispecies),ninjcompa(ispecies)
-            nrein=ninjcomp*numprocs
-            rhoinf=ripn*numprocs
             if(n_part.gt.n_partmax)then
                write(*,*)'ERROR. Too many particles required.'
-               write(*,101)rhoinf,nparta(ispecies),n_partmax
- 101           format('rhoinf=',f8.2,'  needs n_part=',i9
+               write(*,101)ripn,nparta(ispecies),n_partmax
+ 101           format('ripernode=',f8.2,'  needs n_part=',i9
      $              ,'  which exceeds n_partmax=',i9)
                stop
             endif
          endif
       enddo
-c      write(*,*)'Ending ninjcalc',rhoinf,nrein,nparta
       end
 c********************************************************************
       real function smaxflux(uc,chi)

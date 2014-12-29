@@ -150,14 +150,14 @@ c Initialize
          if(.not.lflag) call MPI_INIT( ierr )
          lflag=.true.
          call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
-         call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
-         if(numprocs.gt.maxprocs) then
-            write(*,*)'Too many processes',numprocs,' Increase maxprocs'
+         call MPI_COMM_SIZE( MPI_COMM_WORLD, nprcsses, ierr )
+         if(nprcsses.gt.maxprocs) then
+            write(*,*)'Too many processes',nprcsses,' Increase maxprocs'
             goto 999
          endif
-c Check the asked-for nproc and if not equal to numprocs, reapportion.
-         if(nproc.ne.numprocs)then
-            if(myid.eq.0)write(*,201)numprocs,
+c Check the asked-for nproc and if not equal to nprcsses, reapportion.
+         if(nproc.ne.nprcsses)then
+            if(myid.eq.0)write(*,201)nprcsses,
      $           nproc,(idims(n),n=1,ndims)
  201        format(' MPI processes',i4,
      $           ': don''t match this topology ',i4,':',6i3)
@@ -169,18 +169,18 @@ c Use MPI function to redimension block structure
                   idims(ii)=0
                endif
             enddo
-            call MPI_DIMS_CREATE(numprocs,ndims,idims,ierr)
+            call MPI_DIMS_CREATE(nprcsses,ndims,idims,ierr)
             if(ierr.eq.0)then
-               nproc=numprocs
+               nproc=nprcsses
             else
                stop 'MPI_DIMS_CREATE error'
             endif
             if(myid.eq.0)write(*,'('' Reset to'',i4,'':'',6i3)')
      $           nproc,idims
          else
-            if(myid.eq.0 .and. numprocs.gt.1)
+            if(myid.eq.0 .and. nprcsses.gt.1)
      $           write(*,'('' MPI processes,idims()'',i4,'':'',10i4)')
-     $           numprocs,(idims(n),n=1,ndims)
+     $           nprcsses,(idims(n),n=1,ndims)
          endif
 c End of topology idims resetting.
 c-----
@@ -769,12 +769,12 @@ c Abstraction to isolate mpi calls.
       call MPI_FINALIZE(ierr)
       end
 c*******************************************************************
-      subroutine mpicommsize(numprocs,ierr)
+      subroutine mpicommsize(nprcsses,ierr)
       include 'mpif.h'
-      call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
+      call MPI_COMM_SIZE( MPI_COMM_WORLD, nprcsses, ierr )
       end
 c********************************************************************
-      subroutine mpigetmyid(myid,numprocs,ierr)
+      subroutine mpigetmyid(myid,nprcsses,ierr)
 c If necessary initialize the MPI system.
 c Get my MPI id, and the number of processors.
       include 'mpif.h'
@@ -782,7 +782,7 @@ c Get my MPI id, and the number of processors.
       call MPI_INITIALIZED(lflag,ierr)
       if(.not.lflag) call MPI_INIT(ierr)
       call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
-      call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
+      call MPI_COMM_SIZE( MPI_COMM_WORLD, nprcsses, ierr )
       end
 c********************************************************************
       subroutine mpiconvgreduce(convgd,icommcart,ierr)

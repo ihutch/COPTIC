@@ -123,7 +123,7 @@ c Default zero field
       npassthrough=0
 c---------------------------------------------------------------------
 c This necessary here so one knows early the mpi structure.
-c Otherwise could have been hidden in sormpi and pass back numprocs.
+c Otherwise could have been hidden in sormpi and passed back.
       myid=0
       call mpigetmyid(myid,nprocs,ierr)
       lmyidhead=.true.
@@ -135,7 +135,7 @@ c First time this routine just sets defaults and the object file name.
       call copticcmdline
      $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-     $     ,thetain,nth,iavesteps,nparta,numprocs,ripernode,crelax,ickst
+     $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
      $     ,ninjcomp,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax
      $     ,debyelen,Ts,iwstep,idistp,lrestart,restartpath,extfield
@@ -151,7 +151,7 @@ c Second time: deal with any other command line parameters.
       call copticcmdline
      $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-     $     ,thetain,nth,iavesteps,nparta,numprocs,ripernode,crelax,ickst
+     $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
      $     ,ninjcomp,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax
      $     ,debyelen,Ts,iwstep,idistp,lrestart,restartpath,extfield

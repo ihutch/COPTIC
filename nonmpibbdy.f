@@ -60,13 +60,13 @@ c Abstraction to isolate mpi calls.
       subroutine mpifinalize(ierr)
       end
 c*******************************************************************
-      subroutine mpicommsize(numprocs,ierr)
-      numprocs=1
+      subroutine mpicommsize(nprcsses,ierr)
+      nprcsses=1
       end
 c********************************************************************
-      subroutine mpigetmyid(myid,numprocs,ierr)
+      subroutine mpigetmyid(myid,nprcsses,ierr)
       myid=0
-      numprocs=1
+      nprcsses=1
       end
 c********************************************************************
       subroutine mpiconvgreduce(convgd,icommcart,ierr)

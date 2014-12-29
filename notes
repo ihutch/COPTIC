@@ -13132,3 +13132,30 @@ commit
 Had a particle leakage on X1 with 4 processes. That's not fixed in the
 latest build.
 
+29 Dec 2014
+Found that in accis there were several files that were not properly 
+added to the git repo. pltinit.f Makefile configure. Don't know why
+but added them. Then git pull on sceptic machine gives a working system.
+
+Discovered that numprocs is equal to 1 inside psumreduce. That explains
+the problems I had with stability of -rx runs. As the number of processes
+increases, the effective value of -rx does too. Eventually it becomes
+crazy. 
+
+The reason is that numprocs is passed to cmdline and a default set there
+AFTER nprocs has been determined and used to set numprocs in coptic.
+I shudder to think what has been happening to the rhoinf calculations.
+This confusion is partly caused by the fact that numprocs in mpibddy is
+not referred to through the common partcom.f where the rest of the code
+gets at it. I wish it wasn't there. It would be more consistent to use
+myidcom.f as the only place: nprocs. Let's sort this out.
+First rename to nprcsses in mpibbdy and nonmpibbdy. 
+Next remove numprocs from the cmdline code. It was never even documented.
+We still have two things numprocs in partcom and nprocs in myidcom.
+It's not easy to get rid of one of them.
+
+Actually numprocs is used only in benign initialization code except 
+for the psumreduce place. That's why nothing went wrong before.
+
+It's still going to be the case that -rx should be set no larger than
+Ti for stability.

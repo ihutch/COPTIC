@@ -3,7 +3,7 @@ c Encapsulation of parameter setting.
       subroutine copticcmdline
      $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-     $     ,thetain,nth,iavesteps,nparta,numprocs,ripernode,crelax,ickst
+     $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
      $     ,ninjcomp,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax
      $     ,debyelen,Ts,iwstep,idistp,lrestart,restartpath,extfield
@@ -15,7 +15,7 @@ c Encapsulation of parameter setting.
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps
-     $     ,numprocs,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
+     $     ,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
      $     ,iwstep,idistp,ndims,islp,lrestart
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
      $     ,lextfield,LPF(ndims),lnotallp,ldistshow
@@ -78,7 +78,6 @@ c         crelax=1.*Ts(nspecies)/(1.+Ts(nspecies))
          vneutral=0.
          Enfrac=0.
          colpow=0.
-         numprocs=1
          bdt=1.
          thetain=.1
          nth=1
@@ -168,7 +167,6 @@ c         write(*,*)i,argument
          endif
          if(argument(1:3).eq.'-ni')read(argument(4:),*,err
      $        =201)nparta(nspecies)
-         if(argument(1:3).eq.'-pn')read(argument(4:),*,err=201)numprocs
          if(argument(1:3).eq.'-ri')read(argument(4:),*,err=201)ripernode
          if(argument(1:3).eq.'-rx')read(argument(4:),*,err=201)crelax
          if(argument(1:3).eq.'-ck')read(argument(4:),*,err=201)ickst
