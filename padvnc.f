@@ -453,7 +453,7 @@ c         write(*,'(a,f12.6,$)')' Phirein=',phirein
 c         write(*,*)' nlost=',nlost,' nrein=',nrein,' ninner=',ninner
          cap=2.*Ti
          if(phirein.gt.cap)then
-c            if(myid.eq.0)write(*,*)'PROBLEM: phirein>0:',phirein
+            if(myid.eq.0)write(*,*)'PROBLEM: phirein>0:',cap,phirein
             phirein=cap
          endif
       else

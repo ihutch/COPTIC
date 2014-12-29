@@ -673,6 +673,7 @@ c Use particle information for initializing.
       include 'partcom.f'
       include 'meshcom.f'
       include 'creincom.f'
+      include 'myidcom.f'
       real volume,flux
       real cfactor
 
@@ -702,7 +703,7 @@ c         chi=min(-phirein/Ti,0.5)
          cfactor=smaxflux(vd/sqrt(2.*Ti),chi)
      $        /smaxflux(vd/sqrt(2.*Ti),0.)
          rhoinf=(nrein/(dtin*cfactor*flux))
-c         write(*,*)nrein,dtin,chi,cfactor,flux,rhoinf
+c         write(*,*)nrein,dtin,phirein,chi,cfactor,flux,rhoinf
       else
          if(rhoinf.lt.1.e-4)then
 c Approximate initialization
@@ -713,7 +714,7 @@ c Approximate initialization
 c Else just leave it alone.
       endif
 c      write(*,*)
-c      write(*,'(a,2i8,10f9.4)')
+c      if(myid.eq.0)write(*,'(a,2i8,10f9.4)')
 c     $ 'Ending rhoinfcalc',nrein,n_part,rhoinf
 c     $     ,phirein,chi,cfactor,dtin
 c,flux
@@ -730,7 +731,6 @@ c Particle information
       include 'meshcom.f'
       include 'creincom.f'
       real volume,flux
-      real cfactor
 c 
       do ispecies=1,nspecies
 c An ion species that has n_part set needs no ninjcalc.
@@ -755,26 +755,22 @@ c a reinjection.
             enddo
             if(ispecies.gt.1)ripn=nparta(1)/volume
 c Correct approximately for edge potential depression (OML).
-            chi=sign(1.,eoverms(ispecies))*
-     $           crelax*min(-phirein/Ts(ispecies),0.5)
-            cfactor=smaxflux(vd/sqrt(2.*Ts(ispecies)),chi)
-     $           /smaxflux(vd/sqrt(2.*Ts(ispecies)),0.)
-            ninjcompa(ispecies)=nint(ripn*dtin*cfactor*flux)
+c This makes no sense for ninjcalc because potential is not set.
+c            chi=sign(1.,eoverms(ispecies))*
+c     $           crelax*min(-phirein/Ts(ispecies),0.5)
+c            cfactor=smaxflux(vd/sqrt(2.*Ts(ispecies)),chi)
+c     $           /smaxflux(vd/sqrt(2.*Ts(ispecies)),0.)
+c            ninjcompa(ispecies)=nint(ripn*dtin*cfactor*flux)
+c     $           / numratioa(ispecies)
+            ninjcompa(ispecies)=nint(ripn*dtin*flux)
      $           / numratioa(ispecies)
-c This was a hack when we were using just grein not greins.
-c     $           *sqrt(abs(eoverms(ispecies)/eoverms(1)))
-c
 
-c I don't understand the purpose of this trap: 23 Apr 2014
-c      if(ninjcompa(ispecies).le.0)ninjcompa(ispecies)=1
             nparta(ispecies)=int(ripn*volume
      $           / numratioa(ispecies))
 
 c      write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp'
 c      write(*,*) ispecies,ripn,dtin,cfactor,flux
 c     $     ,nparta(ispecies),ninjcompa(ispecies)
-            
-            
             nrein=ninjcomp*numprocs
             rhoinf=ripn*numprocs
             if(n_part.gt.n_partmax)then
@@ -787,7 +783,6 @@ c     $     ,nparta(ispecies),ninjcompa(ispecies)
          endif
       enddo
 c      write(*,*)'Ending ninjcalc',rhoinf,nrein,nparta
-
       end
 c********************************************************************
       real function smaxflux(uc,chi)
