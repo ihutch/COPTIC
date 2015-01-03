@@ -19,6 +19,7 @@ c Eye obtained from file eye.dat, or default if none exists.
       real x2,y2,z2
       real zmin,zmax
       real d(5)
+      data x2/0./y2/0./z2/0./
       save
 
       cola=isw/256
@@ -30,11 +31,10 @@ c color of web is next 8 bits
 c color of axes is next 8 bits.
       isw=isw/16 - (isw/256)*16
 c isw is second nibble (bits 4-7).
-      if(colw.gt.15)then
+      if(colw.ge.0)then
          call color(colw)
-      else
-         if(colw.gt.0) call color(colw)
       endif
+c      write(*,*)'levd,cola,colw,isw',levd,cola,colw,isw
       if((isw/2-(isw/4)*2).ne.0)then
 c Set the d-vector from work
          do k=1,5
@@ -49,17 +49,20 @@ c Set the top and bottom horizons.
       elseif(levd.eq.4)then
          call surf1dr3(x,y,z,iLx,nx,ny,work,isw,d)
       else
-         call geteye(x2,y2,z2)
 c     Set to non-hiding 3-D calls.
          call hdprset(0,0.)
-c     Set the perspective transform.
-         call trn32(0.,0.,0.,x2,y2,z2,1)
+c The first time, set the perspective transform.
+c But not thereafter to allow rotatezoom control.
+         if(x2.eq.0..and.y2.eq.0..and.z2.eq.0.)then
+            call geteye(x2,y2,z2)
+            call trn32(0.,0.,0.,x2,y2,z2,1)
+         endif
 c     Set the scaling.
-            call minmax2(z,iLx,nx,ny,zmin,zmax)
-            itics=5
-            call fitrange(zmin,zmax,itics,ipow,fac10,delta,first,xlast)
-            zmin=first
-            zmax=xlast
+         call minmax2(z,iLx,nx,ny,zmin,zmax)
+         itics=5
+         call fitrange(zmin,zmax,itics,ipow,fac10,delta,first,xlast)
+         zmin=first
+         zmax=xlast
          if(levd.eq.2)then
             call minmax2(x,iLx,nx,ny,xmin,xmax)
             call minmax2(y,iLx,nx,ny,ymin,ymax)
@@ -315,7 +318,9 @@ c last one does not have it, so it has a thicker line. One option
 c would be to do a stroke before 0 setlinewidth, but that makes all the 
 c lines thick (as usual). 
 c I'm not sure if that's what I want. Trying it; seems better.
+c         write(*,*)'incolor',incolor
          call color(incolor)
+c         write(*,*)'incolor2',incolor
          if(incolor.ne.0)call poly3line(xp,yp,zp,5)
 c Set face as done
          work(imin,jmin)=ddone

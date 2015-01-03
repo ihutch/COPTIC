@@ -51,6 +51,8 @@ c Boundary setting common data
       include 'slpcom.f'
 c Face boundary data
       include 'facebcom.f'
+c Particle distribution accumulation data
+      include 'ptaccom.f'
 
       external bdyshare,bdyset,faddu,cijroutine,cijedge,psumtoq
      $     ,quasineutral,faddlin
@@ -142,7 +144,7 @@ c First time this routine just sets defaults and the object file name.
      $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp)
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag)
 
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
@@ -158,13 +160,14 @@ c Second time: deal with any other command line parameters.
      $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp)
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag)
 
       if(ierr.ne.0)stop
 c The double call enables cmdline switches to override objfile settings.
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
       ndropped=0
+      if(nptdiag.eq.0)nptdiag=nsbins
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
  250  call meshconstruct(ndims,iuds,ifull,ipartperiod,rs)
@@ -403,16 +406,9 @@ c-----------------------------------------------
          endif
          write(*,'(/,a)')'Step Iterations Flux:'
       endif
+c This call is necessary for restart.
       call mditerset(psum,ndims,ifull,iuds,0,0.)
-c This call is necessary for restart with fluid electrons.
-c      write(*,*)'Initial chargetomesh call',ndiags
       call chargetomesh(psum,iLs,diagsum,ndiags) 
-c For any other species, do their advance (with dt=dtf) so as
-c to deposit smoothed charge. This breaks restart. Therefore 
-c instead made chargetomesh for all species.
-c      do ispecies=2,nspecies
-c         call padvnc(iLs,cij,u,ndiags,psum,diagsum,ispecies,ndiagmax)
-c      enddo
 c----------------------------------------------------------
 c Main step iteration -------------------------------------
       do j=1,nsteps
@@ -510,7 +506,7 @@ c Every iavesteps, calculate the box average of the moments, and write it
 c out, if we are doing diagnostics.
          if(mod(j,iavesteps).eq.0)call periodicwrite(ifull,iuds,iLs
      $        ,diagsum,uave,lmyidhead,ndiags,ndiagmax,nf_step,nsteps
-     $        ,idistp,vlimit,xnewlim,cellvol,ibset,idcount)
+     $        ,idistp,vlimit,xnewlim,cellvol,ibinit,idcount)
 c Particle distribution diagnostics.
 c The serial cost for this call with 1M particles is about 1s in 17s.
 c Or less than 2s if both partaccum and vaccum are called. Thus the

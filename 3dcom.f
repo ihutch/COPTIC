@@ -13,7 +13,7 @@ c 23                                             ovax[=ocontra3]
 c 26                                             orscale
 c 27                                             onpair
 c 28    ofluxtype
-c 29-31  ofn1-3   omag
+c 29-31  ofn1-3   omag                           ofn1 [ntheta]
 c 32    offc
 c 33-5  ocgrad
 c 36-8  obgrad

@@ -355,11 +355,11 @@ c Report dropped ions because of excessive acceleration.
 c************************************************************************
       subroutine periodicwrite(ifull,iuds,iLs,diagsum,uave,lmyidhead
      $     ,ndiags,ndiagmax,nf_step,nsteps,idistp,vlimit
-     $     ,xnewlim,cellvol,ibset,idcount)
+     $     ,xnewlim,cellvol,ibinit,idcount)
 c Periodic reduction, reporting, and writing of information on the 
 c state of the simulation.
       implicit none
-      integer ndiags,ndiagmax,nf_step,nsteps,idistp,ibset,idcount
+      integer ndiags,ndiagmax,nf_step,nsteps,idistp,ibinit,idcount
       logical lmyidhead
       real cellvol
       include 'ndimsdecl.f'
@@ -430,6 +430,7 @@ c Reduce the data from nodes.
             if(lmyidhead)then 
                if(2*(idistp/2)-4*(idistp/4).ne.0)
      $              call pltsubdist(5,9,9,vlimit,xnewlim,cellvol,1,3)
+c I think pltsubdist ought to get its first 3 arguments from isuds.
                diagfilename=' '
                call nameconstruct(diagfilename)
                if(nsteps.gt.9999)then
@@ -444,8 +445,8 @@ c Reduce the data from nodes.
      $              diagfilename,cellvol)
             endif
 c (Re)initialize the accumulation
-            ibset=1
-            call fvxinit(xnewlim,cellvol,ibset)
+            ibinit=1
+            call fvxinit(xnewlim,cellvol,ibinit)
             call partacinit(vlimit)
 c Unless we want fsv to accumulate all the particle counts, it also
 c ought to be reinitialized here. (partexamine expects this.)

@@ -815,7 +815,6 @@ static GLint  accis_att[] = { GLX_RGBA, /* Truecolor and Directcolor */
                               GLX_DOUBLEBUFFER, /* */
                               None };
 
-
 glxinfo gives the same answer from my laptop as from loki.
 
 On the laptop visual 96 is selected even when DOUBLEBUFFER is
@@ -832,7 +831,6 @@ I think there are at least two bugs in my opengl.
 2. Selecting double buffering when not asked to.
 
 Seems that loki's opengl does not have 2, as a consequence it trips 1.
-
 
 ===========================================================================
 
@@ -887,3 +885,7 @@ Summary. There were two related bugs.
 1. hidvecn calling vecn with ud>1. Not allowed now because now used.
 2. vecglx drawing vectors with ud>1. Again, incorrect.
 Both corrected.
+
+1 Jan 2015
+Debugged vecglx failure to plot first plot. Could not figure out why 
+it was happening but implemented a work around using accis_glback.

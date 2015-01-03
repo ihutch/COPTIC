@@ -328,6 +328,11 @@ the step size of the gradients (1 by default). Color contouring should
 be done with icl .ge. 2 and the maximum and minimum values in zclv(1)
 and zclv(icl). Then a gradlegend can be constructed with these values.
 
+CONT3PROJ(za,cworka,iLdim,ixm,iym,zclv,icl,x,y,icsw,f) Draw a contour
+plot projected on to the z=f*scbz3 (constant) plane of a 3-D
+plot. Axes etc can be added manually. To end projection call
+hdprset(0,0.). All the arguments but the last are those of CONTOURL.
+
 CONTOUR(za,xa,ya,ix,iy,zclv,icl) Simple contour over mesh xa,ya of entire
 arrays, needing no extra work space. No line labelling.
 
@@ -349,9 +354,10 @@ dimension iL) at xv,yv.  View obtained from file eye.dat (3 reals) or
 default if nonexistent. Control switch isw: .lt.0 no axes.
 Lowest byte abs(isw)=
 \begin{verbatim}
-0 don't rescale, use last scaling.
+0 don't rescale, use last scaling and perspective
 1 scale to fit 1-D range xv(1)-xv(ix), yv(1)-yv(iy), zmin-zmax.
-2 scale to 2-D xmin,xmax, ...; don't hide lines, just wiremesh. 
+2 scale to 2-D xmin,xmax, ...; don't hide lines, just wiremesh.
+Bit3 set [4]. Do no perspective setting regardless.
 \end{verbatim}
 
 Higher bytes: {2nd} (*256) color of web if non-zero. {3rd} (*65536) color
@@ -408,7 +414,8 @@ position of cube center. Defaults .25,.25,.2,.5,.4.
 
 TRN32(x,y,z,xt,yt,zt,ifl) If ifl=1, set 3-D transform; (x,y,z) is
 point looked at, (xt,yt,zt) is eye. If ifl=2, set axonometric, offset
-xt,zt.  If ifl=0 transform (x,y,z) to (xt,yt).
+xt,zt.  If ifl=0 transform (x,y,z) to (xt,yt). If ifl=-1 return eye 
+position in xt,yt,zt.
 
 CUBEPROJ() Draw the cube outline faces closest to eye.
 
@@ -451,7 +458,7 @@ code gives interactive examination of the object:
 
 \verb!        call eye3d(isw)!
 
-\verb!        if(isw.eq.1)goto 51!
+\verb!        if(isw.ne.0)goto 51!
 
 
 Key presses with focus in the plot window, return isw= keysym of key
@@ -462,6 +469,13 @@ purposes. But the codes for cursors are different under Windows
 (37-40) and it returns the ASCII codes for upper case.
  
 IEYE3D() Integer function of convenience to return switch value of eye3d.
+
+ROTATEZOOM(isw) Called immediately after eye3d sets isw, this routine
+adjusts the perspective by zooming-view (z,x), rotating-view (e,r), or
+moving in/out (i,o). The drawing code that is then repeated ought not
+to set the perspective explicitly (through a call to trn32) else a
+call to puteye must be inserted after rotatezoom to ensure the eye.dat
+is updated, otherwise the adjustment will be overridden.
 
 DRAW3ARROW(arrowdata) Draw a 3-D arrow according to settings of
 arrowdata(10): Base position world coords (3), Point position (3),
@@ -529,6 +543,9 @@ normalized.
 
 GTIC(xgw,ilab,xg,yg,tcos,tsin,axcos,axsin,lpara) Low level tic drawing.
 
+GETEYE(x,y,z) Return the position of view in 3-D perspective plots.
+
+PUTEYE(x,y,z) Set the position of view.
 
 \section{Utilities}
 

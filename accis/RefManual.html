@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
            "http://www.w3.org/TR/REC-html40/loose.dtd">
 <html>
-<meta name="GENERATOR" content="TtH 4.04">
+<meta name="GENERATOR" content="TtH 4.06">
  <style type="text/css"> div.p { margin-top: 7pt;}</style>
  <style type="text/css"><!--
  td div.comp { margin-top: -0.6ex; margin-bottom: -1ex;}
@@ -32,7 +32,7 @@
 <h3 align="center">I.H.Hutchinson </h3>
 
 <h3 align="center"> </h3>
-   
+  
 <h1>Contents </h1><a href="#tth_sEc1"
 >1&nbsp; Apologia</a><br />
 <a href="#tth_sEc2"
@@ -479,6 +479,12 @@ be done with icl .ge. 2 and the maximum and minimum values in zclv(1)
 and zclv(icl). Then a gradlegend can be constructed with these values.
 
 <div class="p"><!----></div>
+CONT3PROJ(za,cworka,iLdim,ixm,iym,zclv,icl,x,y,icsw,f) Draw a contour
+plot projected on to the z=f*scbz3 (constant) plane of a 3-D
+plot. Axes etc can be added manually. To end projection call
+hdprset(0,0.). All the arguments but the last are those of CONTOURL.
+
+<div class="p"><!----></div>
 CONTOUR(za,xa,ya,ix,iy,zclv,icl) Simple contour over mesh xa,ya of entire
 arrays, needing no extra work space. No line labelling.
 
@@ -507,9 +513,10 @@ default if nonexistent. Control switch isw: .lt.0 no axes.
 Lowest byte abs(isw)=
 
 <pre>
-0&nbsp;don't&nbsp;rescale,&nbsp;use&nbsp;last&nbsp;scaling.
+0&nbsp;don't&nbsp;rescale,&nbsp;use&nbsp;last&nbsp;scaling&nbsp;and&nbsp;perspective
 1&nbsp;scale&nbsp;to&nbsp;fit&nbsp;1-D&nbsp;range&nbsp;xv(1)-xv(ix),&nbsp;yv(1)-yv(iy),&nbsp;zmin-zmax.
-2&nbsp;scale&nbsp;to&nbsp;2-D&nbsp;xmin,xmax,&nbsp;...;&nbsp;don't&nbsp;hide&nbsp;lines,&nbsp;just&nbsp;wiremesh.&nbsp;
+2&nbsp;scale&nbsp;to&nbsp;2-D&nbsp;xmin,xmax,&nbsp;...;&nbsp;don't&nbsp;hide&nbsp;lines,&nbsp;just&nbsp;wiremesh.
+Bit3&nbsp;set&nbsp;[4].&nbsp;Do&nbsp;no&nbsp;perspective&nbsp;setting&nbsp;regardless.
 
 </pre>
 
@@ -581,7 +588,8 @@ position of cube center. Defaults .25,.25,.2,.5,.4.
 <div class="p"><!----></div>
 TRN32(x,y,z,xt,yt,zt,ifl) If ifl=1, set 3-D transform; (x,y,z) is
 point looked at, (xt,yt,zt) is eye. If ifl=2, set axonometric, offset
-xt,zt.  If ifl=0 transform (x,y,z) to (xt,yt).
+xt,zt.  If ifl=0 transform (x,y,z) to (xt,yt). If ifl=-1 return eye 
+position in xt,yt,zt.
 
 <div class="p"><!----></div>
 CUBEPROJ() Draw the cube outline faces closest to eye.
@@ -638,7 +646,7 @@ code gives interactive examination of the object:
 <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;call&nbsp;eye3d(isw)</tt>
 
 <div class="p"><!----></div>
-<tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if(isw.eq.1)goto&nbsp;51</tt>
+<tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if(isw.ne.0)goto&nbsp;51</tt>
 
 <div class="p"><!----></div>
 Key presses with focus in the plot window, return isw= keysym of key
@@ -650,6 +658,14 @@ purposes. But the codes for cursors are different under Windows
 
 <div class="p"><!----></div>
 IEYE3D() Integer function of convenience to return switch value of eye3d.
+
+<div class="p"><!----></div>
+ROTATEZOOM(isw) Called immediately after eye3d sets isw, this routine
+adjusts the perspective by zooming-view (z,x), rotating-view (e,r), or
+moving in/out (i,o). The drawing code that is then repeated ought not
+to set the perspective explicitly (through a call to trn32) else a
+call to puteye must be inserted after rotatezoom to ensure the eye.dat
+is updated, otherwise the adjustment will be overridden.
 
 <div class="p"><!----></div>
 DRAW3ARROW(arrowdata) Draw a 3-D arrow according to settings of
@@ -732,6 +748,12 @@ normalized.
 
 <div class="p"><!----></div>
 GTIC(xgw,ilab,xg,yg,tcos,tsin,axcos,axsin,lpara) Low level tic drawing.
+
+<div class="p"><!----></div>
+GETEYE(x,y,z) Return the position of view in 3-D perspective plots.
+
+<div class="p"><!----></div>
+PUTEYE(x,y,z) Set the position of view.
 
 <div class="p"><!----></div>
  <a id="tth_sEc14"></a><h2>
@@ -830,5 +852,5 @@ for operation of debugged correct code.
 T<sub><span class="small">E</span></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><span class="small">T</span></sub>H</a>,
-version 4.04.<br />On  1 Jul 2014, 20:36.</small>
+version 4.06.<br />On  2 Jan 2015, 18:03.</small>
 </html>

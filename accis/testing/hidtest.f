@@ -3,7 +3,7 @@ c Example of drawing a 3-D web and projected contour plot.
 	integer nx,ny,ud,i,j,iLx
 	parameter (iLx=50,ny=20)
 	real z,x,y,r,yy
-	dimension z(iLx,ny),x(iLx),y(ny),work(iLx,ny)
+	dimension z(iLx,ny),x(iLx),y(ny)
 	integer nl
 	parameter (nl=10)
 	real cl(nl),ht

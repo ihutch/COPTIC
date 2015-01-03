@@ -199,10 +199,6 @@ interface.f90 : convert
 # Synchronization of versions.
 sync : syncsource synccoptic syncsceptic
 
-syncsceptic : lib$(ACCISDRV).a RefManual.html
-	cd ~/src/sceptic/accis ; git pull origin
-	date > synsceptic
-
 syncsilas : lib$(ACCISDRV).a RefManual.html
 	rsync -u -e ssh  --copy-links -v *.h *.f *.c RefManual.* configure Makefile silas:~/accis/
 	date > syncsilas
@@ -211,9 +207,15 @@ syncsource : lib$(ACCISDRV).a RefManual.html
 	cd ~/src/accis/ ; git pull origin
 	date > syncsource
 
-synccoptic : lib$(ACCISDRV).a RefManual.html
-	cd ~/src/coptic/accis ; git pull origin
+synccoptic : lib$(ACCISDRV).a RefManual.html syncsource
+	cd ~/src/accis/ ; make mproper
+	rsync -av --exclude '.git' ~/src/accis/ ~/src/coptic/accis/ 
 	date > synccoptic
+
+syncsceptic : lib$(ACCISDRV).a RefManual.html
+	cd ~/src/accis/ ; make mproper
+	rsync -av --exclude '.git' ~/src/accis/ ~/src/sceptic/accis/ 
+	date > synsceptic
 
 tests : 
 	make

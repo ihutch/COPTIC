@@ -120,17 +120,26 @@ c Reduce the particle distribution diagnostics accumulations.
       include 'meshcom.f'
       include 'ptaccom.f'
       integer nfv,nfsv
-      parameter(nfv=2*nptdiag*ndimsmax,
-     $     nfsv=nsbins*ndimsmax*(nsub_tot+1)+nsub_tot)
+      parameter(nfv=2*nptdiagmax*ndimsmax)
+      parameter(nfsv=nsbins*ndimsmax*(nsub_tot+1)+nsub_tot)
+      parameter(nf2sv=nsbins*ndimsmax*(nsub_tot*(1+nsbins)+1)+nsub_tot)
 c Reduce the data for common /cartdiag/fv,px,... nfvaccum
 c Only the fv,px are to be added together. And nfvaccum.
       call MPI_ALLREDUCE(MPI_IN_PLACE,fv,nfv,MPI_REAL
      $     ,MPI_SUM,MPI_COMM_WORLD,ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,nfvaccum,1,MPI_INTEGER
      $     ,MPI_SUM,MPI_COMM_WORLD,ierr)
-c Reduce the data for common /subdiag/ ... fsv,fvx,denfvx
-      call MPI_ALLREDUCE(MPI_IN_PLACE,fsv,nfsv,MPI_REAL 
-     $     ,MPI_SUM,MPI_COMM_WORLD,ierr)
+c Reduce the data from common /subdiag/  fsv,fvx,denfvx [,f2vx] 
+c Assuming they are contiguous.
+      if(nptdiag.eq.nsbins)then
+c We need all the data.
+         call MPI_ALLREDUCE(MPI_IN_PLACE,fsv,nf2sv,MPI_REAL 
+     $        ,MPI_SUM,MPI_COMM_WORLD,ierr)
+      else
+c Only the 1-D data needs to be reduced.
+         call MPI_ALLREDUCE(MPI_IN_PLACE,fsv,nfsv,MPI_REAL 
+     $        ,MPI_SUM,MPI_COMM_WORLD,ierr)
+      endif
       end
 c********************************************************************
       subroutine minmaxreduce(mdims,xnewlim)

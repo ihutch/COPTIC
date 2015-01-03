@@ -5,6 +5,7 @@ c Lowest byte:
 c   abs(level)=1 scale to fit the region, 1-d x,y vectors.
 c   abs(level)=2 scale to fit region, 2-d x,y, don't hide, just wiremesh.
 c   abs(level)=0 perform no scale-setting and use last perspective...
+c   if bit2 (4) set, use last perspective regardless.
 c   level.lt.0 draw no axes.
 c Eye obtained from file eye.dat, or default if none exists.
       integer iLx, nx,ny,ilevel,level
@@ -13,19 +14,21 @@ c Eye obtained from file eye.dat, or default if none exists.
       real x2,y2,z2
       real zmin,zmax
       integer ihd
-      data ihd/99/
+      data ihd/99/x2/0./y2/0./z2/0./
       save
 
       level=ilevel
       cola=level/256
       level=level-cola*256
+      ipers=level/4-(level/8)*2
+      level=level-(level/4)*4
 c level is lowest 8 bits.
       colw=cola-(cola/256)*256
 c color of web is next 8 bits
       cola=cola/256 -(cola/65536)*256
 c color of axes is next 8 bits.
 c      write(*,*)'level=',level
-      if(abs(level).ne.0)then
+      if(abs(level).ne.0 .and. ipers.eq.0)then
          call geteye(x2,y2,z2)
       endif
       if(colw.ne.0) call color(colw)
@@ -50,7 +53,7 @@ c Set to non-hiding (ihd=0) or hiding (ihd=1) 3-D calls.
       call hdprset(ihd,0.)
       if(abs(level).ne.0)then
 c Set the perspective transform.
-         call trn32(0.,0.,0.,x2,y2,z2,1)
+         if(ipers.ne.1)call trn32(0.,0.,0.,x2,y2,z2,1)
          itics=5
          call minmax2(z,iLx,nx,ny,zmin,zmax)
          call fitrange(zmin,zmax,itics,ipow,fac10,delta,first,xlast)
@@ -305,5 +308,33 @@ c***************************************************************************
          ybot(i)=bot
     1 continue
       end
+c***************************************************************************
+      subroutine cont3proj(z,pp,iLx,nx,ny,cl,icl,x,y,isw,f)
+      real f
+      real x(*),y(*)
+c Project a contour plot onto a z-plane in 3-D plot, at normalized height f.
+c Arguments are those of contourl.
+      include 'world3.h'
 
+      incolor=igetcolor()
+      icsw=abs(isw-(isw/16)*16)
+      call axregion(-scbx3,scbx3,-scby3,scby3)
+      if(icsw.eq.0)then
+c x, y are unused by contourl.
+         call scalewn(1.,float(nx),1.,float(ny),.false.,.false.)
+      elseif(icsw.eq.1)then
+c x and y are really vectors.
+         call scalewn(x(1),x(nx),y(1),y(ny),.false.,.false.)
+      elseif(icsw.eq.2)then
+c x and y are arrays.
+c         write(*,*)x(1),x(nx),y(1),y(1+iLx*(ny-1)),iLx,ny
+         call scalewn(x(1),x(nx),y(1),y(1+iLx*(ny-1)),.false.,.false.)
+      endif
+      call hdprset(-3,f*scbz3)
+c       Contour without labels, direct on mesh, coloring, smooth.
+      call contourl(z,pp,iLx,nx,ny,cl,icl,x,y,isw)
+      call color(incolor)
 
+c This finish is left for the caller so annotations can be added.
+c      call hdprset(0,0.)
+      end

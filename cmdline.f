@@ -10,13 +10,13 @@ c Encapsulation of parameter setting.
      $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp)
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag)
 
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps
      $     ,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
-     $     ,iwstep,idistp,ndims,islp,lrestart
+     $     ,iwstep,idistp,ndims,islp,lrestart,nptdiag
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
      $     ,lextfield,LPF(ndims),lnotallp,ldistshow
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
@@ -333,6 +333,7 @@ c            Tneutral=Ts(nspecies)
             idistp=1
             read(argument(4:),*,err=240)idistp
          endif
+         if(argument(1:3).eq.'-pu')nptdiag=0
          if(argument(1:3).eq.'-fs')then
             read(argument(4:),*,err=201)lrestart
          endif
@@ -550,6 +551,8 @@ c Help text
      $     ,'     Also period of diagnostic writes.'
       write(*,301)' -pd   set distribution diags     [',idistp
      $     ,'     Bits:1 write, 2 plot.'
+      write(*,301)' -pu   set uniform p-distrib bins [',nptdiag
+     $     ,'     nptdiag value. 0=>nsbins'
       write(*,301)' -md   set No of diag-moments(7). [',ndiags
       write(*,301)' -bc   set boundary condition type[',islp
      $     ,'     E.g. 8201=1(1)+4(8)+13(8192)'

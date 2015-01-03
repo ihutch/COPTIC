@@ -12948,7 +12948,7 @@ The crossings that srvfsect misses appear to be real and ought to be
 counted.
 
 Basically I think that fluxdata.f has completed its transition to
-operation without srvfsect.eaa
+operation without srvfsect.
 
 10 Dec 14
 
@@ -13159,3 +13159,79 @@ for the psumreduce place. That's why nothing went wrong before.
 
 It's still going to be the case that -rx should be set no larger than
 Ti for stability.
+
+=======================================================================
+Summary for Calendar 2014 of code developments.
+
+Replaced the random numbers with Sobol numbers in volint.
+Implemented ndimsdecl.f
+Replace most explicit 3-Dimensional uses of ifull( ).
+2-D version work begun but not completed.
+Made rhoinf an argument to psumtoq to remove partcom dependence.
+
+April 
+Implemented multiple species (electrons). 
+Move charge deposition into the particle advance rather than having
+a separate chargetomesh routine. (To enable multiple species.)
+
+May
+Multiple-species flux accounting.
+Implemented Tperp different from Tpara, maxwellstats.
+Implemented streamset script. But it's not terribly useful.
+Got drift electrons working.
+
+June
+Replace RAN1 with RANLUX. Much more reliable random number generator.
+Update reinject.f orbitinject.f.
+
+July
+Implement object subtraction with potential boundary control.
+Implement Surfaces of Revolution.
+
+Aug
+Change to icross-geom tests from inside_geom tests for object intersections.
+Standardize to mpif77/gfortran compiler with optimization.
+Unformatted fortran write/read of gfortran is the same as pathscale.
+
+Oct
+Added the ability to have a fractional Boltzmann species to help stabilize
+electron pic. It damps out the long-wavelength noise.
+
+Nov
+Implement automated cks checking.
+Rationalized the object intersection code to remove many duplicates.
+Corrected/simplified the flux tallying and fsect.f as part of this process.
+Rewrote spheresect in a symmetric way.
+Most particle leakage is now fixed but there are still occasional cases.
+
+Dec
+Fixed numprocs=1 bug in -rx usage.
+
+==========================================================================
+
+1 Jan 2015
+
+Implemented f2vx 2-D distribution diagnostics accumulation for cases
+where nptdiag==nsbins. The 2-D distribution must be substantially 
+coarser. Therefore it only accumulates in the coarse case, where,
+incidentally, uniform bins are used for nsbins. Normally nptdiag is 
+much larger than nsbins, and would become unwieldy. 
+
+pex writing now includes the extra data which can therefore be got back.
+I think the reduce code ought also to be working appropriately but it
+is not significantly tested.
+
+The partaccum.f plotting has some rudimentary display of the data, but
+needs more work to make it sensible and to control the display.
+
+2 Jan 2015
+Added -pu switch to coptic and partexamine to set the otherwise large
+nptdiag to be equal to nsbins and hence do uniform bins. At present
+nsbins is not itself setable. 
+
+Improved the 3-D plots of the 2-D distribution functions in partaccum.
+
+Adjusted the accis makefile in ~/accis to do the coptic/accis sync by
+rsync instead of git pull. This prevents creating any secondary repo
+in the coptic/accis directory and keeps things clean by using src/accis
+as a staging area.

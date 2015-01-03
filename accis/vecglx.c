@@ -34,7 +34,7 @@ static GLint  accis_double[] = { GLX_RGBA, /* Truecolor and Directcolor */
 			      None };
 static GLint  accis_single[] = { GLX_RGBA, /* Truecolor and Directcolor */
 			      GLX_DEPTH_SIZE, 24, /* Depth 24 */
-				 /*GLX_DOUBLEBUFFER, */
+				 /* GLX_DOUBLEBUFFER,*/
 			      None };
 static XVisualInfo             *accis_vi;
 static Colormap                accis_cmap;
@@ -46,6 +46,7 @@ static Colormap accis_colormap;
 static int accis_depth;
 static int accis_listing=0;
 static int accis_eye3d=9999;
+static int accis_glback=1;
 
 /* Static maximum number of points in path */
 #define accis_path_max 4000
@@ -114,6 +115,10 @@ static char *accis_colornames[a_maxPixels]=
 static char *accis_argv[ACCIS_NARGVS];
 static int accis_argc=0; 
 static char *accis_geometry=NULL;
+#define ACCIS_SWAP {/*fprintf(stdout,"Swapping\n");*/glXSwapBuffers(accis_display,accis_window);}
+
+
+
 /* Get the command line arguments from fortran main using getargs etc. */
 void getcmdargs_()
 {
@@ -200,7 +205,8 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
         exit(0); 
       }else{
 	printf("\tfell-back to single-buffering\n");
-	printf("\tGLX visual %#x selected\n", (int)accis_vi->visualid); 
+	printf("\tGLX visual %#x selected\n", (int)accis_vi->visualid);
+	accis_glback=0;
       }
     }else{
       printf("\tGLX visual %#x selected\n", (int)accis_vi->visualid); 
@@ -235,11 +241,13 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
 /*Start of OpenGL calls ******************/
     accis_glc = glXCreateContext(accis_display, accis_vi, NULL, GL_TRUE);
     glXMakeCurrent(accis_display, accis_window, accis_glc);
-    /* All writes into both buffers at once  */
-    glDrawBuffer(GL_FRONT_AND_BACK); 
-    /* reads from the back buffer */
-    glReadBuffer(GL_BACK);
 
+    if(accis_glback){
+      glDrawBuffer(GL_BACK);
+    }else{
+      glDrawBuffer(GL_FRONT_AND_BACK);
+    }
+    
     accis_depth=accis_vi->depth;
     accis_colormap=accis_cmap;
     initDefaultColors();
@@ -353,15 +361,13 @@ void initDefaultColors()
 
 /* ******************************************************************** */
 #define EXPOSE_ACTION      \
-  /* Get all the queued contiguous expose events, before redrawing */ \
-  if(XPending(accis_display)) XPeekEvent(accis_display,&event);	      \
-      while(XPending(accis_display) && event.type==Expose){	      \
-	XNextEvent(accis_display,&event);			      \
-	if(XPending(accis_display)) XPeekEvent(accis_display,&event); \
+  /* Drop all the queued contiguous expose events, before redrawing */\
+  while(XPending(accis_display)&&XPeekEvent(accis_display,&event)&&   \
+	event.type==Expose){XNextEvent(accis_display,&event);	      \
       } /* Redraw everything.*/					      \
       glCallList(1);						      \
-      /*glXSwapBuffers(accis_display,accis_window); Is this needed?*/ 	\
-      glFlush(); /* Proves to be necessary for remote servers. */	\
+      if(accis_glback)ACCIS_SWAP;                                     \
+      glFlush(); /* Proves to be necessary for remote servers. */     \
 
 /* ******************************************************************** */
 /* End plotting Subroutine */ 
@@ -371,12 +377,15 @@ void txtmode_()
   glEndList(); /* Close the drawing list started in svga.*/
   accis_listing=0;
   ACCIS_SET_FOCUS;
+  /* printf("txtmode Executing Expose_Action\n");*/
+  /* The double expose action ensured the first plot was shown. Otherwise
+     not reliably, but for reasons that I do not understand.*/
+  if(accis_glback)EXPOSE_ACTION;
   EXPOSE_ACTION;
-  glFlush();
   do{
-    /*    printf("Executing XtNextEvent"); */
+    /*    printf("Executing XtNextEvent ");*/
     XNextEvent(accis_display,&event);
-/*     printf("Event: type=%d\n",event.type); */
+    /*    printf("Event: type=%d\n",event.type);*/
     if(event.type == Expose){EXPOSE_ACTION;}
   }while(event.type != ButtonPress && event.type != KeyPress );
     /* We don't do this; but here's how to terminate cleanly.
@@ -504,7 +513,7 @@ XEvent *event;
   /* This flush is necessary to see the black cube. */
   glFlush();
   /* This is for the background case working around GL bugs. */
-  /* glXSwapBuffers(accis_display, accis_window);*/
+  if(accis_glback)ACCIS_SWAP;
 }
 /* ********************************* */
 void accis_keypress(event)
@@ -534,12 +543,15 @@ int eye3d_(value)
   extern void accis_moved();
   XEvent event;
 
+  /*fprintf(stdout,"In eye3d: %d,%d\n",accis_nodisplay,accis_eye3d);*/
   if(accis_nodisplay){ *value=0; return 0; }
   glEndList(); /* Close the drawing list started in svga.*/
   accis_listing=0;
   if(accis_eye3d == 1){ *value=0; return 0; }
 
-  glXSwapBuffers(accis_display, accis_window);
+  glFlush();
+  /* This swap buffers does not work correctly when drawing to front.*/
+  if(accis_glback)ACCIS_SWAP
   XFlush(accis_display);
   /* Wait for a key press */
   if(accis_eye3d != 9999){
@@ -824,5 +836,5 @@ void glfront_()
   /* The order of the next two statements is key to getting all drawing */
   /* but to avoid the X bugs we don't for now do this:
      glDrawBuffer(GL_FRONT_AND_BACK); */
-  glXSwapBuffers(accis_display,accis_window); /* Should never be called*/
+  if(accis_glback)ACCIS_SWAP /* Should never be called*/
 }

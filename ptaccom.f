@@ -1,14 +1,12 @@
 c Dependent on having ndimsdecl.f loaded already, defining ndimsmax.
-c It is not clear whether mdims can be set equal to ndims and eliminated
-c Don't change it without finding out for sure.
-      integer nptdiag
-      parameter (nptdiag=400)
-      real fv(nptdiag,ndimsmax),cumfv(0:nptdiag,ndimsmax)
-      real px(nptdiag,ndimsmax)
-      real vdiag(nptdiag,ndimsmax)
-      real xdiag(nptdiag,ndimsmax)
+      integer nptdiagmax,nptdiag
+      parameter (nptdiagmax=400)
+      real fv(nptdiagmax,ndimsmax),cumfv(0:nptdiagmax,ndimsmax)
+      real px(nptdiagmax,ndimsmax)
+      real vdiag(nptdiagmax,ndimsmax)
+      real xdiag(nptdiagmax,ndimsmax)
       integer nfvaccum,ivproj
-      common /cartdiag/fv,px,vdiag,xdiag,cumfv,nfvaccum,ivproj
+      common /cartdiag/fv,px,vdiag,xdiag,cumfv,nfvaccum,ivproj,nptdiag
 c In this section there is an assumption that we are in 3 dimensions.
       integer nsub_i,nsub_j,nsub_k
 c These determine the number of sub-divisions of the three directions
@@ -24,11 +22,12 @@ c If nsbins.eq.nptdiag, then uniform binning will be used for the summed
 c bins. Behavior for nsbins>nptdiag is uncertain. Avoid that.
       integer nsbins
       parameter (nsbins=32)
-      integer ibinmap(nptdiag,ndimsmax)
+      integer ibinmap(nptdiagmax,ndimsmax)
       real vsbin(nsbins,ndimsmax),csbin(nsbins,ndimsmax)
       real fsv(nsbins,ndimsmax)
       real vhbin(0:nsbins,ndimsmax)
       real fvx(nsbins,ndimsmax,nsub_tot)
+      real f2vx(nsbins,nsbins,ndimsmax,nsub_tot)
       real denfvx(nsub_tot)
       real vtkudata(nsub_i+1,nsub_j+1,nsub_k+1,0:nsbins,2*ndimsmax)
 c ibinmap is the map from uniform to combined bins
@@ -37,6 +36,9 @@ c csbin is the number of fine bins in each combined bin
 c fsv is the sum of fv in each combined bin during the initial
 c     accumulation and bin calculation.
 c vhbin is the histogram boundaries of the combined bins
+c fvx is the 1-D distribution in 3 directions at each sub-position.
+c f2vx is the 2-D distribution normal to 3 directions ditto.
 c All of these must be common to all processes.
+
       common /subdiag/ibinmap,isfull,isuds,vsbin,csbin,vhbin,fsv,fvx
-     $     ,denfvx,vtkudata
+     $     ,denfvx,f2vx,vtkudata

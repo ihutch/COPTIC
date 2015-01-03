@@ -261,7 +261,7 @@ input file. For example a general contour with 5 pairs has 4 segments:
 Note that a type 6 surface of revolution has one \emph{more} segment
 than specified point pairs (because the base and apex ends of the
 axial vector are added), while a type 7 surface of revolution has one
-\emph{less} segment than specified point pairs.
+\emph{less} segment than specified point pairs. 
 
 Total flux to the object is always separately accumulated regardless
 of the optional specification.  Therefore, it is not necessary to
@@ -639,7 +639,7 @@ multiplied at each step by \verb!crelax!. So if \verb!crelax!=1, the update is
 immediate, while if \verb!crelax!=0. the update is zero, and chi and averein
 remain zero throughout. Generally when simulating large domains in
 which the computational boundary is the particle region, one usually
-ought to use \verb!-rx0.!
+ought to use \verb!-rx0.! Stability generally requires \verb!crelax<Ti!.
 
 \paragraph{-dt....}
  Set the timestep during the main part of the iteration. Default .1
@@ -678,7 +678,7 @@ If restarting, this is the number of \emph{additional} steps.
 \paragraph{-v....}  Set the drift velocity, \verb!vd!, of the background ions . Default 0.
 
 \paragraph{-vx -vy -vz...} Set the direction cosines of the drift
-velocity. Default (0,0,1).
+velocity, not necessarily normalized. Default (0,0,1).
 
 \paragraph{-tge...} Set the reference position and gradient of
 $T_e$. Six reals must follow the switch without spaces. The first
@@ -768,6 +768,13 @@ distribution data takes place only every \verb!iavesteps! steps.
 Set distribution diagnostics. Bit1: write, Bit2: plot. Default 0.
 This controls whether particle distribution diagnostics will be
 written and/or plotted at the end of each \verb!iavesteps! steps. 
+
+\paragraph{-pu...}
+Set the particle distribution diagnostics to \verb!nsbins! uniform
+bins in each velocity direction. [Without this setting, importance
+sampling sets non-uniform bins.] This setting also turns on
+accumulation of 2-D distributions; so the pex files will be larger.
+Does nothing if \verb!-pd! is unset.
 
 \paragraph{-md....}  Set number of diagnostic moments to save (max 7). Default 0.
 This controls which diagnostic files and messages will be written
@@ -1100,11 +1107,16 @@ pointers to the positions of different values within the array
       parameter (odata=oagrad+2)
       real obj_geom(odata,ngeomobjmax)
 \end{verbatim}
- The data
-positions in the input file for different objects are specified in
-Table \ref{geomtable}. The parameters that refer to the positions are
-indicated in the first column. Each line in the table refers to
-multiple numbers.
+The data positions in the input file for different objects are
+specified in Table \ref{geomtable}. The index parameters that refer to
+the positions are indicated in the first column. Each line in the
+table refers to multiple numbers that are read into storage positions
+indicated by integer positions following the parameters. Parameters
+refer to the first position of a range.  Integers in parentheses refer
+to storage positions that are not line entry positions. Surfaces of
+revolution are expressed in terms of $r,z$ pairs in fractions of the
+reference radius and the reference $z$-length (from the base to the
+apex).
 \begin{table}[htp]
 \caption{Position of geometric data in object file for different objects.\label{geomtable}}
 \begin{tabular}{|l|l|l|l|l|l|}
@@ -1117,8 +1129,27 @@ multiple numbers.
 \\
 \verb!ocenter! 5-7 & Center& Center& Center& Center& Center\\
 \verb!oradius! 8-10 & Radii& ${1\over2}$-Sides&
-Radii&  vector-1& Axis-vector\\
+Radii&  vector-1& Axis-${1\over2}$-vector\\
 \verb!ocylaxis! 11-16 & & & Axis number& vector-2,3& Ref-vector, radius\\ 
+\hline
+\end{tabular}
+
+\begin{tabular}{|l|l|}
+\hline
+  Byte-1: & 6 or 7 \\
+  Object: & Surface-of-Revolution\\ 
+\hline
+\verb!oabc! 2-4 & ABC  \\
+\verb!obase! 5-7 & Base\\
+\verb!oapex! 8-10 & Apex\\
+\verb!ocylaxis! 11-13 & Reference Vector\\
+\verb!ocylrad! 14 & Reference radius\\
+\verb!onpair! (27) & Number of $rz$-pairs \\
+\verb!opr+k-1,opz+k-1! & Pair $r_k,z_k,\ k=1,n$ \\
+\hline
+\verb!ofluxtype! (28) & Number of fluxes \\
+\verb!ofn1! (29) &  Number of $\theta$-divisions\\
+\verb!opdiv=opr!+2*\verb!ovlen! & Face-divisions $n[+1]$\\
 \hline
 \end{tabular}
 \end{table}
@@ -1215,21 +1246,22 @@ spheres at present).
 \verb!ptaccom.f!, and used only in routines in \verb!partaccum.f!. 
 
 For accumulation of the distribution averaged over large regions, the
-structures in common \verb!/cartdiag/! are used. 
-There are \verb!nptdiag! points in each direction for position and velocity.
-\verbatiminput{ptaccom.f}
-Spatially resolved velocity distributions are collected over blocks of
-cells. The number of such blocks is given by 
-\verb!parameter(nsub_i=15,nsub_j=15,nsub_k=15)! 
-The velocity bins are unevenly spaced so as to allow representation
-of the velocity distribution with a limited number of bins that are
-the combination of bins defined over \verb!nptdiag! velocities in the
-common \verb!/subdiag/!.
-There \verb!ibinmap! is the map from uniform bins to combined bins;
+structures in common \verb!/cartdiag/! are used.  There are
+\verb!nptdiag! points in each direction for position and velocity.
+\verbatiminput{ptaccom.f} Spatially resolved velocity distributions
+are collected over blocks of cells. The number of such blocks is given
+by \verb!parameter(nsub_i=15,nsub_j=15,nsub_k=15)!  The velocity bins
+are unevenly spaced using an importance algorithm, so as to allow
+representation of the velocity distribution with a limited number,
+\verb!nsbins!, of bins that are the combination of bins defined over
+\verb!nptdiag! velocities in the common \verb!/subdiag/!.  There
+\verb!ibinmap! is the map from uniform bins to combined bins;
 \verb!vsbin! is the central velocity of the combined bin; \verb!csbin!
 is the number of fine bins in the combined bin. The spatially resolved
 distribution data is \verb!fvx!. Finer velocity resolution may be
-obtained by using \verb!nsbins! up to 128.
+obtained by using larger \verb!nsbins! than the typical (parameter) 32
+but storage demands eventually become excessive.  Uniform binning
+may be obtained by putting \verb!nptdiag=nsbins!.
 
 \section{Code Execution Flow}
 
@@ -1248,7 +1280,9 @@ on a single processor.
 first, generally by assignment (rather than data) statements. The MPI
 system is initialized by calling \verb!mpigetmyid!, from file
 \verb!mpibbdy.f!, which contains the MPI block boundary communications
-code. The communicator mpiid of the process is determined.
+code. The communicator id, \verb!myid!, of the process is
+determined. The master node (or the unique node for serial runs) has
+\verb!myid=0!. 
 
 \paragraph{Command line arguments} are dealt with by two calls to
 \verb!copticmdline!. The first sets most defaults but returns the name
@@ -1276,7 +1310,7 @@ rho-infinity per node, \verb!ninjcalc!.
 then the mesh is shifted slightly and things are reinitialized.
 
 \sentence{Stored volume information} is sought and read using
-\verb!stored3geometry!. If appropriate information is not retrieved then
+\verb!stored3geometry!. If appropriate information is not retrieved, then
 
 \sentence{Volumes are calculated}
 
@@ -1309,6 +1343,8 @@ number.
 files. If successful, this resets the particles and random number
 generator to where they stood at the end of the saved run.
 
+\sentence{Charge is deposited on the mesh} by an initial \verb!chargetomesh! call.
+
 \paragraph{Main iteration loop is entered} and executed for the set
 number of steps, as follows.
 \begin{itemize}\itemsep=0pt
@@ -1316,15 +1352,14 @@ number of steps, as follows.
 %\item \verb!chargetomesh! generates the final \verb!psum! by deposition of ions.
 \item \verb!psum! is reduced from all nodes. \verb!rhoinfinity! is calculated.
 \item \verb!psumtoq! converts psums to charge density, then zeroes \verb!psum!.
-\item The solver is called (\verb!sormpi!) or
-  quasi-neutrality invoked to determine potential.
+\item The solver  (\verb!sormpi!) is called, or
+  quasi-neutrality invoked, to determine potential.
 \item Force contributions are accumulated by \verb!calculateforces!.
 \item Optionally, plotting is done. Optionally checking is done.
 \item The particles are advanced by \verb!padvnc!. Charge deposition
-%  of species higher than 1 
 is integrated into this routine.
 \item Fluxes are reduced.
-\item The stencils are (optionally) updated by \verb!cijdirect!
+\item Optionally, the stencils are updated by \verb!cijdirect!
 \item Running averages are calculated and optionally diagnostic data
   is written. 
 \item On occasion, particle distribution data is written. 
@@ -1416,10 +1451,10 @@ used. The instantaneous magnetic acceleration is ${\bf v}\times{\bf
 cyclotron frequency $\Omega$ equal to $B$. If $B$ is sufficiently
 large that the angle of rotation in a step is greater than
 \verb!thetamax! (generally 1), then instead ions are treated by a
-drift approximation. The ion motion consists purely of two
+drift approximation. The ion motion then consists purely of two
 terms: (1) parallel (to $B$) acceleration and drift (2) perpendicular
 drift equal to the perpendicular component of the specified drift
-velocity plus the explicit $E\times B$ drift.
+velocity plus the explicit $-\nabla\phi\times B$ drift.
 
 The
 acceleration (kick) step is taken to have a duration equal to the mean
@@ -1559,11 +1594,16 @@ determined by switch \verb!-pd!, at the same time as other diagnostic
 writes, i.e.\ every \verb!iavesteps! steps. 
 
 The distributions are spatially resolved into blocks of nodes. The
-number of blocks in each dimension is \verb!nsub_i, nsub_j, nsub_k!. 
-Those parameters are defined in the file \verb!ptaccom.f!, usually all
-equal to 8. They may be changed only by editing that file and
-recompiling. Subsequent reading of the output requires the analysis
-routines to have been compiled with the same parameter settings.
+number of allocated blocks in each dimension is
+\verb!nsub_i, nsub_j, nsub_k!.  Those parameters are defined in the
+file \verb!ptaccom.f!, usually all equal to 15. The actual used
+dimensions are given by \verb!isuds(3)!, which is initialized in
+\verb!fvxinit! (called from \verb!partdistup!) to the values of
+\verb!isfull(3)! (the \verb!nsub! allocation) (but in partexamine,
+\verb!isuds! are instead initialized to 9 and the non-zero value
+passed to \verb!partdistup! prevents reinitialization). When reading a
+pex file, the used dimensions are set from the file values.
+
 
 
 \subsection{Final Output}
@@ -1695,7 +1735,7 @@ UBUNTU the package \verb!libgl1-mesa-dev!  is required. If the GL
 libraries are not found, it may still be possible to link using the
 X11 libraries. However, often those libraries are also unavailable
 unless development packages are installed such as
-\verb!libxt-dev!. (There is also a MSWindows driver, but no support is
+\verb!libx11-dev!. (There is also a MSWindows driver, but no support is
 provided for running COPTIC under MSWindows and the make file assumes
 the system to be Linux.) A final option is to link with a driver that
 gives (for a long time obsolete) 4014 output. This driver uses no additional

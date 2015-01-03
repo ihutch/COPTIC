@@ -31,6 +31,7 @@ c 1.Simplest call autocontours on a rectangular mesh when nl=0.
 c Put axes, annotations etc on afterward if desired.
       call axis
       call axlabels('x-index','y-index')
+      call pltend()
 c 2.General call. x,y not used since last arg zero.
        call pltinit(1.,float(nx),1.,float(ny))
        iconsw=0
@@ -56,7 +57,7 @@ c       write(*,*)'Finished contourl'
 c       write(*,*)c1st,clast
        call gradlegend(c1st,clast,.0,-.4,1.,-.4,.03,.true.)
 
-       call pltend
+       call pltend()
 
 
       end

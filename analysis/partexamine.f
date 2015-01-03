@@ -11,7 +11,7 @@ c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       character*100 name
       character*100 string
       logical ldoc
-      real extra(nptdiag,ndimsmax),diff(nptdiag,ndimsmax)
+      real extra(nptdiagmax,ndimsmax),diff(nptdiagmax,ndimsmax)
 c Spatial limits bottom-top, dimensions
       real xlimit(2,ndimsmax),xnewlim(2,ndimsmax)
       real Bdirs(ndimsmax+1)
@@ -347,6 +347,8 @@ c Deal with arguments
                read(argument(3:),*,err=201) vlimit(1,2),vlimit(2,2)
             elseif(argument(1:2).eq.'-w')then
                read(argument(3:),*,err=201) vlimit(1,3),vlimit(2,3)
+            elseif(argument(1:3).eq.'-pu')then
+               nptdiag=nsbins
             elseif(argument(1:2).eq.'-p')then
                cellvol=-1
                bread=0.
@@ -391,7 +393,7 @@ c Help text
  201  continue
       write(*,*)'=====Error reading command line argument'
  203  continue
- 301  format(a,i5)
+ 301  format(a,i5,a)
  302  format(a,4f8.3)
  303  format(a,5i5)
       write(*,301)'Usage: partexamine [switches] <partfile> (no ext)'
@@ -401,10 +403,11 @@ c Help text
      $     ,vlimit(1,1),vlimit(2,1)
       write(*,303)' -b<nx,ny,nz>  set spatial block range. [',iuin
       write(*,302)' -p[bx,by,bz]  project [in direction]   [',Bdirs
-c      write(*,301)' -f   set name of partfile.'
       write(*,'(a,$)')' -d<i,i> Set first,last v-index'
       write(*,303)' to plot [',ndfirst,ndlast
       write(*,301)' -sp     Increment species number to examine'
+      write(*,301)' -pu     Set nptdiag for uniform bins   [',nptdiag
+     $     ,'  (Hence 2-D f plots)'
       write(*,301)' -q      Output diagnostics of file reading'
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [copticgeom.dat'
