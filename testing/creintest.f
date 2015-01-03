@@ -34,8 +34,8 @@ c      normal=.false.
       normal=.true.
 
 c Initialize random number generator change (negative) value for different
-c random number selections.
-      v=ran1(-100)
+c random number selections. Obsolete.
+c      v=ran1(-100)
 
 c Set up mesh data.
       do id=1,mdims

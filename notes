@@ -13235,3 +13235,27 @@ Adjusted the accis makefile in ~/accis to do the coptic/accis sync by
 rsync instead of git pull. This prevents creating any secondary repo
 in the coptic/accis directory and keeps things clean by using src/accis
 as a staging area.
+
+Method to make sure that you have all the files of a particular build
+present:
+
+git checkout -- .
+
+Note that simply   git checkout master  does not do the same. It does not
+renew files that have been deleted or are otherwise absent.
+
+Implemented individual save statements in mpibbdy to enable removal of the
+general save statement and hence avoid the warning arising from the mpif.h
+statements.
+
+Also in mpibbdy, change the behavior to do a reapportionment of the 
+processes only if the number asked for is greater than the actual available
+processes. Then ask for 100x100x100 by default (ridiculously large). 
+That enables one to specify fewer blocks than processes if one wishes,
+using the -id flag. It appears to work.
+
+Now make give NO warnings. And the cks checks are all ok.
+If compiler is changed to g77 then also no warnings, but cks fail.
+Explicitly set SHELL in makefile to bash. It was previously sh by default.
+Either one works fine. 
+Fix a few small bugs in testing/.

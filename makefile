@@ -1,4 +1,5 @@
-# This makefile assumes the shell is Bash.
+# The shell assumed in this makefile
+SHELL=/bin/bash
 ########################################################################
 # The eventual target:
 COPTIC=coptic
@@ -35,7 +36,7 @@ else
  ifeq ("$(VECX)","vecx")
    ifeq ("$(TESTX11)","")
      ACCISDRV=accisX
-     LIBRARIES = $(LIBPATH) -l$(ACCISDRV) -lXt -lX11 $(GLULIBS)
+     LIBRARIES = $(LIBPATH) -l$(ACCISDRV) -lX11 $(GLULIBS)
    else
 # Wanted vecx but could not have it:
      ACCISDRV=accis
@@ -47,13 +48,13 @@ else
    ifeq ("$(TESTGL)","")
      ACCISDRV=accisX
      GLULIBS=-lGL -lGLU
-     LIBRARIES=$(LIBPATH) -l$(ACCISDRV) -lXt -lX11 $(GLULIBS)
+     LIBRARIES=$(LIBPATH) -l$(ACCISDRV) -lX11 $(GLULIBS)
      VECX=vecglx
    else
     ifeq ("$(TESTX11)","")
      ACCISDRV=accisX
      GLULIBS=
-     LIBRARIES=$(LIBPATH) -l$(ACCISDRV) -lXt -lX11 $(GLULIBS)
+     LIBRARIES=$(LIBPATH) -l$(ACCISDRV) -lX11 $(GLULIBS)
      VECX=vecx
     else
      ACCISDRV=accis
@@ -181,7 +182,6 @@ if [ `ls -s prior.phi | sed -e "s/[ ].*//"` -ne \
 else if ! diff T1e0v000P200L1e0z005x05.phi prior.phi ; then \
 echo "**** RESULT CHANGED" ; rm prior.phi; fi; fi; else echo "File[s] lacking to compare result.\nProbably you've just made coptic for the first time."; fi 
 	@if [ "$(G77)" = "gfortran" ] ; then echo "Compiled serial coptic. make mproper; make for MPI version if MPI available." ; fi
-	@echo Entering background geometry tests loop. Continue regardless.
 	@make GeometryTests >/dev/null
 
 # For now we are using a big hammer to ensure libcoptic is clean.
@@ -204,7 +204,8 @@ mpicheck : $(COPTIC)
 	mv mpicheck.out mpicheck.prev
 
 # Configure compiler. Mostly one long continued bash script.
-# Currently not forcing f77=g77 by default.
+# Currently not forcing f77=g77 by default. 
+# Preference order mpif77, g77, f77, gfortran
 compiler : makefile
 	@echo Compiler tests. $${G77}
 	@\
@@ -217,7 +218,9 @@ compiler : makefile
   if which g77 >/dev/null ; then\
      GHERE="g77";\
   else if which f77 >/dev/null ; then GHERE="f77";else\
-          echo "$${G77} NO COMPILER found! Specify G77= ..." ; exit 1;\
+          if which gfortran >/dev/null; then GHERE="gfortran"; else\
+             echo "$${G77} NO COMPILER found! Specify G77= ..." ; exit 1;\
+          fi\
        fi\
   fi;\
  fi;\
@@ -284,6 +287,7 @@ testing : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libc
 	make -C testing
 	@echo Made tests in directory testing. Now running them to test.
 	make -C testing testing
+	@echo If all programs finished without crashing. Thats good enough.
 
 testanal : 
 	make clean
@@ -296,13 +300,18 @@ testanal :
 	@echo "******* Completed tests with no obvious analysis errors."
 
 geometry : geometry/*.cks
+	@echo 'Geometry Tests completed or up to date' >&2
 	rm -f T1*
 	date >>GeometryTests
 	cat GeometryTests
 
 # Use compiler (which depends on makefile) as a test of major updates
 GeometryTests : compiler
-	@make geometry >/dev/null &
+	@if [ "`sed -n '/mpif77/p; /gfortran/p' compiler`" != "" ] ; then\
+  echo ' ' >&2;\
+  echo 'Starting background tests. Recompile only when completed.' >&2;\
+  make geometry;\
+else echo "Using uncertain compiler. Skipping background tests" >&2 ; fi &
 
 #####################################################
 clean :

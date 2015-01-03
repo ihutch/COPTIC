@@ -65,7 +65,6 @@ c Otherwise could have been hidden in sormpi and pass back numprocs.
       if(idebug.gt.0)write(*,*)'numprocs,myid',numprocs,myid
 c--------------------------------------------------------------
 c Deal with command-line arguments; not all valid here.
-      call copticcmdline
       include '../cmdargs.f'
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.

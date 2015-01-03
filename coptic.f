@@ -31,7 +31,7 @@ c Used dimensions, Full dimensions. Used dims-2
       integer iuds(ndimsmax),ifull(ndimsmax),ium2(ndimsmax)
 c Processor cartesian geometry can be set by default.
       integer nblksi,nblksj,nblksk
-      parameter (nblksi=1,nblksj=1,nblksk=1)
+      parameter (nblksi=100,nblksj=100,nblksk=100)
       integer idims(ndimsmax)
 c mpi process information.
       include 'myidcom.f'

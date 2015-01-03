@@ -3,6 +3,7 @@ c Block boundary communication.
       subroutine bbdy(iLs,ifull,iuds,u,kc,
      $     ndims,idims,icoords,iLcoords,myside,myorig,
      $     icommcart,mycartid,myid,lperiod)
+      implicit none
 c The number of dimensions of the cartesian topology. (2 for 2d) (IN)
       integer ndims
 c Dimensional structure of u, for 2d should be (1,Li,Lj), 
@@ -17,7 +18,7 @@ c      if kc=-1 this is the final call: gather only.
 c      if kc=-2 only (re)initialize the topology, cartesian communicator
 c
       integer kc
-c The length of each topology dimension (number of blocks) (IN)
+c The length of each topology dimension (number of blocks) (IN/OUT)
       integer idims(ndims)
 c For each topology dimension whether it is periodic or not (IN)
       logical lperiod(ndims)
@@ -44,11 +45,12 @@ c---------------------------------------------------------------
 c Start of local variables.
 c      logical lalltoall
 c      parameter (idebug=1,lalltoall=.false.)
+      integer idebug
       parameter (idebug=0)
 c      parameter (lalltoall=.true.)
-c Local storage:
       logical lreorder
 c vector type ids for each dimension (maximum 10 dimensions)
+      integer imds
       parameter(imds=10)
 c facevector ids for each dimension; odd,even; bulk, top. 
 c These are the handles to datatype that picks out data in the correct
@@ -73,10 +75,12 @@ c Ditto ircoords, lrperiod
       logical lrperiod(imds)
 c Scratch stack, whose length must be at least Prod_1^nd(iside(2,i)+1)
 c Possibly this should be passed to the routine. 
+      integer istacksize
       parameter (istacksize=100000)
       integer is(istacksize)
 c      integer ktype(2**imds)
 c Arrays for constructing ALLtoALL calls.
+      integer maxprocs
       parameter (maxprocs=1000)
       integer isdispls(maxprocs),irdispls(maxprocs)
       integer istypes(maxprocs),irtypes(maxprocs)
@@ -108,6 +112,7 @@ c by a value pointing to the length of u in that dimension minus 1.
 c Each side runs from e.g. iorig(i,j,...)+1 to iorig(i+1,j,...)
 c We declare it as a 1-d array for generality. This is the first time here:
 c It must be of dimension greater than the number of processes (blocks)
+      integer norigmax
       parameter (norigmax=1500)
       integer iorig(norigmax)
       common /iorigcom/iorig
@@ -120,8 +125,16 @@ c Flag that we have called this routine once.
       data lflag/.false./
 c Initialize iobindex to quiet initialization warnings.
       data iobindex/1/
-c This general save statement is necessary. But gives gfortran warnings.
-      save
+c This general save statement gives gfortran warnings from the
+c individual save statements in mpif.h. So instead save individually all
+c the non-parameter or data variables defined above.
+c      save
+      save iface,ibt,iodd,ieven,lodd,leven,isdl,iddl,isdr,iddr
+      save iside,irdims,ircoords,lrperiod,is,status
+      save isdispls,irdispls,istypes,irtypes,iscounts,ircounts
+c Various variables used as counters etc later. Not saved now.
+      integer i,ibeg,iblens,id,ierr,ii,ioffset,iolm,iolp,iorm,iorp
+      integer itag,k,ke,kn,ko,kt,n,nn,np,nprcsses,nproc
 
       if(kc.eq.-1) then 
 c Just do the gather
@@ -152,15 +165,18 @@ c Initialize
          call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
          call MPI_COMM_SIZE( MPI_COMM_WORLD, nprcsses, ierr )
          if(nprcsses.gt.maxprocs) then
-            write(*,*)'Too many processes',nprcsses,' Increase maxprocs'
+            write(*,*)'Too many processes',nprcsses
+     $           ,' Increase maxprocs parameter in mpibbdy.f'
             goto 999
          endif
 c Check the asked-for nproc and if not equal to nprcsses, reapportion.
-         if(nproc.ne.nprcsses)then
+c         if(nproc.ne.nprcsses)then
+c Only reapportion if too many processes were asked for.
+         if(nproc.gt.nprcsses)then
             if(myid.eq.0)write(*,201)nprcsses,
      $           nproc,(idims(n),n=1,ndims)
  201        format(' MPI processes',i4,
-     $           ': don''t match this topology ',i4,':',6i3)
+     $           ': don''t match this topology ',i7,':',6i4)
 c Use MPI function to redimension block structure
             do ii=1,ndims
                if(iuds(ii).lt.8)then
@@ -407,8 +423,8 @@ c kc=-1. Do the block exchanging.
 c Unused process.
  998  continue
       mycartid=-1
-      write(*,*)'Process',myid,' not used in cartesian communicator',
-     $     (idims(i),i=1,ndims)
+      write(*,'(a,i5,a,3i4)')' Process',myid
+     $     ,' not used in cartesian communicator',(idims(i),i=1,ndims)
       return
 c Exception stop:
  999  continue
@@ -701,6 +717,7 @@ c dimensions idims, iLcoords, ioffset, idebug.
       integer isdispls(nproc),istypes(nproc),iscounts(nproc)
       integer irdispls(nproc),irtypes(nproc),ircounts(nproc)
 
+      integer norigmax
       parameter (norigmax=1500)
       integer iorig(norigmax)
       common /iorigcom/iorig
