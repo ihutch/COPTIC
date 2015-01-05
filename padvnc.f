@@ -312,6 +312,8 @@ c Diagnostic for leakage. Remove when convinced it is fixed:
      $        .and..not.leftregion.ne.0)then
             write(*,'(a,i8,6f8.3,i4)')'Particle leakage',i,(x_part(kk,i)
      $           ,kk=1,6),icross
+c Get rid of this leaked particle:
+            leftregion=1
          endif
 c------------ Possible Reinjection ----------
          if(.not.linmesh.or.leftregion.ne.0)then

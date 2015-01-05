@@ -646,7 +646,7 @@ c 3-D only code.
       include 'ptaccom.f'
       include 'plascom.f'
 c Distributions in ptaccom.f
-      real vlimit(2,ndimsmax),xnewlim(2,ndimsmax)
+      real vlimit(2,ndims),xnewlim(2,ndims)
       real cellvol,ftot,vtot,v2tot
       real fvplt(nsbins)
       integer ip,id,iv,iw
@@ -661,12 +661,12 @@ c 2-D variables
       parameter (nl=10)
       real cl(nl)
       integer ieye3d
-      real f2vc(nsbins,nsbins)
+      real f2vc(nsbins,nsbins,ndims)
       include 'accis/world3.h'
       integer icell,jcell,kcell
       real wicell,wjcell,wkcell
       integer jicell,jjcell,jkcell,ii,jj,kk,ip3,idw
-      integer iup,isw
+      integer iup,isw,iwidth
       real xylim(4)
       integer ips,itrace,ies,level
       logical loverplot
@@ -721,7 +721,7 @@ c Alternatively we combine bins in possibly multiple
 c dimensions, if jicell, jjcell, or jkcell are non-zero.
             fvplt(iv)=0.
             do iw=1,nsbins
-               f2vc(iv,iw)=0.
+               f2vc(iv,iw,id)=0.
             enddo
             do ii=0,(isuds(1)-1)*jicell
                do jj=0,(isuds(2)-1)*jjcell
@@ -733,7 +733,7 @@ c dimensions, if jicell, jjcell, or jkcell are non-zero.
      $              *nptdiag/(vlimit(2,id)-vlimit(1,id))/cellvol
             do iw=1,nsbins
 c I'm not clear about the normalization here.
-               f2vc(iv,iw)=f2vc(iv,iw)+f2vx(iv,iw,id,ip3)
+               f2vc(iv,iw,id)=f2vc(iv,iw,id)+f2vx(iv,iw,id,ip3)
 c*csbin(iv,id)
 c     $              *nsbins/(vlimit(2,id)-vlimit(1,id))/cellvol
             enddo
@@ -787,30 +787,52 @@ c         if(id.eq.3)then
          endif
          call axlabels(' ',string(1:lentrim(string)))
          call winset(.true.)
-            call polymark(vsbin(1,id),fvplt,nsbins,1)
+         call polymark(vsbin(1,id),fvplt,nsbins,1)
 c         call polybox(vhbin(0,id),fvx(1,id,ip),nsbins)
-         call polybox(vhbin(0,id),fvplt,nsbins)
+         if(nsbins.ne.nptdiag)then
+            call polybox(vhbin(0,id),fvplt,nsbins)
+         else
+            call polyline(vsbin(1,id),fvplt,nsbins)
+         endif
       enddo
       call winset(.false.)
       call axlabels('Velocity',' ')
       call eye3d(ip)
 c ------------ End of 1-d distribution drawing.
       if(nsbins.eq.nptdiag)then
-c Start of 2-d distribution drawing.      
+c Start of 2-d distribution drawing.
+         write(*,*)'Space key advances v-projection direction. f-count'
          call multiframe(0,0,0)
+         id=3
  98      call pltinit(0.,1.,0.,1.)
          call jdrwstr(0.1,.7,cellstring(1:lentrim(cellstring)),1.)
+         call iwrite(id,iwidth,string)
+         call jdrwstr(0.02,0.02,'Direction ',1.)
+         call drcstr(string)
+c         call drcstr(' Advance with space.')
 c       Plot the surface. With axes (1). Web color 10, axis color 7.
          j=level + 256*10 + 256*256*7
-         call hidweb(vsbin(1,1),vsbin(1,2),f2vc,nsbins,nsbins
+         call hidweb(vsbin(1,1),vsbin(1,2),f2vc(1,1,id),nsbins,nsbins
      $        ,nsbins,j)
+         call color(15)
+         call charsize(0.02,0.02)
+         if(id.eq.1)then
+            call ax3labels('!Bv!dy!d!@','!Bv!dz!d!@','!Bf(v)!@     ')
+         elseif(id.eq.2)then
+            call ax3labels('!Bv!dz!d!@','!Bv!dx!d!@','!Bf(v)!@     ')
+         elseif(id.eq.3)then
+            call ax3labels('!Bv!dx!d!@','!Bv!dy!d!@','!Bf(v)!@     ')
+         endif
+         call charsize(0.0,0.0)
          level=5
-         call cont3proj(f2vc,pp,nsbins,nsbins,nsbins,cl,0,
+         call cont3proj(f2vc(1,1,id),pp,nsbins,nsbins,nsbins,cl,0,
      $        vsbin(1,1),vsbin(1,2),1,1.)
          call hdprset(0,0.)
 c How to enable interactive plot rotation. Just this call instead of pltend:
          ies=ieye3d()
          call rotatezoom(ies)
+c Space key changes f-integration direction.
+         if(ies.eq.ichar(' '))id=mod(id,ndims)+1
 c Exit on 0,q, or an arrow key.
          if(ies.ne.0 .and. ies.ne.ichar('q') .and. ies.lt.65300 )goto 98    
       endif
@@ -975,7 +997,6 @@ c********************************************************************
       include 'ndimsdecl.f'
       include 'ptaccom.f'
       data nptdiag/nptdiagmax/
-c      data nptdiag/nsbins/
       end
 c*******************************************************************
       subroutine adjustlimit(nptdiag,vlimit)
