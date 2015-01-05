@@ -61,10 +61,10 @@ if [ "$VECX" == "" ] ; then
     VECX=vecglx
   else 
     echo Can\'t find -lGL -lGLU. Trying X11 driver
-    if [ -z "`ld -lX11 -lXt -o /dev/null 2>&1 | grep X`" ] ; then
+    if [ -z "`ld -lX11 -o /dev/null 2>&1 | grep X`" ] ; then
         VECX=vecx
     else
-	echo Can\'t find -lX11 -lXt. Using 4014 driver
+	echo Can\'t find -lX11. Using 4014 driver
         VECX=vec4014
     fi
   fi

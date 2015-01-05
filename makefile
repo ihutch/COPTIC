@@ -162,9 +162,18 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 	@./setdimens 64 64 128 >makegeom.log
 	@rm -f T*.phi
 	@./${COPTIC} $*.dat >>makegeom.log
-	@if [ -f T*.phi ] ; then sum T*.phi >checksum ; else echo NO .phi FILE GENERATED; ls T*.phi 2>/dev/null; exit 1; fi
-	@if diff checksum $*.cks >diffout 2>&1; then echo "        Case $*.cks: OK. No differences" >&2; touch $*.cks; else cat diffout; echo '******** Failed geometry test on $*.cks *********' >&2; echo "$*.cks:" >> GeometryTests; cat diffout >> GeometryTests; fi; rm -f diffout checksum
-	@if [ -f $*.cks ] ; then echo >/dev/null ; else echo "******** $*.cks not present. Creating it."; sum T*.phi >$*.cks; fi
+	@if [ -f T*.phi ] ; then sum T*.phi >checksum ;\
+	   else echo NO .phi FILE GENERATED; ls T*.phi 2>/dev/null; exit 1; fi
+	@if diff checksum $*.cks >diffout 2>&1; then\
+	  echo "        Case $*.cks: OK. No differences" >&2; touch $*.cks;\
+	 else cat diffout;\
+	  echo '******** Failed geometry test on $*.cks *********' >&2;\
+	  echo "$*.cks:" >> GeometryTests; cat diffout >> GeometryTests;\
+         fi; rm -f diffout checksum
+	@if [ -f $*.cks ] ; then echo >/dev/null ;\
+	 else echo "******** $*.cks not present. Creating it.";\
+	  sum T*.phi >$*.cks;\
+	 fi
 #	@echo -----------------------------------------------------------------
 
 ##########################################
@@ -180,7 +189,9 @@ if [ `ls -s prior.phi | sed -e "s/[ ].*//"` -ne \
     `ls -s T1e0v000P200L1e0z005x05.phi | sed -e "s/[ ].*//"` ] ;then \
  echo "**** SIZE CHANGED. You probably ran a non-standard case just prior." ; \
 else if ! diff T1e0v000P200L1e0z005x05.phi prior.phi ; then \
-echo "**** RESULT CHANGED" ; rm prior.phi; fi; fi; else echo "File[s] lacking to compare result.\nProbably you've just made coptic for the first time."; fi 
+ echo "**** RESULT CHANGED" ; rm prior.phi; fi; fi;\
+ else echo "File[s] lacking to compare result.";\
+ echo "Probably you've just made coptic for the first time."; fi 
 	@if [ "$(G77)" = "gfortran" ] ; then echo "Compiled serial coptic. make mproper; make for MPI version if MPI available." ; fi
 	@make GeometryTests >/dev/null
 
@@ -229,8 +240,6 @@ compiler : makefile
 # To obtain this information, one has to make a second time.
 	@echo "*********** Remaking COPTIC with chosen G77 ****************"
 	@export MAKEFLAGS=; export G77=$${GHERE}; $(MAKE) coptic
-#	@echo "*********** Terminating recursive make. Not an error *******"
-#	exit 1
 
 # Make the binary writes access='stream'. This has greater portability
 # between compilers but is g77 incompatible.
@@ -307,11 +316,12 @@ geometry : geometry/*.cks
 
 # Use compiler (which depends on makefile) as a test of major updates
 GeometryTests : compiler
-	@if [ "`sed -n '/mpif77/p; /gfortran/p' compiler`" != "" ] ; then\
+	@if [ "`sed -n '/g77/p' compiler`" == "" ] ; then\
   echo ' ' >&2;\
   echo 'Starting background tests. Recompile only when completed.' >&2;\
   make geometry;\
-else echo "Using uncertain compiler. Skipping background tests" >&2 ; fi &
+else echo "Using g77 compiler. Skipping background tests" >&2 ; fi &
+	@echo
 
 #####################################################
 clean :

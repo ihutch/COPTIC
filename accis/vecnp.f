@@ -18,6 +18,7 @@ c        Draw a vector to the plotter file, normalized coords   */
 c On input ud=0 indicates moveto/pen-up; ud=1 lineto/pen-down; 
 c ud=2 lift pen but don't draw; ud=3 stroke (don't move) and disable
 c the stroke at the start of the next move by putting updown=99.
+c ud=-1 draw point only: equivalent to a call with ud=0, then with ud=1.
       subroutine vecnp(nx,ny,ud)
       real nx,ny
       integer ud
@@ -58,6 +59,17 @@ c ud=2 signals pen-up but don't draw this position.
          call abufwrt(spc,ns,ipsunit)
          if(ud.eq.1)then
             call abufwrt(pd,nd,ipsunit)
+         elseif(ud.eq.-1)then
+c Point output: move to, then draw to same place, lift pen [and end].
+            call abufwrt(pu,nd,ipsunit)
+            call ibufwrt(pldx,ipsunit)
+            call abufwrt(spc,ns,ipsunit)
+            call ibufwrt(pldy,ipsunit)
+            call abufwrt(spc,ns,ipsunit)
+            call abufwrt(pd,nd,ipsunit)
+            updown=0
+c Apparently not needed:
+c            call abufwrt(endpair,ne,ipsunit)
          else
             call abufwrt(pu,nd,ipsunit)
          endif

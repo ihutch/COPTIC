@@ -555,7 +555,7 @@ c**********************************************************************
       character*(*) name
 
       open(25,file=name,status='old',form='unformatted',err=101)
-      read(25)nptdiagfile,ndimsfile
+      read(25)nptdiag,ndimsfile
       read(25)(xlimit(1,j),xlimit(2,j),vlimit(1,j),vlimit(2,j),
      $     j=1,ndims)
       read(25)((xdiag(i,j),px(i,j),i=1,nptdiag),j=1,ndims)
@@ -575,7 +575,7 @@ c Check if the nsbins is correct and there's enough storage.
       read(25)((vsbin(i,j),csbin(i,j),fsv(i,j),i=1,nsbins),
      $     (vhbin(i,j),i=0,nsbins),j=1,ndims)
       read(25)((ibinmap(i,j),i=1,nptdiag),j=1,ndims)
-      if(nsbf.eq.nptdiagfile)then
+      if(nsbf.eq.nptdiag)then
          read(25,err=104,end=104)((((f2vx(m,i,j,k),m=1,nsbf),i=1,nsbf),j
      $        =1,ndims),k=1,isftot)
       endif

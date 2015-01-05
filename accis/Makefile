@@ -92,8 +92,6 @@ all : $(MAKEFILE) lib$(ACCISDRV).a
 # So we make the second call to an explicit file.
 makefile : Makefile configure
 	@echo Configuring the Makefile for this platform. 
-#	@export COMPILER="$(COMPILER)"; export VECX=$(VECX); export NOBACKSLASH="$(NOBACKSLASH)"; ./configure
-# Better probably to let the configure script decide:
 	@export COMPILER="$(COMPILER)"; ./configure
 	@echo Now running make again using the new Makefile.
 # The problem with this recursion is that it does not override any command

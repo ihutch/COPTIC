@@ -3,6 +3,7 @@ c Test the accis point plotting ability
       parameter (npts=300,ny=20)
       real x(npts),y(npts)
 
+      call pfset(3)
       call pltinit(0.,1.,-1.,1.)
       call axis()
 
