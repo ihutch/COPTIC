@@ -118,9 +118,11 @@ c Scale the number of particles for higher slots to the ions(?)
          nparta(ispecies)=nparta(1)/numratioa(ispecies)
 c     $        *sqrt(abs(eoverms(1)/eoverms(ispecies)))
          islotmax=nparta(ispecies)+iicparta(ispecies)-1
-         if(islotmax.gt.n_partmax)then
-            write(*,*)'Overflowed available particle slots',n_partmax
-     $           ,' Asking for',islotmax
+         if((islotmax+1)*slotsurplus.gt.n_partmax)then
+            write(*,*)'Too few particle slots',n_partmax
+     $           ,' max, to accommodate',islotmax
+            write(*,*)'multiplied by slotsurplus factor'
+     $           ,slotsurplus,int(islotmax*slotsurplus)
             stop
          endif
          tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))

@@ -88,6 +88,7 @@ c First implemented just for spheres
                ida=0
                call spheresect(ndims,ida,xp1,xp2,obj_geom(ocenter,i)
      $              ,obj_geom(oradius,i),fraction ,f2,sd,C,D)
+               if(fraction.gt.1.or.fraction.lt.0.)fraction=1.
             elseif(itype.eq.2)then
 c Coordinate-aligned cuboid.               
 c Convert into normalized position for object i.

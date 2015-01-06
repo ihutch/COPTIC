@@ -11,11 +11,12 @@ c mdms is dummy here because ndimsdecl is used.
 c Effective index in dimension, c-style (zero based)
 c      integer indm1(ndims)
 c Shifted to correct for face omission.
-      integer indi(ndims)
+      integer indi(ndims),iused(ndims)
 c Error indicator
       real error
 c Not used in this routine
       real cij(*)
+      integer iLs(ndims+1)
 c--------------------------------------------------
 c Object-data storage.
       include 'objcom.f'
@@ -28,13 +29,19 @@ c-----------------------------------------------------
       parameter (tiny=1.e-15)
       integer ipa(ndims)
       real fn(ndims)
+      integer ipt2,oihere
+      logical newbox
       integer istart
       integer ijbin(ovlen)
+      integer ipb(ndims)
+      data ipb/ndims*-1/
       data istart/0/
 
+c Remove this logical when the newbox code is completely established, 
+c together with the obsolete code that it disables.
+      newbox=.true.
 c Silence unused warnings :
-      ichain=iused
-      ichain=iLs
+      ichain=inc
 c Default no chain.
       ichain=0
 c ipoint here is the offset (zero-based pointer)
@@ -43,11 +50,47 @@ c The cij address is to data 2*ndims+1 long
 c Object pointer defaults to zero, unset initially..
 c      icij=icb*ipoint+2*ndims+1
       icij=icb*(ipoint+1)
-      cij(icij)=0.
 c Prevent divide by zero issues with debyelen
       debyehere=debyelen
       if(debyehere.lt.tiny)debyehere=tiny
 
+      if(newbox)then
+c New boxedge management section
+      idiag=0
+      call boxedge(ndims,ipb,indi,fn,npoints,idiag)
+c cijroutine sets boxes only if there are at least ndims points.
+c >0 might be more thorough, but perhaps unnecessary.
+      if(npoints.gt.0)then
+c Do over all the corners of this box
+         do ic=0,2**ndims-1
+            ipt2=ipoint
+            do ib=0,ndims-1
+c Set trailing, so we don't write over.
+c Avoiding the lower edge regions
+               if(indi(ib+1).le.1)goto 31
+               if(btest(ic,ib))ipt2=ipt2-iLs(ib+1)
+            enddo
+            icij2=icb*(ipt2+1)
+c Conditionally start the object: only if it does not already exist.
+            call objstart(cij(icij2),istart,ipt2)
+c            write(*,'(3i10,4i4,f10.1)')ipoint,ipt2,icij2,ic,indi
+c     $           ,cij(icij2)
+ 31        continue
+         enddo
+      else
+         cij(icij)=0.
+      endif
+c End of new boxedge section
+      else
+         cij(icij)=0.
+      endif
+      
+c It is impossible now to assume this object is oi_cij. So don't
+      if(cij(icij).eq.0.)then
+         oihere=oi_cij
+      else
+         oihere=int(cij(icij))
+      endif
 c Iterate over dimensions.
       do id=1,ndims
          ifound=0
@@ -70,16 +113,17 @@ c Determine whether this is a boundary point: adjacent a fraction ne 1.
 c Start object data for this point if not already started.
                call objstart(cij(icij),istart,ipoint)
 c---------------
+               oihere=int(cij(icij))
 c If this object's a,b,c depends on flux, start extra info.
                if(int(obj_geom(otype,iobjno))/256.eq.4 .or.
      $              int(obj_geom(otype,iobjno))/256.eq.5)then
-                  if(idob_cij(iextra_cij,oi_cij).eq.0)then
-c Start chained extra data.
+                  if(idob_cij(iextra_cij,oihere).eq.0)then
+c Start chained extra data. This really is in position oi_cij+ichain.
                      ichain=1
 c                     write(*,*)'Chaining',ipoint,(indi(kw),kw=1,ndims)
 c     $                    ,id,i,iobjno,ijbin(1),cij(icij)
 c First time, initialize the pointer
-                     idob_cij(iextra_cij,oi_cij)=oi_cij+ichain
+                     idob_cij(iextra_cij,oihere)=oi_cij+ichain
 c and initialize the data for all directions
                      do ie=1,nobj_cij
                         dob_cij(ie,oi_cij+ichain)=0.
@@ -120,11 +164,11 @@ c The object data consists of data enumerated as
 c ndims*(2=forward/backward from point)*(3=fraction,b/a,c/a)
 c + diagonal + potential terms.
 c Prevent subsequent divide by zero danger.
-               dob_cij(ioad,oi_cij)=max(fraction(i),tiny)
+               dob_cij(ioad,oihere)=max(fraction(i),tiny)
                if(a.eq.0.) a=tiny
-               dob_cij(ioad+1,oi_cij)=b/a*debyehere
-               dob_cij(ioad+2,oi_cij)=c/a
-               idob_cij(iinter_cij,oi_cij)=iobjno
+               dob_cij(ioad+1,oihere)=b/a*debyehere
+               dob_cij(ioad+2,oihere)=c/a
+               idob_cij(iinter_cij,oihere)=iobjno
             else
 c No intersection.
                dplus(i)=dpm(i)/debyehere
@@ -141,8 +185,8 @@ c coefficient Cd same for all cases
             if(ifound.gt.0)then
 c This is a boundary point.
                ioad=ndata_cij*(2*(id-1)+(i-1))+1
-               if(dob_cij(ioad,oi_cij).lt.1
-     $              .and.dob_cij(ioad,oi_cij).ge.0.)then
+               if(dob_cij(ioad,oihere).lt.1
+     $              .and.dob_cij(ioad,oihere).ge.0.)then
 c We intersected an object in this direction. Adjust Cij and B_y
                   a=conditions(1,i)
                   b=conditions(2,i)/debyehere
@@ -152,12 +196,12 @@ c We intersected an object in this direction. Adjust Cij and B_y
 c Active side.
                      cij(icb*ipoint+2*(id-1)+i)=0.
 c Diagonal term (denominator) difference Cd-Cij stored
-                     dob_cij(idgs_cij,oi_cij)=dob_cij(idgs_cij,oi_cij)
+                     dob_cij(idgs_cij,oihere)=dob_cij(idgs_cij,oihere)
      $                 + coef
 c Adjust potential sum (B_y)
-                     dob_cij(ibdy_cij,oi_cij)=dob_cij(ibdy_cij,oi_cij)
+                     dob_cij(ibdy_cij,oihere)=dob_cij(ibdy_cij,oihere)
      $                    - coef*c/a
-                     if(ichain.gt.0)dob_cij(ioad+2,oi_cij+ichain)=coef/a
+                     if(ichain.gt.0)dob_cij(ioad+2,oihere+ichain)=coef/a
                   else
 c Inactive side. Continuity.
                      dxp2=(1.-fraction(i))*dpm(i)/debyehere
@@ -165,10 +209,10 @@ c Inactive side. Continuity.
                      boapb=b/apb
                      cij(icb*ipoint+2*(id-1)+i)=coef*boapb
 c Diagonal term (denominator) difference Cd-Cij stored.
-                     dob_cij(idgs_cij,oi_cij)=dob_cij(idgs_cij,oi_cij)
+                     dob_cij(idgs_cij,oihere)=dob_cij(idgs_cij,oihere)
      $                 + coef*(1.-boapb)
 c Adjust potential sum (B_y)
-                     dob_cij(ibdy_cij,oi_cij)=dob_cij(ibdy_cij,oi_cij)
+                     dob_cij(ibdy_cij,oihere)=dob_cij(ibdy_cij,oihere)
      $                    - coef*c*dxp2/apb
                      if(ichain.gt.0)dob_cij(ioad+2,oi_cij+ichain)=coef
      $                    *dxp2/apb
@@ -185,6 +229,8 @@ c Standard non-boundary setting: not a boundary point.
 c End of dimension iteration. cij coefficients now set.
       enddo
 
+      if(.not.newbox)then
+c      if(.true.)then
 c----------------------------------------
 c The following sets the object pointer in cij if there is an object
 c crossing within the one of the 2**ndims boxes which have
@@ -243,16 +289,21 @@ c containing a point in known region, that any box vertex with no pointer
 c is in that region. That breaks gradlocalregion. So don't drop for now.
             if(.true.)then
 c Conditionally start the object: only if it does not already exist.
+c               if(cij(icij).eq.0)then
+c                  write(*,'(a,2i10,10i4)')'Old box setting',ipoint,icij
+c     $                 ,j,ipa,indi
+c               endif
                call objstart(cij(icij),istart,ipoint)
+               oihere=int(cij(icij))
 c Set the flag
                ifl=2**(j-1)
-               idob_cij(iflag_cij,oi_cij)=idob_cij(iflag_cij,oi_cij)+ifl
+               idob_cij(iflag_cij,oihere)=idob_cij(iflag_cij,oihere)+ifl
 c Now use these ndims fractions to update the fractions already inserted,
 c [not] if new ones are "smaller" (closer to zero on the +ve side),
 c or if the fraction is 1, implying not set. 
                do i=1,ndims
                   ioad=ndata_cij*(2*(i-1)+(1-ipa(i))/2)+1
-                  f0=dob_cij(ioad,oi_cij)
+                  f0=dob_cij(ioad,oihere)
 c Only if this is the first entry this direction 
                   if(f0.eq.1)then 
                      f1=1./(sign(max(abs(fn(i)),tiny),fn(i)))
@@ -265,22 +316,22 @@ c set of box intersections that represents multiple planes crossing the
 c box. 
 c It might also be a bug or mesh clash.
                         if(error.eq.0)write(*,*)
-     $         'cijroutine     npoint, id oi_cij indi    f1. Mesh?'
+     $         'cijroutine     npoint, id oihere indi    f1. Mesh?'
                         write(*,'(a,2i3,i5,3i4,f6.3,a)')
      $                       'Warning: Box Recut ',npoints,i*ipa(i)
-     $                       ,oi_cij,(indi(kk) ,kk=1 ,ndims),f1
+     $                       ,oihere,(indi(kk) ,kk=1 ,ndims),f1
 c Silenced temporarily a lot of diagnostic messages.
 c     $                       ,f0,f1,ftot
 c     $                       ,(1./fn(kk),kk=1,ndims)
-c     $                      ,idob_cij(iflag_cij,oi_cij)
+c     $                      ,idob_cij(iflag_cij,oihere)
                         error=error+1
 c Call boxedge with diagnostics
                         call boxedge(ndims,ipa,indi,fn,npoints,1)
 c But set it not equal to 1, so we know it was set.
-c                        dob_cij(ioad,oi_cij)=1.001
-c                        dob_cij(ioad,oi_cij)=f1
+c                        dob_cij(ioad,oihere)=1.001
+c                        dob_cij(ioad,oihere)=f1
                      else
-                        dob_cij(ioad,oi_cij)=f1
+                        dob_cij(ioad,oihere)=f1
                      endif
                   endif
                enddo
@@ -288,29 +339,31 @@ c                        dob_cij(ioad,oi_cij)=f1
          endif
       enddo
 
+      endif
+
 c Diagnostics sample -----------------------------------
 
       if(.false. .and. cij(ipoint*icb+ndims*2+1).ne.0)then
          cnon=0.
          do k=1,2*ndims
-            cnon=cnon+abs(dob_cij(3*k-1,oi_cij))
-     $           +abs(dob_cij(3*k,oi_cij))
+            cnon=cnon+abs(dob_cij(3*k-1,oihere))
+     $           +abs(dob_cij(3*k,oihere))
          enddo
          if(cnon.eq.0.)then
             write(*,201)(indi(k),k=1,ndims),
      $           (cij(ipoint*icb+k),k=1,ndims*2+1) 
-            write(*,202)(dob_cij(3*k-2,oi_cij),k=1,nobj_cij/3)
-c            write(*,203)(dob_cij(3*k-1,oi_cij),k=1,nobj_cij/3)
-c            write(*,204)(dob_cij(3*k,oi_cij),k=1,nobj_cij/3)
-         elseif(.false. .and. mod(oi_cij,100).eq.0 )then
+            write(*,202)(dob_cij(3*k-2,oihere),k=1,nobj_cij/3)
+c            write(*,203)(dob_cij(3*k-1,oihere),k=1,nobj_cij/3)
+c            write(*,204)(dob_cij(3*k,oihere),k=1,nobj_cij/3)
+         elseif(.false. .and. mod(oihere,100).eq.0 )then
             write(*,201)(indi(k),k=1,ndims),
      $           (cij(ipoint*icb+k),k=1,ndims*2+1) 
  201        format('cij(',i2,',',i2,',',i2,')=',12f8.1)
-            write(*,202)(dob_cij(3*k-2,oi_cij),k=1,nobj_cij/3)
+            write(*,202)(dob_cij(3*k-2,oihere),k=1,nobj_cij/3)
  202        format('fract  (3k-2)=',14f8.3)
-            write(*,203)(dob_cij(3*k-1,oi_cij),k=1,nobj_cij/3)
+            write(*,203)(dob_cij(3*k-1,oihere),k=1,nobj_cij/3)
  203        format('b/a    (3k-1)=',14f8.2)
-            write(*,204)(dob_cij(3*k,oi_cij),k=1,nobj_cij/3)
+            write(*,204)(dob_cij(3*k,oihere),k=1,nobj_cij/3)
  204        format('c/a    (3k  )=',14f8.2)
          endif
       endif
@@ -1152,3 +1205,4 @@ c     $     ,nf_address(1,ifobj,nf_step+3)-1)
 
       
       end
+c**************************************************************

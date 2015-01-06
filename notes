@@ -13261,3 +13261,74 @@ Either one works fine.
 Fix a few small bugs in testing/.
 
 commit.
+
+The long startup times for large meshes are caused predominantly by 
+the boxedge calls in cijroutine. There are 2**ndims calls to boxedge
+for each point. And boxedge itself calls potlsect about 12 times (once 
+for each cube edge). Consequently there are about 100 potlsect calls
+for each mesh point. That is confirmed by gprof. 
+
+It certainly does not seem necessary to have 2**ndims calls per point.
+As far as I know the only thing that the boxedge stuff is now usefully
+doing is to set the pointer for any point which is part of a box that
+has an intersection. This is necessary to enable the presumption that
+any box corner whose pointer is unset can be assumed to be in the same
+region as any position in the box. However, this additional box setting
+needs to be done only once per box, not repetitively. Therefore a routine
+that calls boxedge and if it returns intersections sets all the pointers
+of corners of that box, would greatly reduce the work in cijroutine.
+
+There's a question as to whether iflag_cij must be set. It looks as if
+the only thing we must have is idob_cij(iregion_cij,int(cij(1)) in
+gradlocalregion. iregion is not set by objstart. It it initialized in
+iregioninit called by coptic, so no problem. 
+
+----------------
+Discovered a bug that appeared on Dec 2nd in the standard geomcubic.dat
+test with extra pointer regions being set. It occurred between commit
+b2155 and 102... The complete removal of spheresect...
+commit 102d49374dda2fe7b0654f842e6a909bbb0873aa
+Author: Ian Hutchinson <ihutch@mit.edu>
+Date:   Tue Dec 2 15:31:54 2014 -0500
+
+    Completion of removal of spherefsect, cubefsect, pllelofsect
+
+commit b2155a858e8474c355640874db76e5bcdd39cf61
+Author: Ian Hutchinson <ihutch@mit.edu>
+Date:   Tue Dec 2 13:45:22 2014 -0500
+
+    Continuing rework of the intersection and flux tallying code.
+
+That's when spherefsect was replaced in potlsect. Seems the likely culprit.
+Yes. It is fixed by 
+               if(fraction.gt.1.or.fraction.lt.0.)fraction=1.
+immediately after the spheresect call. In potlsect fraction must be 1
+unless there's a real intersection. That's different from spheresect's
+convention. Seems fixed.
+----------------
+
+Implement newbox code in cijroutine. It sets the pointer in trailing
+boxes that have intersections. After debugging, it gives the same results
+as the old treatment. There was some trickiness with oi_cij. Unfortunately
+it then fails several geometry tests. 
+
+Some of these failures are to do with the spheresect bug I just fixed.
+So I need to go carefully. Recreated the .cks files with the fixed
+spheresect but prior cijroutine. Then we get no differences. 
+
+Then switch to the edited cijroutine but with newbox turned off.
+Ok that stays correct. No differences. 
+
+Now switch on newbox. There are differences in these only:
+geometry/geomcyl.cks:
+geometry/geommany.cks:
+geometry/geomSoR.cks:
+
+geomcyl.dat give box recuts that are not present with newbox=.false.
+Same with the other 2. That's the cause of the differences. We are not
+doing the mesh shifting etc with the newbox code.
+
+This is then the time to ditch the recut code. Removed the above 3 cks
+files and remade them with the newbox code. Make the newbox the default.
+
+commit.

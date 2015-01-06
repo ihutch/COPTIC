@@ -491,26 +491,6 @@ c Values of u at the points to be interpolated.
          up=u(ixiu+iuinc)
          um=u(ixiu-iuinc)
          uprime=gradinterp(um,u0,up,idf,icp0,xm,dx0,dx1)
-         if(.false.)then
-c         if(abs(u0+10).lt.0.01 .and. abs(uprime).gt.1.)then
-c Specific problem case test.
-            write(*,*)'uprime,u0,up,um,ix,icp0',uprime,u0,up,um,ix,icp0
-     $           ,idob_cij(iregion_cij,icp0)
-            icd1=2*(idf-1)*ndata_cij+1
-            icd0=icd1+ndata_cij
-            fraction=dob_cij(icd0,icp0)
-            boa=dob_cij(icd0+1,icp0)
-            coa=dob_cij(icd0+2,icp0)
-            write(*,*)'icp0,icd0,frac,boa,coa',
-     $           icp0,icd0,fraction,boa,coa
-c In case this was not set previously
-            fraction=dob_cij(icd1,icp0)
-            boa=dob_cij(icd1+1,icp0)
-            coa=dob_cij(icd1+2,icp0)
-            write(*,*)'icp0,icd1,frac,boa,coa',
-     $           icp0,icd1,fraction,boa,coa
-            ix=98
-         endif
       endif
 
       if(.not.abs(uprime).lt.1.e20)then
