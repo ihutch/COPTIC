@@ -13421,3 +13421,9 @@ test in pinit then sets notseparable, which then calls colnreinject
 rather than cartreinject. Turning that off gives apparently correct results.
 Evidently the collisionless aparatus is not working properly.
 Prevent it getting called by mods to pinit for now.
+
+It appears that the cdistcums are set incorrectly without paying attention
+to the area of the faces. That's simply an error. 
+Found how to correct it very easily in the colreinit, since fcarea
+is already calculated. Then the problem is gone even if we use 
+the collisional aparatus for infinite B. So revert to that.

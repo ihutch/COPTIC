@@ -41,7 +41,8 @@ c Tangential velocity of circular orbit at r=?.
      $     ,1)))then
          if(myid.eq.0.)then
             write(*,*)'WARNING Special particle-1 outside region.'
-            write(*,*)'COORDINATES',(x_part(i,1),i=1,9),' Resetting.'
+     $           ,' Resetting from coordinates'
+            write(*,'(9f7.3)')(x_part(i,1),i=1,9)
          endif
          i1=1
       endif
@@ -81,12 +82,14 @@ c the frame of reference in which the background E-field is truly zero:
                vperp(k)=vperp(k)+(Eneutral/Bt)
      $              *(vdrift(k1)*Bfield(k2)-vdrift(k2)*Bfield(k1))
             enddo
-         elseif(Tperps(ispecies).ne.Ts(ispecies) .and.
-     $           Tperps(ispecies).gt.1.e-24)then
+         elseif(Tperps(ispecies).ne.Ts(ispecies)
+     $           )then
 c Collisionless anisotropic distribution is notseparable.
-c But infinite B case may need old treatment.
+c Infinite B case picked up a bug but it is fixed so it can use this too.
+c     $        .and.Tperps(ispecies).gt.1.e-24)then
             notseparable(ispecies)=2
-            if(myid.eq.0)write(*,*)'Non-separable anisotropic T.'
+            if(myid.eq.0)write(*,'(a,2f8.4,a,i3)')
+     $           ' Non-separable anisotropic T.'
      $           ,Ts(ispecies),Tperps(ispecies),' species',ispecies
          else
 c Count the number of non-zero vdrift components. If it is more than one

@@ -673,6 +673,8 @@ c Based upon the ipartperiod settings.
       do i=1,ndims
 c         if(myid.eq.0)write(*,*)ipartperiod(i),cdistflux(i)
          if(ipartperiod(i).ge.3)cdistfluxs(i,ispecies)=0.
+c Normalize the cdistflux and cdistcum to face area.
+         cdistfluxs(i,ispecies)=cdistfluxs(i,ispecies)*fcarea(i)
          ctot=ctot+cdistfluxs(i,ispecies)
       enddo
       if(ctot.ne.0.)then
