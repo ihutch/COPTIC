@@ -1001,8 +1001,8 @@ c         write(*,*)dtpos,Bt
 c         write(*,*)vp,Bt,Bfield,EB
 c         write(*,*)(xr(k),k=1,6)
 c      endif
-c      if(abs(xr(ndims+1)-.5).gt.0.01)then
-c Test if we have a vx different from .5
+c      if(abs(xr(ndims+1)+1.).gt.0.01)then
+c Test if we have a vx different from 1.
 c         write(*,*)'driftparticle strangevx',Efield
 c         write(*,*)dtpos,Bt
 c         write(*,*)vp,Bt,Bfield,EB

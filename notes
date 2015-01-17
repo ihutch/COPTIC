@@ -13332,3 +13332,92 @@ This is then the time to ditch the recut code. Removed the above 3 cks
 files and remade them with the newbox code. Make the newbox the default.
 
 commit.
+
+gprof shows the potlsect calls drop from 100M to 17M. A factor of about 6.
+The time for startup improves by a similar factor. Yeah!
+
+7 Jan 2015 
+With new cijroutine got a lot of No Good Vertices errors. However, it's
+not clear whether the issue is reall the new code. It can be avoided by
+shifting the mesh. I now don't have the test for mesh shifting etc.
+Perhaps that's part of my problem.
+
+These are with the geomrecessed configuration. They occur at positions 43 and
+85 in the radial direction, on a 128 mesh from -3 to 3. 
+x(43)=-1.0157, x(44)=-0.9685, x(85)=+0.9685. So this problem is at the outer
+boundary of the cubes near the surface of the cylinder. The mesh spacing
+is 0.0472. There is no nodal plane between the outer boundary of the cube
+and of the cylinder where they are being subtracted. The problem exists
+for 
+2, 0,0,0, .88,0,0, .13,.15,.3,  1, 1,1,1 but not for
+2, 0,0,0, .9,0,0, .13,.15,.3,  1, 1,1,1
+For these two cases the cube face is at
+1.01 and 1.03 respectively. This seems to confirm the thesis above.
+These two x-direction locations are associated with y-values that are 
+clustered near 62 and near 67, whose r-values are +-0.11811. That seems 
+to be the first and last y-position inside the cube. 
+
+The No good vertices arises from tests like
+idob_cij(iregion_cij,icp0).ne.iregion
+if(icp1.ne.0.and.idob_cij(iregion_cij,icp1).ne.iregion)then
+It appears that this test will not permit one to calculate derivative
+in a situation where a subtraction puts two surfaces close to each other.
+
+It seems these tests are not logically correct for a subtraction
+situation. We ought to use the boolean to decide whether one has
+crossed a real surface. However, the pointer probably ought not to have
+been set in the first place. And the -gt flag shows pointers not set
+for the relevant positions. Therefore a test based upon cij pointer might
+be able to filter this problem. No, I think the pointer is being set
+by proximity to the y-face. If so, then this problem arises for positions
+that are in thin region of the cube that extends outside the cylinder, and
+also lies within a box that is intercepted by the y-faces of the cube.
+The latter makes its pointer set. The former prevents its vertices from
+being allowed.
+
+Perhaps we really do have to look at the boolean, or possibly at the
+fractions not just the pointer.
+
+The way subtraction works is that inside potlsect, the fractions are set
+to 1 if the lattice leg is across a subtractive boundary. And if fraction
+=1, then conditions are not set. In fact arguably potlsect ought to be
+(re-)used for an on-the-fly test to see if vertices are really not good.
+Alternatively we could use the fractions already calculated.
+
+More directly, if we draw a line from the field point to a vertex, and
+find where it crosses an object, if that crossing is inside the
+object(s) subtracted from that object, then it is not a crossing.
+Also if the object is a subtractive object, then if the crossing is outside
+the object from which it is subtracted, then it is not a crossing. 
+If there are no valid crossings between the field point and the vertex,
+then it is good. 
+
+
+16 Jan 2015
+
+Debugging infinite B case without collisions but with cross-field drift.
+Found error in cinjinit xw not set correctly.
+But there seems to be a more general problem that if the width is zero,
+as it is when infinite B happens with a field tangential to a face,
+then I don't see why cumprob would work properly.
+
+Tracking this problem down. cumprob and grein look ok. 
+Proved that this problem has been present since at least May 2014.
+It's not new and has been present in the driftparticle treatment 
+since it was implemented. Multiplying the x-face grein arbitrarily by
+an enhancement factor causes the density to rise. However, it does
+not remove the density _ramp_ as the x drift direction is crossed. 
+It moves the whole thing up. So it does not seem to be just the 
+reinjection at the x-face. It is present regardless of whether dimension
+2 is periodic.
+
+The sign of the ramp slope changes when the x-extent is increased beyond
+-6. (-3 was the prior). This ought to tell me something. It appears to
+be the x-z aspect ratio, because one can make things go positive by 
+reducing z-extent too. With equal x and z length, there is no problem.
+
+I discover that the infinite-B case is setting Tperp small and the
+test in pinit then sets notseparable, which then calls colnreinject 
+rather than cartreinject. Turning that off gives apparently correct results.
+Evidently the collisionless aparatus is not working properly.
+Prevent it getting called by mods to pinit for now.

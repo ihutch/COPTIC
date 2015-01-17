@@ -1,4 +1,4 @@
-c***********************************************************************
+***********************************************************************
 c Block boundary communication.
       subroutine bbdy(iLs,ifull,iuds,u,kc,
      $     ndims,idims,icoords,iLcoords,myside,myorig,
@@ -43,10 +43,7 @@ c to calling process.
 c Subsequently, do the boundary communication.
 c---------------------------------------------------------------
 c Start of local variables.
-c      logical lalltoall
-c      parameter (idebug=1,lalltoall=.false.)
       integer idebug
-      parameter (idebug=0)
 c      parameter (lalltoall=.true.)
       logical lreorder
 c vector type ids for each dimension (maximum 10 dimensions)
@@ -76,8 +73,9 @@ c Ditto ircoords, lrperiod
 c Scratch stack, whose length must be at least Prod_1^nd(iside(2,i)+1)
 c Possibly this should be passed to the routine. 
       integer istacksize
-      parameter (istacksize=100000)
+      parameter (istacksize=1000000)
       integer is(istacksize)
+      integer nstackneed
 c      integer ktype(2**imds)
 c Arrays for constructing ALLtoALL calls.
       integer maxprocs
@@ -120,6 +118,7 @@ c It must be of dimension greater than the number of processes (blocks)
       include 'mpif.h'
       integer status(MPI_STATUS_SIZE)
       integer iobindex
+      data idebug/0/
 c Flag that we have called this routine once.
       logical lflag
       data lflag/.false./
@@ -203,14 +202,6 @@ c-----
 c Define mpi block structure.
 c         write(*,*)'Calling bbdydefine'
          call bbdydefine(ndims,idims,ifull,iuds,iorig,iLs)
-c Check roughly if the istacksize is enough.
-c iLs is set in bbdydefine so it can't be earlier.
-         if(2.*iLs(ndims).ge.istacksize) then
-            write(*,*) 'Stack size',istacksize,
-     $           ' possibly too small for arrays',iLs(ndims)
-            write(*,*) 'Danger of overrun.'
-            goto 999
-         endif
 c----
          mycartid=0
          iLcoords(1)=1
@@ -261,12 +252,16 @@ c Reverse the order of the dimensions in the calls to MPI_CART
 c            icoords(n)=ircoords(n)
             icoords(n)=ircoords(ndims-n+1)
          enddo
-        do n=1,ndims
+         nstackneed=1
+         do n=1,ndims
             ibt(n)=1
             if(icoords(n).eq.idims(n)-1) ibt(n)=2
 c Get my block side lengths, now knowing my cluster position.
             myside(n)=iside(ibt(n),n)
+            nstackneed=nstackneed*(myside(n)+1)
          enddo
+c Check my stack size needs. If too great, stop.
+         if(nstackneed.gt.istacksize)idebug=1
          if(idebug.gt.0)then
             write(*,*)'u used dimensions',(iuds(k),k=1,ndims)
             write(*,*)'Blocks in each dim',(idims(k),k=1,ndims)
@@ -275,6 +270,12 @@ c Get my block side lengths, now knowing my cluster position.
             if(idebug.ge.2)then
                write(*,*)'u dim-structure',(iLs(k),k=1,3)
                write(*,*)'iLcoords=',iLcoords
+            endif
+            if(nstackneed.gt.istacksize)then
+               write(*,*)'nstackneed too large',nstackneed
+     $              ,' larger than istacksize',istacksize
+               write(*,*)'****Error****. Increase istacksize in mpibbdy'
+               goto 999
             endif
          endif
          

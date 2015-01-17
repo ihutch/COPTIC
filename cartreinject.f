@@ -142,10 +142,10 @@ c z-direction and maxwellians of width given by Ts
       do ispec=1,nspecies
       theta=Bt*eoverms(ispec)*dt
       xc=0.
-c Width of velocity distribution
-      xw=sqrt(Ts(ispec))*abs(eoverms(ispec))
 c For three coordinate directions
       do id=1,3
+c Width of velocity distribution
+         xw=sqrt(Ts(ispec))*abs(eoverms(ispec))
 c    For two ends (and hence velocity polarities)
          do i2=1,2
 c idrein determines the sign of velocity. i2 odd => idrein negative.
@@ -159,6 +159,7 @@ c Set the inverse cumulative probability fn hrein, and flux grein
 c Infinite-Bt case 1-d projection.
                xc=vpars(ispec)*Bfield(id)+vperps(id,ispec)
                xw=xw*Bfield(id)
+c               write(*,*)'Calling cumprob',id,xc,xw
                call cumprob(ff1crein,xw,xc,
      $           ncrein,hreins(0,index,ispec),greins(index,ispec),myid)
             endif
@@ -213,11 +214,13 @@ c     $           ,(hreins(kk,index,ispec),kk=ncrein-4,ncrein)
          endif
       enddo
 c
-c      write(*,*)'grein',greins
+c      grein(1)=1.*grein(1)
+c      write(*,*)'grein arbirtrary adjustment',greins
       gtot=0.
 c Alternative general-dimension fcarea calculation:
       do i=1,ndims
          fcarea(i)=1.
+c Set area tiny for period directions
          if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
          do j=1,ndims-1
             id=mod(i+j-1,ndims)+1
@@ -234,10 +237,11 @@ c         write(*,*)'fcarea(',i,')=',fcarea(i)
      $        1.000001*greins(id,ispec)*fcarea((id+1)/2)/gtot
       enddo
       if(.not.gintreins(6,ispec).gt.1.)write(*,*)'gintrein problem!'
-c      write(*,*)'ipartperiod',ipartperiod,' grein',greins
-c      write(*,*)'gintrein',gintrein
-
       enddo
+c      write(*,'(a,3i2,a)')'ipartperiod',ipartperiod,'  greins,gintrein:'
+c      write(*,'(6f10.5)')greins
+c      write(*,'(7f10.5)')gintrein
+
       lreininit=.true.
       
       end

@@ -81,8 +81,10 @@ c the frame of reference in which the background E-field is truly zero:
                vperp(k)=vperp(k)+(Eneutral/Bt)
      $              *(vdrift(k1)*Bfield(k2)-vdrift(k2)*Bfield(k1))
             enddo
-         elseif(Tperps(ispecies).ne.Ts(ispecies))then
+         elseif(Tperps(ispecies).ne.Ts(ispecies) .and.
+     $           Tperps(ispecies).gt.1.e-24)then
 c Collisionless anisotropic distribution is notseparable.
+c But infinite B case may need old treatment.
             notseparable(ispecies)=2
             if(myid.eq.0)write(*,*)'Non-separable anisotropic T.'
      $           ,Ts(ispecies),Tperps(ispecies),' species',ispecies
@@ -101,6 +103,7 @@ c     $           ,(vdrifts(k,ispecies),k=1,ndims),' species',ispecies
 c Test
 c               notseparable(ispecies)=3
          endif
+
          if(notseparable(ispecies).ge.2)then
 c This is where the collisionless distribution is really set.
 c More complicated distributions should redo this setting differently.
