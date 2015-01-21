@@ -18,6 +18,7 @@ c Inverted triangle
          x(i)=i/10.
          y(i)=x(i)**2
       enddo
+c      call AXREGION(.31,.61,.1,.5) 
       call pltinit(0.,1.,0.,1.)
       call axis()
 c      call polydraw(x,y,10,acx)
@@ -25,7 +26,7 @@ c      call polydraw(x,y,10,acx)
       call polydraw(x,y,10,actrid)
       call polydraw(y,x,10,acgen)
       call polydraw(y,x,10,acplus)
-      call charsize(.06,.03)
+      call charsize(.06,.06)
       call polydraw(x,y,10,accircle)
       call charsize(0.,0.)
       call polydraw(x,x,10,acx)

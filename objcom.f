@@ -27,7 +27,7 @@ c Pointer to intersection object code of this node (used for color)
       parameter (iinter_cij=2*ndims*ndata_cij+6)
 c Pointer to additional intersection data for variable boundaries.
       parameter (iextra_cij=2*ndims*ndata_cij+7)
-      parameter (Lobjmax=1000000)
+      parameter (Lobjmax=10000000)
       real dob_cij(nobj_cij,Lobjmax)
       integer oi_cij
       common /objcom/oi_cij,dob_cij

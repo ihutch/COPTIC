@@ -1,7 +1,7 @@
 \documentclass[12pt]{article}
 \usepackage[margin=1in]{geometry}
 \usepackage{hyperref}
-\parindent=0pt
+\parindent=0pt\parskip=3pt
 \newif \iftth 
 
 
@@ -26,6 +26,9 @@ It is powerful. For example, it has interactive routines for
 displaying selectable slices of 3-D data, rotating the views of
 surfaces, projecting 2-D contours, and producing smoothly coloured
 contours.
+
+It also produces publication-quality vector-drawn postscript output,
+including text and mathematical symbols.
 
 It observes what ought to be a standard principle of scientific
 programming: that the focus should be the calculation, not the
@@ -165,6 +168,10 @@ using charsize().
 POLYERRS(xv,yv,errv,ilength,u,d) Draw error bars from yv-d*errv to
 yv+u*errv for all the xv, yv, errv arrays.
 
+POLYBOX(xv,yv,ilength) Draw the outline of a histogram of boxes whose
+(touching) boundaries are at xv(0:ilength) and whose heights are
+yv(ilength). Ends have y=0. Notice that there is one more xv than yv!
+
 STPOLYLINE(xa,ya,ilength,ixstride,iystride),
 
 STPOLYMARK(xa,ya,ilength,ixstride,iystride,isym) Strided versions of
@@ -265,7 +272,7 @@ TICNUMSET(itics) Set the number of tics of axis (approximately).
 
 \iftth \special{html:<img align="right" src="fontshow.png">} \fi
 
-Special text is accessed via ``$\backslash$'' or ``!'' followed by one of 
+Special text is accessed via ``!'' followed by one of 
 the following:
 \begin{verbatim}
 @        to normal font 0.

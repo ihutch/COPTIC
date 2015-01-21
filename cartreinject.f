@@ -971,13 +971,14 @@ c accounting for the density scale length if present
             sa=max(xmeshstart(i),xmeshend(i))-s0
             expsa(i)=exp(g*sa)
             expsi(i)=exp(g*si)
-c            write(*,*)i,expsa(i),expsi(i),g
+c            write(*,*)'ranlenposition',i,expsa(i),expsi(i),g
          enddo
          lfirst=.false.
       endif
       g=gn(id)
       call ranlux(P,1)
       if(abs(g).ne.0)then
+c         write(*,*)'Nonuniform ranlenposition'
          sp=gp0(id)+alog(P*expsa(id)+(1.-P)*expsi(id))/g
       else
          sp=(1.-P)*xmeshstart(id)+P*xmeshend(id)

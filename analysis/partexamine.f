@@ -250,6 +250,12 @@ c         write(*,*)(fsv(kk,id),kk=1,nsbins)
          call color(15)
 c         call pltend()
          call autoplot(xdiag(1,id),px(1,id),nptdiag)
+         if(nptdiag.eq.nsbins)then
+            write(*,*)'Density as a function of position dimension',id
+            do kk=1,nptdiag
+               write(*,*)xdiag(kk,id),px(kk,id)
+            enddo
+         endif
          call axlabels('position',string(1:lentrim(string)))
          call pltend()
       enddo

@@ -190,7 +190,7 @@ c Silence warnings with spurious access.
       ind=indi(1)
 c This routine for use in mditerarg.
 c But we iterate only over the inner mesh (not edges).
-c Here, u=psum, v=rho, w=volumes. 
+c Here, t=psum, u=rho, v=volumes, w=u, x=rhoinf 
 c Set the density
       ind=1+ipoint
       if(volumes(ind).ge.1.e20)then
@@ -202,7 +202,7 @@ c only from deposition at points just outside the region.
             if(.not.u(ind).lt.1.e20)then
                write(*,*)'psumtoq error',indi,rho(ind),u(ind),ind
             endif
-            rho(ind)=faddu(u(ind),fprime,ind)
+            if(rhoinf.gt.0.)rho(ind)=faddu(u(ind),fprime,ind)
          else
 c Outside the particle region, but inside a point-charge region.
 c Don't compensate for electron density. Just set rhoi=0.
@@ -210,11 +210,11 @@ c            rho(ind)=0.
 c That does not seem correct. I still ought to null out the electron
 c density. Do that directly, without the additional rhoci part:
             fprime=exp(u(ind))
-            rho(ind)=fprime
+            if(rhoinf.gt.0)rho(ind)=fprime
          endif
       else
 c Standard case.
-         rho(ind)=psum(ind)/(rhoinf*volumes(ind))
+         rho(ind)=psum(ind)/(abs(rhoinf)*volumes(ind))
       endif
 c      if(.not.rho(ind).lt.1.e20)then
 c         write(*,*)'psumtoq rho error',ind,rho(ind),psum(ind),rhoinf

@@ -498,7 +498,14 @@ c random numbers two at a time, costing a log and a sqrt.
       real vr(2),v1,v2
       equivalence (v1,vr(1)),(v2,vr(2))
       include 'rancom.f'
-      if(ireset.lt.0) gd_iset=0
+      logical lfirst
+      data lfirst/.true./
+
+      if(lfirst)gd_iset=0
+      if(ireset.lt.0)then
+         gd_iset=0
+         write(*,*)'gasdev reset',ireset
+      endif
       if(gd_iset.ne.1)then
  1       continue
          call ranlux(vr,2)

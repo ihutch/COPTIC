@@ -73,7 +73,7 @@ c Ditto ircoords, lrperiod
 c Scratch stack, whose length must be at least Prod_1^nd(iside(2,i)+1)
 c Possibly this should be passed to the routine. 
       integer istacksize
-      parameter (istacksize=1000000)
+      parameter (istacksize=3000000)
       integer is(istacksize)
       integer nstackneed
 c      integer ktype(2**imds)

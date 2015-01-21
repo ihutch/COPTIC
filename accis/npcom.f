@@ -5,3 +5,7 @@
       integer nr,nu,nd,ns,ne,no,nl
       common /pltfc/pu,pd,spc,endpair,postlude,prelude,only
       common /pltfi/nr,nu,nd,ns,ne,no,nl
+c
+c  Bounding Box in normal units.
+      integer bxllx,bxlly,bxurx,bxury 
+      common/bxcorners/bxllx,bxlly,bxurx,bxury 

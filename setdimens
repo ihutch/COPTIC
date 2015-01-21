@@ -30,7 +30,7 @@ if [ "$ARG3" == "" ] ; then ARG3=32; echo Default k=$ARG3 ; fi
 if [ $ARG1 -gt $ARG2 ] ; then MAX=$ARG1; NEXT=$ARG2; 
 else MAX=$ARG2; NEXT=$ARG1; fi
 if [ $ARG3 -gt $MAX ] ; then NEXT=$MAX; MAX=$ARG3 ; 
-else if [ $ARG3 -gt $NEXT ] ; then $NEXT=$ARG3 ; fi
+else if [ $ARG3 -gt $NEXT ] ; then NEXT=$ARG3 ; fi
 fi
 echo >griddeclnew.f <<BLAH    "
 c Declarations of grid array parameters.

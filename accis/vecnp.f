@@ -28,10 +28,12 @@ c      integer updown in common set to 99 by blockdata or color.
       integer plx,ply
       common /plcoord/ plx,ply
 
+      integer ppx,ppy
       integer ipsunit,ipgunit
       parameter (ipsunit=12,ipgunit=13)
       integer ipscale
       parameter (ipscale=10)
+      save ppx,ppy
 c Bigger scale is supposed to prevent rounding problems. See 1016 below.
       include 'npcom.f'
 c Absolute form
@@ -41,10 +43,19 @@ c Absolute form
       ply=pldy
       if(abs(pfsw).eq.2.or.abs(pfsw).eq.3)then
 c Postscript section
+         if(ud.eq.1)then
+c Update bounding box with present, if pen down.
+            call bxupdate(pldx,pldy)
+         endif
          if(updown.ne.ud)then
-c Not sure in PS.
-            if(ud.ne.1.and.updown.ne.99)call abufwrt(endpair,ne,ipsunit)
-c           if(ud.ne.1)call abufwrt(endpair,ne,ipsunit)
+c Pen state changed.
+            if(ud.ne.1.and.updown.ne.99)then
+c Unless lowered(1) or disabled(99), stroke.
+               call abufwrt(endpair,ne,ipsunit)
+            elseif(ud.eq.1)then
+c Recognize prior as path start.
+               call bxupdate(ppx,ppy)
+            endif
             updown=ud
          endif
 c ud=2 signals pen-up but don't draw this position.
@@ -53,10 +64,13 @@ c ud=2 signals pen-up but don't draw this position.
             updown=99
             return
          endif
+c Write new point and save as prior.
          call ibufwrt(pldx,ipsunit)
          call abufwrt(spc,ns,ipsunit)
          call ibufwrt(pldy,ipsunit)
          call abufwrt(spc,ns,ipsunit)
+         ppx=pldx
+         ppy=pldy
          if(ud.eq.1)then
             call abufwrt(pd,nd,ipsunit)
          elseif(ud.eq.-1)then
@@ -124,6 +138,12 @@ c*********************************************************************/
 
       include 'npcom.f'
 
+c Initialize the boundingbox corners
+c      write(*,*)'Initializing bxllx. Was',bxllx,bxlly,bxurx,bxury
+      bxllx=10000
+      bxlly=10000
+      bxurx=-10000
+      bxury=-10000
       itunit=iunit+1
 c      write(*,*)'Starting inib',iunit,'  ',filen
 c The following ensures we can open the file for writing. If not then 
@@ -261,12 +281,29 @@ c*********************************************************************/
       integer sblen
       character*80 sbuf
       common /wbuf/sblen,sbuf
-
+      include 'plotcom.h'
       include 'npcom.f'
 
 c      write(*,*)'Inside flushb',iunit
       if(sblen.gt.1)write(iunit,*)sbuf(1:sblen-1)
       write(iunit,*)postlude
+c If ps, write the trailer with BoundingBox having 2 pt margin.
+      if(abs(pfsw).eq.3)then
+         write(iunit,'(a)')'%%Trailer'
+         write(iunit,101)
+     $         (bxllx*4+426*5)*72/1016/5-2
+     $        ,(bxlly*4+426*5)*72/1016/5-2
+     $        ,(bxurx*4+426*5)*72/1016/5+2
+     $        ,(bxury*4+426*5)*72/1016/5+2
+ 101     format('%%BoundingBox: ',4i6)
+      elseif(abs(pfsw).eq.2)then
+         write(iunit,'(a)')'%%Trailer'
+         write(iunit,101)
+     $        (-bxury+8426)*72/1016-2
+     $        ,(bxllx+426)*72/1016-2
+     $        ,(-bxlly+8426)*72/1016+2
+     $        ,(bxurx+426)*72/1016+2
+      endif
       endfile(iunit)
       close(iunit)
       end
@@ -669,9 +706,11 @@ c      save ca
       data ca(01744:01745)/crlf/
 
          if(abs(pfsw).eq.3)then
-            ca(00026:00053)='%%BoundingBox: 30 30 620 480'
+c            ca(00026:00053)='%%BoundingBox: 30 30 620 480'
+            ca(00026:00053)='%%BoundingBox: (atend)      '
          elseif(abs(pfsw).eq.2)then
-            ca(00026:00053)='%%BoundingBox: 28 28 575 762'
+c            ca(00026:00053)='%%BoundingBox: 28 28 575 762'
+            ca(00026:00053)='%%BoundingBox: (atend)      '
          endif
       call lnswrt(iunit,ca,1745,'\',2)
 c ' Done
@@ -685,4 +724,15 @@ c Obtain the length of a string omitting trailing blanks.
       enddo
       i=0
  101  lntrim=i
+      end
+c******************************************************************
+      subroutine bxupdate(px,py)
+c Update the bounding box corner according to the values px,py
+      integer px,py
+      include 'npcom.f'
+c      write(*,*)'bxupdate',px,py
+      if(px.lt.bxllx)bxllx=px
+      if(py.lt.bxlly)bxlly=py
+      if(px.gt.bxurx)bxurx=px
+      if(py.gt.bxury)bxury=py
       end

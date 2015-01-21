@@ -891,3 +891,7 @@ Debugged vecglx failure to plot first plot. Could not figure out why
 it was happening but implemented a work around using accis_glback.
 
 Implemented point output in postscript file.
+
+19 Jan 2015
+
+Implemented correct bounding box atend for pfsw=3 in postscript.

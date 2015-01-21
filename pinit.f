@@ -108,6 +108,12 @@ c               notseparable(ispecies)=3
          endif
 
          if(notseparable(ispecies).ge.2)then
+c----------------------------------------
+c A test of does the random number generator need to be exercised.
+c            do kk=1,1000000
+c               call ranlux(ra,1)               
+c            enddo
+c It doesn't help.
 c This is where the collisionless distribution is really set.
 c More complicated distributions should redo this setting differently.
 c How many prior particles to save:
@@ -151,6 +157,9 @@ c Shifted Gaussians.
                x_part(4,i)=tisq*gasdev(myid) + vd*vdrift(1)
                x_part(5,i)=tisq*gasdev(myid) + vd*vdrift(2)
                x_part(6,i)=tisq*gasdev(myid) + vd*vdrift(3)
+c Either of these calls cause the peaking of the profile.
+c               test=tisq*gasdev(myid) + vd*vdrift(3)
+c               x_part(6,i)=tisq*gasdev(myid) + vd*vdrift(3)
             else
                call colvget(x_part(4,i))
             endif

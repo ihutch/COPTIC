@@ -13427,3 +13427,26 @@ to the area of the faces. That's simply an error.
 Found how to correct it very easily in the colreinit, since fcarea
 is already calculated. Then the problem is gone even if we use 
 the collisional aparatus for infinite B. So revert to that.
+
+20 Jan 2015
+
+Tracking down cause of the slightly peaked z-density-profile.
+The peaking can be changed by adding additional gasdev calls into the pinit
+loop. This implicates the random number generator. 
+Actually there was a slight problem in that gd_iset was never initialized
+in gasdev before. Added that initialization. It changes the occurence of
+peaking, but does not prevent it.
+Increased the number of particles. It does not go away. 
+
+Initialize as       call rluxgo(4,myid,0,0) instead of call rluxgo(0,myid,0,0)
+changes again. Try level 1. Looks fine. 
+Perhaps the luxury level zero is too optimistic. Here are the purported costs.
+C                               default
+C  Luxury Level   0     1     2   *3*    4
+      DATA NDSKIP/0,   24,   73,  199,  365 /
+Corresponds to p=24    48    97   223   389
+C     time factor 1     2     3     6    10   on slow workstation
+C                 1    1.5    2     3     5   on fast mainframe
+Use 1 for now.
+
+Also fix Boltzmann electron compensation off when using electrons.

@@ -333,7 +333,7 @@ c Set phip from the first object if it makes sense.
 c------------------------------------------------------------------
 c (Re)Initialize the fortran random number generator.
 c      idum=-myid-1
-      call rluxgo(0,myid,0,0)
+      call rluxgo(1,myid,0,0)
 c Initialize with a specified number of particles.
 c      write(*,*)'ibool_part=',ibool_part
       call pinit(subcycle)
@@ -433,8 +433,11 @@ c Because psumtoq internally compensates for faddu, we reduce here
 c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
 c Convert psums to charge density, q. Remember external psumtoq!
-         call mditerarg(psumtoq,ndims,ifull,ium2,
-     $        0,psum(2,2,2),q(2,2,2),volumes(2,2,2),u(2,2,2),rhoinf)
+c Negative rhoinf turns off Boltzmann electron compensation.
+         rsign=1.
+         if(nspecies.gt.1)rsign=-1.
+         call mditerarg(psumtoq,ndims,ifull,ium2,0,psum(2,2,2),q(2,2,2)
+     $        ,volumes(2,2,2),u(2,2,2),rsign*rhoinf)
          istepave=min(nf_step,iavesteps)
 c Reset psum, after psumtoq accommodating padvnc deposition.
          call mditerset(psum,ndims,ifull,iuds,0,0.)
