@@ -181,8 +181,8 @@ c********************************************************************
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
       real psum(*),rho(*),volumes(*),u(*),rhoinf
-      real faddu
-      external faddu
+c      real faddu
+c      external faddu
 
 c Silence warnings with spurious access.
       ind=iLs
@@ -195,29 +195,22 @@ c Set the density
       ind=1+ipoint
       if(volumes(ind).ge.1.e20)then
 c This is outside the region. 
-         if(volumes(ind).ge.1.e30)then
+c         if(volumes(ind).ge.1.e30)then
 c And all point-charge regions.
-c Compensate the electron density, ignoring any psum because that arise
-c only from deposition at points just outside the region.
-            if(.not.u(ind).lt.1.e20)then
-               write(*,*)'psumtoq error',indi,rho(ind),u(ind),ind
-            endif
-            if(rhoinf.gt.0.)rho(ind)=faddu(u(ind),fprime,ind)
-         else
+         rho(ind)=0.
+c The following is not, I think, necessary for fadcomp code. Because
+c boltzwt is always zero for outside the particle region.
+c         else
 c Outside the particle region, but inside a point-charge region.
-c Don't compensate for electron density. Just set rhoi=0.
-c            rho(ind)=0.
-c That does not seem correct. I still ought to null out the electron
+c rho=0 did not seem correct. I still ought to null out the electron
 c density. Do that directly, without the additional rhoci part:
-            fprime=exp(u(ind))
-            if(rhoinf.gt.0)rho(ind)=fprime
-         endif
+c            fprime=exp(u(ind))
+c            rho(ind)=fprime
+c         endif
       else
-c Standard case.
+c Standard case. Use total charge density sum.
          rho(ind)=psum(ind)/(abs(rhoinf)*volumes(ind))
       endif
-c      if(.not.rho(ind).lt.1.e20)then
-c         write(*,*)'psumtoq rho error',ind,rho(ind),psum(ind),rhoinf
 c      endif
       inc=1
       end

@@ -13451,6 +13451,18 @@ Use 1 for now.
 
 Also fix Boltzmann electron compensation off when using electrons.
 
+It's important to note that the ranlux changes make all results now 
+different. What used to be
+ Flux density*r^2, normalized to rhoinf  0.844536364    
+ Floating potential=  -3.00770116    
+is now
+ Flux density*r^2, normalized to rhoinf  0.909752071    
+ Floating potential=  -2.93331695    
+Also all the cks files need updating. I accidentally included 
+the strange griddecl.f too, which needs to be regressed.
+
+So I'm doing that in my sandbox and commit/push 
+
 22 Jan
 
 Fix bug in cmdline usage message with format of -ni.
@@ -13484,3 +13496,52 @@ done in this way. It is done instead by adding charge in psumtoq. I think
 this needs to change. We could, for example, have a mesh of values of 
 boltzamp that is zero outside the particle region. This would have to be
 set in initializations, like uci, rhoci etc, probably in setadfield.
+
+Change boltzamp default to 1, and -sp switch to set it to zero.
+./coptic -sp output is (still using old implementation)
+ Flux density*r^2, normalized to rhoinf  0.867844701    
+ Floating potential=  -2.98047614    
+
+Change to new code fadcomp. Get the same flux/float for standard and -sp
+cases. Make setadfield called always. Things stay the same. Ok. 
+So far in the tests ./coptic uses the old faddu. ./coptic sp uses the new
+fadcom, but with boltzamp=0, which just switches off electron
+compensation everywhere.
+
+Now there is difference between old and new implementations for -spb0.5
+(say). In neither case is the psumtoq compensation being applied. 
+The new code appears to give flat phi inside the object as it should.
+
+There's a puzzle about point charges with influence beyond the particle
+region. I haven't quite sorted it out. There is a compensation of electron
+charge in what the rho is set to. That seems to be to null out the faddu
+contribution. This can't easily be tested because it needs a point 
+charge crazy close to the edge of particle region. 
+
+This version gives
+ Flux density*r^2, normalized to rhoinf  0.909752905    
+ Floating potential=  -2.93331599    
+when it calls with faddu. 
+But
+ Flux density*r^2, normalized to rhoinf  0.909752071    
+ Floating potential=  -2.93331695    
+when with fadcomp, which is the same as previously. So the transition is
+good. 
+
+Now the principle is psumtoq sets the rho equal to scaled psum or to zero
+depending whether we are inside or outside particle region. (test volumes).
+ucrhoset puts boltzwt to zero outside particle region. (test linregion).
+to do that setadfield must now always be called.
+fadcomp is called in all cases except when boltzamp is zero.
+In that case, the faddu use is disabled by a switch to save time.
+
+The way that behaviour ought to have changed:
+1) With -spb we should now be zeroing the external charge correctly.
+2) We are now using an non-linear fadcomp for Boltzamp cases, instead of
+a linear approx. This might cause problems.
+
+I realize there's an issue that is not new. It is that the relaxation in
+sormpi is adjusted by the amount of additional function. However, it looks
+as if this is going to be correct. So I do nothing to the oaddu code.
+
+Regenerate .cks files.

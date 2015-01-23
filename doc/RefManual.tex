@@ -714,16 +714,17 @@ equal (for the background).  Setting -nr1 uses equal numbers of
 particles and no substepping.
 
 \paragraph{-spb...} Add an extra Boltzmann fraction $f_b$
-(\verb!boltzamp!). This applies only when both electrons and ions are
-being modelled as particles (more than one particle species is
-present). It is physically equivalent to adding an additional species
-whose density is equal to $f_be\phi/T_e$. That is, like linearized
-Boltzmann electrons neutralized by an equal background density of
-immobile positive charge. It is implemented through the function
-\verb!faddlin!. The addition helps to stabilize long-wave-length
-fluctuations in regions that are much larger than the Debye
-length. The fraction required is of order the ratio of the Debye
-length to the domain size, when this is small.
+(\verb!boltzamp!). This should be applied only when both electrons and
+ions are being modelled as particles (more than one particle species
+is present) and should occur \emph{after} the -sp switch. It is
+physically equivalent to adding an additional species whose density is
+equal to $f_be\phi/T_e$. That is, like linearized Boltzmann electrons
+neutralized by an equal background density of immobile positive
+charge. It is implemented through the function \verb!faddlin!. The
+addition helps to stabilize long-wave-length fluctuations in regions
+that are much larger than the Debye length. The fraction required is
+of order the ratio of the Debye length to the domain size, when this
+is small.
 
 
 \subsubsection*{Neutrals, Collisions, Magnetic Field}

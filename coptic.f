@@ -54,9 +54,9 @@ c Face boundary data
 c Particle distribution accumulation data
       include 'ptaccom.f'
 
-      external bdyshare,bdyset,faddu,cijroutine,cijedge,psumtoq
-     $     ,quasineutral,faddlin
-      real faddu,faddlin
+      external bdyshare,bdyset,cijroutine,cijedge,psumtoq
+     $     ,quasineutral,faddlin,fadcomp
+      real faddlin,fadcomp
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
       character*100 restartpath
@@ -298,14 +298,13 @@ c Initialize diagsum if necessary.
      $           ,ndims,ifull,iuds,0,0.)
          enddo
       enddo
-c Initialize additional potential and charge if needed.
-      if(iptch_mask.ne.0 .or. gtt.ne.0. .or. gnt.ne.0)
-     $     call setadfield(ifull,iuds,iptch_mask,lsliceplot)
+c Initialize additional potential and charge always now.
+      call setadfield(ifull,iuds,iptch_mask,lsliceplot)
 c      if(myid.eq.0)call sliceGweb(ifull,iuds,rhoci,na_m,zp,
 c     $              ixnp,xn,ifix,'rhoci',dum,dum)
 
 c---------------------------------------------------------------     
-c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
+c Control. Bit 1, use my sor params (not here). Bit 2 use fadcomp (not)
 c Bit 4-6 periodicity.
       ictl=0
 c Make dimensions periodic:
@@ -316,7 +315,7 @@ c      write(*,*)'Calling sormpi'
 c An initial solver call with zero density.
       ierrsor=0
       if(debyelen.ne.0.)call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare
-     $     ,bdyset,faddu,ictl,ierrsor,myid,idims)
+     $     ,bdyset,fadcomp,ictl,ierrsor,myid,idims)
       ictl=2+ictl
 c      write(*,*)'Return from initial sormpi call.'
       if(ltestplot)call sliceGweb(ifull,iuds,u,na_m,zp,
@@ -427,17 +426,14 @@ c         call psumperiod(psum,ifull,iuds,iLs)
 c But it is not necessary so simplify to one period routine.
 c Psumreduce takes care of the reductions that were in rhoinfcalc 
 c and explicit psum. It encapsulates the iaddtype iaddop generation.
-c Because psumtoq internally compensates for faddu, we reduce here
+c Because psumtoq formerly compensated for faddu, we reduced here.
          call psumreduce(psum,nrein,phirein,numprocs,ndims,ifull,iuds
      $        ,iLs)
 c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
 c Convert psums to charge density, q. Remember external psumtoq!
-c Negative rhoinf turns off Boltzmann electron compensation.
-         rsign=1.
-         if(nspecies.gt.1)rsign=-1.
          call mditerarg(psumtoq,ndims,ifull,ium2,0,psum(2,2,2),q(2,2,2)
-     $        ,volumes(2,2,2),u(2,2,2),rsign*rhoinf)
+     $        ,volumes(2,2,2),u(2,2,2),rhoinf)
          istepave=min(nf_step,iavesteps)
 c Reset psum, after psumtoq accommodating padvnc deposition.
          call mditerset(psum,ndims,ifull,iuds,0,0.)
@@ -448,20 +444,15 @@ c Solve for the new potential:
      $        0,q(2,2,2),u(2,2,2),volumes(2,2,2),dum4,dum5)
             call bdyslope0(ndims,ifull,iuds,cij,u,q)
          else
-            if(nspecies.gt.1)then
-               if(boltzamp.ne.0)then
+            if(boltzamp.ne.0)then
 c Use some fraction of linearized Boltzmann electron response.
 c To damp long wavelength oscillations.
-                  call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
-     $              ,faddlin,ictl,ierr,myid,idims)
-               else
-c Turn off use of faddu by ictl-2
-                  call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
-     $              ,faddu,ictl-2,ierr,myid,idims)
-               endif
-            else
                call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
-     $              ,faddu,ictl,ierr,myid,idims)
+     $              ,fadcomp,ictl,ierr,myid,idims)
+            else
+c Turn off use of fadcomp by ictl-2
+               call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
+     $              ,fadcomp,ictl-2,ierr,myid,idims)
             endif
          endif
          call calculateforces(ndims,iLs,cij,u)

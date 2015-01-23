@@ -90,7 +90,7 @@ c         crelax=1.*Ts(nspecies)/(1.+Ts(nspecies))
          rcij=0
          iobpsw=1
          ldistshow=.false.
-         boltzamp=0.
+         boltzamp=1.
 c Boundary condition switch and value. 0=> logarithmic.
          islp=0
          slpD=0.
@@ -268,7 +268,7 @@ c Default to electron Temp/mass for subsequent species.
                Tperps(nspecies)=1.
                eoverms(nspecies)=-1836.
                numratioa(nspecies)=1
-c     $              sqrt(abs(eoverms(nspecies)/eoverms(1)))
+               boltzamp=0.
 c Inherit the drifts of the previous species until explicitly changed.
                vds(nspecies)=vds(nspecies-1)
                do id=1,ndims
@@ -539,7 +539,7 @@ c Help text
       write(*,302)' -Ef   set Ext v-drive fraction   [',Enfrac
       write(*,302)' -cp   set v-power coln freq      [',colpow
       write(*,308)' -sp   add a particle species     [',nspecies
-      write(*,302)' -spb  extra Boltzmann fraction   [',boltzamp
+      write(*,302)' -spb  Boltzmann fraction         [',boltzamp
       write(*,307)' -zm   set Z/mass ratio           ['
      $     ,(eoverms(ispecies),ispecies=1,nspecies)
       write(*,308)' -nr   set species number ratio   ['

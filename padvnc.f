@@ -556,8 +556,8 @@ c Here a segfault was caused if na_m2 was used.
 c      write(*,*)'Point charges included. Mask:',iptch_copy,gtt
       ipoint=0
       ifix=1
-      call mditerarg(ucrhoset,ndims,ifull,iuds,ipoint
-     $     ,uci,rhoci,iptch_copy,Teci,boltzwt)
+      call mditerarg(ucrhoset,ndims,ifull,iuds,ipoint)
+c     $     ,uci,rhoci,iptch_copy,Teci,boltzwt)
       if(lsliceplot)then
          call sliceGweb(ifull,iuds,uci,na_m,zp,
      $        ixnp,xn,ifix,'u!dc!d ptch',dum,dum)
@@ -603,6 +603,7 @@ c Get grid point position, and irptch.
 c Set boltzwt depending on whether we are in the region or not.
       if(linregion(ibool_part,ndims,xp))then
          boltzwti(ipoint+1)=boltzamp
+c         write(*,*)'Setting boltzamp',ipoint,boltzamp
       else
          boltzwti(ipoint+1)=0.
       endif
