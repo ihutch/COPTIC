@@ -557,7 +557,7 @@ c      write(*,*)'Point charges included. Mask:',iptch_copy,gtt
       ipoint=0
       ifix=1
       call mditerarg(ucrhoset,ndims,ifull,iuds,ipoint
-     $     ,uci,rhoci,iptch_copy,Teci)
+     $     ,uci,rhoci,iptch_copy,Teci,boltzwt)
       if(lsliceplot)then
          call sliceGweb(ifull,iuds,uci,na_m,zp,
      $        ixnp,xn,ifix,'u!dc!d ptch',dum,dum)
@@ -568,20 +568,24 @@ c      write(*,*)'Point charges included. Mask:',iptch_copy,gtt
       endif
       end
 c**********************************************************************
-      subroutine ucrhoset(inc,ipoint,indi,mdims,iLs,iuds,
-     $     uci,rhoci,iptch_copy,Teci)
+      subroutine ucrhoset(inc,ipoint,indi,mdims,iLs,iuds)
+c This routine passes no mditerarg arguments only uses commons.
 c Set uci, rhoci, and Teci arrays to compensate for point charges,
-c electron temperature gradients, or density gradients. 
+c electron temperature gradients, or density gradients, boltzamp.
 c These are then subsequently used in faddu to decide the electron
 c density. [They are not used in getadfield.]
       integer inc,ipoint,mdims
-      real uci(*),rhoci(*),Teci(*)
       integer iuds(mdims),indi(mdims)
 c Commons: For position.
       include 'ndimsdecl.f'
       include 'meshcom.f'
 c For debyelen and Tempr gradient.
       include 'plascom.f'
+c For deciding the region via iboolpart for setting boltzwt.
+      include '3dcom.f'
+      include 'ptchcom.f'
+      logical linregion
+      external linregion
 c Local storage:
       integer isw,iregion,irptch
       real xp(ndims),adfield(ndims)
@@ -596,6 +600,12 @@ c Get grid point position, and irptch.
       enddo
       iregion=insideall(ndims,xp)
       irptch=IAND(iregion,iptch_copy)
+c Set boltzwt depending on whether we are in the region or not.
+      if(linregion(ibool_part,ndims,xp))then
+         boltzwti(ipoint+1)=boltzamp
+      else
+         boltzwti(ipoint+1)=0.
+      endif
 c Set the Teci factors.
       Teci(ipoint+1)=1.
       if(gtt.ne.0)then

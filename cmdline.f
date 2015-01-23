@@ -508,7 +508,7 @@ c Help text
       write(*,301)'[-of]<filename>  set name of object data file.'
      $     //'   ['//objfilename(1:30)
       write(*,301)' -ni   set No of particles/node   ['
-     $     ,(nparta(ispecies),ispecies=1,nspecies),'     zero => unset.'
+     $     ,(nparta(ispecies),ispecies=1,1),'     zero => unset.'
       write(*,301)' -rn   set reinjection number     [',ninjcomp
      $     ,'     fixed/step => parts/node unset.'
       write(*,304)' -ri   set rhoinfinity/node       [',ripernode

@@ -13450,3 +13450,37 @@ C                 1    1.5    2     3     5   on fast mainframe
 Use 1 for now.
 
 Also fix Boltzmann electron compensation off when using electrons.
+
+22 Jan
+
+Fix bug in cmdline usage message with format of -ni.
+
+23 Jan
+
+Need to implement a more systematic compensation of the Boltzmann electrons.
+At the moment, they are compensated in psumtoq by putting additional charge
+in places that are outside the particle region. It might be better instead
+to adjust faddu so that it simply does not put Boltzmann electron response
+in such places. That would be perhaps a clearer solution.
+
+Since faddu is called at each Poisson-solve-iteration, it needs to be 
+rather efficient in deciding whether to include Boltzmann response or
+not. At the moment, although the index is passed to it, the decision 
+whether to use that index is made on the basis of ptchcom commons.
+
+Chargetomesh (psumtoq) decides whether we are outside the region based
+on the value of volumes(index). Unfortunately, this is not in a common
+block; so it's tough to access for faddu. faddu needs to be kept clean
+so sormpi does not need to know anything about it. So the challenge is
+this:
+faddu needs access to mesh quantities via common.
+mesh quantities like volumes aren't in commons. 
+
+The way this is addressed for point charges etc, is that in ptchcom.f there
+are some mesh quantities: uc, rhoc, Tec, (and their single index equivalences
+uci, rhoci, Teci). This common is available to faddu. This is the place to
+put the needed information. At the moment the Boltzmann compensation is NOT
+done in this way. It is done instead by adding charge in psumtoq. I think
+this needs to change. We could, for example, have a mesh of values of 
+boltzamp that is zero outside the particle region. This would have to be
+set in initializations, like uci, rhoci etc, probably in setadfield.
