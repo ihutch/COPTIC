@@ -13450,3 +13450,15 @@ C                 1    1.5    2     3     5   on fast mainframe
 Use 1 for now.
 
 Also fix Boltzmann electron compensation off when using electrons.
+
+It's important to note that the ranlux changes make all results now 
+different. What used to be
+ Flux density*r^2, normalized to rhoinf  0.844536364    
+ Floating potential=  -3.00770116    
+is now
+ Flux density*r^2, normalized to rhoinf  0.909752071    
+ Floating potential=  -2.93331695    
+Also all the cks files need updating. I accidentally included 
+the strange griddecl.f too, which needs to be regressed.
+
+So I'm doing that in my sandbox and commit/push 
