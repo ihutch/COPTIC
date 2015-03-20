@@ -55,11 +55,20 @@ c******************************************************************
       subroutine fitscale(xmin,xmax,ymin,ymax,lx,ly)
       real xmin,xmax,ymin,ymax
       logical lx,ly
-c      include 'plotcom.h'
       real xfac,xdelta,fxmin,fymin,fxmax,fymax
       integer nxfac
-      call fitrange(xmin,xmax,6,nxfac,xfac,xdelta,fxmin,fxmax)
-      call fitrange(ymin,ymax,6,nxfac,xfac,xdelta,fymin,fymax)
+      if(lx)then
+         fxmin=10.**(nint(log10(xmin)-0.49999))
+         fxmax=10.**(nint(log10(xmax)+0.49999))
+      else
+         call fitrange(xmin,xmax,6,nxfac,xfac,xdelta,fxmin,fxmax)
+      endif
+      if(ly)then
+         fymin=10.**(nint(log10(ymin)-0.49999))
+         fymax=10.**(nint(log10(ymax)+0.49999))
+      else
+         call fitrange(ymin,ymax,6,nxfac,xfac,xdelta,fymin,fymax)
+      endif
       call scalewn(fxmin,fxmax,fymin,fymax,lx,ly)
       end
 c******************************************************************

@@ -204,19 +204,17 @@ c          call checkdelta(delta,deltaold)
 c Test convergence
          call testifconverged(eps_sor,delta,umin,umax,
      $        lconverged,icommcart)
-c         write(*,'(i5,f10.6,$)')k_sor,delta
-c         if(myid.eq.0)
-c     $        write(*,*)k_sor,delta,umin,umax,lconverged
-c     $        ,relax,omega
+c         if(myid.eq.0) write(*,'(i5,f10.6,2f8.4,l3,2f8.4)')k_sor,delta
+c     $        ,umin,umax,lconverged ,relax,omega
          if(lconverged.and.k_sor.ge.2)goto 11
 
          if(k_sor.eq.1)then
 c Chebychev acceleration doesn't work very well at start.
 c Better not to start with such a big value of omega.
-c It tends to go unstable. But for now, I'm leaving the original
-c for checking purposes.
-            omega=1./(1.-0.5*xjac_sor**2)
-c            omega=1./(1.-0.45*xjac_sor**2)
+c Otherwise it tends to go unstable. 
+            omega=1./(1.-0.45*xjac_sor**2)
+c One might leave the original for checking purposes:
+c            omega=1./(1.-0.5*xjac_sor**2)
          else
             omega2=1./(1.-0.25*xjac_sor**2*omega)
             omega=omega2

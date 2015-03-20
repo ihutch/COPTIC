@@ -340,7 +340,7 @@ c         write(*,*)'calling bbdyblockcreate'
      $     mycartid,nproc,idims,iLcoords,ioffset,idebug,
      $     isdispls,istypes,iscounts,irdispls,irtypes,ircounts)
 c--------------------------------------------------------------------
-         if(idebug.ge.2) write(*,*)'End of initialization'
+         if(idebug.ge.1) write(*,*)'End of initialization'
 c         return
       endif
 c If this is an unused process, do nothing.
@@ -373,10 +373,10 @@ c iolp is for receiving +1 shift, iorp is for sending +1 shift.
          iorm=iorp+iLs(n)
 c iorm is for receiving -1 shift, iolm is for sending -1 shift.
          if(idebug.ge.2)then
-         if(n.eq.1) write(*,*)' n,ko,ke,    iolp,iorp,iolm,iorm,',
-     $        'iddr,isdr,iddl(n),isdl(n)'
-         write(*,'(3i3,8i6)') n,ko,ke,iolp,iorp,iolm,iorm,
-     $        iddr(n),isdr(n),iddl(n),isdl(n)
+            if(n.eq.1) write(*,*)' n,ko,ke,    iolp,iorp,iolm,iorm,',
+     $           'iddr,isdr,iddl(n),isdl(n)'
+            write(*,'(''Communicate'',3i3,8i6)')n,ko,ke,iolp,iorp,iolm
+     $           ,iorm,iddr(n),isdr(n),iddl(n),isdl(n)
          endif
 c Send odd/even data to right, receive odd/even data from left
 c         if(iddr(n).ne.-1) call MPI_SEND(u(iorp),1,iface(n,ko,ibt(n)),
@@ -552,7 +552,7 @@ c This diagnostic works only for up to 3-d arrays.
                endif
             enddo
             write(*,*)'j,k,Block origins(i)='
-            write(string,'(''('',i4''i8)'')')kk(1)+2
+            write(string,'(''('',i4''i10)'')')kk(1)+2
             write(*,string)
      $           ((j,k,(iorig(i+kk(1)*((j-1)+kk(2)*(k-1))),
      $           i=1,kk(1)),j=1,kk(2)),k=1,kk(3))

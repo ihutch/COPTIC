@@ -151,6 +151,9 @@ c Here is where the extra boundary data is needed/used. For a simple mesh
 c with no embedded objects, it would not be necessary.
 c Pointer to object data (converted to integer)
          io=int(cij(icind0+2*ndims+1))
+c This is the single code change that must be made if we transition to
+c using integer representation of the cij pointer.
+c         io=intcij(icind0+2*ndims+1)
          if(io.ne.0) then
 c Adjust the denominator and numerator using external call.
             call ddn_cij(io,csum,dnum)

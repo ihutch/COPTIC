@@ -13545,3 +13545,12 @@ sormpi is adjusted by the amount of additional function. However, it looks
 as if this is going to be correct. So I do nothing to the oaddu code.
 
 Regenerate .cks files.
+
+20 Mar 2015
+
+Reinstituted the sorgen omega fix that is better for convergence.
+This causes all the cks files to be changed (naturally).
+There were some other tests associated with large cases that were done
+but the hacks were removed prior to testing. 
+
+Regenerate the .cks files.

@@ -130,7 +130,7 @@ vecx.o : vecx.c $(MAKEFILE)
 	$(CC)  $(THREADING) -c vecx.c
 
 vecglx.o : vecglx.c
-	$(CC) -c $(WSWITCHES) vecglx.c
+	$(CC) -c $(WSWITCHES) $(THREADING) vecglx.c
 
 # The file drwstr.f must be compiled with this switch which disables
 # for gnu compilers the interpretation of backslashes as escapes.
@@ -181,7 +181,7 @@ convert : convert.f95
 	$(G90) -o convert convert.f95
 	@rm *.mod
 
-# There are major with Metcalf's automatic converter and parameters that
+# There are problems with Metcalf's automatic converter and parameters that
 # define dimensions. Parameters are not included. So the interfaces that it
 # generates are broken. I've hacked the code to include them.
 
@@ -234,3 +234,5 @@ clean : cleantest
 	rm -f *.ida
 	rm -f plot*.ps plot*.pg*
 
+help :
+	@echo Targets: mproper clean cleantest tests interface.f90 sync
