@@ -306,7 +306,11 @@ $0.4\times(-1.)\times4\pi$ normalized units).
 coefficients $A,B,C$ of the Robin boundary condition in this object vary
 linearly in space. Their values at the object center are specified as
 usual. Their gradients are specified by three vectors which follow the
-flux accumulation specification (which must be present).
+flux accumulation specification (which must be present). The gradient
+vectors are in reverse order: $C, B, A$, allowing just the C-vector
+gradient components
+$(x,y,z)$ to be specified if the other gradients are zero, which is
+most often the case.
 
 \paragraph{4($\times256=1024$) Insulating Object} The boundary
 condition is the specification of the potential ($A,C\ne 0$). But the
@@ -1750,3 +1754,8 @@ if it is made with \verb!vec4014!.
 
 
 \end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

@@ -109,11 +109,6 @@ c               notseparable(ispecies)=3
 
          if(notseparable(ispecies).ge.2)then
 c----------------------------------------
-c A test of does the random number generator need to be exercised.
-c            do kk=1,1000000
-c               call ranlux(ra,1)               
-c            enddo
-c It doesn't help.
 c This is where the collisionless distribution is really set.
 c More complicated distributions should redo this setting differently.
 c How many prior particles to save:
@@ -146,11 +141,16 @@ c New position choice including density gradients.
             do j=1,ndims
                x_part(j,i)=ranlenposition(j)
             enddo
-c     If we are not in the plasma region, try again.
             if(.not.linregion(ibool_part,ndims,x_part(1,i)))then
 c            write(*,*)'Initialization of',i,' wrong region',inewregion
 c     $           ,(x_part(kk,i),kk=1,3)
-               goto 1
+c     If we are not in the plasma region, try again if we are doing fixed
+c     particle number else just set this slot empty.
+               if(ninjcompa(ispecies).ne.0)then
+                  x_part(iflag,i)=0
+               else
+                  goto 1
+               endif
             endif
             if(notseparable(ispecies).eq.0. .and. Eneutral.eq.0)then
 c Shifted Gaussians.
@@ -161,7 +161,7 @@ c Either of these calls cause the peaking of the profile.
 c               test=tisq*gasdev(myid) + vd*vdrift(3)
 c               x_part(6,i)=tisq*gasdev(myid) + vd*vdrift(3)
             else
-               call colvget(x_part(4,i))
+               call colvget(x_part(4,i),ispecies)
             endif
 
 c One idea that might improve the initialization would be to add the 
@@ -257,18 +257,19 @@ c      write(*,*)'Redetermined particle mesh locations (locateinit)'
       end
 c***********************************************************************
 c Return a random velocity from the (precalculated) distribution heap.
-      subroutine colvget(v)
+      subroutine colvget(v,ispecies)
       implicit none
       include 'ndimsdecl.f'
       include 'cdistcom.f'
       real v(ndims)
+      integer ispecies
       real ra
       integer nc,i
 
       call ranlux(ra,1)
       nc=int(ncdist*ra)
       do i=1,ndims
-         v(i)=v_col(i,nc)
+         v(i)=vcols(i,nc,ispecies)
       enddo
       end
 c*********************************************************************
