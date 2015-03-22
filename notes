@@ -13554,3 +13554,29 @@ There were some other tests associated with large cases that were done
 but the hacks were removed prior to testing. 
 
 Regenerate the .cks files.
+Commit.
+Fix electron and outside-region initialization bugs. 
+Commit.
+
+This changes the geometry tests on quite a few files. 
+Regenerate the .cks files.
+
+Now there's the question of the integer number of injections.
+Implement ninjadd as the optional additional injection in padvnc.
+Then tests use ninjcompa(ispecies)+ninjadd. Set to zero initially.
+
+22 Mar 2015
+
+Implement partial injection parameter pinjcompa.
+Use it to decide randomly at the start of padvnc whether to use
+zero or one for ninjadd. Seems to work. 
+In effect this is now a corrected quiet injection to the extent that
+the average injection rate is constant within one of the same
+(rather than fluctuating with a Poisson distribution) 
+but it now has an accurate mean value for low injection numbers.
+
+This should break all the tests again. And it does.
+
+Regenerate the .cks files.
+
+Commit.

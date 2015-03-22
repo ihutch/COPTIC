@@ -1,3 +1,6 @@
+c This version of injection is not ready for multiple species.
+c It also does not do fractional injection numbers.
+
       subroutine reinject(xr,ilaunch)
       real xr(*)
       integer ilaunch
@@ -583,6 +586,7 @@ c No time-averaging for now.
 c Particle information
       include 'partcom.f'
 
+      pinjcomp(1)=0.
       if(n_part.ne.0)return
 c Calculate ninjcomp from ripernode
       chi=min(-phirein/Ti,0.5)

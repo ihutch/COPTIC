@@ -344,7 +344,8 @@ c---------------------------------------------
       phirein=0.
       ninjcomp0=ninjcomp
       if(ninjcomp.ne.0.and.lmyidhead)
-     $     write(*,*)'Fixed ion injection count:',ninjcomp
+     $     write(*,'(a,i8,f8.5,i8,f8.5)')' Fixed injection count:'
+     $     ,(ninjcompa(i),pinjcompa(i),i=1,nspecies)
       maccel=nsteps/3
       dtf=dt
 c-----------------------------------------------

@@ -34,10 +34,12 @@ c Lowest particle to print debugging data for.
       parameter (fieldtoosmall=1.e-3)
       real thetamax
       parameter (thetamax=1.)
+      real fieldtoolarge
+      parameter (fieldtoolarge=1.e12)
 c Local storage
       real fractions(10)
-      parameter (fieldtoolarge=1.e12)
-      integer ixp(ndims)
+      real rannum
+      integer ixp(ndims),ninjadd
       real Efield(ndims),adfield(ndims)
       real xfrac(ndims)
       real xprior(ndims)
@@ -69,6 +71,12 @@ c Initialize. Set reinjection potential. We start with zero reinjections.
       do idf=1,ndims
          adfield(idf)=0.
       enddo
+c Set additional injection to zero by default.
+      ninjadd=0
+      if(ninjcompa(ispecies).ne.0)then
+         call ranlux(rannum,1)
+         ninjadd=nint(pinjcompa(ispecies)*rannum)
+      endif
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 c At most do over all particle slots for this species. 
 c But generally we break earlier.
@@ -83,7 +91,7 @@ c Decide nature of this slot
          if(x_part(iflag,i).ne.0)then
 c Standard occupied slot. Proceed.
          elseif(ninjcompa(ispecies).ne.0
-     $        .and.nrein.lt.ninjcompa(ispecies))then
+     $        .and.nrein.lt.ninjcompa(ispecies)+ninjadd)then
 c An unfilled slot needing to be filled. Jump to reinjection.
             goto 200
          elseif(i.ge.iocparta(ispecies))then
@@ -230,7 +238,7 @@ c as being conveyed to any tallying object inside which it disappears.
 c            write(*,*)'Excessive acceleration. Dropping particle',i
 c Reinject if we haven't exhausted complement:
             if(ninjcompa(ispecies).eq.0
-     $           .or. nrein.lt.ninjcompa(ispecies))goto 200
+     $           .or. nrein.lt.ninjcompa(ispecies)+ninjadd)goto 200
 c Else empty slot and move to next particle.
             x_part(iflag,i)=0
             goto 400            
@@ -321,7 +329,7 @@ c  We left the mesh or region. Test if this was a trapped passthrough.
            if(linmesh.and.inewregion.eq.iregion)npassthrough
      $           =npassthrough+1
             if(ninjcompa(ispecies).eq.0
-     $           .or. nrein.lt.ninjcompa(ispecies))goto 200
+     $           .or. nrein.lt.ninjcompa(ispecies)+ninjadd)goto 200
 c Reinject because we haven't exhausted complement. 
 c Else empty slot and move to next particle.
             x_part(iflag,i)=0
@@ -372,7 +380,7 @@ c This situation is benign and not an error if we have a region that
 c happens not to cover the entire mesh edge. So don't stop, retry.
 c            write(*,*)'Reinject out of region',i,iregion,xfrac
             if(ninjcompa(ispecies).eq.0
-     $           .or. nrein.lt.ninjcompa(ispecies))then
+     $           .or. nrein.lt.ninjcompa(ispecies)+ninjadd)then
                nrein=nrein+ilaunch
                goto 200
             else
@@ -438,13 +446,15 @@ c -------------- End of cycle through particles ----------
 c Normalize the collision force appropriately.
          call bulknorm(1./(rhoinf*dt))
       endif
-      if(ninjcompa(ispecies).ne.0.and.nrein.lt.ninjcompa(ispecies))then
+      if(ninjcompa(ispecies).ne.0.and.nrein.lt.ninjcompa(ispecies)
+     $     +ninjadd)then
          write(*,*)'WARNING: Exhausted n_partmax=',n_partmax,
      $        '  before ninjcomp=',ninjcompa(ispecies)
      $        ,' . Increase n_partmax?'
       endif
       iocparta(ispecies)=iocthis
-c      write(*,*)'i,iocthis,npart=',i,iocthis,nparta(ispecies)
+c      write(*,'(a,5i8)')'  i,iocthis,npart,nrein=',i,iocthis
+c     $     ,nparta(ispecies),nrein
 
 c Finished this particle step. Calculate the average reinjection 
 c potential

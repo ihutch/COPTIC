@@ -7,10 +7,13 @@ c       and returns the number of launches. (Pass xp(1,i)).
 c       This routine should initialize itself appropriately.
 c    rhoinfcalc(dt)     
 c        which should return the value of rhoinfinity through common.
+c    ninjcalc(dt)
+c        which decides how many reinjections per step ninjcomp.
 c Any other code needed for these routines ought to be in here too.
 c The majority of the needed data is passed in partcom.f
 c 
 c This case is a spherical boundary.
+c It is not ready for multiple species or fractional injections.
 c***********************************************************************
       subroutine reinject(xr,ilaunch,caverein)
       parameter (mdims=3)
@@ -188,6 +191,7 @@ c No time-averaging for now.
 c Particle information
       include 'partcom.f'
 
+      pinjcompa(1)=0.
       if(n_part.ne.0)return
 c Calculate ninjcomp from ripernode
       chi=min(-phirein/Ti,0.5)

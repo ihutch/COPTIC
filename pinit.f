@@ -53,7 +53,7 @@ c Decide whether the external distribution is separable.
       do ispecies=1,nspecies
 c Conveniently here initialize distribution numbers.
          ncdists(ispecies)=0
-         if(ninjcompa(ispecies).gt.1)then
+         if(ninjcompa(ispecies).gt.0)then
             slotsurplus=1.3
          else
             slotsurplus=1.

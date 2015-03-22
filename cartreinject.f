@@ -736,6 +736,7 @@ c Particle information
       real volume,flux
 c 
       do ispecies=1,nspecies
+         pinjcompa(ispecies)=0.
 c An ion species that has n_part set needs no ninjcalc.
          if(nparta(ispecies).eq.0)then
             if(.not.lreininit)call cinjinit()
@@ -752,24 +753,18 @@ c a reinjection.
                   id=mod(i+j-1,ndims)+1
                   fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
                enddo
+c greins contains the reinjection flux per face for each species when set.
                flux=flux+(greins(2*i-1,ispecies)
      $              +greins(2*i,ispecies))*fcarea(i)
                volume=volume*(xmeshend(i)-xmeshstart(i))
             enddo
             if(ispecies.gt.1)ripn=nparta(1)/volume
-c Correct approximately for edge potential depression (OML).
-c This makes no sense for ninjcalc because potential is not set.
-c            chi=sign(1.,eoverms(ispecies))*
-c     $           crelax*min(-phirein/Ts(ispecies),0.5)
-c            cfactor=smaxflux(vd/sqrt(2.*Ts(ispecies)),chi)
-c     $           /smaxflux(vd/sqrt(2.*Ts(ispecies)),0.)
-c            ninjcompa(ispecies)=nint(ripn*dtin*cfactor*flux)
-c     $           / numratioa(ispecies)
-            ninjcompa(ispecies)=nint(ripn*dtin*flux)
-     $           / numratioa(ispecies)
+            fpinj=ripn*dtin*flux/numratioa(ispecies)
+            ninjcompa(ispecies)=int(fpinj)
+c Partial reinjection is indicated by this fraction.
+            pinjcompa(ispecies)=fpinj-int(fpinj)
 
-            nparta(ispecies)=int(ripn*volume
-     $           / numratioa(ispecies))
+            nparta(ispecies)=int(ripn*volume/numratioa(ispecies))
 
 c      write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp'
 c      write(*,*) ispecies,ripn,dtin,cfactor,flux
