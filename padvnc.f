@@ -75,7 +75,7 @@ c Set additional injection to zero by default.
       ninjadd=0
       if(ninjcompa(ispecies).ne.0)then
          call ranlux(rannum,1)
-         ninjadd=nint(pinjcompa(ispecies)*rannum)
+         if(rannum.lt.pinjcompa(ispecies))ninjadd=1
       endif
 c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 c At most do over all particle slots for this species. 
