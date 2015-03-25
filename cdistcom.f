@@ -3,16 +3,18 @@ c Requires ndimsdecl.f to give ndims
       integer ncdistmax
       parameter (ncdistmax=1000000)
       integer ncdist
-      real v_col(ndimsmax,ncdistmax)
+      real vcol(ndimsmax,ncdistmax)
       real fxvcol(ncdistmax+1,ndims)
-      real cdistflux(ndimsmax),cdistcum(ndimsmax+1)
+      real*8 cdistflux(ndimsmax)
+      real cdistcum(ndimsmax+1)
 c Multispecies
       integer ncdists(nspeciesmax)
       real vcols(ndimsmax,ncdistmax,nspeciesmax)
       real fxvcols(ncdistmax+1,ndims,nspeciesmax)
-      real cdistfluxs(ndimsmax,nspeciesmax)
+      real*8 cdistfluxs(ndimsmax,nspeciesmax)
       real cdistcums(ndimsmax+1,nspeciesmax)
-      equivalence (v_col,vcols),(cdistflux,cdistfluxs)
+      equivalence (vcol,vcols)
+      equivalence (cdistflux,cdistfluxs)
       equivalence (ncdist,ncdists)
       equivalence (fxvcol,fxvcols)
       equivalence (cdistcum,cdistcums)

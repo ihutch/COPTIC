@@ -329,7 +329,7 @@ c to the power colpow. We use the "Null Collision Method" of Skullerud
 c to weight the distribution of the neutrals when the collision frequency
 c is velocity dependent. 
 
-c The velocities are deposited in cdistcom variable v_col(i,j) for j=1,nclim.
+c The velocities are deposited in cdistcom variable vcol(i,j) for j=1,nclim.
 c In addition, the sum of all the absolute velocity cpts in cdistflux(i).
 c It decides weight of 3 coordinate directions for reinjection.
 c vzave returns the sum of the vdrift-components of the velocities.
@@ -414,7 +414,7 @@ c B-field free case
 c               if(i.eq.ndims)v(i)=v(i)+Eneutral*ttic
                v(i)=v(i)+Eneutral*vdrift(i)*ttic
                v2=v2+v(i)**2
-               v_col(i,ncdist)=v(i)
+               vcol(i,ncdist)=v(i)
                cdistflux(i)=cdistflux(i)+abs(v(i))
             enddo
 c            write(*,*)'ncdist,v(3)',ncdist,v(3),ttic,torb
@@ -439,15 +439,15 @@ c And add back the drift velocity, and the parallel acceleration.
             do i=1,ndims
                v(i)=v(i)+vperp(i)+dvpar*Bfield(i)
                v2=v2+v(i)**2
-               v_col(i,ncdist)=v(i)
+               vcol(i,ncdist)=v(i)
                cdistflux(i)=cdistflux(i)+abs(v(i))
             enddo
 c               write(*,*)'ncdist=',ncdist
 c               write(*,*)'theta,v',theta,v
          endif
-c         vzave=vzave+v_col(ndims,ncdist)
+c         vzave=vzave+vcol(ndims,ncdist)
          do i=1,ndims
-            vzave=vzave+v_col(i,ncdist)*vdrift(i)
+            vzave=vzave+vcol(i,ncdist)*vdrift(i)
          enddo
 c Now we are at the end of a tic. Set the next tic length
          ttic=dt0
@@ -675,6 +675,7 @@ c drift velocity.
      $                     +vdrifts(i,ispecies)*vds(ispecies)
                vzave=vzave+vcols(i,j,ispecies)*vdrift(i)
 c Evaluate the total absolute fluxes in the three coordinate directions.
+c This required cdistfluxs to be real*8 to avoid rounding errors:
                cdistfluxs(i,ispecies)=cdistfluxs(i,ispecies)
      $              +abs(vcols(i,j,ispecies))
             enddo

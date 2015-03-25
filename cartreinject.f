@@ -843,16 +843,9 @@ c Choose the normal-dimension for reinjection, from cumulative dist.
       enddo
  1    continue
       idrein=id
-c Grab a random v-sample. Needs to be changed to reflect not just a 
-c random grab,
-c      call colvget(xr(ndims+1))
-c but a grab weighted by the normal-dimension mod-v:
+c Grab a random v-sample weighted by the normal-dimension mod-v:
       call ranlux(ra,1)
       ra=ra*fxvcols(ncdists(ispecies)+1,id,ispecies)
-
-c      write(*,*)'calling invtfunc',ncdists(ispecies)+1,ra,rx,fxvcols(1
-c     $     ,id,ispecies),fxvcols(ncdists(ispecies)+1,id,ispecies),id
-c     $     ,ispecies
       call invtfunc(fxvcols(1,id,ispecies),ncdists(ispecies)+1,ra,rx)
 c Now the integer part of rx is the index of the chosen particle.
       ip=int(rx)
@@ -912,14 +905,15 @@ c         if(myid.eq.0)write(*,*)ipartperiod(i),cdistflux(i)
          if(ipartperiod(i).ge.3)cdistfluxs(i,ispecies)=0.
 c Normalize the cdistflux and cdistcum to face area.
          cdistfluxs(i,ispecies)=cdistfluxs(i,ispecies)*fcarea(i)
-         ctot=ctot+cdistfluxs(i,ispecies)
+c Quiet warnings by explict recognition that cdistfluxs is real*8.
+         ctot=ctot+real(cdistfluxs(i,ispecies))
       enddo
       if(ctot.ne.0.)then
          cdistcums(1,ispecies)=0.
          do i=1,ndims
             cdistfluxs(i,ispecies)=cdistfluxs(i,ispecies)/ctot
             cdistcums(i+1,ispecies)=cdistcums(i,ispecies)
-     $           +cdistfluxs(i,ispecies)
+     $           +real(cdistfluxs(i,ispecies))
          enddo
 c Avoid rounding problems.
          cdistcums(ndims+1,ispecies)=1.
