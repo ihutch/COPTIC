@@ -184,8 +184,9 @@ c Subcycling backs up to the start of the current drift-step, and then
 c takes a position corresponding to a drift-step smaller by a factor of 2.
 c That means the backed-up position is dtprec/4 earlier.
                dtback=-x_part(idtp,i)/4.
-               call moveparticle(x_part(1,i),ndims,Bt*eoverms(ispecies)
-     $              ,Efield,Bfield,vperp,dtback,i-iicparta(ispecies))
+               call moveparticle(x_part(1,i),ndims,Bt
+     $              ,Efield,Bfield,vperp,dtback,i-iicparta(ispecies)
+     $              ,eoverms(ispecies))
                dtdone=dtdone+dtback
 c The remaining time in step is increased by back up and by step loss.
                dtremain=dtremain-dtback+dtpos
@@ -285,10 +286,11 @@ c Save prior position.
             xprior(id)=x_part(id,i)
          enddo
          if(abs(theta).lt.thetamax)then
-            call moveparticle(x_part(1,i),ndims,Bt*eoverms(ispecies)
-     $        ,Efield,Bfield,vperp,dtpos,i-iicparta(ispecies))
+            call moveparticle(x_part(1,i),ndims,Bt
+     $           ,Efield,Bfield,vperp,dtpos,i-iicparta(ispecies)
+     $           ,eoverms(ispecies))
          else
-            call driftparticle(x_part(1,i),ndims,Bt*eoverms(ispecies)
+            call driftparticle(x_part(1,i),ndims,Bt
      $           ,Efield,Bfield,vperp,dtpos,i-iicparta(ispecies))
          endif
          dtdone=dtdone+dtpos
@@ -819,6 +821,7 @@ c in the u-direction times dt from the input position xin to xout.
       end
 c*********************************************************************
       subroutine gyro3(Bt,u,xin,vin,xg,xc)
+c Bt in this routine is multiplied by eoverm.
 c Find gyro radius and center of particle at xin, velocity vin.
 
 c Given a field Bt
@@ -892,13 +895,13 @@ c Normalize the bulkforce, multiplying by factor fac
       end
 c *******************************************************************
       subroutine moveparticle(xr,ndims,Bt,Efield,Bfield,vperp
-     $     ,dtpos,k)
+     $     ,dtpos,k,eom)
 c Move the passed particle in the fields B,E for timestep dtpos.
 c The Bt passed to this routine has been multiplied by eoverms already.
-c
+c That choice now changed. Bt NOT now scaled. Instead scale inside.
       implicit none
       integer ndims,k
-      real Bt,dtpos
+      real Bt,dtpos,eom
       real xr(2*ndims),Bfield(ndims),Efield(ndims)
       real vperp(ndims)
       integer j
@@ -910,7 +913,7 @@ c Local
       real thetamax
       parameter (thetamax=1.)
       integer k1,k2
-      theta=Bt*dtpos
+      theta=eom*Bt*dtpos
       if(abs(theta).eq.0.)then
 c B-field-less Move -----------------------------
          do j=1,ndims
@@ -933,7 +936,7 @@ c trig functions once, otherwise they dominate the cost.
          stheta=sin(-theta)
          ctheta=cos(theta)
 c            if(i.eq.1)write(*,*)'theta=',theta,thetatoosmall
-         if(theta.lt.thetatoosmall)then
+         if(abs(theta).lt.thetatoosmall)then
 c Weak B-field. Advance using summed accelerations. First half-move
             do j=1,ndims
                xr(j)=xr(j)+xr(j+ndims)*dtpos*0.5
@@ -954,7 +957,7 @@ c Subtract off the perpendicular drift velocity.
                xr(j)=xr(j)-EB(j-ndims)
             enddo
 c Find the gyro radius and gyrocenter.
-            call gyro3(Bt,Bfield,xr(1),xr(4),xg,xc)
+            call gyro3(eom*Bt,Bfield,xr(1),xr(4),xg,xc)
 c Rotate the velocity and gyro radius.
             call rotate3(xr(4),stheta,ctheta,Bfield)
             call rotate3(xg,stheta,ctheta,Bfield)
@@ -970,10 +973,6 @@ c Add back EB.
             enddo
          endif
 
-c      else
-c         call driftparticle(xr,ndims,Bt,Efield,Bfield,vperp
-c     $        ,dtpos,k)
-c      endif
 c End of Move -----------------------------------------------------
       end
 c********************************************************************
