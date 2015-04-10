@@ -88,7 +88,11 @@ c First implemented just for spheres
                ida=0
                call spheresect(ndims,ida,xp1,xp2,obj_geom(ocenter,i)
      $              ,obj_geom(oradius,i),fraction ,f2,sd,C,D)
-               if(fraction.gt.1.or.fraction.lt.0.)fraction=1.
+               if(sd.eq.0.or.fraction-1..gt.0. .or. fraction.lt.0.)then
+                  fraction=1.
+               else
+                  call ijbinsphere(i,fraction,xp1,xp2,ijbin)
+               endif
             elseif(itype.eq.2)then
 c Coordinate-aligned cuboid.               
 c Convert into normalized position for object i.
@@ -99,6 +103,7 @@ c Convert into normalized position for object i.
      $                 /obj_geom(oradius+j-1,i)
                enddo
                call cubeusect(xn1,xn2,nsect,fmin,ids)
+               call ijbincube(i,ids(1),fmin(1),xn1,xn2,ijbin,idebug)
                fraction=fmin(1)
             elseif(itype.eq.3)then
 c Coordinate aligned cylinder.
@@ -113,23 +118,32 @@ c Convert to normalized.
                enddo
                call cylusect(xn1,xn2,i,nsect,fmin,ids)
                fraction=fmin(1)
+               if(nsect.ge.1)then
+                  call ijbincyl(i,ids(1),fmin(1),xn1,xn2,ijbin)
+               endif
             elseif(itype.eq.4)then
 c Parallelopiped.
                call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)
                call cubeusect(xn1,xn2,nsect,fmin,ids)
                fraction=fmin(1)
+               if(nsect.ge.1)then
+                  call ijbincube(i,ids(1),fmin(1),xn1,xn2,ijbin,idebug)
+               endif
             elseif(itype.eq.5)then
 c Non-aligned cylinder.
                call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)         
                call cylusect(xn1,xn2,i,nsect,fmin,ids)
                fraction=fmin(1)
-            elseif(itype.eq.6)then
+               if(nsect.ge.1)then
+                  call ijbincyl(i,ids(1),fmin(1),xn1,xn2,ijbin)
+               endif
+            elseif(itype.eq.6.or.itype.eq.7)then
+c Surface of revolution.
                call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)
                call srvsect(xn1,xn2,i,nsect,fmin,ids)
-               fraction=fmin(1)
-            elseif(itype.eq.7)then
-               call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)
-               call srvsect(xn1,xn2,i,nsect,fmin,ids)
+               if(nsect.ge.1)then
+                  call ijbinsrv(i,ids(1),fmin(1),xp1,xp2,ijbin)
+               endif
                fraction=fmin(1)
             else
                write(*,*)"Unknown object type",obj_geom(otype,i),
@@ -452,7 +466,7 @@ c by a larger amount. Worry!
       if((rb-rm)*(rm-rt)*abs(rt-rb).lt.-1.e-6
      $     .or. (zb-zm)*(zm-zt)*abs(zt-zb).lt.-1.e-6)then
          write(*,*)
-         write(*,*)'Puzzling Values for',ids,iobj
+         write(*,*)'Puzzling Values for',ids,iobj,fraction
          write(*,*)'rb,rm,rt,zb,zm,zt',rb,rm,rt,zb,zm,zt
          write(*,'(20f7.3)')(obj_geom(opr+k,iobj),k=0
      $        ,int(obj_geom(onpair,iobj))-1)

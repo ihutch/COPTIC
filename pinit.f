@@ -267,7 +267,7 @@ c Return a random velocity from the (precalculated) distribution heap.
       integer nc,i
 
       call ranlux(ra,1)
-      nc=int(ncdist*ra)
+      nc=int(ncdists(ispecies)*ra)
       do i=1,ndims
          v(i)=vcols(i,nc,ispecies)
       enddo

@@ -13580,3 +13580,125 @@ This should break all the tests again. And it does.
 Regenerate the .cks files.
 
 Commit.
+
+2 Apr 2015
+
+Fix bug in moveparticle that the theta is negative for electrons but 
+the test was theta.le.thetatoosmall. Make abs(theta).le.thetatoosmall.
+
+regenerate .cks files. Commit. Push.
+
+3 Apr 2015
+
+Quiet initialization. Can be accomplished by dividing the volume into
+blocks, injecting a fixed (plus 1 fraction) number of particles into each
+block, then subtracting their average velocity-offset to avoid flux 
+noise. 
+
+One needs some thoughtful algorithm for block choice, since, for example
+Haakonsen is doing quasi 2-D calculations. Perhaps the number of blocks
+in a particular direction should be no larger than the number of cells.
+Other than that, it would make sense perhaps to make the block aspect
+ratio near 1. In other words, the number of blocks in a particular direction 
+should be proportional to the length of the side in that direction.
+How many blocks should there be?
+
+8 Apr
+Bugs Status
+
+----------------
+On 27 Mar Christian reported this as being the cause of the insulating 
+surface problems:
+diff --git a/fsects.f b/fsects.f
+index 24b1ce4..6a0160f 100644
+--- a/fsects.f
++++ b/fsects.f
+@@ -112,6 +112,7 @@ c Convert to normalized.
+      $                 /obj_geom(oradius+j-1,i)
+                enddo
+                call cylusect(xn1,xn2,i,nsect,fmin,ids)
++               call ijbincyl(i,ids,fmin,xn1,xn2,ijbin)
+                fraction=fmin(1)
+             elseif(itype.eq.4)then
+ c Parallelopiped.
+@@ -122,6 +123,7 @@ c Parallelopiped.
+ c Non-aligned cylinder.
+                call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)        
+                call cylusect(xn1,xn2,i,nsect,fmin,ids)
++               call ijbincyl(i,ids,fmin,xn1,xn2,ijbin)
+                fraction=fmin(1)
+             elseif(itype.eq.6)then
+                call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)
+
+
+But soon after
+ segfaults at
+cijroutine.f line ~1100: "a=obj_geom(oabc,iobj)", where oabc=2 and
+iobj=1065353216 (presumably incorrect).
+
+And on 31 Mar he reported:
+
+The segfault seems to be caused by the difference between oihere and oi_cij when
+idob_cij is being populated; that difference is ignored when reading the data. I
+patched it on the reading side (see below), but I don't understand this part of
+the code well enough to say whether that is the right way to fix it/how robust
+it is (for example, the local value of ichain is now ignored).
+
+--- a/cijroutine.f
++++ b/cijroutine.f
+@@ -1044,7 +1044,7 @@ c Object information
+ c-----------------------------------------------------
+       real tiny
+       parameter (tiny=1.e-15)
+-      integer oisor
++      integer oisor,oip
+ c The total areas and flux counts of all flux-tracked objects
+       real totarea(nf_obj),totflux(nf_obj)
+ c Probably this ought to be set up in a common. But for now:
+@@ -1099,8 +1099,9 @@ c For each direction in this dimension,
+      $              .and.dob_cij(ioad,oisor).ge.0.)then
+ c We intersected an object in this direction. Adjust Cij and B_y
+ c Get back coef
+-                  iobj=idob_cij(ioad,oisor+ichain)
+-                  coefoa=dob_cij(ioad+2,oisor+ichain)
++                  oip=idob_cij(iextra_cij,oisor)
++                  iobj=idob_cij(ioad,oip)
++                  coefoa=dob_cij(ioad+2,oip)
+ c These must get the information from somewhere.
+ c Assume that a and b are unchanged by the variability:
+                   a=obj_geom(oabc,iobj)
+@@ -1111,7 +1112,7 @@ c-------------
+                   if(i2type.eq.4)then
+ c                     write(*,*)'Insulating',ifobj
+ c Address the flux data
+-                     ijbin(1)=idob_cij(ioad+1,oisor+ichain)
++                     ijbin(1)=idob_cij(ioad+1,oip)
+ c Pull the area of this facet into here
+                      iaddress=ijbin(1)+nf_address(nf_flux,ifobj,nf_pa)
+                      area=ff_data(iaddress)
+
+8 Apr 
+Implemented the ijbin calculation calls for all the geometry types in
+potlsect. 
+
+Not yet the oihere problem fix.
+
+
+10 Apr 2015
+Working on cijroutine.f
+
+First let's tidy up cijroutine. Remove the newbox code that disables some
+long obsolete code that did not work well. 
+
+Understanding the cijroutine code. Because of the new boxedge treatment,
+the chained extra data for flux-dependent intersections is not now 
+necessarily immediately above the data for the intersection it was chained
+from. However, the code in cijdirect appears to assume that it is.
+That seems to be the problem. 
+
+The difficulty now is that since cijdirect just iterates through all
+the objectcrossing data, how does it know which of these data slots is
+chained and which is an actual intersection. It ought to skip the
+chained.  But how does it know? Well it does nothing if
+idob_cij(iextra_cij,oisor) is unset: it just skips to the next.
+So, since the data of a chained slot should have this unset, we should be ok. 

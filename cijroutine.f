@@ -27,45 +27,38 @@ c-----------------------------------------------------
       real conditions(3,2)
       real tiny
       parameter (tiny=1.e-15)
-      integer ipa(ndims)
       real fn(ndims)
       integer ipt2,oihere
-      logical newbox
+c      integer ipa(ndims)
+c      logical newbox
       integer istart
       integer ijbin(ovlen)
       integer ipb(ndims)
       data ipb/ndims*-1/
       data istart/0/
 
-c Remove this logical when the newbox code is completely established, 
-c together with the obsolete code that it disables.
-      newbox=.true.
-c Silence unused warnings :
-      ichain=inc
 c Default no chain.
       ichain=0
 c ipoint here is the offset (zero-based pointer)
 c The cij address is to data 2*ndims+1 long
       icb=2*ndims+1
-c Object pointer defaults to zero, unset initially..
-c      icij=icb*ipoint+2*ndims+1
+c Object pointer defaults to zero, unset initially.
       icij=icb*(ipoint+1)
 c Prevent divide by zero issues with debyelen
       debyehere=debyelen
       if(debyehere.lt.tiny)debyehere=tiny
-
-      if(newbox)then
-c New boxedge management section
+c New boxedge management section (newbox)
       idiag=0
+c Look at all the adjacent points, and if there is an intersection between
+c any of them and the current point, start an obj for all adjacent points
+c except the lower edges (which are already started).
       call boxedge(ndims,ipb,indi,fn,npoints,idiag)
-c cijroutine sets boxes only if there are at least ndims points.
-c >0 might be more thorough, but perhaps unnecessary.
+c There was doubt about what value of npoints to require, >0 is tight.
       if(npoints.gt.0)then
 c Do over all the corners of this box
          do ic=0,2**ndims-1
             ipt2=ipoint
             do ib=0,ndims-1
-c Set trailing, so we don't write over.
 c Avoiding the lower edge regions
                if(indi(ib+1).le.1)goto 31
                if(btest(ic,ib))ipt2=ipt2-iLs(ib+1)
@@ -73,19 +66,14 @@ c Avoiding the lower edge regions
             icij2=icb*(ipt2+1)
 c Conditionally start the object: only if it does not already exist.
             call objstart(cij(icij2),istart,ipt2)
-c            write(*,'(3i10,4i4,f10.1)')ipoint,ipt2,icij2,ic,indi
-c     $           ,cij(icij2)
  31        continue
          enddo
       else
          cij(icij)=0.
       endif
-c End of new boxedge section
-      else
-         cij(icij)=0.
-      endif
       
-c It is impossible now to assume this object is oi_cij. So don't
+c It is impossible now to assume this object is oi_cij because we might
+c have started an addtional obj. So don't
       if(cij(icij).eq.0.)then
          oihere=oi_cij
       else
@@ -100,12 +88,12 @@ c the value of a, b, c to be attached to it. Fraction=1. is the
 c default case, where no intersection occurs. However, we need to know
 c the fractions for opposite directions before we can calculate the
 c coefficients; so we have to loop twice over the opposite directions.
-c not used         icb2=2*icb
 c For each direction in this dimension,
          do i=1,2
             ioad=ndata_cij*(2*(id-1)+(i-1))+1
             ipm=1-2*(i-1)
 c Determine whether this is a boundary point: adjacent a fraction ne 1.
+c This potlsect call might not need ijbin.
             call potlsect(id,ipm,ndims,indi,
      $           fraction(i),conditions(1,i),dpm(i),iobjno,ijbin(1))
             if(fraction(i).lt.1. .and. fraction(i).ge.0.)then
@@ -122,7 +110,7 @@ c Start chained extra data. This really is in position oi_cij+ichain.
                      ichain=1
 c                     write(*,*)'Chaining',ipoint,(indi(kw),kw=1,ndims)
 c     $                    ,id,i,iobjno,ijbin(1),cij(icij)
-c First time, initialize the pointer
+c First time, initialize the extra pointer
                      idob_cij(iextra_cij,oihere)=oi_cij+ichain
 c and initialize the data for all directions
                      do ie=1,nobj_cij
@@ -228,121 +216,9 @@ c Standard non-boundary setting: not a boundary point.
          enddo
 c End of dimension iteration. cij coefficients now set.
       enddo
-
-      if(.not.newbox)then
-c      if(.true.)then
-c----------------------------------------
-c The following sets the object pointer in cij if there is an object
-c crossing within the one of the 2**ndims boxes which have
-c ijk...=indi(ndims) as a vertex, if it is not already set.
-c A "box" is an ndims-dimensional cube with opposite vertices 
-c indi(ndims) and indi(ndims)+ipa(ndims) with ipa(i)=+-1, defining
-c the box of interest. If the dimension i is under consideration, then
-c ipa(i) defines the direction under consideration. 
-c
-c It then calculates the extended intersection fraction for all the
-c directions from indi(ndims) and enters it into the object data.
-c The routine boxedge does the calculations.
-c If a fraction is already set <1 (in a direction). Use that.  If not,
-c the fraction in each direction represents the axis minimal crossing of
-c bounding planes for that direction. Minimal means the closest to +1,
-c in the order 1->\infty - \infty -> -0. Bounding planes are planes
-c through ndims-lets of box-edge intersections. The boxes relevant to a
-c direction are the 2**(ndims-1) that share this edge.
-c If the returned fraction is 0<f<1, but the prior calculated was not,
-c so that the b/a and c/a are both zero. Don't shift the fraction.
-c If there are no intersections of a box, do no setting for that box (which
-c may mean that some edges remain unset=1, but some might already be set).
-c
-c----------------------------------------
-c Do the box examination and fraction update.
-c Section for using the boxedge call. For each ndims-let of directions
-c call boxedge with the appropriate ipmarray. 2**ndims in all.
-      do j=1,2**ndims
-         k=j-1
-         do i=1,ndims
-c This could be done with bit manipulation probably more efficiently:
-c direction(j)=bit(j)of(i). 0->+1, 1->-1.
-            ipa(i)=1-2*(k-2*(k/2))
-            k=k/2
-         enddo
-c Now ipa is set. Call boxedge, returning the inverse of fractions
-c in fn, and the number of intersections found in npoints.
-         idiag=0
-c         if(oi_cij.eq.3276)idiag=5
-         call boxedge(ndims,ipa,indi,fn,npoints,idiag)
-c         if(idiag.ne.0.and.npoints.ne.0)then
-c            write(*,*)oi_cij,npoints,' fn=',(fn(iw),iw=1,ndims)
-c         endif
-c
-         if(npoints.ge.ndims)then
-            ftot=0
-            do i=1,ndims
-               ftot=ftot+fn(i)
-            enddo
-c See if this plane actually cuts the cell. If not, don't add it.
-c This drastically reduces the number of boxes counted.
-c Also in 3-D it limits additions to 6-intersection cases.
-c            if(ftot.gt.2.)then
-c However, then it is impossible to assume, when dealing with a box
-c containing a point in known region, that any box vertex with no pointer
-c is in that region. That breaks gradlocalregion. So don't drop for now.
-            if(.true.)then
-c Conditionally start the object: only if it does not already exist.
-c               if(cij(icij).eq.0)then
-c                  write(*,'(a,2i10,10i4)')'Old box setting',ipoint,icij
-c     $                 ,j,ipa,indi
-c               endif
-               call objstart(cij(icij),istart,ipoint)
-               oihere=int(cij(icij))
-c Set the flag
-               ifl=2**(j-1)
-               idob_cij(iflag_cij,oihere)=idob_cij(iflag_cij,oihere)+ifl
-c Now use these ndims fractions to update the fractions already inserted,
-c [not] if new ones are "smaller" (closer to zero on the +ve side),
-c or if the fraction is 1, implying not set. 
-               do i=1,ndims
-                  ioad=ndata_cij*(2*(i-1)+(1-ipa(i))/2)+1
-                  f0=dob_cij(ioad,oihere)
-c Only if this is the first entry this direction 
-                  if(f0.eq.1)then 
-                     f1=1./(sign(max(abs(fn(i)),tiny),fn(i)))
-c Warn if any strange crossings found.
-                     if(f1.lt.1. .and. f1.ge.0)then
-c Boxedge has found a fractional crossing that was not found by the
-c earlier intersection examination by potlsect. 
-c The only way this should happen is by the use of SVD on an inappropriate
-c set of box intersections that represents multiple planes crossing the
-c box. 
-c It might also be a bug or mesh clash.
-                        if(error.eq.0)write(*,*)
-     $         'cijroutine     npoint, id oihere indi    f1. Mesh?'
-                        write(*,'(a,2i3,i5,3i4,f6.3,a)')
-     $                       'Warning: Box Recut ',npoints,i*ipa(i)
-     $                       ,oihere,(indi(kk) ,kk=1 ,ndims),f1
-c Silenced temporarily a lot of diagnostic messages.
-c     $                       ,f0,f1,ftot
-c     $                       ,(1./fn(kk),kk=1,ndims)
-c     $                      ,idob_cij(iflag_cij,oihere)
-                        error=error+1
-c Call boxedge with diagnostics
-                        call boxedge(ndims,ipa,indi,fn,npoints,1)
-c But set it not equal to 1, so we know it was set.
-c                        dob_cij(ioad,oihere)=1.001
-c                        dob_cij(ioad,oihere)=f1
-                     else
-                        dob_cij(ioad,oihere)=f1
-                     endif
-                  endif
-               enddo
-            endif
-         endif
-      enddo
-
-      endif
+c Here is where the obsolete code for newbox went.
 
 c Diagnostics sample -----------------------------------
-
       if(.false. .and. cij(ipoint*icb+ndims*2+1).ne.0)then
          cnon=0.
          do k=1,2*ndims
@@ -1034,7 +910,6 @@ c and it is updated in a smoothed manner toward the potential that
 c corresponds to floating.
 c Error indicator
       real error,debyelen
-c      real cij(*)
 c--------------------------------------------------
 c Object-data storage.
       include 'ndimsdecl.f'
@@ -1044,7 +919,7 @@ c Object information
 c-----------------------------------------------------
       real tiny
       parameter (tiny=1.e-15)
-      integer oisor
+      integer oisor,oiextra
 c The total areas and flux counts of all flux-tracked objects
       real totarea(nf_obj),totflux(nf_obj)
 c Probably this ought to be set up in a common. But for now:
@@ -1075,17 +950,16 @@ c the auxiliary data. That is, oisor. oi_cij is the maximum number
 c we've reached.
       oisor=1
       do ioi=1,oi_cij
-      if(idob_cij(iextra_cij,oisor).eq.0)then
+      oiextra=idob_cij(iextra_cij,oisor)
+      if(oiextra.eq.0)then
 c Do nothing but advance to next.
          oisor=oisor+1
       else
-c         if(oisor.lt.20)write(*,*)'cijupdate',oisor
-c     $     ,idob_cij(iextra_cij,oisor)
 c Byte 2 of the type: If it's 4 insulating, 5 floating.
          iobj=idob_cij(iinter_cij,oisor)
          i2type=int(obj_geom(otype,iobj))/256
 c         write(*,*)'i2type=',i2type,iobj
-         ichain=1
+c         ichain=1
          dibdy=dob_cij(ibdy_cij,oisor)
          dob_cij(ibdy_cij,oisor)=0.
 c Iterate over dimensions.
@@ -1099,8 +973,8 @@ c For each direction in this dimension,
      $              .and.dob_cij(ioad,oisor).ge.0.)then
 c We intersected an object in this direction. Adjust Cij and B_y
 c Get back coef
-                  iobj=idob_cij(ioad,oisor+ichain)
-                  coefoa=dob_cij(ioad+2,oisor+ichain)
+                  iobj=idob_cij(ioad,oiextra)
+                  coefoa=dob_cij(ioad+2,oiextra)
 c These must get the information from somewhere.
 c Assume that a and b are unchanged by the variability:
                   a=obj_geom(oabc,iobj)
@@ -1111,7 +985,7 @@ c-------------
                   if(i2type.eq.4)then
 c                     write(*,*)'Insulating',ifobj
 c Address the flux data
-                     ijbin(1)=idob_cij(ioad+1,oisor+ichain)
+                     ijbin(1)=idob_cij(ioad+1,oiextra)
 c Pull the area of this facet into here
                      iaddress=ijbin(1)+nf_address(nf_flux,ifobj,nf_pa)
                      area=ff_data(iaddress)
@@ -1162,11 +1036,9 @@ c     $                    ,' to',c/a
             enddo
 c End of dimension iteration. cij coefficients now set.
          enddo
-c         if(dibdy.ne.dob_cij(ibdy_cij,oisor))then
-c            write(*,*)'Boundary updated from',dibdy,' to'
-c     $           ,dob_cij(ibdy_cij,oisor)
-c         endif
-         oisor=oisor+ichain+1
+c This was using the incorrect assumption that chained data follows.
+c         oisor=oisor+ichain+1
+         oisor=oisor+1
          error=0.
       endif
       if(oisor.gt.oi_cij)return

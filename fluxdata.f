@@ -689,8 +689,6 @@ c Surface of revolution -------------------------------
          ijbin=-1
          call xp2contra(iobj,x1,xi,xn1,xn2,ins1,ins2)
          call srvsect(xn1,xn2,iobj,nsect,fmin,imin)
-c         call srvfsect(ndims,x1,xi,iobj,ijalt,sd,frac)
-c         fraction=frac
          if(.false.)then
             write(*,*)'nsect,fmin,frac',nsect,fmin(1),fmin(2),frac
             write(*,*)'ijalt,ijbin,sds',ijalt,ijbin,sd,sd1
