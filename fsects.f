@@ -75,6 +75,7 @@ c so we are in a position to call the flux routines.
 c-------------------------------------------------------------
 c Process data stored in obj_geom.
       do i=1,ngeomobj
+         infobj=nf_map(i)
          if(obj_geom(oabc,i).ne.0. .or. obj_geom(oabc+1,i).ne.0. .or.
      $        obj_geom(oabc+2,i).ne.0.)then
 c Only for non-null BCs
@@ -90,7 +91,7 @@ c First implemented just for spheres
      $              ,obj_geom(oradius,i),fraction ,f2,sd,C,D)
                if(sd.eq.0.or.fraction-1..gt.0. .or. fraction.lt.0.)then
                   fraction=1.
-               else
+               elseif(infobj.gt.0)then
                   call ijbinsphere(i,fraction,xp1,xp2,ijbin)
                endif
             elseif(itype.eq.2)then
@@ -103,7 +104,9 @@ c Convert into normalized position for object i.
      $                 /obj_geom(oradius+j-1,i)
                enddo
                call cubeusect(xn1,xn2,nsect,fmin,ids)
-               call ijbincube(i,ids(1),fmin(1),xn1,xn2,ijbin,idebug)
+               if(nsect.gt.0.and.infobj.gt.0) then
+                  call ijbincube(i,ids(1),fmin(1),xn1,xn2,ijbin,idebug)
+               endif
                fraction=fmin(1)
             elseif(itype.eq.3)then
 c Coordinate aligned cylinder.
@@ -118,7 +121,7 @@ c Convert to normalized.
                enddo
                call cylusect(xn1,xn2,i,nsect,fmin,ids)
                fraction=fmin(1)
-               if(nsect.ge.1)then
+               if(nsect.ge.1.and.infobj.gt.0)then
                   call ijbincyl(i,ids(1),fmin(1),xn1,xn2,ijbin)
                endif
             elseif(itype.eq.4)then
@@ -126,7 +129,7 @@ c Parallelopiped.
                call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)
                call cubeusect(xn1,xn2,nsect,fmin,ids)
                fraction=fmin(1)
-               if(nsect.ge.1)then
+               if(nsect.gt.0.and.infobj.gt.0)then
                   call ijbincube(i,ids(1),fmin(1),xn1,xn2,ijbin,idebug)
                endif
             elseif(itype.eq.5)then
@@ -134,14 +137,14 @@ c Non-aligned cylinder.
                call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)         
                call cylusect(xn1,xn2,i,nsect,fmin,ids)
                fraction=fmin(1)
-               if(nsect.ge.1)then
+               if(nsect.ge.1.and.infobj.gt.0)then
                   call ijbincyl(i,ids(1),fmin(1),xn1,xn2,ijbin)
                endif
             elseif(itype.eq.6.or.itype.eq.7)then
 c Surface of revolution.
                call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)
                call srvsect(xn1,xn2,i,nsect,fmin,ids)
-               if(nsect.ge.1)then
+               if(nsect.ge.1.and.infobj.gt.0)then
                   call ijbinsrv(i,ids(1),fmin(1),xp1,xp2,ijbin)
                endif
                fraction=fmin(1)
@@ -590,7 +593,9 @@ c Intersects this plane. Test whether other dimensions are inside
                xi=xp1(j)+fn*(xp2(j)-xp1(j))
                if(abs(xi).gt.1)goto 1
 c This prevents duplicates when the intersection is at an edge:
-               if(nsect.ge.1.and.fn.eq.fmin(nsect))goto 1
+               if(nsect.ge.1)then
+                  if(fn.eq.fmin(nsect))goto 1
+               endif
             enddo
 c This is sorted:
             call insertsorted2(nsect,fmin,fn,ids,i)
@@ -757,6 +762,9 @@ c obj_geom(ofn.,iobj):
       integer infobj,ibstep,ibin,k,i
       real xk,xcr
       infobj=nf_map(iobj)
+      if(infobj.eq.0)then
+         write(*,*)'ijbincube called for unmapped object',iobj
+      endif
       ibstep=1
       ibin=0
       if(idebug.eq.1)write(*,'(''Position'',$)')

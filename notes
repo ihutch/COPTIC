@@ -13702,3 +13702,12 @@ chained and which is an actual intersection. It ought to skip the
 chained.  But how does it know? Well it does nothing if
 idob_cij(iextra_cij,oisor) is unset: it just skips to the next.
 So, since the data of a chained slot should have this unset, we should be ok. 
+Therefore his patch is basically correct EXCEPT the skip has to be removed.
+
+15 Apr 2015
+Working on reported floating segfault I find that there are bounds errors
+when potlsect is called in cijroutine. This appears to be because the 
+nf_map(iobj) is zero. The object is not yet mapped when ijbincube is being
+called. It really ought not to be called in the first instance when the
+cijroutine is setting things up. So add a test to evaluate infobj=nf_map(iobj)
+

@@ -493,6 +493,10 @@ c Otherwise steps of iused(1)-1 or 1 on first or last (of dim 1).
       inc=1
 c Start object data for this point if not already started.
       call objstart(cij(icij),ist,ipoint)
+      if(cij(icij).eq.0)then
+         write(*,*)'cji zero',icij,indi,ipoint,ist
+         stop
+      endif
       idob_cij(iregion_cij,int(cij(icij)))=-1
 c Calculate the increment:
       do n=ndims,2,-1

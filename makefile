@@ -89,7 +89,7 @@ COMPILE-SWITCHES =-Wall $(OPTIMIZE) -I.
 #COMPILE-SWITCHES =-Wall   $(OPTIMIZE) -I. -g -fbounds-check
 ##########################################################################
 # Decide on various compiler options based on compiler name.
-# -fno-bounds-check is not recognized reliably except by g77
+# -fno-bounds-check is not recognized reliably except by g77 and gfortran
 # In g77 -Wno-globals silences spurious type messages on reduce.f
 # This is unrecognized by gfortran. no-unused-dummy... is better.
 ifeq ("$(findstring g77,$(G77))","")
@@ -104,6 +104,7 @@ ifeq ("$(findstring g77,$(G77))","")
   ifeq ("$(findstring gfortran,$(shell mpif77 -show))","")
   else
     NGW=-Wno-unused-dummy-argument
+    NOBOUNDS=$(COMPILE-SWITCHES) -fno-bounds-check
 # Not now needed -Wno-conversion 
   endif
  endif
