@@ -67,7 +67,8 @@ c Do over all the corners of this box
          do ic=0,2**ndims-1
             ipt2=ipoint
             do ib=0,ndims-1
-c Avoiding the lower edge regions
+c Avoiding the lower edge regions, which are boundaries.
+c Upper boundaries are not set because they aren't trailing.
                if(indi(ib+1).le.1)goto 31
                if(btest(ic,ib))ipt2=ipt2-iLs(ib+1)
             enddo
@@ -499,12 +500,10 @@ c Silence unused warnings
 c Algorithm: if on a boundary face of dimension >1, steps of 1 (dim 1).
 c Otherwise steps of iused(1)-1 or 1 on first or last (of dim 1).
       inc=1
-c Start object data for this point if not already started.
+c Initialize the cij because cijroutine now does not do so for boundary.
+      cij(icij)=0
+c Start object data for this point. 
       call objstart(cij(icij),ist,ipoint)
-      if(cij(icij).eq.0)then
-         write(*,*)'cji zero',icij,indi,ipoint,ist
-         stop
-      endif
       idob_cij(iregion_cij,int(cij(icij)))=-1
 c Calculate the increment:
       do n=ndims,2,-1
@@ -527,7 +526,6 @@ c This is where the boundary setting is done for n=1
          stop
       endif
  101  continue
-c      write(*,*)'indi,inc,iused,ipoint',indi,inc,iused,ipoint
       end
 c****************************************************************
 c*********************************************************************

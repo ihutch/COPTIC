@@ -13735,6 +13735,15 @@ to tell if it's non-zero. Then I zero it if not.
 I think this is simply an error that has been present since Jan 2015,
 and just needs cij(icij)=0 at the start.
 
-Reset geometry/uniformelec.cks (broken by electron fixes earlier)
+Reset geometry/uniformelec.cks (broken by electron fixes earlier):
 
 commit.
+
+Doesn't solve the pathscale problem with segfaults. It appears that 
+cijroutine initializes only nodes that don't include the boundary.
+Then when cijedge initialzes the boundary, it breaks. Yes the mditerate
+call for cijroutine uses ium2 and starts at an incremented pointer.
+Therefore, the fix is that cijedge should always set cij to zero and then
+do its job. Seems to prevent the segfault.
+
+Implement. commit. push.
