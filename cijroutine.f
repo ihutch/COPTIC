@@ -31,27 +31,35 @@ c-----------------------------------------------------
       integer ipt2,oihere
 c      integer ipa(ndims)
 c      logical newbox
-      integer istart
+      integer istart,ireport
       integer ijbin(ovlen)
       integer ipb(ndims)
       data ipb/ndims*-1/
-      data istart/0/
+      data istart/0/ireport/0/
 
 c Default no chain.
       ichain=0
 c ipoint here is the offset (zero-based pointer)
 c The cij address is to data 2*ndims+1 long
       icb=2*ndims+1
-c Object pointer defaults to zero, unset initially.
       icij=icb*(ipoint+1)
+c Object pointer defaults to zero, unset initially.
+c We are setting only trailing adjacent pointers in the loop below.
+c Therefore we know that this cij(icij) has not yet been set.
+      if(cij(icij).ne.0)then
+c When we are sure this is working, we can simplify to cij(icij)=0.
+         if(ireport.eq.0)write(*,*)'cij(icij) needed initialization'
+     $        ,icij,cij(icij)
+         ireport=ireport+1
+         cij(icij)=0
+      endif
 c Prevent divide by zero issues with debyelen
       debyehere=debyelen
       if(debyehere.lt.tiny)debyehere=tiny
 c New boxedge management section (newbox)
       idiag=0
-c Look at all the adjacent points, and if there is an intersection between
-c any of them and the current point, start an obj for all adjacent points
-c except the lower edges (which are already started).
+c Look at the trailing box relative to point (since ipb is -1).
+c Report any intersections as npoints. 
       call boxedge(ndims,ipb,indi,fn,npoints,idiag)
 c There was doubt about what value of npoints to require, >0 is tight.
       if(npoints.gt.0)then

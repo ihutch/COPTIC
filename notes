@@ -13711,3 +13711,30 @@ nf_map(iobj) is zero. The object is not yet mapped when ijbincube is being
 called. It really ought not to be called in the first instance when the
 cijroutine is setting things up. So add a test to evaluate infobj=nf_map(iobj)
 
+16 Apr 15
+
+Further pursuing this problem with cij. First, I note that since fluxdata
+is deliberately initialized before cijroutine or cijedge is called, the
+immediately prior report can't be quite right. 
+
+More significantly there appears to be a problem in cijroutine in that
+it is implicitly presuming cij to have been intialized to zero. The
+first thing that cij does is for any box that has intersections do an
+objstart.  The first thing that objstart does is to test if cij(icij2)
+is zero.  If it isn't then it is not set up properly because the
+rubbish prevents it.  In earlier versions, this problem did not exist
+because there there was special treatment setting cij(icij)=0 at the
+start of cijroutine.  It looks as if the modifications I made to
+rationalize and speed it up have broken it. 
+
+Looking back I see that the new code is supposed to set only trailing boxes
+that have already been examined. Hence it ought to be possible simply to
+zero the cij we are working on initially. First I put a write statement
+to tell if it's non-zero. Then I zero it if not. 
+
+I think this is simply an error that has been present since Jan 2015,
+and just needs cij(icij)=0 at the start.
+
+Reset geometry/uniformelec.cks (broken by electron fixes earlier)
+
+commit.
