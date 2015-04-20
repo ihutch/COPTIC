@@ -13747,3 +13747,18 @@ Therefore, the fix is that cijedge should always set cij to zero and then
 do its job. Seems to prevent the segfault.
 
 Implement. commit. push.
+
+20 Apr 15 Problem with the theta.lt.thetatoosmall code. It appears not
+to apply the electric field corresponding to -vdriftxB that is
+needed. Now that electrons are allowed. We might be in a situation
+with small drift of ions becoming non-negligible. It needs to be
+implemented. moveparticle seems the sensible place to put the extra
+acceleration, since it is not required for zero field or for strong
+field treated via the drift mechanism.  But then it needs to be added
+to the moveparticle arguments. Also we need to know which species'
+drift field to use, but ispecies is not known in
+moveparticle. Currently an integer is passed but not used.
+Replace that with driftfields(1,ispecies). 
+
+Tested with blankgeom.dat which has no objects but a 1.e-6 variation of
+potential round the boundary to force the convergence to be quick.

@@ -429,37 +429,26 @@ c Flag an inappropriate field and dt combination
      $           ,' Use B.dt less than 1; else inaccurate.'
          endif
          do ispecies=1,nspecies
-c This test is redundant now. Should use the general (else) case.
-c            if(vdrifts(1,ispecies).eq.0)then
-            if(.false.)then
-c Assume that vds(ispecies) is in the z-direction
-               vpars(ispecies)=vds(ispecies)*Bfield(ndims)
-               do i=1,ndims
-                  vperps(i,ispecies)=-Bfield(i)*vpars(ispecies)
-               enddo
-            vperps(ndims,ispecies)=vperps(ndims,ispecies)+vds(ispecies)
-            else
-c vds(ispecies) non-z:
-               vpars(ispecies)=0.
-               do i=1,ndims
-                  vpars(ispecies)=vds(ispecies)*vdrifts(i,ispecies)
-     $                 *Bfield(i)
-               enddo
-               do i=1,ndims
-                  vperps(i,ispecies)=-Bfield(i)*vpars(ispecies)
-               enddo
-               vwork=0.
-               do i=1,ndims
-                  vperps(i,ispecies)=vperps(i,ispecies)+vds(ispecies)
-     $                 *vdrifts(i,ispecies)
-                  vwork=vwork+(vperps(i,ispecies)+vpars(ispecies)
-     $                 *Bfield(i))**2
-               enddo
-               vwork=sqrt(vwork)
-               if(lmyidhead)write(*,'(a,f10.6,a,3f10.6,a,f10.6)'
-     $              )'vpars(ispecies),vperp,vtot',vpars(ispecies),','
-     $              ,(vperps(id,ispecies),id=1,3),',',vwork
-            endif
+c vds(ispecies):
+            vpars(ispecies)=0.
+            do i=1,ndims
+               vpars(ispecies)=vds(ispecies)*vdrifts(i,ispecies)
+     $              *Bfield(i)
+            enddo
+            do i=1,ndims
+               vperps(i,ispecies)=-Bfield(i)*vpars(ispecies)
+            enddo
+            vwork=0.
+            do i=1,ndims
+               vperps(i,ispecies)=vperps(i,ispecies)+vds(ispecies)
+     $              *vdrifts(i,ispecies)
+               vwork=vwork+(vperps(i,ispecies)+vpars(ispecies)
+     $              *Bfield(i))**2
+            enddo
+            vwork=sqrt(vwork)
+            if(lmyidhead)write(*,'(a,f10.6,a,3f10.6,a,f10.6)'
+     $           )'vpars(ispecies),vperp,vtot',vpars(ispecies),','
+     $           ,(vperps(id,ispecies),id=1,3),',',vwork
          enddo
       else
 c Zero the vparallel and vperp. Probably not necessary; but tidy.

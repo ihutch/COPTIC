@@ -168,6 +168,7 @@ c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
       ndropped=0
       if(nptdiag.eq.0)nptdiag=nsbins
+      call initdriftfield
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
  250  call meshconstruct(ndims,iuds,ifull,ipartperiod,rs)

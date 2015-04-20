@@ -145,7 +145,7 @@ c z-direction and maxwellians of width given by Ts
 c For three coordinate directions
       do id=1,3
 c Width of velocity distribution
-         xw=sqrt(Ts(ispec))*abs(eoverms(ispec))
+         xw=sqrt(Ts(ispec)*abs(eoverms(ispec)))
 c    For two ends (and hence velocity polarities)
          do i2=1,2
 c idrein determines the sign of velocity. i2 odd => idrein negative.
@@ -205,7 +205,7 @@ c            write(*,*)index,(hreins(kk,index,ispec),kk=0,5)
 c     $           ,(hreins(kk,index,ispec),kk=ncrein-4,ncrein)
          enddo
          idrein=id
-         if(theta.lt.thetamax)then
+         if(abs(theta).lt.thetamax)then
             call cumprob(fvdrein,xw,xc,
      $           ncrein,preins(0,id,ispec),gdummy,myid)
          else

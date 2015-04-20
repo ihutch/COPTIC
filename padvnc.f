@@ -185,7 +185,7 @@ c takes a position corresponding to a drift-step smaller by a factor of 2.
 c That means the backed-up position is dtprec/4 earlier.
                dtback=-x_part(idtp,i)/4.
                call moveparticle(x_part(1,i),ndims,Bt
-     $              ,Efield,Bfield,vperp,dtback,i-iicparta(ispecies)
+     $              ,Efield,Bfield,vperp,dtback,driftfields(1,ispecies)
      $              ,eoverms(ispecies))
                dtdone=dtdone+dtback
 c The remaining time in step is increased by back up and by step loss.
@@ -245,8 +245,8 @@ c Else empty slot and move to next particle.
             goto 400            
          endif
 c Accelerate ----------
-c Here we only include the electric field force. 
-c B-field force is accommodated within moveparticle routine.
+c Here we only include the electric field force. B-field force and vxB
+c field is accommodated within moveparticle routine.
          do j=ndims+1,2*ndims
             x_part(j,i)=x_part(j,i)
      $           +eoverms(ispecies)*Efield(j-ndims)*dtaccel
@@ -287,7 +287,7 @@ c Save prior position.
          enddo
          if(abs(theta).lt.thetamax)then
             call moveparticle(x_part(1,i),ndims,Bt
-     $           ,Efield,Bfield,vperp,dtpos,i-iicparta(ispecies)
+     $           ,Efield,Bfield,vperp,dtpos,driftfields(1,ispecies)
      $           ,eoverms(ispecies))
          else
             call driftparticle(x_part(1,i),ndims,Bt
@@ -895,15 +895,15 @@ c Normalize the bulkforce, multiplying by factor fac
       end
 c *******************************************************************
       subroutine moveparticle(xr,ndims,Bt,Efield,Bfield,vperp
-     $     ,dtpos,k,eom)
+     $     ,dtpos,driftfield,eom)
 c Move the passed particle in the fields B,E for timestep dtpos.
 c The Bt passed to this routine has been multiplied by eoverms already.
 c That choice now changed. Bt NOT now scaled. Instead scale inside.
       implicit none
-      integer ndims,k
+      integer ndims
       real Bt,dtpos,eom
       real xr(2*ndims),Bfield(ndims),Efield(ndims)
-      real vperp(ndims)
+      real vperp(ndims),driftfield(ndims)
       integer j
 c Local      
       real theta,stheta,ctheta
@@ -937,10 +937,14 @@ c trig functions once, otherwise they dominate the cost.
          ctheta=cos(theta)
 c            if(i.eq.1)write(*,*)'theta=',theta,thetatoosmall
          if(abs(theta).lt.thetatoosmall)then
-c Weak B-field. Advance using summed accelerations. First half-move
+c Weak B-field. First adding the vxB field acceleration for a timestep
+c dtaccel would be equivalent to adding to E. But we don't have dtaccel.
+c Advance using summed accelerations. First half-move
             do j=1,ndims
                xr(j)=xr(j)+xr(j+ndims)*dtpos*0.5
-            enddo          
+c First half vxB acceleration
+               xr(j+ndims)=xr(j+ndims)+driftfield(j)*dtpos*0.5
+            enddo
 c Rotate the velocity to add the magnetic field acceleration.
 c This amounts to a presumption that the magnetic field acceleration
 c acts at the mid-point of the translation (drift) rather than at
@@ -948,6 +952,8 @@ c the kick between translations.
             call rotate3(xr(4),stheta,ctheta,Bfield)
 c Second half-move.
             do j=1,ndims
+c Second half vxB drift field acceleration.
+               xr(j+ndims)=xr(j+ndims)+driftfield(j)*dtpos*0.5
                xr(j)=xr(j)+xr(j+ndims)*dtpos*0.5
             enddo          
          else
@@ -1014,20 +1020,23 @@ c is necessary because the perpendicular acceleration has been applied
 c improperly for the whole timestep.
          xr(j+ndims)=vp*Bfield(j)+EB(j)
       enddo
-c      if(abs(xr(ndims+2)).gt.0.001)then
-c Test if we have a non-zero vy.
-c         write(*,*)'driftparticle nonzerovy',Efield
-c         write(*,*)dtpos,Bt
-c         write(*,*)vp,Bt,Bfield,EB
-c         write(*,*)(xr(k),k=1,6)
-c      endif
-c      if(abs(xr(ndims+1)+1.).gt.0.01)then
-c Test if we have a vx different from 1.
-c         write(*,*)'driftparticle strangevx',Efield
-c         write(*,*)dtpos,Bt
-c         write(*,*)vp,Bt,Bfield,EB
-c         write(*,*)(xr(k),k=1,6)
-c      endif
 
       end
 c*********************************************************************
+      subroutine initdriftfield
+c Initialize the drift electric field = -vxB.  The reason this can be
+c different for different species is that we might want to use it to
+c represent, e.g. gravitational drift. At any rate, it is the electric
+c field needed to give rise to the specified (ExB) drift for that species.
+      include 'ndimsdecl.f'
+      include 'plascom.f'
+      include 'partcom.f'
+c Local
+      do j=1,nspecies
+         do i=1,ndims
+            driftfields(i,j)=-vds(j)*
+     $           (vperps(mod(i,ndims)+1,j)*Bfield(mod(i+1,ndims)+1)
+     $           -vperps(mod(i+1,ndims)+1,j)*Bfield(mod(i,ndims)+1))*Bt
+         enddo
+      enddo
+      end
