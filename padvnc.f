@@ -943,7 +943,7 @@ c Advance using summed accelerations. First half-move
             do j=1,ndims
                xr(j)=xr(j)+xr(j+ndims)*dtpos*0.5
 c First half vxB acceleration
-               xr(j+ndims)=xr(j+ndims)+driftfield(j)*dtpos*0.5
+               xr(j+ndims)=xr(j+ndims)+eom*driftfield(j)*dtpos*0.5
             enddo
 c Rotate the velocity to add the magnetic field acceleration.
 c This amounts to a presumption that the magnetic field acceleration
@@ -953,7 +953,7 @@ c the kick between translations.
 c Second half-move.
             do j=1,ndims
 c Second half vxB drift field acceleration.
-               xr(j+ndims)=xr(j+ndims)+driftfield(j)*dtpos*0.5
+               xr(j+ndims)=xr(j+ndims)+eom*driftfield(j)*dtpos*0.5
                xr(j)=xr(j)+xr(j+ndims)*dtpos*0.5
             enddo          
          else
@@ -1034,9 +1034,13 @@ c field needed to give rise to the specified (ExB) drift for that species.
 c Local
       do j=1,nspecies
          do i=1,ndims
-            driftfields(i,j)=-vds(j)*
+            driftfields(i,j)=-Bt*
      $           (vperps(mod(i,ndims)+1,j)*Bfield(mod(i+1,ndims)+1)
-     $           -vperps(mod(i+1,ndims)+1,j)*Bfield(mod(i,ndims)+1))*Bt
+     $           -vperps(mod(i+1,ndims)+1,j)*Bfield(mod(i,ndims)+1))
          enddo
       enddo
+c      write(*,*)'Bt',Bt
+c      write(*,*)'Bfield',Bfield
+c      write(*,*)'vperps',vperps
+c      write(*,*)'Driftfield', driftfields
       end

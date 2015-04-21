@@ -368,7 +368,7 @@ c Reset all.
 c Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1         
-      elseif(type.gt.110.and.type.lt.110+ndims)then
+      elseif(type.gt.110.and.type.le.110+ndims)then
 c------------------------------------------------
 c Periodic boundary condition on this dimension
          if(iCFcount.eq.0)then
