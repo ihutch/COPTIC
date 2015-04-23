@@ -13762,3 +13762,50 @@ Replace that with driftfields(1,ispecies).
 
 Tested with blankgeom.dat which has no objects but a 1.e-6 variation of
 potential round the boundary to force the convergence to be quick.
+
+23 Apr 2015
+Correcting the cyclotronic mover to avoid electron instabilities.
+Simple test case moverunstable.dat
+# Mesh geometry
+91,1,32,0, -0.025,0.025,
+92,1,3,0, -0.5,0.5,
+93,1,64,0, -0.05,0.05
+
+# Cylinder
+#1027,       1.,0.,0.,  -1.0,0.0,0.0,  1.,0.5,1., 2,  1, 1,512,1
+
+# Particle region
+#99,1,-1,0
+
+# Potential boundary conditions
+111
+112
+113
+
+# Periodic particles in direction 2 (faking pot. with zero grad.)
+98,4,4,4
+
+# s steps length dt
+Arguments: -s1280 -dt0.00004
+Arguments: -ri1600000 -rx0.
+Arguments: -l0.0065625 -Bz6. -v4. -vx-1. -vy0. -vz0.
+# Turn on electrons
+Arguments: -sp -zm-1024
+# Use uniform distribution bins
+Arguments: -pu100
+# Save md diagnostics every a steps.
+Arguments: -md4 -a100
+
+This is unstable with the current mover.
+Deleting the erroneous E kick in padvnc DOES NOT stabilize it.
+However, deleting the ExB contribution to EB velocity shift DOES STABILIZE.
+Conclusion: One must not add the grad\phi x B term to the vdrift.
+
+Reworked moveparticle so that all of the move is in it and there are
+three options. B=0, thetatoosmall=Boris, cyclotronic.
+Drift (infinite B) is in the driftparticle routine, unchanged.
+
+Both movers are now stable wit the above input file. They can be favored
+by adjusting thetatoosmall to either a giant or tiny value.
+
+We are now back to a situation where driftfields are not used.

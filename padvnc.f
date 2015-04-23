@@ -64,6 +64,7 @@ c Initialize. Set reinjection potential. We start with zero reinjections.
       phirein=0
       nrein=0
       nlost=0
+      if(.not.lnotallp)ninjcompa(ispecies)=0
       iocthis=0
       nparta(ispecies)=0
       nsubc=0
@@ -182,10 +183,11 @@ c Reduce the position-step size.
                dtpos=dtpos/2.
 c Subcycling backs up to the start of the current drift-step, and then 
 c takes a position corresponding to a drift-step smaller by a factor of 2.
-c That means the backed-up position is dtprec/4 earlier.
+c That means the backed-up position is dtprec/4 earlier. There might be
+c an error if dtpost and dtaccel are different. Is -dtaccel correct?
                dtback=-x_part(idtp,i)/4.
-               call moveparticle(x_part(1,i),ndims,Bt
-     $              ,Efield,Bfield,vperp,dtback,driftfields(1,ispecies)
+               call moveparticle(x_part(1,i),ndims,Bt ,Efield,Bfield
+     $              ,vperp,dtback,-dtaccel,driftfields(1,ispecies)
      $              ,eoverms(ispecies))
                dtdone=dtdone+dtback
 c The remaining time in step is increased by back up and by step loss.
@@ -244,14 +246,11 @@ c Else empty slot and move to next particle.
             x_part(iflag,i)=0
             goto 400            
          endif
-c Accelerate ----------
+c Accelerate used to be here -----------------
 c Here we only include the electric field force. B-field force and vxB
 c field is accommodated within moveparticle routine.
-         do j=ndims+1,2*ndims
-            x_part(j,i)=x_part(j,i)
-     $           +eoverms(ispecies)*Efield(j-ndims)*dtaccel
-         enddo
          if(Eneutral.ne.0.)then
+c Calculate collision force --------
             if(Bt.ne.0.)then
 c Only the Enparallel is needed for non-zero Bfield.
 c This doesn't seem to be correct unless drift is in z-direction.
@@ -286,8 +285,8 @@ c Save prior position.
             xprior(id)=x_part(id,i)
          enddo
          if(abs(theta).lt.thetamax)then
-            call moveparticle(x_part(1,i),ndims,Bt
-     $           ,Efield,Bfield,vperp,dtpos,driftfields(1,ispecies)
+            call moveparticle(x_part(1,i),ndims,Bt ,Efield,Bfield,vperp
+     $           ,dtpos,dtaccel,driftfields(1,ispecies)
      $           ,eoverms(ispecies))
          else
             call driftparticle(x_part(1,i),ndims,Bt
@@ -895,89 +894,91 @@ c Normalize the bulkforce, multiplying by factor fac
       end
 c *******************************************************************
       subroutine moveparticle(xr,ndims,Bt,Efield,Bfield,vperp
-     $     ,dtpos,driftfield,eom)
-c Move the passed particle in the fields B,E for timestep dtpos.
-c The Bt passed to this routine has been multiplied by eoverms already.
-c That choice now changed. Bt NOT now scaled. Instead scale inside.
+     $     ,dtpos,dtaccel,driftfield,eom)
+c Accelerate and move the passed particle in the fields B,E for timestep
+c dtaccel and dtpos. 
       implicit none
       integer ndims
-      real Bt,dtpos,eom
+      real Bt,dtpos,dtaccel,eom
       real xr(2*ndims),Bfield(ndims),Efield(ndims)
       real vperp(ndims),driftfield(ndims)
       integer j
 c Local      
-      real theta,stheta,ctheta
-      real xg(3),xc(3),EB(3)
+      real theta,stheta,ctheta,thacc
+      real xg(3),xc(3)
       real thetatoosmall
       parameter (thetatoosmall=1.e-3)
       real thetamax
       parameter (thetamax=1.)
-      integer k1,k2
+
       theta=eom*Bt*dtpos
+      thacc=eom*Bt*dtaccel
       if(abs(theta).eq.0.)then
-c B-field-less Move -----------------------------
+c B-field-less Kick - Move -----------------------------
          do j=1,ndims
+            xr(j+ndims)=xr(j+ndims)+eom*Efield(j)*dtaccel
             xr(j)=xr(j)+xr(j+ndims)*dtpos
          enddo          
          return
       endif
 
-c Only if Bt!=0:
-      do j=1,ndims
-         k1=mod(j,ndims)+1
-         k2=mod(j+1,ndims)+1
-c Explicit ExB velocity plus vperp
-         EB(j)=vperp(j)+(Efield(k1)*Bfield(k2)-Efield(k2)*Bfield(k1))/Bt
-      enddo
-c      if(abs(theta).lt.thetamax)then
-c Magnetic field non-zero but finite -------------
+c Only if magnetic field nonzero ---------------------------------
 c Rotation is counterclockwise for ions. We only want to call the 
 c trig functions once, otherwise they dominate the cost.
-         stheta=sin(-theta)
-         ctheta=cos(theta)
-c            if(i.eq.1)write(*,*)'theta=',theta,thetatoosmall
-         if(abs(theta).lt.thetatoosmall)then
-c Weak B-field. First adding the vxB field acceleration for a timestep
-c dtaccel would be equivalent to adding to E. But we don't have dtaccel.
-c Advance using summed accelerations. First half-move
-            do j=1,ndims
-               xr(j)=xr(j)+xr(j+ndims)*dtpos*0.5
-c First half vxB acceleration
-               xr(j+ndims)=xr(j+ndims)+eom*driftfield(j)*dtpos*0.5
-            enddo
+      if(abs(theta).lt.thetatoosmall)then
+c Weak B-field. ------------------------------------
+c Boris Mover in frame of reference moving with external drift
+         stheta=sin(-thacc)
+         ctheta=cos(thacc)
+         do j=1,ndims
+c First E half-kick
+            xr(j+ndims)=xr(j+ndims)+eom*Efield(j)*dtaccel*0.5
+c Change reference to drifting frame
+            xr(j+ndims)=xr(j+ndims)-vperp(j)
+         enddo
 c Rotate the velocity to add the magnetic field acceleration.
 c This amounts to a presumption that the magnetic field acceleration
 c acts at the mid-point of the translation (drift) rather than at
 c the kick between translations.
-            call rotate3(xr(4),stheta,ctheta,Bfield)
+         call rotate3(xr(4),stheta,ctheta,Bfield)
 c Second half-move.
-            do j=1,ndims
-c Second half vxB drift field acceleration.
-               xr(j+ndims)=xr(j+ndims)+eom*driftfield(j)*dtpos*0.5
-               xr(j)=xr(j)+xr(j+ndims)*dtpos*0.5
-            enddo          
-         else
-c Strong but finite B-field case:
+         do j=1,ndims
+c Transform back to undrifted frame
+            xr(j+ndims)=xr(j+ndims)+vperp(j)
+c Second E half-kick
+            xr(j+ndims)=xr(j+ndims)+eom*Efield(j)*dtaccel*0.5
+c Move particle
+            xr(j)=xr(j)+xr(j+ndims)*dtpos
+         enddo          
+      else
+c Strong but finite B-field case -------------------------
+c Cyclotronic mover
+c Rotation is counterclockwise for ions. We only want to call the 
+c trig functions once, otherwise they dominate the cost.
+         stheta=sin(-theta)
+         ctheta=cos(theta)
+         do j=ndims+1,2*ndims
+c E-kick
+            xr(j+ndims)=xr(j+ndims)+eom*Efield(j)*dtaccel
 c Subtract off the perpendicular drift velocity.
-            do j=ndims+1,2*ndims
-               xr(j)=xr(j)-EB(j-ndims)
-            enddo
+            xr(j)=xr(j)-vperp(j-ndims)
+         enddo
 c Find the gyro radius and gyrocenter.
-            call gyro3(eom*Bt,Bfield,xr(1),xr(4),xg,xc)
+         call gyro3(eom*Bt,Bfield,xr(1),xr(4),xg,xc)
 c Rotate the velocity and gyro radius.
-            call rotate3(xr(4),stheta,ctheta,Bfield)
-            call rotate3(xg,stheta,ctheta,Bfield)
+         call rotate3(xr(4),stheta,ctheta,Bfield)
+         call rotate3(xg,stheta,ctheta,Bfield)
 c Move xc along the B-direction.
-            call translate3(xc,xr(4),dtpos,Bfield,xc)
+         call translate3(xc,xr(4),dtpos,Bfield,xc)
 c Add the new gyro center and gyro radius
 c And add back the drift velocity.
-            do j=1,ndims
+         do j=1,ndims
 c Move the gyro-center perpendicular and add gyro-radius:
-               xr(j)=xc(j)+EB(j)*dtpos+xg(j)
-c Add back EB.
-               xr(j+ndims)=xr(j+ndims)+EB(j)
-            enddo
-         endif
+            xr(j)=xc(j)+vperp(j)*dtpos+xg(j)
+c Add back vperp.
+            xr(j+ndims)=xr(j+ndims)+vperp(j)
+         enddo
+      endif
 
 c End of Move -----------------------------------------------------
       end
@@ -1039,8 +1040,4 @@ c Local
      $           -vperps(mod(i+1,ndims)+1,j)*Bfield(mod(i,ndims)+1))
          enddo
       enddo
-c      write(*,*)'Bt',Bt
-c      write(*,*)'Bfield',Bfield
-c      write(*,*)'vperps',vperps
-c      write(*,*)'Driftfield', driftfields
       end
