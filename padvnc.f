@@ -902,8 +902,8 @@ c dtaccel and dtpos.
       real Bt,dtpos,dtaccel,eom
       real xr(2*ndims),Bfield(ndims),Efield(ndims)
       real vperp(ndims),driftfield(ndims)
-      integer j
 c Local      
+      integer j
       real theta,stheta,ctheta,thacc
       real xg(3),xc(3)
       real thetatoosmall
@@ -957,11 +957,11 @@ c Rotation is counterclockwise for ions. We only want to call the
 c trig functions once, otherwise they dominate the cost.
          stheta=sin(-theta)
          ctheta=cos(theta)
-         do j=ndims+1,2*ndims
+         do j=1,ndims            
 c E-kick
             xr(j+ndims)=xr(j+ndims)+eom*Efield(j)*dtaccel
 c Subtract off the perpendicular drift velocity.
-            xr(j)=xr(j)-vperp(j-ndims)
+            xr(j+ndims)=xr(j+ndims)-vperp(j)
          enddo
 c Find the gyro radius and gyrocenter.
          call gyro3(eom*Bt,Bfield,xr(1),xr(4),xg,xc)
