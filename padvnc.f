@@ -904,7 +904,7 @@ c dtaccel and dtpos.
       real vperp(ndims),driftfield(ndims)
 c Local      
       integer j
-      real theta,stheta,ctheta,thacc
+      real theta,stheta,ctheta,thacc,sthacc,cthacc
       real xg(3),xc(3)
       real thetatoosmall
       parameter (thetatoosmall=1.e-3)
@@ -928,8 +928,6 @@ c trig functions once, otherwise they dominate the cost.
       if(abs(theta).lt.thetatoosmall)then
 c Weak B-field. ------------------------------------
 c Boris Mover in frame of reference moving with external drift
-         stheta=sin(-thacc)
-         ctheta=cos(thacc)
          do j=1,ndims
 c First E half-kick
             xr(j+ndims)=xr(j+ndims)+eom*Efield(j)*dtaccel*0.5
@@ -940,7 +938,9 @@ c Rotate the velocity to add the magnetic field acceleration.
 c This amounts to a presumption that the magnetic field acceleration
 c acts at the mid-point of the translation (drift) rather than at
 c the kick between translations.
-         call rotate3(xr(4),stheta,ctheta,Bfield)
+         sthacc=sin(-thacc)
+         cthacc=cos(thacc)
+         call rotate3(xr(4),sthacc,cthacc,Bfield)
 c Second half-move.
          do j=1,ndims
 c Transform back to undrifted frame
@@ -953,10 +953,6 @@ c Move particle
       else
 c Strong but finite B-field case -------------------------
 c Cyclotronic mover
-c Rotation is counterclockwise for ions. We only want to call the 
-c trig functions once, otherwise they dominate the cost.
-         stheta=sin(-theta)
-         ctheta=cos(theta)
          do j=1,ndims            
 c E-kick
             xr(j+ndims)=xr(j+ndims)+eom*Efield(j)*dtaccel
@@ -966,8 +962,18 @@ c Subtract off the perpendicular drift velocity.
 c Find the gyro radius and gyrocenter.
          call gyro3(eom*Bt,Bfield,xr(1),xr(4),xg,xc)
 c Rotate the velocity and gyro radius.
-         call rotate3(xr(4),stheta,ctheta,Bfield)
-         call rotate3(xg,stheta,ctheta,Bfield)
+c Rotation is counterclockwise for ions.
+         sthacc=sin(-thacc)
+         cthacc=cos(thacc)
+         call rotate3(xr(4),sthacc,cthacc,Bfield)
+         if(theta.eq.thacc)then
+            call rotate3(xg,sthacc,cthacc,Bfield)
+         else
+c For unequal timesteps, rotate gyro center by theta, not thacc.
+            stheta=sin(-theta)
+            ctheta=cos(theta)
+            call rotate3(xg,stheta,ctheta,Bfield)
+         endif
 c Move xc along the B-direction.
          call translate3(xc,xr(4),dtpos,Bfield,xc)
 c Add the new gyro center and gyro radius

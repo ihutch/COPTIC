@@ -335,7 +335,6 @@ c (Re)Initialize the fortran random number generator.
 c      idum=-myid-1
       call rluxgo(1,myid,0,0)
 c Initialize with a specified number of particles.
-c      write(*,*)'ibool_part=',ibool_part
       call pinit(subcycle)
 c      if(lmyidhead)write(*,*)'Return from pinit'
 c---------------------------------------------

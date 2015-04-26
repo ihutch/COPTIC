@@ -13805,7 +13805,21 @@ Reworked moveparticle so that all of the move is in it and there are
 three options. B=0, thetatoosmall=Boris, cyclotronic.
 Drift (infinite B) is in the driftparticle routine, unchanged.
 
-Both movers are now stable wit the above input file. They can be favored
+Both movers are now stable with the above input file. They can be favored
 by adjusting thetatoosmall to either a giant or tiny value.
 
 We are now back to a situation where driftfields are not used.
+
+27 Apr 15 
+
+Thinking about reported electron excess (ion deficit) at drift input.
+Ignoring dtremain, particles are reinjected at the boundary and then
+given a standard move with a dtpos that is a random fraction of
+current dtpos, with dtp equal to zero. That means dtaccel is equal to
+half dtpos. It mocks up a situation where the previous move was of 
+negligible length, in which case the distribution ought to be correct.
+The only ambiguity I see is that the theta is being calculated with 
+dtpos in cyclotron mover and dtaccel in the Boris.
+
+I think this is now a mistake. The cyclotronic mover should rotate the
+velocity by dtaccel and the gyroradius by dtpos. So implemented that.

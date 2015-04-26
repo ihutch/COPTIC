@@ -157,9 +157,6 @@ c Shifted Gaussians.
                x_part(4,i)=tisq*gasdev(myid) + vd*vdrift(1)
                x_part(5,i)=tisq*gasdev(myid) + vd*vdrift(2)
                x_part(6,i)=tisq*gasdev(myid) + vd*vdrift(3)
-c Either of these calls cause the peaking of the profile.
-c               test=tisq*gasdev(myid) + vd*vdrift(3)
-c               x_part(6,i)=tisq*gasdev(myid) + vd*vdrift(3)
             else
                call colvget(x_part(4,i),ispecies)
             endif
