@@ -49,7 +49,7 @@ static int accis_eye3d=9999;
 static int accis_glback=1;
 
 /* Static maximum number of points in path */
-#define accis_path_max 4000
+#define accis_path_max 300
 static XPoint accis_path[accis_path_max];
 static int accis_pathlen=0;
 /* Until svga is called, the default is that there is no display */
@@ -456,19 +456,75 @@ FORT_INT *px, *py, *ud;
     return 0;
 } /* vec_ */
 /* ******************************************************************** */
-/* Fill the current path */
-void vecfill_()
+/* Fill the current path. Incorrect because OpenGL requires tessellation*/
+void vecfillold_()
 {
   int i;
   extern XPoint accis_path[];
     extern int accis_pathlen;
     if(accis_pathlen>1){ /* If path is more than 2 points, fill. */
+      /* This works only for convex path */
       glBegin(GL_POLYGON);
       for(i=0;i<=accis_pathlen;i++){
 	glVertex2i(accis_path[i].x,accis_path[i].y);
       }
       glEnd();
     }
+}
+/* ******************************************************************** */
+void combineCallback(GLdouble coords[3], GLdouble *vertex_data[4],
+                     GLfloat weight[4], GLdouble **dataOut )
+{ /* Simplest combine callback just returns the coords. */ 
+   GLdouble *vertex;
+   vertex = (GLdouble *) malloc(3 * sizeof(GLdouble));
+   vertex[0] = coords[0];
+   vertex[1] = coords[1];
+   vertex[2] = coords[2];
+   *dataOut = vertex;
+}
+/*----------------------------------------------------------------------*/
+/* Draw a filled polygon (compatibility function for XFillPolygon()	*/
+/* Originally based on, but with serious corrections to, the code in    */
+/* opengl.c  by Tim Edwards.                   Ian Hutchinson 2015      */
+/*----------------------------------------------------------------------*/
+void
+FillPolygon(Display *dpy, Window win, GC nullptr, XPoint *points,
+	int npoints, int shape, int mode)
+{
+   int i, j;
+   static GLUtesselator *tess = NULL;
+   static GLdouble *v=NULL;
+
+   if (tess == NULL) {
+      tess = gluNewTess();
+      gluTessCallback(tess, GLU_TESS_BEGIN, (_GLUfuncptr)glBegin);
+      gluTessCallback(tess, GLU_TESS_VERTEX, (_GLUfuncptr)glVertex2dv);
+      gluTessCallback(tess, GLU_TESS_END, (_GLUfuncptr)glEnd);
+      gluTessCallback(tess, GLU_TESS_COMBINE, (_GLUfuncptr)combineCallback);
+   }
+   v = (GLdouble *)realloc(v, 3 * npoints * sizeof(GLdouble));
+
+   gluTessBeginPolygon(tess, NULL);
+   gluTessBeginContour(tess);
+   j = 0;
+   /* There have to be 3 coordinates with z=0 passed to gluTessVertex*/
+   for (i = 0; i < npoints; i++, j += 3) {
+      v[j] = (GLdouble)points[i].x;
+      v[j + 1] = (GLdouble)points[i].y;
+      v[j+2]=0;
+      /* printf("%d %f %f\n",i,v[j],v[j+1]); */
+      gluTessVertex(tess, &v[j], &v[j]);
+   }
+   gluTessEndContour(tess);
+   gluTessEndPolygon(tess);
+}
+/* ******************************************************************** */
+/* Fill the current path, Using GLX tessalation code.*/
+void vecfill_()
+{
+  Window win=0; GC nullptr=0;
+      FillPolygon(accis_display,win,nullptr,
+		   accis_path,accis_pathlen+1,Nonconvex,CoordModeOrigin);
 }
 /* ******************************************************************** */
 float xeye,yeye,zeye;
@@ -838,3 +894,5 @@ void glfront_()
      glDrawBuffer(GL_FRONT_AND_BACK); */
   if(accis_glback)ACCIS_SWAP /* Should never be called*/
 }
+
+

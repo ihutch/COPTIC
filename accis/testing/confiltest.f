@@ -1,7 +1,7 @@
 c  Test of contouring routine.
       save
       integer nx,ny,nlmax
-      parameter (nx=30,ny=40,nlmax=50)
+      parameter (nx=30,ny=41,nlmax=50)
 c      parameter (nx=8,ny=8,nlmax=50)
 c      parameter  (nx=20,ny=17,nlmax=50)
       real z(nx,ny),x(nx,ny),y(nx,ny),cl(nlmax)
@@ -11,7 +11,7 @@ c      parameter  (nx=20,ny=17,nlmax=50)
       integer ired(ipno),igreen(ipno),iblue(ipno)
 
       icolsmooth=0
-      nl=5
+      nl=8
       icolsmooth=1
 c icolsmooth determines if we use gradients, and then color-step.
 c      write(*,'('' Enter No of contours (<50), and colorsmooth'')')
@@ -51,6 +51,7 @@ c x,y matrices used since last arg 2. Coloring since +16. +64 tricolor.
        call axis
        call axlabels('x','y')
        call pltend
+       if(.false.)then
        call pltinit(x(1,1),x(nx,1),y(1,1),y(1,ny))
        npixel=ipno
        do k=1,npixel 
@@ -72,6 +73,20 @@ c x,y matrices used since last arg 2. Coloring since +16. +64 tricolor.
        call axis
        call axlabels('x','y')
        call pltend
+       endif
+c Individual contour filling.
+c The switch in contourl is 
+c      ifcolor=(theconsw/65536-256*(theconsw/(256*65536)))
+       call pfset(3)
+       call pltinit(x(1,1),x(nx,1),y(1,1),y(1,ny))
+       do i=4,4
+          isw=2+i*65536
+          call contourl(z,ppath,nx,nx,ny,cl(i),1,x,y,isw)
+       enddo
+       call axis
+       call axlabels('x','y')
+       call pltend
+
       stop
       end
 

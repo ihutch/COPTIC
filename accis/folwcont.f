@@ -134,6 +134,7 @@ c         write(*,*)ctic,c1st,xtic,x1st,cyc,xcyc,in
          else
 c Current fitting of contours and labels code.
             call fitrange(minz,maxz,in,nxfac,xfac,xtic,x1st,xlast)
+            cv=maxz-minz
 c Start assuming the label is every contour.
             cyc=1
  201        continue
@@ -188,67 +189,68 @@ c            stop
 c Coloring.
 c      write(*,*)'minz,maxz,c1st,clast',minz,maxz,c1st,clast
       if(icfil.ne.0)then
-      id=4
-      incolor=igetcolor() 
+         id=4
+         incolor=igetcolor() 
 c      write(*,*)'ncolor=',ncolor,'incolor=',incolor
 c      write(*,*)'c1st,clast,ngradcol,itri',c1st,clast,ngradcol,itri
-      do j=1,jmax
-         y1=j-0.500001
-         y2=j+0.500001
-         if(j.eq.1)y1=1.001
-         if(j.eq.jmax)y2=j-.001
-         do i=1,imax
-            if(itri.eq.0)then
+         do j=1,jmax
+            y1=j-0.500001
+            y2=j+0.500001
+            if(j.eq.1)y1=1.001
+            if(j.eq.jmax)y2=j-.001
+            do i=1,imax
+               if(itri.eq.0)then
 c Block chunky.
-               x1=i-0.500001
-               x2=i+0.500001
-               if(i.eq.1)x1=1.001
-               if(i.eq.imax)x2=i-.001
-               if(lclog)then
-                  icolor=nint((log(max(z(i,j),c1st))-c1stlog)*(ngradcol
-     $                 -1.)*cdiflog)
-               else
-                  icolor=nint((z(i,j)-c1st)*(ngradcol-1.)/(clast-c1st))
-               endif
-               if(icolor.gt.ngradcol-1)icolor=ngradcol-1
-               if(icolor.lt.0)icolor=0
+                  x1=i-0.500001
+                  x2=i+0.500001
+                  if(i.eq.1)x1=1.001
+                  if(i.eq.imax)x2=i-.001
+                  if(lclog)then
+                     icolor=nint((log(max(z(i,j),c1st))-c1stlog)
+     $                    *(ngradcol-1.)*cdiflog)
+                  else
+                     icolor=nint((z(i,j)-c1st)*(ngradcol-1.)/(clast
+     $                    -c1st))
+                  endif
+                  if(icolor.gt.ngradcol-1)icolor=ngradcol-1
+                  if(icolor.lt.0)icolor=0
 c               write(*,*)'icolor=',icolor
-               call gradcolor(icolor) 
-               xd(1)=x1
-               yd(1)=y1
-               xd(2)=x2
-               yd(2)=y1
-               xd(3)=x2
-               yd(3)=y2
-               xd(4)=x1
-               yd(4)=y2 
-               call mesh2w(xd,yd,id,x,y,l,theconsw) 
-               call polyline(xd,yd,id)
-               call pathfill() 
-            else
+                  call gradcolor(icolor) 
+                  xd(1)=x1
+                  yd(1)=y1
+                  xd(2)=x2
+                  yd(2)=y1
+                  xd(3)=x2
+                  yd(3)=y2
+                  xd(4)=x1
+                  yd(4)=y2 
+                  call mesh2w(xd,yd,id,x,y,l,theconsw) 
+                  call polyline(xd,yd,id)
+                  call pathfill() 
+               else
 c Triangle gradients.
-               if(i.lt.imax .and. j.lt.jmax)then
-                  xd(1)=i
-                  yd(1)=j
-                  xd(2)=i+1
-                  yd(2)=j
-                  xd(3)=i+1
-                  yd(3)=j+1
-                  xd(4)=i
-                  yd(4)=j+1
-                  call mesh2w(xd,yd,id,x,y,l,theconsw)
-                  zd(1)=z(i,j)
-                  zd(2)=z(i+1,j)
-                  zd(3)=z(i+1,j+1)
-                  zd(4)=z(i,j+1)
+                  if(i.lt.imax .and. j.lt.jmax)then
+                     xd(1)=i
+                     yd(1)=j
+                     xd(2)=i+1
+                     yd(2)=j
+                     xd(3)=i+1
+                     yd(3)=j+1
+                     xd(4)=i
+                     yd(4)=j+1
+                     call mesh2w(xd,yd,id,x,y,l,theconsw)
+                     zd(1)=z(i,j)
+                     zd(2)=z(i+1,j)
+                     zd(3)=z(i+1,j+1)
+                     zd(4)=z(i,j+1)
 c                  write(*,*)c1st,clast,ngradcol
-                  call gradquad(xd,yd,zd,zd,
-     $                 c1st,clast,0,ngradcol-1,256*istep)
+                     call gradquad(xd,yd,zd,zd,
+     $                    c1st,clast,0,ngradcol-1,256*istep)
+                  endif
                endif
-            endif
+            enddo
          enddo
-      enddo
-      call color(incolor)
+         call color(incolor)
       endif
       if(inocont.eq.0)then
       if(nc.lt.0)then
@@ -274,8 +276,6 @@ c Contour drawing
             cdel=xtic
          endif
          ic=ici
-c This gave interesting random values. i1st not initialized.
-c        if((mod(i+i1st,cyc).eq.0).and.labels)then
          if((mod(i,cyc).eq.0).and.labels)then
             ipoint=max(point,1-min(ifix(log10(cdel)+1.e-4),2))
             if(ipoint.gt.8)then
@@ -318,7 +318,7 @@ c Switch determining the type of plot:
 c       0   Equally spaced arrays. Arguments x and y are not used.
 c       1   Vectors x and y determine the unequally spaced arrays.
 c       2   Arrays x and y determine the arbitrary mesh.
-c If the Third byte of theconsw is non-zero it is the gradcolor by
+c If the Third byte of theconsw is non-zero it is the color by
 c which to fill a contour that is closed without encountering the bdy.
       integer i,j,k,kk,icc,ii,kk1
 c labeling common
@@ -335,7 +335,7 @@ c consw is the lowest byte of the consw
       consw=theconsw-256*(theconsw/256)
 c fillcolor is the next byte
       ifcolor=(theconsw/65536-256*(theconsw/(256*65536)))
-c      write(*,*)'theconsw,ifcolor',theconsw,ifcolor
+c      write(*,*)'consgen:theconsw,ifcolor,cv',theconsw,ifcolor,cv
 
 c Search for starting points and call confol.
       icc=ic
@@ -368,7 +368,26 @@ c Found a new starting point.
                         call confol(z,cv,l,ixmax,iymax,
      $                    i,j,id,ppath,xc,yc,ic)
                         call mesh2w(xc,yc,ic,x,y,l,consw)
-                        call labeline(xc,yc,ic,str1,width)
+c                           do kc=1,ic
+c                              write(*,*)kc,xc(kc),yc(kc)
+c                           enddo
+                        if(ifcolor.ne.0)then
+                           if(xc(1).eq.xc(ic).or.yc(1).eq.yc(ic))then
+c                           write(*,*)'Filling ifcolor',ifcolor,ic,cv
+c                           write(*,*)'start end',xc(1),yc(1),xc(ic)
+c     $                          ,yc(ic)
+                           icol=igetcolor()
+c                           call acgradcolor(ifcolor)
+                           call color(ifcolor)
+                           call polyline(xc,yc,ic)
+c                           write(*,'(i4,2f10.4)')(kc,xc(kc),yc(kc),kc=1
+c     $                          ,ic)
+                           call pathfill()
+                           call color(icol)
+                           endif
+                        else
+                           call labeline(xc,yc,ic,str1,width)
+                        endif
                         ic=icc
                      endif
                   endif
@@ -396,14 +415,18 @@ c Found a new starting point.
      $                 i,j,id,ppath,xc,yc,ic)
                      call mesh2w(xc,yc,ic,x,y,l,consw)
                      if(ifcolor.ne.0)then
-c                        call getrgbcolor(icol,ired,igreen,iblue)
+c                        write(*,*)'Filling ifcolor',ifcolor,ic,cv
+c                        write(*,'(2f10.4)')(xc(kk),yc(kk),kk=1,ic)
                         icol=igetcolor()
-                        call acgradcolor(ifcolor)
+c                        call acgradcolor(ifcolor)
+                        call color(ifcolor)
+c                        call color(12)
                         call polyline(xc,yc,ic)
                         call pathfill()
                         call color(icol)
+                     else
+                        call labeline(xc,yc,ic,str1,width)
                      endif
-                     call labeline(xc,yc,ic,str1,width)
                      ic=icc
                   endif
                endif

@@ -13823,3 +13823,23 @@ dtpos in cyclotron mover and dtaccel in the Boris.
 
 I think this is now a mistake. The cyclotronic mover should rotate the
 velocity by dtaccel and the gyroradius by dtpos. So implemented that.
+
+Constructed a bdrifttest.dat file and found a leading edge transient.
+However, that transient is present even with zero B-field, so the 
+case doesn't really test the bug reported. Instead it is something to do
+with reinjection regardless of B. Lowering dt rapidly decreases it.
+It is not affected by Boris versus cyclotron.
+
+Notebook of 17 Aug 11 discuss the suppression of gyrating particle loss.
+This is quite possibly the problem, and nothing to do with the mover
+questions. However, this effect ought to be present with the Boris mover.
+
+Created a test case and found that anything other than moving both 
+v and g by theta in the cyclotronic mover produces a velocity layer
+at the edges from reinjection. So went back to that. Basically I have
+not made much progress on this problem. 
+
+11 May 15
+Fixed mditerset not to use itermults because that does not override NaNs.
+Also explicitly initialized the uave and qave because of the same issue.
+Included the updated driver vecglx that correctly does non-convex polygons.

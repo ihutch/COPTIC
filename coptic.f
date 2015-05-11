@@ -290,8 +290,10 @@ c Plot objects 0,1 and 2 (bits)
 c---------------------------------------------
 c Initialize charge (set q to zero over entire array).
       call mditerset(q,ndims,ifull,iuds,0,0.)
+      call mditerset(qave,ndims,ifull,iuds,0,0.)
 c Initialize potential (set u to zero over entire array).
       call mditerset(u,ndims,ifull,iuds,0,0.)
+      call mditerset(uave,ndims,ifull,iuds,0,0.)
 c Initialize diagsum if necessary.
       do ispecies=1,nspecies
          do idiag=1,ndiags+1

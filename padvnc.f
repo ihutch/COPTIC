@@ -289,6 +289,11 @@ c Save prior position.
      $           ,dtpos,dtaccel,driftfields(1,ispecies)
      $           ,eoverms(ispecies))
          else
+            do j=1,ndims            
+c E-kick
+               x_part(j+ndims,i)=x_part(j+ndims,i)+eoverms(ispecies)
+     $              *Efield(j)*dtaccel
+            enddo
             call driftparticle(x_part(1,i),ndims,Bt
      $           ,Efield,Bfield,vperp,dtpos,i-iicparta(ispecies))
          endif
@@ -963,17 +968,12 @@ c Find the gyro radius and gyrocenter.
          call gyro3(eom*Bt,Bfield,xr(1),xr(4),xg,xc)
 c Rotate the velocity and gyro radius.
 c Rotation is counterclockwise for ions.
-         sthacc=sin(-thacc)
-         cthacc=cos(thacc)
-         call rotate3(xr(4),sthacc,cthacc,Bfield)
-         if(theta.eq.thacc)then
-            call rotate3(xg,sthacc,cthacc,Bfield)
-         else
 c For unequal timesteps, rotate gyro center by theta, not thacc.
-            stheta=sin(-theta)
-            ctheta=cos(theta)
-            call rotate3(xg,stheta,ctheta,Bfield)
-         endif
+         stheta=sin(-theta)
+         ctheta=cos(theta)
+c Anything other than theta gives velocity strangeness at edge.
+         call rotate3(xr(4),stheta,ctheta,Bfield)
+         call rotate3(xg,stheta,ctheta,Bfield)
 c Move xc along the B-direction.
          call translate3(xc,xr(4),dtpos,Bfield,xc)
 c Add the new gyro center and gyro radius

@@ -153,14 +153,6 @@ c Reached the end.
 
       end
 c*****************************************************************
-c Use the generalized scalar mult call to set values
-      subroutine mditerset(u,ndims,ifull,iused,ipin,v)
-      real u(*)
-      integer ifull(*),iused(*)
-      call mditermults(u,ndims,ifull,iused,ipin,0.,v)
-      end
-c******************************************************************
-c*****************************************************************
       integer function indexcontract(ndims,ifull,indi)
 c On entry indi(ndims) contains the (ndims)-dimensional offsets
 c to position in array whose full dimensions are ifull(ndims)
@@ -268,6 +260,40 @@ c Individual setup.
          enddo
       endif
       end
+c*****************************************************************
+c Use the generalized scalar mult call to set values
+c This version has a problem in that NaNs are not set. Obsolete.
+      subroutine mditerset1(u,ndims,ifull,iused,ipin,v)
+      real u(*)
+      integer ifull(*),iused(*)
+      call mditermults(u,ndims,ifull,iused,ipin,0.,v)
+      end
+c*****************************************************************
+      subroutine mditerset(u,ndims,ifull,iused,ipin,v)
+c Iterate over the array u, setting u(i)=v scalar.
+c Reimplementation using mditerator.
+c Normally, the starting pointer is ipin=0 for the full array.
+      integer ndims,ifull(ndims),iused(ndims)
+      real u(*),v
+      integer mdims
+      parameter (mdims=3)
+c Effective index in dimension, c-style (zero based)
+      integer indi(mdims),iview(3,mdims)
+c This data statement serves to silence ftnchek. The first mditerator
+c call actually initializes the iview and indi.
+      data iview/mdims*0,mdims*0,mdims*0/
+      data indi/mdims*0/
+      
+c Set to iterate the whole used array:
+      icomplete=mditerator(ndims,iview,indi,4,iused)
+c Reset starting indices from input pointer, in case non-zero.
+      if(ipin.ne.0)call offsetexpand(ndims,ifull,ipin,indi)
+ 1      ii=1+indexcontract(ndims,ifull,indi)
+        u(ii)=v
+      if(mditerator(ndims,iview,indi,0,iused).eq.0)goto 1
+
+      end
+c******************************************************************
 c*****************************************************************
       subroutine mditermults(u,ndims,ifull,iused,ipin,v,w)
 c Iterate over the array u, multiplying it by v(scalar)
@@ -579,132 +605,3 @@ c******************************************************************
 c   Obsolete below here.
 c******************************************************************
 c******************************************************************
-
-      subroutine mditermults0(u,ndims,ifull,iused,ipin,v,w)
-c Iterate over the array u, multiplying it by v(scalar)
-c and adding w(scalar): u = u*v+w.
-c Uses the mechanisms of mditerate. But inc is always 1.
-c Normally, the starting pointer is ipin=0 for the full array.
-      integer ndims
-      integer ifull(ndims)
-      integer iused(ndims)
-      real u(*),v,w
-
-      integer mdims
-      parameter (mdims=3)
-c Effective index in dimension, c-style (zero based)
-      integer indi(mdims),indinp(mdims)
-c Structure vector
-      integer iLs(mdims+1)
-      
-      call offsetexpand(ndims,ifull,ipin,indi)
-      iLs(1)=1
-      do n=1,ndims
-         indinp(n)=indi(n)
-         iLs(n+1)=iLs(n)*ifull(n)
-         if(indinp(n)+iused(n).gt.ifull(n))then
-            write(*,*) 'MDITERMULTS Error. Dimension',n,' ioff + iused',
-     $           indinp(n),iused(n),' .gt. ifull',ifull(n)
-         endif
-      enddo
-      ipoint=ipin
-
-      inc=1
-      n=1
-c Iteration over the multidimensional array
- 101  continue
-c      write(*,'(''('',i1,i4,'') '',$)')n,indi(n)
-      if(indi(n)-indinp(n).gt.iused(n)-1)then
-c     Overflow. Subtract off enough (inm) of next dimension
-c     and move ipoint to appropriate position in full array.
-         inm=0
- 102     inm=inm+1
-         ipoint=ipoint+iLs(n+1)-iused(n)*iLs(n)
-         indi(n)=indi(n)-iused(n)
-         if(indi(n)-indinp(n).gt.iused(n)-1)goto 102
-c Increment the next level.
-         n=n+1
-         if(n.gt.ndims)goto 201
-         indi(n)=indi(n)+inm
-         goto 101
-      elseif(n.gt.1)then
-c We've carried and cleared an increment.
-c Return stepwise to base level
-         n=n-1
-         goto 101
-      else
-c We're at the base level and have succeeded in incrementing.
-c Do whatever we need to and increment indi(1) and ipoint
-         u(ipoint+1)=u(ipoint+1)*v+w
-         indi(1)=indi(1)+inc
-         ipoint=ipoint+inc
-         goto 101
-      endif
-
- 201  continue
-c Reached the end.
-      end
-c******************************************************************
-      subroutine mditeradd0(u,ndims,ifull,iused,ipin,v)
-c Iterate over the array u, adding v(array) to it.
-c Uses the mechanisms of mditerate. But inc is always 1.
-c Normally, the starting pointer is ipin=0 for the full array.
-      integer ndims
-      integer ifull(ndims)
-      integer iused(ndims)
-      real u(*),v(*)
-
-      integer mdims
-      parameter (mdims=3)
-c Effective index in dimension, c-style (zero based)
-      integer indi(mdims),indinp(mdims)
-c Structure vector
-      integer iLs(mdims+1)
-    
-      call offsetexpand(ndims,ifull,ipin,indi)
-      iLs(1)=1
-      do n=1,ndims
-         indinp(n)=indi(n)
-         iLs(n+1)=iLs(n)*ifull(n)
-         if(indinp(n)+iused(n).gt.ifull(n))then
-            write(*,*) 'MDITERADD Error. Dimension',n,' ioff + iused',
-     $           indinp(n),iused(n),' .gt. ifull',ifull(n)
-         endif
-      enddo
-      ipoint=ipin
-
-      inc=1
-      n=1
-c Iteration over the multidimensional array
- 101  continue
-c      write(*,'(''('',i1,i4,'') '',$)')n,indi(n)
-      if(indi(n)-indinp(n).gt.iused(n)-1)then
-c     Overflow. Subtract off enough (inm) of next dimension
-c     and move ipoint to appropriate position in full array.
-         inm=0
- 102     inm=inm+1
-         ipoint=ipoint+iLs(n+1)-iused(n)*iLs(n)
-         indi(n)=indi(n)-iused(n)
-         if(indi(n)-indinp(n).gt.iused(n)-1)goto 102
-c Increment the next level.
-         n=n+1
-         if(n.gt.ndims)goto 201
-         indi(n)=indi(n)+inm
-         goto 101
-      elseif(n.gt.1)then
-c We've carried and cleared an increment.
-c Return stepwise to base level
-         n=n-1
-         goto 101
-      else
-c We're at the base level and have succeeded in incrementing.
-c Do whatever we need to and increment indi(1) and ipoint
-         u(ipoint+1)=u(ipoint+1)+v(ipoint+1)
-         indi(1)=indi(1)+inc
-         ipoint=ipoint+inc
-         goto 101
-      endif
-
- 201  continue
-c Reached the end.
-      end

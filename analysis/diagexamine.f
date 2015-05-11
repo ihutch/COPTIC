@@ -13,7 +13,7 @@ c 1-d plotting arrays.
       real z1d(na_m),u1d(na_m),dene1d(na_m),deni1d(na_m)
       character*20 mname(ndiagmax+1)
 
-      real mcell
+      integer mcell
       logical lvtk
       character*70 xtitle,ytitle
       integer iuphi(3),iurs(3),isrs(3)
@@ -374,7 +374,7 @@ c*************************************************************
       subroutine diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle
      $     ,lvtk,mcell)
       integer iunp,isingle,i1d
-      real mcell
+      integer mcell
       character*70 xtitle,ytitle
       logical lvtk
       include 'examdecl.f'

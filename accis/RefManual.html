@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
            "http://www.w3.org/TR/REC-html40/loose.dtd">
 <html>
-<meta name="GENERATOR" content="TtH 4.06">
+<meta name="GENERATOR" content="TtH 4.08">
  <style type="text/css"> div.p { margin-top: 7pt;}</style>
  <style type="text/css"><!--
  td div.comp { margin-top: -0.6ex; margin-bottom: -1ex;}
@@ -482,10 +482,15 @@ if non-zero to determine contour number) on a mesh defined by
 x,y. Switch icsw determines call type: 0 equal spacing, x,y not used;
 1 vectors x,y determine mesh; 2 arrays x,y determine mesh; bit 5 (16)
 sets coloring; bit 6 (32) omits contour lines; bit 7 (64) color-fills
-with triangle gradients, in which case non-zero second byte determines
-the step size of the gradients (1 by default). Color contouring should
-be done with icl .ge. 2 and the maximum and minimum values in zclv(1)
-and zclv(icl). Then a gradlegend can be constructed with these values.
+with triangle gradients, in which case non-zero second byte (*256)
+determines the step size of the gradients (1 by default). Color
+gradient contouring should be done with icl .ge. 2 and the maximum and
+minimum values in zclv(1) and zclv(icl). Then a gradlegend can be
+constructed with these values.  Third byte (*65536) if non-zero sets
+filling of (usually one level of) closed contour by the integer color
+to which it corresponds, and turns off contour lines (which might
+therefore have to be drawn later on top). Contour filling doesn't work
+perfectly for contours that intersect more than one border.
 
 <div class="p"><!----></div>
 CONT3PROJ(za,cworka,iLdim,ixm,iym,zclv,icl,x,y,icsw,f) Draw a contour
@@ -577,6 +582,11 @@ HDPROJECT(ihide,iproject,ifixedcoord,fxdworld,irlsys)
 Set hiding (ihide = 1), projecting 2&#8594;3 (iproject.ne.0), which
 coordinate to hold fixed (ifixedcoord), what its world value is
 (fxdworld), and right (+1) or left (-1) handed system (irlsys).
+
+<div class="p"><!----></div>
+CONT3PROJ(za,cworka,iLdim,ixm,iym,zclv,icl,x,y,icsw,f) Project onto 
+a z=constant plane in a 3-D plot at height f. The arguments and plot
+are those of contourl.
 
 <div class="p"><!----></div>
  <a id="tth_sEc11"></a><h2>
@@ -862,5 +872,5 @@ for operation of debugged correct code.
 T<sub><span class="small">E</span></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><span class="small">T</span></sub>H</a>,
-version 4.06.<br />On 19 Jan 2015, 12:39.</small>
+version 4.08.<br />On 26 Apr 2015, 19:25.</small>
 </html>
