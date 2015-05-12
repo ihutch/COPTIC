@@ -13843,3 +13843,7 @@ not made much progress on this problem.
 Fixed mditerset not to use itermults because that does not override NaNs.
 Also explicitly initialized the uave and qave because of the same issue.
 Included the updated driver vecglx that correctly does non-convex polygons.
+
+12 May 15
+Read the fluxfile earlier when restarting with flux, so as to enable the
+fluxdata init to be with the actual needed number of total steps.

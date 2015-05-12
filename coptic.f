@@ -201,10 +201,30 @@ c Initialize the fluxdata storage and addressing before cijroutine
 c That is necessary because ijbin addressing is used in cijroutine for
 c subsequent access by cijdirect when calculating floating potential.
       nf_species=nspecies
-      nf_nsteps=nf_maxsteps
-      if(lrestart/2-2*(lrestart/4).eq.0)then
-c Not restarting flux. Check only asked for step range
-         nf_nsteps=nsteps
+      nf_nsteps=nsteps
+      if(lrestart.ne.0)then
+c Part of the restart code needs to be here to determine the required
+c total number of steps for which the flux initialization is needed.
+c Since some must be here, we construct the names here and not later.
+         partfilename=restartpath
+         if(lrestart/4-2*(lrestart/8).ne.0)then
+            partfilename(lentrim(partfilename)+1:)='restartfile'
+         else
+            call nameconstruct(partfilename)
+         endif
+         phifilename=partfilename
+         nb=nbcat(phifilename,'.phi')
+         fluxfilename=partfilename
+         nb=nbcat(fluxfilename,'.flx')
+         nb=nameappendint(partfilename,'.',myid,3)
+         if(lrestart/2-2*(lrestart/4).ne.0)then
+            iferr=0
+c            write(*,*)'Reading flux file:',fluxfilename
+            call readfluxfile(fluxfilename,iferr)
+c The total number of steps for fluxdatainit is the sum of what we
+c just read out of fluxfile and the new nsteps:
+            nf_nsteps=nf_nsteps+nsteps
+         endif
       endif
       call fluxdatainit(myid)
 c-----------------------------------------------------------------
@@ -353,20 +373,9 @@ c---------------------------------------------
 c-----------------------------------------------
 c Restart code
       if(lrestart.ne.0)then
-         partfilename=restartpath
-         if(lrestart/4-2*(lrestart/8).ne.0)then
-            partfilename(lentrim(partfilename)+1:)='restartfile'
-         else
-            call nameconstruct(partfilename)
-         endif
-         phifilename=partfilename
-         nb=nbcat(phifilename,'.phi')
-         fluxfilename=partfilename
-         nb=nbcat(fluxfilename,'.flx')
-         nb=nameappendint(partfilename,'.',myid,3)
+c names are constructed earlier.
          if(lrestart/2-2*(lrestart/4).ne.0)then
             iferr=0
-c            write(*,*)'Reading flux file:',fluxfilename
             call readfluxfile(fluxfilename,iferr)
          else
             iferr=1
