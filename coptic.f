@@ -429,10 +429,6 @@ c Main step iteration -------------------------------------
 c Acceleration code.
          bdtnow=max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)
          dt=bdtnow*dtf
-         if(nspecies.gt.1)then
-c Ramp down boltzamp to zero if electrons are present.
-            boltzamp=max(0.,boltzamp0*(mbzero-j+2)/(mbzero+1.))
-         endif
          ninjcomp=int(bdtnow*ninjcomp0)
          if(ninjcomp.ne.0)nrein=ninjcomp
 
@@ -489,6 +485,10 @@ c Turn off use of fadcomp by ictl-2
                if(lphiplot)call sliceGweb(ifull,iuds,u,na_m,zp,
      $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0),dum,dum)
             endif
+         endif
+         if(nspecies.gt.1)then
+c Ramp down boltzamp to zero if electrons are present.
+            boltzamp=max(0.,boltzamp0*(mbzero-j+2)/(mbzero+1.))
          endif
 
          if(nf_step.eq.ickst)call checkuqcij(ifull,u,q,psum,volumes,cij)
