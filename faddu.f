@@ -90,7 +90,7 @@ c Need to compensate for point charges and/or Te-gradient.
       else
          um=u
       endif
-      fprime=boltzwti(index)*exp(um)
+      fprime=boltzamp*boltzwti(index)*exp(um)
       if(iptch_mask.ne.0)then 
 c We access rhoci only if we know we need to.
          fadcomp=fprime-rhoci(index)

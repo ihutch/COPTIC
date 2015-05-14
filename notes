@@ -13847,3 +13847,24 @@ Included the updated driver vecglx that correctly does non-convex polygons.
 12 May 15
 Read the fluxfile earlier when restarting with flux, so as to enable the
 fluxdata init to be with the actual needed number of total steps.
+
+14 May 15
+
+Change the boltzamp and boltzwt handling so that fadcomp uses their product
+to set the compensation. That enables boltzamp to be ramped down with
+time if desired. (Boltzwt then does not need to change). 
+
+Now think about boltzamp. Does it make sense to have electrons that are
+full charge weight PLUS a boltzamp response? At the moment that is what the
+code seems to have. The Refmanual is not up to date on this point since it
+says the boltzamp is linearized, but it isn't since we are now using fadcomp.
+It looks as if the code was not properly completed for the transition to
+fadcomp.
+
+Changed achargetomesh so that echarge only applies to the psum, not
+to the diagsum. Then we can allow non-unity echarge without silly things
+happening. Changed the calls to achargetomesh to include a factor 
+(1-boltzamp) in echarge for species 2. That means the number of electrons
+ought to remain equal to the number of ions when boltzamp is non-zero.
+But the extra charge is compensated by reducing the charge value on
+the electrons accordingly. 

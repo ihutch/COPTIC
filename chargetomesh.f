@@ -7,35 +7,37 @@ c Which are enumerated up to ndiags in their trailing dimension.
       real diagsum(*)
 c mesh data, notably ndims, since we don't pass it:
       include 'ndimsdecl.f'
-c      include 'meshcom.f'
       integer iLs(ndims+1)
-
       include 'plascom.f'
       include 'partcom.f'
 c On entry, psum ought to have been initialized to zero.
+c Needed for boltzamp.
+      include 'meshcom.f'
+      include 'ptchcom.f'
 
 c For all (possibly-active) particles.
       do ispecies=1,nspecies
-      do i=iicparta(ispecies),iocparta(ispecies)
-         if(x_part(iflag,i).ne.0)then
-            call achargetomesh(i,psum,iLs,diagsum,ndiags,
-     $           numratioa(ispecies)*sign(1.,eoverms(ispecies)))
-         endif
-      enddo
+         echarge=numratioa(ispecies)*sign(1.,eoverms(ispecies))
+         if(ispecies.eq.2)echarge=echarge*(1.-boltzamp)
+         do i=iicparta(ispecies),iocparta(ispecies)
+            if(x_part(iflag,i).ne.0)then
+               call achargetomesh(i,psum,iLs,diagsum,ndiags,echarge)
+            endif
+         enddo
       enddo
 c End of charge deposition.
       end
 c********************************************************************
       subroutine achargetomesh(i,psum,iLs,diagsum,ndiags,echarge)
 c Assign charge and other moments to the mesh accumulators,
-c for a single particle i of echarge value
-c Particle weight sum, having structure iLs, and (possible) diagnostics.
-c Which are enumerated up to ndiags in their trailing dimension.
+c for a single particle i of echarge value, which only affects psum
+c Particle weight sum, having structure iLs.
+c Also (possible) diagnostics diagsum which are enumerated up to ndiags 
+c in their trailing dimension.
       real psum(*)
       real diagsum(*)
 c mesh data, notably ndims, since we don't pass it:
       include 'ndimsdecl.f'
-c      include 'meshcom.f'
       integer iLs(ndims+1)
       include 'partcom.f'
 
@@ -51,9 +53,8 @@ c Cycle through the vertices of the box we are in.
          do ii=0,2**ndims-1
             ii1=ii
             iinc=iu
-c We could use this statement to implement particle weighting.
-            fac=echarge
 c Calculate the index and weight of this vertex.
+            fac=1.
             do ik=1,ndims
 c There may be bit-manipulation routines to accelerate this.
 c But likely not by very much since the main cost is divide+mult by 2
@@ -71,13 +72,11 @@ c But likely not by very much since the main cost is divide+mult by 2
                endif
             enddo 
 c Add to the particle sum the fraction for this vertex.
-c               write(*,*)'ii,iu,iinc,fac',ii,iu,iinc,fac
-            psum(1+iinc)=psum(1+iinc)+fac
+            psum(1+iinc)=psum(1+iinc)+fac*echarge
             if(ndiags.gt.0)then
 c Do something with diagnostics. 
 c Assumption here is diags1 n, diags2-4 v, diags5-7 v^2.
-c Make the density always positive by using abs(fac).
-               diagsum(1+iinc)=diagsum(1+iinc)+abs(fac)
+               diagsum(1+iinc)=diagsum(1+iinc)+fac
                do k=1,ndiags-1
 c Six moments. 3 for v and 3 for v^2.
                   temp=x_part(ndims+1+mod(k-1,ndims),i)
@@ -181,8 +180,6 @@ c********************************************************************
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
       real psum(*),rho(*),volumes(*),u(*),rhoinf
-c      real faddu
-c      external faddu
 
 c Silence warnings with spurious access.
       ind=iLs
@@ -198,15 +195,6 @@ c This is outside the region.
 c         if(volumes(ind).ge.1.e30)then
 c And all point-charge regions.
          rho(ind)=0.
-c The following is not, I think, necessary for fadcomp code. Because
-c boltzwt is always zero for outside the particle region.
-c         else
-c Outside the particle region, but inside a point-charge region.
-c rho=0 did not seem correct. I still ought to null out the electron
-c density. Do that directly, without the additional rhoci part:
-c            fprime=exp(u(ind))
-c            rho(ind)=fprime
-c         endif
       else
 c Standard case. Use total charge density sum.
          rho(ind)=psum(ind)/(abs(rhoinf)*volumes(ind))

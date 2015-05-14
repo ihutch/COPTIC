@@ -55,8 +55,8 @@ c Particle distribution accumulation data
       include 'ptaccom.f'
 
       external bdyshare,bdyset,cijroutine,cijedge,psumtoq
-     $     ,quasineutral,faddlin,fadcomp
-      real faddlin,fadcomp
+     $     ,quasineutral,fadcomp
+      real fadcomp
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
       character*100 restartpath
@@ -167,6 +167,7 @@ c The double call enables cmdline switches to override objfile settings.
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
       ndropped=0
+      boltzamp0=boltzamp
       if(nptdiag.eq.0)nptdiag=nsbins
       call initdriftfield
 c---------------------------------------------------------------
@@ -370,6 +371,7 @@ c---------------------------------------------
      $     ,(ninjcompa(i),pinjcompa(i),i=1,nspecies)
       maccel=nsteps/3
       dtf=dt
+      mbzero=maccel
 c-----------------------------------------------
 c Restart code
       if(lrestart.ne.0)then
@@ -427,6 +429,10 @@ c Main step iteration -------------------------------------
 c Acceleration code.
          bdtnow=max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)
          dt=bdtnow*dtf
+         if(nspecies.gt.1)then
+c Ramp down boltzamp to zero if electrons are present.
+            boltzamp=max(0.,boltzamp0*(mbzero-j+2)/(mbzero+1.))
+         endif
          ninjcomp=int(bdtnow*ninjcomp0)
          if(ninjcomp.ne.0)nrein=ninjcomp
 

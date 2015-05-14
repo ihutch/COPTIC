@@ -23,6 +23,7 @@ c Meshcom provides ixnp, xn, the mesh spacings. (+ndims)
       external linregion
       logical linregion
       include 'plascom.f'
+      include 'ptchcom.f'
 c Collision settings.
       include 'colncom.f'
 
@@ -69,6 +70,8 @@ c Initialize. Set reinjection potential. We start with zero reinjections.
       nparta(ispecies)=0
       nsubc=0
       nwmax=20
+      echarge=sign(1.,eoverms(ispecies))
+      if(ispecies.eq.2)echarge=echarge*(1.-boltzamp)
       do idf=1,ndims
          adfield(idf)=0.
       enddo
@@ -428,7 +431,7 @@ c appropriate species place of diagsum. Charge magnitude is 1.
          if(x_part(iflag,i).ne.0)then
             call achargetomesh(i,psum,iLs
      $           ,diagsum(1+iLs(ndims+1)*(ndiagmax+1)*(ispecies-1))
-     $           ,ndiags,sign(1.,eoverms(ispecies)))
+     $           ,ndiags,echarge)
 c            if(mod(i,500).eq.0)write(*,*)'achargetomesh',ispecies,i,iLs
 c     $           ,ndiags,ndiagmax
 c     $           ,diagsum(1+iLs(ndims+1)*(ndiagmax+1)*(ispecies-1)+1)
@@ -618,8 +621,9 @@ c Get grid point position, and irptch.
       irptch=IAND(iregion,iptch_copy)
 c Set boltzwt depending on whether we are in the region or not.
       if(linregion(ibool_part,ndims,xp))then
-         boltzwti(ipoint+1)=boltzamp
-c         write(*,*)'Setting boltzamp',ipoint,boltzamp
+c         boltzwti(ipoint+1)=boltzamp
+c Changed to do the boltzamp scaling inside fadcomp
+         boltzwti(ipoint+1)=1.
       else
          boltzwti(ipoint+1)=0.
       endif
