@@ -194,9 +194,10 @@ c Now print out the result of the initialization.
 c---------------------------------------------------------------
 c      write(*,*)'Doing ninjcalc',n_part,ripernode,dt
       if(n_part.ne.0)ripernode=0.
-c Set ninjcomp if we are using ripernode. This used to be called only
-c if n_part.eq.0. But now we do it always, for possible multiple species.
       call ninjcalc(dt)
+c------------------------------------------------------------------
+c Set phip from the first object. Must be done before nameconstruct.
+      call phipset(myid)
 c----------------------------------------------------------------
 c Initialize the fluxdata storage and addressing before cijroutine
 c That is necessary because ijbin addressing is used in cijroutine for
@@ -350,9 +351,6 @@ c-------------------------------------------------------------------
          call vaccheck(ifull,iuds,cij,u,thetain,nth,rs,ltestplot)
       endif
 c End of plotting.
-c------------------------------------------------------------------
-c Set phip from the first object if it makes sense.
-      call phipset(myid)
 c------------------------------------------------------------------
 c (Re)Initialize the fortran random number generator.
 c      idum=-myid-1
