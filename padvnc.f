@@ -590,7 +590,7 @@ c**********************************************************************
       subroutine ucrhoset(inc,ipoint,indi,mdims,iLs,iuds)
 c This routine passes no mditerarg arguments only uses commons.
 c Set uci, rhoci, and Teci arrays to compensate for point charges,
-c electron temperature gradients, or density gradients, boltzamp.
+c electron temperature gradients, or density gradients.
 c These are then subsequently used in faddu to decide the electron
 c density. [They are not used in getadfield.]
       integer inc,ipoint,mdims
@@ -621,8 +621,6 @@ c Get grid point position, and irptch.
       irptch=IAND(iregion,iptch_copy)
 c Set boltzwt depending on whether we are in the region or not.
       if(linregion(ibool_part,ndims,xp))then
-c         boltzwti(ipoint+1)=boltzamp
-c Changed to do the boltzamp scaling inside fadcomp
          boltzwti(ipoint+1)=1.
       else
          boltzwti(ipoint+1)=0.

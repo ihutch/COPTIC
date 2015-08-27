@@ -93,6 +93,8 @@ c********************************************************************
       subroutine psumperiod(psum,ifull,iaux,iLs)
 c If there are periodic particles in any dimension, do the periodic
 c exchange sum.
+c This is now obsolete because diagperiod is used everywhere despite
+c being slightly less efficient.
       real psum(*)
       include 'ndimsdecl.f'
       integer ifull(ndims),iaux(ndims)
@@ -233,5 +235,35 @@ c There still might be too small a density, so set a floor for it.
          u(ind)=phip
       endif
       if(abs(u(ind)).gt.20.)write(*,*)'Large phi',ind,u(ind),phip
+      inc=1
+      end
+c********************************************************************
+      subroutine psumtoqminus(inc,ipoint,indi,ndims,iLs,iused,
+     $     psum,rho,volumes,bckgd,rhoinf)
+c This version subtracts uniform background in the particle region.
+c u(*) is removed.
+      integer ipoint,inc
+      integer indi(ndims),iused(ndims)
+      real psum(*),rho(*),volumes(*),rhoinf
+
+c Silence warnings with spurious access.
+      ind=iLs
+      ind=iused(1)
+      ind=indi(1)
+c This routine for use in mditerarg.
+c But we iterate only over the inner mesh (not edges).
+c Here, t=psum, u=rho, v=volumes, w=u, x=rhoinf 
+c Set the density
+      ind=1+ipoint
+      if(volumes(ind).ge.1.e20)then
+c This is outside the region. 
+c         if(volumes(ind).ge.1.e30)then
+c And all point-charge regions.
+         rho(ind)=0.
+      else
+c Standard case. Use total charge density sum.
+         rho(ind)=psum(ind)/(abs(rhoinf)*volumes(ind))-bckgd
+      endif
+c      endif
       inc=1
       end

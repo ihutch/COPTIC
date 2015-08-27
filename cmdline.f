@@ -253,8 +253,11 @@ c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
      $        read(argument(8:),*,err=201)ninjcomp
          if(argument(1:3).eq.'-rn')
      $        read(argument(4:),*,err=201)ninjcomp
-         if(argument(1:4).eq.'-spb')then
+         if(argument(1:3).eq.'-sb')then
 c Boltzamp setting
+            read(argument(4:),*,err=201)boltzamp
+         elseif(argument(1:4).eq.'-spb')then
+c Boltzamp setting obsolete switch
             read(argument(5:),*,err=201)boltzamp
          elseif(argument(1:3).eq.'-sp')then
             if(nspecies+1.gt.nspeciesmax)then
@@ -528,7 +531,7 @@ c Help text
       write(*,302)' -Ef   set Ext v-drive fraction   [',Enfrac
       write(*,302)' -cp   set v-power coln freq      [',colpow
       write(*,308)' -sp   add a particle species     [',nspecies
-      write(*,302)' -spb  Boltzmann fraction         [',boltzamp
+      write(*,302)' -sb   Boltzmann fraction         [',boltzamp
       write(*,307)' -zm   set Z/mass ratio           ['
      $     ,(eoverms(ispecies),ispecies=1,nspecies)
       write(*,308)' -nr   set species number ratio   ['

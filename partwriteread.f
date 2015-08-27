@@ -316,15 +316,22 @@ c*****************************************************************
       end
 c******************************************************************
 c************************************************************************
-      subroutine reportprogress(nf_step,nsteps,nsubc,ndropped)
+      subroutine reportprogress(nf_step,nsteps,nsubc,ndropped,ierr)
 c Output parameter development to stdout.
       implicit none
-      integer nf_step,nsteps,nsubc,ndropped
+      integer nf_step,nsteps,nsubc,ndropped,ierr
       include 'ndimsdecl.f'
       include 'partcom.f'
       integer k
       real fluxdiag
       external fluxdiag
+
+c Step number print
+            if(nf_step.gt.999.or.abs(ierr).gt.999)then
+               write(*,'(i5.5,i5,$)')nf_step,ierr
+            else
+               write(*,'(i4.4,i4,$)')nf_step,ierr
+            endif
 
 c write out flux to object 1.
             write(*,'(f6.3,''| '',$)')fluxdiag()

@@ -13868,3 +13868,25 @@ happening. Changed the calls to achargetomesh to include a factor
 ought to remain equal to the number of ions when boltzamp is non-zero.
 But the extra charge is compensated by reducing the charge value on
 the electrons accordingly. 
+
+26 Aug 2015
+Put step number print into reportprogress.
+
+27 Aug 2015
+
+How to run coptic with just electrons. The basic idea is to make species 1
+electrons and turn off faddu. Boltzamp=0 implies faddu off. So simply 
+using the switch -spb0. accomplishes that. However, we are not then
+subtracting a uniform background. We need to be able to do so. 
+Implemented automatic (separate) subtraction if boltzamp=0 and nspecies=0.
+However that has the problem that it subtracts the background even inside
+objects. That's not what I intended. Still it would work for an empty box.
+So create a new psumtoqminus and call the alternate. This works.
+Actually we now seem to have two parallel approaches to fixing inside
+objects. This and boltzwt. Maybe ought to rationalize. Not yet.
+
+Change -spb switch to -sb. 
+Implement a test case with -zm-1 and positive object potential. This is 
+then essentially a standard case for electrons and uniform immobile ions.
+
+We have a working electrons in immobile background code.

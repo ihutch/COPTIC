@@ -54,7 +54,7 @@ c Face boundary data
 c Particle distribution accumulation data
       include 'ptaccom.f'
 
-      external bdyshare,bdyset,cijroutine,cijedge,psumtoq
+      external bdyshare,bdyset,cijroutine,cijedge,psumtoq,psumtoqminus
      $     ,quasineutral,fadcomp
       real fadcomp
       external volnode,linregion
@@ -257,7 +257,7 @@ c---------------------------------------------
 c Here we try to read the stored geometry volume data.
       istat=1
       call stored3geometry(volumes,iuds,ifull,istat,.true.)
-c don't calculate volumes testing.      istat=1
+c an istat=1 return says we succeeded. If so skip the calculation. 
       if(istat.eq.0)then
 c Calculate the nodal volumes for all non-edge points.
          ipoint=0
@@ -270,6 +270,7 @@ c Calculate the nodal volumes for all non-edge points.
      $        volumes,cij,dum3,dum4,dum5)
          if(lmyidhead)write(*,*)'Finished volume setting'
 c If head, write the geometry data if we've had to calculate it.
+c That means it isn't saved if writing to local slave disks.
          if(lmyidhead)call stored3geometry(volumes,iuds,ifull,istat
      $        ,.true.)
       endif
@@ -433,22 +434,21 @@ c Acceleration code.
 c Call here if we are not doing direct deposition in padvnc.
 c         call chargetomesh(psum,iLs,diagsum,ndiags)
          call diagperiod(psum,ifull,iuds,iLs,1)
-c The following call is marginally more efficient than diagperiod call.
-c         call psumperiod(psum,ifull,iuds,iLs)
-c But it is not necessary so simplify to one period routine.
-c Psumreduce takes care of the reductions that were in rhoinfcalc 
-c and explicit psum. It encapsulates the iaddtype iaddop generation.
-c Because psumtoq formerly compensated for faddu, we reduced here.
          call psumreduce(psum,nrein,phirein,numprocs,ndims,ifull,iuds
      $        ,iLs)
 c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
 c Convert psums to charge density, q. Remember external psumtoq!
-         call mditerarg(psumtoq,ndims,ifull,ium2,0,psum(2,2,2),q(2,2,2)
-     $        ,volumes(2,2,2),u(2,2,2),rhoinf)
+         bckgd=0.
+         if(nspecies.eq.1.)bckgd=(1.-boltzamp)*eoverms(1)
+c Subtract uniform background (for single-species running).
+            call mditerarg(psumtoqminus,ndims,ifull,ium2,0,psum(2,2,2)
+     $           ,q(2,2,2),volumes(2,2,2),bckgd,rhoinf)
          istepave=min(nf_step,iavesteps)
+
 c Reset psum, after psumtoq accommodating padvnc deposition.
          call mditerset(psum,ndims,ifull,iuds,0,0.)
+
 
 c Solve for the new potential:
          if(debyelen.eq.0)then
@@ -467,17 +467,12 @@ c Turn off use of fadcomp by ictl-2
      $              ,fadcomp,ictl-2,ierr,myid,idims)
             endif
          endif
+
          call calculateforces(ndims,iLs,cij,u)
 
-         if(lmyidhead)then
-            if(nf_step.gt.999.or.abs(ierr).gt.999)then
-               write(*,'(i5.5,i5,$)')nf_step,ierr
-            else
-               write(*,'(i4.4,i4,$)')nf_step,ierr
-            endif
-         endif
          if(lsliceplot)then
             if(ipstep.eq.0.or.mod(j,ipstep).eq.0)then
+c Slice plots
                if(ldenplot)call sliceGweb(ifull,iuds,q,na_m,zp,
      $              ixnp,xn,ifix,'density: n'//char(0),dum,dum)
                if(lphiplot)call sliceGweb(ifull,iuds,u,na_m,zp,
@@ -506,7 +501,8 @@ c Store the step's rhoinf, dt, npart.
          nf_npart(nf_step)=n_part
 
 c Report step values etc.
-         if(lmyidhead)call reportprogress(nf_step,nsteps,nsubc,ndropped)
+         if(lmyidhead)call reportprogress(nf_step,nsteps,nsubc,ndropped
+     $        ,ierr)
 
 c These running and box averages do not include the updates for this step.
 c Accumulate running q and u averages (replaced 3d routines):
@@ -530,8 +526,7 @@ c Sometimes write them out:
      $        ,partfilename,restartpath,ifull,iuds,u,uave,qave)
 
 c This non-standard fortran call works with gfortran and g77 to flush stdout.
-c Pathscale demands an argument number. So give it explicitly. Should fix
-c the segfaults.
+c Pathscale demands an argument number. So give it explicitly.
 c Comment it out if it causes problems.
          if(lmyidhead)call flush(6)
       enddo
