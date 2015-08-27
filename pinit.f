@@ -133,6 +133,7 @@ c     $        *sqrt(abs(eoverms(1)/eoverms(ispecies)))
             stop
          endif
          tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
+c ----------------------------- Actual Particle Setting ----------
          do i=iicparta(ispecies)+i1-1,islotmax
             x_part(iflag,i)=1
  1          continue
@@ -189,7 +190,7 @@ c Initialize the mesh fraction data in x_part.
 c This test rejects particles exactly on mesh boundary:
             if(.not.linmesh)goto 1
          enddo
-c----------------------------------------
+c------------------------------- End of Actual Particle Setting --
 c The maximum used slot for this species
          iocparta(ispecies)=i-1
 c Start of next slot-set may give a gap for overflow.

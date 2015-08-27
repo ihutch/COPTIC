@@ -13890,3 +13890,6 @@ Implement a test case with -zm-1 and positive object potential. This is
 then essentially a standard case for electrons and uniform immobile ions.
 
 We have a working electrons in immobile background code.
+
+Constructed phasespace.f in analysis. It plots phasespace points and
+constructs and plots a phasespace histogram. 
