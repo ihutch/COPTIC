@@ -41,6 +41,7 @@ c This version applies the additional factor weighted by the value
 c of boltzwt on the indexed mesh. boltzwt is set to zero outside the
 c particle region where there ought to be no electrons.
       real function fadcomp(u,fprime,index)
+      implicit none
       real u,fprime
       integer index
       include 'ndimsdecl.f'
@@ -55,11 +56,11 @@ c
       if(gtt_copy.ne.0. .or. gnt_copy.ne.0)then
 c Need to compensate for point charges and/or Te-gradient.
          um=(u+uci(index))/Teci(index)
-         if(abs(um).gt.ubig)um=sign(ubig,um)
+         if(abs(um).gt.ubig)um=sign(ubig,um)*boltzsign
       else
-         um=u
+         um=u*boltzsign
       endif
-      fprime=boltzamp*boltzwti(index)*exp(um)
+      fprime=boltzsign*boltzamp*boltzwti(index)*exp(um)
       if(iptch_mask.ne.0)then 
 c We access rhoci only if we know we need to.
          fadcomp=fprime-rhoci(index)

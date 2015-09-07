@@ -10,7 +10,8 @@ c Encapsulation of parameter setting.
      $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag)
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
+     $     ,holelen,holepsi)
 
       implicit none
 
@@ -21,7 +22,7 @@ c Encapsulation of parameter setting.
      $     ,lextfield,LPF(ndims),lnotallp,ldistshow
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,vneutral,debyelen,extfield,slpD
-     $     ,Tneutral,Enfrac,colpow,boltzamp
+     $     ,Tneutral,Enfrac,colpow,boltzamp,holelen,holepsi
       real Bfield(ndims),Bt,CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
@@ -91,6 +92,8 @@ c         crelax=1.*Ts(nspecies)/(1.+Ts(nspecies))
          iobpsw=1
          ldistshow=.false.
          boltzamp=1.
+         holepsi=0.
+         holelen=4.
 c Boundary condition switch and value. 0=> logarithmic.
          islp=0
          slpD=0.
@@ -180,7 +183,6 @@ c         write(*,*)i,argument
          if(argument(1:3).eq.'-zm')then
             read(argument(4:),*,err =201)eoverms(nspecies)
             numratioa(nspecies)=1
-c            numratioa(nspecies)=sqrt(abs(eoverms(nspecies)/eoverms(1)))
          endif
          if(argument(1:3).eq.'-nr')read(argument(4:),*,err=201)
      $        numratioa(nspecies)
@@ -354,7 +356,14 @@ c            write(*,*)'||||||||||||||extfield',extfield
      $        read(argument(4:),'(a)',err=201)objfilename
          if(argument(1:1).ne.'-')
      $        read(argument(1:),'(a)',err=201)objfilename
-
+         if(argument(1:3).eq.'-ih')then
+            read(argument(4:),*,err=201,end=231)holepsi,holelen
+            goto 240
+ 231        holelen=4.
+c Default hole value[s]
+            if(holepsi.eq.0.)holepsi=0.1
+            write(*,*)'holepsi,holelen',holepsi,holelen
+         endif
          if(argument(1:3).eq.'-ho')then
             call geomdocument()
             call exit(0)
@@ -369,6 +378,7 @@ c Indicator that coptic arguments are ended.
             write(*,*)'Arguments terminated by: ',argument(1:3)
             goto 202
          endif
+c Finished parsing this argument.
  240     continue
          if(i.eq.0)goto 502
 c End of internal argline iteration
@@ -563,6 +573,7 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,*)'     0 open; 1 lower absorbing; 2 upper absorbing;'
      $     ,' 3 both absorb; 4 periodic'
       write(*,305)' -id<i,j,k> Set MPI block dims    [',idims
+      write(*,302)' -ih<P>[,L] Set hole psi[,len]    [',holepsi,holelen
       write(*,301)' -fs<i>  set restart switch:      [',lrestart
      $     ,' bit1:partls+potl, bit2:flux, bit3:name'
 

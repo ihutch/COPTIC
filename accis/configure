@@ -6,9 +6,9 @@ if [ "$COMPILER" == "" ] ; then
 if [ -x "`which mpif77`" ] ; then
 # By default use mpif77
    COMPILER="mpif77"
-   if [ -x "`which g77`" ] ; then
-       COMPILER="$COMPILER -f77=g77"
-   fi
+#   if [ -x "`which g77`" ] ; then
+#       COMPILER="$COMPILER -f77=g77"
+#   fi
    echo Choosing compiler $COMPILER.  Overrule by COMPILER="your compiler"
 else
 # Else use gfortran or g77.

@@ -13893,3 +13893,99 @@ We have a working electrons in immobile background code.
 
 Constructed phasespace.f in analysis. It plots phasespace points and
 constructs and plots a phasespace histogram. 
+
+29 Aug 2015
+Fix bug in accis/slicing code tickled by 1d cases.
+Implement boltzsign tracking and correct handling. This permits us to 
+use non-zero boltzamp with negatively charged ions (simulating electrons).
+At the moment we set the sign equal to the sign of species 1. This then
+works for one or two species I hope. But not obviously for more. 
+
+1-d settings with negative ions only now seems to work. Ran a 256 mesh
+looks fine. Diagnostics are a bit strange since 3-D, but workable.
+
+3 Sep 2015
+
+Created phasespace plotting routine. Points. Contours. And energy histogram.
+
+It's not obvious that the energy histogram is really useful. It is hard to
+convert it into a true distribution function since the area by which to
+divide is uncertain when potential varies. It gives f only when there is
+essentially a uniform potential in the region sampled. 
+
+Electron hole initialization ideas. 
+
+We want to start with a self-consistent electron distribution. The
+untrapped part of it should connect to the Maxwellian at infinity. 
+The trapped part of it is a free choice. But the combined distribution
+should be consistent with Poisson's equation and the potential that binds
+the hole.
+
+The most promising-seeming approach appears to be to start from a specified
+potential. Its spatial variation can reasonably be taken as the sech^4 form.
+Its peak value determines the width of the hole. If we choose a particular
+f(E) shape in the trapped region, then we can calculate everywhere from 
+the given potential shape what f(v) is. Possion's equation tells us what
+the total trapped density must be as a function of x. But we don't really
+wish to satisfy exactly either Poisson or the distribution being constant on
+energy contours, because sech^4 arises only from the linearized approx of
+a certain (parabolic) velocity distribution. Still, we could. 
+
+What satisfying Poisson tells us is the total trapped density as a function
+of position (potential). We might simply take a specified shape of the f
+in the hole as being the way the trapped particles are distributed. 
+Then the algorithm would be something like:
+
+1. Choose the x-position on the basis of the (total) density distribution
+
+2. Decide if particle is trapped or untrapped, knowing untrapped density.  
+
+These two steps can be combined, eliminating any adjustment of the
+position selection by choosing position from a uniform variate, and
+then selecting one variate extra p such that there are three ranges
+$0<p<untrappedden$, $untrappedden <p<total$, $total<p<1$. The third is
+simply rejected, so we've done the spatial selection by rejection.
+
+2a. If untrapped, distribute with external (Maxwellian) energy distribution.
+2b. If trapped, distribute with chosen trapped v-profile. 
+
+These two stages can be done using the same random number u (restricted
+appropriately to the ranges). The external distribution is
+f(u)={1\over\sqrt{\pi}}\exp(-[\sqrt{u^2-\phi}-\pm u_m]^2)
+where u_m is the velocity shift. I could generate the cumulative
+probability distribution as I do the untrapped density calculation.
+
+The trapped v-profile could presumably be taken to be triangular if one
+wished. Or parabolic. Or rectangular. One could also adopt a different
+hole potential shape if desired.
+
+Because the bulk of the density deficit in the trapped region is required
+to reduce the density perturbation so that total charge is non-negative, 
+it seems likely that the bit extra needed for the trapping potential 
+might not cause a problem when it is not quite self-consistent. As the
+trapped particles circulate in the hole after initialization, they will
+produce potential perturbations because they are not quite self-consistent.
+This will likely produce mixing within the trapped region (and maybe at 
+the boundary). With luck, it won't be too bad.
+
+I have a fortran routine in untrapden for calculating the untrapped density
+from a shifted Maxwellian background. There does not seem an analytic form
+for the untrapped density when there's a shift. Improved that to return
+the cumulative distributions.
+
+7 Sep
+
+Wrote routine to construct a cumulative probability distribution for 
+holes based upon the parabolic hole. It will return a range greater than
+one for a flat distribution, which is presumably the largest one of interest.
+Therefore if we scale the range so that the flattop at the peak potential
+is unity, the rejection will be reasonably efficient. However, we ought
+to reject particles based upon the total density so we don't call this 
+relatively expensive routine unless we need to. We can still use the same
+random number to interpolate the v for accepted choices.
+
+I now seem to have hole initialization working hacked into coptic.
+A 1-d hole in a 3-D box persists for 500 steps of 0.1 in a +-10 box.
+(Uniform background -sb0). Single species. The species is positively charged.
+The only thing that is changed is the particle initialization.
+There is no quieting, purely random 800k particles.

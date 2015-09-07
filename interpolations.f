@@ -196,7 +196,7 @@ c      write(*,*)'nq=',nq
       Ql=Q(1)
       Qr=Q(nq)
 c Circumlocution to catch y=NAN. [Why is this le?]
-      if(.not.((y-Ql)*(y-Qr).le.0.)) then
+      if(.not.((y-Ql)*(y-Qr).lt.0.)) then
 c Value is outside the range.
          if((y-Ql)*(Qr-Ql).le.0.)then
             x=0
@@ -230,6 +230,7 @@ c Now iql and iqr, Ql and Qr bracket Q
       else
          x=iql
          write(*,*)'****** Error!: interp coincident points'
+     $        ,iql,iqx,iqr,Ql,Qr,Qx,y,Q(1),Q(nq)
       endif
       end
 c**********************************************************************

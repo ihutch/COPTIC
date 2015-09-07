@@ -407,6 +407,10 @@ c Region code of point
       integer iregion
 c Type of interpolation
       integer itype
+c If itype=0, no use of cij,iregion: skip to multilin interpolation.
+c If itype=1, use "missing" vertices anyway.
+c If itype=2, call fillinlin to fill in missing vertices
+c If itype=3, just return the value at nearest vertex.
       
       include 'ndimsdecl.f'
       include 'objcom.f'
@@ -456,21 +460,23 @@ c Also calculate the square distance from point to this vertex.
 c Now inc is the offset within u of the ith box vertex.
 c Make iup the pointer to the u element.
          iup=icb+inc
+         if(itype.gt.0)then
 c Make icp the pointer within cij to the object pointer element. 
 c Accidental expression. Think of it as (iup-1)*ic1 + 2*ndims+1.
-         icp=iup*ic1
+            icp=iup*ic1
 c Get that object pointer.
-         ico=int(cij(icp))
-         if(ico.ne.0)then
+            ico=int(cij(icp))
+            if(ico.ne.0)then
 c This is an interface point
-            if(idob_cij(iregion_cij,ico).ne.iregion)then
+               if(idob_cij(iregion_cij,ico).ne.iregion)then
 c This vertex is outside the region. Flag it missing
 c               write(*,'(i4,$)')idob_cij(iregion_cij,ico)
-               imissing=imissing+1
-               ival(i)=0
+                  imissing=imissing+1
+                  ival(i)=0
 c But store the value anyway
-               uval(i)=u(iup)
-               goto 101
+                  uval(i)=u(iup)
+                  goto 101
+               endif
             endif
          endif
 c Store this valid vertex
@@ -768,3 +774,4 @@ c Get each component of the field.
 c      write(*,*)kxf,koff,xff,field
 
       end
+c*************************************************************************

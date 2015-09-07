@@ -119,7 +119,7 @@ NOGLOBALS:=$(COMPILE-SWITCHES) $(NGW)
 #GCURR=gcc -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
 GCURR=$(G77) -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) $(LIBRARIES)
 ##########################################################################
-FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate.o padvnc.o chargetomesh.o slicesect.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o cmdline.o fsects.o bdyshare.o toms659.o ranlux.o intersects.o
+FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate.o padvnc.o chargetomesh.o slicesect.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o cmdline.o fsects.o bdyshare.o toms659.o ranlux.o intersects.o trapinit.o
 ifeq ("$(G77)","")
 # First time through with undefined compiler don't define MPIOBJECTS.
 else

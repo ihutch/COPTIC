@@ -1,4 +1,4 @@
-      program coptic
+c      program coptic
 c Main program of cartesian coordinate, oblique boundary, pic code.
 
       include 'ndimsdecl.f'
@@ -31,7 +31,7 @@ c Used dimensions, Full dimensions. Used dims-2
       integer iuds(ndimsmax),ifull(ndimsmax),ium2(ndimsmax)
 c Processor cartesian geometry can be set by default.
       integer nblksi,nblksj,nblksk
-      parameter (nblksi=99,nblksj=99,nblksk=99)
+      parameter (nblksi=1,nblksj=1,nblksk=1)
       integer idims(ndimsmax)
 c mpi process information.
       include 'myidcom.f'
@@ -51,12 +51,10 @@ c Boundary setting common data
       include 'slpcom.f'
 c Face boundary data
       include 'facebcom.f'
-c Particle distribution accumulation data
-      include 'ptaccom.f'
 
-      external bdyshare,bdyset,cijroutine,cijedge,psumtoq,psumtoqminus
-     $     ,quasineutral,fadcomp
-      real fadcomp
+      external bdyshare,bdyset,faddu,cijroutine,cijedge,psumtoq
+     $     ,quasineutral,fnodensity
+      real faddu,fnodensity
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
       character*100 restartpath
@@ -67,6 +65,8 @@ c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       integer ipstep,iwstep,idistp,idcount,icijcount,lrestart
 c Diagnostics etc
 c      real zp(na_m,na_m2,ndimsmax)
+      real fractions(4)
+      integer imin(4)
 c The above does not seem to be the correct workspace for zp (slicing)
       real zp(na_m,na_m)
       real xlimit(2,ndimsmax),vlimit(2,ndimsmax)
@@ -75,6 +75,9 @@ c Input for face boundary data:
       real CFin(3+ndimsmax,2*ndimsmax)
 c Center of objplot final plot.
       real cv(ndimsmax)
+      real x1(ndimsmax),x2(ndimsmax),xn1(ndimsmax),xn2(ndimsmax)
+c      data x1/1.6,-1.6,1.5/x2/2.,-2.,2./
+      data x1/-1.6,1.5,1.6/x2/-2.,2.,2./
 
 c Set up the structure vector.
       data iLs/1,Li1,Li2,Li3/
@@ -82,7 +85,7 @@ c Mesh and mpi parameter defaults:
       data idims/nblksi,nblksj,nblksk/
       data ifull/na_i,na_j,na_k/
 c Data for plotting etc.
-      data iobpl/0/
+      data iobpl/1/
       data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot/
      $     .false.,.false.,.false.,.true.,.false./
       data lphiplot,ldenplot/.false.,.false./
@@ -122,10 +125,9 @@ c Default zero field
       chi=0.
       ierr=0
       ifix=0
-      npassthrough=0
 c---------------------------------------------------------------------
 c This necessary here so one knows early the mpi structure.
-c Otherwise could have been hidden in sormpi and passed back.
+c Otherwise could have been hidden in sormpi and pass back.
       myid=0
       call mpigetmyid(myid,nprocs,ierr)
       lmyidhead=.true.
@@ -144,9 +146,7 @@ c First time this routine just sets defaults and the object file name.
      $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi)
-
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag)
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -161,19 +161,12 @@ c Second time: deal with any other command line parameters.
      $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi)
-
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag)
       if(ierr.ne.0)stop
 c The double call enables cmdline switches to override objfile settings.
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
       ndropped=0
-      boltzamp0=boltzamp
-      boltzsign=sign(1.,eoverms(1))
-c      write(*,*)'boltzamp,boltzsign',boltzamp,boltzsign
-      if(nptdiag.eq.0)nptdiag=nsbins
-      call initdriftfield
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
  250  call meshconstruct(ndims,iuds,ifull,ipartperiod,rs)
@@ -198,39 +191,18 @@ c Now print out the result of the initialization.
 c---------------------------------------------------------------
 c      write(*,*)'Doing ninjcalc',n_part,ripernode,dt
       if(n_part.ne.0)ripernode=0.
+c Set ninjcomp if we are using ripernode. This used to be called only
+c if n_part.eq.0. But now we do it always, for possible multiple species.
       call ninjcalc(dt)
-c------------------------------------------------------------------
-c Set phip from the first object. Must be done before nameconstruct.
-      call phipset(myid)
 c----------------------------------------------------------------
 c Initialize the fluxdata storage and addressing before cijroutine
 c That is necessary because ijbin addressing is used in cijroutine for
 c subsequent access by cijdirect when calculating floating potential.
       nf_species=nspecies
-      nf_nsteps=nsteps
-      if(lrestart.ne.0)then
-c Part of the restart code needs to be here to determine the required
-c total number of steps for which the flux initialization is needed.
-c Since some must be here, we construct the names here and not later.
-         partfilename=restartpath
-         if(lrestart/4-2*(lrestart/8).ne.0)then
-            partfilename(lentrim(partfilename)+1:)='restartfile'
-         else
-            call nameconstruct(partfilename)
-         endif
-         phifilename=partfilename
-         nb=nbcat(phifilename,'.phi')
-         fluxfilename=partfilename
-         nb=nbcat(fluxfilename,'.flx')
-         nb=nameappendint(partfilename,'.',myid,3)
-         if(lrestart/2-2*(lrestart/4).ne.0)then
-            iferr=0
-c            write(*,*)'Reading flux file:',fluxfilename
-            call readfluxfile(fluxfilename,iferr)
-c The total number of steps for fluxdatainit is the sum of what we
-c just read out of fluxfile and the new nsteps:
-            nf_nsteps=nf_nsteps+nsteps
-         endif
+      nf_nsteps=nf_maxsteps
+      if(lrestart/2-2*(lrestart/4).eq.0)then
+c Not restarting flux. Check only asked for step range
+         nf_nsteps=nsteps
       endif
       call fluxdatainit(myid)
 c-----------------------------------------------------------------
@@ -241,19 +213,18 @@ c Initialize cij:
       do id=1,ndims
          ium2(id)=iuds(id)-2
          ipoint=ipoint+iLs(id)
-      enddo
+      enddo         
       call mditerarg(cijroutine,ndims,ifull,ium2,ipoint,
      $     cij(1,1,1,1),debyelen,error,dum4,dum5)
       if(error.ne.0.)then
          icijcount=icijcount+1
          if(icijcount.le.2)then
-            if(lmyidhead)write(*,*)'cijroutine warnings',int(error)
+            if(lmyidhead)write(*,*)'cijroutine warnings',error
      $        ,' Shifting mesh and recalculating.'
             call meshshift()
             goto 250
          else
-            if(lmyidhead)write(*,*)'Failed to avoid cij warnings'
-     $           ,int(error)
+            if(lmyidhead)write(*,*)'Failed to avoid cij warnings',error
          endif
       endif
 c      write(*,*)'Finished cijroutine iteration'
@@ -261,7 +232,7 @@ c---------------------------------------------
 c Here we try to read the stored geometry volume data.
       istat=1
       call stored3geometry(volumes,iuds,ifull,istat,.true.)
-c an istat=1 return says we succeeded. If so skip the calculation. 
+c don't calculate volumes testing.      istat=1
       if(istat.eq.0)then
 c Calculate the nodal volumes for all non-edge points.
          ipoint=0
@@ -274,7 +245,6 @@ c Calculate the nodal volumes for all non-edge points.
      $        volumes,cij,dum3,dum4,dum5)
          if(lmyidhead)write(*,*)'Finished volume setting'
 c If head, write the geometry data if we've had to calculate it.
-c That means it isn't saved if writing to local slave disks.
          if(lmyidhead)call stored3geometry(volumes,iuds,ifull,istat
      $        ,.true.)
       endif
@@ -307,20 +277,57 @@ c The following requires include objcom.f
          if(lmyidhead)write(*,*)
      $      'Used No of pointers:',oi_cij,' of',iuds(1)*iuds(2)*iuds(3)
      $        ,' points.'
+
+
+
+c Testing icross section.
+ 50   write(*,*)'Two 3-D points for orbit.'
+c      read(*,*,err=51)x1,x2
+      write(*,*)x1,x2
+      xorbit(1,1)=x1(1)
+      yorbit(1,1)=x1(2)
+      zorbit(1,1)=x1(3)
+      xorbit(2,1)=x2(1)
+      yorbit(2,1)=x2(2)
+      zorbit(2,1)=x2(3)
+      norbits=1
+      iorbitlen(1)=2
+      icross=icross_geom(x1,x2,1,fractions)
+      write(*,'(a,i2,6f8.4)')'icross_geom for object 1 returns',icross
+     $     ,(fractions(i),i=1,icross)
+
+      iobj=1
+      do i=1,ndims
+         xn1(i)=(x1(i)-obj_geom(ocenter+i-1,iobj))
+     $        /obj_geom(oradius+i-1,iobj)
+         xn2(i)=(x2(i)-obj_geom(ocenter+i-1,iobj))
+     $        /obj_geom(oradius+i-1,iobj)
+      enddo
+      itype=int(obj_geom(otype,iobj))
+      if(itype.eq.2.or.itype.eq.4)then
+         call cubeusect(xn1,xn2,nsect,fractions,imin)
+         write(*,*)'Cubeusect returns',nsect,(imin(i),fractions(i),i=1
+     $        ,nsect)
+      endif
+
 c Plot objects 0,1 and 2 (bits)
          if(iobpl.ne.0.and.lmyidhead)then
             if(rcij.eq.0.)rcij=rs
-            write(*,*)'cijplot',rcij
             call cijplot(ifull,iuds,cij,rcij,iobpl)
           endif
+          do i=1,ndims
+             x1(i)=x2(i)+1.4*(x1(i)-x2(i))
+          enddo
+      goto 50
+
       endif
+      stop
+
 c---------------------------------------------
 c Initialize charge (set q to zero over entire array).
       call mditerset(q,ndims,ifull,iuds,0,0.)
-      call mditerset(qave,ndims,ifull,iuds,0,0.)
 c Initialize potential (set u to zero over entire array).
       call mditerset(u,ndims,ifull,iuds,0,0.)
-      call mditerset(uave,ndims,ifull,iuds,0,0.)
 c Initialize diagsum if necessary.
       do ispecies=1,nspecies
          do idiag=1,ndiags+1
@@ -328,13 +335,14 @@ c Initialize diagsum if necessary.
      $           ,ndims,ifull,iuds,0,0.)
          enddo
       enddo
-c Initialize additional potential and charge always now.
-      call setadfield(ifull,iuds,iptch_mask,lsliceplot)
+c Initialize additional potential and charge if needed.
+      if(iptch_mask.ne.0 .or. gtt.ne.0. .or. gnt.ne.0)
+     $     call setadfield(ifull,iuds,iptch_mask,lsliceplot)
 c      if(myid.eq.0)call sliceGweb(ifull,iuds,rhoci,na_m,zp,
 c     $              ixnp,xn,ifix,'rhoci',dum,dum)
 
 c---------------------------------------------------------------     
-c Control. Bit 1, use my sor params (not here). Bit 2 use fadcomp (not)
+c Control. Bit 1, use my sor params (not here). Bit 2 use faddu (not)
 c Bit 4-6 periodicity.
       ictl=0
 c Make dimensions periodic:
@@ -345,7 +353,7 @@ c      write(*,*)'Calling sormpi'
 c An initial solver call with zero density.
       ierrsor=0
       if(debyelen.ne.0.)call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare
-     $     ,bdyset,fadcomp,ictl,ierrsor,myid,idims)
+     $     ,bdyset,faddu,ictl,ierrsor,myid,idims)
       ictl=2+ictl
 c      write(*,*)'Return from initial sormpi call.'
       if(ltestplot)call sliceGweb(ifull,iuds,u,na_m,zp,
@@ -357,15 +365,15 @@ c-------------------------------------------------------------------
       endif
 c End of plotting.
 c------------------------------------------------------------------
+c Set phip from the first object if it makes sense.
+      call phipset(myid)
+c------------------------------------------------------------------
 c (Re)Initialize the fortran random number generator.
-      call rluxgo(1,myid,0,0)
-      if(holepsi.eq.0.)then
-c Standard particle initialization
-         call pinit(subcycle)
-      else
-c Hole initialization
-         call trapinit(subcycle)
-      endif
+c      idum=-myid-1
+      call rluxgo(0,myid,0,0)
+c Initialize with a specified number of particles.
+c      write(*,*)'ibool_part=',ibool_part
+      call pinit(subcycle)
 c      if(lmyidhead)write(*,*)'Return from pinit'
 c---------------------------------------------
 c Initialize the force tracking.
@@ -374,17 +382,26 @@ c---------------------------------------------
       phirein=0.
       ninjcomp0=ninjcomp
       if(ninjcomp.ne.0.and.lmyidhead)
-     $     write(*,'(a,i8,f8.5,i8,f8.5)')' Fixed injection count:'
-     $     ,(ninjcompa(i),pinjcompa(i),i=1,nspecies)
+     $     write(*,*)'Fixed ion injection count:',ninjcomp
       maccel=nsteps/3
       dtf=dt
-      mbzero=maccel
 c-----------------------------------------------
 c Restart code
       if(lrestart.ne.0)then
-c names are constructed earlier.
+         partfilename=restartpath
+         if(lrestart/4-2*(lrestart/8).ne.0)then
+            partfilename(lentrim(partfilename)+1:)='restartfile'
+         else
+            call nameconstruct(partfilename)
+         endif
+         phifilename=partfilename
+         nb=nbcat(phifilename,'.phi')
+         fluxfilename=partfilename
+         nb=nbcat(fluxfilename,'.flx')
+         nb=nameappendint(partfilename,'.',myid,3)
          if(lrestart/2-2*(lrestart/4).ne.0)then
             iferr=0
+c            write(*,*)'Reading flux file:',fluxfilename
             call readfluxfile(fluxfilename,iferr)
          else
             iferr=1
@@ -426,9 +443,16 @@ c-----------------------------------------------
          endif
          write(*,'(/,a)')'Step Iterations Flux:'
       endif
-c This call is necessary for restart.
       call mditerset(psum,ndims,ifull,iuds,0,0.)
+c This call is necessary for restart with fluid electrons.
+c      write(*,*)'Initial chargetomesh call',ndiags
       call chargetomesh(psum,iLs,diagsum,ndiags) 
+c For any other species, do their advance (with dt=dtf) so as
+c to deposit smoothed charge. This breaks restart. Therefore 
+c instead made chargetomesh for all species.
+c      do ispecies=2,nspecies
+c         call padvnc(iLs,cij,u,ndiags,psum,diagsum,ispecies,ndiagmax)
+c      enddo
 c----------------------------------------------------------
 c Main step iteration -------------------------------------
       do j=1,nsteps
@@ -442,21 +466,22 @@ c Acceleration code.
 c Call here if we are not doing direct deposition in padvnc.
 c         call chargetomesh(psum,iLs,diagsum,ndiags)
          call diagperiod(psum,ifull,iuds,iLs,1)
+c The following call is marginally more efficient than diagperiod call.
+c         call psumperiod(psum,ifull,iuds,iLs)
+c But it is not necessary so simplify to one period routine.
+c Psumreduce takes care of the reductions that were in rhoinfcalc 
+c and explicit psum. It encapsulates the iaddtype iaddop generation.
+c Because psumtoq internally compensates for faddu, we reduce here
          call psumreduce(psum,nrein,phirein,numprocs,ndims,ifull,iuds
      $        ,iLs)
 c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
 c Convert psums to charge density, q. Remember external psumtoq!
-         bckgd=0.
-         if(nspecies.eq.1.)bckgd=(1.-boltzamp)*eoverms(1)
-c Subtract uniform background (for single-species running).
-            call mditerarg(psumtoqminus,ndims,ifull,ium2,0,psum(2,2,2)
-     $           ,q(2,2,2),volumes(2,2,2),bckgd,rhoinf)
+         call mditerarg(psumtoq,ndims,ifull,ium2,
+     $        0,psum(2,2,2),q(2,2,2),volumes(2,2,2),u(2,2,2),rhoinf)
          istepave=min(nf_step,iavesteps)
-
 c Reset psum, after psumtoq accommodating padvnc deposition.
          call mditerset(psum,ndims,ifull,iuds,0,0.)
-
 
 c Solve for the new potential:
          if(debyelen.eq.0)then
@@ -464,32 +489,32 @@ c Solve for the new potential:
      $        0,q(2,2,2),u(2,2,2),volumes(2,2,2),dum4,dum5)
             call bdyslope0(ndims,ifull,iuds,cij,u,q)
          else
-            if(boltzamp.ne.0)then
-c Use some fraction of linearized Boltzmann electron response.
-c To damp long wavelength oscillations.
+            if(nspecies.gt.1)then
+c               call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
+c     $              ,fnodensity,ictl,ierr,myid,idims)
                call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
-     $              ,fadcomp,ictl,ierr,myid,idims)
+     $              ,faddu,ictl-2,ierr,myid,idims)
             else
-c Turn off use of fadcomp by ictl-2
                call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
-     $              ,fadcomp,ictl-2,ierr,myid,idims)
+     $              ,faddu,ictl,ierr,myid,idims)
             endif
          endif
-
          call calculateforces(ndims,iLs,cij,u)
 
+         if(lmyidhead)then
+            if(nf_step.gt.999.or.abs(ierr).gt.999)then
+               write(*,'(i5.5,i5,$)')nf_step,ierr
+            else
+               write(*,'(i4.4,i4,$)')nf_step,ierr
+            endif
+         endif
          if(lsliceplot)then
             if(ipstep.eq.0.or.mod(j,ipstep).eq.0)then
-c Slice plots
                if(ldenplot)call sliceGweb(ifull,iuds,q,na_m,zp,
      $              ixnp,xn,ifix,'density: n'//char(0),dum,dum)
                if(lphiplot)call sliceGweb(ifull,iuds,u,na_m,zp,
      $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0),dum,dum)
             endif
-         endif
-         if(nspecies.gt.1)then
-c Ramp down boltzamp to zero if electrons are present.
-            boltzamp=max(0.,boltzamp0*(mbzero-j+2)/(mbzero+1.))
          endif
 
          if(nf_step.eq.ickst)call checkuqcij(ifull,u,q,psum,volumes,cij)
@@ -534,7 +559,8 @@ c Sometimes write them out:
      $        ,partfilename,restartpath,ifull,iuds,u,uave,qave)
 
 c This non-standard fortran call works with gfortran and g77 to flush stdout.
-c Pathscale demands an argument number. So give it explicitly.
+c Pathscale demands an argument number. So give it explicitly. Should fix
+c the segfaults.
 c Comment it out if it causes problems.
          if(lmyidhead)call flush(6)
       enddo

@@ -156,10 +156,9 @@ c Zero the obj_geom data.
       enddo
 c Read
       open(1,file=filename,status='old',err=101)
+ 2    continue
       iline=1
       read(1,'(a)',end=902)cline
-c First line must be the number of dimensions. Pointless. Remove.
-c      read(cline,*,err=901)nd
       nd=3
 
       if(myid.eq.0)write(*,'(a,a50)')'Reading objects from file: '
@@ -486,6 +485,10 @@ c Set whether particle region has a part inside an object.
 
  101  write(*,*) 'Readgeom File ',filename(1:lentrim(filename))
      $     ,' could not be opened.'
+      filename='copticgeom.dat'
+      open(1,file=filename,status='old',err=102)  
+      goto 2
+ 102  write(*,*) 'And copticgeom.dat could not be opened either.'
       ierr=1
 
       end

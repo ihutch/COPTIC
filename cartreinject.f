@@ -6,9 +6,8 @@ c Wrapper:
       include 'ndimsdecl.f'
       include 'partcom.f'
 
-c This test ought to be just whether the distribution is separable.
-c And probably it ought to be decided just once.
-c      if(colntime.eq.0. .or. colpow.eq.0.)then
+c Test whether the distribution is separable. It MUST be if pinit.f
+c has been replaced by something that does not initialize colreinject.
       if(notseparable(ispecies).eq.0)then
 c Cartreinject is the version to be used when the distribution is 
 c separable in the directions of the cartesian axes.

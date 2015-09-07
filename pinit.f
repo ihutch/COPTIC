@@ -1,3 +1,7 @@
+c pinit is the only routine in this file that is called from other
+c files.  Hence it can safely be replaced wholesale by another file.
+c However, colreinit in cartreinject.f presumes collisional distribution
+c data has already been calculated by routines here. 
 c***********************************************************************
 c Initializing particles.
       subroutine pinit(sprior)
@@ -224,34 +228,6 @@ c Set flag of unused slots to 0
       enddo
 c Allow the last species to fill the array:
       iicparta(ispecies)=n_partmax+1
-      end
-c***********************************************************************
-      subroutine locateinit()
-c Initialize particles loaded from restart files so that they have the
-c correct mesh-fraction coordinate in their upper values.
-c If they are outside the mesh or particle region, drop them.
-c Common data:
-      include 'ndimsdecl.f'
-      include 'partcom.f'
-c      include 'myidcom.f'
-      include '3dcom.f'
-      include 'meshcom.f'
-c Local dummy variables for partlocate.
-      real xfrac(ndims)
-      integer ixp(ndims)
-      logical linmesh,linregion
-      external linregion
-
-      do i=1,ioc_part
-         call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
-c         write(*,*)linmesh,linregion(ibool_part,ndims,x_part(1,i))
-         if(.not.linmesh .or. .not.
-     $        linregion(ibool_part,ndims,x_part(1,i)))then
-            x_part(iflag,i)=0
-         endif
-      enddo
-      nrein=0
-c      write(*,*)'Redetermined particle mesh locations (locateinit)'
       end
 c***********************************************************************
 c Return a random velocity from the (precalculated) distribution heap.

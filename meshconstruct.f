@@ -34,9 +34,9 @@ c Mesh data.
  11      continue
          if(iblk.le.1) write(*,*)'Too few mesh steps. Dimension',id
          if(imeshstep(id,iblk).gt.ifull(id))then
-            write(*,*)'Meshconstruct ERROR: Meshpos(',id,')='
-     $           ,imeshstep(id,iblk),'  too large for ifull=',(ifull(k)
-     $           ,k=1,ndims)
+            write(*,'(a,i1,a,i4,a,3i5)')'Meshconstruct ERROR: Meshpos('
+     $           ,id,')=',imeshstep(id,iblk),'  too large for ifull='
+     $           ,(ifull(k),k=1,ndims)
             stop
             endif
 c Set iuds according to specified mesh

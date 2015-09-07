@@ -48,13 +48,14 @@ c Effective face area for purposes of reinjection. Small if periodic.
 c Whether not all directions of particles are periodic
       logical lnotallp
       integer n_part,iic_part,ioc_part,ninjcomp
+      real holepsi,holelen
       equivalence (n_part,nparta(1)),(iic_part,iicparta(1))
      $     ,(ioc_part,iocparta(1)),(ninjcomp,ninjcompa(1))
       common/particles/x_part,nspecies
      $     ,nparta,iicparta,iocparta,ninjcompa,pinjcompa,numratioa
      $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs,npassthrough
      $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp
-     $     ,caverein,chi,notseparable
+     $     ,caverein,chi,notseparable,holepsi,holelen
 
 c Orbit plotting storage for tracking the first norbits orbits.
 c This nstepmax does NOT control the maximum number of steps.

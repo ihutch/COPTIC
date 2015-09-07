@@ -24,11 +24,13 @@ c   ixnp(id)+1 to ixnp(id)+iuds(id) [and ixnp(id+1)-ixnp(id)>=iuds(id)]
       real xn(*)
 c The fixed dimension which is chosen to start, and returned after, is:
       integer idfix
-c If idfix<0, then don't maintain aspect ratio.
+c If idfix<0, then toggle (off) aspect ratio maintenance.
+c If idfix=0, use ndims as fixed dimension
+c If idfix>7 or !=idflast, reinitialize (e.g. different dimension array)
 c The plotted quantity title is
       character*(*) utitle
-c If abs(idfix) has bit 3 set (by adding 4), then use svec, which is an
-c optional vector argument on the same array of positions as u. 
+c If abs(idfix) has bit 3 set (by adding 4), toggle plotting of svec, an
+c optional vector argument on the same array of positions as u.
       real svec(ifull(1),ifull(2),ifull(3),3)
       real vp(nw,nw,2)
 c These arguments ought to be present at least as dummy reals for all
@@ -45,54 +47,46 @@ c Contour levels
 c Local variables:
       integer icontour,iweb
       integer jsw
-      integer iclipping
+      integer iclipping,idflast
       integer idpa(2)
       character*(10) cxlab,cylab
       character*(30) form1
       save nf1,nf2,nff,if1,if2,iff
-      logical lfirst,laspect,larrow,ltellslice
-      data lfirst/.true./laspect/.true./larrow/.false./
+      logical laspect,larrow,ltellslice
+      data laspect/.true./larrow/.false./
       data ltellslice/.true./
-      data iclipping/0/jsw/0/
+      data iclipping/0/idflast/0/jsw/0/n1/0/icontour/1/iweb/1/
 c Tell that we are looking from the top by default.
-      data ze1/1./icontour/1/iweb/1/
-      save n1
+      data ze1/1./
 
       if(idfix.lt.0)then
-         laspect=.false.
+         laspect=.not.laspect
          idfix=abs(idfix)
       endif
-      if(idfix.gt.7)idfix=ndims
+      if(idfix.gt.7)then 
+         idfix=ndims
+         idflast=0
+      endif
       if(idfix/4-2*(idfix/8).ne.0)then 
+c Then we are using the svec argument.
          larrow=.not.larrow
 c         write(*,*)'idfix=',idfix,'  larrow=',larrow
          idfix=idfix-4*(idfix/4)
       endif
       if(idfix.lt.1)idfix=ndims
-c Then we are using the svec argument.
       ips=0
       irotating=0
-c Initial slice number
-c red-green gradient:
-c      call accisgradinit(64000,0,0,-64000,128000,64000)
-c blue purple white gradient
-c      call accisgradinit(-32000,-65000,0,97000,65500,150000)
-c green yellow white 
-c      call accisgradinit(-32000,0,-65000,97000,150000,65500)
-c red orange white
-c      call accisgradinit(0,-32000,-65000,150000,97000,65500)
-c Better one that gives a good mono gradient too:
-      call blueredgreenwhite()
-      if(lfirst)then
-         n1=iuds(idfix)/2
+      if(.not.idflast.eq.idfix)then
+c Initialize
+         n1=(iuds(idfix)+1)/2
 c     Plot the surface. With scaling 1. Web color 6, axis color 7.
+         call blueredgreenwhite()
          jsw=1 + 256*6 + 256*256*7
          iweb=1
          icontour=1
          iclipping=0
-         lfirst=.false.
          write(*,*)' ======== Slice plotting interface. Hit h for help.'
-c         if(zp(1,1).ne.0)goto 19
+         idflast=idfix
       endif
 c Start of controlled plotting loop.
  21   call pltinit(0.,1.,0.,1.)
@@ -425,11 +419,13 @@ c Local variables:
       integer icontour,iweb
       integer isw,jsw,imode,itype,ifileno
       character*(30) form1
-      logical lfirst,lsideplot,larrow
-      data lfirst/.true./lsideplot/.false./larrow/.false./
+      logical lsideplot,larrow
+      data lsideplot/.false./larrow/.false./
 c Tell that we are looking from the top by default.
       data ze1/1./icontour/1/iweb/1/
       data xpl/0.,0.,0./xnl/1.,0.,0./ifileno/0/
+c      data jsw/1+256*6+256*256*7/
+      data jsw/460289/
 
       ierr=1
       imv=1
@@ -448,13 +444,6 @@ c Tell that we are looking from the top by default.
       irotating=0
       call minmax2(u(1,1,ifixpt(3)),ifull(1),iuds(1),iuds(2),umin,umax)
       call accisgradinit(64000,0,0,-64000,128000,64000)
-      if(lfirst)then
-c     Plot the surface. With scaling 1. Web color 6, axis color 7.
-         jsw=1 + 256*6 + 256*256*7
-         iweb=1
-         icontour=1
-         lfirst=.false.
-      endif
 
       call setcube(.2,.2,.2,.5,.4)
 c Start of plotting loop.
@@ -1152,3 +1141,13 @@ c Now iql and iqr, Ql and Qr bracket Q
          write(*,*)'****** Error!: interp coincident points'
       endif
       end
+c******************************************************************
+c Some gradients.
+c red-green gradient:
+c      call accisgradinit(64000,0,0,-64000,128000,64000)
+c blue purple white gradient
+c      call accisgradinit(-32000,-65000,0,97000,65500,150000)
+c green yellow white 
+c      call accisgradinit(-32000,0,-65000,97000,150000,65500)
+c red orange white
+c      call accisgradinit(0,-32000,-65000,150000,97000,65500)
