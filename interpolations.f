@@ -195,8 +195,8 @@ c      write(*,*)'nq=',nq
       interp=0
       Ql=Q(1)
       Qr=Q(nq)
-c Circumlocution to catch y=NAN. [Why is this le?]
-      if(.not.((y-Ql)*(y-Qr).lt.0.)) then
+c Circumlocution to catch y=NAN. [Why is this le? lt breaks geomSoR]
+      if(.not.((y-Ql)*(y-Qr).le.0.)) then
 c Value is outside the range.
          if((y-Ql)*(Qr-Ql).le.0.)then
             x=0
