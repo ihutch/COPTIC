@@ -195,6 +195,7 @@ c      write(*,*)'nq=',nq
       interp=0
       Ql=Q(1)
       Qr=Q(nq)
+      QS=Qr-Ql
 c Circumlocution to catch y=NAN. [Why is this le? lt breaks geomSoR]
       if(.not.((y-Ql)*(y-Qr).le.0.)) then
 c Value is outside the range.
@@ -213,7 +214,8 @@ c Value is outside the range.
       iqx=(iqr+iql)/2
       Qx=Q(iqx)
 c      write(*,*)y,Ql,Qx,Qr,iql,iqr
-      if((Qx-y)*(Qr-y).le.0.) then
+c      if((Qx-y)*(Qr-y).le.0.) then
+      if((Qx-y)*QS.le.0.)then
          Ql=Qx
          iql=iqx
       else

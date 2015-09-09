@@ -1,27 +1,45 @@
 #!/bin/bash
 # Script for setting the coptic allocated mesh dimensions from either
-# Three arguments on the command line or
-# The values set in copticgeom.dat or
+# Three arguments on the command line or 
+# The values set in copticgeom.dat or a filename argument, or 
 # The defaults 32 32 32
 
 ARG1=$1
 ARG2=$2
 ARG3=$3
-if [ $# -ne 3 ] ; then 
-if [ -f "copticgeom.dat" ] ; then
+if [ $# -eq 0 ] ; then 
+ if [ -f "copticgeom.dat" ] ; then
     echo Trying to set dimensions from copticgeom.dat
     ARG1=`sed -n -e "/^91/p"  copticgeom.dat | sed  -e "s/,0,.*//" | sed -e "s/^.*,//" `
     ARG2=`sed -n -e "/^92/p"  copticgeom.dat | sed  -e "s/,0,.*//" | sed -e "s/^.*,//" `
     ARG3=`sed -n -e "/^93/p"  copticgeom.dat | sed  -e "s/,0,.*//" | sed -e "s/^.*,//" `
     echo Dimensions derived: $ARG1 $ARG2 $ARG3
-else 
+ else 
     echo $# arguments
-    echo Usage $0 na_i na_j na_k
+    echo "Usage $0 [filename |  na_i na_j na_k ]"
     echo Specify the array dimensions in the i,j,k directions.
     echo The file griddecl.f is created appropriately.
     echo Then COPTIC is recompiled.
     exit
-fi
+ fi
+else
+ if [ $# -eq 1 ] ; then 
+# use the one argument as a geometry file.
+  if [ -f "$1" ] ; then
+    echo Trying to set dimensions from $1
+    ARG1=`sed -n -e "/^91/p"  $1 | sed  -e "s/,0,.*//" | sed -e "s/^.*,//" `
+    ARG2=`sed -n -e "/^92/p"  $1 | sed  -e "s/,0,.*//" | sed -e "s/^.*,//" `
+    ARG3=`sed -n -e "/^93/p"  $1 | sed  -e "s/,0,.*//" | sed -e "s/^.*,//" `
+    echo Dimensions derived: $ARG1 $ARG2 $ARG3
+  else 
+    echo $# arguments
+    echo "Usage $0 [filename |  na_i na_j na_k ]"
+    echo Specify the array dimensions in the i,j,k directions.
+    echo The file griddecl.f is created appropriately.
+    echo Then COPTIC is recompiled.
+    exit
+  fi
+ fi
 fi
 if [ "$ARG1" == "" ] ; then ARG1=32; echo Default i=$ARG1 ; fi
 if [ "$ARG2" == "" ] ; then ARG2=32; echo Default j=$ARG2 ; fi
