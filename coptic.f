@@ -487,8 +487,9 @@ c Slice plots
      $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0),dum,dum)
             endif
          endif
-         if(nspecies.gt.1)then
-c Ramp down boltzamp to zero if electrons are present.
+         if(nspecies.gt.1.or.holepsi.ne.0.)then
+c Ramp down boltzamp to zero if electrons are present,
+c or this is a hole run
             boltzamp=max(0.,boltzamp0*(mbzero-j+2)/(mbzero+1.))
          endif
 
