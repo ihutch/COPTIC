@@ -145,7 +145,7 @@ c First time this routine just sets defaults and the object file name.
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi)
+     $     ,holelen,holepsi,holeum,holeeta)
 
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
@@ -162,7 +162,7 @@ c Second time: deal with any other command line parameters.
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi)
+     $     ,holelen,holepsi,holeum,holeeta)
 
       if(ierr.ne.0)stop
 c The double call enables cmdline switches to override objfile settings.
@@ -171,7 +171,8 @@ c Finalize parameters after switch reading.
       ndropped=0
       boltzamp0=boltzamp
       boltzsign=sign(1.,eoverms(1))
-c      write(*,*)'boltzamp,boltzsign',boltzamp,boltzsign
+c Holeum is f drift speed relative to hole so holeum=vd-holespeed:
+c set in trapinit.
       if(nptdiag.eq.0)nptdiag=nsbins
       call initdriftfield
 c---------------------------------------------------------------
@@ -329,7 +330,8 @@ c Initialize diagsum if necessary.
          enddo
       enddo
 c Initialize additional potential and charge always now.
-      call setadfield(ifull,iuds,iptch_mask,lsliceplot)
+c      call setadfield(ifull,iuds,iptch_mask,lsliceplot)
+      call setadfield(ifull,iuds,iptch_mask,ltestplot)
 c      if(myid.eq.0)call sliceGweb(ifull,iuds,rhoci,na_m,zp,
 c     $              ixnp,xn,ifix,'rhoci',dum,dum)
 

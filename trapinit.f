@@ -118,8 +118,11 @@ c Determine the trapping dimension
          enddo
 c Default x
          if(id.eq.0)id=1
-         if(myid.eq.0)write(*,'(2a,i2,a)')' Hole particle'
-     $        ,' initialization with trapping id',id,' please wait...'
+c Calculate holespeed using vd component in projection dimension.
+         holespeed=vd*vdrift(id)-holeum
+         if(myid.eq.0)write(*,'(2a,i2,a,f7.3,a)')' Hole particle'
+     $        ,' initialization. Trapping id',id,'. Speed',holespeed,
+     $        '. Please wait...'
 c ----------------------------- Actual Particle Setting ----------
          do i=iicparta(ispecies)+i1-1,islotmax
             x_part(iflag,i)=1
@@ -138,7 +141,8 @@ c     particle number else just set this slot empty.
                   goto 1
                endif
             endif
-c Shifted Gaussians.
+c Shifted Gaussians um is in units sqrt(2T/m), holeum in sqrt(T/m)
+            um=holeum/sqrt(2.)
             do j=1,ndims
                if(j.ne.id)then
                   x_part(ndims+j,i)=tisq*gasdev(myid) + vd*vdrift(j)
@@ -158,8 +162,7 @@ c Decide rejection:
                   if(vr.lt.dentot)then
 c Accept
                      iaccept=iaccept+1
-                     um=0.
-                     eta=2.
+                     eta=holeeta
                      call untrapcum(phi,um,psi,nin,np,nm,fpa,fma,ua,nt
      $                    ,cump,cumv,eta)
 c Now cump contains the offset cumulative probability function at cumv. 
@@ -173,9 +176,10 @@ c Now cump contains the offset cumulative probability function at cumv.
                      endif 
                      v=v-iv
                      iv=iv-1-nm-nt
-c Units of cumv are sqrt(2T/m)
+c Units of cumv are sqrt(2T/m). Add holespeed in sqrt(T/m) units.
                      x_part(ndims+id,i)
      $                    =(cumv(iv)*(1-v)+cumv(iv+1)*(v))*sqrt(2.)
+     $                    +holespeed
 
                   else
 c Reject. Set slot empty. Try again.

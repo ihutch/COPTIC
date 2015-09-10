@@ -13989,3 +13989,10 @@ A 1-d hole in a 3-D box persists for 500 steps of 0.1 in a +-10 box.
 (Uniform background -sb0). Single species. The species is positively charged.
 The only thing that is changed is the particle initialization.
 There is no quieting, purely random 800k particles.
+
+10 Sep 2015
+Implement switches for holeum and holeeta setting into ih.
+holeum is the drift of the Maxwellian in the rest frame of the hole.
+holespeed is the speed of the hole relative to the mesh. These are 
+both in sqrt(T/m) units like vd etc. Only holeum needs to be set.
+holespeed is calculated using vd. Updated RefManual.
