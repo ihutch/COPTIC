@@ -171,8 +171,6 @@ c Finalize parameters after switch reading.
       ndropped=0
       boltzamp0=boltzamp
       boltzsign=sign(1.,eoverms(1))
-c Holeum is f drift speed relative to hole so holeum=vd-holespeed:
-c set in trapinit.
       if(nptdiag.eq.0)nptdiag=nsbins
       call initdriftfield
 c---------------------------------------------------------------

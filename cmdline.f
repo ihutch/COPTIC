@@ -363,7 +363,7 @@ c            write(*,*)'||||||||||||||extfield',extfield
      $           ,holeeta
             goto 240
 c Default hole value[s] are being used
- 231        if(holepsi.eq.0.)holepsi=0.1
+ 231        continue
 c            write(*,*)'holepsi,holeum,holelen,holeeta',holepsi,holeum
 c     $           ,holelen,holeeta
          endif

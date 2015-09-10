@@ -119,7 +119,8 @@ c Determine the trapping dimension
 c Default x
          if(id.eq.0)id=1
 c Calculate holespeed using vd component in projection dimension.
-         holespeed=vd*vdrift(id)-holeum
+c Holeum is minus f drift speed relative to hole so holeum=-vd+holespeed:
+         holespeed=holeum+vd*vdrift(id)
          if(myid.eq.0)write(*,'(2a,i2,a,f7.3,a)')' Hole particle'
      $        ,' initialization. Trapping id',id,'. Speed',holespeed,
      $        '. Please wait...'

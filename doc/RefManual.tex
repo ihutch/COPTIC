@@ -753,19 +753,23 @@ dt/\lambda_{De}<1$.
 initialization. Up to four parameters are set by succeeding values
 separated by commas (no spaces). The parameters and their defaults are
 \verb!holepsi! [0.1] the hole (peak) potential, \verb!holeum! [0.]\
-the drift speed of the (external) Maxwellian distribution relative to
-the hole, \verb!holelen! [4.]\ the length of the hole in Debye
+the speed of the hole relative to the mean of the untrapped Maxwellian
+distribution, \verb!holelen! [4.]\ the length of the hole in Debye
 lengths, and \verb!holeeta! [2.]\ the power that determines the hole
-shape (2 is a parabola). The spatial direction of the velocity
+shape (2 is a parabola).
+The spatial direction of the velocity
 trapping of the hole must be one of the axes, and is determined by the
 B-field direction (unless it is not axis-aligned, in which case axis 1
-is chosen). In the other directions uniform Maxwellian initialization
-is used. A zero potential hole cannot be set; omit this switch to give
-no hole. A hole is incompatible with non-zero collisions. Holes
-probably must
-use \verb!-sb0!, a uniform neutralizing background. Then \verb!-zm-1!,
-negative charge particles means the particles can be considered to be
-electrons and the velocity units $\sqrt{T_e/m_e}$ (assuming $T=1$).
+is chosen). When plasma drift is present, its component in the
+trapping direction is added to \verb!holeum! to give the net hole
+speed relative to the mesh; so setting drift equal to \verb!holeum!
+gives a stationary hole.
+In the other directions uniform Maxwellian initialization
+is used. A hole is incompatible with non-zero collisions. Holes
+probably must use \verb!-sb0!, a uniform neutralizing background. Then
+\verb!-zm-1!, negative charge particles means the particles can be
+considered to be electrons and the velocity units $\sqrt{T_e/m_e}$
+(assuming $T=1$). 
 
 \subsubsection*{Neutrals, Collisions, Magnetic Field}
 
