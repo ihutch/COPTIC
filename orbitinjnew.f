@@ -586,7 +586,7 @@ c No time-averaging for now.
 c Particle information
       include 'partcom.f'
 
-      pinjcomp(1)=0.
+      pinjcompa(1)=0.
       if(n_part.ne.0)return
 c Calculate ninjcomp from ripernode
       chi=min(-phirein/Ti,0.5)

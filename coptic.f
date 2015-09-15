@@ -123,6 +123,7 @@ c Default zero field
       ierr=0
       ifix=0
       npassthrough=0
+      rhoinf=0.
 c---------------------------------------------------------------------
 c This necessary here so one knows early the mpi structure.
 c Otherwise could have been hidden in sormpi and passed back.
@@ -373,6 +374,7 @@ c Initialize the force tracking.
 c---------------------------------------------
       phirein=0.
       ninjcomp0=ninjcomp
+      pinjcomp0=pinjcompa(1)
       if(ninjcomp.ne.0.and.lmyidhead)
      $     write(*,'(a,i8,f8.5,i8,f8.5)')' Fixed injection count:'
      $     ,(ninjcompa(i),pinjcompa(i),i=1,nspecies)
@@ -437,7 +439,12 @@ c Acceleration code.
          bdtnow=max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)
          dt=bdtnow*dtf
          ninjcomp=int(bdtnow*ninjcomp0)
-         if(ninjcomp.ne.0)nrein=ninjcomp
+c         write(*,*)ninjcomp,nrein,bdtnow,ninjcomp0
+c The following statement is not needed with modified rhoinfcalc.
+c         if(ninjcomp.ne.0)nrein=ninjcomp
+c It introduces inaccuracy because partial injections are ignored.
+c The new version rhoinfcalc does a more accurate calculation but needs
+         pinjcompa(1)=bdtnow*pinjcomp0
 
 c Call here if we are not doing direct deposition in padvnc.
 c         call chargetomesh(psum,iLs,diagsum,ndiags)

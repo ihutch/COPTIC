@@ -677,12 +677,14 @@ c Use particle information for initializing.
       include 'meshcom.f'
       include 'creincom.f'
       include 'myidcom.f'
+c Local variables
       real volume,flux
       real cfactor
 
+      cfactor=1.
       volume=1.
       flux=0.
-
+c In reality this calculation is needed only once.
       do i=1,ndims
          fcarea(i)=1.
          if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
@@ -696,31 +698,39 @@ c that specifies the flux for this face, and add to total.
          flux=flux+(grein(2*i-1)+grein(2*i))*fcarea(i)
          volume=volume*(xmeshend(i)-xmeshstart(i))
       enddo
-c      if(nrein.ne.0)then
-c Better to use a significant number to avoid bias at low reinjections.
-      if(nrein.ge.10)then
+
+      if(ninjcomp.ne.0.and..true.)then
+c Fixed injection rate implies fixed rhoinf. Set it only once.
+         if(rhoinf.eq.0)then
+            rhoinf=numprocs*(ninjcompa(1)+pinjcompa(1))/(dtin*flux)
+         endif
+      else
+         if(nrein.ge.10)then
 c Calculate rhoinf from nrein if there are enough.
 c Correct approximately for edge potential depression (OML).
 c         chi=min(-phirein/Ti,0.5)
-         chi=max(crelax*(-phirein/Ti)+(1.-crelax)*chi,0.)
-         cfactor=smaxflux(vd/sqrt(2.*Ti),chi)
-     $        /smaxflux(vd/sqrt(2.*Ti),0.)
-         rhoinf=(nrein/(dtin*cfactor*flux))
+            chi=max(crelax*(-phirein/Ti)+(1.-crelax)*chi,0.)
+            cfactor=smaxflux(vd/sqrt(2.*Ti),chi)
+     $           /smaxflux(vd/sqrt(2.*Ti),0.)
+            rhoinf=(nrein/(dtin*cfactor*flux))
 c         write(*,*)nrein,dtin,phirein,chi,cfactor,flux,rhoinf
-      else
-         if(rhoinf.lt.1.e-4)then
+         else
+            if(rhoinf.lt.1.e-4)then
 c Approximate initialization
-            rhoinf=numprocs*n_part/volume
-            write(*,*)'Rhoinf in rhoinfcalc approximated as',rhoinf
-     $           ,numprocs,n_part
-         endif
+               rhoinf=numprocs*n_part/volume
+               write(*,*)'Rhoinf in rhoinfcalc approximated as',rhoinf
+     $              ,numprocs,n_part
+            endif
 c Else just leave it alone.
+         endif
       endif
-c      write(*,*)
-c      if(myid.eq.0)write(*,'(a,2i8,10f9.4)')
-c     $ 'Ending rhoinfcalc',nrein,n_part,rhoinf
-c     $     ,phirein,chi,cfactor,dtin
+      if(myid.eq.0.and..false.)then
+         write(*,*)
+         write(*,'(a,2i8,10f9.4)') 'Ending rhoinfcalc',nrein,n_part
+     $        ,rhoinf ,phirein,chi,cfactor,dtin
+      endif
 c,flux
+
       end
 c*********************************************************************
       subroutine ninjcalc(dtin)
@@ -764,10 +774,11 @@ c Partial reinjection is indicated by this fraction.
             pinjcompa(ispecies)=fpinj-int(fpinj)
 
             nparta(ispecies)=int(ripn*volume/numratioa(ispecies))
-
-c      write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp'
-c      write(*,*) ispecies,ripn,dtin,cfactor,flux
-c     $     ,nparta(ispecies),ninjcompa(ispecies)
+      if(.true.)then      
+      write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp,pinj'
+      write(*,'(i2,4f8.3,2i8,f8.4)') ispecies,ripn,dtin,cfactor,flux
+     $     ,nparta(ispecies),ninjcompa(ispecies),pinjcompa(ispecies)
+      endif
             if(n_part.gt.n_partmax)then
                write(*,*)'ERROR. Too many particles required.'
                write(*,101)ripn,nparta(ispecies),n_partmax

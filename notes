@@ -13996,3 +13996,32 @@ holeum is the drift of the Maxwellian in the rest frame of the hole.
 holespeed is the speed of the hole relative to the mesh. These are 
 both in sqrt(T/m) units like vd etc. Only holeum needs to be set.
 holespeed is calculated using vd. Updated RefManual.
+
+15 Sep 2015
+Discovered a bug/problem associated with rhoinf calculation when going
+to smaller dt. The charge cancellation is clearly broken at the first 
+solve. This appears to be because rhoinfcalc gives a more inaccurate 
+value 4.9861 versus 4.9990 (-ri5). The number of reinjections per
+timestep is 308 versus 772. So there's some rounding error arising from 
+the small number of reinjections. There needs to be a more consistent
+calculation. It's nothing to do with trapinit per se. 
+
+Remove rhoinf initialization from pinit. It was being set incorrectly 
+as if for a spherical domain, when rhoinf=0. Also initialize rhoinf to
+zero in coptic. Changes no geometry tests.
+
+The call of rhoinfcalc and determination of the rhoinf from the number
+of injections, nrein, is problematic for small numbers of reinjections.
+It also seems to be inappropriate when using a fixed injection rate
+ninjcomp. In that case we ought simply to leave rhoinf at its fixed
+set value in most cases, certainly not vary it according to the actual
+number of injections, unless there's some other reason. rhoinfcalc does
+account for the number of processes, because nrein increases with 
+that number. So probably it needs to do something at least once.
+Introduced a new calculation in rhoinfcalc when ninjcomp is nonzero. 
+It requires adjustment of the acceleration code, which was anyway not
+quite correct for partial injections.
+
+Unfortunately this correction changes all the geometry files. So we 
+need to regen them. Implement make target regeom to remake them.
+And run it. 

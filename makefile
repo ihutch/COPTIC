@@ -316,6 +316,10 @@ geometry : geometry/*.cks
 	date >>GeometryTests
 	cat GeometryTests
 
+regeom :
+	@echo 'Regenerating geometry/*.cks files' >&2
+	for file in geometry/*.dat ; do rm $${file%.dat}.cks; make $${file%.dat}.cks; done
+
 # Use compiler (which depends on makefile) as a test of major updates
 GeometryTests : compiler
 	@if [ "`sed -n '/g77/p' compiler`" == "" ] ; then\
