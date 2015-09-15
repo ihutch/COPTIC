@@ -14025,3 +14025,4 @@ quite correct for partial injections.
 Unfortunately this correction changes all the geometry files. So we 
 need to regen them. Implement make target regeom to remake them.
 And run it. 
+Flux density*r^2, normalized to rhoinf  0.905194461

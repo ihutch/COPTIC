@@ -774,7 +774,7 @@ c Partial reinjection is indicated by this fraction.
             pinjcompa(ispecies)=fpinj-int(fpinj)
 
             nparta(ispecies)=int(ripn*volume/numratioa(ispecies))
-      if(.true.)then      
+      if(.false.)then      
       write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp,pinj'
       write(*,'(i2,4f8.3,2i8,f8.4)') ispecies,ripn,dtin,cfactor,flux
      $     ,nparta(ispecies),ninjcompa(ispecies),pinjcompa(ispecies)
