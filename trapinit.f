@@ -219,8 +219,6 @@ c Zero the overflow slots' flag
      $           ,iicparta(ispecies),iocparta(ispecies)
 c     $           ,ninjcompa(ispecies)
          endif
-c Initialize rhoinf:
-         if(rhoinf.eq.0.)rhoinf=numprocs*n_part/(4.*pi*rs**3/3.)
 c Initialize orbit tracking
          do ko=1,norbits
             iorbitlen(ko)=0

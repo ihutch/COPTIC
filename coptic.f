@@ -441,7 +441,7 @@ c Acceleration code.
          ninjcomp=int(bdtnow*ninjcomp0)
 c         write(*,*)ninjcomp,nrein,bdtnow,ninjcomp0
 c The following statement is not needed with modified rhoinfcalc.
-c         if(ninjcomp.ne.0)nrein=ninjcomp
+         if(ninjcomp.ne.0)nrein=ninjcomp
 c It introduces inaccuracy because partial injections are ignored.
 c The new version rhoinfcalc does a more accurate calculation but needs
          pinjcompa(1)=bdtnow*pinjcomp0

@@ -702,7 +702,11 @@ c that specifies the flux for this face, and add to total.
       if(ninjcomp.ne.0.and..true.)then
 c Fixed injection rate implies fixed rhoinf. Set it only once.
          if(rhoinf.eq.0)then
+c            write(*,*)'*************flux=',flux
             rhoinf=numprocs*(ninjcompa(1)+pinjcompa(1))/(dtin*flux)
+            chi=0.
+         else
+c            write(*,*)'rhoinf=',rhoinf,ninjcomp
          endif
       else
          if(nrein.ge.10)then
@@ -774,7 +778,7 @@ c Partial reinjection is indicated by this fraction.
             pinjcompa(ispecies)=fpinj-int(fpinj)
 
             nparta(ispecies)=int(ripn*volume/numratioa(ispecies))
-      if(.false.)then      
+      if(.true.)then      
       write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp,pinj'
       write(*,'(i2,4f8.3,2i8,f8.4)') ispecies,ripn,dtin,cfactor,flux
      $     ,nparta(ispecies),ninjcompa(ispecies),pinjcompa(ispecies)
