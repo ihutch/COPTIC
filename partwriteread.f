@@ -327,7 +327,7 @@ c Output parameter development to stdout.
       external fluxdiag
 
 c Step number print
-            if(nf_step.gt.999.or.abs(ierr).gt.999)then
+            if(nf_step.gt.9999.or.abs(ierr).gt.999)then
                write(*,'(i5.5,i5,$)')nf_step,ierr
             else
                write(*,'(i4.4,i4,$)')nf_step,ierr

@@ -277,26 +277,13 @@ c Limiting the range to 0-65535, warning if the pixel number is not right.
       enddo
       end
 c***********************************************************************
-c Dummy
-      integer function igradtri(x,y,z,h,i3d)
-c Silence warnings
-      r=x
-      r=y
-      r=z
-      r=h
-      i=i3d
+c Dummy Functions without proper parameters
+      integer function igradtri()
       igradtri=0
       end
-c**********************************************************************
-c Dummy
-      subroutine usleep(usecs)
-      r=usecs
+      subroutine usleep()
       end
-c**********************************************************************
-c Dummy
-      subroutine noeye3d(value)
-      r=value
+      subroutine noeye3d()
       end
-c*********************************************************************
       subroutine accisflush()
       end

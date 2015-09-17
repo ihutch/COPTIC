@@ -653,7 +653,7 @@ int eye3d_(value)
   }
   do{
     XNextEvent(accis_display,&event);
-        printf("The event type: %d\n",event.type); 
+    /*printf("The event type: %d\n",event.type); */
     switch(event.type) {
     case Expose: EXPOSE_ACTION; break;
     case ButtonPress: accis_butdown(&event); break;
