@@ -8,20 +8,21 @@ c********************************************************************
       accis_driver=2
       end
 C********************************************************************
-      blockdata scrndat
-      include 'plotcom.h'
+c This removed because of clash with initiald block data.
+c      blockdata scrndat
+c      include 'plotcom.h'
 c      data scrxpix,scrypix,ncolor,vmode/1024,779,15,4010/
-      data scrxpix,scrypix,ncolor,vmode/4096,3120,15,4014/      
-      end
+c      data scrxpix,scrypix,ncolor,vmode/4096,3120,15,4014/      
+c      end
 C********************************************************************
 c Switch to graphics mode Tek 4010/14.
       subroutine svga(scrxpix,scrypix,vmode,ncolor)
       integer scrxpix,scrypix,vmode,ncolor
 c Silence warnings
-      j=scrxpix
-      j=scrypix
-      j=vmode
-      j=ncolor
+      scrxpix=4096
+      scrypix=3120
+      vmode=4014
+      ncolor=15
       accis_nodisplay=1;
 c Enter Tek mode. Modified for Xterm.
       write(*,'(1x,a)')char(27)//'[?38h'
@@ -295,4 +296,7 @@ c**********************************************************************
 c Dummy
       subroutine noeye3d(value)
       r=value
+      end
+c*********************************************************************
+      subroutine accisflush()
       end

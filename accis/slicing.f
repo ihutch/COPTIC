@@ -1,10 +1,9 @@
 c*******************************************************************
 c General slicing routine with web projection.
-      subroutine sliceGweb(ifull,iuds,u,nw,zp,ixnp,xn,idfix,utitle
+      subroutine sliceGweb(ifull,iuds,u,nw,zp,ixnp,xn,idfixin,utitle
      $     ,svec,vp)
 c Plot web-projected and/or projected contour representations 
-c of quantity u on slices with
-c fixed values of dimension idfix.
+c of quantity u on slices with fixed values of dimension idfix.
 c The full dimensions of arrays u are
       parameter(ndims=3,nd2=2*ndims)
       integer ifull(ndims)
@@ -22,11 +21,8 @@ c So the vector of positions for dimension id is
 c   ixnp(id)+1 to ixnp(id)+iuds(id) [and ixnp(id+1)-ixnp(id)>=iuds(id)]
       integer ixnp(ndims+1)
       real xn(*)
-c The fixed dimension which is chosen to start, and returned after, is:
-      integer idfix
-c If idfix<0, then toggle (off) aspect ratio maintenance.
-c If idfix=0, use ndims as fixed dimension
-c If idfix>7 or !=idflast, reinitialize (e.g. different dimension array)
+c The fixed dimension which is chosen to start (extended usage below) is:
+      integer idfixin
 c The plotted quantity title is
       character*(*) utitle
 c If abs(idfix) has bit 3 set (by adding 4), toggle plotting of svec, an
@@ -47,45 +43,69 @@ c Contour levels
 c Local variables:
       integer icontour,iweb
       integer jsw
-      integer iclipping,idflast
+      integer iclipping,idflast,idfinlast
       integer idpa(2)
       character*(10) cxlab,cylab
       character*(30) form1
-      save nf1,nf2,nff,if1,if2,iff
+      save nf1,nf2,nff,if1,if2,iff,idfix
       logical laspect,larrow,ltellslice
       data laspect/.true./larrow/.false./
-      data ltellslice/.true./
-      data iclipping/0/idflast/0/jsw/0/n1/0/icontour/1/iweb/1/
+      data ltellslice/.false./
+      data iclipping/0/idflast/-9999/jsw/0/n1/0/icontour/1/iweb/1/
+      data idfinlast/-9999/
 c Tell that we are looking from the top by default.
       data ze1/1./
 
-      if(idfix.lt.0)then
+c Need to get more systematic with idfix. 
+c Sign negative  toggle (off) aspect ratio maintenance.
+c Bits 0 (1) and 1 (2)  specify the id fixed. 
+c Bit 2 (4)  toggle (on) plotting of svec arrows.
+c Bit 3 (8)  reinitialize.
+c Bits 4,5 (16xicontour)  set the initial icontour number 0...3
+c Bit 6 (64)  Toggle ltellslice 
+c Bit 7 (128) Return continuously. (Equivalent of d-control).
+
+      idfixf=abs(idfixin)/4
+c Sign
+      if(idfixin.lt.0)then
          laspect=.not.laspect
-         idfix=abs(idfix)
       endif
-      if(idfix.gt.7)then 
-         idfix=ndims
-         idflast=0
+      idfix=abs(idfixin)-4*(idfixf)
+      if(idfix.eq.0)then
+c Bits 0,1 set direction, or reinitialize and use default ndims.
+         if(idflast.eq.-9999)then
+            idfix=ndims
+         else
+            idfix=idflast
+         endif
       endif
-      if(idfix/4-2*(idfix/8).ne.0)then 
-c Then we are using the svec argument.
+      if(idfixf-2*(idfixf/2).ne.0)then
+c Bit 2 Toggle on svec 
          larrow=.not.larrow
 c         write(*,*)'idfix=',idfix,'  larrow=',larrow
-         idfix=idfix-4*(idfix/4)
       endif
-      if(idfix.lt.1)idfix=ndims
+      idfixf=idfixf/2
+      if(idfixf-2*(idfixf/2).ne.0)then 
+c Bit 3=1 reinitialize:
+         idfinlast=-9999
+      endif
+      idfixf=idfixf/2
+c Bits 4,5 set icontour
+      icontour=(idfixf-4*(idfixf/4))
+      idfixf=idfixf/4
+      if(idfixf-2*(idfixf/2).ne.0)ltellslice=.not.ltellslice
       ips=0
       irotating=0
-      if(.not.idflast.eq.idfix)then
+      if(.not.idfinlast.eq.idfixin)then
 c Initialize
          n1=(iuds(idfix)+1)/2
 c     Plot the surface. With scaling 1. Web color 6, axis color 7.
          call blueredgreenwhite()
          jsw=1 + 256*6 + 256*256*7
          iweb=1
-         icontour=1
          iclipping=0
          write(*,*)' ======== Slice plotting interface. Hit h for help.'
+         idfinlast=idfixin
          idflast=idfix
       endif
 c Start of controlled plotting loop.
@@ -244,7 +264,6 @@ c we need an immediate turn off of the pfsw. This is fixed by calling
 c pfset before pltend. On entry, pltend sees pfsw as negative, so does
 c not pause. The last thing pltend does is set the pfsw from
 c the pfnextsw set by pfset to zero.
-c         call pfset(0)
          call prtend()
          write(*,*)'Terminating sliceweb ips=',ips,pfsw
          ips=0
@@ -254,7 +273,7 @@ c User interface
       call ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping,ips
      $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice)
       if(iquit.eq.0)goto 21
-
+      call prtend()
       call hdprset(0,0.)
       end
 c******************************************************************
@@ -683,10 +702,11 @@ c 5. Draw line only in places in front of all 3 planes.
       if(ips.ne.0)then
 c We called for a local print of plot. Terminate and switch it off.
 c Prevent pltend from querying the interface.
-c         write(*,*)'Terminating sliceGweb. ips=',ips
-         pfsw=-ips
-         call pfset(0)
-         call pltend()
+         write(*,*)'Terminating sliceGweb. ips=',ips
+c         pfsw=-ips
+c         call pfset(0)
+c         call pltend()
+         call prtend()
          ips=0
       endif
       call gradlegend(c1st,clast,-.55,0.,-.55,1.,.03,.false.) 
@@ -820,6 +840,7 @@ c Show the lineout position if it is changed.
 c      write(*,*)'Returning to 21'
       goto 21
  23   continue
+      call prtend()
       call hdprset(0,0.)
 
       end

@@ -599,7 +599,7 @@ int eye3d_(value)
   extern void accis_moved();
   XEvent event;
 
-  /*fprintf(stdout,"In eye3d: %d,%d\n",accis_nodisplay,accis_eye3d);*/
+  /* fprintf(stdout,"In eye3d: %d,%d\n",accis_nodisplay,accis_eye3d); */
   if(accis_nodisplay){ *value=0; return 0; }
   glEndList(); /* Close the drawing list started in svga.*/
   accis_listing=0;
@@ -613,18 +613,21 @@ int eye3d_(value)
   if(accis_eye3d != 9999){
     if(XPending(accis_display)){
       XPeekEvent(accis_display,&event);
-      if(event.type==KeyPress){
+      if(event.type==KeyPress){ /* Halt continuous running on keypress */
 	*value=(int)XLookupKeysym(&(event.xkey),0);
 	accis_eye3d=9999;
+      }else{ /* Discard other events */
+	XNextEvent(accis_display,&event);
       }
-    }else{
-      *value=accis_eye3d; return 0; 
     }
+    if(accis_eye3d!=9999) {*value=accis_eye3d;return 0;}
   }
+  /* fprintf(stdout,"Second accis_eye3 in eye3d= %d\n",accis_eye3d); */
   ACCIS_SET_FOCUS;
+  /* Deal with next events until a button or keypress is detected. */
   do{
     XNextEvent(accis_display,&event);
-/*     printf("First loop:The event type: %d, %d\n",event.type,ButtonPress); */
+    /* printf("First loop:The event type: %d, %d\n",event.type,ButtonPress); */
     switch(event.type) {
     case Expose: EXPOSE_ACTION; break;
     case ButtonPress: accis_butdown(&event); break;
@@ -640,7 +643,6 @@ int eye3d_(value)
     if(XPending(accis_display)) XPeekEvent(accis_display,&event);
     /* Get all the queued contiguous KeyPress events so we don't over-
        run the rotation when the key is lifted. */
-    if(XPending(accis_display)) XPeekEvent(accis_display,&event);
     while(XPending(accis_display) &&
 	  (event.type==KeyPress || event.type==KeyRelease) )
       {
@@ -651,7 +653,7 @@ int eye3d_(value)
   }
   do{
     XNextEvent(accis_display,&event);
-/*        printf("The event type: %d\n",event); */
+        printf("The event type: %d\n",event.type); 
     switch(event.type) {
     case Expose: EXPOSE_ACTION; break;
     case ButtonPress: accis_butdown(&event); break;

@@ -163,6 +163,7 @@ c         write(*,*)i,argument
          if(argument(1:3).eq.'-gi')linjplot=.true.
          if(argument(1:3).eq.'-gf')read(argument(4:),*,err=201)ifplot
          if(argument(1:3).eq.'-go')read(argument(4:),*,err=201)norbits
+         if(argument(1:3).eq.'-gg')call noeye3d(0)
          if(argument(1:3).eq.'-at')then
             read(argument(4:),*,err=201)thetain
          elseif(argument(1:3).eq.'-an')then
@@ -590,6 +591,7 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
       write(*,301)' -gn   Plot collisional reinjection distribution.'
+      write(*,301)' -gg   Run continuously without pausing.'
       write(*,301)
      $      ' -gp -gd[] Plot slices of setup; plus potential, '
      $     //'density. [At step n]. [',ipstep
