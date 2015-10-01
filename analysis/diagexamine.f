@@ -11,14 +11,15 @@ c Extra work array for arrowplotting in sliceGweb.
       real vp(na_m,na_m2,3,3)
 c 1-d plotting arrays.
       real z1d(na_m),u1d(na_m),dene1d(na_m),deni1d(na_m)
+      real zminmax(2)
       character*20 mname(ndiagmax+1)
 
-      integer mcell
+      integer mcell,icontour
       logical lvtk
-      character*70 xtitle,ytitle
+      character*70 xtitle,ytitle,label
       integer iuphi(3),iurs(3),isrs(3)
       integer iunp,i1d,isingle,i1,iwr
-      data iunp/0/i1d/0/iwr/0/
+      data iunp/0/i1d/0/iwr/0/zminmax/0.,0./icontour/0/
 
       lvtk=.false.
       fluxfilename=' '
@@ -29,24 +30,23 @@ c 1-d plotting arrays.
       mname(5)='T!d1!d'
       mname(6)='T!d2!d'
       mname(7)='T!d3!d'
-      mname(9)='Density'
+      mname(ndiagmax)='Potential'
+      mname(ndiagmax+1)='Density'
       xleg=.75
       ipp=0
 c      pscale=3.
 c 
       call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
-     $     ,mcell)
+     $     ,mcell,zminmax,icontour)
       i1=1
       ied=ndiagmax
+c Create label
+      label=diagfilename(lentrim(diagfilename)-3:lentrim(diagfilename))
       call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
       if(ierr.eq.1)stop 'Error reading diag file'
 
       ndiags=ied
-      if(isingle.ne.0)then
-         isingle=min(isingle,ndiags)
-         ndiags=isingle
-         i1=isingle
-      endif
+
 c Attempt to read the volumes data.
       istat=1
       call stored3geometry(diagsum(1,1,1,ndiags+1),iuds,ifull,istat
@@ -62,8 +62,9 @@ c         write(*,*)'phifilename=',phifilename
 c         write(*,*)'denfilename=',denfilename
 
 c-------------------------------------
+c These are up to two additional quantities \phi and n for separate plotting
       if(lentrim(phifilename).gt.1)then
-c Read in a potential as well.
+c Read in a separate potential as well.
          ied=1
          ierr=1
          call array3read(phifilename,ifull,iuphi,ied,u,ierr)
@@ -139,7 +140,7 @@ c                  write(*,*)'Warning zero volumes',i,j,k
             enddo
          enddo
       enddo
-
+c---------------------------------------------------------------
 c Decide the actual ends and beginnings of the relevant data.
 c If the middle of a face has zero density, that is a dummy face.
 c e.g. because of periodicity.
@@ -156,7 +157,7 @@ c e.g. because of periodicity.
       iurs(3)=iuds(3)+1-isrs(3)
       if(diagsum(iuds(1)/2,iuds(2)/2,iuds(3),1).eq.0)iurs(3)=iurs(3)-1
 
-      write(*,*)'isrs,iurs',isrs,iurs
+c      write(*,*)'isrs,iurs',isrs,iurs
 c      write(*,*)'Normalized diagnostics.'
 
 c      lvtk=.false.
@@ -268,7 +269,6 @@ c            write(*,*)i,u1d(i),dene1d(i),deni1d(i)
 c Line-out plot.
          call fitinit(xn(ixnp(i1d)+1),xn(ixnp(i1d+1)),z1d(2)
      $        ,max(z1d(iuds(i1d)-1),0.))
-         call pfset(3)
          call polyline(xn(ixnp(i1d)+2),z1d(2),ixnp(i1d+1)-ixnp(i1d)-2)
          call axptset(1.,0.)
 c xticoff reverses the tics.
@@ -335,31 +335,47 @@ c Arrow plotting of velocity:
      $        ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
      $        ,diagsum(1,1,1,2),vp)
       else
-         if(istat.eq.1)then
+         if(istat.eq.1.and.isingle.eq.0)then
             k=ndiagmax+1
             zp(1,1,1)=99
             ifix=2
 c         write(fluxfilename,'(''diagnorm('',i1,'')'')')k
             fluxfilename=mname(k)
-c         write(*,*)mname(k),fluxfilename,lentrim(fluxfilename)
+            write(*,*)k,mname(k),fluxfilename(1:lentrim(fluxfilename))
             call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
      $           ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
      $           ,dum,dum)
          endif
+c----------------------------------------------------------------
 c Default examination of all diagnostics.
          do k=i1,ndiags
             zp(1,1,1)=99
-            ifix=2
+            ifix=3
 c            write(fluxfilename,'(''diagnorm('',i1,'')'')')k
-            fluxfilename=mname(k)
+            fluxfilename=mname(k)(1:lentrim(mname(k)))
+     $           //'('//label(1:lentrim(label))//')'
 c            write(*,*)k,mname
-            if(k.eq.ndiags)fluxfilename='Potential'
-c         write(*,*)mname(k),fluxfilename,lentrim(fluxfilename)
-            call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
-     $           ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
-     $           ,dum,dum)
+            if(k.eq.ndiags)
+     $           fluxfilename='!Af!@('//label(1:lentrim(label))//')'
+            write(*,*)k,fluxfilename(1:lentrim(fluxfilename))
+            if(isingle.eq.0.or.isingle.eq.k)then
+               if(zminmax(1).ne.zminmax(2))then
+                  write(*,*)'zminmax',zminmax
+                  call scale3(0.,1.,0.,1.,zminmax(1),zminmax(2))
+                  call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
+     $                 ixnp,xn,ifix+256+icontour*16
+     $                 ,fluxfilename(1:lentrim(fluxfilename)+2) ,dum
+     $                 ,dum)                  
+               else
+                  call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
+     $                 ixnp,xn,ifix+icontour*16
+     $                 ,fluxfilename(1:lentrim(fluxfilename)+2) ,dum
+     $                 ,dum)
+               endif
+            endif
          enddo
       endif
+c----------------------------------------------------------------
 c Arrow plotting of velocity:
 c      fluxfilename=mname(1)
 c      ifix=2+4
@@ -372,9 +388,10 @@ c     $     ,diagsum(1,1,1,2),vp)
 
 c*************************************************************
       subroutine diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle
-     $     ,lvtk,mcell)
+     $     ,lvtk,mcell,zminmax,icontour)
       integer iunp,isingle,i1d
-      integer mcell
+      integer mcell,icontour
+      real zminmax(2)
       character*70 xtitle,ytitle
       logical lvtk
       include 'examdecl.f'
@@ -393,6 +410,7 @@ c Defaults
       ytitle=' '
       xtitle=' '
       mcell=5.
+      ipfs=3
 
 c Deal with arguments
       if(iargc().eq.0) goto 201
@@ -417,10 +435,19 @@ c Deal with arguments
      $           read(argument(3:),*,err=201)isingle
             if(argument(1:2).eq.'-o')iwr=1
             if(argument(1:2).eq.'-f')ipp=1
+            if(argument(1:2).eq.'-g')then
+               read(argument(3:),*,err=204,end=204)ipfs
+ 204           call pfset(ipfs)
+            endif
+            if(argument(1:2).eq.'-r')call noeye3d(0)
+            if(argument(1:2).eq.'-c')
+     $           read(argument(3:),*,err=201)icontour
             if(argument(1:2).eq.'-a')
      $           read(argument(3:),*,err=201)i1d
             if(argument(1:2).eq.'-m')
      $           read(argument(3:),*,err=201)mcell
+            if(argument(1:2).eq.'-z')
+     $           read(argument(3:),*,err=201)zminmax
             if(argument(1:2).eq.'-h')goto 203
             if(argument(1:2).eq.'-?')goto 203
             if(argument(1:2).eq.'-w')then
@@ -436,10 +463,10 @@ c Deal with arguments
 c------------------------------------------------------------
 c Help text
  201  continue
-      write(*,*)'=====Error reading command line argument'
+      write(*,*)'=====Error reading command line argument',argument
  203  continue
  301  format(a,i5)
- 302  format(a,f8.3)
+ 302  format(a,2f8.3)
       write(*,301)'Usage: diagexamine [switches] <diagfile>'
       write(*,*)' Plot diagnostics from file'
       write(*,*)' If additional parameter file is set,'
@@ -452,7 +479,12 @@ c Help text
       write(*,301)' -o   write out the profiles               [',iwr
       write(*,301)' -f   plot potential profile (if -p given) [',ipp
       write(*,301)' -u   plot un-normalized diagnostics       [',iunp
+      write(*,301)' -c<i>  set contour plotting               ['
+     $     ,icontour
       write(*,301)' -m<f>  set minimum non-zero cell count    [',mcell
+      write(*,302)' -z<min><max> set range of values plotted  [',zminmax
+      write(*,*)'-g<i>   print ps-graphics files to unit i [3,-3]'
+      write(*,*)'-r   run without pausing'
       write(*,*)'-w<name> toggle vtk file writing,'
      $     ,' optionally name the vector[',lvtk,' '
      $     ,fluxfilename(1:lentrim(fluxfilename))

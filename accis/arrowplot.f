@@ -232,7 +232,7 @@ c         call accisgradinit(22000,-40000,-40000,64000,64000,64000)
      $        ,jsw,d)
       endif
 c Draw barb. Normally included in the finite thickness shaft.
-      if(.false.)then
+      if(.true.)then
       call color(ncolor)
       call vec3w(arrow(ipx),arrow(ipy),arrow(ipz),0)
       do i=1,nangle+1

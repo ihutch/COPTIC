@@ -6,6 +6,7 @@ c   abs(level)=1 scale to fit the region, 1-d x,y vectors.
 c   abs(level)=2 scale to fit region, 2-d x,y, don't hide, just wiremesh.
 c   abs(level)=0 perform no scale-setting and use last perspective...
 c   if bit2 (4) set, use last perspective regardless.
+c   if bit3 (8) set, use last scaling regardless.
 c   level.lt.0 draw no axes.
 c Eye obtained from file eye.dat, or default if none exists.
       integer iLx, nx,ny,ilevel,level
@@ -21,13 +22,13 @@ c Eye obtained from file eye.dat, or default if none exists.
       cola=level/256
       level=level-cola*256
       ipers=level/4-(level/8)*2
+      iscale=level/8-(level/16)*2
       level=level-(level/4)*4
 c level is lowest 8 bits.
       colw=cola-(cola/256)*256
 c color of web is next 8 bits
       cola=cola/256 -(cola/65536)*256
 c color of axes is next 8 bits.
-c      write(*,*)'level=',level
       if(abs(level).ne.0 .and. ipers.eq.0)then
          call geteye(x2,y2,z2)
       endif
@@ -59,7 +60,7 @@ c Set the perspective transform.
          call fitrange(zmin,zmax,itics,ipow,fac10,delta,first,xlast)
          zmin=first
          zmax=xlast
-         call scale3(xmin,xmax,ymin,ymax,zmin,zmax)
+         if(iscale.ne.1)call scale3(xmin,xmax,ymin,ymax,zmin,zmax)
       endif
 c Draw the web
       if(ihd.eq.99)then

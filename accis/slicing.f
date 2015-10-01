@@ -25,13 +25,15 @@ c The fixed dimension which is chosen to start (extended usage below) is:
       integer idfixin
 c The plotted quantity title is
       character*(*) utitle
-c If abs(idfix) has bit 3 set (by adding 4), toggle plotting of svec, an
+c If abs(idfix) has bit 2 set (by adding 4), toggle plotting of svec, an
 c optional vector argument on the same array of positions as u.
       real svec(ifull(1),ifull(2),ifull(3),3)
       real vp(nw,nw,2)
 c These arguments ought to be present at least as dummy reals for all
 c calls; otherwise the length of the utitle will not be found correctly.
-c Do arrow plots of this field over contours Needed for perspective plot
+c Do arrow plots of this field over contours.
+
+c Needed for perspective plot
       include 'world3.h'
 c For testing only
       include 'plotcom.h'
@@ -64,6 +66,7 @@ c Bit 3 (8)  reinitialize.
 c Bits 4,5 (16xicontour)  set the initial icontour number 0...3
 c Bit 6 (64)  Toggle ltellslice 
 c Bit 7 (128) Return continuously. (Equivalent of d-control).
+c Bit 8 (256) Do no internal scaling initially. 
 
       idfixf=abs(idfixin)/4
 c Sign
@@ -161,7 +164,6 @@ c Set up the vector arrow plot arrays.
             enddo
          enddo
       endif
-
 c 3D plot ranges.
       xmin=xn(ixnp(idp1)+if1)
       xmax=xn(ixnp(idp1)+nf1)
@@ -190,11 +192,20 @@ c Old buggy setting, only works for centered cube.
 c Rescale x and y (if necessary), but not z.
 c         if(iclipping.ne.0)
          call scale3(xmin,xmax,ymin,ymax,wz3min,wz3max)
-         call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
-     $        zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
+         if(idfixin/256 -512*(idfixin/512).ne.0)then
+c This call does no internal initial z-scale setting and scale3 ought to
+c have been called in the external program:
+            call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
+     $           zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw+8)
+         else
+c This is the standard call that normally does internal scaling:
+            call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
+     $           zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
+         endif
       endif
 c Use this scaling until explicitly reset.
       jsw=0 + 256*6 + 256*256*7
+      
       write(form1,'(''Dimension '',i1,'' Plane'',i4)')idfix,n1
       if(ltellslice)call drwstr(.1,.02,form1)
       call iwrite(idp1,iwidth,cxlab)
@@ -319,12 +330,12 @@ c Change fixed dimension, remove clipping, force scaling.
       if(isw.eq.65361)then
          idfix=mod(idfix+1,3)+1
          iclipping=0
-         n1=iuds(idfix)/2
+         n1=(iuds(idfix)+1)/2
          jsw=1 + 256*6 + 256*256*7
       elseif(isw.eq.65363)then
          idfix=mod(idfix,3)+1
          iclipping=0
-         n1=iuds(idfix)/2
+         n1=(iuds(idfix)+1)/2
          jsw=1 + 256*6 + 256*256*7
       endif
 c Adjust clipping
@@ -456,9 +467,9 @@ c      data jsw/1+256*6+256*256*7/
          larrow=.not.larrow
          ifixpt(1)=-ifixpt(1)
       endif
-      if(ifixpt(1).eq.0)ifixpt(1)=iuds(1)/2
-      if(ifixpt(2).eq.0)ifixpt(2)=iuds(2)/2
-      if(ifixpt(3).eq.0)ifixpt(3)=iuds(3)/2
+      if(ifixpt(1).eq.0)ifixpt(1)=(iuds(1)+1)/2
+      if(ifixpt(2).eq.0)ifixpt(2)=(iuds(2)+1)/2
+      if(ifixpt(3).eq.0)ifixpt(3)=(iuds(3)+1)/2
       ips=0
       irotating=0
       call minmax2(u(1,1,ifixpt(3)),ifull(1),iuds(1),iuds(2),umin,umax)

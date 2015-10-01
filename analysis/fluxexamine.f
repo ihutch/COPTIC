@@ -62,8 +62,11 @@ c         write(*,*) argument
          if(argument(1:2).eq.'-b')
      $        read(argument(3:),'(i5)')nbox
 c iplot is the quantity number to plot and average.
-         if(argument(1:2).eq.'-p')
-     $        read(argument(3:),'(i5)')iplot
+         if(argument(1:3).eq.'-pf')then
+            call pfset(3)
+         elseif(argument(1:2).eq.'-p')then
+            read(argument(3:),'(i5)')iplot
+         endif
          if(argument(1:2).eq.'-q')then
             iplot=-257
 c            ifmask=0
@@ -394,7 +397,7 @@ c v printing this object
 
 c      write(*,*)'iomask=',iomask,' iosw=',iosw,' iplot=',iplot
 
-      if(iplot.ne.0.and.vtkflag.eq.0.and.iosw.ge.0.and.iosw.lt.3)then
+      if(iplot.ne.0.and.vtkflag.eq.0.and.iosw.ge.-3.and.iosw.lt.3)then
          call pltend()
 c         write(*,*)'abs(iplot),rview,cv,iosw,iomask',abs(iplot),rview,cv
 c     $        ,iosw,iomask
@@ -423,6 +426,7 @@ c Read more arguments if there are any.
       write(*,*)'-cff,ff,ff set 3-D center of plot window'
       write(*,*)'-i set iosw for objplot:'
      $     ,' Color 0 position, 1 flux, 2 flux-density. Else none.'
+      write(*,*)'   If negative, no face annotation.'
       write(*,*)'-oiii add object iii to 3D objects to plot'
      $     ,' (first time masking all others).'
       write(*,*)'-omiii set full mask of 3D objects not to plot.'
@@ -433,6 +437,7 @@ c Read more arguments if there are any.
       write(*,*)'-vtkiii outputs a vtk file every nf_step/iii steps'
       write(*,*)'-g<i,j,k,l,m,n> specify a facet to print average'
      $     ,' iquant,iobj,iface,i1,i2,i3'
+      write(*,*)'-pf Write plots to files.'
       write(*,*)'Turn off plots progressively: -p-1 -m0 -i9 -q'
       write(*,*)'Turn off print progressively: -w0 -v1024 -p256 ' 
 

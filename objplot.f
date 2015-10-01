@@ -27,7 +27,7 @@ c      character*20 string
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
 c No flux for this object
-      iav=nf_address(iq,ifobj,nf_step+iosw)
+      iav=nf_address(iq,ifobj,nf_step+abs(iosw))
 c Find max and min of flux
       if(fmax.eq.fmin)then
          call minmax(ff_data(iav),nf_posno(iq,ifobj),fmin,fmax)
@@ -131,7 +131,7 @@ c      character*20 string
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
 
-      iav=nf_address(iq,ifobj,nf_step+iosw)
+      iav=nf_address(iq,ifobj,nf_step+abs(iosw))
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -208,7 +208,7 @@ c 2:            according to average flux-density already in nf_step+2
       ifobj=nf_map(iobj)
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
-      iav=nf_address(iq,ifobj,nf_step+iosw)
+      iav=nf_address(iq,ifobj,nf_step+abs(iosw))
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -359,7 +359,7 @@ c 2:            according to average flux-density already in nf_step+2
       ifobj=nf_map(iobj)
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
-      iav=nf_address(iq,ifobj,nf_step+iosw)
+      iav=nf_address(iq,ifobj,nf_step+abs(iosw))
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -519,7 +519,7 @@ c 2:            according to average flux-density already in nf_step+2
       ifobj=nf_map(iobj)
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
-      iav=nf_address(iq,ifobj,nf_step+iosw)
+      iav=nf_address(iq,ifobj,nf_step+abs(iosw))
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -647,7 +647,7 @@ c 2:            according to average flux-density already in nf_step+2
       ifobj=nf_map(iobj)
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
-      iav=nf_address(iq,ifobj,nf_step+iosw)
+      iav=nf_address(iq,ifobj,nf_step+abs(iosw))
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -776,7 +776,7 @@ c      character*20 string
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
 
-      iav=nf_address(iq,ifobj,nf_step+iosw)
+      iav=nf_address(iq,ifobj,nf_step+abs(iosw))
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -841,7 +841,7 @@ c*******************************************************************
 c Color the facet of the object iobj corresponding to imin,k2,k3 (is,i2)
 c If iosw=0 with a color simply to delineate it.
 c If iosw.ne.0 with a color corresponding to the data at ff_data(iav+offsets)
-c If lfw=.true. then annotate the facet.
+c If lfw=.true. and iosw gt 0 then annotate the facet.
 c Arguments:
 c imin is the face index.
 c k2,k3 are the indexes of the facet within the face.
@@ -908,7 +908,7 @@ c            write(*,*)(rface(ik,3),ik=1,ncorn)
       call poly3line(rface(1,1),rface(1,2),rface(1,3),ncorn)
       call pathfill()
       call color(15)
-      if(iosw.ne.0.and. lfw)then
+      if(iosw.gt.0.and. lfw)then
          call iwrite(ijbin,iw,string)
          string(iw+1:iw+1)=' '
          call fwrite(ff,iw,2,string(iw+2:))
@@ -981,9 +981,9 @@ c      write(*,*)iosw,ipint,'iosw,iprint'
 c Color gradient.
       call blueredgreenwhite()
  51   continue
+      if(iprinting.ne.0)call pfset(3)
       call pltinit(0.,1.,0.,1.)
       call scale3(cv(1)-rv,cv(1)+rv,cv(2)-rv,cv(2)+rv,cv(3)-rv,cv(3)+rv)
-      if(iprinting.ne.0)call pfset(3)
       if(irotating.eq.0)then
          icorner=igetcorner()
          call ax3labels('x','y','z')
@@ -1037,11 +1037,11 @@ c This legend was removed from sphereplot to enable vtkwriting to
 c use that routine without additional complexity.
       if(iosw.ne.0)then
          call gradlegend(fmin,fmax,-.35,0.,-.35,.7,-.1,.false.)
-         if(iosw.eq.0)then
+         if(abs(iosw).eq.0)then
             string='Position '
-         elseif(iosw.eq.1)then
+         elseif(abs(iosw).eq.1)then
             string='Flux '
-         elseif(iosw.eq.2)then
+         elseif(abs(iosw).eq.2)then
             string='Flux-density '
          endif
 c         call iwrite(iosw,iwd,string(lentrim(string)+1:))
@@ -1066,6 +1066,7 @@ c         write(*,*)i,(x_sc(k,1,i),k=1,3)
 c User interface:
       iprinting=0
       call accisflush()
+      call prtend()
       call eye3d(isw)
       call rotatezoom(isw)
       if(isw.eq.ichar('p'))iprinting=mod(iprinting+1,2)
