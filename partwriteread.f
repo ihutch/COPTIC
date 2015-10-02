@@ -171,8 +171,9 @@ c File name:
       character*(130) charout
 
 c      write(*,*)'ifull',ifull
-      write(charout,51)debyelen,Ti,vd,rs,phip,ixnlength
- 51   format('V3 debyelen,Ti,vd,rs,phip',5f9.4,' ixnlength',i6)
+      write(charout,51)debyelen,Ti,vd,rs,phip,ixnlength,ifull
+ 51   format('V4 debyelen,Ti,vd,rs,phip',5f9.4,' ixnlength',i6,' ifull'
+     $     ,3i6)
       open(22,file=name,status='unknown',err=101)
       close(22,status='delete')
       open(22,file=name,status='new',form='unformatted',err=101)
@@ -208,22 +209,44 @@ c File name:
       include 'plascom.f'
       include 'meshcom.f'
       character*(130) charout
+      integer ifulr(3),istop
+      data istop/0/
 
       open(23,file=name,status='old',form='unformatted',err=101)
-      write(*,*)'Opened',name
+      write(*,*)'Opened ',name(1:lentrim(name))
       read(23)charout
+c --------- Parsing the leading string to test parameter consistency.
 c      write(*,'(2a)')'Charout=',charout(1:lentrim(charout))
+      irst=istrstr(charout,'ifull')
+      if(irst.ne.0)then
+         read(charout(irst+5:),*)ifulr
+         do i=1,3
+            if(ifulr(i).ne.ifull(i))then
+               write(*,'(a,3i5,a,3i5)')
+     $              'Allocated array dimension mismatch. File:'
+     $              ,ifulr,' Code:',ifull
+               write(*,'(a,3i5,a)')'To read this file run $ ./setdimens'
+     $              ,ifulr,'  to adjust griddecl.f'
+               istop=2
+               goto 102
+            endif
+         enddo
+      endif
       irst=istrstr(charout,'ixnlength')
       if(irst.ne.0)then
 c String contains ixnlength value. Get it and check it.
          read(charout(irst+9:),*)ixnlen
          if(ixnlen.ne.ixnlength)then
-            write(*,*)'ixnlength mismatch',
-     $           ' in array3read. Written with different griddecl.',
-     $           ixnlen,ixnlength
-            stop 'array3read fatal'
+            write(*,'(a,2i5,a)')'****ixnlength mismatch in array3read',
+     $           ixnlen,ixnlength,' griddecl problem!'
+            istop=1
          endif
       endif
+ 102  if(istop.gt.0)then
+         write(*,*)charout(1:lentrim(charout))
+         stop '********  array3read fatal error  *********'
+      endif
+c-----------
 c      write(*,*)charout(irst+9:)
       read(23)debyelen,Ti,vd,rs,phip
       read(23)ixnp,xn
