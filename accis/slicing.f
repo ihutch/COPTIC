@@ -103,7 +103,6 @@ c Bits 4,5 set icontour
 c Initialize
          n1=(iuds(idfix)+1)/2
 c     Plot the surface. With scaling 1. Web color 6, axis color 7.
-         call blueredgreenwhite()
          jsw=1 + 256*6 + 256*256*7
          iweb=1
          iclipping=0
@@ -112,7 +111,10 @@ c     Plot the surface. With scaling 1. Web color 6, axis color 7.
          idflast=idfix
       endif
 c Start of controlled plotting loop.
- 21   call pltinit(0.,1.,0.,1.)
+ 21   call accisinit
+c This gradient call needs to be after accisinit else nodisplay commands
+c are broken.
+      call blueredgreenwhite()
 c Set the plotting arrays for fixed dimension idfix.
       idp1=mod(idfix,3)+1
       idp2=mod(idfix+1,3)+1
@@ -477,7 +479,7 @@ c      data jsw/1+256*6+256*256*7/
 
       call setcube(.2,.2,.2,.5,.4)
 c Start of plotting loop.
- 21   if(.not.lsideplot)call pltinit(0.,1.,0.,1.)
+ 21   if(.not.lsideplot)call accisinit
       do id=1,3
          cmin(id)=xn(ixnp(id)+1)
          cmax(id)=xn(ixnp(id)+iuds(id))

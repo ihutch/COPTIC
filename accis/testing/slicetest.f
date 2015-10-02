@@ -13,7 +13,7 @@
 
 
 c      call setconlog(.true.)
-c      call pfset(3)
+      call pfset(3)
 
       range=10.
       amp=1.
@@ -83,7 +83,7 @@ c Calculate the gradient of u as a vector field to do arrow plotting.
             enddo
          enddo
       enddo
-      
+
 
 c      iuds(3)=iuds(3)-1
 
