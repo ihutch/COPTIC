@@ -73,5 +73,7 @@ c********************************************************************
       implicit none
       real convgd(3)
       integer ierr,icommcart
-      
+      end
+c********************************************************************
+      subroutine mpibarrier(ierr)
       end

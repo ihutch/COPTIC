@@ -261,6 +261,10 @@ c---------------------------------------------
 c Here we try to read the stored geometry volume data.
       istat=1
       call stored3geometry(volumes,iuds,ifull,istat,.true.)
+      call mpibarrier(ierr)
+c Here we need to wait till all nodes have tried to read before
+c we go ahead and write, else we get inconsistent file status.
+
 c an istat=1 return says we succeeded. If so skip the calculation. 
       if(istat.eq.0)then
 c Calculate the nodal volumes for all non-edge points.

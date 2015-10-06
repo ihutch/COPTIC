@@ -14029,3 +14029,8 @@ Flux density*r^2, normalized to rhoinf  0.905194461
 
 Now we have a problem with the hole initialization. It's been broken by
 what I did. Neglected to remove the spurious initialization from trapinit.
+
+6 Oct 2015
+Implemented mpibarrier because there was a problem on loki with MPI where
+if storedgeom.dat did not pre-exist the different nodes tried to read and
+write it at the same time and became confused.

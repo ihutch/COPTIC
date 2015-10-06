@@ -825,3 +825,9 @@ c This is the version that one must use when MPI_IN_PLACE is absent.
          convgd(i)=convgr(i)
       enddo
       end
+c*********************************************************************
+      subroutine mpibarrier(ierr)
+      include 'mpif.h'
+      integer ierr
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      end
