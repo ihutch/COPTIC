@@ -14034,3 +14034,11 @@ what I did. Neglected to remove the spurious initialization from trapinit.
 Implemented mpibarrier because there was a problem on loki with MPI where
 if storedgeom.dat did not pre-exist the different nodes tried to read and
 write it at the same time and became confused.
+
+Discovered that the pathscale compiler does something really stupid with
+block data.       block data com3dset includes       include '3dcom.f'
+and inside that there is a giant ff_data which is 10M floats. 
+It isn't initialized in that block data, because in gfortran that 
+creates an object file that is very big. But in pathscale, even though it is
+not initialized, it is included in the object file, which is then 44M big.
+Fixed by replacing with explicit initialization.

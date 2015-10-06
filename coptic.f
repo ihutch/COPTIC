@@ -90,6 +90,8 @@ c      data thetain,nth/.1,1/
       data lrestart/0/cv/0.,0.,0./
       data ipstep/1/idistp/0/idcount/0/icijcount/0/
 c-------------------------------------------------------------
+c Replace Block Data programs with this 
+      call blockdatainit()
 c-------------------------------------------------------------
 c Initialize the fortran random number generator with a fixed number
 c for solutions of volumes etc. Each node then does the same.

@@ -729,7 +729,10 @@ the fraction of the electrons represented by particles, but their
 number density remains the same as the ions.  The addition helps to stabilize
 long-wave-length fluctuations in regions that are much larger than the
 Debye length. The fraction required is of order the ratio of the Debye
-length to the domain size, when this is small.
+length to the domain size, when this is small. If either there is more
+than one species or \verb!holepsi! is non-zero (switch \verb!-ih! is
+set nonzero), then \verb!boltzamp! is ramped down to zero in the first
+third of the timesteps.
 
 \paragraph{-sb0} When only one species is present, the switch usage
 -sb0, setting \verb!boltzamp! to zero, removes the effective Boltzmann
@@ -756,20 +759,18 @@ separated by commas (no spaces). The parameters and their defaults are
 the speed of the hole relative to the mean of the untrapped Maxwellian
 distribution, \verb!holelen! [4.]\ the length of the hole in Debye
 lengths, and \verb!holeeta! [2.]\ the power that determines the hole
-shape (2 is a parabola).
-The spatial direction of the velocity
+shape (2 is a parabola).  The spatial direction of the velocity
 trapping of the hole must be one of the axes, and is determined by the
 B-field direction (unless it is not axis-aligned, in which case axis 1
 is chosen). When plasma drift is present, its component in the
 trapping direction is added to \verb!holeum! to give the net hole
 speed relative to the mesh; so setting drift equal to \verb!holeum!
-gives a stationary hole.
-In the other directions uniform Maxwellian initialization
-is used. A hole is incompatible with non-zero collisions. Holes
-probably must use \verb!-sb0!, a uniform neutralizing background. Then
-\verb!-zm-1!, negative charge particles means the particles can be
-considered to be electrons and the velocity units $\sqrt{T_e/m_e}$
-(assuming $T=1$). 
+gives a stationary hole.  In the other directions uniform Maxwellian
+initialization is used. A hole is incompatible with non-zero
+collisions. Holes probably must use \verb!-sb0! (or small), a uniform
+neutralizing background. Then \verb!-zm-1!, negative charge particles
+means the particles can be considered to be electrons and the velocity
+units $\sqrt{T_e/m_e}$ (assuming $T=1$).
 
 \subsubsection*{Neutrals, Collisions, Magnetic Field}
 
@@ -896,11 +897,14 @@ ought not otherwise to use the display switches.
 Debugging switches for testing
  -gt   Plot regions and solution tests.
  -gi   Plot injection accumulated diagnostics.
- -gp -gd[] Plot slices of solution potential, density. [At step n]. [    1
+ -gn   Plot collisional reinjection distribution.
+ -gg   Run continuously without pausing.
+ -gp -gd[] Plot slices of setup; plus potential, density. [At step n]. [    1
  -gf   set quantity plotted for flux evolution and final distribution. [   -1
  -gw   set objplot sw. [+256:intercepts] Shade by 1:flux 2:flux-density[    1
+ To plot intersections with objects use -gf and -gw
  -gc   set wireframe [& stencils(-)] mask. objects<->bits. [    0
- -gr   set override view scale (box size) for -gc, -gf plots.  [    0
+ -gr   set override view scale (box size) for -gc, -gf plots.  [   0.000
  -go   set No of orbits(to plot on objects set by -gc). [    0
  -at   set test angle. -an   set No of angles. 
  -ck   set checking timestep No. [    0

@@ -1,39 +1,83 @@
-c*****************************************************************
-c Initialize with zero 3d objects.
-      block data com3dset
+c This replaces the block data program com3dset which causes giant objects.
+      subroutine blockdatainit()
       include 'ndimsdecl.f'
       include '3dcom.f'
       include 'meshcom.f'
-      data ngeomobj/0/
+      ngeomobj=0
 c Default track no objects.
-      data nf_map/ngeomobjmax*0/
-c And no reverse-map pointers.
-      data nf_geommap/nf_obj*0/
-      integer ibm
-c Default particle region: outside object 1, inside 2.
-c      parameter (ibm=ibtotal_part-4)
-c      data ibool_part/1,-1,1,2,ibm*0/
-c Default particle region: zero boolean. Particles everywhere.
-      parameter (ibm=ibtotal_part)
-      data ibool_part/ibm*0/
-      integer ifm1
-c Set all the bits of ifield_mask: =2**31-1=2*(2**30-1)+1 avoid overflow.
-      parameter (ifm1=2*(2**30-1)+1)
-c      parameter (ifm1=2**10-1)
-c      parameter (ifm1=31)
-      data ifield_mask/ifm1/
-c Normally there's no external field.
-      data lextfield/.false./extfield/ndims*0./
-c Mesh default initialization (meshcom.f)
-      parameter (imsr=ndims*(nspec_mesh-2))
-      data imeshstep/ndims*1,ndims*32,imsr*0/
-      data xmeshpos/ndims*-5.,ndims*5.,imsr*0./
-c Default no point charges:
-      data iptch_mask/0/
 c Default no subtractive objects
-      data normv/ngeomobjmax*0/
-c We don't do flux initialization in a block data. Too big.
+      do i=1,ngeomobjmax
+         nf_map(i)=0
+         normv(i)=0
+      enddo
+c And no reverse-map pointers.
+      do i=1,nf_obj
+         nf_geommap(i)=0
+c      data nf_geommap/nf_obj*0/
+      enddo
+c Default particle region: zero boolean. Particles everywhere.
+      do i=1,ibtotal_part
+         ibool_part(i)=0
+      enddo
+c Set all the bits of ifield_mask: =2**31-1=2*(2**30-1)+1 avoid overflow.
+      ifield_mask=2*(2**30-1)+1
+c Normally there's no external field.
+      lextfield=.false.
+c Mesh default initialization (meshcom.f)
+      do i=1,ndims
+         extfield(i)=0
+         do j=1,nspec_mesh
+            imeshstep(i,j)=0
+            xmeshpos(i,j)=0
+            if(j.le.1)then
+               imeshstep(i,j)=1
+               xmeshpos(i,j)=-5.
+            elseif(j.le.2)then
+               imeshstep(i,j)=32
+               xmeshpos(i,j)=5.
+            endif
+         enddo
+      enddo
+c Default no point charges:
+      iptch_mask=0
       end
+
+c$$$c*****************************************************************
+c$$$c Initialize with zero 3d objects.
+c$$$      block data com3dset
+c$$$      include 'ndimsdecl.f'
+c$$$      include '3dcom.f'
+c$$$      include 'meshcom.f'
+c$$$      data ngeomobj/0/
+c$$$c Default track no objects.
+c$$$      data nf_map/ngeomobjmax*0/
+c$$$c And no reverse-map pointers.
+c$$$      data nf_geommap/nf_obj*0/
+c$$$      integer ibm
+c$$$c Default particle region: outside object 1, inside 2.
+c$$$c      parameter (ibm=ibtotal_part-4)
+c$$$c      data ibool_part/1,-1,1,2,ibm*0/
+c$$$c Default particle region: zero boolean. Particles everywhere.
+c$$$      parameter (ibm=ibtotal_part)
+c$$$      data ibool_part/ibm*0/
+c$$$      integer ifm1
+c$$$c Set all the bits of ifield_mask: =2**31-1=2*(2**30-1)+1 avoid overflow.
+c$$$      parameter (ifm1=2*(2**30-1)+1)
+c$$$c      parameter (ifm1=2**10-1)
+c$$$c      parameter (ifm1=31)
+c$$$      data ifield_mask/ifm1/
+c$$$c Normally there's no external field.
+c$$$      data lextfield/.false./extfield/ndims*0./
+c$$$c Mesh default initialization (meshcom.f)
+c$$$      parameter (imsr=ndims*(nspec_mesh-2))
+c$$$      data imeshstep/ndims*1,ndims*32,imsr*0/
+c$$$      data xmeshpos/ndims*-5.,ndims*5.,imsr*0./
+c$$$c Default no point charges:
+c$$$      data iptch_mask/0/
+c$$$c Default no subtractive objects
+c$$$      data normv/ngeomobjmax*0/
+c$$$c We don't do flux initialization in a block data. Too big.
+c$$$      end
 c**********************************************************************
       subroutine geomdocument()
       write(*,*)'######################################################'
