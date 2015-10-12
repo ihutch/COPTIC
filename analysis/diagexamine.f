@@ -18,8 +18,8 @@ c 1-d plotting arrays.
       logical lvtk
       character*70 xtitle,ytitle,label
       integer iuphi(3),iurs(3),isrs(3)
-      integer iunp,i1d,isingle,i1,iwr
-      data iunp/0/i1d/0/iwr/0/zminmax/0.,0./icontour/0/
+      integer iunp,i1d,isingle,i1,iwr,istd
+      data iunp/0/i1d/0/iwr/0/zminmax/0.,0./icontour/0/istd/1/
 
       lvtk=.false.
       fluxfilename=' '
@@ -38,6 +38,7 @@ c      pscale=3.
 c 
       call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
      $     ,mcell,zminmax,icontour)
+      if(zminmax(1).gt.zminmax(2))istd=0
       i1=1
       ied=ndiagmax
 c Create label
@@ -51,6 +52,7 @@ c Attempt to read the volumes data.
       istat=1
       call stored3geometry(diagsum(1,1,1,ndiags+1),iuds,ifull,istat
      $     ,.false.)
+      if(istd.gt.0)then
       if(istat.eq.1)then
          write(*,*)'Read volumes successfully'
      $     ,diagsum(2,2,2,ndiags+1)
@@ -58,9 +60,7 @@ c Attempt to read the volumes data.
          write(*,*)'Storedgeom failed; returned',istat,iuds,ifull
          write(*,*)'***** No volume-corrected density is available.'
       endif
-c         write(*,*)'phifilename=',phifilename
-c         write(*,*)'denfilename=',denfilename
-
+      endif
 c-------------------------------------
 c These are up to two additional quantities \phi and n for separate plotting
       if(lentrim(phifilename).gt.1)then
@@ -124,7 +124,7 @@ c Subtract v^2 from the second moment to give temperature.
             enddo
          enddo
       enddo
-      write(*,*)'rs,debyelen,vd,Ti',rs,debyelen,vd,Ti
+      if(istd.gt.0)write(*,*)'rs,debyelen,vd,Ti',rs,debyelen,vd,Ti
 
 c Normalize the density= diagsum(1)/volumes into the volumes 
       do k=1,iuds(3)
@@ -357,15 +357,22 @@ c            write(fluxfilename,'(''diagnorm('',i1,'')'')')k
 c            write(*,*)k,mname
             if(k.eq.ndiags)
      $           fluxfilename='!Af!@('//label(1:lentrim(label))//')'
-            write(*,*)k,fluxfilename(1:lentrim(fluxfilename))
+            if(istd.gt.0)write(*,*)k,
+     $           fluxfilename(1:lentrim(fluxfilename))
             if(isingle.eq.0.or.isingle.eq.k)then
-               if(zminmax(1).ne.zminmax(2))then
+               if(zminmax(1).lt.zminmax(2))then
                   write(*,*)'zminmax',zminmax
                   call scale3(0.,1.,0.,1.,zminmax(1),zminmax(2))
                   call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
      $                 ixnp,xn,ifix+256+icontour*16
      $                 ,fluxfilename(1:lentrim(fluxfilename)+2) ,dum
-     $                 ,dum)                  
+     $                 ,dum)   
+               elseif(zminmax(1).gt.zminmax(2))then
+c If limits are crossed on entry. Find minimum and maximum.
+                  call minmax3(ifull,iuds,diagsum(1,1,1,k),
+     $                 zminmax(1),zminmax(2))
+                  write(*,*)zminmax,'=zmin/max'
+                  call exit(0)
                else
                   call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
      $                 ixnp,xn,ifix+icontour*16
@@ -483,6 +490,7 @@ c Help text
      $     ,icontour
       write(*,301)' -m<f>  set minimum non-zero cell count    [',mcell
       write(*,302)' -z<min><max> set range of values plotted  [',zminmax
+      write(*,*)' if zmin>zmax, print zmin and zmax of first diag'
       write(*,*)'-g<i>   print ps-graphics files to unit i [3,-3]'
       write(*,*)'-r   run without pausing'
       write(*,*)'-w<name> toggle vtk file writing,'
@@ -496,3 +504,20 @@ c Help text
       if(lentrim(diagfilename).lt.5)goto 203
       end
 c*****************************************************************
+      subroutine minmax3(ifull,iuds,u,umin,umax)
+c Find the minimum and maximum of a 3d array. Allocated dimensions ifull,
+c used dimensions iuds.
+      parameter (ndims=3)
+      integer ifull(ndims),iuds(ndims)
+      real u(ifull(1),ifull(2),ifull(3))
+      umin=1.e30
+      umax=-1.e30
+      do k=1,iuds(3)
+         do j=1,iuds(2)
+            do i=1,iuds(1)
+               if(u(i,j,k).gt.umax)umax=u(i,j,k)
+               if(u(i,j,k).lt.umin)umin=u(i,j,k)
+            enddo
+         enddo
+      enddo
+      end
