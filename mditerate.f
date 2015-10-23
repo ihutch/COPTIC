@@ -261,13 +261,47 @@ c Individual setup.
       endif
       end
 c*****************************************************************
-c Use the generalized scalar mult call to set values
-c This version has a problem in that NaNs are not set. Obsolete.
-      subroutine mditerset1(u,ndims,ifull,iused,ipin,v)
-      real u(*)
-      integer ifull(*),iused(*)
-      call mditermults(u,ndims,ifull,iused,ipin,0.,v)
+      integer function mditer(ndims,ifull,iused,index)
+c Uses the mditerator for full array without having to supply extra
+c arrays. On first call iused is the used dimensions.  Works by
+c returning iused as the current index until the array is completed,
+c then it is reset. index is the compact index position into the
+c array. It handles automatically the initialization and so does not
+c have to be called differently for initialization.  
+c
+c Example of typical usage: 
+c   icomplete=mditer(ndims,ifull,iused,index)
+c 1  u(index)=mod(1+iused(3),10)
+c   if(mditer(ndims,ifull,iused,index).eq.0)goto 1
+c      
+      implicit none
+      integer ndims,index
+      integer ifull(ndims),iused(ndims)
+      integer isw,ndimsmax,i,nzeros
+      parameter (ndimsmax=5,nzeros=3*ndimsmax)
+      integer iview(3,ndimsmax),indexcontract,mditerator
+c iview is explicitly zeroed to avoid uninitialized warnings.
+      data isw/1/iview/nzeros*0/
+      external indexcontract
+      if(isw.ne.0)then
+         if(.not.ndims.le.ndimsmax)Stop 'Too many dimensions in mditer'
+         i=mditerator(ndims,iview,iused,4,iused)
+c Now iview(2,*)=iused(*)-1
+         mditer=1
+         isw=0
+      else
+         mditer=mditerator(ndims,iview,iused,0,iused)
+         if(mditer.ne.0)then
+c Restore iused and return to initial state.
+            do i=1,ndims
+               iused(i)=iview(2,i)+1
+            enddo
+            isw=1
+         endif
+      endif
+      index=indexcontract(ndims,ifull,iused)+1
       end
+
 c*****************************************************************
       subroutine mditerset(u,ndims,ifull,iused,ipin,v)
 c Iterate over the array u, setting u(i)=v scalar.

@@ -369,8 +369,12 @@ c            write(*,*)k,mname
      $                 ,dum)   
                elseif(zminmax(1).gt.zminmax(2))then
 c If limits are crossed on entry. Find minimum and maximum.
-                  call minmax3(ifull,iuds,diagsum(1,1,1,k),
+c                  call minmaxN(ndims,ifull,iuds,diagsum(1,1,1,k),
+c     $                 zminmax(1),zminmax(2))
+                  call minmaxM(ndims,ifull,iuds,diagsum(1,1,1,k),
      $                 zminmax(1),zminmax(2))
+c                  call minmax3(ifull,iuds,diagsum(1,1,1,k),
+c     $                 zminmax(1),zminmax(2))
                   write(*,*)zminmax,'=zmin/max'
                   call exit(0)
                else
@@ -520,4 +524,41 @@ c used dimensions iuds.
             enddo
          enddo
       enddo
+      end
+c*****************************************************************
+c********************************************************************
+      subroutine minmaxN(ndims,ifull,iuds,u,umin,umax)
+c Find the minimum and maximum of a ndims array. Allocated dimensions ifull,
+c used dimensions iuds. Using the general mditerator. 
+      implicit none
+      integer ndims
+      integer ifull(ndims),iuds(ndims)
+      real u(*),umin,umax
+c Need local storage.
+      integer ndimsmax,indexcontract,mditerator
+      parameter (ndimsmax=5)
+      integer indi(ndimsmax),iview(3,ndimsmax),i
+      external mditerator,indexcontract
+      umin=1.e30
+      umax=-1.e30
+      i=mditerator(ndims,iview,indi,4,iuds)
+ 1    i=1+indexcontract(ndims,ifull,indi)
+         if(u(i).gt.umax)umax=u(i)
+         if(u(i).lt.umin)umin=u(i)
+      if(mditerator(ndims,iview,indi,0,iuds).eq.0)goto 1
+      end
+c*************************************************************
+c This demonstrates the minimalistic iterator.
+      subroutine minmaxM(ndims,ifull,iuds,u,umin,umax)
+      integer ndims,ifull(ndims),iuds(ndims)
+      real u(*),umin,umax
+      integer mditer
+      external mditer
+      integer ii,i
+      umin=1.e30
+      umax=-1.e30
+      ii=mditer(ndims,ifull,iuds,i)
+ 1       if(u(i).gt.umax)umax=u(i)
+         if(u(i).lt.umin)umin=u(i)
+      if(mditer(ndims,ifull,iuds,i).eq.0)goto 1
       end
