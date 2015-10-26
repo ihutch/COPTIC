@@ -3,6 +3,9 @@ SHELL=/bin/bash
 ########################################################################
 # The eventual target:
 COPTIC=coptic
+########################################################################
+# The root directory of the distribution (for now)
+COPTIC_ROOT=.
 #########################################################################
 # To get to compile with X, you might need to supplement this path.
 LIBPATH= -L./accis/ -L/usr/lib/mesa
@@ -21,7 +24,7 @@ LIBPATH= -L./accis/ -L/usr/lib/mesa
 #GEOMFILE=geometry/geomsphere.dat
 ###################
 REINJECT=cartreinject.o
-GEOMFILE=geometry/geomcubic.dat
+GEOMFILE=${COPTIC_ROOT}/geometry/geomcubic.dat
 ########################################################################
 # Decide accis driver choice. Alternatives are vec4014 vecx or vecglx. 
 # Automatic choice can be overriden by commandline option e.g. 
@@ -64,7 +67,7 @@ else
    endif
  endif
 endif
-ACCISLIB=./accis/lib$(ACCISDRV).a
+ACCISLIB=${COPTIC_ROOT}/accis/lib$(ACCISDRV).a
 # For submakes:
 export VECX
 ##########################################################################
@@ -284,10 +287,10 @@ $(COPTIC) : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) li
 sorserial : libcopsol.a sortest.f compiler makefile $(ACCISLIB) $(SOLOBJECTS) nonmpibbdy.o
 	$(G77) -o sorserial $(COMPILE-SWITCHES) $(PROFILING) sortest.f nonmpibbdy.o libcopsol.a $(LIBRARIES)
 
-$(ACCISLIB) : ./accis/*.f ./accis/*.c ./accis/*.h
+$(ACCISLIB) : ${COPTIC_ROOT}/accis/*.f ${COPTIC_ROOT}/accis/*.c ${COPTIC_ROOT}/accis/*.h
 	@echo "******************* Making accis with VECX=${VECX} **********"
-	make -C accis
-	@if [ -f ./accis/$(VECX) ] ; then echo ; else echo "Failed making accis with $(VECX). Might need to specify a different driver."; fi
+	make -C ${COPTIC_ROOT}/accis
+	@if [ -f ${COPTIC_ROOT}/accis/$(VECX) ] ; then echo ; else echo "Failed making accis with $(VECX). Might need to specify a different driver."; fi
 
 vecx :
 	make clean
@@ -295,22 +298,22 @@ vecx :
 
 ######################################################
 testing : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a 
-	make -C testing
+	make -C ${COPTIC_ROOT}/testing
 	@echo Made tests in directory testing. Now running them to test.
-	make -C testing testing
+	make -C ${COPTIC_ROOT}/testing testing
 	@echo If all programs finished without crashing. Thats good enough.
 
 testanal : 
 	make clean
-	make -C analysis clean
+	make -C ${COPTIC_ROOT}/analysis clean
 	make
-	make -C analysis
-	analysis/partexamine -vtk T1e0v000P200L1e0z005x05
-	analysis/phiexamine T1e0v000P200L1e0z005x05.pha -w
-	analysis/fluxexamine -q T1e0v000P200L1e0z005x05.flx
+	make -C ${COPTIC_ROOT}/analysis
+	${COPTIC_ROOT}/analysis/partexamine -vtk T1e0v000P200L1e0z005x05
+	${COPTIC_ROOT}/analysis/phiexamine T1e0v000P200L1e0z005x05.pha -w
+	${COPTIC_ROOT}/analysis/fluxexamine -q T1e0v000P200L1e0z005x05.flx
 	@echo "******* Completed tests with no obvious analysis errors."
 
-geometry : geometry/*.cks
+geometry : ${COPTIC_ROOT}/geometry/*.cks
 	@echo 'Geometry Tests completed or up to date' >&2
 	rm -f T1*
 	date >>GeometryTests
@@ -318,27 +321,28 @@ geometry : geometry/*.cks
 
 regeom :
 	@echo 'Regenerating geometry/*.cks files' >&2
-	for file in geometry/*.dat ; do rm $${file%.dat}.cks; make $${file%.dat}.cks; done
+	for file in ${COPTIC_ROOT}/geometry/*.dat ; do rm $${file%.dat}.cks; make $${file%.dat}.cks; done
 
 # Use compiler (which depends on makefile) as a test of major updates
 GeometryTests : compiler
-	@if [ "`sed -n '/g77/p' compiler`" == "" ] ; then\
+	@if [ "`sed -n '/g77/p' compiler`" == "" ]; then\
   echo ' ' >&2;\
   echo 'Starting background tests. Recompile only when completed.' >&2;\
   make geometry;\
-else echo "Using g77 compiler. Skipping background tests" >&2 ; fi &
+else echo "Skipping background GeometryTests" >&2 ; fi &
+	@sleep 1
 	@echo
 
 #####################################################
 clean :
 	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.* *.ps *.aux *.log *.out *.toc *.prev *.tlg *.synctex.gz ftnchek.output libcoptic.a storedgeom.dat
-	make -C testing clean
-	make -C accis mproper
+	make -C ${COPTIC_ROOT}/testing clean
+	make -C ${COPTIC_ROOT}/accis mproper
 
 mproper :
 	rm -f compiler REINJECT.f coptic copticgeom.dat storedgeom.dat GeometryTests
 	make clean
-	make -C analysis clean
+	make -C ${COPTIC_ROOT}/analysis clean
 
 ftnchek :
 	ftnchek  -nopure\
@@ -381,7 +385,7 @@ vcg :
  `echo "$(COPTIC).f $(OBJECTS)" | sed -e "s/[.]o/[.]f/g"`
 
 fordocu :
-	testing/fordocu.sh "$(COPTIC).f $(OBJECTS)"
+	${COPTIC_ROOT}/testing/fordocu.sh "$(COPTIC).f $(OBJECTS)"
 	firefox html/index.html
 
 coptic.prof : compiler makefile $(OBJECTS) 
@@ -392,5 +396,5 @@ coptic.prof : compiler makefile $(OBJECTS)
 
 help :
 	@echo Targets: clean mproper ftnchek tree coptic.prof vecx
-	@echo Tests:   geometry testing testanal
+	@echo Tests:   geometry testing testanal regeom
 	@echo Setup:   streamset streamunset

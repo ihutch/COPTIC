@@ -14042,3 +14042,12 @@ It isn't initialized in that block data, because in gfortran that
 creates an object file that is very big. But in pathscale, even though it is
 not initialized, it is included in the object file, which is then 44M big.
 Fixed by replacing with explicit initialization.
+
+26 Oct 2015
+Found GeometryTests broken. Happened at
+commit cbcbdda1d20bbf2ce2e9d8ccc226c51fd7a8876f
+Author: Ian Hutchinson <ihutch@mit.edu>
+Date:   Fri Oct 2 10:12:17 2015 -0400
+    Improved parsing of array3read leading string for grid consistency.
+Not surprising since the array3write string was changed.
+make regeom.
