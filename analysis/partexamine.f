@@ -4,8 +4,8 @@ c selected cell ranges.
       include 'examdecl.f' 
 c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       parameter (nfilemax=999)
-      include '../partcom.f'
-      include '../ptaccom.f'
+      include '../src/partcom.f'
+      include '../src/ptaccom.f'
  
       character*10 chartemp
       character*100 name
@@ -306,7 +306,7 @@ c*************************************************************
       subroutine partexamargs(xlimit,vlimit
      $           ,iuin,cellvol,Bdirs,ldoc,ivtk,ispecies,ndfirst,ndlast)
       include 'examdecl.f'
-      include '../ptaccom.f'
+      include '../src/ptaccom.f'
       real xlimit(2,3),vlimit(2,3),Bdirs(4)
       integer iuin(3)
       logical ldoc

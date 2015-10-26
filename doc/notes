@@ -14044,6 +14044,7 @@ not initialized, it is included in the object file, which is then 44M big.
 Fixed by replacing with explicit initialization.
 
 26 Oct 2015
+Working on reorganizing the directories. Introduce COPTIC_ROOT.
 Found GeometryTests broken. Happened at
 commit cbcbdda1d20bbf2ce2e9d8ccc226c51fd7a8876f
 Author: Ian Hutchinson <ihutch@mit.edu>
@@ -14051,3 +14052,6 @@ Date:   Fri Oct 2 10:12:17 2015 -0400
     Improved parsing of array3read leading string for grid consistency.
 Not surprising since the array3write string was changed.
 make regeom.
+
+Rework references to libcoptic and other source files.
+Correct sortest.f to do call blockdatainit.

@@ -1,987 +1,0 @@
-
-3dobjects.f,345
-      subroutine blockdatainit(2,76
-      subroutine geomdocument(82,2735
-      subroutine readgeom(167,7149
-      subroutine cylinit(540,20966
-      subroutine plleloinit(623,24054
-      subroutine srvinit(665,25388
-      subroutine iregioninit(738,28135
-      subroutine reportfieldmask(766,28848
-      subroutine objsetabc(787,29645
-
-average.f,167
-      FUNCTION ERFCC(3,110
-      FUNCTION expERFCC(14,514
-      subroutine invtfunc(26,1021
-      subroutine average3d(65,1895
-      subroutine averagegd(83,2475
-
-bdyroutine.f,443
-      subroutine bdyset(5,236
-      subroutine bdysetfree(22,791
-      subroutine bdyslopeDh(91,3398
-      subroutine bdymach(153,5599
-      subroutine bdyslopescreen(262,9590
-      function r2indi(320,11759
-      subroutine bdyface(336,12235
-      subroutine bdyfaceinit(408,14763
-      subroutine bdyset3sl(488,17588
-      subroutine bdy3slope(501,18067
-      subroutine bdyslope0(543,19560
-      subroutine bdysetnull(559,20107
-
-bdysetsol.f,243
-      subroutine bdyset(4,193
-      subroutine bdysetnull(9,370
-      subroutine bdyset3sl(14,530
-      subroutine bdy3slope(24,935
-      subroutine bdyslopeDh(66,2430
-      function r2indi(127,4528
-      subroutine orbit3plot(142,4978
-
-bdyshare.f,72
-      subroutine bdyshare(2,72
-      subroutine bdyshrroutine(76,2937
-
-cartreinject.f,682
-      subroutine reinject(3,82
-      block data creinset27,1107
-      subroutine cartreinject(34,1332
-      subroutine cinjinit(121,4132
-      subroutine cumprob(266,9782
-      real function fvdrein(432,14429
-      real function ffdrein(493,16580
-      function fvcx(556,18729
-      real function ff1crein(594,19942
-      real function fv1crein(636,21385
-      subroutine rhoinfcalc(669,22271
-      subroutine ninjcalc(740,24745
-      real function smaxflux(797,27012
-      subroutine geominit(816,27696
-      subroutine cavereinset(822,27847
-      subroutine colreinject(834,28285
-      subroutine colreinit(908,30708
-      real function ranlenposition(957,32656
-
-chargetomesh.f,266
-      subroutine chargetomesh(2,70
-      subroutine achargetomesh(31,1159
-      subroutine psumperiod(93,3319
-      subroutine diagperiod(134,4781
-      subroutine psumtoq(180,6473
-      subroutine quasineutral(208,7343
-      subroutine psumtoqminus(241,8440
-
-checkcode.f,107
-      subroutine checkuqcij(6,326
-      subroutine checkx(110,3264
-      subroutine checkdelta(206,6143
-
-cijplot.f,32
-      subroutine  cijplot(3,87
-
-cijroutine.f,595
-      subroutine cijroutine(3,133
-      subroutine ddn_cij(263,10537
-      subroutine objinit(273,10935
-      subroutine objstart(292,11460
-      subroutine boxedge(322,12427
-      subroutine cijedge(487,18267
-      subroutine text3vgraph(533,19847
-      subroutine text3rgraph(555,20615
-      function ireg3(577,21445
-      subroutine text3graphs(593,21923
-      SUBROUTINE SVDsol(610,22823
-      SUBROUTINE SVBKSB(626,23300
-      SUBROUTINE SVDCMP(649,23848
-      real function phiofcount(882,29481
-      subroutine cijdirect(914,30656
-      subroutine objfluxtotal(1059,36271
-
-cmdline.f,76
-      subroutine copticcmdline3,108
-      subroutine argextract(619,24502
-
-dummyreduce.f,368
-      subroutine fluxreduce(2,72
-      subroutine psumreduce(4,112
-      subroutine diagreduce(6,152
-      subroutine ptdiagreduce(8,192
-      subroutine minmaxreduce(10,234
-      subroutine mpisubopcreate(12,276
-      subroutine mpiopcreate(14,320
-      subroutine addsubarray_MPI(16,361
-      subroutine iteradd(18,406
-      subroutine addarray_MPI(20,443
-
-extint.f,157
-      subroutine initext(5,229
-      SUBROUTINE CALCEI(50,1479
-      FUNCTION EI(494,23946
-      FUNCTION EXPEI(515,24568
-      FUNCTION EONE(537,25248
-
-faddu.f,107
-      real function faddu(8,400
-      real function fadcomp(43,1732
-      real function faddlin(81,3073
-
-fluxdata.f,640
-      subroutine fluxdatainit(7,391
-      subroutine nfaddressinit(187,7676
-      subroutine positioninit(228,9214
-      subroutine tallyexit(502,21791
-      subroutine objsect(558,23692
-      subroutine binadding(727,29835
-      subroutine srvsectplot(784,31828
-      subroutine pllelfrac(841,33491
-      subroutine timeave(865,34285
-      real function fluxdiag(900,35282
-      subroutine fluxave(928,36311
-      subroutine writefluxfile(1045,40278
-      subroutine readfluxfile(1125,43156
-      integer function ijbinindex(1252,47798
-      real function getfluxdenave(1350,51581
-      real function getfluxave(1366,52106
-
-fsects.f,491
-      subroutine potlsect(2,62
-      subroutine xp2contra(267,10685
-      subroutine srvfsect(311,12365
-      subroutine ijbinsrv(438,16739
-      subroutine spheresect(495,18738
-      subroutine cubeusect(568,21157
-      subroutine cylusect(609,22525
-      subroutine ijbinsphere(708,25976
-      subroutine ijbincube(752,27621
-      subroutine ijbincyl(795,29497
-      subroutine segmentcross(853,31587
-      subroutine rztell(872,32457
-      subroutine insertsorted2(895,33288
-
-getfield.f,348
-      subroutine getfield(30,1444
-      subroutine getsimple3field(322,12574
-      real function getpotential(398,14987
-      real function smultilinearinterp(524,19189
-      subroutine fillinlin(558,20394
-      subroutine fieldatpoint(672,24123
-      real function potentialatpoint(706,25263
-      subroutine fieldsimple3atpoint(743,26700
-
-interpolations.f,357
-      function boxinterp(2,18
-      function box2interpnew(15,442
-      function box2interp(55,1777
-      function box1interp(165,5060
-      function interp(180,5460
-      subroutine indexexpand(240,7080
-      function ipindex(260,7774
-      function ipfindex(271,8185
-      function gradinterp(282,8629
-      subroutine gradlocalregion(391,12527
-
-intersects.f,665
-      function insideall(2,72
-      function insidemask(21,694
-      function imaskregion(44,1441
-      function inside_geom(51,1672
-      logical function linregion(183,6389
-      integer function leaveregion(221,7464
-      logical function lbounded(362,12726
-      subroutine contra3world(417,14650
-      subroutine world3contra(444,15437
-      real function w2sect(471,16314
-      function icrossall(540,18912
-      integer function icross_geom(557,19479
-      subroutine insertsorted(658,23314
-      subroutine srvsect(676,23765
-      subroutine conesect(782,27494
-      subroutine cylnormsect(833,29252
-      subroutine cubenormsect(918,32062
-
-mditerate.f,474
-      subroutine bdyroutine(3,142
-      subroutine mditerarg(51,1612
-      integer function indexcontract(156,5710
-      subroutine offsetexpand(168,6220
-      integer function mditerator(188,7001
-      integer function mditer(264,9765
-      subroutine mditerset(306,11322
-      subroutine mditermults(332,12404
-      subroutine mditeradd(358,13472
-      subroutine mditerave(383,14514
-      subroutine mditerarg1(415,15806
-      subroutine mditerarg2(507,19851
-
-meshconstruct.f,74
-      subroutine meshconstruct(9,416
-      subroutine meshshift(66,2373
-
-mpibbdy.f,600
-      subroutine bbdy(3,104
-      subroutine bbdyalternate(437,17826
-      subroutine bbdycatstep(483,19368
-      subroutine bbdyfacecreate(491,19608
-      subroutine bbdyorigprint(540,21489
-      subroutine bbdydefine(564,22305
-      subroutine bbdyblockcreate(604,23680
-      subroutine bbdyblam(642,25181
-      subroutine bbdycoords(680,26732
-      subroutine bbdygatherparam(706,27709
-      subroutine mpifinalize(786,30555
-      subroutine mpicommsize(790,30699
-      subroutine mpigetmyid(795,30905
-      subroutine mpiconvgreduce(806,31359
-      subroutine mpibarrier(829,32229
-
-nonmpibbdy.f,220
-      subroutine bbdy(6,281
-      subroutine mpifinalize(60,2299
-      subroutine mpicommsize(63,2413
-      subroutine mpigetmyid(67,2554
-      subroutine mpiconvgreduce(72,2712
-      subroutine mpibarrier(78,2917
-
-objplot.f,486
-      subroutine sphereplot(2,71
-      subroutine cubeplot(112,3910
-      subroutine cylplot(190,6810
-      subroutine cylgplot(342,12421
-      subroutine srvplot(502,17840
-      subroutine srvgplot(627,22075
-      subroutine pllelplot(756,26663
-      subroutine facecolor(839,29662
-      subroutine zsort(932,32918
-      subroutine objplot(951,33458
-      subroutine vtkwrite(1077,37853
-      subroutine faceorder(1138,40493
-      integer function ifacefarther(1172,41550
-
-orbit3plot.f,70
-      subroutine orbitplot(2,38
-      subroutine orbit3plot(60,1909
-
-orbitinjnew.f,791
-      subroutine reinject(4,116
-      subroutine thisreinject(25,841
-      subroutine injinit(45,1558
-      subroutine oreinject(67,2347
-      subroutine oinjinit(240,8096
-      real function pu(290,9676
-      subroutine finvtfunc(311,10413
-      subroutine alcossin(358,11546
-      real function alcos(364,11756
-      real function alsin(375,12053
-      subroutine alphaint(394,12802
-      subroutine avereinset(527,17209
-      subroutine adeficitset(533,17392
-      subroutine plascomset(538,17556
-      subroutine rhoinfcalc(548,17793
-      subroutine ninjcalc(580,18976
-      real function smaxflux(611,19977
-      subroutine geominit(631,20721
-      subroutine cavereinset(658,21786
-      subroutine colreinit(668,22145
-      real function ranlenposition(716,24014
-
-padvnc.f,573
-      subroutine padvnc(1,0
-      subroutine getadfield(494,19420
-      subroutine setadfield(554,21456
-      subroutine ucrhoset(590,22808
-      subroutine partlocate(668,25339
-      subroutine postcollide(747,28539
-      subroutine rotate3(785,29773
-      subroutine translate3(818,31083
-      subroutine gyro3(829,31531
-      subroutine bulkforce(861,32458
-      subroutine bulknorm(891,33728
-      subroutine moveparticle(903,34096
-      subroutine driftparticle(994,37446
-      subroutine initdriftfield1035,38745
-      subroutine locateinit(1053,39475
-
-partaccum.f,760
-      subroutine partdistup(2,70
-      subroutine partacinit(79,3160
-      subroutine oneaccum(104,4005
-      subroutine partsaccum(148,5398
-      subroutine vlimitdeterm(192,6792
-      subroutine sortbottomlimit(257,8956
-      subroutine sorttoplimit(287,9814
-      subroutine bincalc(317,10684
-      subroutine subaccum(429,15252
-      subroutine subvaccum(469,16578
-      subroutine fvxinit(516,18237
-      subroutine distread(549,19118
-      subroutine distwrite(597,20905
-      subroutine pltsubdist(638,22425
-      subroutine eyereadreal(909,32279
-      subroutine fsvzero(946,33160
-      real function vproject(958,33466
-      function ip3index(988,34315
-      block data ptaccomdata996,34596
-      subroutine adjustlimit(1002,34789
-
-partwriteread.f,381
-      subroutine datawrite(2,72
-      subroutine partwrite(39,1481
-      subroutine partread(80,2771
-      subroutine array3write(162,5697
-      subroutine array3read(198,6883
-      subroutine namewrite(284,9934
-      subroutine nameconstruct(294,10329
-      subroutine phipset(322,11389
-      subroutine reportprogress(342,12146
-      subroutine periodicwrite(386,13776
-
-phisoluplot.f,330
-      subroutine vaccheck(1,0
-      subroutine circleplot(39,1399
-      subroutine spherecheck(53,1758
-      subroutine solu3plot(119,4123
-      subroutine slicesolu(137,4787
-      subroutine gradradial(157,5378
-      subroutine phiradial(343,12055
-      subroutine fixedline(474,16695
-      subroutine eremesh(509,17879
-
-pinit.f,222
-      subroutine pinit(7,362
-      subroutine colvget(232,9588
-      subroutine colninit(250,10111
-      subroutine colnstats(294,11554
-      subroutine colndistshow(495,18636
-      subroutine maxwellstats(561,20741
-
-ranlux.f,212
-      SUBROUTINE RANLUX(1,0
-      ENTRY RLUXIN(163,6620
-      ENTRY RLUXUT(210,7969
-      ENTRY RLUXAT(219,8288
-      ENTRY RLUXGO(227,8492
-      subroutine luxtst333,11928
-      FUNCTION gasdev(496,18979
-
-reduce.f,390
-      subroutine fluxreduce(9,422
-      subroutine psumreduce(40,1666
-      subroutine diagreduce(81,3040
-      subroutine ptdiagreduce(116,4217
-      subroutine minmaxreduce(145,5430
-      subroutine mpisubopcreate(158,5921
-      subroutine mpiopcreate(206,7572
-      subroutine addsubarray_MPI(260,9559
-      subroutine iteradd(277,10294
-      subroutine addarray_MPI(295,10892
-
-reindiag.f,71
-      subroutine diaginject(2,72
-      subroutine plotinject(93,2750
-
-reinject.f,378
-      subroutine reinject(18,840
-      subroutine injinit(107,3404
-      subroutine rhoinfcalc(155,5031
-      subroutine ninjcalc(185,6036
-      real function smaxflux(216,7043
-      subroutine avereinset(235,7727
-      subroutine geominit(239,7850
-      subroutine cavereinset(243,7971
-      subroutine colreinit(253,8330
-      real function ranlenposition(301,10199
-
-slicesect.f,109
-      subroutine surfmark(2,74
-      subroutine slice3web(51,1817
-      subroutine boxintersect(298,10143
-
-sormpi.f,75
-      subroutine sormpi(9,347
-      subroutine testifconverged(258,10496
-
-sorrelaxgen.f,35
-      subroutine sorrelaxgen(3,96
-
-stress.f,319
-      subroutine maxwellforce(11,575
-      subroutine pressureforce(49,1693
-      subroutine totalcharge(97,3292
-      subroutine calculateforces(126,4202
-      subroutine forcetrackinit(167,5701
-      subroutine spheremesh(237,7993
-      subroutine chargeforce(297,9593
-      subroutine forceinitone(341,11035
-
-stringsnames.f,207
-      subroutine nameappendexp(16,581
-      subroutine nameappendint(28,974
-      function nbcat(45,1547
-      function lentrim(55,1897
-      subroutine eformati(65,2204
-      function istrstr(92,2999
-
-toms659.f,142
-      BLOCK DATA BDSOBL11,455
-      SUBROUTINE INSOBL(865,58087
-      SUBROUTINE GOSOBL(1067,63343
-      INTEGER FUNCTION EXOR(1162,65687
-
-trapinit.f,240
-      subroutine trapinit(8,307
-      real function untrappedden(267,10497
-      subroutine untrappeddentest373,13482
-      subroutine untrapcumtest569,20093
-      subroutine untrapcum(597,20894
-      subroutine getholepotl(701,24822
-
-udisplay.f,145
-      subroutine udisplay(5,253
-      subroutine zero3array(42,1361
-      subroutine diag3array(55,1721
-      subroutine giant3array(71,2208
-
-volint.f,118
-      subroutine volnode(8,331
-      real function volintegrate(110,3859
-      subroutine stored3geometry(175,5982
-
-accis/arrowplot.f,182
-      subroutine arrowplot(2,23
-      subroutine arg3arrow(90,3025
-      subroutine draw3arrow(108,3506
-      subroutine crossprod(254,8502
-      subroutine arrow3path(269,9013
-
-accis/autopl.f,248
-      subroutine yautoplot(3,120
-      subroutine ypolyline(18,606
-      subroutine autoplot(28,888
-      subroutine autoinit(37,1123
-      subroutine manautoinit(51,1611
-      subroutine automark(99,3103
-      subroutine auto3init(108,3367
-
-accis/axis.f,335
-      subroutine axis(5,246
-      subroutine axbox(14,480
-      subroutine xaxis(24,790
-      subroutine yaxis(43,1414
-      subroutine gaxis(62,2063
-      subroutine powlabel(273,9141
-      subroutine gtic(313,10225
-      subroutine altxaxis(374,12164
-      subroutine altyaxis(389,12675
-      subroutine togminor(403,13150
-
-accis/axlabels.f,175
-      subroutine axlabels(2,71
-      subroutine axident3old(22,644
-      subroutine axident3(36,1164
-      subroutine boxtitle(40,1337
-      subroutine ax3labels(65,2227
-
-accis/axon.f,27
-      subroutine axon(1,0
-
-accis/axregion.f,32
-      subroutine axregion(2,71
-
-accis/boxcarave.f,69
-      subroutine boxcarave(5,195
-      subroutine triangave(26,799
-
-accis/charsize.f,283
-      subroutine charsize(3,137
-        subroutine charangl(14,461
-      subroutine getcangl(23,743
-      integer function istlen(31,1040
-      subroutine termchar(43,1467
-      integer function istpos(52,1752
-      subroutine fwrite(72,2417
-      subroutine iwrite(120,3685
-
-accis/contour.f,31
-      subroutine CONTOUR(4,75
-
-accis/drwstr.f,268
-      subroutine drwstrdo(2,69
-      subroutine spstr(125,4335
-      subroutine drwchar(213,6730
-      subroutine jdrwstr(260,8100
-      subroutine jdrcstr(282,8722
-      subroutine drcstr(300,9205
-      subroutine drwstr(311,9520
-      function wstr(323,9898
-
-accis/examine.f,161
-      subroutine butdown(3,147
-      subroutine butup(15,463
-      subroutine cubeupd(24,732
-      subroutine viewrot(36,1079
-      function ieye3d(60,1950
-
-accis/fillgrad.f,225
-      subroutine gradtri(24,1167
-      subroutine gradquad(216,7091
-      subroutine gradquad2(270,8758
-      function sineon(315,10000
-      subroutine brgwscaled(320,10181
-      subroutine blueredgreenwhite(341,11000
-
-accis/fitrange.f,70
-      subroutine fitrangeold(4,98
-      subroutine fitrange(73,2483
-
-accis/folwcont.f,481
-      subroutine contrec(26,1246
-      subroutine autocolcont(37,1678
-      subroutine contourl(54,2277
-      subroutine consgen(309,11018
-      subroutine mesh2w(439,15903
-      subroutine confol(480,17205
-      subroutine acpathdoc(587,20689
-      subroutine  nextpt(599,20946
-      subroutine intpara(630,21986
-      subroutine conlabel(657,22842
-      logical function getconlog(667,23140
-      subroutine setconlog(673,23337
-      subroutine gradlegend(682,23715
-
-accis/fontdata.f,30
-      block data fontdata1,0
-
-accis/hid.f,238
-      subroutine hidweb(1,0
-      subroutine webdr2(82,2671
-      subroutine webdrw(135,4340
-      subroutine hidvecn(187,5988
-      subroutine trihere(297,9382
-      subroutine hidinit(303,9584
-      subroutine cont3proj(313,9843
-
-accis/initiald.f,169
-      block data initiald2,70
-      block data dashdata23,808
-      block data followdata37,1282
-      block data tn2shidata44,1485
-      block data hdcdata56,1898
-
-accis/labeline.f,32
-      subroutine labeline(2,70
-
-accis/lautopl.f,106
-      subroutine lautoinit(3,133
-      subroutine lautoplot(40,1217
-      subroutine lautomark(51,1534
-
-accis/minmax.f,128
-      subroutine minmax(2,69
-      subroutine minmax2(16,443
-        function indmin(33,953
-        function indmax(48,1407
-
-accis/pltinit.f,457
-      subroutine accisinit(1,0
-      subroutine pltinit(6,163
-      subroutine pltend(70,2300
-      subroutine prtend(86,2781
-      subroutine color(100,3218
-      subroutine multiframe(115,3652
-      subroutine mregion134,4170
-      subroutine setframe(157,5160
-      subroutine fitinit(164,5343
-      subroutine pltinaspect(175,5823
-      function igetcolor(208,6951
-      subroutine cmdlineargs(217,7321
-      function istrnonspace(235,7876
-
-accis/polyline.f,712
-      subroutine polyline(2,70
-      subroutine dashset(69,2111
-      subroutine polymark(151,4102
-      subroutine polyerr(189,5157
-      subroutine polyerrs(199,5470
-      subroutine legendline(218,6068
-      subroutine polydraw(255,7196
-      subroutine accircle(266,7506
-      subroutine acx(281,7915
-      subroutine acplus(298,8390
-      subroutine acast(315,8816
-      subroutine actrid(329,9147
-      subroutine acgen(341,9602
-      subroutine acgset(360,10179
-      subroutine poly3line(377,10608
-      subroutine poly3mark(447,12875
-      subroutine polybox(487,14007
-      subroutine stpolyline(516,14862
-      subroutine stpolymark(585,17096
-      subroutine smoothline(623,18227
-
-accis/scale.f,642
-        function ybyx(2,78
-      subroutine pfset(9,321
-      subroutine scalewn(24,846
-      subroutine fitscale(55,1910
-        function idarkblue(76,2655
-        function idarkgreen(79,2716
-        function iskyblue(82,2779
-        function ibrickred(85,2838
-        function ipurple(88,2899
-        function igold(91,2956
-        function igray(94,3009
-        function ilightgray(97,3062
-        function iblue(100,3125
-        function igreen(103,3178
-        function icyan(106,3234
-        function ired(109,3288
-        function imagenta(112,3340
-        function iyellow(115,3400
-        function iblack(118,3458
-
-accis/slicing.f,297
-      subroutine sliceGweb(3,116
-      subroutine ui3d(293,10261
-      subroutine sliceGcont(401,13892
-      subroutine rotateline(861,30077
-      subroutine rotatezoom(931,32114
-      subroutine line3out(1002,34298
-      subroutine rankdraw(1108,37651
-      function accinterp(1135,38458
-
-accis/surfaces.f,141
-      subroutine surf3d(2,79
-      subroutine surfdr3(90,3357
-      subroutine surf1dr3(226,8093
-      subroutine vertexorient(361,13068
-
-accis/sysfont.f,473
-      subroutine PSfontdefine(4,179
-      subroutine PSfontinit(41,1530
-      subroutine PSscalefont(50,1894
-      subroutine PSsetfont(78,2920
-      subroutine PSstartfont(97,3618
-      subroutine vecnnops(127,4774
-      subroutine abufstring(138,5091
-      subroutine crbufwrt(150,5485
-      subroutine PSchardrw(159,5780
-      subroutine PSfontangle(172,6255
-      function iPSsymsub(185,6710
-      subroutine pfPSset(201,7433
-      function ipfps(218,7881
-
-accis/ticset.f,199
-      subroutine ticset(1,0
-      subroutine ticrev(34,847
-      subroutine axptset(43,1126
-      subroutine axis2(52,1437
-      subroutine ticlabtog(63,1727
-      subroutine ticnumset(81,2162
-
-accis/vec3.f,766
-      subroutine vec3n(2,75
-      subroutine scale3(19,695
-      subroutine getscale3(32,1069
-      subroutine seti3trunc(44,1428
-      subroutine togi3trunc(50,1662
-      subroutine w2scl360,1960
-      subroutine setcube(80,2598
-      subroutine getcube(94,3023
-      subroutine vec3w(105,3352
-      subroutine nxyz2wxyz(126,4044
-      subroutine wxyz2nxyz(137,4386
-      subroutine xy2ncbc(148,4725
-      function scbn(155,4927
-      subroutine hdprset(168,5230
-      subroutine hdproject(187,5882
-      subroutine cubed(214,6868
-      subroutine cubeproj(267,8530
-      subroutine axproj(284,9223
-      subroutine geteye(400,13271
-      subroutine puteye(417,13788
-      function igetcorner(426,14087
-      function igetcubecorner(457,15064
-
-accis/vec4014.f,665
-      integer function accis_driver(7,317
-      subroutine svga(19,811
-      subroutine txtmode39,1546
-      subroutine vec(50,1992
-      subroutine scolor(124,3944
-      subroutine svganodisplay(147,4693
-      subroutine vecfill(153,4931
-      subroutine eye3d(156,5038
-      subroutine acgradcolor(160,5160
-      block data a_grad_data176,5709
-      subroutine getrgbcolor(189,6177
-      subroutine accisgraddef(206,6819
-      subroutine accisgradinit(213,7040
-      subroutine accisgradset(252,8227
-      integer function igradtri(281,9249
-      subroutine usleep(284,9310
-      subroutine noeye3d(286,9346
-      subroutine accisflush(288,9383
-
-accis/vecnp.f,654
-      subroutine vecnp(22,1228
-      subroutine inib(128,4478
-      subroutine flushb(279,9572
-      subroutine pathfill(313,10755
-      subroutine gradcolor(333,11449
-      subroutine asleep(369,12758
-      subroutine accisusleep(399,13738
-      integer function npgradtri(414,14162
-      subroutine zerolinewidth(491,16391
-      subroutine npcolor(502,16810
-      subroutine ibufwrt(544,18302
-      subroutine fbufwrt(552,18603
-      subroutine abufwrt(560,18916
-      subroutine lnswrt(579,19553
-      subroutine nlwrt(594,20109
-      subroutine psheader(604,20457
-      function lntrim(720,25943
-      subroutine bxupdate(729,26184
-
-accis/vecw.f,451
-      subroutine vecw(3,101
-      subroutine optvecn(19,595
-      subroutine getwx2nx(31,902
-      subroutine getwy2ny(34,964
-      function wx2nx(38,1096
-      function wy2ny(57,1632
-      function xn2xw(94,2791
-      function yn2yw(107,3093
-      subroutine trn32(120,3393
-      subroutine tn2s(205,6261
-      subroutine vecn(247,7635
-      subroutine truncf(285,8719
-      function ptrunc(320,9762
-        subroutine winset(397,11324
-
-analysis/denexamine.f,39
-      subroutine denexamargs(117,3319
-
-analysis/diagexamine.f,149
-      subroutine diagexamargs(401,14865
-      subroutine minmax3(511,19116
-      subroutine minmaxN(530,19766
-      subroutine minmaxM(552,20614
-
-analysis/fluxexamine.f,76
-      subroutine fluxcheck(446,17441
-      subroutine vtkoutput(455,17822
-
-analysis/partexamine.f,41
-      subroutine partexamargs(306,10336
-
-analysis/partv2d.f,40
-      subroutine partexamargs(174,5685
-
-analysis/phasespace.f,161
-      subroutine plotlocalphasepoints(181,5894
-      subroutine fhistinc(220,7343
-      subroutine ehistinc(269,8954
-      subroutine partexamargs(325,10739
-
-analysis/phiexamine.f,110
-      subroutine examargs(425,13690
-      subroutine cyl3bin(501,16515
-      subroutine cyl3vbin(591,19377
-
-analysis/philineread.f,118
-      subroutine lineargs(312,10777
-      subroutine xfig2trace(478,16634
-      subroutine differentiate(597,20911
-
-analysis/phioverlay.f,69
-      subroutine examargs(136,4432
-      subroutine rzbin(187,6002
-
-analysis/sortlist.f,76
-      subroutine sortbottomlimit(1,0
-      subroutine sorttoplimit(30,789
-
-analysis/xfig2trace.f,34
-      subroutine xfig2trace(2,73
-
-testing/bbddecltest.f,32
-      subroutine passed(39,844
-
-testing/boxedge.f,38
-      subroutine boxroutine(124,3986
-
-testing/fieldave.f,35
-      subroutine examargs(93,2605
-
-testing/integratetest.f,37
-      real function finttest(12,309
-
-testing/ipof.f,34
-      integer function ipof(2,72
-
-testing/lamination.f,104
-      subroutine alternate(1,0
-      subroutine catenate(36,1189
-      subroutine facecreate(44,1416
-
-testing/mdate.f,34
-      subroutine mditerate(3,115
-
-testing/mditeratetest.f,36
-      subroutine rbroutine(85,2503
-
-testing/mpibbdy1.f,235
-      subroutine bbdy(3,105
-      subroutine bbdyalternate(320,13462
-      subroutine bbdycatstep(366,15004
-      subroutine bbdyfacecreate(374,15244
-      subroutine bbdyorigprint(423,17125
-      subroutine bbdydefine(448,17972
-
-testing/mpibbdytest.f,78
-      subroutine blockadvance3d(4,205
-      subroutine blockadvance(43,1597
-
-testing/stresstest.f,86
-      subroutine fieldatpoint(83,2570
-      real function potentialatpoint(128,3612
-
-accis/testing/sysfonttest.f,0
-
-accis/testing/sysfontshow.f,0
-
-accis/testing/surftest.f,0
-
-accis/testing/surfdrtest.f,0
-
-accis/testing/slicetest.f,0
-
-accis/testing/printtest.f,0
-
-accis/testing/pointtest.f,0
-
-accis/testing/plottest.f,0
-
-accis/testing/pdtest.f,0
-
-accis/testing/manautotest.f,0
-
-accis/testing/hidtest.f,0
-
-accis/testing/hidtest2.f,0
-
-accis/testing/gradcoltest.f,0
-
-accis/testing/fontshow.f,0
-
-accis/testing/fontshow2.f,0
-
-accis/testing/flushanim.f,0
-
-accis/testing/fittest.f,0
-
-accis/testing/filltest.f,0
-
-accis/testing/fillgradtest.f,0
-
-accis/testing/eyetest.f,0
-
-accis/testing/conttest.f,0
-
-accis/testing/contest.f,0
-
-accis/testing/confiltest.f,0
-
-accis/testing/colortest.f,0
-
-accis/testing/boxtest.f,0
-
-accis/testing/boxcartest.f,0
-
-accis/testing/arrowtest.f,0
-
-testing/test3dgeom.f,0
-
-testing/spheresecttest.f,0
-
-testing/sortest.f,0
-
-testing/plotconv.f,0
-
-testing/mditeratortest.f,0
-
-testing/itermulttest.f,0
-
-testing/isecttest.f,0
-
-testing/index.f,0
-
-testing/griddecl.f,0
-
-testing/examdecl.f,0
-
-testing/creintest.f,0
-
-testing/bbdydecl.f,0
-
-testing/bbdydecl2.f,0
-
-testing/bbdydebug.f,0
-
-testing/alltoallw.f,0
-
-analysis/griddecl.f,0
-
-analysis/examdecl.f,0
-
-accis/npcom.f,0
-
-accis/fluxmesh.f,0
-
-vtkcom.f,0
-
-slpcom.f,0
-
-sectcom.f,0
-
-reincom.f,0
-
-rancom.f,0
-
-ptchcom.f,0
-
-ptaccom.f,0
-
-plascom.f,0
-
-partcom.f,0
-
-objcom.f,0
-
-ndimsdecl.f,0
-
-myidcom.f,0
-
-meshcom.f,0
-
-mditcom.f,0
-
-griddecl.f,0
-
-facebcom.f,0
-
-creincom.f,0
-
-coptic.f,0
-
-colncom.f,0
-
-cmdargs.f,0
-
-cdistcom.f,0
-
-bbdydecl.f,0
-
-3dcom.f,0

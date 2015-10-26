@@ -1,7 +1,12 @@
 COPTIC=coptic
+########################################################################
+# The root directory of the distribution (for now)
+COPTIC_ROOT=..
+SRC=src
 #########################################################################
-ACCISLIB=../accis/libaccisX.a
-LIBRARIES = -L/usr/X11R6/lib/ -L/usr/lib/mesa -L../accis/ -laccisX -lXt -lX11 $(GLULIBS) -L.
+#########################################################################
+ACCISLIB=${COPTIC_ROOT}/accis/libaccisX.a
+LIBRARIES = -L/usr/X11R6/lib/ -L/usr/lib/mesa -L${COPTIC_ROOT}/accis/ -laccisX -lXt -lX11 $(GLULIBS) -L.
 #Default accis driver choice
 #Alternatives are vecx or vecglx, can be overriden by commandline option
 VECX=vecglx
@@ -25,7 +30,7 @@ COMPILE-SWITCHES = -Wall  $(OPTIMIZE)  -I.
 ##COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -g -I.
 NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
-HEADERS=../ptaccom.f
+HEADERS=$(COPTIC_ROOT)/$(SRC)/ptaccom.f
 ##########################################################################
 TARGETS=creintest mditeratetest mpibbdytest mditeratortest stresstest sortest 
 
@@ -33,16 +38,16 @@ all: $(TARGETS)
 
 # We used to presume that all these routines are serial not parallel.
 # But now we are using the full libcoptic without this replacement.
-dummyreduce.o : ../dummyreduce.f
-	$(G77) -c ../dummyreduce.f
+dummyreduce.o : $(COPTIC_ROOT)/$(SRC)/dummyreduce.f
+	$(G77) -c $(COPTIC_ROOT)/$(SRC)/dummyreduce.f
 
-% : %.f  makefile $(ACCISLIB) ../libcoptic.a $(HEADERS)
+% : %.f  makefile $(ACCISLIB) $(COPTIC_ROOT)/$(SRC)/libcoptic.a $(HEADERS)
 # I don't remember why this explicit form was preferred to a dependency below.
 #	make -C ../ libcoptic.a
-	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f ../libcoptic.a $(LIBRARIES)
+	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f $(COPTIC_ROOT)/$(SRC)/libcoptic.a $(LIBRARIES)
 
 # Don't recompile accis every time the makefile is changed.
-../accis/%.o : ../accis/%.f $(HEADERS)
+$(COPTIC_ROOT)/accis/%.o : $(COPTIC_ROOT)/accis/%.f $(HEADERS)
 	$(G77)  -c $(COMPILE-SWITCHES) $(PROFILING) $*.f
 
 # Just putting the specials first ensures that the compile works.
@@ -52,17 +57,17 @@ dummyreduce.o : ../dummyreduce.f
 %.o : %.c makefile
 	cc -c $(PROFILING) $*.c -I.
 
-../libcoptic.a : 
-	make -C ../ libcoptic.a
+$(COPTIC_ROOT)/$(SRC)/libcoptic.a : 
+	make -C $(COPTIC_ROOT)/$(SRC)/ libcoptic.a
 
 ########################################################
-$(ACCISLIB) : ../accis/*.f ../accis/*.c ../accis/*.h
-	make -C ../accis
+$(ACCISLIB) : $(COPTIC_ROOT)/accis/*.f $(COPTIC_ROOT)/accis/*.c $(COPTIC_ROOT)/accis/*.h
+	make -C $(COPTIC_ROOT)/accis
 
 ######################################################
 vecx :
 	make clean
-	make VECX=vecx -C ../accis
+	make VECX=vecx -C $(COPTIC_ROOT)/accis
 	make
 
 #####################################################

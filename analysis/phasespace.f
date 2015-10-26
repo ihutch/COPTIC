@@ -3,8 +3,8 @@ c Read particle data and construct phase space plots.
       include 'examdecl.f' 
 c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       parameter (nfilemax=999)
-      include '../partcom.f'
-      include '../ptaccom.f'
+      include '../src/partcom.f'
+      include '../src/ptaccom.f'
  
       character*10 chartemp
       character*100 name
@@ -182,8 +182,8 @@ c*************************************************************
      $     ,nfvaccum)
 c Plot points in phase space in direction iaxis for particles that lie
 c in the space and velocity ranges given by xlimit, vlimit.
-      include '../ndimsdecl.f'
-      include '../partcom.f'
+      include '../src/ndimsdecl.f'
+      include '../src/partcom.f'
       real xlimit(2,ndims),vlimit(2,ndims)
       character*1 axnames(3)
       data axnames/'x','y','z'/ 
@@ -221,8 +221,8 @@ c*************************************************************
      $     ,nhist,hist,nx,nv)
 c Increment histogram of phase space in direction iaxis for particles
 c that lie in the space and velocity ranges given by xlimit, vlimit.
-      include '../ndimsdecl.f'
-      include '../partcom.f'
+      include '../src/ndimsdecl.f'
+      include '../src/partcom.f'
       real xlimit(2,ndims),vlimit(2,ndims)
       real hist(nx,nv)
 c      character*1 axnames(3)
@@ -273,9 +273,9 @@ c particle data.
 c iexis if non-zero restricts the kinetic energy to that axis. 
 c But then equal intervals of energy leads to a singularity at
 c zero. We could perhaps scale them differently.
-      include '../ndimsdecl.f'
-      include '../partcom.f'
-      include '../plascom.f'
+      include '../src/ndimsdecl.f'
+      include '../src/partcom.f'
+      include '../src/plascom.f'
       real u(*)
       integer ifull(ndims),iexis
       real xlimit(2,ndims),elimit(2)
@@ -325,7 +325,7 @@ c*************************************************************
       subroutine partexamargs(xlimit,vlimit
      $           ,iuin,cellvol,Bdirs,ldoc,ivtk,ispecies,ndfirst,ndlast)
       include 'examdecl.f'
-      include '../ptaccom.f'
+      include '../src/ptaccom.f'
       real xlimit(2,3),vlimit(2,3),Bdirs(4)
       integer iuin(3)
       logical ldoc

@@ -1,11 +1,11 @@
 c**************************************************************
       program fluxexamine
-      include '../ndimsdecl.f'
-      include '../3dcom.f'
-      include '../plascom.f'
-      include '../sectcom.f'
-      include '../colncom.f'
-      include '../vtkcom.f'
+      include '../src/ndimsdecl.f'
+      include '../src/3dcom.f'
+      include '../src/plascom.f'
+      include '../src/sectcom.f'
+      include '../src/colncom.f'
+      include '../src/vtkcom.f'
 
       parameter (ntr=10000)
       real plotdata(ntr,6),stepdata(ntr)
@@ -444,21 +444,21 @@ c Read more arguments if there are any.
       end
 c********************************************************************
       subroutine fluxcheck()
-      include '../ndimsdecl.f'
-      include '../3dcom.f'
-      include '../plascom.f'
-      include '../sectcom.f'
+      include '../src/ndimsdecl.f'
+      include '../src/3dcom.f'
+      include '../src/plascom.f'
+      include '../src/sectcom.f'
       end
 c*********************************************************************
 c This subroutine calls vtkwrite to write in the common blocks our vtk data
 c then it calls vtkwritescalarfacets to write vtk files for unstructred meshes
       subroutine vtkoutput(filename,kk,iplot,iomask)
-      include '../ndimsdecl.f'
-      include '../3dcom.f'
-      include '../plascom.f'
-      include '../sectcom.f'
-      include '../colncom.f'
-      include '../vtkcom.f'
+      include '../src/ndimsdecl.f'
+      include '../src/3dcom.f'
+      include '../src/plascom.f'
+      include '../src/sectcom.f'
+      include '../src/colncom.f'
+      include '../src/vtkcom.f'
       parameter (ntr=10000)
       integer centering(ntr),conn(ntr),celltypes(ntr)
       character*100 filename

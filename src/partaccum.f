@@ -662,7 +662,7 @@ c 2-D variables
       real cl(nl)
       integer ieye3d
       real f2vc(nsbins,nsbins,ndims)
-      include 'accis/world3.h'
+      include '../accis/world3.h'
       integer icell,jcell,kcell
       real wicell,wjcell,wkcell
       integer jicell,jjcell,jkcell,ii,jj,kk,ip3,idw

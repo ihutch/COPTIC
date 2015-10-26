@@ -1,15 +1,15 @@
-      include '../ndimsdecl.f'
+      include '../src/ndimsdecl.f'
 c Storage array spatial count size
-      include '../griddecl.f'
+      include '../src/griddecl.f'
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
       real zp(na_m,na_m,ndims)
       integer ifull(ndims),iuds(ndims)
 c Object data
-      include '../objcom.f'
+      include '../src/objcom.f'
 c Mesh spacing description structure
-      include '../meshcom.f'
+      include '../src/meshcom.f'
 c Plasma common data
-      include '../plascom.f'
+      include '../src/plascom.f'
 c Filenames
       character*100 partfilename
       character*100 phifilename

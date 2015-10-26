@@ -1,1 +1,1 @@
-../griddecl.f
+../src/griddecl.f

@@ -8,7 +8,7 @@ COPTIC=coptic
 COPTIC_ROOT=..
 #########################################################################
 # To get to compile with X, you might need to supplement this path.
-LIBPATH= -L./accis/ -L/usr/lib/mesa
+LIBPATH= -L$(COPTIC_ROOT)/accis/ -L/usr/lib/mesa
 #########################################################################
 # Test whether X libraries are found. Null => yes.
  TESTGL:=$(shell ld  $(LIBPATH) -lGLU -lGL -o /dev/null none.o 2>&1 | grep GL)
@@ -24,7 +24,7 @@ LIBPATH= -L./accis/ -L/usr/lib/mesa
 #GEOMFILE=geometry/geomsphere.dat
 ###################
 REINJECT=cartreinject.o
-GEOMFILE=${COPTIC_ROOT}/geometry/geomcubic.dat
+GEOMFILE=$(COPTIC_ROOT)/geometry/geomcubic.dat
 ########################################################################
 # Decide accis driver choice. Alternatives are vec4014 vecx or vecglx. 
 # Automatic choice can be overriden by commandline option e.g. 

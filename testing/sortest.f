@@ -1,9 +1,9 @@
       program sortest
-      include '../ndimsdecl.f'
+      include '../src/ndimsdecl.f'
 c Main program of cartesian coordinate solver 
-      include '../objcom.f'
+      include '../src/objcom.f'
 c Mesh spacing description structure
-      include '../meshcom.f'
+      include '../src/meshcom.f'
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
      $     ,cij(2*ndims+1,na_i,na_j,na_k)
       real volumes(na_i,na_j,na_k)
@@ -14,7 +14,7 @@ c Processor cartesian geometry can be set by default.
       parameter (nblksi=1,nblksj=1,nblksk=1)
       integer idims(ndims) 
 c mpi process information.
-      include '../myidcom.f'
+      include '../src/myidcom.f'
 c Structure vector needed for finding adjacent u values.
       integer iLs(ndims+1)
       external bdyshare,bdyset,bdysetnull,faddu,cijroutine,cijedge
@@ -27,9 +27,9 @@ c Structure vector needed for finding adjacent u values.
       integer ipstep,idebug
       real CFin(3+ndims,2*ndims)
       integer ipartperiod(ndims)
-      include '../facebcom.f'
+      include '../src/facebcom.f'
 c Either include plascom or define vperp and Bfield.
-      include '../plascom.f'
+      include '../src/plascom.f'
 c      real vperp(ndims),Bfield(ndims)
       real zp(na_m,na_m,ndims)
 c sor control values
@@ -46,6 +46,8 @@ c Data for plotting etc.
      $     .true.,.false.,.false./
       data lphiplot,lpgraph/.true.,.false./
       data ipstep/1/
+
+      call blockdatainit()
 c-------------------------------------------------------------
 c Consistency checks
       if(ndims.ne.ndims)then
@@ -65,7 +67,8 @@ c Otherwise could have been hidden in sormpi and pass back numprocs.
       if(idebug.gt.0)write(*,*)'numprocs,myid',numprocs,myid
 c--------------------------------------------------------------
 c Deal with command-line arguments; not all valid here.
-      include '../cmdargs.f'
+      include '../src/cmdargs.f'
+      include '../src/cmdargs.f'
 c-----------------------------------------------------------------
 c Finalize parameters after switch reading.
 c Geometry and boundary information. Read in.

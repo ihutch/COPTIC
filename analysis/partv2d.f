@@ -5,8 +5,8 @@ c collisional distributions. Much came from partexamine.
       include 'examdecl.f'
 c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       parameter (nfilemax=999)
-      include '../partcom.f'
-      include '../ptaccom.f'
+      include '../src/partcom.f'
+      include '../src/ptaccom.f'
 
  
       character*10 chartemp

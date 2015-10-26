@@ -1,7 +1,11 @@
 COPTIC=coptic
+########################################################################
+# The root directory of the distribution (for now)
+COPTIC_ROOT=..
+SRC=src
 #########################################################################
-ACCISLIB=../accis/libaccisX.a
-LIBRARIES = -L/usr/X11R6/lib/ -L/usr/lib/mesa -L../accis/ -laccisX -lXt -lX11 $(GLULIBS) -L. -lvtkwrite
+ACCISLIB=${COPTIC_ROOT}/accis/libaccisX.a
+LIBRARIES = -L/usr/X11R6/lib/ -L/usr/lib/mesa -L${COPTIC_ROOT}/accis/ -laccisX -lXt -lX11 $(GLULIBS) -L. -lvtkwrite
 #Default accis driver choice
 #Alternatives are vecx or vecglx, can be overriden by commandline option
 VECX=vecglx
@@ -12,7 +16,7 @@ endif
 ######################################################################
 # An option setting might override default compiler.
 ifeq ("$(G77)","")
-	override G77=$(shell cat ../compiler 2>/dev/null)
+	override G77=$(shell cat ${COPTIC_ROOT}/${SRC}/compiler 2>/dev/null)
 endif
 # export this so it is inherited by sub-makes.
 export G77
@@ -28,24 +32,22 @@ endif
 ##COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -g -I.
 NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
-HEADERS=../ptaccom.f
+HEADERS=${COPTIC_ROOT}/${SRC}/ptaccom.f
 ##########################################################################
-TARGETS=partexamine denexamine phiexamine diagexamine fluxexamine philineread phioverlay
+TARGETS=partexamine denexamine phiexamine diagexamine fluxexamine philineread phioverlay phasespace
 
 
 all: $(TARGETS)
 
 # We presume that all these routines are serial not parallel.
-dummyreduce.o : ../dummyreduce.f
-	$(G77) -c ../dummyreduce.f
+dummyreduce.o : ${COPTIC_ROOT}/${SRC}/dummyreduce.f
+	$(G77) -c ${COPTIC_ROOT}/${SRC}/dummyreduce.f
 
-% : %.f  makefile examdecl.f $(ACCISLIB) dummyreduce.o ../libcoptic.a $(HEADERS) libvtkwrite.a
-# I don't remember why this explicit form was preferred to a dependency below.
-#	make -C ../ libcoptic.a
-	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f dummyreduce.o ../libcoptic.a $(LIBRARIES)
+% : %.f  makefile examdecl.f $(ACCISLIB) dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(HEADERS) libvtkwrite.a
+	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(LIBRARIES)
 
 # Don't recompile accis every time the makefile is changed.
-../accis/%.o : ../accis/%.f $(HEADERS)
+${COPTIC_ROOT}/accis/%.o : ${COPTIC_ROOT}/accis/%.f $(HEADERS)
 	$(G77)  -c $(COMPILE-SWITCHES) $(PROFILING) $*.f
 
 # Just putting the specials first ensures that the compile works.
@@ -55,20 +57,20 @@ dummyreduce.o : ../dummyreduce.f
 %.o : %.c makefile
 	cc -c $(PROFILING) $*.c -I.
 
-../libcoptic.a : 
-	make -C ../ libcoptic.a
+${COPTIC_ROOT}/libcoptic.a : 
+	make -C ${COPTIC_ROOT}/ libcoptic.a
 
 libvtkwrite.a : vtkwritewrap.o visit_writer.o
 	@ar -rs libvtkwrite.a vtkwritewrap.o visit_writer.o
 
 ########################################################
-$(ACCISLIB) : ../accis/*.f ../accis/*.c ../accis/*.h
-	make -C ../accis
+$(ACCISLIB) : ${COPTIC_ROOT}/accis/*.f ${COPTIC_ROOT}/accis/*.c ${COPTIC_ROOT}/accis/*.h
+	make -C ${COPTIC_ROOT}/accis
 
 ######################################################
 vecx :
 	make clean
-	make VECX=vecx -C ../accis
+	make VECX=vecx -C ${COPTIC_ROOT}/accis
 	make
 
 #####################################################
