@@ -72,7 +72,7 @@ vecx :
 
 #####################################################
 clean :
-	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.0?? *.ps *.a
+	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.0?? *.ps *.a 
 
 testing :
 #	echo $(TARGETS)
