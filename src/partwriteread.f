@@ -333,6 +333,7 @@ c*****************************************************************
      $        ,obj_geom(omag,1),' at radius ',obj_geom(oradius,1)
      $        ,' Charge:',phip
       else
+         phip=0.
          if(myid.eq.0)write(*,*)'Potential phip not set from objects.'
       endif
 

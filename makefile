@@ -7,4 +7,7 @@ default 	:
 
 help	:
 	@echo 'For other make commands $$ make <target> or $$ make -C <directory> [<target>]'
+	@echo 'If the target is the name of a directory $$ make -C src <target>'
 
+tidy	: 
+	rm -f T*.*

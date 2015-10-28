@@ -26,6 +26,7 @@ c particles if not fixed:
       real thetamax
       parameter (thetamax=1.)
 c-----------------------------------------------------------------
+      npassthrough=0
 c A special orbit. Preserved only for ispecies=1.
 c Pinit resets x_part. So set it for the special first particle.
       x_part(1,1)=2.
@@ -119,6 +120,7 @@ c How many prior particles to save:
 c            ncdists(ispecies)=0
 c How many extra to add:
             nclim=ncdistmax
+            write(*,*)'Calling maxwellstats',nclim,vzave,ispecies
             call maxwellstats(nclim,vzave,ispecies)
             call colreinit(myid,ispecies)
          endif
@@ -596,6 +598,8 @@ c is perpendicular to 1 and y; 3-perpendicular to 1 and 2.
       external gasdev
       save vns,vnp,vdirs
 
+c      write(*,*)'Bt,Bfield',Bt,Bfield
+
       if(Bt.eq.0.)vpars(ispecies)=vds(ispecies)
 c Define the ndims directions 1 parallel and (ndims-1) perpendicular.
       do i=1,ndims
@@ -660,7 +664,7 @@ c            endif
       endif
       ncdists(ispecies)=ncdists(ispecies)+nclim
 
-c      write(*,*)'Completed Maxwellstats',nclim,ncdists(ispecies)
+c      write(*,*)'Completed Maxwellstats',nclim,ncdists(ispecies),vzave
       end
 
 

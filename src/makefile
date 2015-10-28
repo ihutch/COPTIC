@@ -141,7 +141,7 @@ REGULAROBJECTS=$(MPIOBJECTS) $(FIXEDOBJECTS) ${REINJECT}
 OBJECTS=$(SPECIALOBJECTS) $(REGULAROBJECTS)
 HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f creincom.f ptaccom.f colncom.f griddecl.f ptchcom.f mditcom.f sectcom.f plascom.f slpcom.f myidcom.f facebcom.f cdistcom.f ndimsdecl.f reincom.f
 # Nothing in root directory now depends on  examdecl.f
-SOLHEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f accis/world3.h 
+SOLHEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f $(COPTIC_ROOT)/accis/world3.h 
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 ##########################################################################
 # If this rule does not seem to recognize the file you are trying to make,
@@ -213,11 +213,11 @@ libcopsol.a : compiler makefile $(SOLOBJECTS) $(UTILITIES) $(SOLHEADERS)
 copticgeom.dat : $(GEOMFILE)
 	@if [ -f "$(GEOMFILE)" ] ; then ln -s -f $(GEOMFILE) copticgeom.dat ; fi
 
-#mpi checking target
-mpicheck : $(COPTIC)
-	mpiexec -l -n 2 ./$(COPTIC) >mpicheck.out
-	if [ -f mpicheck.prev ] ; then diff mpicheck.prev mpicheck.out ; else mv mpicheck.out mpicheck.prev  ; fi
-	mv mpicheck.out mpicheck.prev
+#mpi checking target doesn't work well
+#mpicheck : $(COPTIC)
+#	mpiexec -n 2 ./$(COPTIC) >mpicheck.out
+#	@if [ -f mpicheck.prev ] ; then diff mpicheck.prev mpicheck.out; else echo "No prior file to compare"  ; fi
+#	mv mpicheck.out mpicheck.prev
 
 # Configure compiler. Mostly one long continued bash script.
 # Currently not forcing f77=g77 by default. 
@@ -280,17 +280,16 @@ bdyroutine.o : bdyroutine.f compiler makefile $(HEADERS)
 $(COPTIC) : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
 	@echo "      rjscheme="\'$(REINJECT)\'" " > REINJECT.f
 	$(G77) -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f libcoptic.a $(LIBRARIES)
-#	@echo "TestGL:$(TESTGL), TestX11:$(TESTX11), vecx=$(VECX), G77=$(G77)"
 
 # Sorserial links nonmpibbdy.o explicitly, so that none of those routines
 # are linked from the main libcopsol that need mpi.
 sorserial : libcopsol.a sortest.f compiler makefile $(ACCISLIB) $(SOLOBJECTS) nonmpibbdy.o
 	$(G77) -o sorserial $(COMPILE-SWITCHES) $(PROFILING) sortest.f nonmpibbdy.o libcopsol.a $(LIBRARIES)
 
-$(ACCISLIB) : ${COPTIC_ROOT}/accis/*.f ${COPTIC_ROOT}/accis/*.c ${COPTIC_ROOT}/accis/*.h
+$(ACCISLIB) : $(COPTIC_ROOT)/accis/*.f $(COPTIC_ROOT)/accis/*.c $(COPTIC_ROOT)/accis/*.h
 	@echo "******************* Making accis with VECX=${VECX} **********"
-	make -C ${COPTIC_ROOT}/accis
-	@if [ -f ${COPTIC_ROOT}/accis/$(VECX) ] ; then echo ; else echo "Failed making accis with $(VECX). Might need to specify a different driver."; fi
+	make -C $(COPTIC_ROOT)/accis
+	@if [ -f $(COPTIC_ROOT)/accis/$(VECX) ] ; then echo ; else echo "Failed making accis with $(VECX). Might need to specify a different driver."; fi
 
 vecx :
 	make clean
@@ -298,22 +297,22 @@ vecx :
 
 ######################################################
 testing : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a 
-	make -C ${COPTIC_ROOT}/testing
+	make -C $(COPTIC_ROOT)/testing
 	@echo Made tests in directory testing. Now running them to test.
-	make -C ${COPTIC_ROOT}/testing testing
+	make -C $(COPTIC_ROOT)/testing testing
 	@echo If all programs finished without crashing. Thats good enough.
 
 testanal : 
 	make clean
-	make -C ${COPTIC_ROOT}/analysis clean
+	make -C $(COPTIC_ROOT)/analysis clean
 	make
-	make -C ${COPTIC_ROOT}/analysis
-	${COPTIC_ROOT}/analysis/partexamine -vtk T1e0v000P200L1e0z005x05
-	${COPTIC_ROOT}/analysis/phiexamine T1e0v000P200L1e0z005x05.pha -w
-	${COPTIC_ROOT}/analysis/fluxexamine -q T1e0v000P200L1e0z005x05.flx
+	make -C $(COPTIC_ROOT)/analysis
+	$(COPTIC_ROOT)/analysis/partexamine -vtk T1e0v000P200L1e0z005x05
+	$(COPTIC_ROOT)/analysis/phiexamine T1e0v000P200L1e0z005x05.pha -w
+	$(COPTIC_ROOT)/analysis/fluxexamine -q T1e0v000P200L1e0z005x05.flx
 	@echo "******* Completed tests with no obvious analysis errors."
 
-geometry : ${COPTIC_ROOT}/geometry/*.cks
+geometry : $(COPTIC_ROOT)/geometry/*.cks
 	@echo 'Geometry Tests completed or up to date' >&2
 	rm -f T1*
 	date >>GeometryTests
@@ -321,7 +320,7 @@ geometry : ${COPTIC_ROOT}/geometry/*.cks
 
 regeom :
 	@echo 'Regenerating geometry/*.cks files' >&2
-	for file in ${COPTIC_ROOT}/geometry/*.dat ; do rm $${file%.dat}.cks; make $${file%.dat}.cks; done
+	for file in $(COPTIC_ROOT)/geometry/*.dat ; do rm $${file%.dat}.cks; make $${file%.dat}.cks; done
 
 # Use compiler (which depends on makefile) as a test of major updates
 GeometryTests : compiler
@@ -336,13 +335,13 @@ else echo "Skipping background GeometryTests" >&2 ; fi &
 #####################################################
 clean :
 	rm -f *.o $(TARGETS) *.html *.flx *.ph? *.den T*.* *.ps *.aux *.log *.out *.toc *.prev *.tlg *.synctex.gz ftnchek.output libcoptic.a storedgeom.dat
-	make -C ${COPTIC_ROOT}/testing clean
-	make -C ${COPTIC_ROOT}/accis mproper
+	make -C $(COPTIC_ROOT)/testing clean
+	make -C $(COPTIC_ROOT)/accis mproper
 
 mproper :
 	rm -f compiler REINJECT.f coptic copticgeom.dat storedgeom.dat GeometryTests
 	make clean
-	make -C ${COPTIC_ROOT}/analysis clean
+	make -C $(COPTIC_ROOT)/analysis clean
 
 ftnchek :
 	ftnchek  -nopure\
@@ -385,7 +384,7 @@ vcg :
  `echo "$(COPTIC).f $(OBJECTS)" | sed -e "s/[.]o/[.]f/g"`
 
 fordocu :
-	${COPTIC_ROOT}/testing/fordocu.sh "$(COPTIC).f $(OBJECTS)"
+	$(COPTIC_ROOT)/testing/fordocu.sh "$(COPTIC).f $(OBJECTS)"
 	firefox html/index.html
 
 coptic.prof : compiler makefile $(OBJECTS) 

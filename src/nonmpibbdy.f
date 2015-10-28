@@ -58,22 +58,27 @@ c******************************************************************
 c********************************************************************
 c Abstraction to isolate mpi calls.
       subroutine mpifinalize(ierr)
+      ierr=0
       end
 c*******************************************************************
       subroutine mpicommsize(nprcsses,ierr)
       nprcsses=1
+      ierr=0
       end
 c********************************************************************
       subroutine mpigetmyid(myid,nprcsses,ierr)
       myid=0
       nprcsses=1
+      ierr=0
       end
 c********************************************************************
       subroutine mpiconvgreduce(convgd,icommcart,ierr)
       implicit none
       real convgd(3)
       integer ierr,icommcart
+      ierr=0
       end
 c********************************************************************
       subroutine mpibarrier(ierr)
+      ierr=0
       end

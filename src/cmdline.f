@@ -1,3 +1,75 @@
+c Combination of the two calls to copticcmdline. 
+      subroutine parametersetting
+     $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
+     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
+     $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
+     $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
+     $     ,ninjcomp,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax
+     $     ,debyelen,Ts,iwstep,idistp,lrestart,restartpath,extfield
+     $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
+     $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
+     $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
+     $     ,holelen,holepsi,holeum,holeeta
+     $     ,ifull,ierr)
+      implicit none
+      integer ifull,ierr
+      include 'myidcom.f'
+
+      integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps
+     $     ,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
+     $     ,iwstep,idistp,ndims,islp,lrestart,nptdiag
+      logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
+     $     ,lextfield,LPF(ndims),lnotallp,ldistshow
+      real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
+     $     ,dropaccel,vneutral,debyelen,extfield,slpD ,Tneutral,Enfrac
+     $     ,colpow,boltzamp,holelen,holepsi,holeum,holeeta
+      real Bfield(ndims),Bt,CFin(3+ndims,6)
+      integer iCFcount,ipartperiod(ndims),idims(ndims)
+      character*100 restartpath,objfilename
+      character*256 argline
+      real gt(ndims),gp0(ndims),gtt,gn(ndims),gnt
+      real Ts(*),vds(*),eoverms(*),Tperps(*)
+      integer nparta(*),numratioa(*)
+      real vpars(*)
+      real vperps(ndims,*),vdrifts(ndims,*)
+      integer nspecies,nspeciesmax
+
+c----------------------------------------------------------------------
+c Deal with command-line arguments and geometry/object file.
+c First time this routine just sets defaults and the object file name.
+      call copticcmdline
+     $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
+     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
+     $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
+     $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
+     $     ,ninjcomp,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax
+     $     ,debyelen,Ts,iwstep,idistp,lrestart,restartpath,extfield
+     $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
+     $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
+     $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
+     $     ,holelen,holepsi,holeum,holeeta)
+c Read in object file information.
+      call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
+     $     ,argline)
+      if(ierr.ne.0)stop 'Error in readgeom call'
+c Second time: deal with any other command line parameters.
+      call copticcmdline
+     $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
+     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
+     $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
+     $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
+     $     ,ninjcomp,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax
+     $     ,debyelen,Ts,iwstep,idistp,lrestart,restartpath,extfield
+     $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
+     $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
+     $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
+     $     ,holelen,holepsi,holeum,holeeta)
+c The double call enables cmdline switches to override objfile settings.
+c----------------------------------------------------------------------
+      end
 *********************************************************************
 c Encapsulation of parameter setting.
       subroutine copticcmdline
@@ -108,6 +180,8 @@ c Boundary condition switch and value. 0=> logarithmic.
          do id=1,ndims
             LPF(id)=.false.
             ipartperiod(id)=0
+c Default zero field
+            Bfield(id)=0.
          enddo
          gtt=0.
          gnt=0.

@@ -14055,3 +14055,7 @@ make regeom.
 
 Rework references to libcoptic and other source files.
 Correct sortest.f to do call blockdatainit.
+
+28 Oct 15
+Rework early parts of coptic.f to encapsulate the default and parameter
+setting and some restarting.

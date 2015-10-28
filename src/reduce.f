@@ -37,12 +37,13 @@ c     $     i=1,nf_posno(1,1))
 
       end
 c********************************************************************
-      subroutine psumreduce(psum,nrein,phirein,numprocs,ndims,ifull,iuds
+      subroutine psumreduce(psum,nrein,phirein,ndims,ifull,iuds
      $     ,iLs)
       integer nrein,ndims
       integer ifull(ndims),iuds(ndims),iLs(ndims+1)
       real psum(*),phirein
       include 'mpif.h'
+      include 'myidcom.f'
 c Operator
       external addsubarray_MPI
 
@@ -70,7 +71,7 @@ c Reduce also the nrein and phirein.
      $     MPI_COMM_WORLD,ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,phirein,1,MPI_REAL,MPI_SUM,
      $     MPI_COMM_WORLD,ierr)
-      phirein=phirein/numprocs
+      phirein=phirein/nprocs
 c      write(*,*)'numprocs,phirein',numprocs,phirein
 
       end

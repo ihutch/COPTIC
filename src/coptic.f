@@ -1,6 +1,6 @@
       program coptic
 c Main program of cartesian coordinate, oblique boundary, pic code.
-
+      implicit none
       include 'ndimsdecl.f'
 c Object data storage.
       include 'objcom.f'
@@ -11,6 +11,7 @@ c Coptic here begins to assume it is 3-D.
 c However allocation is to ndimsmax to allow adjustment to ndims.
 c Consequently it may be feasible to put na_k=1 and do 2-d.
 c coptic runs correctly with unequal dimensions but phiexamine does not.
+      integer Li1,Li2,Li3
       parameter (Li1=na_i,Li2=Li1*na_j,Li3=Li2*na_k)
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
 c Running averages.
@@ -22,11 +23,9 @@ c Diagnostics (moments)
       integer ndiagmax
       parameter (ndiagmax=7)
       real diagsum(na_i,na_j,na_k,ndiagmax+1,nspeciesmax)
-c Distribution functions
+c Distribution function lengths
       integer ndistmax
       parameter (ndistmax=300)
-c      real fv(ndistmax,na_i,na_j,na_k)
-
 c Used dimensions, Full dimensions. Used dims-2
       integer iuds(ndimsmax),ifull(ndimsmax),ium2(ndimsmax)
 c Processor cartesian geometry can be set by default.
@@ -66,8 +65,6 @@ c      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical lmyidhead,lphiplot,ldenplot
       integer ipstep,iwstep,idistp,idcount,icijcount,lrestart
 c Diagnostics etc
-c      real zp(na_m,na_m2,ndimsmax)
-c The above does not seem to be the correct workspace for zp (slicing)
       real zp(na_m,na_m)
       real xlimit(2,ndimsmax),vlimit(2,ndimsmax)
       real xnewlim(2,ndimsmax)
@@ -75,7 +72,18 @@ c Input for face boundary data:
       real CFin(3+ndimsmax,2*ndimsmax)
 c Center of objplot final plot.
       real cv(ndimsmax)
-
+c Various local parameters
+      real bckgd,bdt,bdtnow,boltzamp0,cellvol,dtf
+      real dum,dum2,dum3,dum4,dum5
+      real error,pinjcomp0,rc,rcij,rinf,rs1,thetain
+      integer i,iavesteps,ibinit,iCFcount,ickst,ictl,id,idiag,idn
+      integer ied,ierr,ierrsor,iferr,ifix,ifobj,ifplot,iobpl
+      integer ipoint,ispecies,istat,istepave,iobpsw,j,k,maccel
+      integer mbzero,ninjcomp0,nsteps,nth,ndiags
+c And Functions
+      integer lentrim,nbcat,nameappendint
+      external lentrim,nbcat,nameappendint
+      
 c Set up the structure vector.
       data iLs/1,Li1,Li2,Li3/
 c Mesh and mpi parameter defaults:
@@ -99,45 +107,16 @@ c for solutions of volumes etc. Each node then does the same.
 c Defaults:
 c Determine what reinjection scheme we use. Sets rjscheme.
       include 'REINJECT.f'
-c This circumlocution to silence warnings.
-      i1=ndims+1
-      do id=i1,ndimsmax
-         ifull(id)=1
-         iuds(id)=1
-      enddo
-      do id=1,ndimsmax
-c Use very big xlimits by default to include whole domain
-         xlimit(1,id)=-500.
-         xlimit(2,id)=500.
-         xnewlim(1,id)=0.
-         xnewlim(2,id)=0.
-         vlimit(1,id)=5.
-         vlimit(2,id)=-5.
-c Default zero field
-         Bfield(id)=0.
-      enddo
-      phip=0.
-      cellvol=0.
-      rs=5.0
-      rsmesh=rs
-      caverein=0.
-      chi=0.
-      ierr=0
-      ifix=0
-      npassthrough=0
-      rhoinf=0.
 c---------------------------------------------------------------------
 c This necessary here so one knows early the mpi structure.
 c Otherwise could have been hidden in sormpi and passed back.
-      myid=0
       call mpigetmyid(myid,nprocs,ierr)
-      lmyidhead=.true.
-      if(myid.ne.0) lmyidhead=.false.
+      lmyidhead=myid.eq.0
+c numprocs is the parameter in partcom kept separately for some reason
       numprocs=nprocs
 c--------------------------------------------------------------
 c Deal with command-line arguments and geometry/object file.
-c First time this routine just sets defaults and the object file name.
-      call copticcmdline
+      call parametersetting
      $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
@@ -148,34 +127,13 @@ c First time this routine just sets defaults and the object file name.
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi,holeum,holeeta)
-
-c Read in object file information.
-      call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
-     $     ,argline)
-c Second time: deal with any other command line parameters.
-      call copticcmdline
-     $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
-     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-     $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
-     $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
-     $     ,ninjcomp,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax
-     $     ,debyelen,Ts,iwstep,idistp,lrestart,restartpath,extfield
-     $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
-     $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
-     $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi,holeum,holeeta)
-
-      if(ierr.ne.0)stop
-c The double call enables cmdline switches to override objfile settings.
+     $     ,holelen,holepsi,holeum,holeeta
+     $     ,ifull,ierr)
 c-----------------------------------------------------------------
-c Finalize parameters after switch reading.
-      ndropped=0
-      boltzamp0=boltzamp
-      boltzsign=sign(1.,eoverms(1))
-      if(nptdiag.eq.0)nptdiag=nsbins
-      call initdriftfield
+c Finalize initial parameters after switch and geometry reading.
+      call initializeparams(ifull,iuds,xlimit,vlimit,xnewlim
+     $     ,boltzamp0,cellvol,ifix)
+      write(*,*)'Bt,Bfield',Bt,Bfield
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
  250  call meshconstruct(ndims,iuds,ifull,ipartperiod,rs)
@@ -198,42 +156,19 @@ c Now print out the result of the initialization.
          if(lmyidhead)call bdyfaceinit(-2,CFin(1,1))
       endif
 c---------------------------------------------------------------
-c      write(*,*)'Doing ninjcalc',n_part,ripernode,dt
-      if(n_part.ne.0)ripernode=0.
       call ninjcalc(dt)
-c------------------------------------------------------------------
-c Set phip from the first object. Must be done before nameconstruct.
-      call phipset(myid)
 c----------------------------------------------------------------
 c Initialize the fluxdata storage and addressing before cijroutine
 c That is necessary because ijbin addressing is used in cijroutine for
 c subsequent access by cijdirect when calculating floating potential.
       nf_species=nspecies
       nf_nsteps=nsteps
-      if(lrestart.ne.0)then
 c Part of the restart code needs to be here to determine the required
 c total number of steps for which the flux initialization is needed.
 c Since some must be here, we construct the names here and not later.
-         partfilename=restartpath
-         if(lrestart/4-2*(lrestart/8).ne.0)then
-            partfilename(lentrim(partfilename)+1:)='restartfile'
-         else
-            call nameconstruct(partfilename)
-         endif
-         phifilename=partfilename
-         nb=nbcat(phifilename,'.phi')
-         fluxfilename=partfilename
-         nb=nbcat(fluxfilename,'.flx')
-         nb=nameappendint(partfilename,'.',myid,3)
-         if(lrestart/2-2*(lrestart/4).ne.0)then
-            iferr=0
-c            write(*,*)'Reading flux file:',fluxfilename
-            call readfluxfile(fluxfilename,iferr)
-c The total number of steps for fluxdatainit is the sum of what we
-c just read out of fluxfile and the new nsteps:
-            nf_nsteps=nf_nsteps+nsteps
-         endif
-      endif
+      call restartnames(lrestart,partfilename,restartpath,phifilename
+     $     ,fluxfilename,nf_nsteps,nsteps)
+
       call fluxdatainit(myid)
 c-----------------------------------------------------------------
       if(lmyidhead)write(*,*)'Initializing the stencil data cij.'
@@ -455,8 +390,7 @@ c The new version rhoinfcalc does a more accurate calculation but needs
 c Call here if we are not doing direct deposition in padvnc.
 c         call chargetomesh(psum,iLs,diagsum,ndiags)
          call diagperiod(psum,ifull,iuds,iLs,1)
-         call psumreduce(psum,nrein,phirein,numprocs,ndims,ifull,iuds
-     $        ,iLs)
+         call psumreduce(psum,nrein,phirein,ndims,ifull,iuds,iLs)
 c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
 c Convert psums to charge density, q. Remember external psumtoq!
@@ -580,3 +514,92 @@ c         write(*,*)'Calling objplot'
       endif
       end
 c************************************************************************
+      subroutine initializeparams(ifull,iuds,xlimit,vlimit,xnewlim
+     $     ,boltzamp0,cellvol,ifix)
+      implicit none
+      include 'ndimsdecl.f'
+      include 'griddecl.f'
+      include 'partcom.f'
+      include 'colncom.f'
+      include 'ptaccom.f'
+      include 'plascom.f'
+      include 'ptchcom.f'
+      include 'myidcom.f'
+      integer ifull(ndimsmax),iuds(ndimsmax)
+      real xlimit(2,ndimsmax),vlimit(2,ndimsmax)
+      real xnewlim(2,ndimsmax)
+      real boltzamp0,cellvol
+      integer ifix
+
+      integer id,i1
+c-------------------------------------------------------------
+c This circumlocution to silence warnings.
+      i1=ndims+1
+      do id=i1,ndimsmax
+         ifull(id)=1
+         iuds(id)=1
+      enddo
+      do id=1,ndimsmax
+c Use very big xlimits by default to include whole domain
+         xlimit(1,id)=-500.
+         xlimit(2,id)=500.
+         xnewlim(1,id)=0.
+         xnewlim(2,id)=0.
+         vlimit(1,id)=5.
+         vlimit(2,id)=-5.
+      enddo
+      cellvol=0.
+      rs=5.0
+      caverein=0.
+      chi=0.
+      ifix=0
+      rhoinf=0.
+      ndropped=0
+      boltzamp0=boltzamp
+      boltzsign=sign(1.,eoverms(1))
+      if(nptdiag.eq.0)nptdiag=nsbins
+      if(n_part.ne.0)ripernode=0.
+
+      call initdriftfield
+
+c Set phip from the first object. Must be done before nameconstruct.
+      call phipset(myid)
+
+c-------------------------------------------------------------
+      end
+c********************************************************************
+
+      subroutine restartnames(lrestart,partfilename,restartpath
+     $     ,phifilename,fluxfilename,nf_nsteps,nsteps)
+      implicit none
+      integer lrestart,nf_nsteps,nsteps
+      character*100 partfilename,phifilename,fluxfilename,restartpath
+      
+      include 'myidcom.f'
+      integer nb,nbcat,lentrim,nameappendint,iferr
+      if(lrestart.ne.0)then
+c Part of the restart code needs to be here to determine the required
+c total number of steps for which the flux initialization is needed.
+c Since some must be here, we construct the names here and not later.
+         partfilename=restartpath
+         if(lrestart/4-2*(lrestart/8).ne.0)then
+            partfilename(lentrim(partfilename)+1:)='restartfile'
+         else
+            call nameconstruct(partfilename)
+         endif
+         phifilename=partfilename
+         nb=nbcat(phifilename,'.phi')
+         fluxfilename=partfilename
+         nb=nbcat(fluxfilename,'.flx')
+         nb=nameappendint(partfilename,'.',myid,3)
+         if(lrestart/2-2*(lrestart/4).ne.0)then
+            iferr=0
+c            write(*,*)'Reading flux file:',fluxfilename
+            call readfluxfile(fluxfilename,iferr)
+c The total number of steps for fluxdatainit is the sum of what we
+c just read out of fluxfile and the new nsteps:
+            nf_nsteps=nf_nsteps+nsteps
+         endif
+      endif
+
+      end

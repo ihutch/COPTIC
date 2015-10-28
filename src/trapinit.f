@@ -44,6 +44,7 @@ c Arguments of untrapcum
       real fpa(nin),fma(nin),ua(nin)
       real cump(-ntot:ntot),cumv(-ntot:ntot)
 
+      npassthrough=0
       iaccept=0
       ireject=0
 c-----------------------------------------------------------------

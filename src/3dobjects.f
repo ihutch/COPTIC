@@ -529,10 +529,12 @@ c Set whether particle region has a part inside an object.
 
  101  write(*,*) 'Readgeom File ',filename(1:lentrim(filename))
      $     ,' could not be opened.'
-      filename='copticgeom.dat'
-      open(1,file=filename,status='old',err=102)  
-      goto 2
- 102  write(*,*) 'And copticgeom.dat could not be opened either.'
+      if(filename(1:lentrim(filename)).ne.'copticgeom.dat')then
+         filename='copticgeom.dat'
+         open(1,file=filename,status='old',err=102)  
+         goto 2
+ 102     write(*,*) 'And copticgeom.dat could not be opened either.'
+      endif
       ierr=1
 
       end
