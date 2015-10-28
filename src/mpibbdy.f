@@ -172,7 +172,7 @@ c Check the asked-for nproc and if not equal to nprcsses, reapportion.
 c         if(nproc.ne.nprcsses)then
 c Only reapportion if too many processes were asked for.
          if(nproc.gt.nprcsses)then
-            if(myid.eq.0)write(*,201)nprcsses,
+            if(myid.eq.0 .and. idims(1).ne.99)write(*,201)nprcsses,
      $           nproc,(idims(n),n=1,ndims)
  201        format(' MPI processes',i4,
      $           ': don''t match this topology ',i7,':',6i4)
@@ -190,8 +190,8 @@ c Use MPI function to redimension block structure
             else
                stop 'MPI_DIMS_CREATE error'
             endif
-            if(myid.eq.0)write(*,'('' Reset to'',i4,'':'',6i3)')
-     $           nproc,idims
+            if(myid.eq.0)write(*,'('' (Re)set MPI processes to'',i4
+     $,'' :'',6i3)')nproc,idims
          else
             if(myid.eq.0 .and. nprcsses.gt.1)
      $           write(*,'('' MPI processes,idims()'',i4,'':'',10i4)')

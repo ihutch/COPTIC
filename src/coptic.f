@@ -53,7 +53,7 @@ c Face boundary data
 c Particle distribution accumulation data
       include 'ptaccom.f'
 
-      external bdyshare,bdyset,cijroutine,cijedge,psumtoq,psumtoqminus
+      external bdyshare,bdyset,cijroutine,cijedge,psumtoq
      $     ,quasineutral,fadcomp
       real fadcomp
       external volnode,linregion
@@ -77,7 +77,7 @@ c Various local parameters
       real dum,dum2,dum3,dum4,dum5
       real error,pinjcomp0,rc,rcij,rinf,rs1,thetain
       integer i,iavesteps,ibinit,iCFcount,ickst,ictl,id,idiag,idn
-      integer ied,ierr,ierrsor,iferr,ifix,ifobj,ifplot,iobpl
+      integer ied,ierr,ierrsor,ifix,ifobj,ifplot,iobpl
       integer ipoint,ispecies,istat,istepave,iobpsw,j,k,maccel
       integer mbzero,ninjcomp0,nsteps,nth,ndiags
 c And Functions
@@ -94,9 +94,9 @@ c Data for plotting etc.
       data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot/
      $     .false.,.false.,.false.,.true.,.false./
       data lphiplot,ldenplot/.false.,.false./
-c      data thetain,nth/.1,1/
       data lrestart/0/cv/0.,0.,0./
       data ipstep/1/idistp/0/idcount/0/icijcount/0/
+c End of declarations etc.------------------------------------
 c-------------------------------------------------------------
 c Replace Block Data programs with this 
       call blockdatainit()
@@ -104,7 +104,6 @@ c-------------------------------------------------------------
 c Initialize the fortran random number generator with a fixed number
 c for solutions of volumes etc. Each node then does the same.
       call rluxgo(0,0,0,0)
-c Defaults:
 c Determine what reinjection scheme we use. Sets rjscheme.
       include 'REINJECT.f'
 c---------------------------------------------------------------------
@@ -133,7 +132,6 @@ c-----------------------------------------------------------------
 c Finalize initial parameters after switch and geometry reading.
       call initializeparams(ifull,iuds,xlimit,vlimit,xnewlim
      $     ,boltzamp0,cellvol,ifix)
-      write(*,*)'Bt,Bfield',Bt,Bfield
 c---------------------------------------------------------------
 c Construct the mesh vector(s) and ium2
  250  call meshconstruct(ndims,iuds,ifull,ipartperiod,rs)
@@ -158,9 +156,6 @@ c Now print out the result of the initialization.
 c---------------------------------------------------------------
       call ninjcalc(dt)
 c----------------------------------------------------------------
-c Initialize the fluxdata storage and addressing before cijroutine
-c That is necessary because ijbin addressing is used in cijroutine for
-c subsequent access by cijdirect when calculating floating potential.
       nf_species=nspecies
       nf_nsteps=nsteps
 c Part of the restart code needs to be here to determine the required
@@ -168,7 +163,9 @@ c total number of steps for which the flux initialization is needed.
 c Since some must be here, we construct the names here and not later.
       call restartnames(lrestart,partfilename,restartpath,phifilename
      $     ,fluxfilename,nf_nsteps,nsteps)
-
+c Initialize the fluxdata storage and addressing before cijroutine
+c That is necessary because ijbin addressing is used in cijroutine for
+c subsequent access by cijdirect when calculating floating potential.
       call fluxdatainit(myid)
 c-----------------------------------------------------------------
       if(lmyidhead)write(*,*)'Initializing the stencil data cij.'
@@ -199,10 +196,9 @@ c Here we try to read the stored geometry volume data.
       istat=1
       call stored3geometry(volumes,iuds,ifull,istat,.true.)
       call mpibarrier(ierr)
-c Here we need to wait till all nodes have tried to read before
+c We need to wait till all nodes have tried to read before
 c we go ahead and write, else we get inconsistent file status.
-
-c an istat=1 return says we succeeded. If so skip the calculation. 
+c An istat=1 return says we succeeded. If so skip the calculation. 
       if(istat.eq.0)then
 c Calculate the nodal volumes for all non-edge points.
          ipoint=0
@@ -227,6 +223,10 @@ c Set an object pointer region -1 for all the edges.
       ipoint=0
       call mditerarg(cijedge,ndims,ifull,iuds,ipoint,cij,dum2,dum3,dum4
      $     ,dum5)
+c The following requires include objcom.f
+         if(lmyidhead)write(*,*)
+     $      'Used No of pointers:',oi_cij,' of',iuds(1)*iuds(2)*iuds(3)
+     $        ,' points.'
 c---------------------------------------------
       if(.not.lmyidhead)then
 c Don't do plotting from any node except the master.
@@ -243,11 +243,6 @@ c Some simple graphics of cij, and volumes.
 c More elaborate graphics of volumes. Was ltestplot.
          if(.false.)call sliceGweb(ifull,iuds,volumes,na_m,zp,
      $              ixnp,xn,ifix,'volumes:'//'!Ay!@'//char(0),dum,dum)
-c---------------------------------------------
-c The following requires include objcom.f
-         if(lmyidhead)write(*,*)
-     $      'Used No of pointers:',oi_cij,' of',iuds(1)*iuds(2)*iuds(3)
-     $        ,' points.'
 c Plot objects 0,1 and 2 (bits)
          if(iobpl.ne.0.and.lmyidhead)then
             if(rcij.eq.0.)rcij=rs
@@ -270,7 +265,6 @@ c Initialize diagsum if necessary.
          enddo
       enddo
 c Initialize additional potential and charge always now.
-c      call setadfield(ifull,iuds,iptch_mask,lsliceplot)
       call setadfield(ifull,iuds,iptch_mask,ltestplot)
 c      if(myid.eq.0)call sliceGweb(ifull,iuds,rhoci,na_m,zp,
 c     $              ixnp,xn,ifix,'rhoci',dum,dum)
@@ -283,13 +277,11 @@ c Make dimensions periodic:
       do id=1,ndims
          if(LPF(id))ictl=ictl+4*2**id
       enddo
-c      write(*,*)'Calling sormpi'
 c An initial solver call with zero density.
       ierrsor=0
       if(debyelen.ne.0.)call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare
      $     ,bdyset,fadcomp,ictl,ierrsor,myid,idims)
       ictl=2+ictl
-c      write(*,*)'Return from initial sormpi call.'
       if(ltestplot)call sliceGweb(ifull,iuds,u,na_m,zp,
      $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0),dum,dum)
 c
@@ -323,44 +315,10 @@ c---------------------------------------------
       dtf=dt
       mbzero=maccel
 c-----------------------------------------------
-c Restart code
-      if(lrestart.ne.0)then
-c names are constructed earlier.
-         if(lrestart/2-2*(lrestart/4).ne.0)then
-            iferr=0
-            call readfluxfile(fluxfilename,iferr)
-         else
-            iferr=1
-         endif
-c         write(*,*)'iferr=',iferr
-         if(lrestart-4*(lrestart/4).ne.0)then
-            call partread(partfilename,ierr)
-            if(ierr-4*(ierr/4).eq.0)then 
-c We succeeded in reading the part-file. Relocate the particles.
-               write(*,'(a,i4,a,a,i3)')' cpu',myid
-     $              ,' Restart file read: '
-     $              ,partfilename(1:lentrim(partfilename)+1),lrestart
-               call locateinit()
-               if(nsteps+nf_step.gt.nf_maxsteps)then
-                  if(lmyidhead)write(*,*)'Asked for',
-     $                 nsteps,' in addition to',nf_step,
-     $                 ' Total',nsteps+nf_step,
-     $                 ' too much; set to',nf_maxsteps-1
-                  nsteps=nf_maxsteps-nsteps-1
-               endif
-               ied=1
-c Only read the phi-file if the flux file was present. Full restart.
-               if(iferr.eq.0)then
-c                  write(*,*)'Reading phifile',ierr,phifilename
-                  call array3read(phifilename,ifull,iuds,ied,u,ierr)
-               endif
-            endif
-         endif
-c In case we have overwritten phip with the value from the restart file,
-c try to set it again from the first object. But tell it we are not
-c the head node, so it does not give out messages.
-         call phipset(1)
-      endif
+c Restart read in if we are restarting
+      call restartread(lrestart,fluxfilename,partfilename,nsteps
+     $        ,nf_step,nf_maxsteps,phifilename,ifull,iuds,ied,u,ierr
+     $        ,lmyidhead,myid)
 c-----------------------------------------------
       if(lmyidhead)then
          if(colntime.ne.0)then
@@ -369,7 +327,9 @@ c-----------------------------------------------
          endif
          write(*,'(/,a)')'Step Iterations Flux:'
       endif
-c This call is necessary for restart.
+c This call is necessary for restart. It deposits the restarted particles
+c into psum, giving the required status immediately after padvnc when
+c padvnc includes the charge deposition.
       call mditerset(psum,ndims,ifull,iuds,0,0.)
       call chargetomesh(psum,iLs,diagsum,ndiags) 
 c----------------------------------------------------------
@@ -382,13 +342,11 @@ c Acceleration code.
          ninjcomp=int(bdtnow*ninjcomp0)
 c         write(*,*)ninjcomp,nrein,bdtnow,ninjcomp0
 c The following statement is not needed with modified rhoinfcalc.
-         if(ninjcomp.ne.0)nrein=ninjcomp
+c         if(ninjcomp.ne.0)nrein=ninjcomp
 c It introduces inaccuracy because partial injections are ignored.
 c The new version rhoinfcalc does a more accurate calculation but needs
          pinjcompa(1)=bdtnow*pinjcomp0
 
-c Call here if we are not doing direct deposition in padvnc.
-c         call chargetomesh(psum,iLs,diagsum,ndiags)
          call diagperiod(psum,ifull,iuds,iLs,1)
          call psumreduce(psum,nrein,phirein,ndims,ifull,iuds,iLs)
 c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
@@ -396,16 +354,14 @@ c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
 c Convert psums to charge density, q. Remember external psumtoq!
          bckgd=0.
          if(nspecies.eq.1.)bckgd=(1.-boltzamp)*eoverms(1)
-c Subtract uniform background (for single-species running).
-            call mditerarg(psumtoqminus,ndims,ifull,ium2,0,psum(2,2,2)
-     $           ,q(2,2,2),volumes(2,2,2),bckgd,rhoinf)
+c Subtract specified weight uniform background (for single-species running).
+         call mditerarg(psumtoq,ndims,ifull,ium2,0,psum(2,2,2)
+     $        ,q(2,2,2),volumes(2,2,2),bckgd,rhoinf)
          istepave=min(nf_step,iavesteps)
-
-c Reset psum, after psumtoq accommodating padvnc deposition.
+c Reset psum, after psumtoq.
          call mditerset(psum,ndims,ifull,iuds,0,0.)
 
-
-c Solve for the new potential:
+c Solve for the new potential:-------------------
          if(debyelen.eq.0)then
             call mditerarg(quasineutral,ndims,ifull,ium2,
      $        0,q(2,2,2),u(2,2,2),volumes(2,2,2),dum4,dum5)
@@ -422,9 +378,9 @@ c Turn off use of fadcomp by ictl-2
      $              ,fadcomp,ictl-2,ierr,myid,idims)
             endif
          endif
+c ------------------------------------------------
 
          call calculateforces(ndims,iLs,cij,u)
-
          if(lsliceplot)then
             if(ipstep.eq.0.or.mod(j,ipstep).eq.0)then
 c Slice plots
@@ -434,6 +390,7 @@ c Slice plots
      $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0),dum,dum)
             endif
          endif
+
          if(nspecies.gt.1.or.holepsi.ne.0.)then
 c Ramp down boltzamp to zero if electrons are present,
 c or this is a hole run
@@ -441,10 +398,11 @@ c or this is a hole run
          endif
 
          if(nf_step.eq.ickst)call checkuqcij(ifull,u,q,psum,volumes,cij)
-c Particle advance:
+c Particle advance:------------------------------
          do ispecies=1,nspecies
             call padvnc(iLs,cij,u,ndiags,psum,diagsum,ispecies,ndiagmax)
          enddo
+c------------------------------------------------
 c Optional checking step. Used for restart testing.
          if(nf_step.eq.ickst)call checkx
 
@@ -486,11 +444,9 @@ c Pathscale demands an argument number. So give it explicitly.
 c Comment it out if it causes problems.
          if(lmyidhead)call flush(6)
       enddo
-c-------- End of Main Step Iteration ----------------------
+c End of Main Step Iteration ------------------------------
 c----------------------------------------------------------
-      if(norbits.ne.0)
-     $     call cijplot(ifull,iuds,cij,rs,iobpl)
-
+      if(norbits.ne.0)call cijplot(ifull,iuds,cij,rs,iobpl)
       if(lorbitplot.and.norbits.ne.0)call orbitplot(ifull,iuds,u,phip,rc
      $     ,rs)
 
@@ -501,18 +457,13 @@ c Everyone writes what they have to.
 c-------------------------------------------------------------------
       call mpifinalize(ierr)
 c Check some flux diagnostics and writing.
-      if(lmyidhead)then 
-         if(linjplot)call plotinject(Ti)
-         do ifobj=1,mf_obj
-            call fluxave(nf_step/2,nf_step,ifobj,ifplot,rinf)
-         enddo
-c         write(*,*)'Calling objplot'
-         if(ifplot.gt.0)then
-            if(rcij.le.0)rcij=rs
-            call objplot(1,rcij,cv,iobpsw,0)
-         endif
-      endif
+      call finaldiags(lmyidhead,linjplot,Ti,mf_obj,nf_step,rinf
+     $     ,ifobj,ifplot,rcij,rs,cv,iobpsw)
+
       end
+c End of Main Program.
+c************************************************************************
+c************************************************************************
 c************************************************************************
       subroutine initializeparams(ifull,iuds,xlimit,vlimit,xnewlim
      $     ,boltzamp0,cellvol,ifix)
@@ -599,6 +550,81 @@ c            write(*,*)'Reading flux file:',fluxfilename
 c The total number of steps for fluxdatainit is the sum of what we
 c just read out of fluxfile and the new nsteps:
             nf_nsteps=nf_nsteps+nsteps
+         endif
+      endif
+
+      end
+c***********************************************************************
+      subroutine restartread(lrestart,fluxfilename,partfilename,nsteps
+     $     ,nf_step,nf_maxsteps,phifilename,ifull,iuds,ied,u,ierr
+     $     ,lmyidhead,myid)
+      implicit none
+      integer lrestart,nsteps,nf_step,nf_maxsteps,ied,ierr,myid
+      logical lmyidhead
+      character*100 partfilename,phifilename,fluxfilename
+      integer ifull(*),iuds(*)
+      real u(*)
+      
+      integer iferr
+      integer lentrim
+      external lentrim
+
+      if(lrestart.ne.0)then
+c names are constructed earlier.
+         if(lrestart/2-2*(lrestart/4).ne.0)then
+            iferr=0
+            call readfluxfile(fluxfilename,iferr)
+         else
+            iferr=1
+         endif
+         if(lrestart-4*(lrestart/4).ne.0)then
+            call partread(partfilename,ierr)
+            if(ierr-4*(ierr/4).eq.0)then 
+c We succeeded in reading the part-file. Relocate the particles.
+               write(*,'(a,i4,a,a,i3)')' cpu',myid
+     $              ,' Restart file read: '
+     $              ,partfilename(1:lentrim(partfilename)+1),lrestart
+               call locateinit()
+               if(nsteps+nf_step.gt.nf_maxsteps)then
+                  if(lmyidhead)write(*,*)'Asked for',
+     $                 nsteps,' in addition to',nf_step,
+     $                 ' Total',nsteps+nf_step,
+     $                 ' too much; set to',nf_maxsteps-1
+                  nsteps=nf_maxsteps-nsteps-1
+               endif
+               ied=1
+c Only read the phi-file if the flux file was present. Full restart.
+               if(iferr.eq.0)then
+c                  write(*,*)'Reading phifile',ierr,phifilename
+                  call array3read(phifilename,ifull,iuds,ied,u,ierr)
+               endif
+            endif
+         endif
+c In case we have overwritten phip with the value from the restart file,
+c try to set it again from the first object. But tell it we are not
+c the head node, so it does not give out messages.
+         call phipset(1)
+      endif
+
+      end
+c**********************************************************************
+      subroutine finaldiags(lmyidhead,linjplot,Ti,mf_obj,nf_step,rinf
+     $     ,ifobj,ifplot,rcij,rs,cv,iobpsw)
+      implicit none
+      logical lmyidhead,linjplot
+      real Ti,rinf,rcij,rs,cv(*)
+      integer mf_obj,nf_step,ifobj,ifplot,iobpsw
+
+c Check some flux diagnostics and writing.
+      if(lmyidhead)then 
+         if(linjplot)call plotinject(Ti)
+         do ifobj=1,mf_obj
+            call fluxave(nf_step/2,nf_step,ifobj,ifplot,rinf)
+         enddo
+c         write(*,*)'Calling objplot'
+         if(ifplot.gt.0)then
+            if(rcij.le.0)rcij=rs
+            call objplot(1,rcij,cv,iobpsw,0)
          endif
       endif
 

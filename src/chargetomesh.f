@@ -177,7 +177,8 @@ c Diagnostic particles must be transferred, not just added.
       end
 
 c********************************************************************
-      subroutine psumtoq(inc,ipoint,indi,ndims,iLs,iused,
+c Obsolete version that does no background subtraction.
+      subroutine psumtoqnominus(inc,ipoint,indi,ndims,iLs,iused,
      $     psum,rho,volumes,u,rhoinf)
       integer ipoint,inc
       integer indi(ndims),iused(ndims)
@@ -238,7 +239,7 @@ c There still might be too small a density, so set a floor for it.
       inc=1
       end
 c********************************************************************
-      subroutine psumtoqminus(inc,ipoint,indi,ndims,iLs,iused,
+      subroutine psumtoq(inc,ipoint,indi,ndims,iLs,iused,
      $     psum,rho,volumes,bckgd,rhoinf)
 c This version subtracts uniform background in the particle region.
 c u(*) is removed.
