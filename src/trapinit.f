@@ -12,8 +12,6 @@ c Common data:
       include 'partcom.f'
       include 'plascom.f'
       include 'myidcom.f'
-      include '3dcom.f'
-c      include 'meshcom.f'
       include 'colncom.f'
       include 'cdistcom.f'
       real sprior

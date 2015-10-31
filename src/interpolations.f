@@ -452,6 +452,8 @@ c            uprime= 2.*((xm+0.5) * (up-u0)
 c     $           +(0.5-xm) * (u0-um))/(dx0+dx1)
 c This seems if anything marginally slower:
 c            uprime= (2.*xm*(up-u0-u0+um) + up-um)/(dx0+dx1)
+c This saves about 2 sec out of 42 (but changes phi by rounding):
+c            uprime=((xm+0.5)*(up-u0)+(0.5-xm)*(u0-um))/dx1
          else
             if(xm.lt.0)then
                x=xm*dx0

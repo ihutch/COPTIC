@@ -13,11 +13,12 @@ c e.g. point-charge objects.
       real cij(*)
 
       include 'ndimsdecl.f'
-
+      include 'partcom.f'
       include '3dcom.f'
       external linregion
       logical linregion
       include 'meshcom.f'
+      include 'ptchcom.f'
       real xm(ndims),xi(ndims),xp(ndims)
 c      parameter (npoints=10000)
 c Sobel numbers are more "favorable" if the number of them is 2^k
@@ -113,6 +114,7 @@ c But randc.c would have to be reinstated. See end of file.
       integer npoints
       double precision qrn(mdims)
       include 'ndimsdecl.f'
+      include 'partcom.f'
       include '3dcom.f'
       real x(ndims)
       external linregion

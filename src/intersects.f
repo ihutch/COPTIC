@@ -186,9 +186,6 @@ c ibool structure: n1, n1*values, n2, n2*values, ... ,0
       integer ndims
       real x(ndims)
       logical ltemp,lt1,lt2
-c The following ought to be consistent with 3dcom.f
-c      integer ibmax
-c      parameter (ibmax=100) 
 
 c  linregion = Prod_1^nj Sum_1^ni inside(bool(ni,nj))
 c where inside(n) is true if n is +/-ve and x is inside/outside |n|. 

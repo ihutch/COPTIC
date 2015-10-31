@@ -183,12 +183,10 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 
 ##########################################
 # Default target compiler must always be the first dependency.
-# Problem when using geometry that can't do smt check. 
-smt.out : compiler $(COPTIC) copticgeom.dat
-	@if [ -f smt.out ] ; then mv smt.out smt.prev ; fi
+tested : compiler $(COPTIC) copticgeom.dat
 	@if [ -f T1e0v000P200L1e0z005x05.phi ] ; then mv T1e0v000P200L1e0z005x05.phi prior.phi ; echo "Created prior.phi" ; fi
 	./$(COPTIC)
-	@if [ -f smt.prev ] ;then if [ -f smt.out ] ;then diff smt.prev smt.out ;else touch smt.out ;fi ;fi
+	@date > tested
 	@if [ -f prior.phi ] && [ -f T1e0v000P200L1e0z005x05.phi ] ; then \
 if [ `ls -s prior.phi | sed -e "s/[ ].*//"` -ne \
     `ls -s T1e0v000P200L1e0z005x05.phi | sed -e "s/[ ].*//"` ] ;then \
@@ -339,7 +337,7 @@ clean :
 	make -C $(COPTIC_ROOT)/accis mproper
 
 mproper :
-	rm -f compiler REINJECT.f coptic copticgeom.dat storedgeom.dat GeometryTests
+	rm -f compiler REINJECT.f coptic copticgeom.dat storedgeom.dat GeometryTests tested
 	make clean
 	make -C $(COPTIC_ROOT)/analysis clean
 

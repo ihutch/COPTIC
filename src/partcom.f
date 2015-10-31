@@ -47,6 +47,11 @@ c Effective face area for purposes of reinjection. Small if periodic.
       real fcarea(ndims)
 c Whether not all directions of particles are periodic
       logical lnotallp
+c Ibool defining region of particles.
+      integer ibtotal_part
+      parameter (ibtotal_part=100)
+      integer ibool_part(ibtotal_part)
+c
       integer n_part,iic_part,ioc_part,ninjcomp
       real holepsi,holelen,holeum,holespeed,holeeta
       equivalence (n_part,nparta(1)),(iic_part,iicparta(1))
@@ -54,7 +59,7 @@ c Whether not all directions of particles are periodic
       common/particles/x_part,nspecies
      $     ,nparta,iicparta,iocparta,ninjcompa,pinjcompa,numratioa
      $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs,npassthrough
-     $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp
+     $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp,ibool_part
      $     ,caverein,chi,notseparable,holepsi,holelen,holeum,holespeed
      $     ,holeeta
 

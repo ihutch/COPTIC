@@ -14059,3 +14059,12 @@ Correct sortest.f to do call blockdatainit.
 28 Oct 15
 Rework early parts of coptic.f to encapsulate the default and parameter
 setting and some restarting.
+
+I ought to move ibool_part to partcom instead of 3dcom. That would enable
+me to get rid of a lot of 3dcom dependencies. 
+
+29 Oct 15
+Moved ibool_part. But it needed several additional adjustments where ibool_part
+appeared. So this was not a big step forward. (More like backward).
+Move iptch_mask into ptchcom.f replacing iptch_copy everywhere. Still doesn't
+much help. Disentangling this seems too difficult.

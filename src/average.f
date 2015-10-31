@@ -35,7 +35,7 @@ c
       Qr=Q(nq)
       iql=1
       iqr=nq
-      if((y-Ql)*(y-Qr).gt.0.) then
+      if(.not.(y-Ql)*(y-Qr).le.0.) then
 c Value is outside the range.
          x=0
          return
@@ -60,23 +60,6 @@ c         write(*,*)'invtfn error',x,nq,y,q(1),q(nq),
 c     $     ql,qr,iql,iqr,qx,iqx
 c         write(*,*)'q=',q
 c      endif
-      end
-c*********************************************************************
-      subroutine average3d(q,qave,ifull,iuds,istepave)
-c 3d only version of averaging. Obsolete.
-      integer ifull(3),iuds(3)
-      real q(ifull(1),ifull(2),ifull(3))
-      real qave(ifull(1),ifull(2),ifull(3))
-
-      do k=1,iuds(3)
-         do j=1,iuds(2)
-            do i=1,iuds(1)
-               qave(i,j,k)=((istepave-1.)*qave(i,j,k)+q(i,j,k))
-     $              /float(istepave)
-            enddo
-         enddo
-      enddo
-
       end
 c*********************************************************************
 c General dimensional version of running average. See mditerate.f

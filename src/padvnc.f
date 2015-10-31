@@ -20,10 +20,10 @@ c Meshcom provides ixnp, xn, the mesh spacings. (+ndims)
       include 'meshcom.f'
       include 'myidcom.f'
       include '3dcom.f'
+      include 'ptchcom.f'
       external linregion
       logical linregion
       include 'plascom.f'
-      include 'ptchcom.f'
 c Collision settings.
       include 'colncom.f'
 
@@ -557,7 +557,7 @@ c points that compensate for the analytic field of getadfield.
 c Also any temperature-gradient and density-gradient factors.
 
       logical lsliceplot
-c Defines iptch_copy uci, rhoc and dimensions.
+c Defines iptch_mask uci, rhoc and dimensions.
 c ndims must be same as ndimsp.
 c To do the slice plot we need this it include grid decl.
       include 'ndimsdecl.f'
@@ -569,14 +569,14 @@ c Here a segfault was caused if na_m2 was used.
       real zp(na_m,na_m)
       integer ipoint
       external ucrhoset
-      iptch_copy=irptch
+      iptch_mask=irptch
       gtt_copy=gtt
       gnt_copy=gnt
-c      write(*,*)'Point charges included. Mask:',iptch_copy,gtt
+c      write(*,*)'Point charges included. Mask:',iptch_mask,gtt
       ipoint=0
       ifix=1
       call mditerarg(ucrhoset,ndims,ifull,iuds,ipoint)
-c     $     ,uci,rhoci,iptch_copy,Teci,boltzwt)
+c     $     ,uci,rhoci,iptch_mask,Teci,boltzwt)
       if(lsliceplot)then
          call sliceGweb(ifull,iuds,uci,na_m,zp,
      $        ixnp,xn,ifix,'u!dc!d ptch',dum,dum)
@@ -602,6 +602,7 @@ c For debyelen and Tempr gradient.
       include 'plascom.f'
 c For deciding the region via iboolpart for setting boltzwt.
       include '3dcom.f'
+      include 'partcom.f'
       include 'ptchcom.f'
       logical linregion
       external linregion
@@ -618,7 +619,7 @@ c Get grid point position, and irptch.
          xp(id)=xn(ixnp(id)+1+indi(id))
       enddo
       iregion=insideall(ndims,xp)
-      irptch=IAND(iregion,iptch_copy)
+      irptch=IAND(iregion,iptch_mask)
 c Set boltzwt depending on whether we are in the region or not.
       if(linregion(ibool_part,ndims,xp))then
          boltzwti(ipoint+1)=1.
@@ -1057,8 +1058,6 @@ c If they are outside the mesh or particle region, drop them.
 c Common data:
       include 'ndimsdecl.f'
       include 'partcom.f'
-c      include 'myidcom.f'
-      include '3dcom.f'
       include 'meshcom.f'
 c Local dummy variables for partlocate.
       real xfrac(ndims)

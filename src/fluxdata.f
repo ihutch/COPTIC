@@ -1047,6 +1047,9 @@ c Initialize the name before entry. Very Important!
 c File name:
       character*(*) name
       include 'ndimsdecl.f'
+c Point charge info:
+      include 'griddecl.f'
+      include 'ptchcom.f'
 c Common data containing the BC-object geometric information
       include '3dcom.f'
 c Particle common data
@@ -1127,7 +1130,11 @@ c On entry ierr .ne.0 indicates write informational messages.
 c On exit  ierr .ne.0 indicates error.
       character*(*) name
       include 'ndimsdecl.f'
+c Point charge info:
+      include 'griddecl.f'
+      include 'ptchcom.f'
       include '3dcom.f'
+      include 'partcom.f'
       include 'plascom.f'
       include 'sectcom.f'
       include 'colncom.f'
@@ -1195,7 +1202,6 @@ c Object data:
 c      write(*,*)'Object data for',ngeomobj,' objects:'
 c      write(*,*)((obj_geom(j,k),j=1,ndlen),nf_map(k),k=1,ngeomobj)
 c      write(*,*)((obj_geom(j,k),j=1,8),nf_map(k),k=1,ngeomobj)
-c      write(*,*)ibool_part,ifield_mask,iptch_mask,lboundp,rjscheme
 c Intersection data:
       read(23)sc_ipt
       read(23)(((x_sc(j,i,k),j=1,ndims),i=1,2),iob_sc(k),

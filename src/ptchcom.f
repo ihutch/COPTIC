@@ -10,9 +10,9 @@ c Single-index access version:
       real Teci(na_i*na_j*na_k)
       real boltzamp,boltzsign,boltzwti(na_i*na_j*na_k)
       equivalence (uc,uci),(rhoc,rhoci),(Tec,Teci),(boltzwt,boltzwti)
-c Copy of iptch_mask tells if we need to compensate.
-      integer iptch_copy
+c Mask defining objects that are of special point-charge type.
+      integer iptch_mask
 c Copy of gtt if we need variable Te. Get from plascom?
       real gtt_copy,gnt_copy
-      common /ptchcom/iptch_copy,gtt_copy,gnt_copy,uc,rhoc,Tec
+      common /ptchcom/iptch_mask,gtt_copy,gnt_copy,uc,rhoc,Tec
      $     ,boltzamp,boltzsign,boltzwt

@@ -79,14 +79,8 @@ c-------------------------------------------------------------------
 c Mapping from obj_geom object number to nf_flux object (many->fewer)
 c Zero indicates no flux tracking for this object.
       integer nf_map(ngeomobjmax)
-c Ibool defining region of particles.
-      integer ibtotal_part
-      parameter (ibtotal_part=100)
-      integer ibool_part(ibtotal_part)
 c Mask defining the objects (bits) relevant to field regions.
       integer ifield_mask
-c Mask defining objects that are of special point-charge type.
-      integer iptch_mask
 c Has the particle region got an enclosed region
       logical lboundp
 c What is the reinjection scheme?
@@ -97,8 +91,7 @@ c Number of subtractive objects for this object:
 c Object number and sign of objects to subtract.
       integer ormv(ngeomobjmax,ngeomobjmax)
 c
-      common /objgeomcom/ngeomobj,obj_geom,nf_map
-     $     ,ibool_part,ifield_mask,iptch_mask,lboundp
+      common /objgeomcom/ngeomobj,obj_geom,nf_map,ifield_mask,lboundp
      $     ,normv,ormv,isrnpair,rjscheme
 c-------------------------------------------------------------------
 c-------------------------------------------------------------------

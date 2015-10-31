@@ -5,16 +5,17 @@ c data has already been calculated by routines here.
 c***********************************************************************
 c Initializing particles.
       subroutine pinit(sprior)
+      implicit none
+      real sprior
 c Common data:
       include 'ndimsdecl.f'
       include 'partcom.f'
       include 'plascom.f'
       include 'myidcom.f'
-      include '3dcom.f'
       include 'meshcom.f'
       include 'colncom.f'
       include 'cdistcom.f'
-      external linregion,ranlenposition
+      external linregion,ranlenposition,gasdev
       logical linregion
 c Local dummy variables for partlocate.
       real xfrac(ndims)
@@ -25,6 +26,10 @@ c particles if not fixed:
       real slotsurplus
       real thetamax
       parameter (thetamax=1.)
+c Local variables to satisfy implicit none
+      integer i,i1,islotmax,ispecies,j,k,k1,k2,ko,nclim,nonzero,ntries
+      integer iregion
+      real theta,tisq,vzave,ranlenposition,gasdev
 c-----------------------------------------------------------------
       npassthrough=0
 c A special orbit. Preserved only for ispecies=1.
