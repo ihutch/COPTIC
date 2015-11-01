@@ -647,9 +647,12 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
      $     ,' ABC Robin coefs. Cxyz gradients.'
       write(*,303)' -bp<i>  toggle bndry periodicity [',LPF
      $     ,'    in dimension <i>.'
-      write(*,305)' -pp<i,j,k>  partcl bcs/periodcty [',ipartperiod 
+      write(*,305)' -pp<i,j,k>  partcl bcs/periodcty [',ipartperiod
+     $     ,'    Use sum of:'
       write(*,*)'     0 open; 1 lower absorbing; 2 upper absorbing;'
      $     ,' 3 both absorb; 4 periodic'
+      write(*,*)'     +Domain end between nodes (upper byte)',
+     $     ' 64:lower, 128:upper, 192:both.'
       write(*,305)' -id<i,j,k> Set MPI block dims    [',idims
       write(*,302)' -ih<P>[..] Set hole psi[u,l,eta] [',holepsi,holeum
      $     ,holelen,holeeta

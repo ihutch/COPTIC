@@ -49,8 +49,17 @@ c Half-cell-position mesh ends (but id+1 mesh is not yet set).
             xmeshend(id)=(xn(ixnp(id)+iuds(id))
      $           +xn(ixnp(id)+iuds(id)-1))*.5
          else
+c Whole-cell-position ends
             xmeshstart(id)=xmeshpos(id,1)
             xmeshend(id)=xmeshpos(id,iblk)
+c Unless higher byte settings used.
+            if(ipartperiod(id)/64-(ipartperiod(id)/128)*2.eq.1)then
+               xmeshstart(id)=(xn(ixnp(id)+1)+xn(ixnp(id)+2))*.5
+            endif
+            if(ipartperiod(id)/128-(ipartperiod(id)/256)*2.eq.1)then
+               xmeshend(id)=(xn(ixnp(id)+iuds(id))
+     $              +xn(ixnp(id)+iuds(id)-1))*.5
+            endif
          endif
          rsi=0.5*abs(xmeshend(id)-xmeshstart(id))
          if(rsi.gt.rs)then 

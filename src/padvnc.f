@@ -667,8 +667,7 @@ c      write(*,*)'ucrhoset return',irptch
 
 c***********************************************************************
       subroutine partlocate(xi,ixp,xfrac,iregion,linmesh)
-c Locate the particle xi
-c in the mesh (from common meshcom).
+c Locate the particle xi in the mesh (from common meshcom).
 c Return the integer cell-base coordinates in ixp(ndims)
 c Return the fractions of cell width at which located in xfrac(ndims)
 c Return the region identifier in iregion.
@@ -701,19 +700,20 @@ c mesh boundary than half a cell, so as to use periodicity consistent
 c with the potential periodicity. chargetomesh does additional sums 
 c to communicate the extra particle weight periodically.
             fisz=float(isz)-0.5
-            if(.not.(ix.ne.0.and.xm.gt.1.5.and.xm.lt.fisz))then
+            fist=float(1)+0.5
+            if(.not.(ix.ne.0.and.xm.gt.fist.and.xm.lt.fisz))then
 c Move the particle by one grid length, to the periodic position. Use
 c tiny bit less so that if it starts exactly on boundary, it does not
 c end on it. The length is between end mid-cell positions.
                xgridlen=(xn(ixnp(id+1))+xn(ixnp(id+1)-1)
      $              -(xn(ixnp(id)+1)+xn(ixnp(id)+2)))*0.499999
-               if(xm.le.1.5)then
+               if(xm.le.fist)then
                   xi(id)=xi(id)+xgridlen
-               elseif(xm.ge.isz-0.5)then
+               elseif(xm.ge.fisz)then
                   xi(id)=xi(id)-xgridlen
                endif
                ix=interp(xn(ioff+1),isz,xi(id),xm)
-               if(.not.(xm.gt.1.5.and.xm.lt.fisz))then
+               if(.not.(xm.gt.fist.and.xm.lt.fisz))then
 c It's conceivable that a particle might move more than one period,
 c in which case correction won't work. Don't repeat. Instead, just
 c give up and call it lost but announce the problem. 
@@ -728,9 +728,15 @@ c If every dimension is periodic, increment nrein. (Otherwise not)
                endif
             endif
          else
+            fist=1.
+            if(ipartperiod(id)/64-(ipartperiod(id)/128)*2.eq.1)
+     $           fist=fist+0.5
+            fisz=float(isz)
+            if(ipartperiod(id)/128-(ipartperiod(id)/256)*2.eq.1)
+     $           fisz=fisz-0.5
 c This rather complete test is necessary and costs perhaps 3% extra time.
 c Because we must not allow exactly on boundaries.
-            if(.not.(ix.ne.0.and.xm.gt.1..and.xm.lt.float(isz)))then
+            if(.not.(ix.ne.0.and.xm.gt.fist.and.xm.lt.fisz))then
                linmesh=.false.
             endif
          endif

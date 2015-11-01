@@ -492,6 +492,7 @@ c mdims argument is unused here because we use ndimsdecl to give ndims.
       integer indi(ndims),iused(ndims)
       real cij(*)
       include 'objcom.f'
+      include 'partcom.f'
 c Silence unused warnings
       icb=iLs
 
@@ -502,9 +503,24 @@ c Otherwise steps of iused(1)-1 or 1 on first or last (of dim 1).
       inc=1
 c Initialize the cij because cijroutine now does not do so for boundary.
       cij(icij)=0
+c Tests to see if we do the pointer setting (revert by uncommenting):
+c      goto 102
+      do id=1,ndims
+         if(ipartperiod(id)/64-(ipartperiod(id)/128)*2.ne.1
+     $        .and.ipartperiod(id).ne.4)then
+            if(indi(id).eq.0)goto 102
+         endif
+         if(ipartperiod(id)/128-(ipartperiod(id)/256)*2.ne.1
+     $        .and.ipartperiod(id).ne.4)then
+            if(indi(id).eq.iused(id)-1)goto 102
+         endif
+      enddo
+      goto 103
+ 102  continue
 c Start object data for this point. 
       call objstart(cij(icij),ist,ipoint)
       idob_cij(iregion_cij,int(cij(icij)))=-1
+ 103   continue
 c Calculate the increment:
       do n=ndims,2,-1
          if(indi(n).eq.0)then

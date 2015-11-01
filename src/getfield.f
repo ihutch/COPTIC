@@ -221,8 +221,6 @@ c     $           ,idf,ii,f
                      weights(ii)=(1.+xfidf)
 c                     write(*,*)ii,xfidf,' weights=',weights(ii)
                   endif
-c See above for explanation of alternatives.
-c               elseif(icptm.ne.0.and.idob_cij(iregion_cij,icptm)
                endif
                if((iincm.ge.0).and.(icptm.ne.0).and.
      $              (idob_cij(iregion_cij,icptm).eq.iregion))then
@@ -469,6 +467,7 @@ c Get that object pointer.
             if(ico.ne.0)then
 c This is an interface point
                if(idob_cij(iregion_cij,ico).ne.iregion)then
+c               if(.false.)then
 c This vertex is outside the region. Flag it missing
 c               write(*,'(i4,$)')idob_cij(iregion_cij,ico)
                   imissing=imissing+1

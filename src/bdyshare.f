@@ -95,7 +95,7 @@ c Silence warnings:
       if(LF)then
 c Currently this only works for face rectangular boundary conditions.
          if(.not.LPF(mod(idn-1,ndims)+1).or.idone(2).eq.1)then
-c Only if we are not on a periodic face:
+c I don't really understand that test. idone(2) seems to contradict LPF.
             if(LCF(idn))then
 c Variable C. Calculate:
                C=C0F(idn)
@@ -110,6 +110,7 @@ c Simple short cut.
 c Assume A=1.
                u(ipoint+1)=-C
             else
+c This is where periodic conditions get set using ioffset:
                u(ipoint+1)=-(C+AmBF(idn)*u(ipoint+1-ioffset))
      $              /ApBF(idn)
             endif

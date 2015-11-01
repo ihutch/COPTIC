@@ -916,7 +916,8 @@ c Based upon the ipartperiod settings.
       ctot=0.
       do i=1,ndims
 c         if(myid.eq.0)write(*,*)ipartperiod(i),cdistflux(i)
-         if(ipartperiod(i).ge.3)cdistfluxs(i,ispecies)=0.
+         if(ipartperiod(i).eq.3.or.ipartperiod(i).eq.4)
+     $        cdistfluxs(i,ispecies)=0.
 c Normalize the cdistflux and cdistcum to face area.
          cdistfluxs(i,ispecies)=cdistfluxs(i,ispecies)*fcarea(i)
 c Quiet warnings by explict recognition that cdistfluxs is real*8.

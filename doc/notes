@@ -14068,3 +14068,74 @@ Moved ibool_part. But it needed several additional adjustments where ibool_part
 appeared. So this was not a big step forward. (More like backward).
 Move iptch_mask into ptchcom.f replacing iptch_copy everywhere. Still doesn't
 much help. Disentangling this seems too difficult.
+
+31 Oct 15
+
+Exploring periodic particles without cijedge. A standard run has differences.
+A one-particle run does not. I conclude that it is only when there are 
+particles near the edge that the cijedge not being called makes a difference.
+
+I find that the difference arises from interpolations.f gradlocalregion
+and can be prevented by adding to this test:
+      if(icp0.eq.0.or.idob_cij(iregion_cij,icp0).eq.-1)then
+I believe this test is triggered when in the edge cell but only for the
+electric field in the tangential direction.
+
+Looking back in notes, I see 4 Dec 13 that I concluded that there was no
+significant cost from edge nodes having their pointers set. I now believe
+that conclusion was false because it neglected the tangential field 
+multilinear interpolation which will try to access excluded fields. 
+Indeed the multilinear interpolation of tangential fields appears to be
+incorrect for periodic cases! (Probably no big deal; certainly no error
+for n=3 dimension compaction.) 
+
+It is only periodic particles that causes the domain shortening. Also
+diagperiod exchanges particle and diagnostic depositions are based on
+testing particle periodicity ipartperiod.
+
+There's something strange in bdyshare with periodicity with idone(2).
+
+We need to generalize this flag definition.
+c Flags for which dimensions are periodic or absorbing for particles.
+c 0 open, 1 lower absorbs, 2 upper absorbs, 3 both absorb, 4 periodic
+
+A reasonable approach would be to designate which directions have
+between-node boundaries by the second byte via values
+c 0 neither, 1 lower between-node, 2 upper between-node, 3 both between
+             bit 8                bit 9                bits 8+9
+	     64	 		  128 		       192
+However, periodic requires both already. Also periodic requires a different
+charge transfer from non-periodic. 
+
+Implemented setting. Implemented xmeshstart end adjustment.
+Implemented partlocate adjustment. Implemented ghost diagnostic transfer.
+Implemented cijroutine selective edge setting. Not set for periodic
+or for half-node boundaries.
+
+I believe I am now in a position to test the effects of omitting or not
+omitting the cijedge setting on (e.g.) periodic boundaries. There are
+some changes to phi for periodic conditions. But that's what I showed
+already. I think they are the tangential components.
+
+A 3-grid gives corrupt gradlocalregion. Actually the problems seem to 
+be present even without periodic particles. Seems the sphere is
+a problem. Remove it.
+
+Test of 32x32x3 with periodic in small direction. A small (~10%) speed
+up from removing the cijedge setting from the periodic direction but
+not much. There's an improvement in correctness for periodic dimensions.
+
+New
+real    0m22.678s
+user    0m22.630s
+Old
+real    0m24.596s
+user    0m24.516s
+
+The new version fails geometry test on baresheath and unform4.
+Skipping the cijedge adjustment gives agreement on all cases. 
+So the differences are just arising from the correction of periodic
+particle treatment by the new code.
+
+make regeom
+

@@ -429,6 +429,7 @@ c xn is the position array for each dimension arranged linearly.
 c Pointer to object data,
       icp0=int(cij(1))
 c      jpm=0
+c      if(icp0.eq.0.or.idob_cij(iregion_cij,icp0).eq.-1)then
       if(icp0.eq.0)then
 c Short-cut 1: an ordinary point don't call the full routine
 c Distance forward and backward along idf-dimension to adjacent
@@ -476,8 +477,6 @@ c     $        ,icp0,ix,xm
             if(xm.lt.0.)jpm=-1
             ix=ix+jpm
             icp1=int(cij(1+(ix-1)*icinc))
-c Old and seemingly incorrect version:
-c            if(icp1.eq.0 .or. idob_cij(iregion_cij,icp1).ne.iregion)then
             if(icp1.ne.0.and.idob_cij(iregion_cij,icp1).ne.iregion)then
                ix=99
                uprime=0.

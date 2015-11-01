@@ -346,7 +346,7 @@ c         if(ninjcomp.ne.0)nrein=ninjcomp
 c It introduces inaccuracy because partial injections are ignored.
 c The new version rhoinfcalc does a more accurate calculation but needs
          pinjcompa(1)=bdtnow*pinjcomp0
-
+c Transfer deposits periodically or from ghost cells.
          call diagperiod(psum,ifull,iuds,iLs,1)
          call psumreduce(psum,nrein,phirein,ndims,ifull,iuds,iLs)
 c Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.

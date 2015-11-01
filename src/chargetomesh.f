@@ -133,7 +133,7 @@ c Other-1=Other-1 + Face
 c********************************************************************
       subroutine diagperiod(diagsum,ifull,iaux,iLs,ndiags)
 c If there are periodic particles in any dimension, do the periodic
-c exchange sum.
+c deposit transfer. Also any half-node boundary transfers.
       real diagsum(*)
       include 'ndimsdecl.f'
       integer ifull(ndims),iaux(ndims)
@@ -153,7 +153,7 @@ c call actually initializes the iview and indi.
 c            write(*,*)'Diagperiod',id
 c Set view to entire array (Offsets indi [0:iaux(id)-1]).
             icomplete=mditerator(ndims,iview,indi,4,iaux)
-c Use the general iterator to sum periodically.
+c Use the general iterator to transfer contributions periodically.
 c Slice dimension id:
             iview(iend,id)=0
  101        ii=indexcontract(ndims,ifull,indi)
@@ -172,6 +172,37 @@ c Diagnostic particles must be transferred, not just added.
                diagsum(ib+kshift)=0.
             enddo
             if(mditerator(ndims,iview,indi,0,iaux).eq.0)goto 101
+         else
+            if(ipartperiod(id)/64-(ipartperiod(id)/128)*2.eq.1)then
+c Lower half-node position boundary. Transfer bottom to bottom+1.
+               icomplete=mditerator(ndims,iview,indi,4,iaux)
+               iview(iend,id)=0
+ 102           ii=indexcontract(ndims,ifull,indi)
+               ib=1+ii
+               ib1=1+iLs(id)+ii
+               do k=0,ndiags-1
+                  kshift=k*iLs(ndims+1)
+                  diagsum(ib1+kshift)= diagsum(ib1+kshift)
+     $                 + diagsum(ib+kshift)
+                  diagsum(ib+kshift)=0.
+               enddo
+               if(mditerator(ndims,iview,indi,0,iaux).eq.0)goto 102
+            endif
+            if(ipartperiod(id)/128-(ipartperiod(id)/256)*2.eq.1)then
+c Upper half-node position boundary. Transfer top to top-1.
+               icomplete=mditerator(ndims,iview,indi,4,iaux)
+               iview(iend,id)=0
+ 103           ii=indexcontract(ndims,ifull,indi)
+               it=1+(iaux(id)-1)*iLs(id)+ii
+               it1=1+(iaux(id)-2)*iLs(id)+ii
+               do k=0,ndiags-1
+                  kshift=k*iLs(ndims+1)
+                  diagsum(it1+kshift)= diagsum(it1+kshift)
+     $                 + diagsum(it+kshift)
+                  diagsum(it+kshift)=0.
+               enddo
+               if(mditerator(ndims,iview,indi,0,iaux).eq.0)goto 103
+            endif
          endif
       enddo
       end
