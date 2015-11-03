@@ -693,7 +693,28 @@ c Offset to start of dimension-id-position array.
 c xn is the position array for each dimension arranged linearly.
 c Find the index of xprime in the array xn:
          isz=ixnp(id+1)-ioff
-         ix=interp(xn(ioff+1),isz,xi(id),xm)
+         
+c An inverse lookup table for non-uniform. --------------------
+         ipi=int((xi(id)-xmeshstart(id))/(xmeshend(id)-xmeshstart(id))
+     $        *(ipilen-1.00001)+1)
+         if(ipi.lt.1)then
+c Outside mesh
+            ix=0
+            xm=0
+         elseif(ipi.gt.ipilen)then
+            ix=0
+            xm=isz+1
+         else
+            ix=iposindex(ipi,id)
+            if(iposindex(ipi+1,id).eq.ix)then
+               xm=(xi(id)-xn(ioff+ix))/(xn(ioff+ix+1)-xn(ioff+ix))+ix
+            else
+               ix=interp(xn(ioff+1),isz,xi(id),xm)
+            endif
+         endif
+c --------------------------------------------------------------
+c Interp costs here were 18% of particle intensive runs.
+c         ix=interp(xn(ioff+1),isz,xi(id),xm)
          if(ipartperiod(id).eq.4)then
 c In periodic directions, we do not allow particles to be closer to the
 c mesh boundary than half a cell, so as to use periodicity consistent

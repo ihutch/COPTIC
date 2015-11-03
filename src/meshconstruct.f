@@ -1,11 +1,11 @@
 c**********************************************************************
-c Version constructs a mesh from xmstart(id) to xmend(id)
 c Convert from previously set imeshstep, xmeshpos to ixnp.
 c There must be at least 2 non-zero and monotonically increasing
 c values starting imeshstep.
 c Return values of iuds(ndims) per constructed mesh.
 c Also return the value of rs equal to half the largest mesh box side
 c length.
+c Version constructs xmstart(id) to xmend(id) according to particle domain.
       subroutine meshconstruct(mdims,iuds,ifull,ipartperiod,rs)
       integer iuds(mdims),ifull(mdims),ipartperiod(mdims)
       real rs
@@ -66,10 +66,24 @@ c Unless higher byte settings used.
             rs=rsi
          endif
       enddo
-c      write(*,*)'Meshconstructed',xmeshstart,xmeshend
       ixnp(ndims+1)=iof
+c      write(*,*)'Meshconstructed',xmeshstart,xmeshend
 c      write(*,*)(ixnp(k),k=1,ndims+1)
 c      write(*,*)(xn(k),k=1,iof)
+      do id=1,ndims
+c Now construct the interpolation index arrays from xmeshstart to xmeshend
+         ioff=ixnp(id)
+         do ipi=1,ipilen
+            y=xmeshstart(id)+(ipi-1.)/(ipilen-.99999)
+     $           *(xmeshend(id)-xmeshstart(id))
+c Recover with ipi=(y-xmeshstart)/(xmeshend-xmeshstart)*(ipilen-1.00001)+1
+            ix=interp(xn(ioff+1),ixnp(id+1)-ioff,y,x)
+            if(ix.le.0)write(*,*)'Meshconstruct interp error',y,x,ix
+            iposindex(ipi,id)=ix
+         enddo
+      enddo
+c      write(*,'(20i3)')iposindex
+
       end
 c**************************************************************
       subroutine meshshift()

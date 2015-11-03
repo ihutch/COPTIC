@@ -14139,3 +14139,72 @@ particle treatment by the new code.
 
 make regeom
 
+Need to reintroduce TAGS:
+etags * ../analysis/*
+Then M-.
+
+3 Nov 2015
+
+New shortcut for getfield, bypassing getlocalgrad.
+-s100 -ri1000
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls  ms/call  ms/call  name    
+ 30.81     23.32    23.32 306886434     0.00     0.00  getfield_
+ 18.59     37.39    14.07 310015443     0.00     0.00  interp_
+  7.20     42.83     5.45 407015274     0.00     0.00  inside_geom_
+  7.02     48.15     5.32 308345599     0.00     0.00  gradlocalregion_
+  5.89     52.61     4.46      100    44.60   718.20  padvnc_
+  5.87     57.05     4.45 100616156     0.00     0.00  spheresect_
+
+Total 75.67
+
+Old version for same test:
+ 24.68     20.83    20.83 1228525933     0.00     0.00  gradlocalregion_
+ 19.72     37.47    16.64 306886434     0.00     0.00  getfield_
+ 16.03     50.99    13.53 310015443     0.00     0.00  interp_
+  6.47     56.45     5.46 407015274     0.00     0.00  inside_geom_
+  5.76     61.31     4.86      100    48.60   806.02  padvnc_
+  5.27     65.76     4.45 98397734     0.00     0.00  achargetomesh_
+  5.07     70.04     4.28 100616156     0.00     0.00  spheresect_
+  3.83     73.27     3.24 103215478     0.00     0.00  partlocate_
+
+Total 84.37
+The shortcut does save over 10% of total. (On a uniform grid).
+It also saves a lot more on the getfield total 23.32+5.32 vs 37.47
+About 9 seconds of 37. => 0.76. It is worth it.
+
+Also fiddled with the iinc calculation but found no improvement.
+
+Unfortunately, make geometry is broken by the shortcut. It was rounding.
+Rewrote in same form as original. Unbreaks it. Ok now.
+
+The routine interp uses 18% of the time. Almost all of it is from partlocate.
+This could be substantially reduced if a more efficient location were used.
+One possibility is to have an inverse lookup table based upon the fractional
+value of position as index returning the corresponding grid index. 
+It would be natural to put this in meshcom. If the lookup table is fine
+enough, then looking up the p-index below and above will return the same
+value and no bisection will be needed. Then interp could just be a fall-back
+hardly ever called. 
+
+Implemented a reverse lookup scheme:
+
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls  ms/call  ms/call  name    
+ 36.36     24.68    24.68 306886434     0.00     0.00  getfield_
+  9.17     30.91     6.23 103215478     0.00     0.00  partlocate_
+  7.69     36.13     5.22 407015274     0.00     0.00  inside_geom_
+  7.60     41.29     5.16 308345599     0.00     0.00  gradlocalregion_
+  7.07     46.08     4.80 98397734     0.00     0.00  achargetomesh_
+  6.73     50.65     4.57 100616156     0.00     0.00  spheresect_
+  6.34     54.95     4.30      100    43.00   640.15  padvnc_
+  3.44     57.28     2.34 46927877     0.00     0.00  interp_
+  2.64     59.07     1.79    11307     0.16     0.18  sorrelaxgen_
+  1.68     60.21     1.14 67356357     0.00     0.00  gradinterp_
+  1.62     61.31     1.10 99821835     0.00     0.00  moveparticle_
+
+Total 67.87
+
+Interp costs are way down. Partlocate self costs are up a bit, since
+it now does the work previously in interp. But it's a significant win.
+make geometry is fine.

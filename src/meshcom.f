@@ -17,6 +17,9 @@ c ixnp(id)+1 is the start of each dimension vector.
 c ixnp(id+1)-ixnp(id) is the length of dimension id.
 c Last element points to the last element of the last dimension, which
 c is equal to the total length used of xn.
-      integer ixnp(ndimsmax+1)
-      real xmeshstart(ndimsmax),xmeshend(ndimsmax)
-      common /sormesh/ixnp,xn,xmeshstart,xmeshend
+      integer ixnp(ndims+1)
+      real xmeshstart(ndims),xmeshend(ndims)
+      integer ipilen
+      parameter (ipilen=200)
+      integer iposindex(ipilen,ndims)
+      common /sormesh/ixnp,xn,xmeshstart,xmeshend,iposindex

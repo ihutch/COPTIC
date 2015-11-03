@@ -57,7 +57,7 @@ c We DONT include sormesh, because xn is passed
       integer iflags(ipwr2nd)
       real weights(ipwr2nd)
       real f(ipwr2nd),d(ndims-1)
-      integer ii1,ii2
+      integer ii1
 
 c Allow the passing of the real position, not just fraction.
 c This is the case if ix>=1. For fractions, ix=0. 
@@ -100,25 +100,36 @@ c Attempts at speeding up don't do much.
       do ii=1,2**(ndims-1)
          ii1=ii-1
          iinc=iu0
-c This is likely to be most costly. We are just calculating iinc.
+c The cost of calculating iinc is non-negligible 
+c but this can't be improved upon.
          do ik=1,ndims-1
-c This break saves unnecessary iterations, about 15%.
-            if(ii1.eq.0)goto 41
-            ii2=ii1/2
-            if(ii1-2*ii2.ne.0)iinc=iinc+iuinc(idn(ik))
-            ii1=ii2
+            if(btest(ii1,ik-1))iinc=iinc+iuinc(idn(ik))
+c            if(mod(ii1/ik,2).ne.0)iinc=iinc+iuinc(idn(ik))
          enddo
- 41      continue
-c Suppose we know there's only 3 dimensions total we could replace with
-c         iinc=iinc+ipa(ii,1)*iuinc(idn(1))+ipa(ii,2)*iuinc(idn(2))
-c Which saves about 25% of the original time this routine. 
 c Now iinc is the index of u including the offset from the chosen origin 
 c to address the multilinear position under consideration. 
 c Pass arrays with local origin.
-         call gradlocalregion(
-     $        cij(1+ic1*iinc),u(1+iinc)
-     $        ,idf,ic1*iuinc(idf),iuinc(idf),xn(ixn0)
-     $        ,xfidf,f(ii),iregion,ix,xm)
+         if(
+     $        cij(1+ic1*iinc).eq.0
+     $        .and.abs((xn(ixn0+1)-xn(ixn0))-(xn(ixn0)-xn(ixn0-1)))
+     $              .lt.1.e-6*(xn(ixn0)-xn(ixn0-1)))then
+c This is a shortcut to improve performance by not calling
+c gradlocalregion when it's not necessary. It saves 25% of the cost
+c of getfield on uniform mesh. >10% of total particle time.
+            dx1=xn(ixn0+1)-xn(ixn0)
+            dx0=xn(ixn0)-xn(ixn0-1)
+            u0=u(1+iinc)
+            up=u(1+iinc+iuinc(idf))
+            um=u(1+iinc-iuinc(idf))
+            f(ii)= ((2.*xfidf+1.) * (up-u0)
+     $           +(1.-2.*xfidf) * (u0-um))/(dx0+dx1)
+            ix=1
+         else
+            call gradlocalregion(
+     $           cij(1+ic1*iinc),u(1+iinc)
+     $           ,idf,ic1*iuinc(idf),iuinc(idf),xn(ixn0)
+     $           ,xfidf,f(ii),iregion,ix,xm)
+         endif
          if(.not.abs(f(ii)).lt.1.e20)then
             write(*,*)'Corrupt gradlocalregion'
      $           ,idf,ii,f
@@ -130,10 +141,6 @@ c Pass arrays with local origin.
             enddo
             write(*,*)'xff=',xff,iad
          endif
-c         do ki=1,4
-c            if(abs(f(ki)).gt.1.e20)write(*,*)'Corrupt f'
-c     $           ,idf,ii,f
-c         enddo
          if(ix.ge.99)then
 c            write(*,*)'Getfield no-value',ii,idf,iinc,xff
 c This gradient request has failed (probably) because the lattice leg 
