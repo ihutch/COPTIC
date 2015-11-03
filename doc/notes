@@ -14208,3 +14208,15 @@ Total 67.87
 Interp costs are way down. Partlocate self costs are up a bit, since
 it now does the work previously in interp. But it's a significant win.
 make geometry is fine.
+
+Things are about as tight now as it is reasonable to aim for. getfield
+is the main cost. The only other big win at hand is to drop the getfield
+for periodic dimensions of length <=3. This would save approximately
+1/3 of the getfield cost. That's about 8 seconds in 67. About 12%.
+That's not nearly as good as a true 2-D code because we are still
+doing multilinear interpolation in the uniform direction (unnecessarily).
+If the multilinear interpolation were corrected for reduced dimension
+that would take a factor of 2 off getfield in the other directions. 
+We'd then get 2/3 less effort in getfield and gradlocalregion which
+together are 30s of 67. So we'd save 20s off 67, but only for 2-D runs.
+

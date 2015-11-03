@@ -798,3 +798,8 @@ c*****************************************************************
 
       end
 c******************************************************************
+      integer function oicijfunc()
+      include 'ndimsdecl.f'
+      include 'objcom.f'
+      oicijfunc=oi_cij
+      end
