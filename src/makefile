@@ -87,8 +87,11 @@ endif
 export G77
 ##########################################################################
 #OPTIMIZE=-O3 -funroll-loops -finline-functions
-OPTIMIZE=-O3
-COMPILE-SWITCHES =-Wall $(OPTIMIZE) -I.
+# Cray compilers don't recognize -Wall and optimize by default
+ifneq ("$(G77)","ftn")
+	OPTIMIZE=-O3
+        COMPILE-SWITCHES =-Wall $(OPTIMIZE) -I.
+endif
 #COMPILE-SWITCHES =-Wall   $(OPTIMIZE) -I. -g -fbounds-check
 ##########################################################################
 # Decide on various compiler options based on compiler name.
