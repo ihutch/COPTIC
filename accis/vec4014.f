@@ -18,12 +18,14 @@ C********************************************************************
 c Switch to graphics mode Tek 4010/14.
       subroutine svga(scrxpix,scrypix,vmode,ncolor)
       integer scrxpix,scrypix,vmode,ncolor
+      common /com4014/i14no
 c Silence warnings
       scrxpix=4096
       scrypix=3120
       vmode=4014
       ncolor=15
       accis_nodisplay=1;
+      if(i14no.eq.1)return
 c Enter Tek mode. Modified for Xterm.
       write(*,'(1x,a)')char(27)//'[?38h'
       write(*,*)'                                 '
@@ -38,6 +40,8 @@ c Extra clear screen for non Kermit.
 C********************************************************************
       subroutine txtmode
       character resp
+      common /com4014/i14no
+      if(i14no.eq.1)return
 c Write padding, so we don't lose characters on switch back.
       read(*,'(a1)')resp
       write(*,*)char(24),'                                         '
@@ -49,6 +53,7 @@ c*********************************************************************
 c 4014 vector driver.
       subroutine vec(x,y,iud)
       integer x,y,iud
+      common /com4014/i14no
       include 'plotcom.h'
       integer oylst,oyhi,oxlow,oxhi
       integer ylow,yhi,xlow,xhi,i,xlst,ylst
@@ -107,7 +112,7 @@ c Start vector.
       endif
       if(i.ge.74.or.istart.eq.1)then
 c Finish draw and start again, if we are longer than a line or starting.
-         write(*,999)outchr(1:i)
+         if(i14no.eq.0)  write(*,999)outchr(1:i)
   999    format(1x,a)
          outchr(1:6)=char(29)//char(yhi)//char(ylst)
      $        //char(ylow)//char(xhi)//char(xlow)
@@ -146,6 +151,8 @@ c*********************************************************************
 C********************************************************************
       subroutine svganodisplay(scrxpix,scrypix,vmode,ncolor)
       integer scrxpix,scrypix,vmode,ncolor
+      common /com4014/i14no
+      i14no=1
       call svga(scrxpix,scrypix,vmode,ncolor)
       end
 c********************************************************************
@@ -183,6 +190,8 @@ c***********************************************************************
       integer a_gradblue(a_gradPixno)
       common /a_grad/a_gradPix,a_gradred,a_gradgreen,a_gradblue
      $     ,a_grad_inited
+      common /com4014/i14no
+      data i14no/0/
       data a_grad_inited/0/
       end
 c********** Tell the current rgb color ********************************

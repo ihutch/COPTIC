@@ -8,11 +8,16 @@ COPTIC=coptic
 COPTIC_ROOT=..
 #########################################################################
 # To get to compile with X, you might need to supplement this path.
-LIBPATH= -L$(COPTIC_ROOT)/accis/ -L/usr/lib/mesa -L/usr/lib/ -L/usr/lib64/
+LIBPATH= -L$(COPTIC_ROOT)/accis/ -L/usr/lib/mesa -L/usr/lib64/
 #########################################################################
 # Test whether X libraries are found. Null => yes.
- TESTGL:=$(shell ld  $(LIBPATH) -lGLU -lGL -o /dev/null none.o 2>&1 | grep GL)
- TESTX11:=$(shell ld $(LIBPATH) -lX11 -o /dev/null none.o 2>&1 | grep X)
+ifeq ("$(G77)","")
+ TESTGL:=$(shell ld  $(LIBPATH) -lGLU -lGL -o /dev/null 2>&1 | grep GL)
+ TESTX11:=$(shell ld $(LIBPATH) -lX11 -o /dev/null 2>&1 | grep X)
+else
+ TESTGL:=$(shell $(G77)  $(LIBPATH) -lGLU -lGL -o /dev/null 2>&1 | grep GL)
+ TESTX11:=$(shell $(G77) $(LIBPATH) -lX11 -o /dev/null 2>&1 | grep X)
+endif
 ##########################################################################
 # The reinjection choice:
 #######################
@@ -76,23 +81,16 @@ ifeq ("$(G77)","")
 # I don't know why this has to be overridden. 
 # But within this section of code G77 is not set without an override.
 	override G77=$(shell cat compiler 2>/dev/null)
-#	ifeq ("$(G77)","")
-# Default compiler to be used if a strange make target is used 
-# on the very first call. Not now set. Depend on compiler tests.
-# After that, compiler ought to be set on disk and used.
-#		override G77=mpif77
-#	endif
 endif
 # export this so it is inherited by sub-makes.
 export G77
 ##########################################################################
-#OPTIMIZE=-O3 -funroll-loops -finline-functions
 # Cray compilers don't recognize -Wall and optimize by default
 ifneq ("$(G77)","ftn")
 	OPTIMIZE=-O3
         COMPILE-SWITCHES =-Wall $(OPTIMIZE) -I.
-endif
 #COMPILE-SWITCHES =-Wall   $(OPTIMIZE) -I. -g -fbounds-check
+endif
 ##########################################################################
 # Decide on various compiler options based on compiler name.
 # -fno-bounds-check is not recognized reliably except by g77 and gfortran
@@ -107,8 +105,7 @@ ifeq ("$(findstring g77,$(G77))","")
     NGW=
   endif
  else
-  ifeq ("$(findstring gfortran,$(shell mpif77 -show))","")
-  else
+  ifneq ("$(findstring gfortran,$(shell mpif77 -show))","")
     NGW=-Wno-unused-dummy-argument
     NOBOUNDS=$(COMPILE-SWITCHES) -fno-bounds-check
 # Not now needed -Wno-conversion 

@@ -593,10 +593,10 @@ c character ch to define the end of line, omitting last iomit characters.
 c********************************************************************
       subroutine nlwrt(iunit)
 c Start a new line on the unit iunit.
-      integer sblen,iunit,la
+      integer sblen,iunit
       character*80 sbuf
       common /wbuf/sblen,sbuf
-      if(sblen.le.0) write(*,*)'sblen error:',sblen,la,sbuf,iunit
+      if(sblen.le.0) write(*,*)'sblen error:',sblen,sbuf,iunit
       write(iunit,*)sbuf(1:sblen-1)
       sblen=1
       end

@@ -269,7 +269,7 @@ c (but warnings may arise from the compiler).
       real fpa(0:nin-1),fma(0:nin-1),ua(0:nin-1)
 
       parameter (dui=.04,df=1.e-4,nppar=10000)
-      data iwarn/0/
+c      data iwarn/0/
 
       nmax=nppar
       sqpi=sqrt(3.1415926)
