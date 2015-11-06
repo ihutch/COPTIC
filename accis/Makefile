@@ -130,7 +130,8 @@ vecx.o : vecx.c $(MAKEFILE)
 	$(CC)  $(THREADING) -c vecx.c
 
 vecglx.o : vecglx.c
-	$(CC) -c $(WSWITCHES) $(THREADING) vecglx.c
+	$(CC) -c $(THREADING) vecglx.c
+#	$(CC) -c $(WSWITCHES) $(THREADING) vecglx.c
 
 # The file drwstr.f must be compiled with this switch which disables
 # for gnu compilers the interpretation of backslashes as escapes.
