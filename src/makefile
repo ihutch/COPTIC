@@ -7,17 +7,34 @@ COPTIC=coptic
 # The root directory of the distribution (for now)
 COPTIC_ROOT=..
 #########################################################################
+ifeq ("$(G77)","")
+# Configure compiler. Mostly one long continued bash script.
+# Preference order mpif77, ftn, g77, f77, gfortran
+ COMPILER:=\
+$(shell \
+ if which mpif77 >/dev/null; then echo -n "mpif77";else\
+  if which ftn >/dev/null ; then echo -n "ftn";else\
+    if which g77 >/dev/null ; then echo -n "g77";else\
+     if which f77 >/dev/null ; then echo -n "f77";else\
+      if which gfortran >/dev/null; then echo -n "gfortran";else\
+	echo "Unable to decide compiler. Specify via G77=..."; exit 1;\
+      fi;\
+     fi;\
+    fi;\
+  fi;\
+ fi;\
+)
+G77:=$(COMPILER)
+else
+COMPILER=$(G77)
+endif
+#########################################################################
 # To get to compile with X, you might need to supplement this path.
 LIBPATH= -L$(COPTIC_ROOT)/accis/ -L/usr/lib/mesa -L/usr/lib64/
-#########################################################################
+##########################################################################
 # Test whether X libraries are found. Null => yes.
-ifeq ("$(G77)","")
- TESTGL:=$(shell ld  $(LIBPATH) -lGLU -lGL -o /dev/null 2>&1 | grep GL)
- TESTX11:=$(shell ld $(LIBPATH) -lX11 -o /dev/null 2>&1 | grep X)
-else
- TESTGL:=$(shell $(G77)  $(LIBPATH) -lGLU -lGL -o /dev/null 2>&1 | grep GL)
- TESTX11:=$(shell $(G77) $(LIBPATH) -lX11 -o /dev/null 2>&1 | grep X)
-endif
+ TESTGL:=$(shell $(COMPILER)  $(LIBPATH) -lGLU -lGL -o /dev/null 2>&1 | grep GL)
+ TESTX11:=$(shell $(COMPILER) $(LIBPATH) -lX11 -o /dev/null 2>&1 | grep X)
 ##########################################################################
 # The reinjection choice:
 #######################
@@ -212,41 +229,8 @@ libcopsol.a : compiler makefile $(SOLOBJECTS) $(UTILITIES) $(SOLHEADERS)
 copticgeom.dat : $(GEOMFILE)
 	@if [ -f "$(GEOMFILE)" ] ; then ln -s -f $(GEOMFILE) copticgeom.dat ; fi
 
-#mpi checking target doesn't work well
-#mpicheck : $(COPTIC)
-#	mpiexec -n 2 ./$(COPTIC) >mpicheck.out
-#	@if [ -f mpicheck.prev ] ; then diff mpicheck.prev mpicheck.out; else echo "No prior file to compare"  ; fi
-#	mv mpicheck.out mpicheck.prev
-
-# Configure compiler. Mostly one long continued bash script.
-# Not forcing g77 use mpif77 -f77=g77 by default. 
-# Preference order mpif77, ftn, g77, f77, gfortran
 compiler : makefile
-	@echo Compiler tests. $${G77}
-	@\
- if which `echo $${G77} | sed -e "s/ .*$$//"` 2>/dev/null >/dev/null ; then\
-  GHERE="$${G77}";\
- else\
- if which mpif77 >/dev/null;\
- then echo -n "MPI system. "; GHERE=mpif77;\
- else echo -n "Not mpif77 System. ";\
-  if which ftn >/dev/null ;\
-  then echo -n "MPI ftn system. "; GHERE=ftn;\
-  else echo -n "Not ftn System. Probably not MPI at all. ";\
-   if which g77 >/dev/null ; then GHERE="g77";else\
-      if which f77 >/dev/null ; then GHERE="f77";else\
-       if which gfortran >/dev/null; then GHERE="gfortran"; else\
-             echo "$${G77} NO COMPILER found! Specify G77= ..." ; exit 1;\
-       fi\
-      fi\
-   fi;\
-  fi;\
- fi;\
- fi;\
- echo "Chosen G77="$${GHERE}; G77=$${GHERE}; echo $${G77} > compiler;
-# To obtain this information, one has to make a second time.
-	@echo "*********** Remaking COPTIC with chosen G77 ****************"
-	@export MAKEFLAGS=; export G77=$${GHERE}; $(MAKE) coptic
+	@echo $(G77) > compiler
 
 # Make the binary writes access='stream'. This has greater portability
 # between compilers but is g77 incompatible.
@@ -289,9 +273,8 @@ sorserial : libcopsol.a sortest.f compiler makefile $(ACCISLIB) $(SOLOBJECTS) no
 	$(G77) -o sorserial $(COMPILE-SWITCHES) $(PROFILING) sortest.f nonmpibbdy.o libcopsol.a $(LIBRARIES)
 
 $(ACCISLIB) : $(COPTIC_ROOT)/accis/*.f $(COPTIC_ROOT)/accis/*.c $(COPTIC_ROOT)/accis/*.h
-	@echo TESTGL=$(TESTGL).
-	@echo TESTX11=$(TESTX11).
-	@echo COMPILER=$(G77).
+	@echo "TESTGL=$(TESTGL). TESTX11=$(TESTX11)."
+	@echo "G77=$(G77). COMPILER=$(COMPILER)."
 	@echo "******************* Making accis with VECX=${VECX} **********"
 	make -C $(COPTIC_ROOT)/accis
 	@if [ -f $(COPTIC_ROOT)/accis/$(VECX) ] ; then echo ; else echo "Failed making accis with $(VECX). Might need to specify a different driver."; fi
@@ -329,11 +312,13 @@ regeom :
 
 # Use compiler (which depends on makefile) as a test of major updates
 GeometryTests : compiler
-	@if [ "`sed -n '/g77/p' compiler`" == "" ]; then\
+	@if [ "`sed -n '/g77/p' compiler`" == "" ];\
+then\
   echo ' ' >&2;\
   if [ "$(G77)" != "mpif77" ] ; then echo "Not doing geometry tests" >&2; exit 1;\
   else\
   echo 'Starting background tests. Recompile only when completed.' >&2;\
+  echo "compiler=$(COMPILER).";\
   make geometry;\
   fi;\
 else echo "Skipping background GeometryTests" >&2 ; fi &
