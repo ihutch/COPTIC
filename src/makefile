@@ -163,7 +163,7 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 # Ensure we are using a standard allocated array size.
 # Run coptic on the dat file. If it works and gives phi output, sum it.
 # Compare with the old cks file and see if it's the same.
-%.cks : %.dat $(COPTIC)	
+%.cks : %.dat $(COPTIC)
 	@./setdimens 64 64 128 >makegeom.log
 	@rm -f T*.phi
 	@./${COPTIC} $*.dat >>makegeom.log
@@ -324,8 +324,11 @@ regeom :
 GeometryTests : compiler
 	@if [ "`sed -n '/g77/p' compiler`" == "" ]; then\
   echo ' ' >&2;\
+  if [ "$(G77)" != "mpif77" ] ; then echo "Not doing geometry tests" >&2; exit 1;\
+  else\
   echo 'Starting background tests. Recompile only when completed.' >&2;\
   make geometry;\
+  fi;\
 else echo "Skipping background GeometryTests" >&2 ; fi &
 	@sleep 1
 	@echo
