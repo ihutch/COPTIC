@@ -50,7 +50,7 @@ c earlier fitrange.
       elseif(xtic.le.10.0001)then
          xtic=10.
       else
-         write(*,'('' Fitrange error NAN. Range:'',2g10.4)'),xmin,xmax
+         write(*,'('' Fitrange error NAN. Range:'',2g10.4)')xmin,xmax
          xtic=1.
          nxfac=0
          sfac=1.
@@ -109,7 +109,7 @@ c             lying outside the range (xmin,xmax).
       if(xtic.lt.1.)then
          write(*,'('' Fitrange error 1. xtic='',f16.7)')xtic
       elseif(.not.xtic.lt.10.0001)then
-         write(*,'('' Fitrange error NAN. Range:'',2g10.4)'),xmin,xmax
+         write(*,'('' Fitrange error NAN. Range:'',2g10.4)')xmin,xmax
          xtic=1.
          nxfac=0
          sfac=1.
