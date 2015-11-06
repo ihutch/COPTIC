@@ -126,11 +126,12 @@ FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate
 ifeq ("$(G77)","")
 # First time through with undefined compiler don't define MPIOBJECTS.
 else
+ MPIOBJECTS=reduce.o mpibbdy.o
  ifeq ("$(findstring mpi,"$(G77)")","")
-# non MPI compiler (e.g. gfortran) is used
+   ifeq ("$(findstring ftn,"$(G77)")","")
+# Assume Non-MPI compiler (e.g. gfortran) is used
        MPIOBJECTS=dummyreduce.o nonmpibbdy.o
- else
-       MPIOBJECTS=reduce.o mpibbdy.o
+   endif
  endif
 endif
 SPECIALOBJECTS=bdyroutine.o faddu.o getfield.o interpolations.o 
@@ -218,8 +219,8 @@ copticgeom.dat : $(GEOMFILE)
 #	mv mpicheck.out mpicheck.prev
 
 # Configure compiler. Mostly one long continued bash script.
-# Currently not forcing f77=g77 by default. 
-# Preference order mpif77, g77, f77, gfortran
+# Not forcing g77 use mpif77 -f77=g77 by default. 
+# Preference order mpif77, ftn, g77, f77, gfortran
 compiler : makefile
 	@echo Compiler tests. $${G77}
 	@\
@@ -227,15 +228,18 @@ compiler : makefile
   GHERE="$${G77}";\
  else\
  if which mpif77 >/dev/null;\
- then echo -n " MPI system. "; GHERE=mpif77;\
- else echo -n " Not MPI System. ";\
-  if which g77 >/dev/null ; then\
-     GHERE="g77";\
-  else if which f77 >/dev/null ; then GHERE="f77";else\
-          if which gfortran >/dev/null; then GHERE="gfortran"; else\
+ then echo -n "MPI system. "; GHERE=mpif77;\
+ else echo -n "Not mpif77 System. ";\
+  if which ftn >/dev/null ;\
+  then echo -n "MPI ftn system"; GHERE=ftn;\
+  else echo -n "Not ftn System. Probably not MPI at all. ";\
+   if which g77 >/dev/null ; then GHERE="g77";else\
+      if which f77 >/dev/null ; then GHERE="f77";else\
+       if which gfortran >/dev/null; then GHERE="gfortran"; else\
              echo "$${G77} NO COMPILER found! Specify G77= ..." ; exit 1;\
-          fi\
        fi\
+      fi\
+   fi;\
   fi;\
  fi;\
  fi;\
