@@ -231,7 +231,7 @@ compiler : makefile
  then echo -n "MPI system. "; GHERE=mpif77;\
  else echo -n "Not mpif77 System. ";\
   if which ftn >/dev/null ;\
-  then echo -n "MPI ftn system"; GHERE=ftn;\
+  then echo -n "MPI ftn system. "; GHERE=ftn;\
   else echo -n "Not ftn System. Probably not MPI at all. ";\
    if which g77 >/dev/null ; then GHERE="g77";else\
       if which f77 >/dev/null ; then GHERE="f77";else\
@@ -289,6 +289,9 @@ sorserial : libcopsol.a sortest.f compiler makefile $(ACCISLIB) $(SOLOBJECTS) no
 	$(G77) -o sorserial $(COMPILE-SWITCHES) $(PROFILING) sortest.f nonmpibbdy.o libcopsol.a $(LIBRARIES)
 
 $(ACCISLIB) : $(COPTIC_ROOT)/accis/*.f $(COPTIC_ROOT)/accis/*.c $(COPTIC_ROOT)/accis/*.h
+	@echo TESTGL=$(TESTGL).
+	@echo TESTX11=$(TESTX11).
+	@echo COMPILER=$(G77).
 	@echo "******************* Making accis with VECX=${VECX} **********"
 	make -C $(COPTIC_ROOT)/accis
 	@if [ -f $(COPTIC_ROOT)/accis/$(VECX) ] ; then echo ; else echo "Failed making accis with $(VECX). Might need to specify a different driver."; fi
