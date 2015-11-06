@@ -8,7 +8,7 @@ COPTIC=coptic
 COPTIC_ROOT=..
 #########################################################################
 # To get to compile with X, you might need to supplement this path.
-LIBPATH= -L$(COPTIC_ROOT)/accis/ -L/usr/lib/mesa
+LIBPATH= -L$(COPTIC_ROOT)/accis/ -L/usr/lib/mesa -L/usr/lib/ -L/usr/lib64/
 #########################################################################
 # Test whether X libraries are found. Null => yes.
  TESTGL:=$(shell ld  $(LIBPATH) -lGLU -lGL -o /dev/null none.o 2>&1 | grep GL)
