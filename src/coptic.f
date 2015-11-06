@@ -2,10 +2,7 @@
 c Main program of cartesian coordinate, oblique boundary, pic code.
       implicit none
       include 'ndimsdecl.f'
-c Object data storage.
-c      include 'objcom.f'
-c Storage array spatial count size
-c Mesh spacing description structure includes grid decl too.
+c Mesh spacing description structure includes griddecl too.
       include 'meshcom.f'
 c Coptic here begins to assume it is 3-D. 
 c However allocation is to ndimsmax to allow adjustment to ndims.
@@ -96,7 +93,7 @@ c Data for plotting etc.
       data lphiplot,ldenplot/.false.,.false./
       data lrestart/0/cv/0.,0.,0./
       data ipstep/1/idistp/0/idcount/0/icijcount/0/
-c End of declarations etc.------------------------------------
+c End of declarations      ###################################
 c-------------------------------------------------------------
 c Replace Block Data programs with this 
       call blockdatainit()
@@ -107,8 +104,7 @@ c for solutions of volumes etc. Each node then does the same.
 c Determine what reinjection scheme we use. Sets rjscheme.
       include 'REINJECT.f'
 c---------------------------------------------------------------------
-c This necessary here so one knows early the mpi structure.
-c Otherwise could have been hidden in sormpi and passed back.
+c Find out early (here) the mpi structure and my mpi id number.
       call mpigetmyid(myid,nprocs,ierr)
       lmyidhead=myid.eq.0
 c numprocs is the parameter in partcom kept separately for some reason
@@ -168,8 +164,8 @@ c That is necessary because ijbin addressing is used in cijroutine for
 c subsequent access by cijdirect when calculating floating potential.
       call fluxdatainit(myid)
 c-----------------------------------------------------------------
-      if(lmyidhead)write(*,*)'Initializing the stencil data cij.'
 c Initialize cij:
+      if(lmyidhead)write(*,*)'Initializing the stencil data cij.'
       error=0.
       ipoint=0
       do id=1,ndims
@@ -190,7 +186,6 @@ c Initialize cij:
      $           ,int(error)
          endif
       endif
-c      write(*,*)'Finished cijroutine iteration'
 c---------------------------------------------
 c Here we try to read the stored geometry volume data.
       istat=1
@@ -239,8 +234,8 @@ c---------------------------------------------
 c Some simple graphics of cij, and volumes.
          if(ltestplot)call text3graphs(ndims,iuds,ifull,cij,volumes)
 c More elaborate graphics of volumes. Was ltestplot.
-         if(.false.)call sliceGweb(ifull,iuds,volumes,na_m,zp,
-     $              ixnp,xn,ifix,'volumes:'//'!Ay!@'//char(0),dum,dum)
+c         if(.false.)call sliceGweb(ifull,iuds,volumes,na_m,zp,
+c     $              ixnp,xn,ifix,'volumes:'//'!Ay!@'//char(0),dum,dum)
 c Plot objects 0,1 and 2 (bits)
          if(iobpl.ne.0.and.lmyidhead)then
             if(rcij.eq.0.)rcij=rs
@@ -249,27 +244,26 @@ c Plot objects 0,1 and 2 (bits)
           endif
       endif
 c---------------------------------------------
-c Initialize charge (set q to zero over entire array).
+c Initialize charge, potential (set q,u to zero over entire array).
       call mditerset(q,ndims,ifull,iuds,0,0.)
       call mditerset(qave,ndims,ifull,iuds,0,0.)
-c Initialize potential (set u to zero over entire array).
       call mditerset(u,ndims,ifull,iuds,0,0.)
       call mditerset(uave,ndims,ifull,iuds,0,0.)
-c Initialize diagsum if necessary.
+c Initialize diagsum to zero if necessary.
       do ispecies=1,nspecies
          do idiag=1,ndiags+1
             call mditerset(diagsum(1,1,1,idiag,ispecies)
      $           ,ndims,ifull,iuds,0,0.)
          enddo
       enddo
-c Initialize additional potential and charge always now.
+c Initialize additional potential and charge.
       call setadfield(ifull,iuds,iptch_mask,ltestplot)
 c---------------------------------------------------------------     
+c Initial potential solution.
 c Control. Bit 1, use my sor params (not here). Bit 2 use fadcomp (not)
-c Bit 4-6 periodicity.
       ictl=0
-c Make dimensions periodic:
       do id=1,ndims
+c Make dimensions periodic as necessary: Bit 4-6 periodicity.
          if(LPF(id))ictl=ictl+4*2**id
       enddo
 c An initial solver call with zero density.
@@ -279,8 +273,6 @@ c An initial solver call with zero density.
       ictl=2+ictl
       if(ltestplot)call sliceGweb(ifull,iuds,u,na_m,zp,
      $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0),dum,dum)
-c
-c-------------------------------------------------------------------
       if(lmyidhead)then
          call vaccheck(ifull,iuds,cij,u,thetain,nth,rs,ltestplot)
       endif
@@ -295,11 +287,11 @@ c Standard particle initialization
 c Hole initialization
          call trapinit(subcycle)
       endif
-c      if(lmyidhead)write(*,*)'Return from pinit'
 c---------------------------------------------
 c Initialize the force tracking.
       call forcetrackinit()
 c---------------------------------------------
+c Acceleration parameters etc.
       phirein=0.
       ninjcomp0=ninjcomp
       pinjcomp0=pinjcompa(1)
@@ -328,7 +320,7 @@ c padvnc includes the charge deposition.
       call mditerset(psum,ndims,ifull,iuds,0,0.)
       call chargetomesh(psum,iLs,diagsum,ndiags) 
 c----------------------------------------------------------
-c Main step iteration -------------------------------------
+c Main step iteration ##############################################
       do j=1,nsteps
          nf_step=nf_step+1
 c Acceleration code.
@@ -434,16 +426,15 @@ c Pathscale demands an argument number. So give it explicitly.
 c Comment it out if it causes problems.
          if(lmyidhead)call flush(6)
       enddo
-c End of Main Step Iteration ------------------------------
+c End of Main Step Iteration #########################################
 c----------------------------------------------------------
       if(norbits.ne.0)call cijplot(ifull,iuds,cij,rs,iobpl)
       if(lorbitplot.and.norbits.ne.0)call orbitplot(ifull,iuds,u,phip,rc
      $     ,rs)
-
+c-------------------------------------------------------------------
 c Everyone writes what they have to.
       if(iwstep.gt.0 .or. myid.eq.0)call datawrite(myid,partfilename
      $     ,restartpath,ifull,iuds,u,uave,qave)
-      
 c-------------------------------------------------------------------
       call mpifinalize(ierr)
 c Check some flux diagnostics and writing.

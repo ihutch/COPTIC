@@ -10,7 +10,8 @@ else
 endif
 #Default xlib path
 ifeq ("$(XLIB)","")
-    XLIB=/usr/lib/mesa/
+# Wild guess at possible paths.
+    XLIB=/usr/lib/mesa/ /usr/lib64/ /usr/lib/
 endif
 #Default driver choice
 ifeq ("$(VECX)","")
@@ -21,7 +22,6 @@ ifeq ("$(VECX)","vec4014")
     ACCISDRV=accis
 endif
 
-WSWITCHES=-Wall
 ifeq ("$(G77)","gfortran")
 	WSWITCHES=-Wall -Wno-conversion
 endif
