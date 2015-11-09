@@ -8,6 +8,18 @@ COPTIC=coptic
 COPTIC_ROOT=..
 # To get to compile with X, you might need to supplement this path.
 LIBPATH:= -L$(COPTIC_ROOT)/accis/ -L/usr/lib/mesa
+##########################################################################
+# The reinjection choice:
+#######################
+# This does not work with vaccheck because of outer boundary alteration.
+#REINJECT=orbitinjnew.o extint.o
+#GEOMFILE=geometry/geomsphere.dat
+##################
+#REINJECT=reinject.o
+#GEOMFILE=geometry/geomsphere.dat
+###################
+REINJECT=cartreinject.o
+GEOMFILE=$(COPTIC_ROOT)/geometry/geomcubic.dat
 #########################################################################
 ifeq ("$(G77)","")
 # Configure compiler. Mostly one long continued bash script.
@@ -31,6 +43,7 @@ else
 COMPILER=$(G77)
 endif
 #########################################################################
+# In the Cray environment we need to tell explicitly to link -dynamic.
 ifeq ("$(G77)","ftn")
 LIBPATH:=-dynamic $(LIBPATH)
 endif
@@ -39,25 +52,10 @@ export LIBPATH
 # Test whether X libraries are found. Null => yes.
  TESTGL:=$(shell $(COMPILER)  $(LIBPATH) -lGLU -lGL -o /dev/null none.o 2>&1 | grep GL)
  TESTX11:=$(shell $(COMPILER) $(LIBPATH) -lX11 -o /dev/null 2>&1 none.o | grep X)
-##########################################################################
-# The reinjection choice:
-#######################
-# This does not work with vaccheck because of outer boundary alteration.
-#REINJECT=orbitinjnew.o extint.o
-#GEOMFILE=geometry/geomsphere.dat
-##################
-#REINJECT=reinject.o
-#GEOMFILE=geometry/geomsphere.dat
-###################
-REINJECT=cartreinject.o
-GEOMFILE=$(COPTIC_ROOT)/geometry/geomcubic.dat
 ########################################################################
 # Decide accis driver choice. Alternatives are vec4014 vecx or vecglx. 
 # Automatic choice can be overriden by commandline option e.g. 
 # make VECX=vec4014
-# or in accis if libraries are unfound. 
-# But we need to be able to tell which ACCISDRV to use based upon 
-# accis configuration. So we decide here. 
 ifeq ("$(VECX)","vec4014")
  ACCISDRV=accis
  LIBRARIES = $(LIBPATH) -l$(ACCISDRV)
@@ -97,21 +95,13 @@ ACCISLIB=${COPTIC_ROOT}/accis/lib$(ACCISDRV).a
 # For submakes:
 export VECX
 ##########################################################################
-# Decide which compiler to use.
-ifeq ("$(G77)","")
-# I don't know why this has to be overridden. 
-# But within this section of code G77 is not set without an override.
-	override G77=$(shell cat compiler 2>/dev/null)
-endif
-# export this so it is inherited by sub-makes.
-export G77
-##########################################################################
 # Cray compilers don't recognize -Wall and optimize by default
 ifneq ("$(G77)","ftn")
 	OPTIMIZE=-O3
-        COMPILE-SWITCHES =-Wall $(OPTIMIZE) -I.
+        COMPILE-SWITCHES=-Wall $(OPTIMIZE) -I.
 else
-	COMPILE-SWITCHES =-fPIC
+# -fPIC Not needed. All that's needed is the  -dynamic switch for link.
+	COMPILE-SWITCHES=
 endif
 ##########################################################################
 # Decide on various compiler options based on compiler name.
@@ -138,11 +128,6 @@ else
   NOBOUNDS=$(COMPILE-SWITCHES) -fno-bounds-check
 endif
 NOGLOBALS:=$(COMPILE-SWITCHES) $(NGW)
-##########################################################################
-# A couple of special compile/link cases, not usually used.
-# Probably good only for g77
-#GCURR=gcc -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -lpthread_p -lm_p -lc -lg2c -lmpich -lrt -lfrtbegin  $(LIBRARIES)
-GCURR=$(G77) -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) $(LIBRARIES)
 ##########################################################################
 FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate.o padvnc.o chargetomesh.o slicesect.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o cmdline.o fsects.o bdyshare.o toms659.o ranlux.o intersects.o trapinit.o mainroutines.o
 MPIOBJECTS=reduce.o mpibbdy.o
@@ -202,8 +187,8 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 	 fi
 
 ##########################################
-# Default target compiler must always be the first dependency.
-tested : compiler $(COPTIC) copticgeom.dat
+# Default Target
+tested : $(COPTIC) copticgeom.dat
 	@if [ -f T1e0v000P200L1e0z005x05.phi ] ; then mv T1e0v000P200L1e0z005x05.phi prior.phi ; echo "Created prior.phi" ; fi
 	./$(COPTIC)
 	@date > tested
@@ -219,20 +204,17 @@ else if ! diff T1e0v000P200L1e0z005x05.phi prior.phi ; then \
 	@make GeometryTests >/dev/null
 
 # For now we are using a big hammer to ensure libcoptic is clean.
-libcoptic.a : compiler makefile $(OBJECTS) $(UTILITIES)
+libcoptic.a : makefile $(OBJECTS) $(UTILITIES)
 #	@echo $(OBJECTS)
 	rm -f libcoptic.a
 	@ar -rs libcoptic.a $(OBJECTS) $(UTILITIES)
 
-libcopsol.a : compiler makefile $(SOLOBJECTS) $(UTILITIES) $(SOLHEADERS)
+libcopsol.a : makefile $(SOLOBJECTS) $(UTILITIES) $(SOLHEADERS)
 	rm -f libcopsol.a
 	ar -rs libcopsol.a $(SOLOBJECTS) $(UTILITIES)
 
 copticgeom.dat : $(GEOMFILE)
 	@if [ -f "$(GEOMFILE)" ] ; then ln -s -f $(GEOMFILE) copticgeom.dat ; fi
-
-compiler : makefile
-	@echo $(G77) > compiler
 
 # Make the binary writes access='stream'. This has greater portability
 # between compilers but is g77 incompatible.
@@ -251,27 +233,27 @@ streamunset :
 # Things to compile with non-standard switches
 # We make one of these the first thing in objects to force the header
 # dependence to be reported, not just ignored by make on pattern rule.
-interpolations.o : interpolations.f compiler makefile $(HEADERS)
+interpolations.o : interpolations.f makefile $(HEADERS)
 	$(G77) -c $(NOBOUNDS) $(NGW) $(PROFILING) $*.f
 
-getfield.o : getfield.f compiler makefile $(HEADERS)
+getfield.o : getfield.f makefile $(HEADERS)
 	$(G77) -c $(NOBOUNDS) $(NGW) $(PROFILING) $*.f
 
-reduce.o : reduce.f compiler makefile $(HEADERS)
+reduce.o : reduce.f makefile $(HEADERS)
 	$(G77) -c $(NOGLOBALS) $(PROFILING) $*.f
 
-bdyroutine.o : bdyroutine.f compiler makefile $(HEADERS)
+bdyroutine.o : bdyroutine.f makefile $(HEADERS)
 	$(G77) -c $(NOGLOBALS) $(PROFILING) $*.f
 
 #####################################################
 # Main program explicit to avoid make bugs:
-$(COPTIC) : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
+$(COPTIC) : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
 	@echo "      rjscheme="\'$(REINJECT)\'" " > REINJECT.f
 	$(G77) -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f libcoptic.a $(LIBRARIES)
 
 # Sorserial links nonmpibbdy.o explicitly, so that none of those routines
 # are linked from the main libcopsol that need mpi.
-sorserial : libcopsol.a sortest.f compiler makefile $(ACCISLIB) $(SOLOBJECTS) nonmpibbdy.o
+sorserial : libcopsol.a sortest.f makefile $(ACCISLIB) $(SOLOBJECTS) nonmpibbdy.o
 	$(G77) -o sorserial $(COMPILE-SWITCHES) $(PROFILING) sortest.f nonmpibbdy.o libcopsol.a $(LIBRARIES)
 
 $(ACCISLIB) : $(COPTIC_ROOT)/accis/*.f $(COPTIC_ROOT)/accis/*.c $(COPTIC_ROOT)/accis/*.h
@@ -291,7 +273,7 @@ analysis : $(DUMMYMPIOBJECTS)
 serial : $(COPTIC) $(DUMMYMPIOBJECTS)
 	$(G77) -o $(COPTIC).serial $(DUMMYMPIOBJECTS) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f libcoptic.a $(LIBRARIES)
 ######################################################
-testing : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a 
+testing : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a 
 	make -C $(COPTIC_ROOT)/testing
 	@echo Made tests in directory testing. Now running them to test.
 	make -C $(COPTIC_ROOT)/testing testing
@@ -300,8 +282,9 @@ testing : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libc
 testanal : 
 	make clean
 	make -C $(COPTIC_ROOT)/analysis clean
-	make
+	make $(COPTIC)
 	make -C $(COPTIC_ROOT)/analysis
+	./$(COPTIC)
 	$(COPTIC_ROOT)/analysis/partexamine -vtk T1e0v000P200L1e0z005x05
 	$(COPTIC_ROOT)/analysis/phiexamine T1e0v000P200L1e0z005x05.pha -w
 	$(COPTIC_ROOT)/analysis/fluxexamine -q T1e0v000P200L1e0z005x05.flx
@@ -318,19 +301,13 @@ regeom :
 	for file in $(COPTIC_ROOT)/geometry/*.dat ; do rm $${file%.dat}.cks; make $${file%.dat}.cks; done
 
 # Use compiler (which depends on makefile) as a test of major updates
-GeometryTests : compiler
-	@if [ "`sed -n '/g77/p' compiler`" == "" ];\
-then\
-  echo ' ' >&2;\
-  if [ "$(G77)" != "mpif77" ] ; then echo "Not doing geometry tests" >&2; exit 1;\
+GeometryTests : $(COPTIC)
+	@if [ "$(G77)" != "mpif77" ] ; then echo "Not doing geometry tests" >&2;\
   else\
-  echo 'Starting background tests. Recompile only when completed.' >&2;\
-  echo "compiler=$(COMPILER).";\
-  make geometry;\
-  fi;\
-else echo "Skipping background GeometryTests" >&2 ; fi &
-	@sleep 1
-	@echo
+   echo 'Starting background tests. Recompile only when completed.' >&2;\
+   echo "compiler=$(COMPILER).";\
+   make geometry;\
+  fi
 
 #####################################################
 clean :
@@ -339,7 +316,7 @@ clean :
 	make -C $(COPTIC_ROOT)/accis mproper
 
 mproper :
-	rm -f compiler REINJECT.f coptic copticgeom.dat storedgeom.dat GeometryTests tested
+	rm -f REINJECT.f coptic copticgeom.dat storedgeom.dat GeometryTests tested
 	make clean
 	make -C $(COPTIC_ROOT)/analysis clean
 
@@ -387,11 +364,11 @@ fordocu :
 	$(COPTIC_ROOT)/testing/fordocu.sh "$(COPTIC).f $(OBJECTS)"
 	firefox html/index.html
 
-coptic.prof : compiler makefile $(OBJECTS) 
+coptic.prof : makefile $(OBJECTS) 
 	make clean
 	make PROFILING=-pg coptic
 	make PROFILING=-pg coptic.o
-	$(GCURR)
+	$(G77) -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) $(LIBRARIES)
 
 help :
 	@echo Targets: clean mproper ftnchek tree coptic.prof vecx analysis serial

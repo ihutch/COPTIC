@@ -35,12 +35,12 @@ G90=gfortran
 ifeq ("$(NOBACKSLASH)","")
 NOBACKSLASH:=\
 $(shell \
-if [ -n "`$(COMPILER) --version 2>&1 | grep GNU`" ] ; then\
- echo "-w -fno-backslash";else \
 if [ -n "`$(COMPILER) --version 2>&1 | grep PathScale`" ] ; then\
  echo "-backslash";else \
 if [ -n "`$(COMPILER) --version 2>&1 | grep Portland`" ] ; then\
- echo "-Mbackslash"; \
+ echo "-Mbackslash";else \
+if [ -n "`$(COMPILER) --version 2>&1 | grep GNU`" ] ; then\
+ echo "-w -fno-backslash"; \
 fi fi fi\
 )
 endif
