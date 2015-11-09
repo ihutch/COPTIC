@@ -40,7 +40,7 @@ if [ -n "`$(COMPILER) --version 2>&1 | grep GNU`" ] ; then\
 if [ -n "`$(COMPILER) --version 2>&1 | grep PathScale`" ] ; then\
  echo "-backslash";else \
 if [ -n "`$(COMPILER) --version 2>&1 | grep Portland`" ] ; then\
- echo "-Mbackslash";else \
+ echo "-Mbackslash"; \
 fi fi fi\
 )
 endif
