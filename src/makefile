@@ -30,11 +30,14 @@ COMPILER=$(G77)
 endif
 #########################################################################
 # To get to compile with X, you might need to supplement this path.
-LIBPATH= -L$(COPTIC_ROOT)/accis/ -L/usr/lib/mesa -L/usr/lib64/
+LIBPATH:= -L$(COPTIC_ROOT)/accis/ -L/usr/lib/mesa -L/usr/lib64/
+ifeq ("$(G77)","ftn")
+LIBPATH=-dynamic $(LIBPATH)
+endif	
 ##########################################################################
 # Test whether X libraries are found. Null => yes.
- TESTGL:=$(shell $(COMPILER)  $(LIBPATH) -lGLU -lGL -o /dev/null 2>&1 | grep GL)
- TESTX11:=$(shell $(COMPILER) $(LIBPATH) -lX11 -o /dev/null 2>&1 | grep X)
+ TESTGL:=$(shell $(COMPILER)  $(LIBPATH) -lGLU -lGL -o /dev/null none.o 2>&1 | grep GL)
+ TESTX11:=$(shell $(COMPILER) $(LIBPATH) -lX11 -o /dev/null 2>&1 none.o | grep X)
 ##########################################################################
 # The reinjection choice:
 #######################
@@ -106,7 +109,8 @@ export G77
 ifneq ("$(G77)","ftn")
 	OPTIMIZE=-O3
         COMPILE-SWITCHES =-Wall $(OPTIMIZE) -I.
-#COMPILE-SWITCHES =-Wall   $(OPTIMIZE) -I. -g -fbounds-check
+else
+	COMPILE-SWITCHES =-fPIC
 endif
 ##########################################################################
 # Decide on various compiler options based on compiler name.
@@ -188,7 +192,7 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 	@if [ -f T*.phi ] ; then sum T*.phi >checksum ;\
 	   else echo NO .phi FILE GENERATED; ls T*.phi 2>/dev/null; exit 1; fi
 	@if diff checksum $*.cks >diffout 2>&1; then\
-	  echo "        Case $*.cks: OK. No differences" >&2; touch $*.cks;\
+	  touch $*.cks;\
 	 else cat diffout;\
 	  echo '******** Failed geometry test on $*.cks *********' >&2;\
 	  echo "$*.cks:" >> GeometryTests; cat diffout >> GeometryTests;\
@@ -197,7 +201,6 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 	 else echo "******** $*.cks not present. Creating it.";\
 	  sum T*.phi >$*.cks;\
 	 fi
-#	@echo -----------------------------------------------------------------
 
 ##########################################
 # Default target compiler must always be the first dependency.
@@ -273,7 +276,7 @@ sorserial : libcopsol.a sortest.f compiler makefile $(ACCISLIB) $(SOLOBJECTS) no
 	$(G77) -o sorserial $(COMPILE-SWITCHES) $(PROFILING) sortest.f nonmpibbdy.o libcopsol.a $(LIBRARIES)
 
 $(ACCISLIB) : $(COPTIC_ROOT)/accis/*.f $(COPTIC_ROOT)/accis/*.c $(COPTIC_ROOT)/accis/*.h
-	@echo "TESTGL=$(TESTGL). TESTX11=$(TESTX11)."
+#	@echo "TESTGL=$(TESTGL). TESTX11=$(TESTX11)."
 	@echo "G77=$(G77). COMPILER=$(COMPILER)."
 	@echo "******************* Making accis with VECX=${VECX} **********"
 	make -C $(COPTIC_ROOT)/accis

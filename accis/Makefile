@@ -1,31 +1,86 @@
+########################################################################
 # Makefile for accis routines.
-G90=gfortran
-
-# These defaults generally set in ./configure, but we allow null configure.
-#Default compiler
+# The shell assumed in this Makefile
+SHELL=/bin/bash
+#########################################################################
+# To get to compile with X, you might need to supplement this path.
+LIBPATH:=-L.
+ifeq ("$(G77)","ftn")
+LIBPATH:=-dynamic $(LIBPATH)
+endif	
+#########################################################################
 ifeq ("$(G77)","")
-    G77=gfortran
+# Configure compiler. Mostly one long continued bash script.
+# Preference order mpif77, ftn, g77, f77, gfortran
+COMPILER:=\
+$(shell \
+ if which mpif77 >/dev/null; then echo -n "mpif77";else\
+  if which ftn >/dev/null ; then echo -n "ftn";else\
+    if which g77 >/dev/null ; then echo -n "g77";else\
+     if which f77 >/dev/null ; then echo -n "f77";else\
+      if which gfortran >/dev/null; then echo -n "gfortran";else\
+	echo "Unable to decide compiler. Specify via G77=..."; exit 1;\
+      fi;\
+     fi;\
+    fi;\
+  fi;\
+ fi;\
+)
+G77:=$(COMPILER)
 else
-    COMPILER=$(G77)
+COMPILER=$(G77)
 endif
-#Default xlib path
-ifeq ("$(XLIB)","")
-# Wild guess at possible paths.
-    XLIB=/usr/lib/mesa/ /usr/lib64/ /usr/lib/
+G90=gfortran
+#######################################################################
+ifeq ("$(NOBACKSLASH)","")
+NOBACKSLASH:=\
+$(shell \
+if [ -n "`$(COMPILER) --version | grep GNU`" ] ; then echo "-w -fno-backslash";\
+  else \
+if [ -n "`$(COMPILER) --version | grep PathScale`" ] ; then echo "-backslash";\
+  else \
+if [ -n "`$(COMPILER) --version | grep Portland`" ] ; then echo "-Mbackslash";\
+  else \
+if [ "$(COMPILER)"=="ftn" ] ; then echo "-Mbackslash";\
+fi fi fi fi\
+)
 endif
-#Default driver choice
-ifeq ("$(VECX)","")
-    VECX=vecx
+##########################################################################
+# Test whether X libraries are found. Null => yes.
+ TESTGL:=$(shell $(COMPILER)  $(LIBPATH) -lGLU -lGL -o /dev/null none.o 2>&1 | grep GL)
+ TESTX11:=$(shell $(COMPILER) $(LIBPATH) -lX11 -o /dev/null 2>&1 none.o | grep X)
+##########################################################################
+ifneq ("$(VECX)","")
+# VECX explicitly set. Use the tests to convey the choice.
+ ifneq ("$(VECX)","vecglx")
+  TESTGL=NO
+ endif
+ ifneq ("$(VECX)","vecx")
+  TESTX11=NO
+ endif
 endif
-ACCISDRV=accisX
-ifeq ("$(VECX)","vec4014")
-    ACCISDRV=accis
+##########################################################################
+# VECX choice. Preference order vecglx, vecx, vec4014.
+ifeq ("$(TESTGL)","")
+    VECX=vecglx
+    ACCISDRV=accisX
+    libraries=-lX11 -lGL -lGLU $(LIBPATH)
+else
+    ifeq ("$(TESTX11)","")
+     VECX=vecx
+     ACCISDRV=accisX
+     libraries=-lX11 $(LIBPATH)
+    else
+     VECX=vec4014
+     ACCISDRV=accis
+     libraries=-L.
+    endif
 endif
-
+#########################################################################
 ifeq ("$(G77)","gfortran")
 	WSWITCHES=-Wall -Wno-conversion
 endif
-
+#########################################################################
 standard_object_files= \
 autopl.o \
 contour.o \
@@ -61,49 +116,17 @@ noback_object_files = drwstr.o fontdata.o vecnp.o
 object_files=$(standard_object_files) $(noback_object_files)
 root_files=$(patsubst %.o,%,$(object_files))
 
-ifeq ("$(VECX)","vec4014")
-	libraries = -L.
-else
-	libraries = -L$(XLIB) -L. -lX11 $(GLLIBS)
-endif
-
-ifeq ("$(VECX)","vecglx")
-	GLLIBS= -lGL -lGLU
-else
-	GLLIBS=
-endif
-
 #header include files
 headers= hidcom.h plotcom.h world3.h
 
-#The real makefile
-MAKEFILE=makefile
+#The real Makefile
+MAKEFILE=Makefile
 
 #######################################################################
 # Start of targets
 #######################################################################
 
 all : $(MAKEFILE) lib$(ACCISDRV).a
-
-# A way of making a general makefile. By default the file 
-# makefile is used if present, but if not, Makefile is used. 
-# So we start as Makefile. The configure writes a new one: makefile.
-# However, if it doesn't we have an infinite loop, which is bad.
-# So we make the second call to an explicit file.
-makefile : Makefile configure
-	@echo Configuring the Makefile for this platform. 
-	@export COMPILER="$(COMPILER)"; ./configure
-	@echo Now running make again using the new Makefile.
-# The problem with this recursion is that it does not override any command
-# argument such as G77= Thus G77 might be forced blank inside the submake
-# because by default command arguments override internal settings.
-# It is not enough to give MAKEFILE= in the make arguments. You must do this:
-	export MAKEFLAGS=; $(MAKE) -f $(MAKEFILE) $(MAKECMDGOALS)
-	@echo =================================================================
-	@echo Completed make with new makefile. [Ignore any following error.]
-	@touch $(VECX)
-# Touch vecx to prevent a libaccisX remake with the outermost VECX definition,
-# For which vecx is standard.
 
 RefManual.html : RefManual.tex RefManual.pdf
 	if which tth ; then tth -e2 RefManual ; fi
@@ -115,7 +138,7 @@ RefManual.pdf : RefManual.tex
 
 #update the libraries.
 libaccis.a : $(object_files)
-	echo "Updating libaccis."
+	echo "Updating libaccis. For $(G77), $(VECX), $(ACCISDRV)."
 	ar -rs libaccis.a $(object_files)
 
 libaccisX.a : libaccis.a $(VECX)
@@ -142,7 +165,7 @@ $(noback_object_files) : drwstr.f fontdata.f vecnp.f $(headers) $(MAKEFILE)
 # Specific test programs of one sort and another should be put here 
 # only if they need special switches.
 testing/plottest90 : testing/plottest90.f90 interface.f90
-	$(G90) $(WSWITCHES) -o testing/plottest90 testing/plottest90.f90  -l$(ACCISDRV) $(libraries)
+	$(G90) $(WSWITCHES) -o testing/plottest90 testing/plottest90.f90 -l$(ACCISDRV) $(libraries)
 
 #pattern rule, compile using the external definitions of commons
 %.o : %.f ;
@@ -150,11 +173,11 @@ testing/plottest90 : testing/plottest90.f90 interface.f90
 
 # For fortran 90 executables.
 % : %.f90 lib$(ACCISDRV).a $(VECX)
-	$(G90) $(WSWITCHES) -o $* $*.f90  -l$(ACCISDRV) $(libraries)
+	$(G90) $(WSWITCHES) -o $* $*.f90 -l$(ACCISDRV)  $(libraries)
 
 # The main f77 executable pattern.
 % : %.f lib$(ACCISDRV).a $(VECX)
-	$(G77) $(WSWITCHES) -o $* $*.f  -l$(ACCISDRV) $(libraries)
+	$(G77) $(WSWITCHES) -o $* $*.f -l$(ACCISDRV)  $(libraries)
 
 %.4014 : %.f libaccis.a
 	$(G77) $(WSWITCHES) -o $*.4014 $*.f -L. -laccis
@@ -199,7 +222,7 @@ interface.f90 : convert
 sync : syncsource synccoptic syncsceptic
 
 syncsilas : lib$(ACCISDRV).a RefManual.html
-	rsync -u -e ssh  --copy-links -v *.h *.f *.c RefManual.* configure Makefile silas:~/accis/
+	rsync -u -e ssh  --copy-links -v *.h *.f *.c RefManual.* Makefile silas:~/accis/
 	date > syncsilas
 
 syncsource : lib$(ACCISDRV).a RefManual.html
@@ -226,7 +249,6 @@ cleantest :
 
 mproper : clean
 	rm -f *.a *~ eye.dat sync*
-	rm -f makefile
 	rm -f vecx vecglx vec4014
 	rm -f convert interface.f90
 
