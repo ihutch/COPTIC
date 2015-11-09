@@ -125,7 +125,7 @@ c How many prior particles to save:
 c            ncdists(ispecies)=0
 c How many extra to add:
             nclim=ncdistmax
-            write(*,*)'Calling maxwellstats',nclim,vzave,ispecies
+c            write(*,*)'Calling maxwellstats',nclim,ispecies
             call maxwellstats(nclim,vzave,ispecies)
             call colreinit(myid,ispecies)
          endif

@@ -14,7 +14,7 @@ ifeq ("$(G77)","")
 # Preference order mpif77, ftn, g77, f77, gfortran
  COMPILER:=\
 $(shell \
- if which mpif7 >/dev/null 2>&1; then echo -n "mpif77";else\
+ if which mpif77 >/dev/null 2>&1; then echo -n "mpif77";else\
   if which ftn >/dev/null 2>&1 ; then echo -n "ftn";else\
     if which g77 >/dev/null 2>&1 ; then echo -n "g77";else\
      if which f77 >/dev/null 2>&1 ; then echo -n "f77";else\
@@ -144,9 +144,9 @@ NOGLOBALS:=$(COMPILE-SWITCHES) $(NGW)
 GCURR=$(G77) -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) $(LIBRARIES)
 ##########################################################################
 FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate.o padvnc.o chargetomesh.o slicesect.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o cmdline.o fsects.o bdyshare.o toms659.o ranlux.o intersects.o trapinit.o mainroutines.o
-ifeq ("$(G77)","")
+#ifeq ("$(G77)","")
 # First time through with undefined compiler don't define MPIOBJECTS.
-else
+#else
  MPIOBJECTS=reduce.o mpibbdy.o
  ifeq ("$(findstring mpi,"$(G77)")","")
    ifeq ("$(findstring ftn,"$(G77)")","")
@@ -154,7 +154,7 @@ else
        MPIOBJECTS=dummyreduce.o nonmpibbdy.o
    endif
  endif
-endif
+#endif
 SPECIALOBJECTS=bdyroutine.o faddu.o getfield.o interpolations.o 
 # Things just needed for the test routine:
 UTILITIES=udisplay.o

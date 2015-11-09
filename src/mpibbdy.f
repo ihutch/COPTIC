@@ -131,9 +131,10 @@ c      save
       save iface,ibt,iodd,ieven,lodd,leven,isdl,iddl,isdr,iddr
       save iside,irdims,ircoords,lrperiod,is,status
       save isdispls,irdispls,istypes,irtypes,iscounts,ircounts
-c Various variables used as counters etc later. Not saved now.
+c Various variables used as counters etc later. Not all saved now.
       integer i,ibeg,iblens,id,ierr,ii,ioffset,iolm,iolp,iorm,iorp
       integer itag,k,ke,kn,ko,kt,n,nn,np,nprcsses,nproc
+      save nproc
 
       if(kc.eq.-1) then 
 c Just do the gather

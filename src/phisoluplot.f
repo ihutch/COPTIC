@@ -1,6 +1,6 @@
       subroutine vaccheck(ifull,iuds,cij,u,thetain,nth,rs,ltestplot)
       integer ifull(*),iuds(*)
-      real cij(*),u(*)
+      real cij(*),u(*),thetain
       logical ltestplot
       include 'ndimsdecl.f'
       include '3dcom.f'
@@ -118,6 +118,7 @@ c***************************************************************
 c Master plotting routine.
       subroutine solu3plot(ifull,iuds,u,cij,
      $     phi,phiinf,rc,thetain,nth)
+      real thetain
       include 'ndimsdecl.f'
       integer ifull(ndimsmax),iuds(ndimsmax)
       integer iLs(ndims+1)
@@ -479,7 +480,7 @@ c********************************************************************
       integer ifmax
       parameter (ifmax=1000,Li=ifmax)
       real z(ifmax),xp(ifmax)
-      write(*,*)'In solu3plot',ifull,iuds,rc,thetain,nth
+      write(*,*)'In solu3plot',ifull,iuds,rc
       n0=max(iuds(2)/2,1)
       n1=max(iuds(3)/2,1)
       idf=3

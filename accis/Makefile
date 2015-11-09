@@ -137,7 +137,7 @@ RefManual.pdf : RefManual.tex
 
 #update the libraries.
 libaccis.a : $(object_files)
-	echo "Updating libaccis. For $(G77), $(VECX), $(ACCISDRV)."
+	@echo "Updating libaccis. For $(G77), $(VECX), $(ACCISDRV)."
 	ar -rs libaccis.a $(object_files)
 
 libaccisX.a : libaccis.a $(VECX)

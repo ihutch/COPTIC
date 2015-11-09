@@ -540,7 +540,7 @@ c There's a serious error. Give info and stop
             enddo
             r=sqrt(r)
             r1=sqrt(r1)
-            write(*,*)'Tallyexit error',ierr,i,iobj,idiffreg
+            write(*,*)'Tallyexit error',ierr,iobj,idiffreg
             if(ierr.eq.99)write(*,*)'Unknown object type.'
             write(*,*)'xpart,r=',(xi(k),k=1,6),r,ireg
             write(*,*)'xp1',(xprior(k),k=1,3),r1
