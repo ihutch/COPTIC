@@ -145,17 +145,15 @@ NOGLOBALS:=$(COMPILE-SWITCHES) $(NGW)
 GCURR=$(G77) -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) $(LIBRARIES)
 ##########################################################################
 FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate.o padvnc.o chargetomesh.o slicesect.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o cmdline.o fsects.o bdyshare.o toms659.o ranlux.o intersects.o trapinit.o mainroutines.o
-#ifeq ("$(G77)","")
-# First time through with undefined compiler don't define MPIOBJECTS.
-#else
- MPIOBJECTS=reduce.o mpibbdy.o
- ifeq ("$(findstring mpi,"$(G77)")","")
+MPIOBJECTS=reduce.o mpibbdy.o
+DUMMYMPIOBJECTS=nonmpibbdy.o dummyreduce.o
+export DUMMYMPIOBJECTS
+ifeq ("$(findstring mpi,"$(G77)")","")
    ifeq ("$(findstring ftn,"$(G77)")","")
 # Assume Non-MPI compiler (e.g. gfortran) is used
        MPIOBJECTS=dummyreduce.o nonmpibbdy.o
    endif
- endif
-#endif
+endif
 SPECIALOBJECTS=bdyroutine.o faddu.o getfield.o interpolations.o 
 # Things just needed for the test routine:
 UTILITIES=udisplay.o
@@ -287,9 +285,11 @@ vecx :
 	make clean
 	make VECX=vecx
 
-analysis : 
+analysis : $(DUMMYMPIOBJECTS)
 	make -C $(COPTIC_ROOT)/analysis
 
+serial : $(COPTIC) $(DUMMYMPIOBJECTS)
+	$(G77) -o $(COPTIC).serial $(DUMMYMPIOBJECTS) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f libcoptic.a $(LIBRARIES)
 ######################################################
 testing : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a 
 	make -C $(COPTIC_ROOT)/testing
@@ -394,6 +394,6 @@ coptic.prof : compiler makefile $(OBJECTS)
 	$(GCURR)
 
 help :
-	@echo Targets: clean mproper ftnchek tree coptic.prof vecx analysis
+	@echo Targets: clean mproper ftnchek tree coptic.prof vecx analysis serial
 	@echo Tests:   geometry testing testanal regeom
 	@echo Setup:   streamset streamunset
