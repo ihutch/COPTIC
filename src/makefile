@@ -7,7 +7,7 @@ COPTIC=coptic
 # The root directory of the distribution (for now)
 COPTIC_ROOT=..
 # To get to compile with X, you might need to supplement this path.
-LIBPATH:= -L$(COPTIC_ROOT)/accis/ -L/usr/lib/mesa -L/usr/lib64/
+LIBPATH:= -L$(COPTIC_ROOT)/accis/ -L/usr/lib/mesa
 #########################################################################
 ifeq ("$(G77)","")
 # Configure compiler. Mostly one long continued bash script.
@@ -33,7 +33,8 @@ endif
 #########################################################################
 ifeq ("$(G77)","ftn")
 LIBPATH:=-dynamic $(LIBPATH)
-endif	
+endif
+export LIBPATH	
 ##########################################################################
 # Test whether X libraries are found. Null => yes.
  TESTGL:=$(shell $(COMPILER)  $(LIBPATH) -lGLU -lGL -o /dev/null none.o 2>&1 | grep GL)
@@ -286,6 +287,9 @@ vecx :
 	make clean
 	make VECX=vecx
 
+analysis : 
+	make -C $(COPTIC_ROOT)/analysis
+
 ######################################################
 testing : compiler $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a 
 	make -C $(COPTIC_ROOT)/testing
@@ -390,6 +394,6 @@ coptic.prof : compiler makefile $(OBJECTS)
 	$(GCURR)
 
 help :
-	@echo Targets: clean mproper ftnchek tree coptic.prof vecx
+	@echo Targets: clean mproper ftnchek tree coptic.prof vecx analysis
 	@echo Tests:   geometry testing testanal regeom
 	@echo Setup:   streamset streamunset
