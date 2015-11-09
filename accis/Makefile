@@ -5,20 +5,17 @@ SHELL=/bin/bash
 #########################################################################
 # To get to compile with X, you might need to supplement this path.
 LIBPATH:=-L.
-ifeq ("$(G77)","ftn")
-LIBPATH:=-dynamic $(LIBPATH)
-endif	
 #########################################################################
 ifeq ("$(G77)","")
 # Configure compiler. Mostly one long continued bash script.
 # Preference order mpif77, ftn, g77, f77, gfortran
 COMPILER:=\
 $(shell \
- if which mpif77 >/dev/null; then echo -n "mpif77";else\
-  if which ftn >/dev/null ; then echo -n "ftn";else\
-    if which g77 >/dev/null ; then echo -n "g77";else\
-     if which f77 >/dev/null ; then echo -n "f77";else\
-      if which gfortran >/dev/null; then echo -n "gfortran";else\
+ if which mpif77 >/dev/null 2>&1; then echo -n "mpif77";else\
+  if which ftn >/dev/null 2>&1 ; then echo -n "ftn";else\
+    if which g77 >/dev/null 2>&1 ; then echo -n "g77";else\
+     if which f77 >/dev/null 2>&1 ; then echo -n "f77";else\
+      if which gfortran >/dev/null 2>&1; then echo -n "gfortran";else\
 	echo "Unable to decide compiler. Specify via G77=..."; exit 1;\
       fi;\
      fi;\
@@ -30,19 +27,21 @@ G77:=$(COMPILER)
 else
 COMPILER=$(G77)
 endif
+ifeq ("$(G77)","ftn")
+LIBPATH:=-dynamic $(LIBPATH)
+endif	
 G90=gfortran
 #######################################################################
 ifeq ("$(NOBACKSLASH)","")
 NOBACKSLASH:=\
 $(shell \
-if [ -n "`$(COMPILER) --version | grep GNU`" ] ; then echo "-w -fno-backslash";\
-  else \
-if [ -n "`$(COMPILER) --version | grep PathScale`" ] ; then echo "-backslash";\
-  else \
-if [ -n "`$(COMPILER) --version | grep Portland`" ] ; then echo "-Mbackslash";\
-  else \
-if [ "$(COMPILER)"=="ftn" ] ; then echo "-Mbackslash";\
-fi fi fi fi\
+if [ -n "`$(COMPILER) --version 2>&1 | grep GNU`" ] ; then\
+ echo "-w -fno-backslash";else \
+if [ -n "`$(COMPILER) --version 2>&1 | grep PathScale`" ] ; then\
+ echo "-backslash";else \
+if [ -n "`$(COMPILER) --version 2>&1 | grep Portland`" ] ; then\
+ echo "-Mbackslash";else \
+fi fi fi\
 )
 endif
 ##########################################################################

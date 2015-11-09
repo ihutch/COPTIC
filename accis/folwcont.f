@@ -279,7 +279,7 @@ c Contour drawing
          if((mod(i,cyc).eq.0).and.labels)then
             ipoint=max(point,1-min(ifix(log10(cdel)+1.e-4),2))
             if(ipoint.gt.8)then
-               write(str2,'(g12.6)')cv
+               write(str2,'(g13.6)')cv
 c this circumlocution to work around an f2c/powerc bug. 
                 str1=str2
                width=12
@@ -643,7 +643,7 @@ c       di      fractional index increment at which y(di)=yv.
          if(dy.gt.0)goto 10
       endif
       write(*,*)'INTPARA INPUT ERROR: Value not bracketed'
-      write(*,'(a,g12.6,a,g12.6,a,i4,/)')
+      write(*,'(a,g13.6,a,g13.6,a,i4,/)')
      $     ' y0=',y0,' y1=',y1
       return
    10 yp=y1-y0

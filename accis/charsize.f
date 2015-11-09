@@ -78,7 +78,7 @@ c      character*8 sformat
 c Use g format if too long.
       xx=x*10**point
       if(abs(xx).gt.1.e9)then
-         write(string,'(g12.6)')x
+         write(string,'(g13.6)')x
          width=12
          return
       endif

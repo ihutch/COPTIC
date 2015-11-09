@@ -171,11 +171,6 @@ void accis_set_focus(){
     XSetInputFocus(accis_display, accis_window, RevertToParent,CurrentTime);
 }
 /* ********************************************************************** */
-int accisinit()
-{
-  FORT_INT xp, yp, vm, nc;
-  svga_(&xp,&yp,&vm,&nc);
-}
 /* Main setup subroutine */ 
 int svga_(scrxpix, scrypix, vmode, ncolor)
 FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
@@ -184,7 +179,7 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
   extern void initDefaultColors();
   XSizeHints hints;
   int x_size,y_size,x_off,y_off,gravity;
-  int oldwidth,oldheight;
+  int oldwidth=0,oldheight=0;
 
   accis_nodisplay=0;
   *ncolor=15;
@@ -265,7 +260,12 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
      XRaiseWindow(accis_display, accis_window);*/
   return 0;
 }
-
+/************************************************************************/
+int accisinit()
+{
+  FORT_INT xp, yp, vm, nc;
+  svga_(&xp,&yp,&vm,&nc);
+}
 /************************************************************************/
 int is_truecolor()
 {  
