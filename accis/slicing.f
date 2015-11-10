@@ -93,14 +93,14 @@ c Bit 3=1 reinitialize:
          idfinlast=-9999
       endif
       idfixf=idfixf/2
-c Bits 4,5 set icontour
-      icontour=(idfixf-4*(idfixf/4))
-      idfixf=idfixf/4
-      if(idfixf-2*(idfixf/2).ne.0)ltellslice=.not.ltellslice
       ips=0
       irotating=0
       if(.not.idfinlast.eq.idfixin)then
 c Initialize
+c Bits 4,5 set icontour
+         icontour=(idfixf-4*(idfixf/4))
+         idfixf=idfixf/4
+         if(idfixf-2*(idfixf/2).ne.0)ltellslice=.not.ltellslice
          n1=(iuds(idfix)+1)/2
 c     Plot the surface. With scaling 1. Web color 6, axis color 7.
          jsw=1 + 256*6 + 256*256*7
@@ -287,6 +287,7 @@ c User interface
      $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice)
       if(iquit.eq.0)goto 21
       call prtend()
+      idflast=idfix
       call hdprset(0,0.)
       end
 c******************************************************************

@@ -112,7 +112,7 @@ c Local variables:
       integer lentrim,iargc
       external lentrim
       integer i,id,idn,idcn,i0,i1,iargcount,iargpos,ispecies
-      real vwork,bdotgn
+      real vwork,bdotgn,vdotgn
       character*100 argument,message
       logical lfirst
       data lfirst/.true./
@@ -492,20 +492,27 @@ c         vneutral=vds(1)
 c --- Deal with B-field
       Bt=0.
       Bdotgn=0.
+      vdotgn=0.
       do i=1,ndims
          Bt=Bt+Bfield(i)**2
          Bdotgn=Bdotgn+Bfield(i)*gn(i)
+         vdotgn=vdotgn+vdrifts(i,1)*gn(i)
       enddo
       Bt=sqrt(Bt)
       if(gnt.ne.0.)then
          if(Bt.ne.0.)then
             if(Bdotgn.gt.1.e-5*Bt*gnt)then
 c Complain if there's a B-component in the gradient direction.
-               message='**Density gradient parallel to Bt not allowed'
+               message='*** Density gradient parallel to Bt not allowed'
                goto 203
             endif
          else
-            message='**Zero B-field with density gradient not allowed'
+            message='*** Zero B-field with density gradient not allowed'
+            goto 203
+         endif
+         if(.not.vdotgn.eq.0)then
+            message='*** V-drift component along density gradient'//
+     $           ' not allowed.'
             goto 203
          endif
       endif

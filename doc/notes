@@ -14226,3 +14226,32 @@ supposed to save time.  It saves about 20% of the time for one
 periodic dimension. And another 20% for the second. Significant.
 The remaining getfield costs only about 25% of the remaining total. 
 So no major gains would be obtained from improvements to it. 
+
+10 Nov 15
+
+Testing density gradient operation. Found that there's a small discrepancy
+in the compensation that gives rise to a systematically low charge in
+an open box when density gradient is present. It depresses the potential
+in the middle. It is substantially affected by drift velocity and B-field
+
+One problem is with ninjcalc which is incorrect for density gradients
+and gives an nparta value that is wrong. Then the number of particles
+initialized is incorrect. The problem is that it assumes the nparta
+= ripn*volume with volume calculated naively. But for gradient cases
+we are using rhoinfinity as the value at the reference (center) position
+so this calculation is incorrect. Corrected using the exponential forms.
+Looks much better with zero drift velocity. 
+
+However, turning drift velocity on, we get evolution to a substantial 
+error again. So probably there's another error. Certainly the particle
+number drops a lot. We aren't injecting enough particles. Biggest
+deficit is at positive values of the drift dimension. On reflection, I think
+this is an incoherent test since the drift velocity has a component in
+the direction of the density gradient. That does not make sense in the 
+physical model I've been thinking of. Therefore implement a test to 
+prevent it.
+
+Seems to be working.
+Can't use -l0. with -gn because the direct potential calculation has no
+compensation. Correct that by subtracting uc(ind) in the quasineutral
+routine. Gives a flat potential. Seems right.

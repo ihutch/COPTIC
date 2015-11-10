@@ -702,9 +702,9 @@ c that specifies the flux for this face, and add to total.
       if(ninjcomp.ne.0.and..true.)then
 c Fixed injection rate implies fixed rhoinf. Set it only once.
          if(rhoinf.eq.0)then
-c            write(*,*)'*************flux=',flux
             rhoinf=numprocs*(ninjcompa(1)+pinjcompa(1))/(dtin*flux)
             chi=0.
+c            write(*,*)'*************flux,rhoinf=',flux,rhoinf
          else
 c            write(*,*)'rhoinf=',rhoinf,ninjcomp
          endif
@@ -769,19 +769,30 @@ c a reinjection.
 c greins contains the reinjection flux per face for each species when set.
                flux=flux+(greins(2*i-1,ispecies)
      $              +greins(2*i,ispecies))*fcarea(i)
-               volume=volume*(xmeshend(i)-xmeshstart(i))
+               if(gn(i).eq.0.)then
+                  volume=volume*(xmeshend(i)-xmeshstart(i))
+               else
+c Corrected effective volume for density gradient cases.
+                  volume=volume*(
+     $                   exp((max(xmeshstart(i),xmeshend(i))-gp0(i))
+     $                   *gn(i))-
+     $                   exp((min(xmeshstart(i),xmeshend(i))-gp0(i))
+     $                   *gn(i)) )/
+     $                   (gn(i))
+               endif
             enddo
             if(ispecies.gt.1)ripn=nparta(1)/volume
             fpinj=ripn*dtin*flux/numratioa(ispecies)
             ninjcompa(ispecies)=int(fpinj)
 c Partial reinjection is indicated by this fraction.
             pinjcompa(ispecies)=fpinj-int(fpinj)
-
             nparta(ispecies)=int(ripn*volume/numratioa(ispecies))
       if(.false.)then      
-      write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp,pinj'
-      write(*,'(i2,4f8.3,2i8,f8.4)') ispecies,ripn,dtin,cfactor,flux
+      write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp,pinj',
+     $        ',volume'
+      write(*,'(i2,4f8.3,2i8,f8.4,f8.1)')ispecies,ripn,dtin,cfactor,flux
      $     ,nparta(ispecies),ninjcompa(ispecies),pinjcompa(ispecies)
+     $     ,volume
       endif
             if(n_part.gt.n_partmax)then
                write(*,*)'ERROR. Too many particles required.'

@@ -556,7 +556,7 @@ c***********************************************************************
 c Set the values of the potential and charge at the grid
 c points that compensate for the analytic field of getadfield.
 c Also any temperature-gradient and density-gradient factors.
-
+      implicit none
       logical lsliceplot
 c Defines iptch_mask uci, rhoc and dimensions.
 c ndims must be same as ndimsp.
@@ -568,7 +568,8 @@ c To do the slice plot we need this it include grid decl.
       include 'plascom.f'
 c Here a segfault was caused if na_m2 was used.
       real zp(na_m,na_m)
-      integer ipoint
+      integer ipoint,ifix
+      real dum
       external ucrhoset
       iptch_mask=irptch
       gtt_copy=gtt

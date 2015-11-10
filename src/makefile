@@ -308,7 +308,7 @@ GeometryTests :  $(COPTIC)
    if $(G77) --version 2>&1 | grep "GNU Fortran" ; then\
     echo 'Starting background tests. Recompile only when completed.' >&2;\
     echo "compiler=$(COMPILER).";\
-    make geometry;\
+    make geometry &\
    fi\
   fi
 

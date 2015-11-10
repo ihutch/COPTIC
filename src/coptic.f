@@ -347,7 +347,7 @@ c Reset psum, after psumtoq.
 c Solve for the new potential:-------------------
          if(debyelen.eq.0)then
             call mditerarg(quasineutral,ndims,ifull,ium2,
-     $        0,q(2,2,2),u(2,2,2),volumes(2,2,2),dum4,dum5)
+     $        0,q(2,2,2),u(2,2,2),volumes(2,2,2),uc(2,2,2),dum5)
             call bdyslope0(ndims,ifull,iuds,cij,u,q)
          else
             if(boltzamp.ne.0)then
