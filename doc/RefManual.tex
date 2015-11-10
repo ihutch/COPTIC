@@ -1052,7 +1052,7 @@ specification data \verb!/meshspec/! that is read in from the object file.
 It is used in the routine \verb!meshconstruct! to construct the mesh,
 but is generally unimportant during running, because the information
 is coded into the second common \verb!/sormesh/!.
-\verbatiminput{meshcom.f} 
+\verbatiminput{../src/meshcom.f} 
 
 The array \verb!xn! contains the x, y, and z mesh positions
 concatenated one after the other. Its allocated length,
@@ -1070,7 +1070,7 @@ of the mesh is \verb!ixnp(id+1)-ixnp(id)!.
 
 \paragraph{Non-standard stencils,} which occur at object surfaces,
 are controlled by data structures in file \verb!objcom.f!. 
-\verbatiminput{objcom.f}
+\verbatiminput{../src/objcom.f}
 The array \verb!dob_cij! which is equivalenced to \verb!idob_cij!
 contains the information accessed by a pointer into its second index.
 For any node of the mesh, there is a pointer which if non-zero refers
@@ -1124,7 +1124,7 @@ integer array.
 
 Collisions with neutrals are governed by a collision time
 \verb!colntime! which if zero means there are no collisions.
-\verbatiminput{colncom.f}
+\verbatiminput{../src/colncom.f}
 
 The collision frequency is by default independent of particle
 velocity. However, if \verb!colpow! is non-zero, then the collision
@@ -1302,7 +1302,8 @@ spheres at present).
 For accumulation of the distribution averaged over large regions, the
 structures in common \verb!/cartdiag/! are used.  There are
 \verb!nptdiag! points in each direction for position and velocity.
-\verbatiminput{ptaccom.f} Spatially resolved velocity distributions
+\verbatiminput{../src/ptaccom.f} 
+Spatially resolved velocity distributions
 are collected over blocks of cells. The number of such blocks is given
 by \verb!parameter(nsub_i=15,nsub_j=15,nsub_k=15)!  The velocity bins
 are unevenly spaced using an importance algorithm, so as to allow
@@ -1770,9 +1771,7 @@ will attempt to find a compiler called \verb!mpif77! with MPI
 capability.  If it succeeds, or actually if the compiler's name
 contains the string \verb!mpi!, then it will build a parallel
 executable. If not, then it will build a fully functional serial
-executable without MPI dependencies. The first time make is run, it
-will write a new default compiler command based upon its system tests
-into the file \verb!compiler!. If errors arise, then the command
+executable without MPI dependencies. If errors arise, then the command
 \verb!$ make clean; make! will clean up and retry with the new default
 compiler, which will likely work.
 

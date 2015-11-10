@@ -295,18 +295,21 @@ geometry : $(COPTIC_ROOT)/geometry/*.cks
 	rm -f T1*
 	date >>GeometryTests
 	cat GeometryTests
+	cd $(COPTIC_ROOT)/src/; ./coptic; cd -
 
 regeom :
 	@echo 'Regenerating geometry/*.cks files' >&2
 	for file in $(COPTIC_ROOT)/geometry/*.dat ; do rm $${file%.dat}.cks; make $${file%.dat}.cks; done
 
 # Use compiler (which depends on makefile) as a test of major updates
-GeometryTests : $(COPTIC)
+GeometryTests :  $(COPTIC)
 	@if [ "$(G77)" != "mpif77" ] ; then echo "Not doing geometry tests" >&2;\
   else\
-   echo 'Starting background tests. Recompile only when completed.' >&2;\
-   echo "compiler=$(COMPILER).";\
-   make geometry;\
+   if $(G77) --version 2>&1 | grep "GNU Fortran" ; then\
+    echo 'Starting background tests. Recompile only when completed.' >&2;\
+    echo "compiler=$(COMPILER).";\
+    make geometry;\
+   fi\
   fi
 
 #####################################################

@@ -14220,3 +14220,9 @@ that would take a factor of 2 off getfield in the other directions.
 We'd then get 2/3 less effort in getfield and gradlocalregion which
 together are 30s of 67. So we'd save 20s off 67, but only for 2-D runs.
 
+9 Nov 2015 
+Implement a test for 3-size and periodic potential that is
+supposed to save time.  It saves about 20% of the time for one
+periodic dimension. And another 20% for the second. Significant.
+The remaining getfield costs only about 25% of the remaining total. 
+So no major gains would be obtained from improvements to it. 

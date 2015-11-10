@@ -26,6 +26,7 @@ c Meshcom provides ixnp, xn, the mesh spacings. (+ndims)
       include 'plascom.f'
 c Collision settings.
       include 'colncom.f'
+      include 'facebcom.f'
 
 c Local parameters
 c Lowest particle to print debugging data for.
@@ -140,25 +141,25 @@ c the region information.
          r2=0.
          v2=0.
          do idf=1,ndims
-            call getfield(cij(ic1),u,iLs
-     $           ,xn(ixnp(idf)+1),idf,x_part(ndimsx2+1,i)
-     $           ,IAND(iregion,ifield_mask),Efield(idf))
-            if(.not.abs(Efield(idf)).lt.fieldtoolarge)then
-               write(*,*)'Field corruption(?) by getfield.'
-               write(*,'(''Particle'',i8,'' dimension='',i2,
+c Test for need to get field:
+            if(.not.(LPF(idf).and.ixnp(idf+1)-ixnp(idf).eq.3))then
+c            if(.true.)then   
+               call getfield(cij(ic1),u,iLs
+     $              ,xn(ixnp(idf)+1),idf,x_part(ndimsx2+1,i)
+     $              ,IAND(iregion,ifield_mask),Efield(idf))
+               if(.not.abs(Efield(idf)).lt.fieldtoolarge)then
+                  write(*,*)'Field corruption(?) by getfield.'
+                  write(*,'(''Particle'',i8,'' dimension='',i2,
      $'' iregion='',i3,'' masked='',i3,'' Field='',3f10.5)')i,idf
-     $              ,iregion ,IAND(iregion,ifield_mask),Efield(idf)
-               write(*,'(''xp:'',9f8.4)')(x_part(kk,i),kk=1,3
-     $              *ndims)
-               write(*,'(''In region'',l2,''  iLs=''
+     $                 ,iregion ,IAND(iregion,ifield_mask),Efield(idf)
+                  write(*,'(''xp:'',9f8.4)')(x_part(kk,i),kk=1,3
+     $                 *ndims)
+                  write(*,'(''In region'',l2,''  iLs=''
      $,4i8)')linregion(ibool_part,ndims,x_part(1,i)),iLs
-               stop
-            endif
-            if(i.eq.1)then
-c               write(*,*)
-c     $             idf,irptch,' field,adfield',Efield(idf),adfield(idf)
-c     $              ,adfield(idf)/Efield(idf),Efield(idf)
-c     $              /x_part(idf,i)
+                  stop
+               endif
+            else
+               Efield(idf)=0.
             endif
             Efield(idf)=Efield(idf)+adfield(idf)
             f2=f2+Efield(idf)**2

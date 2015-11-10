@@ -262,13 +262,16 @@ c converged, but the total spread depends on multiple blocks.
       integer ierr,icommcart
       logical lconverged
       real convgd(3)
+      real cscale
+c This determines a minimum convergence scale for uniform cases.
+      parameter (cscale=0.01)
       convgd(1)=abs(delta)
       convgd(2)=-umin
       convgd(3)=umax
 c Here we need to allreduce the data, selecting the maximum values,
       call mpiconvgreduce(convgd,icommcart,ierr)
 c........
-      if(convgd(1).le.eps*(convgd(2)+convgd(3))) then
+      if(convgd(1).le.eps*max(convgd(2)+convgd(3),cscale)) then
          lconverged=.true.
       else
          lconverged=.false.
