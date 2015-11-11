@@ -40,8 +40,9 @@ $(shell \
 )
 G77:=$(COMPILER)
 else
-COMPILER=$(G77)
+COMPILER:=$(G77)
 endif
+export G77
 #########################################################################
 # In the Cray environment we need to tell explicitly to link -dynamic.
 ifeq ("$(G77)","ftn")
@@ -170,7 +171,6 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 # Run coptic on the dat file. If it works and gives phi output, sum it.
 # Compare with the old cks file and see if it's the same.
 %.cks : %.dat $(COPTIC)
-	@./setdimens 64 64 128 >makegeom.log
 	@rm -f T*.phi
 	@./${COPTIC} $*.dat >>makegeom.log
 	@if [ -f T*.phi ] ; then sum T*.phi >checksum ;\
@@ -248,6 +248,7 @@ bdyroutine.o : bdyroutine.f makefile $(HEADERS)
 #####################################################
 # Main program explicit to avoid make bugs:
 $(COPTIC) : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
+	@echo $(G77) > compiler
 	@echo "      rjscheme="\'$(REINJECT)\'" " > REINJECT.f
 	$(G77) -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f libcoptic.a $(LIBRARIES)
 
@@ -303,14 +304,22 @@ regeom :
 
 # Use compiler (which depends on makefile) as a test of major updates
 GeometryTests :  $(COPTIC)
-	@if [ "$(G77)" != "mpif77" ] ; then echo "Not doing geometry tests" >&2;\
+	@if ./setdimens 64 64 128 NO ; then\
+  if [ "$(G77)" != "mpif77" ] ; then echo "Not doing geometry tests" >&2;\
   else\
    if $(G77) --version 2>&1 | grep "GNU Fortran" ; then\
     echo 'Starting background tests. Recompile only when completed.' >&2;\
-    echo "compiler=$(COMPILER).";\
-    make geometry &\
-   fi\
-  fi
+    sleep 1; make geometry &\
+   fi; \
+  fi; \
+else\
+  echo Grid changes nececessary for GeometryTests. So not done.;\
+  echo If you want to do tests, first do make newgrid.;\
+fi
+
+newgrid : griddeclnew.f
+	mv griddeclnew.f griddecl.f
+	date > newgrid
 
 #####################################################
 clean :
@@ -375,5 +384,5 @@ coptic.prof : makefile $(OBJECTS)
 
 help :
 	@echo Targets: clean mproper ftnchek tree coptic.prof vecx analysis serial
-	@echo Tests:   geometry testing testanal regeom
+	@echo Tests:   GeometryTests testing testanal regeom
 	@echo Setup:   streamset streamunset

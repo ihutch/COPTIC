@@ -1032,12 +1032,19 @@ c      write(*,*)'Sectcom ipt=',sc_ipt
          call boxtitle(string)
          call axlabels('step','Spatially-summed flux number')
          call pltend()
+         call multiframe(1,2,0)
          call automark(ff_data(nf_address(iq,ifobj,nf_p1))
      $        ,ff_data(iav+1),nf_posno(iq,ifobj),1)
          call boxtitle(string)
          call axlabels('First flux face variable',
      $        'Time-averaged flux number')
+         call automark(ff_data(nf_address(iq,ifobj,nf_p2))
+     $        ,ff_data(iav+1),nf_posno(iq,ifobj),1)
+         call boxtitle(string)
+         call axlabels('Second flux face variable',
+     $        '')
          call pltend()
+         call multiframe(0,0,0)
       endif
 
       end
