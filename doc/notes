@@ -14260,7 +14260,7 @@ routine. Gives a flat potential. Seems right.
 
 fluxexamine gives segfaults when called with -q on loki
 (unfortunately not on X1). The GL color setting are referenced by gdb,
-and with vecx the XSetFocus is referenced. I think what's happening 
+and with vecx the XSetForeground is referenced. I think what's happening 
 is that e.g. color setting routines are being called without pltinit
 having initialized the display etc. That's causing incorrect calls
 to X and GL which are the segfaults.

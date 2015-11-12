@@ -215,6 +215,7 @@ c         endif
 c Write nicely the fluxdensity versus position for a sphere. 
 c Object k. Face 1, indexed by i,j, [third index 0 ignored].
 c We write out in row-order not column order. Which is 2nd index.
+      write(*,*)'irw',irw
       if(irw.gt.0.)then
          if(irw.gt.mf_obj)then
             write(*,*)'Asked for non-existent object',irw,'of',mf_obj
@@ -373,8 +374,9 @@ c               stop
                call axlabels('step','Force-'//argument)
                call winset(.true.)
                ipinit=ipinit+1
-            elseif(ipinit.gt.0)then
-               write(*,*)'FLUXEXAMINE calling color',k
+            endif
+            if(ipinit.gt.0)then
+c               write(*,*)'FLUXEXAMINE calling color',k
                call color(k)
                call dashset(4)
                call iwrite(k,iwd,argument)
@@ -475,7 +477,7 @@ c Read more arguments if there are any.
      $     ,' iquant,iobj,iface,i1,i2,i3'
       write(*,*)'-pf Write plots to files.'
 c      write(*,*)'-rp... Write potential phip' 
-      write(*,*)'-rpiii Row write average fluxdensity for object iii'
+      write(*,*)'-rwiii Row write average fluxdensity for object iii'
       write(*,*)'Turn off plots progressively: -p-1 -m0 -i9 -q'
       write(*,*)'Turn off print progressively: -w0 -v1024 -p256 ' 
 
