@@ -11,8 +11,8 @@ c**************************************************************
       real plotdata(ntr,6),stepdata(ntr)
 C      real traceave(ntr)
       real traceave(ntr)
-      character*100 filename,argument
-      integer iplot,iprint,ifmask,idimf,iomask,ivprn,ivtk,istep
+      character*100 filename,argument,fmt
+      integer iplot,iprint,ifmask,idimf,iomask,ivprn,ivtk,istep,irw
       real avefield(ndims),avepress(ndims),avepart(ndims)
       real avetotal(ndims),avecoln(ndims),avesq(ndims)
       real rp,yrange,cv(ndims)
@@ -20,19 +20,20 @@ C      real traceave(ntr)
       integer ifluxget(ngets,ngetpar)
       intrinsic ibclr,btest
       character*10 typetext(5)
-      character poslabel(4,5)
+      character*10 poslabel(4,5)
       integer objnumtotext(7)
       data objnumtotext/1,2,3,5,3,4,4/
-      data poslabel/'c','p','0','A','x','y','z','A','r','t','z','A'
-     $     ,'r','t','z','A','1','2','3','A'/
+      data poslabel/'cos(theta)','phi(rad)','0','Area',
+     $     'x','y','z','Area','radius','theta(rad)','z','Area'
+     $     ,'radius','theta(rad)','z','Area','1','2','3','Area'/
       data typetext/'Sphere ','Cuboid ','Cylinder ','SurfRev '
      $     ,'Pllelopp '/
       data iplot/1/iprint/1/ivprn/0/iquiet/1/
       data ifmask/1023/iomask/0/
-      data idimf/3/
+      data idimf/3/irw/0/
       data rp/0./cv/ndims*0./
       data ifluxget/nfget*0./
-      external getfluxdenave,getfluxden
+      external getfluxdenave,getfluxden,getposcoord
 
       fn1=0.5
       fn2=1.
@@ -98,6 +99,8 @@ c            read(argument(3:),'(i5)')iquiet
          endif
          if(argument(1:3).eq.'-rp')then
             read(argument(4:),*)rp
+         elseif(argument(1:3).eq.'-rw')then
+            read(argument(4:),*)irw
          elseif(argument(1:2).eq.'-r')then
             read(argument(3:),*)rview
          elseif(argument(1:2).eq.'-c')then
@@ -138,12 +141,15 @@ c Give informational messages.
 c      write(*,*)'File:',filename(1:lentrim(filename)) 
       write(*,*)'debyelen,Ti,vd,rs,phip,colntime,subcycle,vneut',
      $     ',fcold,dropac,Tneut,Eneut'
-      write(*,'(12f6.2)')debyelen,Ti,vd,rs,phip ,colntime,subcycle
+      write(*,'(a,12f6.2)')':',debyelen,Ti,vd,rs,phip ,colntime,subcycle
      $     ,vneutral,fcollided,dropaccel,Tneutral,Eneutral
       if(ivprn.eq.0)then
-      write(*,*)'   No. objects,   No. steps, dt,   No. quantities(obj)'
-         write(*,'(i12,i12,f10.4,20i3)')mf_obj,nf_step,ff_dt(nf_step),
-     $     (mf_quant(j),j=1,mf_obj)
+c      write(*,*)'   No. objects,   No. steps, dt,   No. quantities(obj)'
+c         write(*,'(i12,i12,f10.4,20i3)')mf_obj,nf_step,ff_dt(nf_step),
+c     $     (mf_quant(j),j=1,mf_obj)
+         write(*,'(a,i3,a,i5,a,f8.4,a,20i3)')'Objects=',mf_obj,' Steps='
+     $        ,nf_step,' dt=',ff_dt(nf_step),' Quantities(obj)='
+     $        ,(mf_quant(j),j=1,mf_obj)
 c      write(*,*) 'Posn and first 2 step addresses ',
 c     $     (((nf_address(i,j,k),i=1,mf_quant(j)),' ,'
 c     $     ,j=1,mf_obj),k=1-nf_posdim,2),'...'
@@ -206,6 +212,36 @@ c            write(*,*)'Plotting',k,mf_quant(k),iplot
             call fluxave(n1,n2,k,iplot,rhoinf)
 c         endif
       enddo
+c Write nicely the fluxdensity versus position for a sphere. 
+c Object k. Face 1, indexed by i,j, [third index 0 ignored].
+c We write out in row-order not column order. Which is 2nd index.
+      if(irw.gt.0.)then
+         if(irw.gt.mf_obj)then
+            write(*,*)'Asked for non-existent object',irw,'of',mf_obj
+            stop
+         endif
+         k=irw
+         write(*,*)'Writing row-ordered fluxdensity for object',k
+         imax=nf_dimlens(1,k,1)
+         jmax=nf_dimlens(1,k,2)
+         write(*,*)imax,jmax
+         do i=1,imax
+            coord=getposcoord(2,k,1,1,i,0)
+            write(*,401)coord
+            do j=1,jmax
+               write(*,401)getfluxdenave(1,k,1,j,i,0)
+            enddo
+            write(*,*)
+         enddo
+ 401     format(' ',f10.4,$)
+         write(*,'(a,$)')'Coordinate:'
+         do j=1,imax
+            coord=getposcoord(1,k,1,j,1,0)
+            write(*,401)coord
+         enddo
+         write(*,*)
+         call exit(0)
+      endif
 c Section for writing out average flux to specified facets.
       write(*,*)'   dt=',ff_dt(nf_step),'   rhoinf=',rhoinf
       do i=1,nget
@@ -438,6 +474,8 @@ c Read more arguments if there are any.
       write(*,*)'-g<i,j,k,l,m,n> specify a facet to print average'
      $     ,' iquant,iobj,iface,i1,i2,i3'
       write(*,*)'-pf Write plots to files.'
+c      write(*,*)'-rp... Write potential phip' 
+      write(*,*)'-rpiii Row write average fluxdensity for object iii'
       write(*,*)'Turn off plots progressively: -p-1 -m0 -i9 -q'
       write(*,*)'Turn off print progressively: -w0 -v1024 -p256 ' 
 

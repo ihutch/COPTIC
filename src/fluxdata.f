@@ -1391,3 +1391,20 @@ c      write(*,*)'getfluxave',iquant,ifobj,iface,i1,i2,i3,ijbin
          getfluxave=0.
       endif
       end
+c********************************************************************
+      real function getposcoord(ic,ifobj,iface,i1,i2,i3)
+c Return the face position relative coordinate ic on object ifobj
+c face iface, at facet indices i1,i2,i3
+      include 'ndimsdecl.f'
+      include '3dcom.f'
+c      write(*,*)'Entering getposcoord',ic,ifobj,iface,i1,i2,i3
+      ijbin=ijbinindex(ifobj,iface,i1,i2,i3)
+      if(ijbin.ne.-1.)then
+         iavd=nf_address(nf_flux,ifobj,1-ic)
+     $        +ijbin
+         getposcoord=ff_data(iavd)
+c      write(*,*)'getposcoord',ic,ifobj,iface,i1,i2,i3,ijbin,getposcoord
+      else
+         getposcoord=1.e20
+      endif
+      end
