@@ -73,8 +73,8 @@ c iplot is the quantity number to plot and average.
 c            ifmask=0
             iosw=-99
             iquiet=0
-c Tell not to initialize the force plots:
-            ipinit=1
+c Tell not to do the force plots:
+            ipinit=-1
 c            read(argument(3:),'(i5)')iquiet
          elseif(argument(1:2).eq.'-g')then
             nget=nget+1
@@ -363,6 +363,7 @@ c               stop
          avecharge=avecharge/float(iavenum)
          if(iplot.ne.0)then
          if(imk.ne.0)then
+            nplot=nplot+1
             if(ipinit.eq.0)then
                if(yrange.eq.0.)yrange=2.*avesq(idimf)
                call pltinit(1.,float(nf_step)
@@ -372,42 +373,41 @@ c               stop
                call axlabels('step','Force-'//argument)
                call winset(.true.)
                ipinit=ipinit+1
-            endif
-            nplot=nplot+1
-            call color(k)
-            call dashset(4)
-            call iwrite(k,iwd,argument)
-            call boxcarave(nf_step,nbox,plotdata(1,3),traceave)
-            call polyline(stepdata,traceave,nf_step)
-c            call polyline(stepdata,plotdata(1,3),nf_step)
-            call legendline(.1+.4*(nplot-1),.2,0,
-     $        'partforce '//argument(1:iwd))
-            call dashset(1)
-            call boxcarave(nf_step,nbox,plotdata(1,1),traceave)
-            call polyline(stepdata,traceave,nf_step)
-c            call polyline(stepdata,plotdata(1,1),nf_step)
-            call legendline(.1+.4*(nplot-1),.15,0,
-     $        'fieldforce '//argument(1:iwd))
-            call dashset(2)
-            call boxcarave(nf_step,nbox,plotdata(1,2),traceave)
-            call polyline(stepdata,traceave,nf_step)
-c            call polyline(stepdata,plotdata(1,2),nf_step)
-            call legendline(.1+.4*(nplot-1),.1,0,
-     $           'pressforce '//argument(1:iwd))
-            if(avecoln(1).ne.0)then
-               call dashset(3)
-               call boxcarave(nf_step,nbox,plotdata(1,6),traceave)
+            elseif(ipinit.gt.0)then
+               write(*,*)'FLUXEXAMINE calling color',k
+               call color(k)
+               call dashset(4)
+               call iwrite(k,iwd,argument)
+               call boxcarave(nf_step,nbox,plotdata(1,3),traceave)
                call polyline(stepdata,traceave,nf_step)
+c            call polyline(stepdata,plotdata(1,3),nf_step)
+               call legendline(.1+.4*(nplot-1),.2,0,
+     $              'partforce '//argument(1:iwd))
+               call dashset(1)
+               call boxcarave(nf_step,nbox,plotdata(1,1),traceave)
+               call polyline(stepdata,traceave,nf_step)
+c            call polyline(stepdata,plotdata(1,1),nf_step)
+               call legendline(.1+.4*(nplot-1),.15,0,
+     $              'fieldforce '//argument(1:iwd))
+               call dashset(2)
+               call boxcarave(nf_step,nbox,plotdata(1,2),traceave)
+               call polyline(stepdata,traceave,nf_step)
+               call legendline(.1+.4*(nplot-1),.1,0,
+     $              'pressforce '//argument(1:iwd))
+               if(avecoln(1).ne.0)then
+                  call dashset(3)
+                  call boxcarave(nf_step,nbox,plotdata(1,6),traceave)
+                  call polyline(stepdata,traceave,nf_step)
 c               call polyline(stepdata,plotdata(1,6),nf_step)
-               call legendline(.1+.4*(nplot-1),.05,0,
-     $              'collisions '//argument(1:iwd))
+                  call legendline(.1+.4*(nplot-1),.05,0,
+     $                 'collisions '//argument(1:iwd))
+               endif
+               call dashset(0)
+               call boxcarave(nf_step,nbox,plotdata(1,4),traceave)
+               call polyline(stepdata,traceave,nf_step)
+               call legendline(.1+.4*(nplot-1),.25,0,
+     $              'total '//argument(1:iwd))
             endif
-            call dashset(0)
-            call boxcarave(nf_step,nbox,plotdata(1,4),traceave)
-            call polyline(stepdata,traceave,nf_step)
-c            call polyline(stepdata,plotdata(1,4),nf_step)
-            call legendline(.1+.4*(nplot-1),.25,0,
-     $           'total '//argument(1:iwd))
          endif
          endif
          if(ivprn.eq.0)then

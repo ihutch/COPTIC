@@ -14255,3 +14255,12 @@ Seems to be working.
 Can't use -l0. with -gn because the direct potential calculation has no
 compensation. Correct that by subtracting uc(ind) in the quasineutral
 routine. Gives a flat potential. Seems right.
+
+12 Nov 15 
+
+fluxexamine gives segfaults when called with -q on loki
+(unfortunately not on X1). The GL color setting are referenced by gdb,
+and with vecx the XSetFocus is referenced. I think what's happening 
+is that e.g. color setting routines are being called without pltinit
+having initialized the display etc. That's causing incorrect calls
+to X and GL which are the segfaults.
