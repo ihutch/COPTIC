@@ -38,7 +38,9 @@ c      pscale=3.
 c 
       call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
      $     ,mcell,zminmax,icontour)
-      if(zminmax(1).gt.zminmax(2))istd=0
+      if(zminmax(1).gt.zminmax(2))then
+         istd=0
+      endif
       i1=1
       ied=ndiagmax
 c Create label
@@ -457,8 +459,11 @@ c Deal with arguments
      $           read(argument(3:),*,err=201)i1d
             if(argument(1:2).eq.'-m')
      $           read(argument(3:),*,err=201)mcell
-            if(argument(1:2).eq.'-z')
-     $           read(argument(3:),*,err=201)zminmax
+            if(argument(1:2).eq.'-z')then
+                read(argument(3:),*,err=201)zminmax
+c Turn on trucation if the z-range is set
+                call togi3trunc()
+             endif
             if(argument(1:2).eq.'-h')goto 203
             if(argument(1:2).eq.'-?')goto 203
             if(argument(1:2).eq.'-w')then
