@@ -288,6 +288,7 @@ c Draw projected axes using the current projection according to ic.
       real fixd
       integer ica,i1,i2
       integer ixc(0:5),iyc(0:5)
+      parameter (rozmin=.2)
       logical flip,xhoriz,yhoriz,ltem
       data ixc/-1,-1,1,1,-1,-1/iyc/1,-1,-1,1,1,-1/
 c
@@ -363,6 +364,15 @@ c corner 3 or 4 draw x-axis + to - as a y-axis
          endif
       endif
 c z- axis.
+c Get eye position for deciding if we plot z-axis
+      call trn32(xdum,ydum,zdum,x2,y2,z2,-1)
+      r2=sqrt(x2**2+y2**2)
+      if(z2.ne.0)then
+         roz=r2/z2
+      else
+         roz=1000.
+      endif
+      if(abs(roz).gt.rozmin)then
       i2=1
       if(ica.le.2)i2=-i2
       if(ica.eq.3.and..not.flip)i2=-i2
@@ -393,6 +403,7 @@ c        i1=3
             call gaxis(wz3min,wz3max,ngpow,0.,0.
      $     ,-scbz3,scbz3,scbx3,scbx3,.false.,.false.)
          endif
+      endif
       endif
       call hdprset(0,0.)
       end

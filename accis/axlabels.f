@@ -69,6 +69,7 @@ c Draw projected axes using the current projection according to ic.
       include 'plotcom.h'
       include 'world3.h'
       real fixd
+      parameter (rozmin=.2)
       integer ica,i1,i2
       integer ixc(0:5),iyc(0:5)
       logical flip,xhoriz,yhoriz,ltem
@@ -207,6 +208,15 @@ c     $           -scbz3,-scbz3,scbx3,-scbx3,.true.,.false.)
          endif
       endif
 c z- axis.
+c Get eye position for deciding if we plot z-axis
+      call trn32(xdum,ydum,zdum,x2,y2,z2,-1)
+      r2=sqrt(x2**2+y2**2)
+      if(z2.ne.0)then
+         roz=r2/z2
+      else
+         roz=1000.
+      endif
+      if(abs(roz).gt.rozmin)then
       i2=1
       if(ica.le.2)i2=-i2
       if(ica.eq.3.and..not.flip)i2=-i2
@@ -249,6 +259,7 @@ c     $    ,-scbz3,scbz3,scbx3,scbx3,.false.,.false.)
             chrssin=-1.
             call jdrwstr(1.3*chrshght,scbx3,zaxlab,-1.2)
          endif
+      endif
       endif
       call hdprset(0,0.)
       chrscos=ctemp
