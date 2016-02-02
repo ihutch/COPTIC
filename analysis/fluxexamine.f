@@ -452,7 +452,7 @@ c Read more arguments if there are any.
       write(*,*)'-n1,-n2 fractional step range over which to average.'
       write(*,*)'-p set quantity to average and plot.'
      $     ,' Default -p1. Non-positive no initial plots'
-      write(*,*)'-q suppress all plots.'
+      write(*,*)'-q suppress all plots and fluxave printing.'
       write(*,*)'-w set object whose read-back data is to be written,',
      $     ' or none.'
       write(*,*)'-m mask objects whose force is to be plotted'

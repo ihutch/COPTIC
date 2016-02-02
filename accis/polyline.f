@@ -141,6 +141,36 @@ c 'Long/Short breaks'.
          dashlen(2)=.005
          dashlen(3)=.02
          dashlen(4)=.02
+      elseif(i.eq.11)then
+c 'Long/Medium long breaks'.
+         dashlen(1)=.03
+         dashlen(2)=.02
+         dashlen(3)=.015
+         dashlen(4)=.02
+      elseif(i.eq.12)then
+c 'Long with tiny breaks'.
+         dashlen(1)=.03
+         dashlen(2)=.005
+         dashlen(3)=.03
+         dashlen(4)=.005
+      elseif(i.eq.13)then
+c 'Dots with long/short breaks'.
+         dashlen(1)=.003
+         dashlen(2)=.005
+         dashlen(3)=.003
+         dashlen(4)=.01
+      elseif(i.eq.14)then
+c 'Short, dot '.
+         dashlen(1)=.01
+         dashlen(2)=.01
+         dashlen(3)=.003
+         dashlen(4)=.01
+      elseif(i.eq.15)then
+c 'Short short break'.
+         dashlen(1)=.01
+         dashlen(2)=.006
+         dashlen(3)=.01
+         dashlen(4)=.02
       endif
       dashdist=1.e-6
       jmask=1

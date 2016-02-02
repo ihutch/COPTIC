@@ -109,7 +109,12 @@ c      write(*,*)' color: updown=',updown
       else
          call gradcolor(li-15)
       endif
-      return
+      end
+C********************************************************************
+      subroutine cyccolor(li,ncyc)
+c Set color li cyclically with cycle from 1 to 0<ncyc<16.
+      integer li,ncyc
+      call color(mod(li,min(max(ncyc,1),15))+1)
       end
 C********************************************************************
       subroutine multiframe(irows,icolumns,itype)

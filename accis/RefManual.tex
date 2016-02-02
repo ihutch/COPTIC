@@ -325,20 +325,21 @@ at levels zclv(icl). If icl=0 fit contour levels instead. If icl.lt.0 no
 line labels. Cworka is a work character array at least (ixm, iym).
 
 CONTOURL(za,cworka,iLdim,ixm,iym,zclv,icl,x,y,icsw) General contour
-za(1:ixm(of ildim), iym) at zclv(icl) (or fit if icl=0, using zclv(1)
-if non-zero to determine contour number) on a mesh defined by
-x,y. Switch icsw determines call type: 0 equal spacing, x,y not used;
-1 vectors x,y determine mesh; 2 arrays x,y determine mesh; bit 5 (16)
-sets coloring; bit 6 (32) omits contour lines; bit 7 (64) color-fills
-with triangle gradients, in which case non-zero second byte (*256)
-determines the step size of the gradients (1 by default). Color
-gradient contouring should be done with icl .ge. 2 and the maximum and
-minimum values in zclv(1) and zclv(icl). Then a gradlegend can be
-constructed with these values.  Third byte (*65536) if non-zero sets
-filling of (usually one level of) closed contour by the integer color
-to which it corresponds, and turns off contour lines (which might
-therefore have to be drawn later on top). Contour filling doesn't work
-perfectly for contours that intersect more than one border.
+za(1:ixm(of ildim), iym) at zclv(icl). If icl=0, or icl$<$-998, fit
+contours using zclv(1) if non-zero to determine contour number. On a
+mesh defined by x,y. Switch icsw determines call type: 0 equal
+spacing, x,y not used; 1 vectors x,y determine mesh; 2 arrays x,y
+determine mesh; bit 5 (16) sets coloring; bit 6 (32) omits contour
+lines; bit 7 (64) color-fills with triangle gradients, in which case
+non-zero second byte (*256) determines the step size of the gradients
+(1 by default). Color gradient contouring should be done with icl
+.ge. 2 and the maximum and minimum values in zclv(1) and
+zclv(icl). Then a gradlegend can be constructed with these values.
+Third byte (*65536) if non-zero sets filling of (usually one level of)
+closed contour by the integer color to which it corresponds, and turns
+off contour lines (which might therefore have to be drawn later on
+top). Contour filling doesn't work perfectly for contours that
+intersect more than one border.
 
 CONT3PROJ(za,cworka,iLdim,ixm,iym,zclv,icl,x,y,icsw,f) Draw a contour
 plot projected on to the z=f*scbz3 (constant) plane of a 3-D

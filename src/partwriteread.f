@@ -12,7 +12,7 @@ c names constructed from the parameters and suitable extensions.
       character*100 localfilename
 
       partfilename=restartpath
-      call partwrite(partfilename,myid)
+      call partwrite(partfilename)
 c      write(*,*)'Returned from partwrite'
 c      write(*,*)partfilename(1:lentrim(partfilename)),myid
       if(myid.eq.0)then
@@ -36,19 +36,22 @@ c      write(*,*)partfilename(1:lentrim(partfilename)),myid
 c%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 c Write particle data to disk.
-      subroutine partwrite(name,myid)
+      subroutine partwrite(name)
 c File name:
       character*(*) name
 c My mpi id
-      integer myid
       include 'ndimsdecl.f'
       include 'partcom.f'
       include 'plascom.f'
       include 'rancom.f'
+      include 'myidcom.f'
       character*(100) charout
 
       call nameconstruct(name)
-      call nameappendint(name,'.',myid,3)
+c Use an extension length sufficient for the total number of processes
+c but always at least 3.
+      call nameappendint(name,'.',myid,
+     $     max(3,int(log10(float(nprocs))+1.)))
       open(22,file=name,status='unknown',err=101)
       close(22,status='delete')
       open(22,file=name,status='new',form='unformatted',err=101)

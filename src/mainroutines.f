@@ -77,7 +77,8 @@ c Since some must be here, we construct the names here and not later.
          nb=nbcat(phifilename,'.phi')
          fluxfilename=partfilename
          nb=nbcat(fluxfilename,'.flx')
-         nb=nameappendint(partfilename,'.',myid,3)
+         nb=nameappendint(partfilename,'.',myid,
+     $     max(3,int(log10(float(nprocs))+1.)))
          if(lrestart/2-2*(lrestart/4).ne.0)then
             iferr=0
 c            write(*,*)'Reading flux file:',fluxfilename

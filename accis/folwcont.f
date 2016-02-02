@@ -51,12 +51,12 @@ c Color (only) Contour of z on rectangular mesh.
       call gradlegend(c1st,clast,-.2,0.,-.2,1.,.03,.false.) 
       end
 c************************************************************************
-      subroutine contourl(z,ppath,l,imax,jmax,cl,nc,x,y,consw)
+      subroutine contourl(z,ppath,l,imax,jmax,cl,ncin,x,y,consw)
 c Contour a function on a mesh defined by x,y.
 c 2 Aug 92 Labelled contouring. Feb 93.
 c 1 Jan 2001 coloring by height.
 c Plot should be initialized first.
-      integer l,imax,jmax,nc
+      integer l,imax,jmax,nc,ncin
       real z(l,jmax),x(l),y(l),cl(*)
       character ppath(l,jmax)
       integer consw
@@ -68,8 +68,8 @@ c   Bit 5 (16) set, do coloring
 c   Bit 6 (32) set, don't contour (only color).
 c   Bit 7 (64) set, color using triangle gradients.
 c     In which case second byte tells the level skip (default 1).
-c If nc lt 0 no labels. If nc eq 0 then fit contours; use cl(1) for
-c number of contours if non-zero. Else use array cl(nc).
+c If nc lt 0 no labels. If nc eq 0 or <-998, then fit contours; use
+c cl(1) for number of contours if non-zero. Else use array cl(nc).
 c 
       include 'plotcom.h'
       real cv
@@ -90,6 +90,8 @@ c Maximum length of a single contour. Increase if necessary.
       parameter (ngradcol=240)
       common/cont1stlast/c1st,clast
 
+      nc=ncin
+      if(nc.lt.-988)nc=0.
 c      write(*,*)'Inside contourl'
 c save charsize
       cw=chrswdth
@@ -104,7 +106,7 @@ c Second byte
 c Third byte plus switch
       ifcol=(consw/65536-256*(consw/(256*65536)))*65536 + theconsw
 c      write(*,*)'consw,theconsw,ifcol,icfil',consw,theconsw,ifcol,icfil
-      if(nc.eq.0)then
+      if(nc.eq.0.)then
 c Contour level fitting.
          call minmax2(z,L,imax,jmax,minz,maxz)
          in=inc
@@ -259,6 +261,7 @@ c                  write(*,*)c1st,clast,ngradcol
          point=0
       else
          labels=.true.
+         if(ncin.lt.-988)labels=.false.
 c    stored current size earlier
          call charsize(.01,.01)
 c Decide on the format of the label based on the contour range.

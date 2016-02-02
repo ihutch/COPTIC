@@ -119,7 +119,7 @@ c Find the mesh position
                   if(ixi.ne.0)then
                      xf=xi-ixi
                      val=dphidx(ixi)*(1-xf)+dphidx(ixi+1)*xf
-                     write(*,'(a,f10.5,af10.5)')'Position:',diffval
+                     write(*,'(a,f10.5,a,f10.5)')'Position:',diffval
      $                    ,'  Derivative Value:',val
                   else
                      write(*,*)'Fixed value outside range.'

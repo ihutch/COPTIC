@@ -14264,3 +14264,8 @@ and with vecx the XSetForeground is referenced. I think what's happening
 is that e.g. color setting routines are being called without pltinit
 having initialized the display etc. That's causing incorrect calls
 to X and GL which are the segfaults.
+
+13 Nov 15
+
+Make partwrite use the nprocs to decide the length of the extension that
+the file it writes to uses.
