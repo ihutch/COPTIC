@@ -213,6 +213,10 @@ libcopsol.a : makefile $(SOLOBJECTS) $(UTILITIES) $(SOLHEADERS)
 	rm -f libcopsol.a
 	ar -rs libcopsol.a $(SOLOBJECTS) $(UTILITIES)
 
+# Create griddecl and copticgeom.dat only if they don't exist.
+griddecl.f :
+	./setdimens ../geometry/geomcubic.dat
+
 copticgeom.dat : $(GEOMFILE)
 	@if [ -f "$(GEOMFILE)" ] ; then ln -s -f $(GEOMFILE) copticgeom.dat ; fi
 
