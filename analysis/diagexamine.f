@@ -20,6 +20,7 @@ c 1-d plotting arrays.
       integer iuphi(3),iurs(3),isrs(3)
       integer iunp,i1d,isingle,i1,iwr,istd
       data iunp/0/i1d/0/iwr/0/zminmax/0.,0./icontour/0/istd/1/
+      data ierr/0/
 
       lvtk=.false.
       fluxfilename=' '
