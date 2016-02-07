@@ -408,7 +408,7 @@ c Every iavesteps, calculate the box average of the moments, and write it
 c out, if we are doing diagnostics.
          if(mod(j,iavesteps).eq.0)call periodicwrite(ifull,iuds,iLs
      $        ,diagsum,uave,lmyidhead,ndiags,ndiagmax,nf_step,nsteps
-     $        ,idistp,vlimit,xnewlim,cellvol,ibinit,idcount)
+     $        ,idistp,vlimit,xnewlim,cellvol,ibinit,idcount,restartpath)
 c Particle distribution diagnostics.
 c The serial cost for this call with 1M particles is about 1s in 17s.
 c Or less than 2s if both partaccum and vaccum are called. Thus the

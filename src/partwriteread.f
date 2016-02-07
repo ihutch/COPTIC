@@ -368,7 +368,7 @@ c Report dropped ions because of excessive acceleration.
 c************************************************************************
       subroutine periodicwrite(ifull,iuds,iLs,diagsum,uave,lmyidhead
      $     ,ndiags,ndiagmax,nf_step,nsteps,idistp,vlimit
-     $     ,xnewlim,cellvol,ibinit,idcount)
+     $     ,xnewlim,cellvol,ibinit,idcount,restartpath)
 c Periodic reduction, reporting, and writing of information on the 
 c state of the simulation.
       implicit none
@@ -382,6 +382,7 @@ c state of the simulation.
       real uave(ifull(1),ifull(2),ifull(3))
       real xlimit(2,ndimsmax),vlimit(2,ndimsmax)
       real xnewlim(2,ndimsmax)
+      character*(*) restartpath
 
 c Local variables:
       character*100 diagfilename,argument
@@ -423,7 +424,7 @@ c If I'm the head, write it.
      $                 ispecies,nf_step
                   endif
                endif
-               diagfilename=' '
+               diagfilename=restartpath
                call namewrite(diagfilename,ifull,iuds,ndiags+1
      $              ,diagsum(1,1,1,1,ispecies),argument)
             endif
