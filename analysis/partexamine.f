@@ -8,6 +8,7 @@ c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       include '../src/ptaccom.f'
  
       character*10 chartemp
+      character*20 theformat
       character*100 name
       character*100 string
       logical ldoc
@@ -68,11 +69,17 @@ c      write(*,*)'nptdiag,nsbins',nptdiag,nsbins
       endif
 c Now the base filename is in partfilename.
 
-      ip=lentrim(partfilename)-3
-      if(partfilename(ip:ip).eq.'.')then
-c If filename has a 3-character extension or is a numbered pex
+c      ip=lentrim(partfilename)-3
+      ip=istrstr(partfilename,'.')
+c If filename has an character extension or is a (numbered) pex
 c file. Assume it is complete and that we are reading just one
 c file. Should do this only the first time.
+      if(ip.gt.0)then
+      if(partfilename(ip:ip+3).eq.'.pex')then
+         nfmax=-1
+         name=partfilename
+         write(*,*)'Reading pex file ',name(1:lentrim(name))
+      elseif(partfilename(ip:ip).eq.'.')then
          nfmax=0
          name=partfilename
          write(*,*)'Reading single file ',name(1:lentrim(name))
@@ -80,20 +87,20 @@ c file. Should do this only the first time.
             write(*,*)'Using stored distribution file'
             nfmax=-1
          endif
-      elseif(partfilename(ip-4:ip-1).eq.'.pex')then
-         nfmax=-1
-         name=partfilename
-         write(*,*)'Reading numbered pex file ',name(1:lentrim(name))
+      endif
       endif
 c Possible multiple files.
-      do i=0,nfmax
+      il=3
+ 12   do i=0,nfmax
          if(nfmax.ne.0)then
-            write(chartemp,'(''.'',i3.3)')i
+            write(theformat,'(a,i1,a,i1,a)')'(''.'',i',il,'.',il,')'
+            write(chartemp,theformat)i
             name=partfilename(1:lentrim(partfilename))//chartemp
-            write(*,*)'Reading file ',name(1:lentrim(name))
+            write(*,'(2a,$)')' Reading ',name(1:lentrim(name))
          endif
          Bt=0.
          call partread(name,ierr)
+         if(ierr-4*(ierr/4).ne.0)goto 11
          if(ispecies.gt.nspecies)then
             ispecies=nspecies
             write(*,*)'nspecies=',nspecies,'  Reset ispecies',ispecies
@@ -109,7 +116,6 @@ c Possible multiple files.
             write(*,*)'nspecies',nspecies
 c            stop
          endif
-         if(ierr-4*(ierr/4).ne.0)goto 11
          if(Bdirs(4).gt.0. .or. Bt.eq.0)then
 c All directions were set by commandline. Or none were read from file.
             do k=1,ndims
@@ -123,6 +129,8 @@ c The cellvol==-1 call will set ivproj=1 in ptaccom.
 
       enddo
  11   continue
+      il=il+1
+      if(il.le.4)goto 12
 
       if(nfmax.eq.-1)then
          call distread(xlimit,vlimit,xnewlim,name,cellvol)
@@ -135,7 +143,8 @@ c         write(*,*)'nfvaccum,cellvol',nfvaccum,cellvol
 c Don't call bincalc if we read data back.         
 c         call bincalc()
       else
-         name(lentrim(name)-2:lentrim(name))='pex'
+         ip=istrstr(name,'.')
+         name(ip+1:)='pex'
          call distwrite(xlimit,vlimit,xnewlim,name,cellvol)
       endif
       
