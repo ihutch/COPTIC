@@ -14269,3 +14269,22 @@ to X and GL which are the segfaults.
 
 Make partwrite use the nprocs to decide the length of the extension that
 the file it writes to uses.
+
+10 Feb 16
+Running large 65^3 cases on NERSC, with more than 1000 processes.
+First 2048 exceeds maxprocs. So it stops. I increase maxprocs to 4096.
+Then I get segfaults which appear to be happening in sormpi. 
+
+I can avoid the segfaults by limiting the number of processes devoted to
+sormpi, using a switch -id8,8,8 which is 8^3=512 processes in the 
+cartesian communicator. I think I still used 2048 processes for the rest.
+But I've never used different numbers before so there might be issues
+not resolved properly. Actually 512 is enough for decent 3d calculation
+of hole stability.
+
+My best guess is that it is caused by norigmax not being large enough 
+(1500). Tried setting to maxprocs in the bbdy routine. It then gives
+a warning message unless the setting at the other place used is the
+same as maxprocs. This seems like a good compromise.
+
+Do run with 2048 processors with this increased. Fixed!

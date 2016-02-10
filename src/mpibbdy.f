@@ -111,7 +111,7 @@ c Each side runs from e.g. iorig(i,j,...)+1 to iorig(i+1,j,...)
 c We declare it as a 1-d array for generality. This is the first time here:
 c It must be of dimension greater than the number of processes (blocks)
       integer norigmax
-      parameter (norigmax=1500)
+      parameter (norigmax=maxprocs)
       integer iorig(norigmax)
       common /iorigcom/iorig
       
@@ -336,7 +336,6 @@ c   (1+icoords(1)*iLcoords(1)+icoords(2)*iLcoords(2),...)
          myorig=iorig(iobindex)
 c--------------------------------------------------------------------
 c Create the types, pointers and counts for block gathering.
-c         write(*,*)'calling bbdyblockcreate'
          call bbdygatherparam(ndims,iLs,iside,
      $     mycartid,nproc,idims,iLcoords,ioffset,idebug,
      $     isdispls,istypes,iscounts,irdispls,irtypes,ircounts)
@@ -720,7 +719,7 @@ c dimensions idims, iLcoords, ioffset, idebug.
       integer irdispls(nproc),irtypes(nproc),ircounts(nproc)
 
       integer norigmax
-      parameter (norigmax=1500)
+      parameter (norigmax=4096)
       integer iorig(norigmax)
       common /iorigcom/iorig
 
