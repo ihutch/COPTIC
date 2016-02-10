@@ -79,7 +79,7 @@ c Possibly this should be passed to the routine.
 c      integer ktype(2**imds)
 c Arrays for constructing ALLtoALL calls.
       integer maxprocs
-      parameter (maxprocs=1000)
+      parameter (maxprocs=4096)
       integer isdispls(maxprocs),irdispls(maxprocs)
       integer istypes(maxprocs),irtypes(maxprocs)
       integer iscounts(maxprocs),ircounts(maxprocs)
