@@ -109,6 +109,9 @@ c Find out early (here) the mpi structure and my mpi id number.
       lmyidhead=myid.eq.0
 c numprocs is the parameter in partcom kept separately for some reason
       numprocs=nprocs
+c This barrier is to try to make any error in parameter setting stop
+c all processes in such a way that the whole run stops.
+      call mpibarrier(ierr)
 c--------------------------------------------------------------
 c Deal with command-line arguments and geometry/object file.
       call parametersetting

@@ -28,8 +28,8 @@ c Local dummy variables for partlocate.
       logical linmesh
 c Local declarations
       integer i,i1,islotmax,ispecies,j,iregion,k,ko,nonzero,ntries,id,iv
-      integer iaccept,ireject
-      real theta,tisq,denmax,dentot,vr,v,vs
+      integer iaccept,ireject,jj,ntrapcount
+      real theta,tisq,denmax,dentot,vr,v,vs,Ttrans,eopsi,Ttr,vid
 c Factor by which we leave additional space for increased number of 
 c particles if not fixed:
       real slotsurplus
@@ -45,6 +45,7 @@ c Arguments of untrapcum
       npassthrough=0
       iaccept=0
       ireject=0
+      ntrapcount=0
 c-----------------------------------------------------------------
       i1=1
 c Point to the bottom of the particle stack for start of species 1.
@@ -66,16 +67,21 @@ c Set tperp to a tiny number if species is infinitely magnetized.
 c/sqrt(abs(eoverms(ispecies)))
 c         write(*,*)'theta=',theta,Bt,dt,Tperps(ispecies)
          notseparable(ispecies)=0
+         Ttrans=Ts(ispecies)
          if(colntime.ne.0..and.ispecies.eq.1)then
             if(myid.eq.0)write(*,*)'Collisional holes not implemented'
      $           ,colntime
             stop
          elseif(Tperps(ispecies).ne.Ts(ispecies))then
-c Collisionless anisotropic distribution is notseparable.
-            if(myid.eq.0)write(*,'(a,2f8.4,a,i3)')
-     $           ' Non-separable anisotropic T hole not implemented'
-     $           ,Ts(ispecies),Tperps(ispecies),' species',ispecies
-            stop
+c Interpret Tperp unequal to T as being the trapped particle 
+c transverse temperature. 
+            if(myid.eq.0)write(*,'(a,f8.4,a,f8.4,a,i3,/,a,f8.4)')
+     $           ' Tperp',Tperps(ispecies),' !=Ts',Ts(ispecies)
+     $           ,' interpreted as trapped only. Species',ispecies
+     $           ,' Resetting passing Tperp as isotropic.'
+     $           ,Ts(ispecies)
+            Ttrans=Tperps(ispecies)
+            Tperps(ispecies)=Ts(ispecies)
          else
 c Count the number of non-zero vdrift components. If it is more than one
 c then vdrift is not along a coordinate axis => nonseparable.
@@ -101,6 +107,7 @@ c     $        *sqrt(abs(eoverms(1)/eoverms(ispecies)))
      $           ,slotsurplus,int(islotmax*slotsurplus)
             stop
          endif
+c The following will actually be overridden later:
          tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
 c Determine the trapping dimension
          id=0
@@ -143,13 +150,14 @@ c     particle number else just set this slot empty.
             endif
 c Shifted Gaussians um is in units sqrt(2T/m), holeum in sqrt(T/m)
             um=holeum/sqrt(2.)
-            do j=1,ndims
-               if(j.ne.id)then
-                  x_part(ndims+j,i)=tisq*gasdev(myid) + vd*vdrift(j)
-               else
+            do jj=1,ndims
+c Start with the id direction, then the others.
+               j=mod(id+jj-2,ndims)+1
+               if(j.eq.id)then
 c Trapped distribution. Get hole peak and potential. Decide if to reject.
 c Decide velocity component.
                   psi=holepsi
+                  if(psi.le.0)stop 'Negative hole psi not allowed'
                   call getholepotl(psi,holelen,phi,x_part(id,i),id)
 c                  write(*,*)'psi,phi,id',psi,phi,id
 c Total electron density based upon the sech^4 potential variation
@@ -177,17 +185,32 @@ c Now cump contains the offset cumulative probability function at cumv.
                      v=v-iv
                      iv=iv-1-nm-nt
 c Units of cumv are sqrt(2T/m). Add holespeed in sqrt(T/m) units.
-                     x_part(ndims+id,i)
-     $                    =(cumv(iv)*(1-v)+cumv(iv+1)*(v))*sqrt(2.)
-     $                    +holespeed
-
+                     vid=(cumv(iv)*(1-v)+cumv(iv+1)*(v))
+                     x_part(ndims+id,i)=vid*sqrt(2.)+holespeed
+c Calculate the id energy in the hole frame and hence the transverse
+c temperature for cases where it is anisotropic.  Here charge is
+c presumed negative, psi positive (since several places the sqrt of psi
+c is taken).
+                     Ttr=Ts(ispecies)
+                     if(phi.gt.0)then
+c eopsi=1 at psi and zero at sepx.
+                        eopsi=(phi-vid**2)/psi
+                        if(eopsi.lt.0.)eopsi=0.
+c                        eopsi=eopsi**0.3
+                        Ttr=(Ttrans*eopsi + Ts(ispecies)*(1.-eopsi))
+c                        write(*,*)'phi=',phi,' eopsi=',eopsi,' Ttr=',Ttr
+                        if(eopsi.gt.0.)ntrapcount=ntrapcount+1
+                     endif
+                     tisq=sqrt(Ttr*abs(eoverms(ispecies)))
                   else
 c Reject. Set slot empty. Try again.
 c                     write(*,*)'vr,dentot',vr,dentot
                      ireject=ireject+1
-c                     x_part(iflag,i)=0
                      goto 1
                   endif
+               else
+c Transverse directions.
+                  x_part(ndims+j,i)=tisq*gasdev(myid) + vd*vdrift(j)
                endif
             enddo
 
@@ -199,7 +222,7 @@ c This test rejects particles exactly on mesh boundary:
             if(.not.linmesh)goto 1
 c 2          continue
          enddo
-c         write(*,*)'Accept,Reject',iaccept,ireject
+         write(*,*)'Accept,Reject,Ntrap',iaccept,ireject,ntrapcount
 c------------------------------- End of Actual Particle Setting --
 c The maximum used slot for this species
          iocparta(ispecies)=i-1
@@ -707,6 +730,6 @@ c*************************************************************************
       center=0.5*(xmeshstart(id)+xmeshend(id))
       arg=(x-center)/(debyelen*holelen)
       phi=holepsi/cosh(arg)**4
-      if(.not.phi.lt.1.e30)write(*,*)'psi,arg,phi',holepsi,arg,phi
+      if(.not.phi.ge.0.)write(*,*)'psi,arg,phi',holepsi,arg,phi
 
       end

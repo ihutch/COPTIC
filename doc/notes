@@ -13973,7 +13973,7 @@ from a shifted Maxwellian background. There does not seem an analytic form
 for the untrapped density when there's a shift. Improved that to return
 the cumulative distributions.
 
-7 Sep
+7 Sep 15
 
 Wrote routine to construct a cumulative probability distribution for 
 holes based upon the parabolic hole. It will return a range greater than
@@ -14288,3 +14288,11 @@ a warning message unless the setting at the other place used is the
 same as maxprocs. This seems like a good compromise.
 
 Do run with 2048 processors with this increased. Fixed!
+
+28 Apr 16
+
+Implement anisotropic temperature with hole initialization. 
+It is interpreted as setting the transverse temperature
+at the center of the 1-d phase-space, while the temperature of passing
+particles remains isotropic, and the trapped transverse temperature varies 
+linearly in energy from the external value to the center value. 
