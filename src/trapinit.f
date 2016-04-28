@@ -222,7 +222,7 @@ c This test rejects particles exactly on mesh boundary:
             if(.not.linmesh)goto 1
 c 2          continue
          enddo
-         write(*,*)'Accept,Reject,Ntrap',iaccept,ireject,ntrapcount
+c         write(*,*)'Accept,Reject,Ntrap',iaccept,ireject,ntrapcount
 c------------------------------- End of Actual Particle Setting --
 c The maximum used slot for this species
          iocparta(ispecies)=i-1
