@@ -14296,3 +14296,11 @@ It is interpreted as setting the transverse temperature
 at the center of the 1-d phase-space, while the temperature of passing
 particles remains isotropic, and the trapped transverse temperature varies 
 linearly in energy from the external value to the center value. 
+
+Seems I've made the diagnostic files write to the scratchpath now so I
+can't use them as a sign that the loki run is proceeding.  I need
+something, I think. Yes that was 7 Feb
+dacf4974ef029ff0368d01790047d7e7a5ba8092 I think that was because of 
+issues on Cori.
+
+Use monitor `masternodes` instead on loki.

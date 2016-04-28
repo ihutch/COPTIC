@@ -224,12 +224,10 @@ c      write(*,'(2a)')'Charout=',charout(1:lentrim(charout))
       if(irst.ne.0)then
          read(charout(irst+5:),*)ifulr
          do i=1,3
-            if(ifulr(i).ne.ifull(i))then
+            if(ifulr(i).gt.ifull(i))then
                write(*,'(a,3i5,a,3i5)')
      $              'Allocated array dimension mismatch. File:'
      $              ,ifulr,' Code:',ifull
-               write(*,'(a,3i5,a)')'To read this file run $ ./setdimens'
-     $              ,ifulr,'  to adjust griddecl.f'
                istop=2
                goto 102
             endif
@@ -239,20 +237,22 @@ c      write(*,'(2a)')'Charout=',charout(1:lentrim(charout))
       if(irst.ne.0)then
 c String contains ixnlength value. Get it and check it.
          read(charout(irst+9:),*)ixnlen
-         if(ixnlen.ne.ixnlength)then
-            write(*,'(a,2i5,a)')'****ixnlength mismatch in array3read',
-     $           ixnlen,ixnlength,' griddecl problem!'
+         if(.not.ixnlen.le.ixnlength)then
+            write(*,'(a,2i5,a)')'**** ixnlength mismatch in array3read',
+     $           ixnlen,ixnlength,' possible griddecl problem'
             istop=1
          endif
       endif
  102  if(istop.gt.0)then
          write(*,*)charout(1:lentrim(charout))
+         write(*,'(a,3i5,a)')'To read this file run $ ./setdimens'
+     $              ,ifulr,'  to adjust griddecl.f'
          stop '********  array3read fatal error  *********'
       endif
 c-----------
 c      write(*,*)charout(irst+9:)
       read(23)debyelen,Ti,vd,rs,phip
-      read(23)ixnp,xn
+      read(23)ixnp,(xn(kk),kk=1,ixnlen)
       read(23)iuds
       if(charout(1:2).eq.'de')then
 c First version
@@ -281,6 +281,7 @@ c First version
  101  continue
       write(*,*)'Failed to open file:',name(1:lentrim(name))
       ierr=1
+
       end
 c******************************************************************
 c******************************************************************
@@ -470,4 +471,3 @@ c ought to be reinitialized here. (partexamine expects this.)
       endif
       
       end
-c******************************************************************
