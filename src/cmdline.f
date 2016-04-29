@@ -10,7 +10,7 @@ c Combination of the two calls to copticcmdline.
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi,holeum,holeeta
+     $     ,holelen,holepsi,holeum,holeeta,holepow
      $     ,ifull,ierr)
       implicit none
       integer ifull,ierr
@@ -23,7 +23,9 @@ c Combination of the two calls to copticcmdline.
      $     ,lextfield,LPF(ndims),lnotallp,ldistshow
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,vneutral,debyelen,extfield,slpD ,Tneutral,Enfrac
-     $     ,colpow,boltzamp,holelen,holepsi,holeum,holeeta
+     $     ,colpow,boltzamp
+      real holepsi,holelen,holeum,holeeta,holepow
+
       real Bfield(ndims),Bt,CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
@@ -49,7 +51,7 @@ c First time this routine just sets defaults and the object file name.
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi,holeum,holeeta)
+     $     ,holelen,holepsi,holeum,holeeta,holepow)
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -66,7 +68,7 @@ c Second time: deal with any other command line parameters.
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi,holeum,holeeta)
+     $     ,holelen,holepsi,holeum,holeeta,holepow)
 c The double call enables cmdline switches to override objfile settings.
 c----------------------------------------------------------------------
       end
@@ -83,7 +85,7 @@ c Encapsulation of parameter setting.
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi,holeum,holeeta)
+     $     ,holelen,holepsi,holeum,holeeta,holepow)
 
       implicit none
 
@@ -94,7 +96,7 @@ c Encapsulation of parameter setting.
      $     ,lextfield,LPF(ndims),lnotallp,ldistshow
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,vneutral,debyelen,extfield,slpD ,Tneutral,Enfrac
-     $     ,colpow,boltzamp,holelen,holepsi,holeum,holeeta
+     $     ,colpow,boltzamp,holelen,holepsi,holeum,holeeta,holepow
       real Bfield(ndims),Bt,CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
@@ -168,6 +170,7 @@ c         crelax=1.*Ts(nspecies)/(1.+Ts(nspecies))
          holelen=4.
          holeeta=2.
          holeum=0.
+         holepow=1.
 c Boundary condition switch and value. 0=> logarithmic.
          islp=0
          slpD=0.
@@ -436,7 +439,8 @@ c            write(*,*)'||||||||||||||extfield',extfield
      $        read(argument(1:),'(a)',err=201)objfilename
          if(argument(1:3).eq.'-ih')then
             read(argument(4:),*,err=201,end=231)holepsi,holeum,holelen
-     $           ,holeeta
+     $           ,holeeta,holepow
+c            read(argument(4:),*,err=201,end=231)holeparams
             goto 240
 c Default hole value[s] are being used
  231        continue
@@ -662,8 +666,8 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,*)'     +Domain end between nodes (upper byte)',
      $     ' 64:lower, 128:upper, 192:both.'
       write(*,305)' -id<i,j,k> Set MPI block dims    [',idims
-      write(*,302)' -ih<P>[..] Set hole psi[u,l,eta] [',holepsi,holeum
-     $     ,holelen,holeeta
+      write(*,302)' -ih<P>[..] Set hole psi[u,l,h,p] [',holepsi,holeum
+     $     ,holelen,holeeta,holepow
       write(*,301)' -fs<i>  set restart switch:      [',lrestart
      $     ,' bit1:partls+potl, bit2:flux, bit3:name'
 

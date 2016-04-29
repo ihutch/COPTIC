@@ -196,7 +196,7 @@ c is taken).
 c eopsi=1 at psi and zero at sepx.
                         eopsi=(phi-vid**2)/psi
                         if(eopsi.lt.0.)eopsi=0.
-c                        eopsi=eopsi**0.3
+                        eopsi=eopsi**holepow
                         Ttr=(Ttrans*eopsi + Ts(ispecies)*(1.-eopsi))
 c                        write(*,*)'phi=',phi,' eopsi=',eopsi,' Ttr=',Ttr
                         if(eopsi.gt.0.)ntrapcount=ntrapcount+1
