@@ -20,7 +20,7 @@ c             lying outside the range (xmin,xmax).
 
       span=(xmax-xmin)
       if(xmax.eq.0. .and. xmin.eq.0)then
-         write(*,*)'Fitrange error. xmin=xmax=0'
+         write(*,*)'Fitrange warning. xmin=xmax=0'
          nxfac=0
          span=1.
       else

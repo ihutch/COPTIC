@@ -152,7 +152,7 @@ vecx.o : vecx.c $(MAKEFILE)
 	$(CC)  $(THREADING) -c vecx.c
 
 vecglx.o : vecglx.c
-	$(CC) -c $(THREADING) vecglx.c
+	$(CC) $(THREADING) -c vecglx.c
 #	$(CC) -c $(WSWITCHES) $(THREADING) vecglx.c
 
 # The file drwstr.f must be compiled with this switch which disables
@@ -221,7 +221,7 @@ interface.f90 : convert
 sync : syncsource synccoptic syncsceptic
 
 syncsilas : lib$(ACCISDRV).a RefManual.html
-	rsync -u -e ssh  --copy-links -v *.h *.f *.c RefManual.* Makefile silas:~/accis/
+	rsync -u -e ssh  --copy-links -v *.h *.f *.c RefManual.* *.png Makefile silas:~/accis/
 	date > syncsilas
 
 syncsource : lib$(ACCISDRV).a RefManual.html

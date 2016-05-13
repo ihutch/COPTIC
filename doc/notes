@@ -14304,3 +14304,11 @@ dacf4974ef029ff0368d01790047d7e7a5ba8092 I think that was because of
 issues on Cori.
 
 Use monitor `masternodes` instead on loki.
+
+29 Apr 16
+Implement extra hole parameter governing the power of the negative energy that
+scales the Tperp interpolation.
+
+13 May 16
+Remove lentrim from stringsnames.f because it is now part of the accis
+distribution. Accis bug fix in vecglx. Also fixed benign bug in Makefile. 

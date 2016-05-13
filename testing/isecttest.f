@@ -146,7 +146,8 @@ c First time this routine just sets defaults and the object file name.
      $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag)
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
+     $     ,holelen,holepsi,holeum,holeeta,holepow)
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -161,7 +162,8 @@ c Second time: deal with any other command line parameters.
      $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag)
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
+     $     ,holelen,holepsi,holeum,holeeta,holepow)
       if(ierr.ne.0)stop
 c The double call enables cmdline switches to override objfile settings.
 c-----------------------------------------------------------------

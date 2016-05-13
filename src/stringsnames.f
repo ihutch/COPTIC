@@ -51,15 +51,16 @@ c Return the number of catenated characters.
       nbcat=l2
       end
 c******************************************************************
+c Now included in accis library
 c Obtain the length of a string omitting trailing blanks.
-      function lentrim(string)
-      character*(*) string
-      do i=len(string),1,-1
-         if(string(i:i).ne.' ') goto 101
-      enddo
-      i=0
- 101  lentrim=i
-      end
+c      function lentrim(string)
+c      character*(*) string
+c      do i=len(string),1,-1
+c         if(string(i:i).ne.' ') goto 101
+c      enddo
+c      i=0
+c 101  lentrim=i
+c      end
 c******************************************************************
 c Construct an exp-formatted value with ip significant figures.
       subroutine eformati(value,string,ip)

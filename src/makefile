@@ -31,7 +31,7 @@ $(shell \
     if which g77 >/dev/null 2>&1 ; then echo -n "g77";else\
      if which f77 >/dev/null 2>&1 ; then echo -n "f77";else\
       if which gfortran >/dev/null 2>&1; then echo -n "gfortran";else\
-	echo "Unable to decide compiler. Specify via G77=..."; exit 1;\
+	echo "Unable to decide compiler. Specify via G77=..." >&2; exit 1;\
       fi;\
      fi;\
     fi;\

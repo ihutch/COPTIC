@@ -423,8 +423,7 @@ FORT_INT *li;
 /* Draw a vector Subroutine */ int vec_(px, py, ud)
 FORT_INT *px, *py, *ud;
 { /*  Draw vector on screen, with pen up or down. */
-/*     static int px1=0,py1=0,px2=0,py2=0; */
-  static float px1=0.,py1=0.,px2=0.,py2=0.;
+    static float px1=0.,py1=0.,px2=0.,py2=0.;
     extern XPoint accis_path[];
     extern int accis_pathlen;
 
@@ -439,7 +438,7 @@ FORT_INT *px, *py, *ud;
       glVertex2f(px1,py1);
       glVertex2f(px2,py2);
       glEnd();
-      if(accis_pathlen<accis_path_max){      /* Add point to path */
+      if(accis_pathlen<accis_path_max-1){      /* Add point to path */
 	accis_pathlen++;
       }
     }else{ 

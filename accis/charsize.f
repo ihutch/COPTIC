@@ -144,4 +144,14 @@ c Put a null at the end so we can treat as a C-string.
       string(width+1:width+1)=char(0)
       return
       end
+c******************************************************************
+c Obtain the length of a string omitting trailing blanks.
+      function lentrim(string)
+      character*(*) string
+      do i=len(string),1,-1
+         if(string(i:i).ne.' ') goto 101
+      enddo
+      i=0
+ 101  lentrim=i
+      end
 
