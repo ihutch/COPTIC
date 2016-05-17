@@ -4,7 +4,39 @@ c      call untrappeddentest
 c      call untrapcumtest
 c      end
 c***********************************************************************
-c Initializing particles with a trapped hole region.
+c Initializing particles with a trapped hole region.  
+c 
+c The 1-d parallel direction is that of B if it is coordinate-aligned,
+c or else dimension 1 (x).
+c
+c Hole parameters [switch-mnemonic,defaults] are 
+c holepsi, the peak hole potential [psi,0] 
+c holeum, the drift speed of the hole relative to the distribution [u,0]
+c holelen, the parallel length of the hole [l,4*Debyelen]
+c holeeta, the requested power of u determining trapped distribution shape
+c          2 gives parabolic. <=0 gives flattop [h,2]
+c holepow, the power governing trapped transverse temperature variation [p,1]
+c holerad, the transvers hole radius [r,0]
+c holespeed, the rest-frame hole speed [derived: =holeum+vd]
+c
+c The hole is created by adjusting the particle density consistent with
+c a potential profile that is sech^4(x/4l) in the parallel direction.
+c Adjustment is achieved by a rejection scheme based upon the analytic
+c density variation for specified peak potential psi, which gives the
+c density as a function of phi. When the hole is transversely uniform,
+c no transverse density gradient is anyway induced by rejection.
+c
+c However, to avoid generating a transverse density gradient when the
+c hole is transverse-localized, the rejection scheme retries until
+c successful, but with the transverse position unchanged. Therefore the
+c average density has no gradient in the transverse direction. Ideally
+c one wants the external density to have no gradient, so this is close
+c but not quite correct.
+c
+c If Tperp is different from T, this is interpreted as the transverse 
+c temperature of only the trapped region and the untrapped Tperp is
+c set back equal to T.
+c
       subroutine trapinit(sprior)
       implicit none
 c Common data:
@@ -29,7 +61,7 @@ c Local dummy variables for partlocate.
 c Local declarations
       integer i,i1,islotmax,ispecies,j,iregion,k,ko,nonzero,ntries,id,iv
       integer iaccept,ireject,jj,ntrapcount
-      real theta,tisq,denmax,dentot,vr,v,vs,Ttrans,eopsi,Ttr,vid
+      real theta,tisq,denmax,dentot,vr,v,vs,Ttrans,eopsi,Ttr,vid,r2
 c Factor by which we leave additional space for increased number of 
 c particles if not fixed:
       real slotsurplus
@@ -72,7 +104,8 @@ c         write(*,*)'theta=',theta,Bt,dt,Tperps(ispecies)
             if(myid.eq.0)write(*,*)'Collisional holes not implemented'
      $           ,colntime
             stop
-         elseif(Tperps(ispecies).ne.Ts(ispecies))then
+         elseif(Tperps(ispecies).gt.1.e-20
+     $           .and.Tperps(ispecies).ne.Ts(ispecies))then
 c Interpret Tperp unequal to T as being the trapped particle 
 c transverse temperature. 
             if(myid.eq.0)write(*,'(a,f8.4,a,f8.4,a,i3,/,a,f8.4)')
@@ -132,41 +165,58 @@ c Holeum is minus f drift speed relative to hole so holeum=-vd+holespeed:
      $        '. Please wait...'
 c ----------------------------- Actual Particle Setting ----------
          do i=iicparta(ispecies)+i1-1,islotmax
-            x_part(iflag,i)=1
+            x_part(iflag,i)=0
  1          continue
             ntries=ntries+1
 c Position choice including density gradients.
+            if(x_part(iflag,i).ne.1)r2=0.
             do j=1,ndims
-               x_part(j,i)=ranlenposition(j)
+               if(j.ne.id)then
+c Select new transverse position only the first time.
+                  if(x_part(iflag,i).ne.1)then
+                     x_part(j,i)=ranlenposition(j)
+                     r2=r2+x_part(j,i)**2
+                  endif
+               else
+                  x_part(j,i)=ranlenposition(j)
+               endif
             enddo
+            x_part(iflag,i)=1
             if(.not.linregion(ibool_part,ndims,x_part(1,i)))then
 c     If we are not in the plasma region, try again if we are doing fixed
 c     particle number else just set this slot empty.
+               x_part(iflag,i)=0
                if(ninjcompa(ispecies).ne.0)then
-                  x_part(iflag,i)=0
+c The only place a slot is left empty.
                else
                   goto 1
                endif
             endif
 c Shifted Gaussians um is in units sqrt(2T/m), holeum in sqrt(T/m)
             um=holeum/sqrt(2.)
+            psi=holepsi
+            if(holerad.gt.0)then
+c Scale the potential in transverse direction.
+c I wonder if this is allowable or if there's a scaling problem when
+c the hole is not uniform in transverse direction.
+               psi=psi*max((1.-r2/holerad**2),0.)
+c                  write(*,*)'psi',psi,'r2',r2
+            endif
             do jj=1,ndims
 c Start with the id direction, then the others.
                j=mod(id+jj-2,ndims)+1
-               if(j.eq.id)then
-c Trapped distribution. Get hole peak and potential. Decide if to reject.
+               if(j.eq.id.and.psi.gt.0.)then
+c Trapped distribution. Get potential. Decide if to reject.
 c Decide velocity component.
-                  psi=holepsi
-                  if(psi.le.0)stop 'Negative hole psi not allowed'
                   call getholepotl(psi,holelen,phi,x_part(id,i),id)
-c                  write(*,*)'psi,phi,id',psi,phi,id
 c Total electron density based upon the sech^4 potential variation
                   dentot=1.+ phi-(5./4./sqrt(psi))*phi**1.5
 c Value of dentot at its max (when phi/psi=(8/15)^2)
                   denmax=1+(64./45.)*psi
-c Decide rejection:
+c Reject if random*denmax >= dentot at this phi:
                   call ranlux(vr,1)
                   vr=vr*denmax
+c                  write(*,*)'dentot,denmax,vr',dentot,denmax,vr
                   if(vr.lt.dentot)then
 c Accept
                      iaccept=iaccept+1
@@ -203,13 +253,12 @@ c                        write(*,*)'phi=',phi,' eopsi=',eopsi,' Ttr=',Ttr
                      endif
                      tisq=sqrt(Ttr*abs(eoverms(ispecies)))
                   else
-c Reject. Set slot empty. Try again.
-c                     write(*,*)'vr,dentot',vr,dentot
+c Reject. Try again.
                      ireject=ireject+1
                      goto 1
                   endif
                else
-c Transverse directions.
+c Transverse directions unaffected by hole potential.
                   x_part(ndims+j,i)=tisq*gasdev(myid) + vd*vdrift(j)
                endif
             enddo
@@ -720,16 +769,16 @@ c Add enough to t2 to prevent vr overflow.
       end
 c*************************************************************************
 c*************************************************************************
-      subroutine getholepotl(holepsi,holelen,phi,x,id)
+      subroutine getholepotl(psi,holelen,phi,x,id)
       integer id
-      real holepsi,holelen,phi,x
+      real psi,holelen,phi,x
       include 'ndimsdecl.f'
       include 'plascom.f'
       include 'meshcom.f'
 
       center=0.5*(xmeshstart(id)+xmeshend(id))
       arg=(x-center)/(debyelen*holelen)
-      phi=holepsi/cosh(arg)**4
-      if(.not.phi.ge.0.)write(*,*)'psi,arg,phi',holepsi,arg,phi
+      phi=psi/cosh(arg)**4
+      if(.not.phi.ge.0.)write(*,*)'psi,arg,phi',psi,arg,phi
 
       end

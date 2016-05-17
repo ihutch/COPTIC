@@ -125,7 +125,7 @@ c Deal with command-line arguments and geometry/object file.
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi,holeum,holeeta,holepow
+     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad
      $     ,ifull,ierr)
 c-----------------------------------------------------------------
 c Finalize initial parameters after switch and geometry reading.

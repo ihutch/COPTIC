@@ -14312,3 +14312,27 @@ scales the Tperp interpolation.
 13 May 16
 Remove lentrim from stringsnames.f because it is now part of the accis
 distribution. Accis bug fix in vecglx. Also fixed benign bug in Makefile. 
+
+17 May 16
+
+Attempting to initialize a disk-hole with finite perpendicular extent.
+Simply scaling the psi of the trapinit hole with transverse position
+gives a potential that has a big positive value for all parallel
+positions in the transverse regions of the hole. This seems to show
+that the rejection scheme produces a density deficit when it is
+called, that actually does not depend on phi. I think this is true. 
+In a region where phi is zero, dentot=1, and denmax > 1 if psi is nonzero.
+So we reject (random*denmax>=dentot) a fraction 1-1/denmax.
+
+It used not to matter so much since it applied everywhere, and since we
+continued to try to inject until we had a total number of particles that
+provides average density equal to what we set. There was no resultant
+transverse density gradient. Adjusted the internal iteration of the 
+assignment so that a new transverse position is taken only if the 
+iflag is not 1. I.e. not on rejection. Thus rejected particles are
+retried at the same transverse position so there is never a tendency 
+to develop density gradients in the transverse direction. This does 
+fix the potential hump with holerad set non-zero. So this demonstrates
+that I had diagnosed the problem more or less correctly. Now we seem
+to get a transversely localized hole. But on X1 the noise is too
+great to do serious runs.
