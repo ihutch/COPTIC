@@ -720,57 +720,62 @@ particles and no substepping.
 \paragraph{-sb...} Set Boltzmann fraction $f_b$
 (\verb!boltzamp!). When both electrons and ions are being modelled as
 particles (more than one particle species is present) this switch
-should occur \emph{after} the -sp switch. It is physically equivalent
+should occur \emph{after} the -sp switch [because -sp reinitializes
+\verb!boltzamp! to zero.] It is physically equivalent
 to adding an additional species whose density is equal to
 $f_b\exp(e\phi/T_e)$. That is, like Boltzmann electrons.  It is
 implemented through the function \verb!faddcomp!. The charge of
-particle-species 2 is reduced by the factor \verb!1-boltzamp!, which is
-the fraction of the electrons represented by particles, but their
-number density remains the same as the ions.  The addition helps to stabilize
-long-wave-length fluctuations in regions that are much larger than the
-Debye length. The fraction required is of order the ratio of the Debye
-length to the domain size, when this is small. If either there is more
-than one species or \verb!holepsi! is non-zero (switch \verb!-ih! is
-set nonzero), then \verb!boltzamp! is ramped down to zero in the first
-third of the timesteps.
+particle-species 2 is reduced by the factor \verb!1-boltzamp!, which
+is the fraction of that species (by default electrons) represented by
+particles, but their number density remains the same as species 1.  The
+addition helps to stabilize long-wave-length fluctuations in regions
+that are much larger than the Debye length. The fraction required is
+of order the ratio of the Debye length to the domain size, when this
+is small. If either there is more than one species or \verb!holepsi!
+is non-zero (switch \verb!-ih! is set nonzero), then \verb!boltzamp!
+is ramped down to zero in the first third of the timesteps.
 
 \paragraph{-sb0} When only one species is present, the switch usage
 -sb0, setting \verb!boltzamp! to zero, removes the effective Boltzmann
 response from the calculation and \emph{instead} adds a uniform
-negative background charge. This is physically equivalent to ions
-moving in an immobile (uniform) electron background. [A non-zero but
-non-unity value of \verb!boltzamp! removes some of the Boltzmann
-electron response and adds a consistent fraction \verb!1-boltzamp! of
-immobile negative background.]  COPTIC then runs as a true
-single-species PIC code. More relevantly, the moving
-particles can then be considered to be electrons in a uniform ion
-background, (but with reversed charge signs unless \verb!-zm-1.! is
-used). Appropriate stability limits on time-step must be observed as
-if the times-scales were electron. Thus one should consider
-velocities to be normalized to $\sqrt{T_e/m_e}$. The (electron)
-plasma frequency in computational units is then
-$\omega_{pe}=1/\lambda_{De}$, and stability requires $\omega_{pe}dt =
-dt/\lambda_{De}<1$. 
+negative background charge.  This is physically equivalent to ions
+moving in an immobile (uniform) electron background.  COPTIC then runs
+as a true single-species PIC code. Setting a non-zero but non-unity
+value of \verb!boltzamp! removes some of the Boltzmann electron
+response and adds a consistent fraction \verb!1-boltzamp! of immobile
+negative background. More relevantly, the moving particles can then be
+considered to be electrons in a uniform ion background, (but with
+reversed charge signs unless \verb!-zm-1.! is used). Appropriate
+stability limits on time-step must be observed as if the times-scales
+were electron. Thus one should consider velocities to be normalized to
+$\sqrt{T_e/m_e}$. The (electron) plasma frequency in computational
+units is then $\omega_{pe}=1/\lambda_{De}$, and stability requires
+$\omega_{pe}dt = dt/\lambda_{De}<1$.
 
 \paragraph{-ih[...]} Set parameters of a phase-space hole in particle
-initialization. Up to four parameters are set by succeeding values
-separated by commas (no spaces). The parameters and their defaults are
-\verb!holepsi! [0.1] the hole (peak) potential, \verb!holeum! [0.]\
-the speed of the hole relative to the mean of the untrapped Maxwellian
-distribution, \verb!holelen! [4.]\ the length of the hole in Debye
-lengths, and \verb!holeeta! [2.]\ the power that determines the hole
-shape (2 is a parabola).  The spatial direction of the velocity
-trapping of the hole must be one of the axes, and is determined by the
-B-field direction (unless it is not axis-aligned, in which case axis 1
-is chosen). When plasma drift is present, its component in the
-trapping direction is added to \verb!holeum! to give the net hole
-speed relative to the mesh; so setting drift equal to \verb!holeum!
-gives a stationary hole.  In the other directions uniform Maxwellian
-initialization is used. A hole is incompatible with non-zero
-collisions. Holes probably must use \verb!-sb0! (or small), a uniform
-neutralizing background. Then \verb!-zm-1!, negative charge particles
-means the particles can be considered to be electrons and the velocity
-units $\sqrt{T_e/m_e}$ (assuming $T=1$).
+initialization for the current species. Only one species can be
+initialized as a hole; so this switch overrules and disables hole
+settings for any previous species. Up to six parameters are set by
+succeeding values separated by commas (no spaces). The parameters and
+their defaults are \verb!holepsi! [0.1] the hole (peak) potential,
+\verb!holeum! [0.]\ the speed of the hole relative to the mean of the
+untrapped Maxwellian distribution, \verb!holelen! [4.]\ the length of
+the hole in Debye lengths, \verb!holeeta! [2.]\ the power that
+determines the hole shape (2 is a parabola), \verb!holepow! [0.5]
+which governs the interpolation power when the hole transverse trapped
+temperature is other than the external, and \verb!holerad! [0.] the
+radius of the hole in the transverse plane.  The spatial direction of
+the velocity trapping of the hole must be one of the axes, and is
+determined by the B-field direction (unless it is not axis-aligned, in
+which case axis 1 is chosen). When plasma drift is present, its
+component in the trapping direction is added to \verb!holeum! to give
+the net hole speed relative to the mesh; so setting \verb!holeum! equal to
+minus the drift gives a hole stationary in the mesh.  In the other directions
+uniform Maxwellian initialization is used. A hole is incompatible with
+non-zero collisions. Single-species holes typically use \verb!-sb0!
+(or small), a uniform neutralizing background. Then \verb!-zm-1!,
+negative charge particles means the particles can be considered to be
+electrons and the velocity units $\sqrt{T_e/m_e}$ (assuming $T=1$).
 
 \subsubsection*{Neutrals, Collisions, Magnetic Field}
 

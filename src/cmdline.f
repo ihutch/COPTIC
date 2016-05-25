@@ -10,7 +10,7 @@ c Combination of the two calls to copticcmdline.
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad
+     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
      $     ,ifull,ierr)
       implicit none
       integer ifull,ierr
@@ -25,6 +25,7 @@ c Combination of the two calls to copticcmdline.
      $     ,dropaccel,vneutral,debyelen,extfield,slpD ,Tneutral,Enfrac
      $     ,colpow,boltzamp
       real holepsi,holelen,holeum,holeeta,holepow,holerad
+      integer hspecies
 
       real Bfield(ndims),Bt,CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
@@ -51,7 +52,7 @@ c First time this routine just sets defaults and the object file name.
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad)
+     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies)
 c Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -68,7 +69,7 @@ c Second time: deal with any other command line parameters.
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad)
+     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies)
 c The double call enables cmdline switches to override objfile settings.
 c----------------------------------------------------------------------
       end
@@ -85,7 +86,7 @@ c Encapsulation of parameter setting.
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
-     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad)
+     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies)
 
       implicit none
 
@@ -109,7 +110,7 @@ c Only the first species is possibly collisional.
       integer nparta(*),numratioa(*)
       real vpars(*)
       real vperps(ndims,*),vdrifts(ndims,*)
-      integer nspecies,nspeciesmax
+      integer nspecies,nspeciesmax,hspecies
 
 c Local variables:
       integer lentrim,iargc
@@ -173,6 +174,7 @@ c         crelax=1.*Ts(nspecies)/(1.+Ts(nspecies))
          holeum=0.
          holepow=1.
          holerad=0.
+         hspecies=0
 c Boundary condition switch and value. 0=> logarithmic.
          islp=0
          slpD=0.
@@ -440,14 +442,12 @@ c            write(*,*)'||||||||||||||extfield',extfield
          if(argument(1:1).ne.'-')
      $        read(argument(1:),'(a)',err=201)objfilename
          if(argument(1:3).eq.'-ih')then
+            hspecies=nspecies
             read(argument(4:),*,err=201,end=231)holepsi,holeum,holelen
      $           ,holeeta,holepow,holerad
-c            read(argument(4:),*,err=201,end=231)holeparams
-            goto 240
+c            goto 240
 c Default hole value[s] are being used
  231        continue
-c            write(*,*)'holepsi,holeum,holelen,holeeta',holepsi,holeum
-c     $           ,holelen,holeeta
          endif
          if(argument(1:3).eq.'-ho')then
             call geomdocument()
@@ -489,12 +489,6 @@ c               if(vdrifts(i,ispecies).eq.0.)vdrifts(i,ispecies)=1.e-25
             enddo
          endif
       enddo
-c ---
-      if(colntime.eq.0.)then
-c Collisionless, also set vneutral to vd, else things are inconsistent:
-c But vneutral is only the first species. This is redundant.
-c         vneutral=vds(1)
-      endif
 c --- Deal with B-field
       Bt=0.
       Bdotgn=0.
@@ -537,8 +531,8 @@ c Flag an inappropriate field and dt combination
 c vds(ispecies):
             vpars(ispecies)=0.
             do i=1,ndims
-               vpars(ispecies)=vds(ispecies)*vdrifts(i,ispecies)
-     $              *Bfield(i)
+               vpars(ispecies)=vpars(ispecies)+vds(ispecies)*vdrifts(i
+     $              ,ispecies)*Bfield(i)
             enddo
             do i=1,ndims
                vperps(i,ispecies)=-Bfield(i)*vpars(ispecies)

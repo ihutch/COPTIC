@@ -110,7 +110,7 @@ c Read back ranlux settings and initialize.
          endif
       else
 c Older versions.
-         read(23)debyelen,Ti,vd,rs,phip
+         read(23)debyelen,Ti,vds(1),rs,phip
          read(23)ranstate
          read(23)ioc_part
          if(charout(1:2).eq.'de')then
@@ -174,7 +174,7 @@ c File name:
       character*(130) charout
 
 c      write(*,*)'ifull',ifull
-      write(charout,51)debyelen,Ti,vd,rs,phip,ixnlength,ifull
+      write(charout,51)debyelen,Ti,vds(1),rs,phip,ixnlength,ifull
  51   format('V4 debyelen,Ti,vd,rs,phip',5f9.4,' ixnlength',i6,' ifull'
      $     ,3i6)
       open(22,file=name,status='unknown',err=101)

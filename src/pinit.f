@@ -77,7 +77,7 @@ c/sqrt(abs(eoverms(ispecies)))
 c         write(*,*)'theta=',theta,Bt,dt,Tperps(ispecies)
          notseparable(ispecies)=0
          if(colntime.ne.0..and.ispecies.eq.1)then
-c At this point vperp refers to the perp part of vd, set by cmdline.
+c At this point vperp refers to the perp part of flow, set by cmdline.
 c Initialize the reinjection particles and discover the full Eneutral.
             call colninit(0,myid)
             call colreinit(myid,ispecies)
@@ -166,9 +166,9 @@ c     particle number else just set this slot empty.
             endif
             if(notseparable(ispecies).eq.0. .and. Eneutral.eq.0)then
 c Shifted Gaussians.
-               x_part(4,i)=tisq*gasdev(myid) + vd*vdrift(1)
-               x_part(5,i)=tisq*gasdev(myid) + vd*vdrift(2)
-               x_part(6,i)=tisq*gasdev(myid) + vd*vdrift(3)
+               x_part(4,i)=tisq*gasdev(myid) + vds(ispecies)*vdrift(1)
+               x_part(5,i)=tisq*gasdev(myid) + vds(ispecies)*vdrift(2)
+               x_part(6,i)=tisq*gasdev(myid) + vds(ispecies)*vdrift(3)
             else
                call colvget(x_part(4,i),ispecies)
             endif
@@ -278,7 +278,8 @@ c The number of samples.
 c         write(*,*)'nclim=',nclim
 c Initial guess at what whole Eneutral really needs to be to give the
 c drift requested. Also set relaxation rate for iterations.
-         Eneutral=(vd-vneutral)/colntime*(1-0.5*colpow)
+c Eneutral is based only on species-1 drifts.
+         Eneutral=(vds(1)-vneutral)/colntime*(1-0.5*colpow)
          if(myid.eq.0)write(*,'(a,$)')' Colninit velocity: '
          relax=1.
          if(colpow.gt.0)relax=0.5
@@ -288,7 +289,7 @@ c Iterate over guesses at Eneutral.
             vzave=vzave/nclim
             if(myid.eq.0)write(*,'(f6.4,'', '',$)')vzave
             if(colpow.eq.0.)goto 4
-            Eneutral=Eneutral*(relax*((vd-vneutral)/vzave-1.)+1.)
+            Eneutral=Eneutral*(relax*((vds(1)-vneutral)/vzave-1.)+1.)
 c            write(*,*)Eneutral
          enddo
 c End of Eneutral iteration.
@@ -465,7 +466,7 @@ c And add back the drift velocity, and the parallel acceleration.
                v(i)=v(i)+vperp(i)+dvpar*Bfield(i)
             enddo
          endif
-c Possible collision: Choose a neutral velocity and calculate (v-vd)^2
+c Possible collision: Choose a neutral velocity and calculate (v-vn)^2
          v2=0.
          do i=1,ndims
             vn(i)=tisq*gasdev(0)

@@ -17,7 +17,7 @@ c holeeta, the requested power of u determining trapped distribution shape
 c          2 gives parabolic. <=0 gives flattop [h,2]
 c holepow, the power governing trapped transverse temperature variation [p,1]
 c holerad, the transvers hole radius [r,0]
-c holespeed, the rest-frame hole speed [derived: =holeum+vd]
+c holespeed, the rest-frame hole speed [derived: =holeum+vds]
 c
 c The hole is created by adjusting the particle density consistent with
 c a potential profile that is sech^4(x/4l) in the parallel direction.
@@ -96,8 +96,6 @@ c Conveniently here initialize distribution numbers.
 c Set tperp to a tiny number if species is infinitely magnetized.
          theta=Bt*eoverms(ispecies)*dt
          if(abs(theta).gt.thetamax)Tperps(ispecies)=1.e-24
-c/sqrt(abs(eoverms(ispecies)))
-c         write(*,*)'theta=',theta,Bt,dt,Tperps(ispecies)
          notseparable(ispecies)=0
          Ttrans=Ts(ispecies)
          if(colntime.ne.0..and.ispecies.eq.1)then
@@ -157,12 +155,14 @@ c Determine the trapping dimension
          enddo
 c Default x
          if(id.eq.0)id=1
-c Calculate holespeed using vd component in projection dimension.
-c Holeum is minus f drift speed relative to hole so holeum=-vd+holespeed:
-         holespeed=holeum+vd*vdrift(id)
-         if(myid.eq.0)write(*,'(2a,i2,a,f7.3,a)')' Hole particle'
-     $        ,' initialization. Trapping id',id,'. Speed',holespeed,
-     $        '. Please wait...'
+c Calculate holespeed using vds component in projection dimension.
+c Holeum is minus f drift speed relative to hole so holeum=-vds+holespeed:
+         holespeed=holeum+vds(ispecies)*vdrift(id)
+         if(myid.eq.0.and.ispecies.eq.hspecies)
+     $        write(*,'(2a,i2,a,f7.3,a,f7.3,/,a)')' Hole particle'
+     $        ,' initialization. Trapping id',id,'. Speed',holespeed
+     $        ,' psi',holepsi
+     $        ,' Please wait...'
 c ----------------------------- Actual Particle Setting ----------
          do i=iicparta(ispecies)+i1-1,islotmax
             x_part(iflag,i)=0
@@ -205,7 +205,7 @@ c                  write(*,*)'psi',psi,'r2',r2
             do jj=1,ndims
 c Start with the id direction, then the others.
                j=mod(id+jj-2,ndims)+1
-               if(j.eq.id.and.psi.gt.0.)then
+               if(j.eq.id.and.psi.gt.0..and.ispecies.eq.hspecies)then
 c Trapped distribution. Get potential. Decide if to reject.
 c Decide velocity component.
                   call getholepotl(psi,holelen,phi,x_part(id,i),id)
@@ -259,7 +259,8 @@ c Reject. Try again.
                   endif
                else
 c Transverse directions unaffected by hole potential.
-                  x_part(ndims+j,i)=tisq*gasdev(myid) + vd*vdrift(j)
+                  x_part(ndims+j,i)=tisq*gasdev(myid)
+     $                 + vds(ispecies)*vdrift(j)
                endif
             enddo
 

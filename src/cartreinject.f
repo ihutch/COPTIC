@@ -119,7 +119,7 @@ c Correct the total energy for caverein.
       end
 c*********************************************************************
       subroutine cinjinit()
-c Cartesian reinjection initialization for drift velocity, vd, in the
+c Cartesian reinjection initialization for drift velocity, vds, in the
 c z-direction and maxwellians of width given by Ts
 
       include 'ndimsdecl.f'
@@ -237,9 +237,10 @@ c         write(*,*)'fcarea(',i,')=',fcarea(i)
       enddo
       if(.not.gintreins(6,ispec).gt.1.)write(*,*)'gintrein problem!'
       enddo
-c      write(*,'(a,3i2,a)')'ipartperiod',ipartperiod,'  greins,gintrein:'
-c      write(*,'(6f10.5)')greins
-c      write(*,'(7f10.5)')gintrein
+      write(*,'(a,3i2,a)')'ipartperiod',ipartperiod,'  greins,gintrein:'
+      write(*,*)'greins is the total flux across each of 6 faces'
+      write(*,'(6f10.5)')greins
+      write(*,'(7f10.5)')gintrein
 
       lreininit=.true.
       
@@ -432,13 +433,13 @@ c*******************************************************************
       real function fvdrein(v)
 c Return the probability distribution for reinjection,
 c in coordinate direction idrein (signed) in creincom,
-c from a drift-distribution shifted by vd (in plascom),
+c from a drift-distribution shifted by vds (in plascom),
 c whose direction cosines are vdrift(3) (in plascom),
 c colliding with neutrals of velocity vneutral (in colncom).
 c If v is normalized by sqrt(ZT_e/m_i), then Tsi is the ratio T_i/ZT_e.
 c Because the drift distribution is not separable except in the directions
 c perpendicular and parallel to the drift, only degenerate Maxwellian
-c (vd-vneutral=0) non-z cases are allowed so far.
+c (vds-vneutral=0) non-z cases are allowed so far.
 c Diamagnetic drift is implemented as a Maxwellian shift.
       implicit none
       real v,vn,u,ud,fvcx
@@ -452,7 +453,7 @@ c Diamagnetic drift is implemented as a Maxwellian shift.
       integer ispec
       common /species/ispec
 
-      ud=vd-vneutral
+      ud=vds(ispec)-vneutral
       if(ispec.ne.1)ud=0.
       vdia=0.
 c Are there background diamagnetic drifts? Density gradient. 
@@ -461,15 +462,15 @@ c Gradient is always perpendicular to B.
          id2=mod(abs(idrein),3)+1
          id3=mod(abs(idrein)+1,3)+1
 c v_dia = -(T_i \nabla n \times B / qnB^2)
-         vdia=- (gn(id2)*Bfield(id3)-gn(id3)*Bfield(id2))*Ti/Bt
+         vdia=- (gn(id2)*Bfield(id3)-gn(id3)*Bfield(id2))*Ts(ispec)/Bt
 c The approximation is to represent the perpendicular distribution by
 c a Maxwellian shifted by the diamagnetic drift.
       endif
       vn=sqrt(2.*Ts(ispec)*abs(eoverms(ispec)))
-      if(vdrift(3).eq.1.)then
+      if(vdrifts(3,ispec).eq.1.)then
 c Z-drift cases. (equiv old)
          if(abs(idrein).eq.3)then
-            u=(v-vd+ud-vdia)/vn
+            u=(v-vds(ispec)+ud-vdia)/vn
             ud=ud/vn
             fvdrein=fvcx(u,ud)
             fvdrein=fvdrein/vn
@@ -484,8 +485,8 @@ c Non-z
             stop
          else
 c Maxwellian non-z drift.
-            fvdrein=exp(-((v-vd*vdrift(abs(idrein))-vdia)/vn)**2)
-     $           /(vn*sqrt(3.1415926))
+            fvdrein= exp(-((v-vds(ispec)*vdrifts(abs(idrein),ispec)
+     $           -vdia)/vn)**2) /(vn*sqrt(3.1415926))
          endif
       endif
       end
@@ -507,7 +508,7 @@ c Diamagnetic drift is implemented as a Maxwellian shift.
       integer ispec
       common /species/ispec
 
-      ud=vd-vneutral
+      ud=vds(ispec)-vneutral
       if(ispec.ne.1)ud=0.
       vdia=0.
 c Are there background diamagnetic drifts? Density gradient. 
@@ -516,7 +517,7 @@ c Gradient is always perpendicular to B.
          id2=mod(abs(idrein),3)+1
          id3=mod(abs(idrein)+1,3)+1
 c v_dia = -(T_i \nabla n \times B / qnB^2)
-         vdia=- (gn(id2)*Bfield(id3)-gn(id3)*Bfield(id2))*Ti/Bt
+         vdia=- (gn(id2)*Bfield(id3)-gn(id3)*Bfield(id2))*Ts(ispec)/Bt
 c The approximation is to represent the perpendicular distribution by
 c a Maxwellian shifted by the diamagnetic drift.
       endif
@@ -524,11 +525,11 @@ c      if(vdia.ne.0..and.abs(v-1.).lt.0.0005)then
 c         write(*,*)'v,ffdrein,idrein,vdia',v,ffdrein,idrein,vdia,id2,id3
 c      endif
       vn=sqrt(2.*Ts(ispec)*abs(eoverms(ispec)))
-      if(vdrift(3).eq.1.)then
+      if(vdrifts(3,ispec).eq.1.)then
 c Z-drift cases. (equiv old)
          if(abs(idrein).eq.3)then
 c In z-direction use appropriate drift distribution.
-            u=(v-vd+ud-vdia)/vn
+            u=(v-vds(ispec)+ud-vdia)/vn
             ud=ud/vn
             ffdrein=fvcx(u,ud)
             ffdrein=abs(v)*ffdrein/vn
@@ -543,8 +544,8 @@ c Non-z
             stop
          else
 c Maxwellian non-z drift.
-            ffdrein=exp(-((v-vd*vdrift(abs(idrein))-vdia)/vn)**2)
-     $           *abs(v)/(vn*sqrt(3.1415926))
+            ffdrein= exp(-((v-vds(ispec)*vdrifts(abs(idrein),ispec)
+     $           -vdia)/vn)**2) *abs(v)/(vn*sqrt(3.1415926))
          endif
       endif
 c Don't count particles going the wrong way:
@@ -554,7 +555,7 @@ c Don't count particles going the wrong way:
 c****************************************************************
 c FVCX function for 1-d drifting CX distribution.
       function fvcx(u,ud)
-      real u,ud,v,vd,fvcx
+      real u,ud,v,vw,fvcx
 c Return the normalized distribution function f(u)=v_n f(v) for constant
 c cx collision frequency at a value of normalized velocity u=v/v_n, when
 c the normalized drift velocity is ud= (a/\nu_c) /v_n, with v_n =
@@ -562,29 +563,29 @@ c sqrt(2T_n/m). a is acceleration, nu_c collision freq.  This is the
 c solution of the steady Boltzmann equation.
       if(ud.lt.0.) then
          v=-u
-         vd=-ud
+         vw=-ud
       else
          v=u
-         vd=ud
+         vw=ud
       endif
-      if(vd.eq.0.)then
+      if(vw.eq.0.)then
          carg=20.
          earg=100
       else
-         carg=0.5/vd-v
-         earg=(0.5/vd)**2-v/vd
+         carg=0.5/vw-v
+         earg=(0.5/vw)**2-v/vw
       endif
       if(carg.gt.10)then
-c asymptotic form for large exp argument (small vd):
+c asymptotic form for large exp argument (small vw):
 c  exp(-v^2)/[sqrt(\pi)(1-2 v_d v)]:
-         fvcx=exp(-v**2)/1.77245385/(1.-2.*vd*v)
+         fvcx=exp(-v**2)/1.77245385/(1.-2.*vw*v)
       elseif(carg.gt.-5.)then
-         fvcx=exp(-v**2)*experfcc(carg)*0.5/vd
+         fvcx=exp(-v**2)*experfcc(carg)*0.5/vw
       else
-c         fvcx=exp(earg)*erfcc(carg)*0.5/vd
-         fvcx=exp(earg)/vd
+c         fvcx=exp(earg)*erfcc(carg)*0.5/vw
+         fvcx=exp(earg)/vw
       endif
-c      write(*,*)'fvcx:vd,v,earg,fvcx',vd,v,earg,fvcx
+c      write(*,*)'fvcx:vw,v,earg,fvcx',vw,v,earg,fvcx
       if(.not.fvcx.ge.0) then
          write(*,*)'fvcx error. u=',u,' ud=',ud,' f=',fvcx,carg
          fvcx=0.
@@ -612,7 +613,7 @@ c the coordinate direction idrein.
       if(int(sign(1.,v)).eq.sign(1,idrein))then
          Tsi=Ts(ispec)*abs(eoverms(ispec))
          j=abs(idrein)
-         vs=Bfield(j)*vpar+vperp(j)
+         vs=Bfield(j)*vpars(ispec)+vperps(j,ispec)
          vt2=2.*Tsi*Bfield(j)**2
          if(vt2.gt.vt2min)then
             arg=-(v-vs)**2/vt2
@@ -648,7 +649,7 @@ c Return the probability distribution value.
       common /species/ispec
 
       j=abs(idrein)
-      vs=Bfield(j)*vpar+vperp(j)
+      vs=Bfield(j)*vpars(ispec)+vperps(j,ispec)
       Tsi=Ts(ispec)*abs(eoverms(ispec))
       vt2=2.*Tsi*Bfield(j)**2
       if(vt2.gt.vt2min)then
@@ -712,10 +713,10 @@ c            write(*,*)'rhoinf=',rhoinf,ninjcomp
          if(nrein.ge.10)then
 c Calculate rhoinf from nrein if there are enough.
 c Correct approximately for edge potential depression (OML).
-c         chi=min(-phirein/Ti,0.5)
+c Use the first species drift velocity as for calculating rhoinf.
             chi=max(crelax*(-phirein/Ti)+(1.-crelax)*chi,0.)
-            cfactor=smaxflux(vd/sqrt(2.*Ti),chi)
-     $           /smaxflux(vd/sqrt(2.*Ti),0.)
+            cfactor=smaxflux(vds(1)/sqrt(2.*Ti),chi)
+     $           /smaxflux(vds(1)/sqrt(2.*Ti),0.)
             rhoinf=(nrein/(dtin*cfactor*flux))
 c         write(*,*)nrein,dtin,phirein,chi,cfactor,flux,rhoinf
          else
@@ -787,12 +788,12 @@ c Corrected effective volume for density gradient cases.
 c Partial reinjection is indicated by this fraction.
             pinjcompa(ispecies)=fpinj-int(fpinj)
             nparta(ispecies)=int(ripn*volume/numratioa(ispecies))
-      if(.false.)then      
+      if(.true.)then      
       write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp,pinj',
      $        ',volume'
-      write(*,'(i2,4f8.3,2i8,f8.4,f8.1)')ispecies,ripn,dtin,cfactor,flux
-     $     ,nparta(ispecies),ninjcompa(ispecies),pinjcompa(ispecies)
-     $     ,volume
+      write(*,'(i2,2f8.3,2f10.3,2i8,f8.4,f8.1)')ispecies,ripn,dtin
+     $     ,cfactor,flux,nparta(ispecies),ninjcompa(ispecies)
+     $     ,pinjcompa(ispecies),volume
       endif
             if(n_part.gt.n_partmax)then
                write(*,*)'ERROR. Too many particles required.'

@@ -14336,3 +14336,24 @@ fix the potential hump with holerad set non-zero. So this demonstrates
 that I had diagnosed the problem more or less correctly. Now we seem
 to get a transversely localized hole. But on X1 the noise is too
 great to do serious runs.
+
+
+24 May 2016
+Working on holes with multiple species. 
+I find that there's a problem with drift velocities and reinjection 
+initialization with multiple species. The possibly different drifts of
+the different species are not recognized because the functional code
+passed by cinjinit just refers to vd, vpar, ... instead of vds(ispec)
+vpars(ispec) .... Replaced with vds etc.
+
+25 May 2016
+Went through other places (egrep '[^a-z]vd[^a-z]' *.f) where we are
+still referring to vd not vds. Fixed many. 
+array3write/read and writefluxfile still refer to vd because really
+they ought to be recoded to do multiple species writing of vd. However,
+vd is not integral to the the actual output in those files, it is just
+part of the parameter documentation, so it is very low priority.
+
+particle data for all species is written out and read back. partexamine
+has switches to look at different species. I think that's enough 
+rationalization for now.

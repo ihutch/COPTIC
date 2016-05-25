@@ -52,7 +52,7 @@ c Ibool defining region of particles.
       parameter (ibtotal_part=100)
       integer ibool_part(ibtotal_part)
 c
-      integer n_part,iic_part,ioc_part,ninjcomp
+      integer n_part,iic_part,ioc_part,ninjcomp,hspecies
       real holepsi,holelen,holeum,holespeed,holeeta,holepow,holerad
       equivalence (n_part,nparta(1)),(iic_part,iicparta(1))
      $     ,(ioc_part,iocparta(1)),(ninjcomp,ninjcompa(1))
@@ -62,6 +62,7 @@ c
      $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp,ibool_part
      $     ,caverein,chi,notseparable
      $     ,holepsi,holelen,holeum,holespeed,holeeta,holepow,holerad
+     $     ,hspecies
 
 c Orbit plotting storage for tracking the first norbits orbits.
 c This nstepmax does NOT control the maximum number of steps.
