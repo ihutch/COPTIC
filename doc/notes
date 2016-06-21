@@ -14357,3 +14357,16 @@ part of the parameter documentation, so it is very low priority.
 particle data for all species is written out and read back. partexamine
 has switches to look at different species. I think that's enough 
 rationalization for now.
+
+21 Jun 2016
+
+Implement passing of xprior (including velocity) to achargetomesh in
+order to fix the bias in velocity diagnostics. chargetomesh is called
+once on restart. It does not know the xprior. So I just pass the
+current x as xprior in this case. Then in achargetomesh I effectively
+advance the velocity by half of its previous step: a forward
+extrapolation. Since the state of x/v is at the end of a kick then
+drift cycle, a perfect diagnostic would require knowledge of the next
+kick, but we can't afford that, so we assume the next kick is the same
+as the prior kick. It hasn't obviously broken anything, but it is hard
+to verify real improvement except on the extreme cases like holes.

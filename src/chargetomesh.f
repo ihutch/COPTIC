@@ -21,14 +21,15 @@ c For all (possibly-active) particles.
          if(ispecies.eq.2)echarge=echarge*(1.-boltzamp)
          do i=iicparta(ispecies),iocparta(ispecies)
             if(x_part(iflag,i).ne.0)then
-               call achargetomesh(i,psum,iLs,diagsum,ndiags,echarge)
+               call achargetomesh(i,psum,iLs,diagsum,ndiags,echarge
+     $              ,x_part(1,i))
             endif
          enddo
       enddo
 c End of charge deposition.
       end
 c********************************************************************
-      subroutine achargetomesh(i,psum,iLs,diagsum,ndiags,echarge)
+      subroutine achargetomesh(i,psum,iLs,diagsum,ndiags,echarge,xprior)
 c Assign charge and other moments to the mesh accumulators,
 c for a single particle i of echarge value, which only affects psum
 c Particle weight sum, having structure iLs.
@@ -40,6 +41,7 @@ c mesh data, notably ndims, since we don't pass it:
       include 'ndimsdecl.f'
       integer iLs(ndims+1)
       include 'partcom.f'
+      real xprior(2*ndims)
 
       if(x_part(iflag,i).ne.0)then
          inewregion=insideall(ndims,x_part(1,i))
@@ -78,8 +80,11 @@ c Do something with diagnostics.
 c Assumption here is diags1 n, diags2-4 v, diags5-7 v^2.
                diagsum(1+iinc)=diagsum(1+iinc)+fac
                do k=1,ndiags-1
-c Six moments. 3 for v and 3 for v^2.
-                  temp=x_part(ndims+1+mod(k-1,ndims),i)
+c Six moments. 3 for v and 3 for v^2. Old uncentered velocity:
+c                  temp=x_part(ndims+1+mod(k-1,ndims),i)
+c For diagnostics use velocity advanced by half its prior step. 
+                  temp=1.5*x_part(ndims+1+mod(k-1,ndims),i)
+     $                 -0.5*xprior(ndims+1+mod(k-1,ndims))
                   if(k.gt.ndims)temp=temp*temp
                   kindex=1+iinc+k*iLs(ndims+1)
                   diagsum(kindex)=diagsum(kindex)+fac*temp

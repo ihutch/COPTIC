@@ -44,7 +44,7 @@ c Local storage
       integer ixp(ndims),ninjadd
       real Efield(ndims),adfield(ndims)
       real xfrac(ndims)
-      real xprior(ndims)
+      real xprior(2*ndims)
       logical linmesh
       logical lcollided,ltlyerr
       save adfield
@@ -284,8 +284,8 @@ c But correcting the collisional force appropriately.
             endif
          endif
 c Move ----------------
-c Save prior position.
-         do id=1,ndims
+c Save prior position and velocity.
+         do id=1,2*ndims
             xprior(id)=x_part(id,i)
          enddo
          if(abs(theta).lt.thetamax)then
@@ -432,7 +432,7 @@ c appropriate species place of diagsum. Charge magnitude is 1.
          if(x_part(iflag,i).ne.0)then
             call achargetomesh(i,psum,iLs
      $           ,diagsum(1+iLs(ndims+1)*(ndiagmax+1)*(ispecies-1))
-     $           ,ndiags,echarge)
+     $           ,ndiags,echarge,xprior)
 c            if(mod(i,500).eq.0)write(*,*)'achargetomesh',ispecies,i,iLs
 c     $           ,ndiags,ndiagmax
 c     $           ,diagsum(1+iLs(ndims+1)*(ndiagmax+1)*(ispecies-1)+1)
