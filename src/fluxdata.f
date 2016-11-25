@@ -1118,9 +1118,9 @@ c      write(*,*)'geommap',(nf_geommap(j),j=1,mf_obj)
       ndatalen=nf_address(1,1,nf_step+2)-1
       write(22)(ff_data(i),i=1,ndatalen)
 c Debug:
-      write(*,*)'Writefile addresses',
-     $     (nf_address(nf_flux,1,1-j),j=1,nf_posdim),' values'
-     $     ,(ff_data(nf_address(nf_flux,1,1-j)),j=1,nf_posdim)
+c      write(*,*)'Writefile addresses',
+c     $     (nf_address(nf_flux,1,1-j),j=1,nf_posdim),' values'
+c     $     ,(ff_data(nf_address(nf_flux,1,1-j)),j=1,nf_posdim)
 c New force write.
       write(22)(((fieldforce(i,j,k),pressforce(i,j,k) ,partforce(i,j,k)
      $     ,colnforce(i,j,k),i=1,ndims)
@@ -1216,9 +1216,9 @@ c      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+2)-1)
 c      write(*,*)'Datalen',ndatalen
       read(23)(ff_data(i),i=1,ndatalen)
 c Debug:
-      write(*,*)'Readfile addresses',
-     $     (nf_address(nf_flux,1,1-j),j=1,nf_posdim),' values'
-     $     ,(ff_data(nf_address(nf_flux,1,1-j)),j=1,nf_posdim)
+c      write(*,*)'Readfile addresses',
+c     $     (nf_address(nf_flux,1,1-j),j=1,nf_posdim),' values'
+c     $     ,(ff_data(nf_address(nf_flux,1,1-j)),j=1,nf_posdim)
 
       if(iversion.eq.0)then
          write(*,*)'Old force data version',iversion

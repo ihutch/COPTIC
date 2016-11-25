@@ -139,7 +139,7 @@ c      call jdrwstr(.1,.1,mystring,1.)
          do j=1,iyud
             do k=1,izud
                iobj=int(cij(2*ndims+1,i,j,k))
-               iobjcode=idob_cij(iinter_cij,iobj)
+               if(iobj.gt.0)iobjcode=idob_cij(iinter_cij,iobj)
                if(iobj.ne.0.and.iobjcode.ge.0)then
                isob=int(mysw/2**iobjcode-(mysw/2**(iobjcode+1))*2)
                if(iobjcode.ne.igetcolor().and.iobjcode.ne.0)then

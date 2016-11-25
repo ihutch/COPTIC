@@ -328,8 +328,8 @@ c end of this step.
 c Diagnostic for leakage. Remove when convinced it is fixed:
          if(.not.linregion(ibool_part,ndims,x_part(1,i))
      $        .and..not.leftregion.ne.0)then
-            write(*,'(a,i8,6f8.3,i4)')'Particle leakage',i,(x_part(kk,i)
-     $           ,kk=1,6),icross
+            write(*,'(a,i8,6f8.3,2i3)')'Particle leakage',i,(x_part(kk
+     $           ,i),kk=1,6),icross,inewregion
 c Get rid of this leaked particle:
             leftregion=1
          endif

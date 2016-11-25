@@ -718,15 +718,16 @@ c Order the two wall positions increasing.
 c Non intersecting: points both off the same end of segment.
 c Hopefully this case is the dominant one and quick. Continue to next.
 c               write(*,*)'Both off end',z1,z2
-         elseif(abs(zd).lt.1.e-8*rc)then
-c Degenerate: disc identical z. Alternate treatment, unscaled.
+         elseif(abs(zd).lt. 2.e-4*rc)then
+c Near Degenerate: disc identical z. Alternate treatment, unscaled.
+c Need to make e-4; e-8 gave rise to particle leakage.
+c There remains a danger area near 1e-4 which should be avoided. 
             fr=(zw1-z1)/(z2-z1)
             if(fr.ge.0. .and. fr.lt.1.)then
                r=sqrt((xp1(1)+fr*(xp2(1)-xp1(1)))**2
      $              +(xp1(2)+fr*(xp2(2)-xp1(2)))**2)
                if(r.gt.min(rw1,rw2) .and. r.le.max(rw1,rw2))then
                   call insertsorted2(icross_geom,f,fr,ids,i)
-c                  icross_geom=icross_geom+1
                endif
             endif
          else
@@ -734,7 +735,7 @@ c                  icross_geom=icross_geom+1
             if(abs(rd).lt.1.e-8*rc)then
 c Degenerate: cylinder. Use cylinder code.
 c               write(*,*)'Cylinder approximation'
-               if(abs(zd).gt.1.e-8*rc)then
+               if(abs(zd).ge.2.e-4*rc)then
                   do k=1,ndims-1
                      xr(k)=rc
                   enddo
@@ -748,7 +749,7 @@ c Standard cone. zscale=dz/dr.
                dzdr=zd/rd
 c Vertex position
                zx=zw1-rw1*dzdr
-c Scale z to the unit cone.
+c Scale z to the unit cone. z1 and z2 equivalence xn?(3)
                z1=(z1-zx)/dzdr
                z2=(z2-zx)/dzdr
                call conesect(xn1,xn2,f1,f2,sd)
@@ -761,14 +762,12 @@ c Restore zs for next cone, and world calculation.
                zx1=z1+f1*(z2-z1)
                if(zx1.lt.zw2 .and. zx1.ge.zw1)then
                   call insertsorted2(icross_geom,f,f1,ids,i)
-c                  icross_geom=icross_geom+1
                endif
             endif
             if(f2.ge.0. .and. f2.lt.1.)then
                zx2=z1+f2*(z2-z1)
                if(zx2.lt.zw2 .and. zx2.ge.zw1)then
                   call insertsorted2(icross_geom,f,f2,ids,i)
-c                  icross_geom=icross_geom+1
                endif
             endif
             endif
