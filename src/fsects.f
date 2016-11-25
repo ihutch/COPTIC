@@ -690,8 +690,14 @@ c corresponding face numbers are in isdf.
       do k=1,4
          if(abs(zrf(k)).le.1. .and. fn(k).ge.0..and.fn(k).lt.1.)then
 c This prevents duplicates when the intersection is at an edge I hope:
-            if(nsect.ge.1.and.fn(k).eq.fmin(nsect))then
-            else
+c Unfortunately this trips bounds-checking even though irrelevant
+c            if(nsect.ge.1.and.fn(k).eq.fmin(nsect))then
+c            else
+c               call insertsorted2(nsect,fmin,fn(k),ids,isdf(k))
+c            endif
+            if(nsect.eq.0)then
+               call insertsorted2(nsect,fmin,fn(k),ids,isdf(k))
+            elseif(fn(k).eq.fmin(nsect))then
                call insertsorted2(nsect,fmin,fn(k),ids,isdf(k))
             endif
          endif

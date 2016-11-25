@@ -16,7 +16,7 @@ $(shell \
     if which g77 >/dev/null 2>&1 ; then echo -n "g77";else\
      if which f77 >/dev/null 2>&1 ; then echo -n "f77";else\
       if which gfortran >/dev/null 2>&1; then echo -n "gfortran";else\
-	echo "Unable to decide compiler. Specify via G77=..."; exit 1;\
+	echo "Unable to decide compiler. Specify via G77=..." >&2; exit 1;\
       fi;\
      fi;\
     fi;\
@@ -196,7 +196,18 @@ vecglx : libaccis.a vecglx.o
 	rm -f vecx
 
 vec4014 : libaccis.a
+	ar -d libaccis.a noscreen.o
+	ar -q libaccis.a vec4014.o
 	date >vec4014
+	rm -f noscreen
+
+noscreen : libaccis.a
+	sed -e "s/data i14no\/0\//data i14no\/1\//" vec4014.f >noscreen.f
+	$(G77) -c $(WSWITCHES) noscreen.f
+	ar -d libaccis.a vec4014.o
+	ar -q libaccis.a noscreen.o
+	date >noscreen
+	rm -f vec4014
 
 # Fortran 90 interface
 convert : convert.f95
@@ -255,6 +266,13 @@ clean : cleantest
 	rm -f *.o
 	rm -f *.ida
 	rm -f plot*.ps plot*.pg*
+	rm -f noscreen*
 
 help :
 	@echo Targets: mproper clean cleantest tests interface.f90 sync
+	@echo Compiler: G77=gfortran
+	@echo Drivers: VECX=vecx        X11 driver
+	@echo '         VECX=vecglx	OpenGL driver'
+	@echo '         VECX=vec4014	Tektronix 4014 driver'
+	@echo '         VECX=noscreen	No Screen driver. ps output only.'
+

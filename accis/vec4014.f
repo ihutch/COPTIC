@@ -1,8 +1,9 @@
 c Tektronix 4014 driver.
 c Expanded to supply dummy routines for filling and rotating etc 2008.
-c And for usleep, noeye3d. Routines like slicing won't actually work
-c with the 4014 driver, but at least the code will run without the
-c X libraries.
+c And for usleep, noeye3d. Interactive Routines don't interact
+c with the 4014 driver, but the code will run without the
+c X libraries, and ps files can be generated.
+c i14no=1 prevents any 4014 code being emitted.
 c********************************************************************
       integer function accis_driver()
       accis_driver=2
@@ -191,6 +192,7 @@ c***********************************************************************
       common /a_grad/a_gradPix,a_gradred,a_gradgreen,a_gradblue
      $     ,a_grad_inited
       common /com4014/i14no
+c This value determines if 4014 is emitted. 0 yes, 1 no:
       data i14no/0/
       data a_grad_inited/0/
       end

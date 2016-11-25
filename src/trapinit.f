@@ -78,6 +78,8 @@ c Arguments of untrapcum
       iaccept=0
       ireject=0
       ntrapcount=0
+c silence a spurious warning.
+      r2=0.
 c-----------------------------------------------------------------
       i1=1
 c Point to the bottom of the particle stack for start of species 1.

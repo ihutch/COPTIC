@@ -170,9 +170,17 @@ c For all the objects being flux tracked.
 c Write out the position data hopefully comprehensibly.
                do j=1,nf_posdim
                   write(*,*)poslabel(j,itexttype)
-                  write(*,'(10f8.4)')(ff_data(nf_address(nf_flux,k,1-j)
-     $                 +i-1),i=1,nf_posno(1,k))
+                  if(abs(ff_data(nf_address(nf_flux,k,1-j))).lt.10)then
+                     write(*,'(10f8.4)')(ff_data(nf_address(nf_flux,k,1
+     $                    -j)+i-1),i=1,nf_posno(1,k))
+                  else
+                     write(*,'(10f8.1)')(ff_data(nf_address(nf_flux,k,1
+     $                    -j)+i-1),i=1,nf_posno(1,k))
+                  endif
                enddo
+               write(*,*)'addresses',
+     $              (nf_address(nf_flux,k,1-j),j=1,nf_posdim),' values'
+     $              ,(ff_data(nf_address(nf_flux,k,1-j)),j=1,nf_posdim)
 c               write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i
 c     $              -1),i=1,nf_posno(1,k)),j=1,nf_posdim)
             endif

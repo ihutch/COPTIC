@@ -14370,3 +14370,20 @@ drift cycle, a perfect diagnostic would require knowledge of the next
 kick, but we can't afford that, so we assume the next kick is the same
 as the prior kick. It hasn't obviously broken anything, but it is hard
 to verify real improvement except on the extreme cases like holes.
+
+23 Nov 2016
+With a second species the facet areas are being written incorrectly to the
+flux file. It appears their values are clobbered by the second species
+somehow. The values for the first object are already corrupted in the
+fluxave call. Other objects are not obviously corrupted.
+
+The difference was because only the first object had multiple fluxes (3)
+specified. Going back to 1 (flux only no momentum) the corruption goes away.
+Making just object 2 have multiple fluxes causes object 1 areas to be
+corrupted. Five values cf the 6 faces. Giving object 4 multiples corrupts
+areas at addresses 4-15.
+Corruption does not happen if we use -s0 no steps.
+
+Found an error in fluxdata. Some higher flux quantities used mf_quant
+rather than kf_quant to determine whether to write higher flux
+quantities. Correcting that seems to fix the corruption. Declare fixed.

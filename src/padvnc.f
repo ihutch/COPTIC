@@ -703,7 +703,8 @@ c An inverse lookup table for non-uniform. --------------------
 c Outside mesh
             ix=0
             xm=0
-         elseif(ipi.gt.ipilen)then
+c was ipilen, but that seemed to be an error, gave index overrun below.
+         elseif(ipi.gt.ipilen-1)then
             ix=0
             xm=isz+1
          else

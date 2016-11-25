@@ -70,7 +70,9 @@ c Increment number of quantities provided there is allocated address room.
                endif
                if(j.gt.1)if_quant(mf_obj,j)=if_quant(mf_obj,j-1)
      $              +kf_quant(mf_obj,j)
-c               write(*,*)'Quantities',nq,nt,nf_quant,mf_quant(mf_obj)
+c               write(*,'(a,7i4)')'Species,if,kf,mf_quant',j
+c     $              ,if_quant(mf_obj,j),kf_quant(mf_obj,j)
+c     $              ,mf_quant(mf_obj)
             enddo
             itype=int(obj_geom(otype,i))
             i2type=(itype/256)
@@ -117,7 +119,12 @@ c                  write(*,*)(nf_faceind(j,mf_obj,k),k=1,2*ndims)
 c                  nfluxes=2*nfluxes
                elseif(itype.eq.3 .or. itype.eq.5)then
 c Cylinder specifying nr, nt, nz. 
-c Three facets in the order bottom side top.
+c Three facets in the order bottom side top. Check for enough n's
+                  if(obj_geom(ofn3,i).eq.0.)then
+                     write(*,*)'Zero third flux array length for object'
+     $                    ,j,'Probably an error in object file spec'
+                     stop
+                  endif
                   nfluxes=0
                   nf_faceind(j,mf_obj,1)=nfluxes
                   nf_dimlens(j,mf_obj,1)=int(obj_geom(ofn1,i))
@@ -377,6 +384,8 @@ c z
      $                       +nf_faceind(j,io,3))=zc+zr
 c area
                         ff_data(nf_address(j,io,nf_pa)+ip-1)=ar
+c                        write(*,*)'Area address',nf_address(j,io,nf_pa)
+c     $                       +ip-1,' Area',ar
                         ff_data(nf_address(j,io,nf_pa)+ip-1
      $                       +nf_faceind(j,io,3))=ar
                      enddo
@@ -742,10 +751,12 @@ c Not array in this routine.
       real xx
 
 c Adding into bins. At this point all we need is sd, ijbin.
-c Multispecies approach
+c Multispecies approach: add if_quant to the flux index.
       iq=if_quant(infobj,ispecies)
 c Particle Flux.
       iaddress=ijbin+nf_address(nf_flux+iq,infobj,nf_step)
+      if(iaddress.le.1)write(*,*)'BIN ERROR',iaddress,ijbin,infobj
+     $     ,ispecies,mf_quant(infobj),ff_data(iaddress)
       ff_data(iaddress)=ff_data(iaddress)+sd
 c This is the way to test that one is really accessing the right bin:
 c      write(*,*)'ijbin=',ijbin,nf_posno(1,infobj),infobj,sd,fraction
@@ -753,19 +764,27 @@ c      ff_data(iaddress)=ijbin
       if(kf_quant(infobj,ispecies).ge.2)then
 c Momentum               
          iaddress=ijbin+nf_address(nf_gx+iq,infobj,nf_step)
+         if(iaddress.le.1)write(*,*)'BIN ERROR',iaddress,ijbin,infobj
+     $        ,ispecies,mf_quant(infobj),ff_data(iaddress)
          ff_data(iaddress)=ff_data(iaddress)+ sd*xi(4)
       endif
-      if(mf_quant(infobj).ge.3)then
+      if(kf_quant(infobj,ispecies).ge.3)then
          iaddress=ijbin+nf_address(nf_gy+iq,infobj,nf_step)
+         if(iaddress.le.1)write(*,*)'BIN ERROR',iaddress,ijbin,infobj
+     $        ,ispecies,mf_quant(infobj),ff_data(iaddress)
          ff_data(iaddress)=ff_data(iaddress)+ sd*xi(5)
       endif
-      if(mf_quant(infobj).ge.4)then
+      if(kf_quant(infobj,ispecies).ge.4)then
          iaddress=ijbin+nf_address(nf_gz+iq,infobj,nf_step)
+         if(iaddress.le.1)write(*,*)'BIN ERROR',iaddress,ijbin,infobj
+     $        ,ispecies,mf_quant(infobj),ff_data(iaddress)
          ff_data(iaddress)=ff_data(iaddress)+ sd*xi(6)
       endif
-      if(mf_quant(infobj).ge.5)then
+      if(kf_quant(infobj,ispecies).ge.5)then
 c Energy
          iaddress=ijbin+nf_address(nf_heat+iq,infobj,nf_step)
+         if(iaddress.le.1)write(*,*)'BIN ERROR',iaddress,ijbin,infobj
+     $        ,ispecies,mf_quant(infobj),ff_data(iaddress)
          xx=0.
          do k=1,ndims
             xx=xx+xi(3+k)**2
@@ -982,7 +1001,8 @@ c Sum the absolute count over steps
 c Get the area and divide to give the flux density.
          area=ff_data(iaa+i)
          ff_data(iavd+i)=ff_data(iav+i)/area
-c         write(*,*)ifobj,iq,i,' Area,Flux-density',area,ff_data(iavd +i)
+c         write(*,'(4i6,a,2f10.4)')ifobj,iq,i,iaa+i,' Area,Flux-density'
+c     $        ,area,ff_data(iavd +i)
       enddo
 
 c Total the flux over positions as a function of step.
@@ -1097,6 +1117,10 @@ c      write(*,*)'geommap',(nf_geommap(j),j=1,mf_obj)
      $     k=1-nf_posdim,nf_step+2)
       ndatalen=nf_address(1,1,nf_step+2)-1
       write(22)(ff_data(i),i=1,ndatalen)
+c Debug:
+      write(*,*)'Writefile addresses',
+     $     (nf_address(nf_flux,1,1-j),j=1,nf_posdim),' values'
+     $     ,(ff_data(nf_address(nf_flux,1,1-j)),j=1,nf_posdim)
 c New force write.
       write(22)(((fieldforce(i,j,k),pressforce(i,j,k) ,partforce(i,j,k)
      $     ,colnforce(i,j,k),i=1,ndims)
@@ -1191,6 +1215,11 @@ c      read(23)(ff_data(i),i=1,nf_address(1,1,nf_step+2)-1)
  201  continue
 c      write(*,*)'Datalen',ndatalen
       read(23)(ff_data(i),i=1,ndatalen)
+c Debug:
+      write(*,*)'Readfile addresses',
+     $     (nf_address(nf_flux,1,1-j),j=1,nf_posdim),' values'
+     $     ,(ff_data(nf_address(nf_flux,1,1-j)),j=1,nf_posdim)
+
       if(iversion.eq.0)then
          write(*,*)'Old force data version',iversion
          read(23,end=102, err=102)(((fieldforce(i,j,k),pressforce(i,j,k)
@@ -1219,7 +1248,7 @@ c n_part data
          read(23,end=105)nf_species
          read(23,end=105)((if_quant(j,k),kf_quant(j,k),j=1,mf_obj),k=1
      $        ,nf_species)
-         if(ierr.ne.0)write(*,'(a,i3,a,i3,a,i3)')
+         if(ierr.ne.0)write(*,*)
      $        'Flux reading: nf_species=',nf_species,
      $        ' Quantity start',(if_quant(1,k),k=1,nf_species),
      $        ' Quantity count',(kf_quant(1,k),k=1,nf_species)

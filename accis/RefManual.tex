@@ -222,7 +222,7 @@ the color gradient. Position of axis is (x1,y1) to (x1,y2) in axis-box
 units. Width of color bar is colwith times axis-box
 width. lpara=.true. says use parallel labels.
 
-agradcolor(icol) set gradient color 0-239.
+acgradcolor(icol) set gradient color 0-239.
 
 getrgbcolor(icol,ired,igreen,iblue) get the gradient color RGB
 settings for input number icol 0-239.
@@ -623,7 +623,17 @@ For X window systems, the X11 driver (vecx.c) requires linking against
 the Xlib library using compiler/linker arguments such as
 -L/usr/X11R6/lib/-lX11.  The OpenGL driver vecglx.c requires in
 addition -lGL and -lGLU. The development versions of the X11 and
-OpenGL packages may be required to provide these.
+OpenGL packages may be required to provide these. The driver can be
+selected by e.g. \verb!$ make VECX=vecx! or  \verb!$ make VECX=vecglx!. 
+These drivers reside in the library \verb!libaccisX.a!.
+Non-X drivers reside in \verb!libaccis.a! which normally needs no
+additional libraries. 
+The make command \verb!$ make VECX=noscreen!  like \verb!$ make VECX=vec4014!
+makes a version which requires only a fortran
+compiler (no C). The noscreen option outputs no graphics to screen and does not
+wait for any input. It will however generate postscript plot files if the code
+calls for them.
+
 
 All the ACCIS code with the exception of the drivers is fortran 77.
 It takes advantage of the ubiquitous essential extensions: long
@@ -643,3 +653,8 @@ for operation of debugged correct code.
 \end{document}
 
 
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

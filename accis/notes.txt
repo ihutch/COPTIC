@@ -899,3 +899,7 @@ Implemented correct bounding box atend for pfsw=3 in postscript.
 17 Sep 2015
 
 Adjusted noeye interpretation in vecglx, vecx, to allow consistent use.
+
+23 Oct 2016
+
+Implemented a make target noscreen that runs the vec4014 with no display.
