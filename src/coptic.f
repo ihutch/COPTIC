@@ -49,7 +49,8 @@ c Face boundary data
       include 'facebcom.f'
 c Particle distribution accumulation data
       include 'ptaccom.f'
-
+c Debugging
+      include 'dbgcom.f'
       external bdyshare,bdyset,cijroutine,cijedge,psumtoq
      $     ,quasineutral,fadcomp
       real fadcomp

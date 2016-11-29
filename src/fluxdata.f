@@ -698,14 +698,19 @@ c Surface of revolution -------------------------------
          ijbin=-1
          call xp2contra(iobj,x1,xi,xn1,xn2,ins1,ins2)
          call srvsect(xn1,xn2,iobj,nsect,fmin,imin)
-         if(.false.)then
+c Debug
+         if(abs(x1(1)-0.969622).lt.1.e-5)then
             write(*,*)'nsect,fmin,frac',nsect,fmin(1),fmin(2),frac
             write(*,*)'ijalt,ijbin,sds',ijalt,ijbin,sd,sd1
-            call srvsectplot(iobj,xn1,xn2,fmin)
+c            call srvsectplot(iobj,xn1,xn2,fmin)
          endif
          do i=1,nsect
             if(fmin(i).le.fmax)then
                sd=sd1*(-1)**(i-1)
+c Debug
+               if(abs(x1(1)-0.969622).lt.1.e-5)then
+                  write(*,*)'xn1,xn2,nsect,fmin',xn1,xn2,nsect,fmin(i)
+               endif
                call ijbinsrv(iobj,imin(i),fmin(i),x1,xi,ijbin)
                call binadding(xi,infobj,sd,ijbin,ispecies)
             endif
@@ -815,6 +820,7 @@ c      integer imin(ovlen)
       
       call autoplot(obj_geom(opr,iobj),obj_geom(opz,iobj),
      $     int(obj_geom(onpair,iobj)))
+      call axlabels('r','z')
       do i=1,int(obj_geom(onpair,iobj))-1
 c The ends of the segment chosen.
          rb=obj_geom(opr+i-1,iobj)

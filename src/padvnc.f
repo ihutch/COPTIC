@@ -29,6 +29,7 @@ c Collision settings.
       include 'facebcom.f'
 
 c Local parameters
+      include 'dbgcom.f'
 c Lowest particle to print debugging data for.
       integer npr
       parameter (npr=0)
@@ -45,6 +46,7 @@ c Local storage
       real Efield(ndims),adfield(ndims)
       real xfrac(ndims)
       real xprior(2*ndims)
+      real xn1(ndims),xn2(ndims)
       logical linmesh
       logical lcollided,ltlyerr
       save adfield
@@ -328,8 +330,16 @@ c end of this step.
 c Diagnostic for leakage. Remove when convinced it is fixed:
          if(.not.linregion(ibool_part,ndims,x_part(1,i))
      $        .and..not.leftregion.ne.0)then
-            write(*,'(a,i8,6f8.3,2i3)')'Particle leakage',i,(x_part(kk
-     $           ,i),kk=1,6),icross,inewregion
+            write(*,'(a,i8,/,6f8.3,2i3,/,3f8.3,i3)')'Particle leakage',i
+     $           ,(x_part(kk,i),xprior(kk),kk=1,3),icross,inewregion
+     $           ,(x_part(kk,i)*dtpos,kk=4,6)
+         call world3contra(ndims,xprior,xn1,1)
+         call world3contra(ndims,x_part(1,i),xn2,1)
+         idbug=1
+         call srvsect(xn1,xn2,1,icross,f,ids)
+         call srvsectplot(1,xn1,xn2,f)
+         idbug=0
+         write(*,*)'icross=',icross,xn1,xn2
 c Get rid of this leaked particle:
             leftregion=1
          endif

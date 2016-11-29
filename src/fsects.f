@@ -144,6 +144,10 @@ c Non-aligned cylinder.
 c Surface of revolution.
                call xp2contra(i,xp1,xp2,xn1,xn2,ins1,ins2)
                call srvsect(xn1,xn2,i,nsect,fmin,ids)
+c Debug
+c               if(abs(xp1(1)-0.969622).lt.1.e-5)then
+c                  write(*,*)'xn1,xn2,nsect,fmin',xn1,xn2,nsect,fmin
+c               endif
                if(nsect.ge.1.and.infobj.gt.0)then
                   call ijbinsrv(i,ids(1),fmin(1),xp1,xp2,ijbin)
                endif
@@ -469,12 +473,15 @@ c by a larger amount. Worry!
       if((rb-rm)*(rm-rt)*abs(rt-rb).lt.-1.e-6
      $     .or. (zb-zm)*(zm-zt)*abs(zt-zb).lt.-1.e-6)then
          write(*,*)
-         write(*,*)'Puzzling Values for',ids,iobj,fraction
-         write(*,*)'rb,rm,rt,zb,zm,zt',rb,rm,rt,zb,zm,zt
+         write(*,'(a,2i4,f8.3)')'Puzzling Values for',ids,iobj,fraction
+         write(*,'(a,6f8.3)')'rb,rm,rt,zb,zm,zt',rb,rm,rt,zb,zm,zt
          write(*,'(20f7.3)')(obj_geom(opr+k,iobj),k=0
      $        ,int(obj_geom(onpair,iobj))-1)
          write(*,'(20f7.3)')(obj_geom(opz+k,iobj),k=0
      $        ,int(obj_geom(onpair,iobj))-1)
+         write(*,'(a,6f8.4)')'xp1,xp2',xp1,xp2
+         write(*,'(a,4f8.4)')'xm',xm,sqrt(xm(1)**2+xm(2)**2)
+         write(*,*)xp1
          stop
       endif
       dr2=(rt**2-rb**2)/nz

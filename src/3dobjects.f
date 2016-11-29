@@ -5,6 +5,8 @@ c This replaces the block data program com3dset which causes giant objects.
       include 'ptchcom.f'
       include '3dcom.f'
       include 'partcom.f' 
+      include 'dbgcom.f'
+      idbug=0
       ngeomobj=0
 c Default track no objects.
 c Default no subtractive objects

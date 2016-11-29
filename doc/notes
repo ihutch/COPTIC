@@ -14387,3 +14387,41 @@ Corruption does not happen if we use -s0 no steps.
 Found an error in fluxdata. Some higher flux quantities used mf_quant
 rather than kf_quant to determine whether to write higher flux
 quantities. Correcting that seems to fix the corruption. Declare fixed.
+
+28 Nov 16
+Pursuing other sor problems. srvsect appears to have bugs or inaccuracy
+that causes puzzling values. It also seems to have an incomplete section for
+cones that degenerate to cylinders [no. misread.]. Needs to be sorted out.
+srvsect appears to have logical errors. Found a bug with not testing the
+r range. Fixed that. It stops the puzzling errors, but not the leakage.
+
+The leakage is because icross is zero for xprior and x_part clearly such
+that the srv object is crossed. icross is set by icross_all which calls
+icross_geom for each object. icross_geom uses srvsect. So we ought to be
+able to verify the problem.
+
+I seem to have tracked it to a rounding problem in the crossing
+determination in srvsect. For near-disc cones, the fractional axial
+position can be sufficiently inaccurately determined as to be outside
+the range of z for the segment. It seems we need a more appropriate
+way to combine the finding of cone intersection with the determination
+of whether the intersection is within the segment limits.
+
+Implemented oblique angle test. It gets rid of some of the leakage but
+not all. There's still a problem for some reason. It seems to me that
+conesect can't really work for disparities between x and z greater than
+about 10^4, because the A coefficient is x^2+y^2-z^2. So if x/z<10^{-4},
+then its contribution is in the rounding range. The z values are in the 
+ball park of 10^4, so we are in this domain.
+
+29 Nov 16
+
+Finally sorted this problem out. It arose because there is an extreme
+rounding error in conesect that comes from evaluating B^2-AC
+directly. Rewriting the discriminant in a form that explicitly
+accounts for the cancellation of the large terms fixes that problem
+and now we get no particle leakage.
+
+On the way implemented dbgcon.f which provides a common block for
+indicating the debug level. Left some of the tests in conesect and
+srvsect.

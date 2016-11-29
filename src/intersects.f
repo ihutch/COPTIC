@@ -676,18 +676,20 @@ c the line joining points xn1,xn2 (contravariant components) with
 c it. This version uses explicit cone intersection, not iteration.
 
       integer iobj
-c Local storage
       include 'ndimsdecl.f'
       real xp1(ndims),xp2(ndims)
       real f(*)
       integer ids(*)
       include '3dcom.f'
+      include 'dbgcom.f'
+c Local storage`
       real f1,f2
       real xn1(ndims),xn2(ndims),xr(ndims)
       equivalence (xn1(ndims),z1),(xn2(ndims),z2)
       real zero(ndims)
       data zero/ndims*0./
 
+c Example of choosing a particular particle case
       icross_geom=0
       f(1)=1.
       do i=1,ndims
@@ -718,10 +720,9 @@ c Order the two wall positions increasing.
 c Non intersecting: points both off the same end of segment.
 c Hopefully this case is the dominant one and quick. Continue to next.
 c               write(*,*)'Both off end',z1,z2
-         elseif(abs(zd).lt. 2.e-4*rc)then
+         elseif(abs(zd).lt. 1.e-6*rc)then
 c Near Degenerate: disc identical z. Alternate treatment, unscaled.
-c Need to make e-4; e-8 gave rise to particle leakage.
-c There remains a danger area near 1e-4 which should be avoided. 
+            if(idbug.gt.0)write(*,*)'small zd',zd
             fr=(zw1-z1)/(z2-z1)
             if(fr.ge.0. .and. fr.lt.1.)then
                r=sqrt((xp1(1)+fr*(xp2(1)-xp1(1)))**2
@@ -735,7 +736,7 @@ c There remains a danger area near 1e-4 which should be avoided.
             if(abs(rd).lt.1.e-8*rc)then
 c Degenerate: cylinder. Use cylinder code.
 c               write(*,*)'Cylinder approximation'
-               if(abs(zd).ge.2.e-4*rc)then
+               if(abs(zd).ge.2.e-8*rc)then
                   do k=1,ndims-1
                      xr(k)=rc
                   enddo
@@ -753,20 +754,34 @@ c Scale z to the unit cone. z1 and z2 equivalence xn?(3)
                z1=(z1-zx)/dzdr
                z2=(z2-zx)/dzdr
                call conesect(xn1,xn2,f1,f2,sd)
+               if(idbug.gt.0)write(*,'(a,i3,6f10.2)'
+     $              )'i,zx,z1,z2,f1,f2,sd',i,zx,z1,z2,f1,f2,sd
 c Restore zs for next cone, and world calculation.
                z1=xp1(ndims)
                z2=xp2(ndims)
             endif
             if(sd.ne.0.)then
             if(f1.ge.0. .and. f1.lt.1.)then
-               zx1=z1+f1*(z2-z1)
-               if(zx1.lt.zw2 .and. zx1.ge.zw1)then
+c Here we need to tell if the intersection is within the face or beyond
+c it on the cone. The criterion needs to be robust to rounding errors.
+c Take it to be that the 2d position of the intersection observes the
+c wall element as an oblique angle.  
+               zx=z1+f1*(z2-z1)
+               if(idbug.gt.0)write(*,*)'zx1,zw1,zw2',zx,zw1,zw2
+               rx=sqrt((xp1(1)+f1*(xp2(1)-xp1(1)))**2
+     $              +(xp1(2)+f1*(xp2(2)-xp1(2)))**2)
+               if((zw1-zx)*(zw2-zx)+(rw1-rx)*(rw2-rx).lt.0.)then
+                  if(idbug.ne.0)write(*,*)'Insert f1',f1
                   call insertsorted2(icross_geom,f,f1,ids,i)
                endif
             endif
             if(f2.ge.0. .and. f2.lt.1.)then
-               zx2=z1+f2*(z2-z1)
-               if(zx2.lt.zw2 .and. zx2.ge.zw1)then
+               zx=z1+f2*(z2-z1)
+               if(idbug.gt.0)write(*,*)'zx1,zw1,zw2',zx,zw1,zw2
+               rx=sqrt((xp1(1)+f2*(xp2(1)-xp1(1)))**2
+     $              +(xp1(2)+f2*(xp2(2)-xp1(2)))**2)
+               if((zw1-zx)*(zw2-zx)+(rw1-rx)*(rw2-rx).lt.0.)then
+                  if(idbug.ne.0)write(*,*)'Insert f2',f2
                   call insertsorted2(icross_geom,f,f2,ids,i)
                endif
             endif
@@ -780,24 +795,33 @@ c Find the fractional intersection points of the line joining xp1 to xp2
 c with the unit cone x^2+y^2=z^2. If xd=xp2-xp1, then the solution of
 c the intersection is x=xp1+f*xd, with Af^2+2Bf+C=0. Where
 c A=xd^2+yd^2-zd^2, B=xd.xp1+yd.yp1-zd.zp1, C=xp1^2+yp1^2-zp1^2 So f=
-c (-B^2 +- sqrt(B^2-AC) )/A Return f=1 for no intersection. f1 should
+c (-B +- sqrt(B^2-AC) )/A Return f=1 for no intersection. f1 should
 c be always positive if possible, and closest to zero. sd=1 if point 1
 c is outside, meaning r1>z1 (C>0), and the first-f crossing is
 c inward. sd=-1 if the first crossing is outward. sd=0 if there are no
 c crossings even of the extrapolated line.
+      include 'dbgcom.f'
       integer ndims
       parameter (ndims=3)
       real xp1(ndims),xp2(ndims),f1,f2,sd
       real xd(ndims)
+      real A,B,C,D,DS,One
+      data One/1.0/
 
+      if(idbug.ne.0)write(*,*)'Conesect xp1,xp2',xp1,xp2
       do i=1,ndims
          xd(i)=xp2(i)-xp1(i)
       enddo
       A=xd(1)**2+xd(2)**2-xd(3)**2
       B=xd(1)*xp1(1)+xd(2)*xp1(2)-xd(3)*xp1(3)
       C=xp1(1)**2+xp1(2)**2-xp1(3)**2
-      disc=B**2-A*C
-      if(disc.lt.0)then
+      D=xd(3)**2*(xp1(1)**2+xp1(2)**2)+xp1(3)**2*(xd(1)**2+xd(2)**2)
+     $     -2.*xd(3)*xp1(3)*(xd(1)*xp1(1)+xd(2)*xp1(2))
+     $     -(xd(1)*xp1(2)-xd(2)*xp1(1))**2
+c D =B**2-A*C evaluated carefully to avoid rounding.
+c      D=B**2-A*C   ! This gave particle leakage.
+      if(idbug.ne.0)write(*,*)'A,B,C,D,B^2-AC',A,B,C,D,B**2-A*C
+      if(D.lt.0)then
 c No intersections.
          f1=1.
          f2=1.
@@ -806,24 +830,74 @@ c No intersections.
 c One intersection
          f1=-0.5*C/B
          f2=1.
-         sd=sign(1.,C)
+         sd=sign(One,C)
+      else
+c Two intersections.
+          DS=sqrt(D)
+         if( (A.gt.0. .and. C.gt.0. .and. B.lt.0) .or.
+     $        (A.lt.0. .and.(C.ge.0. .or. B.le.0)) )then
+c Can take minus sign and still get positive for A>0.
+            f1=(-B-DS)/A
+            f2=(-B+DS)/A
+         else
+c Can take plus sign and still get positive for A<0.
+            f1=(-B+DS)/A
+            f2=(-B-DS)/A
+         endif
+         sd=sign(One,C)
+      endif
+      end
+c********************************************************************
+      subroutine conesectz(xp1,xp2,z1,z2,sd)
+c Find the z-positions of the intersection of the line from xp1 to xp2
+c with the unit cone x^2+y^2=z^2. 
+
+c They are the solution of Az^2+Bz+C=0, with
+c A=x'^2+y'^2-1;  B=2[x_0x'+y_0y'];  C= x_0^2+y_0^2,
+c where ' means d/dz, and x_0=x1-z1.x' and y_0=y1-z1.y'.  
+
+c Logic of the sorted order needs work. Not done. 
+      integer ndims
+      parameter (ndims=3)
+      real xp1(ndims),xp2(ndims),z1,z2,sd
+      real A,B,C,disc,One
+      data One/1.0/
+      zd=xp2(3)-xp1(3)
+      xp=(xp2(1)-xp1(1))/zd
+      yp=(xp2(2)-xp1(2))/zd
+      x0=xp1(1)-xp1(3)*xp
+      y0=xp1(2)-xp1(3)*yp
+      A=xp**2+yp**2-1
+      B=2.*(x0*xp+y0*yp)
+      C=x0**2+y0**2
+      disc=B**2-A*C
+      if(disc.lt.0)then
+c No intersections.
+         sd=0.
+         z1=0.
+         Z2=0.
+      elseif(A.eq.0)then
+c One intersection
+         z1=-0.5*C/B
+         z2=0.
+         sd=sign(One,C)
       else
 c Two intersections.
          disc=sqrt(disc)
          if( (A.gt.0. .and. C.gt.0. .and. B.lt.0) .or.
      $        (A.lt.0. .and.(C.ge.0. .or. B.le.0)) )then
 c Can take minus sign and still get positive for A>0.
-            f1=(-B-disc)/A
-            f2=(-B+disc)/A
+            z1=(-B-disc)/A
+            z2=(-B+disc)/A
          else
 c Can take plus sign and still get positive for A<0.
-            f1=(-B+disc)/A
-            f2=(-B-disc)/A
+            z1=(-B+disc)/A
+            z2=(-B-disc)/A
          endif
-         sd=sign(1.,C)
+         sd=sign(One,C)
       endif
+
       end
-c********************************************************************
 c Obsolete Below here.
 c*********************************************************************
       subroutine cylnormsect(xn1,xn2,icross_geom,f)
