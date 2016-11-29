@@ -456,7 +456,8 @@ c Contour positions:
 c Areas are equal through segments. Needs to be scaled.
                   area=3.1415927*(rb+rt)*sqrt(rdiff**2+zdiff**2)
      $                 /obj_geom(opdiv+i3-1,i)
-c                  write(*,*)'area=',area,rb,rt,zdiff,rscale,zscale
+c                  write(*,*)'area,rb,rt,zdiff,rscale,zscale',area,rb,rt
+c     $                 ,zdiff,rscale,zscale
                   do i2=1,int(obj_geom(opdiv+i3-1,i))
                      i0=i0+1
 c Calculate contour fractional index:
@@ -483,7 +484,8 @@ c Theta positions:
                         ip=i1+(i0-1)*int(nf_dimlens(j,io,1))
 c Centroid frac index, theta, end frac, area
                         t=3.1415927*
-     $                       (-1.+2.*(i2-0.5)/nf_dimlens(j,io,1))
+     $                       (-1.+2.*(i1-0.5)/nf_dimlens(j,io,1))
+c                        write(*,*)'cm,t,pm,area',cm,t,pm,area
                         ff_data(nf_address(j,io,nf_p1)+ip-1)=cm
                         ff_data(nf_address(j,io,nf_p2)+ip-1)=t
                         ff_data(nf_address(j,io,nf_p3)+ip-1)=pm
@@ -577,6 +579,7 @@ c
       include '3dcom.f'
       include 'partcom.f'
       include 'sectcom.f'
+      include 'dbgcom.f'
 
       real xn1(ndims),xn2(ndims)
       integer isc
@@ -590,6 +593,7 @@ c This does not seem to work as expected:
 
       data isc/0/
 
+      idebug=idbug
       ierr=0
 c Do nothing for untracked objects and report no error.
       infobj=nf_map(iobj)
@@ -698,19 +702,9 @@ c Surface of revolution -------------------------------
          ijbin=-1
          call xp2contra(iobj,x1,xi,xn1,xn2,ins1,ins2)
          call srvsect(xn1,xn2,iobj,nsect,fmin,imin)
-c Debug
-         if(abs(x1(1)-0.969622).lt.1.e-5)then
-            write(*,*)'nsect,fmin,frac',nsect,fmin(1),fmin(2),frac
-            write(*,*)'ijalt,ijbin,sds',ijalt,ijbin,sd,sd1
-c            call srvsectplot(iobj,xn1,xn2,fmin)
-         endif
          do i=1,nsect
             if(fmin(i).le.fmax)then
                sd=sd1*(-1)**(i-1)
-c Debug
-               if(abs(x1(1)-0.969622).lt.1.e-5)then
-                  write(*,*)'xn1,xn2,nsect,fmin',xn1,xn2,nsect,fmin(i)
-               endif
                call ijbinsrv(iobj,imin(i),fmin(i),x1,xi,ijbin)
                call binadding(xi,infobj,sd,ijbin,ispecies)
             endif

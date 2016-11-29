@@ -25,7 +25,7 @@ C      real traceave(ntr)
       data objnumtotext/1,2,3,5,3,4,4/
       data poslabel/'cos(theta)','phi(rad)','0','Area',
      $     'x','y','z','Area','radius','theta(rad)','z','Area'
-     $     ,'radius','theta(rad)','z','Area','1','2','3','Area'/
+     $     ,'centroid','theta(rad)','topfrac','Area','1','2','3','Area'/
       data typetext/'Sphere ','Cuboid ','Cylinder ','SurfRev '
      $     ,'Pllelopp '/
       data iplot/1/iprint/1/ivprn/0/iquiet/1/

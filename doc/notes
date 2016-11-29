@@ -14425,3 +14425,7 @@ and now we get no particle leakage.
 On the way implemented dbgcon.f which provides a common block for
 indicating the debug level. Left some of the tests in conesect and
 srvsect.
+
+Fix bug in writing of srv angle. Fix labels for fluxexamine srv cases.
+There seems to be a problem with color surface plotting of srvs. 
+Fix negative radius bug in srvgplot.

@@ -501,7 +501,7 @@ c********************************************************************
 c*********************************************************************
       subroutine srvplot(iq,objg,iobj,ioswin,fmin,fmax)
 c Plot divided faces of a convex surface of revolution object objg
-c iosw determines the nature of the plot
+c iosw determines the nature of the plot. Currently unused.
 c 0: Color code according to position.
 c 1:            according to average flux already in nf_step+1
 c 2:            according to average flux-density already in nf_step+2
@@ -719,7 +719,7 @@ c Do over axial facets equally spaced in r^2 running from rb^2 to rt^2
             dz=(zt-zb)/nz
             do j=1,nz
                r21=r22
-               r22=(r21+dr2)
+               r22=max((r21+dr2),0.)
                r1=r2
                r2=sqrt(r22)
                z1=z2
@@ -1028,7 +1028,7 @@ c     $        .and. 0.lt.iq.and.iq.le.mf_quant(nf_map(iobj)))then
                call cylgplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             elseif(itype.eq.6.or.itype.eq.7)then
 c srvplot works for monotonic surface of revolution.
-c srvgplot work for both.
+c srvgplot should work for both.
                call srvgplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             endif
          endif
