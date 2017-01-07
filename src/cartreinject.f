@@ -237,11 +237,12 @@ c         write(*,*)'fcarea(',i,')=',fcarea(i)
       enddo
       if(.not.gintreins(6,ispec).gt.1.)write(*,*)'gintrein problem!'
       enddo
+      if(myid.eq.0)then
       write(*,'(a,3i2,a)')'ipartperiod',ipartperiod,'  greins,gintrein:'
       write(*,*)'greins is the total flux across each of 6 faces'
       write(*,'(6f10.5)')greins
       write(*,'(7f10.5)')gintrein
-
+      endif
       lreininit=.true.
       
       end
@@ -748,7 +749,8 @@ c Particle information
       include 'meshcom.f'
       include 'creincom.f'
       real volume,flux
-c 
+c
+      idebug=0
       do ispecies=1,nspecies
          pinjcompa(ispecies)=0.
 c An ion species that has n_part set needs no ninjcalc.
@@ -788,7 +790,7 @@ c Corrected effective volume for density gradient cases.
 c Partial reinjection is indicated by this fraction.
             pinjcompa(ispecies)=fpinj-int(fpinj)
             nparta(ispecies)=int(ripn*volume/numratioa(ispecies))
-      if(.true.)then      
+      if(idebug.gt.0)then      
       write(*,*)'ispecies,ripn,dtin,cfactor,flux,nparta,ninjcomp,pinj',
      $        ',volume'
       write(*,'(i2,2f8.3,2f10.3,2i8,f8.4,f8.1)')ispecies,ripn,dtin

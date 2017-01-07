@@ -10,7 +10,10 @@ c Test alltoallw
       call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
       call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
 
-      if(nproc.ne.numprocs) stop 'wrong number of processes'
+
+      if(nproc.gt.numprocs)then
+         write(*,*)'Too few of processes.',numprocs,' I need',nproc
+      endif
 c initialize
       do i=1,nproc
          isc(i)=0
