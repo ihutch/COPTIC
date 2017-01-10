@@ -14429,3 +14429,6 @@ srvsect.
 Fix bug in writing of srv angle. Fix labels for fluxexamine srv cases.
 There seems to be a problem with color surface plotting of srvs. 
 Fix negative radius bug in srvgplot.
+
+10 Jan 16
+Fix bugs in objplot associated with facecolor and large numbers of facets.

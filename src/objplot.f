@@ -35,7 +35,7 @@ c Find max and min of flux
          if(fmin.gt.0.)fmin=0.
       endif
 c Use position arrays compatible with flux array but not too coarse.
-      if(ish1.gt.nadef)then 
+      if(ish1.gt.ncosdef)then 
          ncos=ish1
       elseif(ish1.gt.0)then
          ism1=nint(float(ncosdef)/ish1)
@@ -82,7 +82,7 @@ c         write(*,'(2i3,2f8.4)')ia,i,cp1,sp1
          do j=1,ncos
 c Cosines are -1.+ 2.*(i-0.5)/ncos, i=1,ncos
 c Maybe also needs to be done in order. But for now just do simply.
-            c1=(-1.+2.*(j-1)/ncos)
+            c1=(-1.+2.*(j-1.)/ncos)
             s1=sqrt(1.-c1**2)
             c2=(-1.+2.* j   /ncos)
             s2=sqrt(1.-c2**2)
@@ -99,7 +99,7 @@ c            write(*,*)c1,c2,ncos
 c            write(*,*)rface
 c            write(*,*)ish1,ism1,ism2
 c Now rface contains the positions of the face corners.
-            k2=nint(ish1*(c1+1.)/2.+.5000)
+            k2=nint(ish1*(c1+1.)/2.+.50001)
             lfw=(mod(i+ism2,ism2).eq.ism2/2 .and.
      $           mod(j+ism1,ism1).eq.ism1/2)
 c            write(*,*)'Calling facecolor',iosw
