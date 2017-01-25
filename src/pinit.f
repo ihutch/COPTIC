@@ -64,7 +64,8 @@ c Decide whether the external distribution is separable.
 c Conveniently here initialize distribution numbers.
          ncdists(ispecies)=0
          if(ninjcompa(ispecies).gt.0)then
-            slotsurplus=1.3
+c This is safer at 1.3 than 1.1
+            slotsurplus=1.1
          else
             slotsurplus=1.
          endif

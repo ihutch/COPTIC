@@ -1,7 +1,7 @@
 c Particle data common. 
 c Requires ndimsdecl.f to define ndims, nspeciesmax
       integer n_partmax
-      parameter (n_partmax=4000000)
+      parameter (n_partmax=5000000)
       integer iflag,idtp
       parameter(iflag=3*ndims+1,idtp=3*ndims+2)
 c Actual number of species (default=1, max nspeciesmax)
