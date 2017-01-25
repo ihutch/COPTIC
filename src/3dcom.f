@@ -111,10 +111,12 @@ c Mnemonics for positional variables.
       parameter (nf_pr=nf_p1,nf_pt=nf_p2,nf_pz=nf_p3,nf_pa=nf_p4)
 c Actual number of current step total steps, quantities, objects <= maxes.
       integer nf_step,nf_nsteps,mf_quant(nf_obj),mf_obj
-c Array of number of quantities by species. 
-c mf_quant=sum_nspecies(if_quant) for each object.
-c We don't yet have a mechanism for setting it different for different
-c species
+c Array of number of quantities by species.
+c if_quant is the start of quantities for this species, zero for species 1
+c kf_quant is the number of fluxes quantities for this species.
+c      if_quant(*,2)=if_quant(*,1)+kf_quant(*,1) etc.
+c mf_quant=sum_nspecies(kf_quant) for each object.
+c No mechanism yet for setting kf different for different species
       integer kf_quant(nf_obj,nspeciesmax),if_quant(nf_obj,nspeciesmax)
 c The number of positions at which this quantity is measured:
       integer nf_posno(nf_quant,nf_obj)
@@ -139,9 +141,11 @@ c The dt for each step
       real ff_dt(nf_maxsteps)
 c The number of species. Should equal nspecies
       integer nf_species
-
-      common /fluxdata/nf_species,nf_step,nf_nsteps,ff_rho,ff_dt
-     $     ,mf_quant,kf_quant,if_quant,mf_obj,nf_posno,nf_npart
+c The species we are currently working on
+      integer if_species
+      
+      common /fluxdata/if_species,nf_species,nf_step,nf_nsteps,ff_rho
+     $     ,ff_dt,mf_quant,kf_quant,if_quant,mf_obj,nf_posno,nf_npart
      $     ,nf_dimlens,nf_faceind,nf_geommap,nf_address,ff_data
 
 c Flux explanation:

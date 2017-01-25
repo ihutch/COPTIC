@@ -11,6 +11,8 @@ c The uniform-spacing bin-positions are calculated and set.
 c-----------------------------------------------
 c Intersection diagnostic points.
       sc_ipt=0
+c Default working species 1
+      if_species=1
 c-----------------------------------------------
 c Initialize here to avoid giant block data program.
       nf_step=0
@@ -956,6 +958,7 @@ c which is ff_data(iav+i)
       real fluxofstep(nf_maxsteps),step(nf_maxsteps)
       character*30 string
 
+      ndatamax=200
       n1=n1in
       n2=n2in
       iq=abs(iquant)
@@ -1034,7 +1037,11 @@ c From here on is mostly for testing.
          write(*,'(a,f9.2,a,i7,a,i7,a)')' rhoinf:',rinf,' Total:'
      $        ,nint(tot*tdur),' Abs',nint(atot)
      $        ,'  Average collected per step by posn:'
-         write(*,'(10f8.2)')(ff_data(iav+i),i=1,nf_posno(iq,ifobj))
+         if(nf_posno(iq,ifobj).lt.ndatamax)then
+            write(*,'(10f8.2)')(ff_data(iav+i),i=1,nf_posno(iq,ifobj))
+         else
+            write(*,*)'[Too much data to write out.]'
+         endif
          fluxdensity=tot/(4.*3.14159)/rinf
          write(*,*)'Flux density*r^2, normalized to rhoinf'
      $        ,fluxdensity
@@ -1284,7 +1291,7 @@ c Now one might have to reconstruct nf_faceind from nf_dimlens.
       if(ierr.ne.0)write(*,*)'Read back flux data from '
      $     ,name(1:lentrim(name))
 c      write(*,*)charout(1:lentrim(charout))
-c      ierr=0
+      ierr=0
       return
  101  write(*,*)'Error opening file:',name(1:lentrim(name))
       ierr=1

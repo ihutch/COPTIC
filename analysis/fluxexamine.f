@@ -35,6 +35,7 @@ C      real traceave(ntr)
       data ifluxget/nfget*0./
       external getfluxdenave,getfluxden,getposcoord
 
+      if_species=1
       fn1=0.5
       fn2=1.
       rview=1.
@@ -62,14 +63,15 @@ c         write(*,*) argument
      $        read(argument(3:),'(i5)')idimf
          if(argument(1:2).eq.'-b')
      $        read(argument(3:),'(i5)')nbox
-c iplot is the quantity number to plot and average.
          if(argument(1:3).eq.'-pf')then
             call pfset(3)
          elseif(argument(1:2).eq.'-p')then
+c iplot is the quantity number to plot and average.
             read(argument(3:),'(i5)')iplot
          endif
          if(argument(1:2).eq.'-q')then
-            iplot=-257
+c Any negative iplot value turns off initial plots.
+            iplot=-1
 c            ifmask=0
             iosw=-99
             iquiet=0
@@ -108,6 +110,8 @@ c            read(argument(3:),'(i5)')iquiet
          elseif(argument(1:2).eq.'-y')then
             read(argument(3:),'(f10.4)')yrange
          endif
+         if(argument(1:2).eq.'-s')
+     $        read(argument(3:),'(i5)')if_species
          if(argument(1:2).eq.'-i')
      $        read(argument(3:),'(i5)')iosw
          if(argument(1:3).eq.'-om')then
@@ -138,6 +142,15 @@ c Give informational messages.
       endif
       call readfluxfile(filename,ierr)
 
+c Test if species requested compatible.
+      if(if_species.lt.1.or.if_species.gt.nf_species)then
+         if(ierr.gt.0)write(*,*)'Error reading file:',filename,ierr
+         write(*,*)'if_species incompatible',if_species,nf_species
+         stop
+      else
+         write(*,*)'Set iplot for species',if_species
+      endif
+      
 c      write(*,*)'File:',filename(1:lentrim(filename)) 
       write(*,*)'debyelen,Ti,vd,rs,phip,colntime,subcycle,vneut',
      $     ',fcold,dropac,Tneut,Eneut'
@@ -160,7 +173,7 @@ c For all the objects being flux tracked.
       do k=1,mf_obj
          itype=int(obj_geom(otype,nf_geommap(k)))
          itexttype=objnumtotext(itype)
-         if(k.eq.iprint)then
+         if(k.eq.iprint.and.nf_posno(nf_flux,k).lt.200)then
             if(mf_quant(k).ge.1)then
                write(*,'(a,i3,a,3i4,a,i3)') 'Position data for '
      $              ,nf_posdim,' flux-indices: x,y,z,A. nf_dimlens='
@@ -192,8 +205,8 @@ c     $              -1),i=1,nf_posno(1,k)),j=1,nf_posdim)
      $                 -1),i=1,nf_posno(nf_flux,k))
 c If flag '-vtk' is true then we call vtkoutput
                  if (ivtk.eq.1)then
-                       vtkflag=1
-                      call vtkoutput(filename,kk,iplot,iomask)
+                    vtkflag=1
+                      call vtkoutput(filename,kk,abs(iplot),iomask)
                   endif
                endif
                if(mf_quant(k).ge.2)then
@@ -217,13 +230,14 @@ c If flag '-vtk' is true then we call vtkoutput
          n2=fn2*nf_step
 c         if(mf_quant(k).ge.iplot)then
 c            write(*,*)'Plotting',k,mf_quant(k),iplot
-            call fluxave(n1,n2,k,iplot,rhoinf)
+         ipltp=sign(abs(iplot)+if_quant(k,if_species),iplot)
+         call fluxave(n1,n2,k,ipltp,rhoinf)
 c         endif
       enddo
 c Write nicely the fluxdensity versus position for a sphere. 
 c Object k. Face 1, indexed by i,j, [third index 0 ignored].
 c We write out in row-order not column order. Which is 2nd index.
-      write(*,*)'irw',irw
+c      write(*,*)'irw',irw
       if(irw.gt.0.)then
          if(irw.gt.mf_obj)then
             write(*,*)'Asked for non-existent object',irw,'of',mf_obj
@@ -469,6 +483,7 @@ c Read more arguments if there are any.
      $     ,' No other printing.'
       write(*,*)'  -v1024 masks out first 10 and stops force print.'
       write(*,*)'-r set 3-D size of plot window'
+      write(*,*)'-s set species whose flux to analyse [default 1]'
       write(*,*)'-cff,ff,ff set 3-D center of plot window'
       write(*,*)'-i set iosw for objplot:'
      $     ,' Color 0 position, 1 flux, 2 flux-density. Else none.'
@@ -513,7 +528,7 @@ c then it calls vtkwritescalarfacets to write vtk files for unstructred meshes
       integer kk,iosw,iplot,iomask
       character*4 charstep
       iosw=kk-nf_step
-      call vtkwrite(abs(iplot),iosw,iomask)
+      call vtkwrite(iplot,iosw,iomask)
       do i=1,vtkindex
          celltypes(i)=9
          centering(i)=0

@@ -27,7 +27,8 @@ c      character*20 string
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
 c No flux for this object
-      iav=nf_address(iq,ifobj,nf_step+abs(iosw))
+      iav=nf_address(iq+if_quant(ifobj,if_species)
+     $     ,ifobj,nf_step+abs(iosw))
 c Find max and min of flux
       if(fmax.eq.fmin)then
          call minmax(ff_data(iav),nf_posno(iq,ifobj),fmin,fmax)
@@ -131,7 +132,8 @@ c      character*20 string
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
 
-      iav=nf_address(iq,ifobj,nf_step+abs(iosw))
+      iav=nf_address(iq+if_quant(ifobj,if_species)
+     $     ,ifobj,nf_step+abs(iosw))
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -208,7 +210,8 @@ c 2:            according to average flux-density already in nf_step+2
       ifobj=nf_map(iobj)
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
-      iav=nf_address(iq,ifobj,nf_step+abs(iosw))
+      iav=nf_address(iq+if_quant(ifobj,if_species)
+     $     ,ifobj,nf_step+abs(iosw))
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -359,7 +362,8 @@ c 2:            according to average flux-density already in nf_step+2
       ifobj=nf_map(iobj)
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
-      iav=nf_address(iq,ifobj,nf_step+abs(iosw))
+      iav=nf_address(iq+if_quant(ifobj,if_species)
+     $     ,ifobj,nf_step+abs(iosw))
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -519,7 +523,8 @@ c 2:            according to average flux-density already in nf_step+2
       ifobj=nf_map(iobj)
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
-      iav=nf_address(iq,ifobj,nf_step+abs(iosw))
+      iav=nf_address(iq+if_quant(ifobj,if_species)
+     $     ,ifobj,nf_step+abs(iosw))
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -647,7 +652,8 @@ c 2:            according to average flux-density already in nf_step+2
       ifobj=nf_map(iobj)
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
-      iav=nf_address(iq,ifobj,nf_step+abs(iosw))
+      iav=nf_address(iq+if_quant(ifobj,if_species)
+     $     ,ifobj,nf_step+abs(iosw))
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -776,7 +782,8 @@ c      character*20 string
       iosw=ioswin
       if(ifobj.eq.0)iosw=0
 
-      iav=nf_address(iq,ifobj,nf_step+abs(iosw))
+      iav=nf_address(iq+if_quant(ifobj,if_species)
+     $     ,ifobj,nf_step+abs(iosw))
       call minmax(ff_data(iav),nf_posno(1,ifobj),fmin,fmax)
       if(fmin.gt.0.)fmin=0.
 
@@ -956,6 +963,7 @@ c 2:            according to average flux density in nf_step+2
 c Byte 2: 256 plot intersections, 0 don't plot intersections.
 c iomask is a mask where non-zero bits mask _out_ objects.
 c iq references the quantity, 1 flux, 2-4 momentum etc, to be plotted.
+c For species N, iq should be added to (N-1)*kf_quant(nf_obj,ispecies).
 c rv gives the Window size, cv the center of the view.
       integer iq,iosw,iomask
       real rv

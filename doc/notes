@@ -14432,3 +14432,38 @@ Fix negative radius bug in srvgplot.
 
 10 Jan 16
 Fix bugs in objplot associated with facecolor and large numbers of facets.
+Now we need to figure out how to display the electron fluxes.
+
+24 Jan 16
+Modifications of fluxexamine and related routines to allow access to
+data from other species. There's a problem that arises in that objects
+can have different numbers of tracked fluxes. Therefore if_quant is
+different for different objects, and the offset for different objects
+is therefore different. Objplot does not know what species
+it is dealing with but cycles through the objects, requiring in principle
+possibly different if_quant offsets for each object. Fix this problem
+by adding if_species integer to the 3dcom.f which is used for the
+working species in fluxexamine. By default it is set to 1. In coptic
+it will currently never be anything different so only the first
+species will be plotted by objplot. But when called from fluxexamine,
+if_species might be 2. vtkwrite routine has the same problem.
+
+In objplot.f changed all the iav=nf... statements to add
++if_quant(ifobj,if_species) to iq. This might be enough.
+Since vtkwrite uses the low level plotting sphereplot etc.
+It also ought to be fixed by this expedient. Then the only thing
+really changed in fluxexamine is the setting of if_species and
+passing adjusted iq to fluxave routine (only).
+
+Got different plots and different fluxave evolutions,
+with -s1 and -s2 switch, but maybe not correct.
+My first thought was that the electron flux ought to be much higher.
+That is true only for the first step or two. However, since the
+potential is -3, electrons are mostly repelled and so their flux
+ought indeed to drop to a low level. Therefore it is not obviously
+impossible that the electron and ion flux levels are about the same. 
+
+Fixed the cumbersome plotting out of averaged data in fluxdata and
+fluxexamine so that they only do it if there are no more than 200
+values. This is a temporary fix until I can decide whether there's a
+better approach.
