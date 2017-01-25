@@ -333,13 +333,13 @@ c Diagnostic for leakage. Remove when convinced it is fixed:
             write(*,'(a,i8,/,6f8.3,2i3,/,3f8.3,i3)')'Particle leakage',i
      $           ,(x_part(kk,i),xprior(kk),kk=1,3),icross,inewregion
      $           ,(x_part(kk,i)*dtpos,kk=4,6)
-         call world3contra(ndims,xprior,xn1,1)
-         call world3contra(ndims,x_part(1,i),xn2,1)
-         idbug=1
-         call srvsect(xn1,xn2,1,icross,f,ids)
-         call srvsectplot(1,xn1,xn2,f)
-         idbug=0
-         write(*,*)'icross=',icross,xn1,xn2
+            call world3contra(ndims,xprior,xn1,1)
+            call world3contra(ndims,x_part(1,i),xn2,1)
+c            idbug=1
+c            call srvsect(xn1,xn2,1,icross,f,ids)
+c            call srvsectplot(1,xn1,xn2,f)
+            idbug=0
+            write(*,*)'icross=',icross,xn1,xn2
 c Get rid of this leaked particle:
             leftregion=1
          endif

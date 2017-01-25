@@ -8,7 +8,7 @@ ACCISLIB=${COPTIC_ROOT}/accis/libaccisX.a
 ifeq ("$(LIBPATH)","")
    LIBPATH:=-L/usr/X11R6/lib/ -L/usr/lib/mesa
 endif
-LIBRARIES = $(LIBPATH) -L${COPTIC_ROOT}/accis/ -laccisX -lXt -lX11 $(GLULIBS) -L. -lvtkwrite
+LIBRARIES = $(LIBPATH) -L${COPTIC_ROOT}/accis/ -laccisX -lX11 $(GLULIBS) -L. -lvtkwrite
 #Default accis driver choice
 #Alternatives are vecx or vecglx, can be overriden by commandline option
 VECX=vecglx
