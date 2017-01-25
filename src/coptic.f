@@ -146,7 +146,9 @@ c Initialize reinjection geometry if needed for particular case.
       call geominit(myid)
 c-----------------------------------------------------------------
 c Initialize the face phi boundary conditions if we are using them.
-      if(iCFcount.ne.0)then
+c      if(iCFcount.ne.0)then
+c Actually, always, sinc CFcount is unreliable in defaults.
+      if(.true.)then
          do idn=1,2*ndims
             call bdyfaceinit(idn,CFin(1,idn))
          enddo
@@ -274,6 +276,7 @@ c An initial solver call with zero density.
       ierrsor=0
       if(debyelen.ne.0.)call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare
      $     ,bdyset,fadcomp,ictl,ierrsor,myid,idims)
+c      write(*,*)'Monitor u:',u(iuds(1)/4,iuds(2)/4,iuds(3)/4)
       ictl=2+ictl
       if(ltestplot)call sliceGweb(ifull,iuds,u,na_m,zp,
      $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0),dum,dum)
@@ -359,6 +362,7 @@ c Use some fraction of linearized Boltzmann electron response.
 c To damp long wavelength oscillations.
                call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
      $              ,fadcomp,ictl,ierr,myid,idims)
+c               write(*,*)'StepMon u:',u(iuds(1)/4,iuds(2)/4,iuds(3)/4)
             else
 c Turn off use of fadcomp by ictl-2
                call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset

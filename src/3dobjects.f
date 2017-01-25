@@ -364,14 +364,14 @@ c Don't count this as an object.
 c------------------------------------------------
 c Face boundary conditions.
          id=int(type)-100
-         if(iCFcount.eq.0)then
-c Reset all.
-            do ii=1,2*ndims
-               do idc=1,3+ndims
-                  CFin(idc,ii)=0.
-               enddo
-            enddo
-         endif
+c         if(iCFcount.eq.0)then
+c Reset all, ought not to be necessary here. Set in cmdline.
+c            do ii=1,2*ndims
+c               do idc=1,3+ndims
+c                  CFin(idc,ii)=0.
+c               enddo
+c            enddo
+c         endif
          read(cline,*,err=901,end=882)idumtype,(CFin(ii,id),ii=1,3
      $        +ndims)
  882     continue

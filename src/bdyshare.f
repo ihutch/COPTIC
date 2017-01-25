@@ -38,6 +38,10 @@ c Local variables
 
       ndims=ndimsbbdy
 
+      if(.false.)then
+         write(*,*)'myid=',myid,'icoords',icoords
+      endif
+      
       idone(1)=1
       ilsid=1
       do id=1,ndims
@@ -55,7 +59,8 @@ c set lower face
             ipin=myorig-1
             ioffset=-ioff
             idn=id
-c            write(*,*)'Entering mditerarg lower',myside,icoords(id),ipin
+c            write(*,'(a,10i6)')'Entering mditerarg lower',id,myside
+c     $           ,icoords(id),ipin
             call mditerarg(bdyshrroutine,ndims,ifull,myside,ipin
      $           ,idn,u,idone,ioffset)
          endif
@@ -64,7 +69,8 @@ c set upper face
             ipin=myorig-1+(mysave-1)*ilsid
             ioffset=ioff
             idn=id+ndims
-c            write(*,*)'Entering mditerarg upper',myside,icoords(id),ipin
+c            write(*,'(a,10i6)')'Entering mditerarg upper',id,myside
+c     $           ,icoords(id),ipin
             call mditerarg(bdyshrroutine,ndims,ifull,myside,ipin
      $           ,idn,u,idone,ioffset)
          endif
@@ -119,5 +125,8 @@ c This is where periodic conditions get set using ioffset:
 c Non-face BCs. Return failure for fallback.
          idone(1)=0
       endif
-c      write(*,*)'bdyshrroutine',ipoint,(indi(k),k=1,ndims),u(1+ipoint)
+      if(u(ipoint+1).eq.0.)then
+c         write(*,'(a,i8,4i4,2f8.3)')'bdyshrroutine',ipoint,(indi(k),k=1
+c     $        ,ndims),idn,AmBF(idn),u(ipoint+1-ioffset)
+      endif
       end

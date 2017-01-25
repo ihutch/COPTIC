@@ -14467,3 +14467,24 @@ Fixed the cumbersome plotting out of averaged data in fluxdata and
 fluxexamine so that they only do it if there are no more than 200
 values. This is a temporary fix until I can decide whether there's a
 better approach.
+
+25 Jan 16
+
+I find that the solver works differently with different MPI cartesian
+communicator layout, using the -id switch. It should not! I think
+there's a bug or rounding problem. Viewing the solution display, it is
+clear that the boundary conditions on the first step are wrong. Only
+one of the cartesian blocks has them right. After the first step,
+things seem to correct. The bug seems to be that the bdyfaceinit is
+not called because no line of type 100 in the copticgeom.dat file
+exists. and iCFcount is therefore zero. (This does not seem to be
+the problem for the sphere benchmark). Remove the iCFcount test from
+the bdyfaceinit calls. Although we now seem to get consistent initialization,
+there are still big differences between -id1,1,1 and -id2,1,1. There should
+be none.
+
+The flux printed at the first step is different! Plainly everything is
+different. Why? Ah! It is because the process(es) not included in the
+cartesian communicator never get the potential updated! So there's no
+obvious way to allow the cartesian communicator to be smaller than the
+entire mpi. I ought not to allow it until that's fixed. 

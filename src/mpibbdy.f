@@ -170,9 +170,10 @@ c Initialize
             goto 999
          endif
 c Check the asked-for nproc and if not equal to nprcsses, reapportion.
-c         if(nproc.ne.nprcsses)then
+         if(nproc.ne.nprcsses)then
 c Only reapportion if too many processes were asked for.
-         if(nproc.gt.nprcsses)then
+c This fails in the coptic context because then some don't know phi!
+c         if(nproc.gt.nprcsses)then
             if(myid.eq.0 .and. idims(1).ne.99)write(*,201)nprcsses,
      $           nproc,(idims(n),n=1,ndims)
  201        format(' MPI processes',i4,
@@ -424,8 +425,8 @@ c kc=-1. Do the block exchanging.
 c Unused process.
  998  continue
       mycartid=-1
-      write(*,'(a,i5,a,3i4)')' Process',myid
-     $     ,' not used in cartesian communicator',(idims(i),i=1,ndims)
+      write(*,'(a,i5,a,3i4)')' DANGER: Process',myid
+     $     ,' not in cartesian communicator',(idims(i),i=1,ndims)
       return
 c Exception stop:
  999  continue
