@@ -335,6 +335,7 @@ c Diagnostic for leakage. Remove when convinced it is fixed:
      $           ,(x_part(kk,i)*dtpos,kk=4,6)
             call world3contra(ndims,xprior,xn1,1)
             call world3contra(ndims,x_part(1,i),xn2,1)
+c This gave crashes in cluster running.
 c            idbug=1
 c            call srvsect(xn1,xn2,1,icross,f,ids)
 c            call srvsectplot(1,xn1,xn2,f)
