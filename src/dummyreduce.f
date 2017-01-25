@@ -19,3 +19,5 @@ c For a non-mpi installation, the subroutines should be dummies, simply
       end
       subroutine addarray_MPI()
       end
+      subroutine meshbroadcast()
+      end

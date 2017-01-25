@@ -170,10 +170,10 @@ c Initialize
             goto 999
          endif
 c Check the asked-for nproc and if not equal to nprcsses, reapportion.
-         if(nproc.ne.nprcsses)then
+c         if(nproc.ne.nprcsses)then
 c Only reapportion if too many processes were asked for.
 c This fails in the coptic context because then some don't know phi!
-c         if(nproc.gt.nprcsses)then
+         if(nproc.gt.nprcsses)then
             if(myid.eq.0 .and. idims(1).ne.99)write(*,201)nprcsses,
      $           nproc,(idims(n),n=1,ndims)
  201        format(' MPI processes',i4,
@@ -425,8 +425,9 @@ c kc=-1. Do the block exchanging.
 c Unused process.
  998  continue
       mycartid=-1
-      write(*,'(a,i5,a,3i4)')' DANGER: Process',myid
+      write(*,'(a,i5,a,3i4)')' Process',myid
      $     ,' not in cartesian communicator',(idims(i),i=1,ndims)
+      if(myid.eq.0)stop
       return
 c Exception stop:
  999  continue
@@ -832,3 +833,46 @@ c*********************************************************************
       integer ierr
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
       end
+c********************************************************************
+c Broadcast the mesh quantity from the root.
+      subroutine meshbroadcast(quant,ndims,ifull,iuds,iLs,iroot
+     $     ,icommcart)
+      implicit none
+      integer ndims,ifull(ndims),iuds(ndims),iLs(ndims+1),iroot,ierr
+     $     ,icommcart
+      real quant(*)
+      include 'mpif.h'
+c Operator not really needed:
+      external addarray_MPI
+      logical lfirst,lneeded
+      integer iaddtype,iaddop,iporig,nprcsses,ncartsize
+      data lfirst/.true./lneeded/.true./
+      save lfirst,iaddtype,iaddop,iporig,lneeded
+
+      if(.not.lneeded)return
+      
+      if(lfirst)then
+c Determine if this is all needed
+         call MPI_COMM_SIZE(MPI_COMM_WORLD,nprcsses,ierr)
+         if(icommcart.eq.MPI_COMM_NULL)then
+            ncartsize=0
+         else
+            call MPI_COMM_SIZE(icommcart,ncartsize,ierr)
+         endif
+         if(nprcsses.gt.ncartsize)then
+c         write(*,*)'Calling mpiopcreate',ndiags
+c Create addtype and operator for reduce sum; full array.
+            call mpiopcreate(ndims,ifull,iuds,addarray_MPI,
+     $        iaddtype,iaddop)
+c         write(*,*)'Returned from mpiopcreate',iaddtype
+            lfirst=.false.
+         else
+            lneeded=.false.
+            return
+         endif
+      endif
+      iporig=1
+c      write(*,*)'Bcast',icommcart
+      call MPI_Bcast(quant(iporig),1,iaddtype,iroot,MPI_COMM_WORLD,ierr)
+      end
+c********************************************************************

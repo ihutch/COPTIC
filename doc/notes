@@ -14487,4 +14487,9 @@ The flux printed at the first step is different! Plainly everything is
 different. Why? Ah! It is because the process(es) not included in the
 cartesian communicator never get the potential updated! So there's no
 obvious way to allow the cartesian communicator to be smaller than the
-entire mpi. I ought not to allow it until that's fixed. 
+entire mpi. I ought not to allow it until that's fixed.
+
+Implemented meshbroadcast that broadcasts the potential mesh to all nodes
+from 0 if the cartesian communicator is not full rank. So now it should
+work, at the cost of one broadcast per step. I doubt if that's a big
+hit in the context of the various reductions. 

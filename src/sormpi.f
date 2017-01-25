@@ -248,8 +248,10 @@ c Every process must do this.
 c Indirection is needed here because otherwise the finalize call
 c seems to cause the return to fail. Probably unnecessary.
       mpiid=myid
-      end
-c**********************************************************************
+c If we need to broadcast more widely, do it.
+      call meshbroadcast(u,ndims,ifull,iuds,iLs,0,icommcart)
+      end      
+c****************************************************************
 c***********************************************************************
 c The challenge here is to ensure that all processes decide to end
 c at the same time. If not then a process will hang waiting for message.
