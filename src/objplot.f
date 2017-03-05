@@ -880,15 +880,19 @@ c Coloring by flux
 c This part of the code is called when we want vtk files
 c And the coloring and plotting part will be skipped
          if(vtkflag.eq.1)then
-           do incorn=1,ncorn-1
+            do incorn=1,ncorn-1
               do idim=1,ndims
+                 vtkpind=12*vtkindex+(incorn-1)*3+idim
+                 if(vtkpind.gt.nvtkindmax)stop 'Over-ran vtpoints'
                  vtkpoints(12*vtkindex+(incorn-1)*3+idim)
-     $           =rface(incorn,idim)
+     $                =rface(incorn,idim)
               enddo
            enddo
+           if(vtkindex.gt.nvtkindmax)stop 'Over-ran vtkindex'
+c This is the command that corrupts (even though it does not overrun).
            vtkindex=vtkindex+1
            vtkflx(vtkindex)=ff
-           goto 20
+           return
          endif
          icolor=int(240*(ff-fmin)/(fmax-fmin))+1
          call gradcolor(icolor)
@@ -933,7 +937,6 @@ c         call drcstr(string)
          call color(15)
          call charsize(.0,.0)
       endif
- 20   continue
       end
 c*********************************************************************
       subroutine zsort(ngeomobj,zta,index)
@@ -1114,6 +1117,7 @@ c Do drawing in order
      $        /256)
 c         write(*,*)'objplotting',ik,iobj,itype,iobjmask
          if(iobjmask.ne.1 .and. 0.lt.iq.and.iq.le.mf_quant(iobj))then
+c            if(.false.)then
             if(itype.eq.1.)then
                call sphereplot(iq,obj_geom(1,iobj),iobj,iosw,fmin,fmax)
             elseif(itype.eq.2.)then

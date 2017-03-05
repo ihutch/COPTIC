@@ -14492,4 +14492,16 @@ entire mpi. I ought not to allow it until that's fixed.
 Implemented meshbroadcast that broadcasts the potential mesh to all nodes
 from 0 if the cartesian communicator is not full rank. So now it should
 work, at the cost of one broadcast per step. I doubt if that's a big
-hit in the context of the various reductions. 
+hit in the context of the various reductions.
+
+Observed on Engaging that reducing the cartesian size to -id4,4,2 is
+about optimal for a 65^3 mesh. Greater than that, one sees substantial
+degradation.
+
+It occurs to me that a way to avoid the broadcast and minimize the
+communications cost, might be to implement multiple cartesian communicators.
+Then each cartcomm can do its own sormpi calculation, including the
+reduce at the end. In which case all nodes (assuming all nodes are filled)
+end up with the potential data. This is substantially more complicated
+though, and I don't know how to exclude nodes from creating a cartesian
+communicator. Doesn't sound worth it.

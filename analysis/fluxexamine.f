@@ -174,6 +174,7 @@ c For all the objects being flux tracked.
          itype=int(obj_geom(otype,nf_geommap(k)))
          itexttype=objnumtotext(itype)
          if(k.eq.iprint.and.nf_posno(nf_flux,k).lt.200)then
+c         if(k.eq.iprint)then
             if(mf_quant(k).ge.1)then
                write(*,'(a,i3,a,3i4,a,i3)') 'Position data for '
      $              ,nf_posdim,' flux-indices: x,y,z,A. nf_dimlens='
@@ -203,11 +204,6 @@ c     $              -1),i=1,nf_posno(1,k)),j=1,nf_posdim)
      $                 ,ff_rho(kk),'  Flux data'
                   write(*,'(10f8.2)')(ff_data(nf_address(nf_flux,k,kk)+i
      $                 -1),i=1,nf_posno(nf_flux,k))
-c If flag '-vtk' is true then we call vtkoutput
-                 if (ivtk.eq.1)then
-                    vtkflag=1
-                      call vtkoutput(filename,kk,abs(iplot),iomask)
-                  endif
                endif
                if(mf_quant(k).ge.2)then
                   write(*,'(''x-momentum'',i4)')nf_posno(nf_gx,k)
@@ -226,6 +222,17 @@ c If flag '-vtk' is true then we call vtkoutput
                endif
             enddo
          endif
+         if(k.eq.iprint.and.mf_quant(k).ge.1.and..true.)then
+            do kk=max(nf_step/istep,1),nf_step,max(nf_step/istep,1)
+               if(mf_quant(k).ge.1)then
+c If flag '-vtk' is true then we call vtkoutput
+                  if (ivtk.eq.1)then
+                     vtkflag=1
+                     call vtkoutput(filename,kk,abs(iplot),iomask)
+                  endif
+               endif
+            enddo
+         endif
          n1=fn1*nf_step
          n2=fn2*nf_step
 c         if(mf_quant(k).ge.iplot)then
@@ -237,7 +244,6 @@ c         endif
 c Write nicely the fluxdensity versus position for a sphere. 
 c Object k. Face 1, indexed by i,j, [third index 0 ignored].
 c We write out in row-order not column order. Which is 2nd index.
-c      write(*,*)'irw',irw
       if(irw.gt.0.)then
          if(irw.gt.mf_obj)then
             write(*,*)'Asked for non-existent object',irw,'of',mf_obj
@@ -522,11 +528,12 @@ c then it calls vtkwritescalarfacets to write vtk files for unstructred meshes
       include '../src/sectcom.f'
       include '../src/colncom.f'
       include '../src/vtkcom.f'
-      parameter (ntr=10000)
+      parameter (ntr=nvtkindmax)
       integer centering(ntr),conn(ntr),celltypes(ntr)
       character*100 filename
       integer kk,iosw,iplot,iomask
       character*4 charstep
+
       iosw=kk-nf_step
       call vtkwrite(iplot,iosw,iomask)
       do i=1,vtkindex
