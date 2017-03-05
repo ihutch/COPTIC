@@ -1,8 +1,8 @@
-c**********************************************************************
+!**********************************************************************
       subroutine datawrite(myid,partfilename,restartpath,ifull
      $     ,iuds,u,uave,qave)
-c Write data in u,uave,qave to files in path restartpath, with 
-c names constructed from the parameters and suitable extensions.
+! Write data in u,uave,qave to files in path restartpath, with 
+! names constructed from the parameters and suitable extensions.
       integer myid,ifull(*),iuds(*)
       real u(*),uave(*),qave(*)
       character*(*) partfilename,restartpath
@@ -13,8 +13,8 @@ c names constructed from the parameters and suitable extensions.
 
       partfilename=restartpath
       call partwrite(partfilename)
-c      write(*,*)'Returned from partwrite'
-c      write(*,*)partfilename(1:lentrim(partfilename)),myid
+!      write(*,*)'Returned from partwrite'
+!      write(*,*)partfilename(1:lentrim(partfilename)),myid
       if(myid.eq.0)then
          if(iptch_mask.ne.0)then
             localfilename=restartpath
@@ -33,13 +33,13 @@ c      write(*,*)partfilename(1:lentrim(partfilename)),myid
       endif
 
       end
-c%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-c Write particle data to disk.
+! Write particle data to disk.
       subroutine partwrite(name)
-c File name:
+! File name:
       character*(*) name
-c My mpi id
+! My mpi id
       include 'ndimsdecl.f'
       include 'partcom.f'
       include 'plascom.f'
@@ -48,26 +48,26 @@ c My mpi id
       character*(100) charout
 
       call nameconstruct(name)
-c Use an extension length sufficient for the total number of processes
-c but always at least 3.
+! Use an extension length sufficient for the total number of processes
+! but always at least 3.
       call nameappendint(name,'.',myid,
      $     max(3,int(log10(float(nprocs))+1.)))
       open(22,file=name,status='unknown',err=101)
       close(22,status='delete')
       open(22,file=name,status='new',form='unformatted',err=101)
 
-c New MV format
+! New MV format
       write(charout,52)debyelen,rs,phip,dt,ldiags
  52   format('MV2. debyelen,rs,phip,dt,ldiags:',4f10.4,l5)
       write(22)charout
       write(22)debyelen,rs,phip,dt,ldiags
-c      write(22)ranstate
+!      write(22)ranstate
       write(22)nspecies,rhoinf,nrein,phirein,numprocs
       write(22)Bt,Bfield,caverein,chi
       write(22)iocparta,iicparta,nparta,eoverms,vpars,vperps,vds
       write(22)((x_part(j,i),j=1,idtp),i=iicparta(1)
      $        ,iocparta(nspecies))
-c write out ranlux settings.
+! write out ranlux settings.
       call rluxut(ranluxstate)
       write(22)ranluxstate
       close(22)
@@ -79,9 +79,9 @@ c write out ranlux settings.
       close(22,status='delete')
 
       end
-c*****************************************************************
+!*****************************************************************
       subroutine partread(name,ierr)
-c Return ierr bit(0) no file. bit(1) no dtprec. bit(2) no Bfield etc.
+! Return ierr bit(0) no file. bit(1) no dtprec. bit(2) no Bfield etc.
       character*(*) name
       integer ierr
       include 'ndimsdecl.f'
@@ -94,7 +94,7 @@ c Return ierr bit(0) no file. bit(1) no dtprec. bit(2) no Bfield etc.
       open(23,file=name,status='old',form='unformatted',err=101)
       read(23)charout
       if(charout(1:2).eq.'MV')then
-c Multispecies versions:
+! Multispecies versions:
          write(*,*)'Partread MV version detected'
          read(23)debyelen,rs,phip,dt,ldiags
          if(.not.ichar(charout(3:3)).ge.2)read(23)ranstate
@@ -104,12 +104,12 @@ c Multispecies versions:
          read(23,err=102,end=102)
      $        ((x_part(j,i),j=1,idtp),i=1,iocparta(nspecies))
          if(ichar(charout(3:3)).ge.2)then
-c Read back ranlux settings and initialize.
+! Read back ranlux settings and initialize.
             read(23)ranluxstate
             call rluxin(ranluxstate)
          endif
       else
-c Older versions.
+! Older versions.
          read(23)debyelen,Ti,vds(1),rs,phip
          read(23)ranstate
          read(23)ioc_part
@@ -125,7 +125,7 @@ c Older versions.
      $           phirein,numprocs,
      $           ((x_part(j,i),j=1,iflag),i=1,ioc_part)
          endif
-c Extra particle data written since 30 July 2010.
+! Extra particle data written since 30 July 2010.
          read(23,err=102,end=102)(x_part(idtp,i),i=1,ioc_part)
          read(23,err=104,end=104)eoverm,Bt,Bfield,vpar,vperp
          read(23,err=105,end=105)caverein,chi
@@ -138,10 +138,10 @@ c Extra particle data written since 30 July 2010.
  105  write(*,*)'=========== No caverein  . in partfile.========='
       ierr=ierr+8
  103  close(23)
-c      write(*,*)'Finished reading back particle data from '
-c     $     ,name(1:lentrim(name))
-c      write(*,*)'Charout=',charout(1:lentrim(charout))
-c Check that the read back data is sane
+!      write(*,*)'Finished reading back particle data from '
+!     $     ,name(1:lentrim(name))
+!      write(*,*)'Charout=',charout(1:lentrim(charout))
+! Check that the read back data is sane
       do i=1,iocparta(nspecies)
          if(x_part(iflag,i).ne.0)then 
             if(x_part(7,i).eq.0)then
@@ -151,7 +151,7 @@ c Check that the read back data is sane
          endif
       enddo
 
-c Zero the flags of higher slots.
+! Zero the flags of higher slots.
       do i=iocparta(nspecies)+1,n_partmax
          x_part(iflag,i)=0
       enddo
@@ -161,10 +161,10 @@ c Zero the flags of higher slots.
       write(*,*)'No file: ',name(1:lentrim(name))
       ierr=1
       end
-c******************************************************************
+!******************************************************************
       subroutine array3write(name,ifull,iuds,ied,u)
-c 3-Dimensions assumed. But extra dimension ied allowed.
-c File name:
+! 3-Dimensions assumed. But extra dimension ied allowed.
+! File name:
       character*(*) name
       integer ifull(3),iuds(3),ied
       real u(ifull(1),ifull(2),ifull(3),ied)
@@ -173,7 +173,7 @@ c File name:
       include 'meshcom.f'
       character*(130) charout
 
-c      write(*,*)'ifull',ifull
+!      write(*,*)'ifull',ifull
       write(charout,51)debyelen,Ti,vds(1),rs,phip,ixnlength,ifull
  51   format('V4 debyelen,Ti,vd,rs,phip',5f9.4,' ixnlength',i6,' ifull'
      $     ,3i6)
@@ -188,8 +188,8 @@ c      write(*,*)'ifull',ifull
       write(22)((((u(i,j,k,l),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3)),l=1
      $     ,ied)
       close(22)
-c      write(*,'(''Wrote array data to '',a,3i4)')
-c     $     name(1:lentrim(name)),iuds
+!      write(*,'(''Wrote array data to '',a,3i4)')
+!     $     name(1:lentrim(name)),iuds
       return
 
  101  continue
@@ -197,14 +197,14 @@ c     $     name(1:lentrim(name)),iuds
       close(22,status='delete')
 
       end
-c******************************************************************
+!******************************************************************
       subroutine array3read(name,ifull,iuds,ied,u,ierr)
-c 3-Dimensions assumed. Version detection and extra dimension.
-c On entry, ied is the maximum allowed extra dimension.
-c           ierr if .ne.0 indicates write informational messages.
-c On exit, ied is the actual number of extra dimension. That is, the
-c number of 3d arrays actually read.
-c File name:
+! 3-Dimensions assumed. Version detection and extra dimension.
+! On entry, ied is the maximum allowed extra dimension.
+!           ierr if .ne.0 indicates write informational messages.
+! On exit, ied is the actual number of extra dimension. That is, the
+! number of 3d arrays actually read.
+! File name:
       character*(*) name
       integer ifull(3),iuds(3),ied
       real u(ifull(1),ifull(2),ifull(3),ied)
@@ -218,8 +218,8 @@ c File name:
       open(23,file=name,status='old',form='unformatted',err=101)
       write(*,*)'Opened ',name(1:lentrim(name))
       read(23)charout
-c --------- Parsing the leading string to test parameter consistency.
-c      write(*,'(2a)')'Charout=',charout(1:lentrim(charout))
+! --------- Parsing the leading string to test parameter consistency.
+!      write(*,'(2a)')'Charout=',charout(1:lentrim(charout))
       irst=istrstr(charout,'ifull')
       if(irst.ne.0)then
          read(charout(irst+5:),*)ifulr
@@ -235,7 +235,7 @@ c      write(*,'(2a)')'Charout=',charout(1:lentrim(charout))
       endif
       irst=istrstr(charout,'ixnlength')
       if(irst.ne.0)then
-c String contains ixnlength value. Get it and check it.
+! String contains ixnlength value. Get it and check it.
          read(charout(irst+9:),*)ixnlen
          if(.not.ixnlen.le.ixnlength)then
             write(*,'(a,2i5,a)')'**** ixnlength mismatch in array3read',
@@ -249,13 +249,13 @@ c String contains ixnlength value. Get it and check it.
      $              ,ifulr,'  to adjust griddecl.f'
          stop '********  array3read fatal error  *********'
       endif
-c-----------
-c      write(*,*)charout(irst+9:)
+!-----------
+!      write(*,*)charout(irst+9:)
       read(23)debyelen,Ti,vd,rs,phip
       read(23)ixnp,(xn(kk),kk=1,ixnlen)
       read(23)iuds
       if(charout(1:2).eq.'de')then
-c First version
+! First version
          if(ierr.ne.0)write(*,*)'Old version file'
          ied=0
          read(23)(((u(i,j,k,1),i=1,iuds(1)),j=1,iuds(2)),k=1,iuds(3))
@@ -283,10 +283,10 @@ c First version
       ierr=1
 
       end
-c******************************************************************
-c******************************************************************
+!******************************************************************
+!******************************************************************
       subroutine namewrite(name,ifull,iuds,ied,u,extension)
-c Construct name (extending input string name) and write data. 
+! Construct name (extending input string name) and write data. 
       character*(*) name,extension
       integer ifull(*),iuds(*),ied
       real u(*)
@@ -294,17 +294,17 @@ c Construct name (extending input string name) and write data.
       i=nbcat(name,extension)
       call array3write(name,ifull,iuds,ied,u)
       end
-c******************************************************************
+!******************************************************************
       subroutine nameconstruct(name)
       character*(*) name
       include 'ndimsdecl.f'
       include 'plascom.f'
       include 'colncom.f'
       include 'meshcom.f'
-c Construct a filename that contains many parameters
-c Using the routines in strings_names.f
-c We do not now start by zeroing the string. Has to be done earlier.
-c      name=' '
+! Construct a filename that contains many parameters
+! Using the routines in strings_names.f
+! We do not now start by zeroing the string. Has to be done earlier.
+!      name=' '
       call nameappendexp(name,'T',Ti,1)
       if(vd.lt.9.5)then
          call nameappendint(name,'v',nint(100*vd),3)
@@ -322,9 +322,9 @@ c      name=' '
       if(colntime.ne.0)call nameappendexp(name,'c',colntime,1)
       if(Bt.gt..01)call nameappendexp(name,'B',Bt,1)
       end
-c************************************************************************
+!************************************************************************
       subroutine reportprogress(nf_step,nsteps,nsubc,ndropped,ierr)
-c Output parameter development to stdout.
+! Output parameter development to stdout.
       implicit none
       integer nf_step,nsteps,nsubc,ndropped,ierr
       include 'ndimsdecl.f'
@@ -333,14 +333,14 @@ c Output parameter development to stdout.
       real fluxdiag
       external fluxdiag
 
-c Step number print
+! Step number print
             if(nf_step.gt.9999.or.abs(ierr).gt.999)then
                write(*,'(i5.5,i5,$)')nf_step,ierr
             else
                write(*,'(i4.4,i4,$)')nf_step,ierr
             endif
 
-c write out flux to object 1.
+! write out flux to object 1.
             write(*,'(f6.3,''| '',$)')fluxdiag()
             if(nspecies.gt.1)then
                write(*,*)(k,nparta(k),k=1,nspecies)
@@ -355,7 +355,7 @@ c write out flux to object 1.
                npassthrough=0
                if(nsubc.ne.0)write(*,'(''Subcycled:'',i5,$)')nsubc
                if(ndropped.ne.0)then
-c Report dropped ions because of excessive acceleration.
+! Report dropped ions because of excessive acceleration.
                   write(*,'(a,i5,a,f8.3)'
      $             )' dropped-ion period-total:',ndropped
      $                 ,'  per step average:'
@@ -366,12 +366,12 @@ c Report dropped ions because of excessive acceleration.
                endif
             endif
             end
-c************************************************************************
+!************************************************************************
       subroutine periodicwrite(ifull,iuds,iLs,diagsum,uave,lmyidhead
      $     ,ndiags,ndiagmax,nf_step,nsteps,idistp,vlimit
      $     ,xnewlim,cellvol,ibinit,idcount,restartpath)
-c Periodic reduction, reporting, and writing of information on the 
-c state of the simulation.
+! Periodic reduction, reporting, and writing of information on the 
+! state of the simulation.
       implicit none
       integer ndiags,ndiagmax,nf_step,nsteps,idistp,ibinit,idcount
       logical lmyidhead
@@ -385,27 +385,27 @@ c state of the simulation.
       real xnewlim(2,ndimsmax)
       character*(*) restartpath
 
-c Local variables:
+! Local variables:
       character*100 diagfilename,argument
       integer ipin,idiag,ispecies
       integer lentrim
       external lentrim
 
       if(ndiags.gt.0)then
-c Reduce the data
+! Reduce the data
          do ispecies=1,nspecies
             call diagreduce(diagsum(1,1,1,1,ispecies),ndims,ifull
      $           ,iuds,iLs,ndiags)
             call diagperiod(diagsum(1,1,1,1,ispecies),ifull,iuds
      $           ,iLs,ndiags)
-c Do any other processing? Here or later?
-c Write the ave potential into the ndiags+1 slot of diagsum (by adding
-c to the previously zeroed values).
+! Do any other processing? Here or later?
+! Write the ave potential into the ndiags+1 slot of diagsum (by adding
+! to the previously zeroed values).
             ipin=0
             call mditeradd(diagsum(1,1,1,ndiags+1,ispecies),ndims
      $           ,ifull,iuds,ipin,uave)
             if(lmyidhead)then
-c If I'm the head, write it.
+! If I'm the head, write it.
                if(ispecies.eq.1)write(*,'(a,i3,a,$)')'Diags',ndiags
      $              ,' species'
                write(*,'(a,i1,$)')' ',ispecies
@@ -429,7 +429,7 @@ c If I'm the head, write it.
                call namewrite(diagfilename,ifull,iuds,ndiags+1
      $              ,diagsum(1,1,1,1,ispecies),argument)
             endif
-c Now reinit diagsum
+! Now reinit diagsum
             do idiag=1,ndiags+1
                call mditerset(diagsum(1,1,1,idiag,ispecies),ndims
      $              ,ifull,iuds,0,0.)
@@ -437,15 +437,15 @@ c Now reinit diagsum
          enddo
       endif
       if(idistp.ne.0)then
-c Particle distribution diagnostics
+! Particle distribution diagnostics
          if(idcount.ne.0)then
-c Not for the first time, print or plot.
-c Reduce the data from nodes.
+! Not for the first time, print or plot.
+! Reduce the data from nodes.
             call ptdiagreduce()
             if(lmyidhead)then 
                if(2*(idistp/2)-4*(idistp/4).ne.0)
      $              call pltsubdist(5,9,9,vlimit,xnewlim,cellvol,1,3)
-c I think pltsubdist ought to get its first 3 arguments from isuds.
+! I think pltsubdist ought to get its first 3 arguments from isuds.
                diagfilename=' '
                call nameconstruct(diagfilename)
                if(nsteps.gt.9999)then
@@ -459,12 +459,12 @@ c I think pltsubdist ought to get its first 3 arguments from isuds.
      $              call distwrite(xlimit,vlimit,xnewlim,
      $              diagfilename,cellvol)
             endif
-c (Re)initialize the accumulation
+! (Re)initialize the accumulation
             ibinit=1
             call fvxinit(xnewlim,cellvol,ibinit)
             call partacinit(vlimit)
-c Unless we want fsv to accumulate all the particle counts, it also
-c ought to be reinitialized here. (partexamine expects this.)
+! Unless we want fsv to accumulate all the particle counts, it also
+! ought to be reinitialized here. (partexamine expects this.)
             call fsvzero()
          endif
          idcount=idcount+1

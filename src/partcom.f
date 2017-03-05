@@ -1,57 +1,57 @@
-c Particle data common. 
-c Requires ndimsdecl.f to define ndims, nspeciesmax
+! Particle data common. 
+! Requires ndimsdecl.f to define ndims, nspeciesmax
       integer n_partmax
       parameter (n_partmax=5000000)
       integer iflag,idtp
       parameter(iflag=3*ndims+1,idtp=3*ndims+2)
-c Actual number of species (default=1, max nspeciesmax)
+! Actual number of species (default=1, max nspeciesmax)
       integer nspecies
-c Number of actual active particles < n_partmax
+! Number of actual active particles < n_partmax
       integer nparta(nspeciesmax)
-c Maximum particle slot that we must examine
+! Maximum particle slot that we must examine
       integer iocparta(nspeciesmax)
-c Starting particle slot
+! Starting particle slot
       integer iicparta(nspeciesmax+1)
-c Particle position and velocity (3D cartesian) in the order:
-c (x,y,z) (vx,vy,vz) (xm,ym,zm) where xm... is the mesh position.
+! Particle position and velocity (3D cartesian) in the order:
+! (x,y,z) (vx,vy,vz) (xm,ym,zm) where xm... is the mesh position.
       real x_part(idtp,n_partmax)
-c Ratio of the number of steps and inverse number of particles:
+! Ratio of the number of steps and inverse number of particles:
       integer numratioa(nspeciesmax)
-c Whether or not the external distribution is separable
+! Whether or not the external distribution is separable
       integer notseparable(nspeciesmax)
-c Timestep (unperturbed).
+! Timestep (unperturbed).
       real dt
-c Control of diagnostics
+! Control of diagnostics
       logical ldiags
-c Rho at infinity totalled over processes
+! Rho at infinity totalled over processes
       real rhoinf
-c Number of reinjections this step
+! Number of reinjections this step
       integer nrein
-c Average potential of reinjections
+! Average potential of reinjections
       real phirein
-c Number of independent processors
+! Number of independent processors
       integer numprocs
-c Number of reinjections at each step (if non-zero)
+! Number of reinjections at each step (if non-zero)
       integer ninjcompa(nspeciesmax)
       real pinjcompa(nspeciesmax)
-c Number of object passthroughs since last reset
+! Number of object passthroughs since last reset
       integer npassthrough
-c Rho at infinity per processor, relevant only in setup.
+! Rho at infinity per processor, relevant only in setup.
       real ripernode
-c Factor by which we relax the rhoinf calculation. 1 immediate, 0 never.
+! Factor by which we relax the rhoinf calculation. 1 immediate, 0 never.
       real crelax,caverein,chi
-c Flags for which dimensions are periodic or absorbing for particles.
-c 0 open, 1 lower absorbs, 2 upper absorbs, 3 both absorb, 4 periodic
+! Flags for which dimensions are periodic or absorbing for particles.
+! 0 open, 1 lower absorbs, 2 upper absorbs, 3 both absorb, 4 periodic
       integer ipartperiod(ndims)
-c Effective face area for purposes of reinjection. Small if periodic.
+! Effective face area for purposes of reinjection. Small if periodic.
       real fcarea(ndims)
-c Whether not all directions of particles are periodic
+! Whether not all directions of particles are periodic
       logical lnotallp
-c Ibool defining region of particles.
+! Ibool defining region of particles.
       integer ibtotal_part
       parameter (ibtotal_part=100)
       integer ibool_part(ibtotal_part)
-c
+!
       integer n_part,iic_part,ioc_part,ninjcomp,hspecies
       real holepsi,holelen,holeum,holespeed,holeeta,holepow,holerad
       equivalence (n_part,nparta(1)),(iic_part,iicparta(1))
@@ -64,9 +64,9 @@ c
      $     ,holepsi,holelen,holeum,holespeed,holeeta,holepow,holerad
      $     ,hspecies
 
-c Orbit plotting storage for tracking the first norbits orbits.
-c This nstepmax does NOT control the maximum number of steps.
-c That is controlled by nf_maxsteps not nstepmax
+! Orbit plotting storage for tracking the first norbits orbits.
+! This nstepmax does NOT control the maximum number of steps.
+! That is controlled by nf_maxsteps not nstepmax
       integer nobsmax,norbits,nstepmax
       parameter (nobsmax=100)
       parameter (nstepmax=5000)

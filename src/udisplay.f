@@ -1,7 +1,7 @@
-c************************************************************************
-c Print neatly a multidimensional array, u, of ndims up to 3-d.
-c Full lengths ifull(ndims), used lengths iuds(ndims), 
-c iform digits printed as integer. u multiplied by uscale.
+!************************************************************************
+! Print neatly a multidimensional array, u, of ndims up to 3-d.
+! Full lengths ifull(ndims), used lengths iuds(ndims), 
+! iform digits printed as integer. u multiplied by uscale.
       subroutine udisplay(ndims,u,ifull,iuds,iform,uscale)
       integer ndims
       real u(*)
@@ -23,7 +23,7 @@ c iform digits printed as integer. u multiplied by uscale.
          if(id.lt.ndims)iLs=iLs*ifull(id)
       enddo
          
-c      write(*,*)'u='
+!      write(*,*)'u='
       if(.not.abs(ildim(1)).lt.1000)write(*,*)'iused(1) too big'
      $     ,ildim(1)
       write(sform,'(''(i4,1x,'',i3,''i'',i2'',i4)'')')
@@ -38,7 +38,7 @@ c      write(*,*)'u='
          write(*,sform)1000000,(mod(i,10**iform),i=1,ildim(1))
       enddo
       end
-c*********************************************************************
+!*********************************************************************
       subroutine zero3array(array,iLs,ni,nj,nk)
       real array(*)
       integer iLs(4)
@@ -51,7 +51,7 @@ c*********************************************************************
          enddo
       enddo
       end
-c*********************************************************************      
+!*********************************************************************      
       subroutine diag3array(array,iLs,ni,nj,nk)
       real array(*)
       integer iLs(4)
@@ -67,7 +67,7 @@ c*********************************************************************
          enddo
       enddo
       end
-c*********************************************************************      
+!*********************************************************************      
       subroutine giant3array(array,iLs,ni,nj,nk,giant)
       real array(*)
       integer iLs(4)

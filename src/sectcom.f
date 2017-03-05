@@ -1,4 +1,4 @@
-c Data structures for collecting intersections with objects
+! Data structures for collecting intersections with objects
 
       integer sc_npts,sc_ipt
       parameter (sc_npts=300)

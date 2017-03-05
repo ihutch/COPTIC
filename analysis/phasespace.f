@@ -1,7 +1,7 @@
       program phasespace
-c Read particle data and construct phase space plots.
+! Read particle data and construct phase space plots.
       include 'examdecl.f' 
-c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
+! (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       parameter (nfilemax=999)
       include '../src/partcom.f'
       include '../src/ptaccom.f'
@@ -11,11 +11,11 @@ c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       character*100 string
       logical ldoc
       real extra(nptdiagmax,ndimsmax),diff(nptdiagmax,ndimsmax)
-c Spatial limits bottom-top, dimensions
+! Spatial limits bottom-top, dimensions
       real xlimit(2,ndimsmax),xnewlim(2,ndimsmax)
       real elimit(2)
       real Bdirs(ndimsmax+1)
-c Velocity limits
+! Velocity limits
       real vlimit(2,ndimsmax),wicell,wjcell,wkcell
       
       integer nx,nv
@@ -30,7 +30,7 @@ c Velocity limits
 
       nfmax=nfilemax
 
-c Defaults
+! Defaults
       ndfirst=1
       ndlast=3
       do id=1,ndimsmax
@@ -48,18 +48,18 @@ c Defaults
       elimit(2)=0.5*(vlimit(2,1))**2
       elimit(1)=-1.
       do id=1,ndimsmax
-c Needed? initialization removed from partacinit.
+! Needed? initialization removed from partacinit.
          xmeshstart(id)=min(-5.,xlimit(1,id))
          xmeshend(id)=max(5.,xlimit(2,id))
       enddo
 
-c Now the base filename is in partfilename.
-c Do the file naming calculations.
+! Now the base filename is in partfilename.
+! Do the file naming calculations.
       ip=lentrim(partfilename)-3
       if(partfilename(ip:ip).eq.'.')then
-c If filename has a 3-character extension or is a numbered pex
-c file, assume it is complete and that we are reading just one
-c file. Should do this only the first time.
+! If filename has a 3-character extension or is a numbered pex
+! file, assume it is complete and that we are reading just one
+! file. Should do this only the first time.
          nfmax=0
          name=partfilename
          write(*,*)'Reading single file ',name(1:lentrim(name))
@@ -77,12 +77,12 @@ c file. Should do this only the first time.
          phifilename=partfilename(1:lentrim(partfilename))//'.phi'
       endif
 
-c Read in potential
+! Read in potential
       ied=1
       call array3read(phifilename,ifull,iuds,ied,u,ierr)
       if(ierr.eq.0.and.abs(phip).gt.1.)elimit(1)=phip
 
-c Possible multiple particles files.
+! Possible multiple particles files.
       nfvaccum=0
       nhist=0
       nehist=0
@@ -107,28 +107,28 @@ c Possible multiple particles files.
             write(*,*)'eoverm,Bt,Bfield,vpar,vperp=',eoverm,Bt,Bfield
      $           ,vpar,vperp
             write(*,*)'nspecies',nspecies
-c            stop
+!            stop
          endif
          if(ierr-4*(ierr/4).ne.0)goto 11
          if(Bdirs(4).gt.0. .or. Bt.eq.0)then
-c All directions were set by commandline. Or none were read from file.
+! All directions were set by commandline. Or none were read from file.
             do k=1,ndims
                Bfield(k)=Bdirs(k)
             enddo
          endif
          if(cellvol.eq.-1)write(*,*)'Bfield (projection)',Bfield
-c Now act on the particle data we have read in:
-c Choose active axis based on b-settings
+! Now act on the particle data we have read in:
+! Choose active axis based on b-settings
          do k=1,ndims
             if(Bfield(k).ne.0)iaxis=k
          enddo
-c As we go, plot dots in phase-space
+! As we go, plot dots in phase-space
          call plotlocalphasepoints(xlimit,vlimit,iaxis,ispecies
      $        ,nfvaccum)
-c Increment the phase-space histogram
+! Increment the phase-space histogram
          call fhistinc(xlimit,vlimit,iaxis,ispecies,nhist,hist,nx
      $        ,nv)
-c Increment the total energy histogram. Use all axes if iexis=0
+! Increment the total energy histogram. Use all axes if iexis=0
          iexis=0
          call ehistinc(xlimit,elimit,ispecies,nehist,ehist,nv,u,ifull
      $        ,iused,iexis)
@@ -136,7 +136,7 @@ c Increment the total energy histogram. Use all axes if iexis=0
  11   continue
       call pltend()
 
-c Plot the energy histogram.
+! Plot the energy histogram.
       write(*,*)'nhist,emin,emax=',nehist,elimit(1),elimit(2)
       write(*,'(10f8.0)')ehist
       do i=1,nv
@@ -151,7 +151,7 @@ c Plot the energy histogram.
       call axlabels('Total Energy','Occurences: Distribution')
       call pltend()
 
-c Color Contour of Phase space Histogram.
+! Color Contour of Phase space Histogram.
       call minmax2(hist,nx,nx,nv,hmin,hmax)
       ncont=10
       do i=1,ncont
@@ -167,7 +167,7 @@ c Color Contour of Phase space Histogram.
      $     ,vlimit(2,iaxis),.false.,.false.)
       call axis
       call pltend()
-c Second example to illustrate autocolcont.
+! Second example to illustrate autocolcont.
       call pltinit(1.,float(nx),1.,float(nv))
       call autocolcont(hist,nx,nx,nv)
       call scalewn(xlimit(1,iaxis),xlimit(2,iaxis),vlimit(1,iaxis)
@@ -177,20 +177,20 @@ c Second example to illustrate autocolcont.
 
 
       end
-c*************************************************************
+!*************************************************************
       subroutine plotlocalphasepoints(xlimit,vlimit,iaxis,ispecies
      $     ,nfvaccum)
-c Plot points in phase space in direction iaxis for particles that lie
-c in the space and velocity ranges given by xlimit, vlimit.
+! Plot points in phase space in direction iaxis for particles that lie
+! in the space and velocity ranges given by xlimit, vlimit.
       include '../src/ndimsdecl.f'
       include '../src/partcom.f'
       real xlimit(2,ndims),vlimit(2,ndims)
       character*1 axnames(3)
       data axnames/'x','y','z'/ 
 
-c Initialize the plot
+! Initialize the plot
       if(nfvaccum.eq.0)then
-c         call pfset(3)
+!         call pfset(3)
          call pltinit(xlimit(1,iaxis),xlimit(2,iaxis),vlimit(1,iaxis)
      $     ,vlimit(2,iaxis))
          call axis()
@@ -198,7 +198,7 @@ c         call pfset(3)
          call color(ibrickred())
       endif
       do j=iicparta(ispecies),iocparta(ispecies)
-c Only for filled slots
+! Only for filled slots
          if(x_part(iflag,j).ne.0)then
             do id=1,ndims
                x=x_part(id,j)
@@ -207,30 +207,30 @@ c Only for filled slots
                if(v.lt.vlimit(1,id).or.v.gt.vlimit(2,id))goto 12
             enddo
             nfvaccum=nfvaccum+1
-c Here for a particle lying within the limits.
-c Plot a point in phase space
+! Here for a particle lying within the limits.
+! Plot a point in phase space
             call vecw(x_part(iaxis,j),x_part(iaxis+ndims,j),-1)
          endif
  12      continue
       enddo
       write(*,*)'Accumulated',nfvaccum,' particles'
       end
-c*************************************************************
-c*************************************************************
+!*************************************************************
+!*************************************************************
       subroutine fhistinc(xlimit,vlimit,iaxis,ispecies
      $     ,nhist,hist,nx,nv)
-c Increment histogram of phase space in direction iaxis for particles
-c that lie in the space and velocity ranges given by xlimit, vlimit.
+! Increment histogram of phase space in direction iaxis for particles
+! that lie in the space and velocity ranges given by xlimit, vlimit.
       include '../src/ndimsdecl.f'
       include '../src/partcom.f'
       real xlimit(2,ndims),vlimit(2,ndims)
       real hist(nx,nv)
-c      character*1 axnames(3)
-c      data axnames/'x','y','z'/ 
+!      character*1 axnames(3)
+!      data axnames/'x','y','z'/ 
       save x1,x2,xdiff,v1,v3,vdiff
 
       if(nhist.eq.0)then
-c Initialize
+! Initialize
          x1=xlimit(1,iaxis)
          x2=xlimit(2,iaxis)
          xdiff=x2*1.00001-x1
@@ -245,7 +245,7 @@ c Initialize
          enddo
       endif
       do j=iicparta(ispecies),iocparta(ispecies)
-c Only for filled slots
+! Only for filled slots
          if(x_part(iflag,j).ne.0)then
             do id=1,ndims
                x=x_part(id,j)
@@ -255,7 +255,7 @@ c Only for filled slots
                ix=nx*(x-x1)/xdiff+1
                iv=nv*(v-v1)/vdiff+1
                if(id.eq.iaxis)then
-c Here for a particle lying within the limits.
+! Here for a particle lying within the limits.
                   nhist=nhist+1
                   hist(ix,iv)=hist(ix,iv)+1.
                endif
@@ -265,14 +265,14 @@ c Here for a particle lying within the limits.
       enddo
       write(*,*)'Accumulated',nhist,' particles'
       end
-c*************************************************************
+!*************************************************************
       subroutine ehistinc(xlimit,elimit,ispecies
      $     ,nhist,ehist,ne,u,ifull,iused,iexis)
-c Increment the histogram of total energy distribution using current
-c particle data. 
-c iexis if non-zero restricts the kinetic energy to that axis. 
-c But then equal intervals of energy leads to a singularity at
-c zero. We could perhaps scale them differently.
+! Increment the histogram of total energy distribution using current
+! particle data. 
+! iexis if non-zero restricts the kinetic energy to that axis. 
+! But then equal intervals of energy leads to a singularity at
+! zero. We could perhaps scale them differently.
       include '../src/ndimsdecl.f'
       include '../src/partcom.f'
       include '../src/plascom.f'
@@ -281,7 +281,7 @@ c zero. We could perhaps scale them differently.
       real xlimit(2,ndims),elimit(2)
       real ehist(ne)
       integer iLs(ndims+1)
-c Dummies
+! Dummies
       integer iregion
       real cij
 
@@ -291,24 +291,24 @@ c Dummies
       enddo
 
       if(nhist.eq.0)then
-c Initialize
+! Initialize
          do j=1,ne
             ehist(j)=0.
          enddo
          de=(elimit(2)-elimit(1))/ne
       endif
       do j=iicparta(ispecies),iocparta(ispecies)
-c Only for filled slots
+! Only for filled slots
          if(x_part(iflag,j).ne.0)then
             v2=0.
             do id=1,ndims
                x=x_part(id,j)
                if(x.lt.xlimit(1,id).or.x.gt.xlimit(2,id))goto 12
-c Here for a particle lying within the space limits so far
-c Sum the kinetic energy for all directions if iexis=0.
+! Here for a particle lying within the space limits so far
+! Sum the kinetic energy for all directions if iexis=0.
                if(iexis.eq.0.or.iexis.eq.id)v2=v2+x_part(id+ndims,j)**2
             enddo
-c This is a wanted particle. Add its energy to histogram.
+! This is a wanted particle. Add its energy to histogram.
             potential=getpotential(u,cij,iLs,x_part(2*ndims+1,j),iregion
      $           ,0)
             energy=eoverms(ispecies)*potential+v2
@@ -321,7 +321,7 @@ c This is a wanted particle. Add its energy to histogram.
       enddo
       end
 
-c*************************************************************
+!*************************************************************
       subroutine partexamargs(xlimit,vlimit
      $           ,iuin,cellvol,Bdirs,ldoc,ivtk,ispecies,ndfirst,ndlast)
       include 'examdecl.f'
@@ -330,7 +330,7 @@ c*************************************************************
       integer iuin(3)
       logical ldoc
       integer ivtk
-c I think unused here 26 May 12. But I'm not sure.
+! I think unused here 26 May 12. But I'm not sure.
       ifull(1)=na_i
       ifull(2)=na_j
       ifull(3)=na_k
@@ -339,21 +339,21 @@ c I think unused here 26 May 12. But I'm not sure.
 
       do i=1,3
          iuin(i)=9
-c Default field/projection direction:
+! Default field/projection direction:
          Bdirs(i)=0
          if(i.eq.3)Bdirs(i)=1
       enddo
-c Use cellvol=0. by default.
+! Use cellvol=0. by default.
       cellvol=0.
       ldoc=.false.
 
-c silence warnings:
+! silence warnings:
       fluxfilename=' '
       zp(1,1,1)=0.
-c Defaults
+! Defaults
       partfilename=' '
 
-c Deal with arguments
+! Deal with arguments
       if(iargc().eq.0) goto 201
       do i=1,iargc()
          call getarg(i,argument)
@@ -408,13 +408,13 @@ c Deal with arguments
             if(argument(1:2).eq.'-?')goto 203
          else
             read(argument(1:),'(a)',err=201)partfilename
-c            write(*,*)partfilename
+!            write(*,*)partfilename
          endif
          
       enddo
       goto 202
-c------------------------------------------------------------
-c Help text
+!------------------------------------------------------------
+! Help text
  201  continue
       write(*,*)'=====Error reading command line argument'
  203  continue
@@ -445,4 +445,4 @@ c Help text
          goto 203
       endif
       end
-c************************************************************************
+!************************************************************************

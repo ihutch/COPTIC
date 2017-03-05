@@ -1,9 +1,9 @@
       program part2d
-c Examine the particle data, showing distribution function(s)
-c in 2d. A hacked program at present mostly to check the magnetized
-c collisional distributions. Much came from partexamine.
+! Examine the particle data, showing distribution function(s)
+! in 2d. A hacked program at present mostly to check the magnetized
+! collisional distributions. Much came from partexamine.
       include 'examdecl.f'
-c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
+! (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       parameter (nfilemax=999)
       include '../src/partcom.f'
       include '../src/ptaccom.f'
@@ -23,22 +23,22 @@ c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       character pp(4,nxbin,nybin)
 
       logical ldoc
-c      real extra(nptdiag,mdims),diff(nptdiag,mdims)
-c Spatial limits bottom-top, dimensions
+!      real extra(nptdiag,mdims),diff(nptdiag,mdims)
+! Spatial limits bottom-top, dimensions
       real xlimit(2,mdims),xnewlim(2,mdims)
       real Bdirs(mdims+1)
-c Velocity limits
+! Velocity limits
       real vlimit(2,mdims)
       integer iuin(mdims)
 
       nfmax=nfilemax
-c silence warnings:
+! silence warnings:
       zp(1,1,1)=0.
 
-c Defaults
+! Defaults
       do id=1,mdims
-c Use very big xlimits by default to include whole domain
-c They are then reset by the accumulation itself.
+! Use very big xlimits by default to include whole domain
+! They are then reset by the accumulation itself.
          xlimit(1,id)=-500.
          xlimit(2,id)=500.
          xnewlim(1,id)=0.
@@ -49,7 +49,7 @@ c They are then reset by the accumulation itself.
 
       call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc)
       do id=1,mdims
-c Needed initialization removed from partacinit.
+! Needed initialization removed from partacinit.
          xmeshstart(id)=min(-5.,xlimit(1,id))
          xmeshend(id)=max(5.,xlimit(2,id))
          isuds(id)=iuin(id)
@@ -64,12 +64,12 @@ c Needed initialization removed from partacinit.
          write(*,*)'WARNING nptdiags=',nptdiag,' smaller than nsbins='
      $        ,nsbins,' Incorrect array size choice.'
       endif
-c Now the base filename is in partfilename.
+! Now the base filename is in partfilename.
       ip=lentrim(partfilename)-3
       if(partfilename(ip:ip).eq.'.')then
-c If filename has a 3-character extension or is a numbered pex
-c file. Assume it is complete and that we are reading just one
-c file. Should do this only the first time.
+! If filename has a 3-character extension or is a numbered pex
+! file. Assume it is complete and that we are reading just one
+! file. Should do this only the first time.
          nfmax=0
          name=partfilename
          write(*,*)'Reading single file ',name(1:lentrim(name))
@@ -83,7 +83,7 @@ c file. Should do this only the first time.
          write(*,*)'Reading numbered pex file ',name(1:lentrim(name))
       endif
 
-c Possible multiple files.
+! Possible multiple files.
       do i=0,nfmax
          if(nfmax.ne.0)then
             write(chartemp,'(''.'',i3.3)')i
@@ -104,13 +104,13 @@ c Possible multiple files.
          endif
          if(ierr-4*(ierr/4).ne.0)goto 11
          if(Bdirs(4).gt.0. .or. Bt.eq.0)then
-c All directions were set by commandline. Or none were read from file.
+! All directions were set by commandline. Or none were read from file.
             do k=1,ndims
                Bfield(k)=Bdirs(k)
             enddo
          endif
          if(cellvol.eq.-1)write(*,*)'Bfield (projection)',Bfield
-c Accumulate the fvxvy distribution
+! Accumulate the fvxvy distribution
          do k=1,nybin
             do j=1,nxbin
                fvxvy(j,k)=0.
@@ -143,24 +143,24 @@ c Accumulate the fvxvy distribution
      $        -1.)
       enddo
       enddo
-c      write(*,*)vxa
+!      write(*,*)vxa
 98     call pltinit(0.,1.,0.,1.)
-c       Plot the surface. With axes (2-D). Web color 10, axis color 7.
+!       Plot the surface. With axes (2-D). Web color 10, axis color 7.
         j=2 + 256*10 + 256*256*7
         call surf3d(vxa,vya,fvxvy,nxbin,nxbin,nybin,j,work)
-c       Draw a contour plot in perspective. Need to reset color anyway.
+!       Draw a contour plot in perspective. Need to reset color anyway.
         call color(4)
         call axregion(-scbx3,scbx3,-scby3,scby3)
         call scalewn(vxa(1,1),vxa(nxbin,1),vya(1,1),vya(1,nybin),.false.
      $       ,.false.)
         call hdprset(-3,scbz3)
-c       write(*,*) 'Done hdprset'
-c       call axis   ! if desired.
+!       write(*,*) 'Done hdprset'
+!       call axis   ! if desired.
         call scalewn(1.,float(nxbin),1.,float(nybin),.false.,.false.)
-c       Contour without labels, direct on mesh.
-c       write(*,*) 'Done scalewn'
-c Not yet.
-c        call contourl(fvxvy,pp,nxbin,nxbin,nybin,cl,nl,vxa,vya,16)
+!       Contour without labels, direct on mesh.
+!       write(*,*) 'Done scalewn'
+! Not yet.
+!        call contourl(fvxvy,pp,nxbin,nxbin,nybin,cl,nl,vxa,vya,16)
         call color(15)
         if(ieye3d().ne.0) goto 98
 
@@ -170,34 +170,34 @@ c        call contourl(fvxvy,pp,nxbin,nxbin,nybin,cl,nl,vxa,vya,16)
 
 
       end
-c*************************************************************
+!*************************************************************
       subroutine partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc)
       include 'examdecl.f'
       real xlimit(2,3),vlimit(2,3),Bdirs(4)
       integer iuin(3)
       logical ldoc
 
-c I think unused here 26 May 12. But I'm not sure.
+! I think unused here 26 May 12. But I'm not sure.
       ifull(1)=na_i
       ifull(2)=na_j
       ifull(3)=na_k
 
       do i=1,3
          iuin(i)=9
-c convenient default field:
+! convenient default field:
          Bdirs(i)=2-i
       enddo
-c Use cellvol=0. by default.
+! Use cellvol=0. by default.
       cellvol=0.
       ldoc=.false.
 
-c silence warnings:
+! silence warnings:
       fluxfilename=' '
       zp(1,1,1)=0.
-c Defaults
+! Defaults
       partfilename=' '
 
-c Deal with arguments
+! Deal with arguments
       if(iargc().eq.0) goto 201
       do i=1,iargc()
          call getarg(i,argument)
@@ -244,13 +244,13 @@ c Deal with arguments
             if(argument(1:2).eq.'-?')goto 203
          else
             read(argument(1:),'(a)',err=201)partfilename
-c            write(*,*)partfilename
+!            write(*,*)partfilename
          endif
          
       enddo
       goto 202
-c------------------------------------------------------------
-c Help text
+!------------------------------------------------------------
+! Help text
  201  continue
       write(*,*)'=====Error reading command line argument'
  203  continue

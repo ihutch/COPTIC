@@ -1,15 +1,15 @@
       program dsequence
-c Stripped down diagexamine to facilitate plotting of chosen slices.
+! Stripped down diagexamine to facilitate plotting of chosen slices.
 
       include 'examdecl.f'
       parameter (ndiagmax=8)
-c diagmax here must be 7+1 to accommodate potential possibly.
+! diagmax here must be 7+1 to accommodate potential possibly.
       real diagsum(na_i,na_j,na_k,ndiagmax+1)      
-c Volumes are stored in ndiagmax+1
+! Volumes are stored in ndiagmax+1
 
-c Extra work array for arrowplotting in sliceGweb.
+! Extra work array for arrowplotting in sliceGweb.
       real vp(na_m,na_m2,3,3)
-c 1-d plotting arrays.
+! 1-d plotting arrays.
       real z1d(na_m),u1d(na_m),dene1d(na_m),deni1d(na_m)
       real zbase(na_m)
       real zminmax(2),xminmax(2)
@@ -34,7 +34,7 @@ c 1-d plotting arrays.
       mname(6)='T!d2!d'
       mname(7)='T!d3!d'
       xleg=.75
-c 
+! 
       call dsequenceargs(iunp,isingle,idfix,iwr,ipp,xtitle,ytitle,lvtk
      $     ,mcell,zminmax,xminmax,icontour,nskip,jbase)
       if(zminmax(1).gt.zminmax(2))then
@@ -42,21 +42,21 @@ c
       endif
       i1=1
       ied=ndiagmax
-c Create label
+! Create label
       label=diagfilename(lentrim(diagfilename)-3:lentrim(diagfilename))
       call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
       if(ierr.eq.1)stop 'Error reading diag file'
       ndiags=ied
       mname(ndiags)='Potential'
       mname(ndiags+1)='Density'
-c----------------------------------------------------------------
+!----------------------------------------------------------------
       k=isingle
       if(isingle.eq.0)k=ndiags
       if(ipp.eq.0)ipp=(iuds(idfix)+1)/2
       idp1=mod(idfix,3)+1
       idp2=mod(idfix+1,3)+1
-c----------------------------------------------------------------
-c Get a slice at fixed dimension node n1, default middle. 
+!----------------------------------------------------------------
+! Get a slice at fixed dimension node n1, default middle. 
       n1=ipp
       nf1=iuds(idp1)-1
       nf2=iuds(idp2)-1
@@ -65,7 +65,7 @@ c Get a slice at fixed dimension node n1, default middle.
       if2=1+1
       iff=1+1
       write(*,*)idfix,n1,nf1,nf2,idp1,idp2
-c We might wish to swap the indices order for plotting here.
+! We might wish to swap the indices order for plotting here.
       id1=1
       do j=if2,nf2
          do i=if1,nf1
@@ -79,7 +79,7 @@ c We might wish to swap the indices order for plotting here.
          enddo
       enddo
       if(jbase.gt.0)then
-c Subtract a base case from all
+! Subtract a base case from all
          do i=if1,nf1
             zbase(i)=zp(i,jbase,id1)
          enddo
@@ -89,17 +89,17 @@ c Subtract a base case from all
             enddo
          enddo
       endif
-c-------------------------------------------------------------
-c Start of plotting.
+!-------------------------------------------------------------
+! Start of plotting.
 
-c Possibly find vertical range.
+! Possibly find vertical range.
       if(zminmax(1).eq.zminmax(2))call minmax2(zp(if1,if2,id1)
      $     ,na_m,nf1+1-if1,nf2+1-if2,zminmax(1),zminmax(2))
       if(xminmax(1).eq.xminmax(2))then
          xminmax(1)=xn(ixnp(idp1)+if1)
          xminmax(2)=xn(ixnp(idp1)+nf1)
       endif
-c Stacked plot of all profiles.
+! Stacked plot of all profiles.
       call pltinit(xminmax(1),xminmax(2),zminmax(1),zminmax(2))
       call axis()
       call axis2()
@@ -107,7 +107,7 @@ c Stacked plot of all profiles.
       call winset(.true.)
       do j=if2,nf2,nskip
          jc=1+(j-if2)/nskip
-c               write(*,*)j,jc
+!               write(*,*)j,jc
          if((nf2-if2+1)/nskip.lt.16)call color(jc)
          call polyline(xn(ixnp(idp1)+if1),zp(if1,j,id1),nf1+1
      $        -if1)
@@ -120,16 +120,16 @@ c               write(*,*)j,jc
          call axon(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),zp(if1
      $        ,if2,id1),na_m,nf1+1-if1,nf2+1-if2)
       endif
-c       Plot the surface. With axes (1). Web color 10, axis color 7.
+!       Plot the surface. With axes (1). Web color 10, axis color 7.
       j=1 + 256*10 + 256*256*7
-c            call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),zp(if1,if2
-c     $           ,id1),na_m,nf1+1-if1,nf2+1-if2,j)
-c            call pltend()
+!            call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),zp(if1,if2
+!     $           ,id1),na_m,nf1+1-if1,nf2+1-if2,j)
+!            call pltend()
 
       end
 
 
-c*************************************************************
+!*************************************************************
       subroutine dsequenceargs(iunp,isingle,idfix,iwr,ipp,xtitle,ytitle
      $     ,lvtk,mcell,zminmax,xminmax,icontour,nskip,jbase)
       integer iunp,isingle,idfix
@@ -143,9 +143,9 @@ c*************************************************************
          ifull(2)=na_j
          ifull(3)=na_k
 
-c silence warnings:
+! silence warnings:
       zp(1,1,1)=0.
-c Defaults
+! Defaults
       isingle=0
       idfix=3
       ipp=0
@@ -157,7 +157,7 @@ c Defaults
       mcell=5.
       ipfs=3
 
-c Deal with arguments
+! Deal with arguments
       if(iargc().eq.0) goto 201
       do i=1,iargc()
          call getarg(i,argument)
@@ -191,7 +191,7 @@ c Deal with arguments
             if(argument(1:2).eq.'-m')read(argument(3:),*,err=201)mcell
             if(argument(1:2).eq.'-z')then
                read(argument(3:),*,err=201)zminmax
-c Turn on trucation if the z-range is set
+! Turn on trucation if the z-range is set
                call togi3trunc()
             endif
             if(argument(1:2).eq.'-x')read(argument(3:),*,err=201)xminmax
@@ -209,8 +209,8 @@ c Turn on trucation if the z-range is set
          
       enddo
       goto 202
-c------------------------------------------------------------
-c Help text
+!------------------------------------------------------------
+! Help text
  201  continue
       write(*,*)'=====Error reading command line argument',argument
  203  continue
@@ -221,12 +221,12 @@ c Help text
       write(*,301)' -ly  set label of parameter. -lx label of xaxis'
       write(*,301)' -d   set single diagnostic to be examined [',isingle
       write(*,301)' -a   set dimension number of plane normal [',idfix
-c      write(*,301)' -o   write out the profiles               [',iwr
+!      write(*,301)' -o   write out the profiles               [',iwr
       write(*,301)' -f   set fixed plane number               [',ipp
       write(*,301)' -s   set skip size in plot sequence       [',nskip
       write(*,301)' -b   set base case to subtract            [',jbase
-c      write(*,301)' -u   plot un-normalized diagnostics       [',iunp
-c      write(*,301)' -m<f>  set minimum non-zero cell count    [',mcell
+!      write(*,301)' -u   plot un-normalized diagnostics       [',iunp
+!      write(*,301)' -m<f>  set minimum non-zero cell count    [',mcell
       write(*,302)' -z<min><max> set range of values plotted  [',zminmax
       write(*,302)' -x<min><max> set range of values plotted  [',xminmax
       write(*,*)' if zmin>zmax, print zmin and zmax of first diag'
@@ -240,10 +240,10 @@ c      write(*,301)' -m<f>  set minimum non-zero cell count    [',mcell
  202  continue
       if(lentrim(diagfilename).lt.5)goto 203
       end
-c*****************************************************************
+!*****************************************************************
       subroutine minmax3(ifull,iuds,u,umin,umax)
-c Find the minimum and maximum of a 3d array. Allocated dimensions ifull,
-c used dimensions iuds.
+! Find the minimum and maximum of a 3d array. Allocated dimensions ifull,
+! used dimensions iuds.
       parameter (ndims=3)
       integer ifull(ndims),iuds(ndims)
       real u(ifull(1),ifull(2),ifull(3))
@@ -258,16 +258,16 @@ c used dimensions iuds.
          enddo
       enddo
       end
-c*****************************************************************
-c********************************************************************
+!*****************************************************************
+!********************************************************************
       subroutine minmaxN(ndims,ifull,iuds,u,umin,umax)
-c Find the minimum and maximum of a ndims array. Allocated dimensions ifull,
-c used dimensions iuds. Using the general mditerator. 
+! Find the minimum and maximum of a ndims array. Allocated dimensions ifull,
+! used dimensions iuds. Using the general mditerator. 
       implicit none
       integer ndims
       integer ifull(ndims),iuds(ndims)
       real u(*),umin,umax
-c Need local storage.
+! Need local storage.
       integer ndimsmax,indexcontract,mditerator
       parameter (ndimsmax=5)
       integer indi(ndimsmax),iview(3,ndimsmax),i
@@ -280,8 +280,8 @@ c Need local storage.
          if(u(i).lt.umin)umin=u(i)
       if(mditerator(ndims,iview,indi,0,iuds).eq.0)goto 1
       end
-c*************************************************************
-c This demonstrates the minimalistic iterator.
+!*************************************************************
+! This demonstrates the minimalistic iterator.
       subroutine minmaxM(ndims,ifull,iuds,u,umin,umax)
       integer ndims,ifull(ndims),iuds(ndims)
       real u(*),umin,umax

@@ -1,4 +1,4 @@
-c Combination of the two calls to copticcmdline. 
+! Combination of the two calls to copticcmdline. 
       subroutine parametersetting
      $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
@@ -38,9 +38,9 @@ c Combination of the two calls to copticcmdline.
       real vperps(ndims,*),vdrifts(ndims,*)
       integer nspecies,nspeciesmax
 
-c----------------------------------------------------------------------
-c Deal with command-line arguments and geometry/object file.
-c First time this routine just sets defaults and the object file name.
+!----------------------------------------------------------------------
+! Deal with command-line arguments and geometry/object file.
+! First time this routine just sets defaults and the object file name.
       call copticcmdline
      $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
@@ -53,11 +53,11 @@ c First time this routine just sets defaults and the object file name.
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies)
-c Read in object file information.
+! Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
       if(ierr.ne.0)stop 'Error in readgeom call'
-c Second time: deal with any other command line parameters.
+! Second time: deal with any other command line parameters.
       call copticcmdline
      $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
@@ -70,11 +70,11 @@ c Second time: deal with any other command line parameters.
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies)
-c The double call enables cmdline switches to override objfile settings.
-c----------------------------------------------------------------------
+! The double call enables cmdline switches to override objfile settings.
+!----------------------------------------------------------------------
       end
 *********************************************************************
-c Encapsulation of parameter setting.
+! Encapsulation of parameter setting.
       subroutine copticcmdline
      $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
@@ -104,15 +104,15 @@ c Encapsulation of parameter setting.
       character*100 restartpath,objfilename
       character*256 argline
       real gt(ndims),gp0(ndims),gtt,gn(ndims),gnt
-c Multiple species can have these things different.
-c Only the first species is possibly collisional.
+! Multiple species can have these things different.
+! Only the first species is possibly collisional.
       real Ts(*),vds(*),eoverms(*),Tperps(*)
       integer nparta(*),numratioa(*)
       real vpars(*)
       real vperps(ndims,*),vdrifts(ndims,*)
       integer nspecies,nspeciesmax,hspecies
 
-c Local variables:
+! Local variables:
       integer lentrim,iargc
       external lentrim
       integer i,id,idn,idcn,i0,i1,iargcount,iargpos,ispecies
@@ -122,13 +122,13 @@ c Local variables:
       data lfirst/.true./
       save argument,message
 
-c Set defaults and objfilename only the first time, subsequently skip.
+! Set defaults and objfilename only the first time, subsequently skip.
       if(lfirst)then
-c Default (initial) number of particle species.
+! Default (initial) number of particle species.
          nspecies=1
-c Default to constant ripernode not npart.
+! Default to constant ripernode not npart.
          ripernode=100.
-c Fixed number of particles rather than fixed injections.
+! Fixed number of particles rather than fixed injections.
          ninjcomp=0
          nparta(nspecies)=0
          vds(nspecies)=0.
@@ -141,8 +141,8 @@ c Fixed number of particles rather than fixed injections.
             vdrifts(id,nspecies)=0.
          enddo
          vdrifts(ndims,nspecies)=1.
-c Default edge-potential (chi) relaxation rate.     
-c         crelax=1.*Ts(nspecies)/(1.+Ts(nspecies))
+! Default edge-potential (chi) relaxation rate.     
+!         crelax=1.*Ts(nspecies)/(1.+Ts(nspecies))
          crelax=0.
          debyelen=1.
          dt=.1
@@ -175,7 +175,7 @@ c         crelax=1.*Ts(nspecies)/(1.+Ts(nspecies))
          holepow=1.
          holerad=0.
          hspecies=0
-c Boundary condition switch and value. 0=> logarithmic.
+! Boundary condition switch and value. 0=> logarithmic.
          islp=0
          slpD=0.
          iCFcount=0
@@ -187,7 +187,7 @@ c Boundary condition switch and value. 0=> logarithmic.
          do id=1,ndims
             LPF(id)=.false.
             ipartperiod(id)=0
-c Default zero field
+! Default zero field
             Bfield(id)=0.
          enddo
          gtt=0.
@@ -205,18 +205,18 @@ c Default zero field
          lfirst=.false.
          return
       endif
-c End of first time through setting
-c ---------------------------------------
-c Deal with arguments
+! End of first time through setting
+! ---------------------------------------
+! Deal with arguments
       iargcount=iargc()
       iargpos=1
       do i=0,iargcount
-c Start of argline internal iteration
+! Start of argline internal iteration
  502     continue
          if(i.eq.0)then
-c First time through, deal with argline arguments (from the objfile). 
+! First time through, deal with argline arguments (from the objfile). 
             if(lentrim(argline(iargpos:)).ne.0)then
-c Write them.
+! Write them.
                if(lmyidhead.and.iargpos.eq.1)write(*,'(a,a)'
      $              )'File Arguments:',argline(iargpos:lentrim(argline))
                call argextract(argline,iargpos,argument)
@@ -224,10 +224,10 @@ c Write them.
                goto 241
             endif
          else
-c Subsequent: i>0 getarg.
+! Subsequent: i>0 getarg.
             call getarg(i,argument)
          endif
-c         write(*,*)i,argument
+!         write(*,*)i,argument
          if(argument(1:3).eq.'-gt')ltestplot=.true.
          if(argument(1:3).eq.'-gn')ldistshow=.not.ldistshow
          if(argument(1:3).eq.'-gc')read(argument(4:),*,end=201)iobpl
@@ -285,10 +285,10 @@ c         write(*,*)i,argument
          endif
          if(argument(1:3).eq.'-bf')then
             idn=-1
-c Make sure at least the first parameter is readable and sensible
+! Make sure at least the first parameter is readable and sensible
             read(argument(4:),*,err=201)idn
             if(idn.eq.0)then
-c Reset all.
+! Reset all.
                do idn=1,2*ndims
                   do id=1,6
                      CFin(id,idn)=0.
@@ -296,7 +296,7 @@ c Reset all.
                enddo
                iCFcount=0
             elseif(0.lt.idn .and. idn.le.2*ndims+1)then
-c Read coefficients
+! Read coefficients
                if(idn.eq.2*ndims+1)then
                   i0=1
                   i1=2*ndims
@@ -305,15 +305,15 @@ c Read coefficients
                   i1=idn
                endif
                do idcn=i0,i1
-c Initialize first, in case we are given a short read line.
+! Initialize first, in case we are given a short read line.
                   do id=1,6
                      CFin(id,idcn)=0.
                   enddo
                   read(argument(4:),*,err=201,end=212)idn
      $                 ,(CFin(id,idcn),id=1,6)
  212              continue
-c Diagnostics:
-c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
+! Diagnostics:
+!                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
                   LPF(mod(idn-1,ndims)+1)=.false.
                   iCFcount=iCFcount+1
                enddo
@@ -341,10 +341,10 @@ c                  write(*,*)'Set face',idcn,(CFin(id,idcn),id=1,6)
          if(argument(1:3).eq.'-rn')
      $        read(argument(4:),*,err=201)ninjcomp
          if(argument(1:3).eq.'-sb')then
-c Boltzamp setting
+! Boltzamp setting
             read(argument(4:),*,err=201)boltzamp
          elseif(argument(1:4).eq.'-spb')then
-c Boltzamp setting obsolete switch
+! Boltzamp setting obsolete switch
             read(argument(5:),*,err=201)boltzamp
          elseif(argument(1:3).eq.'-sp')then
             if(nspecies+1.gt.nspeciesmax)then
@@ -353,19 +353,19 @@ c Boltzamp setting obsolete switch
                stop
             else
                nspecies=nspecies+1
-c Default to electron Temp/mass for subsequent species.
+! Default to electron Temp/mass for subsequent species.
                Ts(nspecies)=1.
                Tperps(nspecies)=1.
                eoverms(nspecies)=-1836.
                numratioa(nspecies)=1
                boltzamp=0.
-c Inherit the drifts of the previous species until explicitly changed.
+! Inherit the drifts of the previous species until explicitly changed.
                vds(nspecies)=vds(nspecies-1)
                do id=1,ndims
                   vdrifts(id,nspecies)=vdrifts(id,nspecies-1)
                enddo
             endif
-c Drifts must be respecified for this species if different.
+! Drifts must be respecified for this species if different.
          elseif(argument(1:2).eq.'-s')then
             read(argument(3:),*,err=201)nsteps
             if(nsteps.gt.nf_maxsteps)then
@@ -384,9 +384,9 @@ c Drifts must be respecified for this species if different.
             read(argument(4:),*,err=201)vdrifts(3,nspecies)
          elseif(argument(1:2).eq.'-v')then
             read(argument(3:),*,err=201)vds(nspecies)
-c For Mach bdy, set slpD equal to M.
+! For Mach bdy, set slpD equal to M.
             slpD=vds(nspecies)
-c By default put the vneutral the same as first species
+! By default put the vneutral the same as first species
             vneutral=vds(1)
          endif
          if(argument(1:3).eq.'-md')then 
@@ -402,20 +402,20 @@ c By default put the vneutral the same as first species
             gnt=sqrt(gn(1)**2+gn(2)**2+gn(3)**2)
          endif
          if(argument(1:4).eq.'-tge')then
-c Electron temperature gradient parameters
+! Electron temperature gradient parameters
             read(argument(5:),*,err=201)gp0,gt
             gtt=sqrt(gt(1)**2+gt(2)**2+gt(3)**2)
          elseif(argument(1:3).eq.'-tn')then
             write(*,*)'***Tneutral setting is obsolete. No can do.'
             stop
-c            read(argument(4:),*,err=201)Tneutral
+!            read(argument(4:),*,err=201)Tneutral
          elseif(argument(1:3).eq.'-tp')then
             read(argument(4:),*,err=201)Tperps(nspecies)
          elseif(argument(1:2).eq.'-t')then
             read(argument(3:),*,err=201)Ts(nspecies)
             Tperps(nspecies)=Ts(nspecies)
-c Default Tneutral=Ts(nspecies)
-c            Tneutral=Ts(nspecies)
+! Default Tneutral=Ts(nspecies)
+!            Tneutral=Ts(nspecies)
          endif
          
          if(argument(1:2).eq.'-w')read(argument(3:),*,err=201)iwstep
@@ -434,7 +434,7 @@ c            Tneutral=Ts(nspecies)
          endif         
          if(argument(1:10).eq.'--extfield')then
             read(argument(11:),*,err=201)extfield
-c            write(*,*)'||||||||||||||extfield',extfield
+!            write(*,*)'||||||||||||||extfield',extfield
             lextfield=.true.
          endif
          if(argument(1:3).eq.'-of')
@@ -445,8 +445,8 @@ c            write(*,*)'||||||||||||||extfield',extfield
             hspecies=nspecies
             read(argument(4:),*,err=201,end=231)holepsi,holeum,holelen
      $           ,holeeta,holepow,holerad
-c            goto 240
-c Default hole value[s] are being used
+!            goto 240
+! Default hole value[s] are being used
  231        continue
          endif
          if(argument(1:3).eq.'-ho')then
@@ -454,33 +454,33 @@ c Default hole value[s] are being used
             call exit(0)
          endif
          if(argument(1:3).eq.'-hg')goto 402
-c Help text options
+! Help text options
          if(argument(1:2).eq.'-h')goto 203
          if(argument(1:3).eq.'--h')goto 203
          if(argument(1:2).eq.'-?')goto 203
-c Indicator that coptic arguments are ended.
+! Indicator that coptic arguments are ended.
          if(argument(1:3).eq.'-ea'.or.argument(1:2).eq.'--')then
             write(*,*)'Arguments terminated by: ',argument(1:3)
             goto 202
          endif
-c Finished parsing this argument.
+! Finished parsing this argument.
  240     continue
          if(i.eq.0)goto 502
-c End of internal argline iteration
+! End of internal argline iteration
  241     continue
       enddo
-c End of command line parameter parsing.
-c-------------------------------------------------------
+! End of command line parameter parsing.
+!-------------------------------------------------------
 
  202  continue
       do ispecies=1,nspecies
          if(vdrifts(1,ispecies).ne.0. .or. vdrifts(2,ispecies).ne.0)then
-c --- Drift in direction other than z. Normalize vdrifts cosines.
+! --- Drift in direction other than z. Normalize vdrifts cosines.
             vwork=0.
             do i=1,ndims
-c Make all the vdrift components non-zero so that we can use that fact
-c as an indicator of non-z drift.
-c               if(vdrifts(i,ispecies).eq.0.)vdrifts(i,ispecies)=1.e-25
+! Make all the vdrift components non-zero so that we can use that fact
+! as an indicator of non-z drift.
+!               if(vdrifts(i,ispecies).eq.0.)vdrifts(i,ispecies)=1.e-25
                vwork=vwork+vdrifts(i,ispecies)**2
             enddo
             vwork=sqrt(vwork)
@@ -489,7 +489,7 @@ c               if(vdrifts(i,ispecies).eq.0.)vdrifts(i,ispecies)=1.e-25
             enddo
          endif
       enddo
-c --- Deal with B-field
+! --- Deal with B-field
       Bt=0.
       Bdotgn=0.
       vdotgn=0.
@@ -502,7 +502,7 @@ c --- Deal with B-field
       if(gnt.ne.0.)then
          if(Bt.ne.0.)then
             if(Bdotgn.gt.1.e-5*Bt*gnt)then
-c Complain if there's a B-component in the gradient direction.
+! Complain if there's a B-component in the gradient direction.
                message='*** Density gradient parallel to Bt not allowed'
                goto 203
             endif
@@ -517,18 +517,18 @@ c Complain if there's a B-component in the gradient direction.
          endif
       endif
       if(Bt.ne.0)then
-c Normalize magnetic field cosines.
+! Normalize magnetic field cosines.
          do i=1,ndims
             Bfield(i)=Bfield(i)/Bt
          enddo
          if(Bt.lt.1.e3 .and. Bt*dt.gt.1.)then
-c Flag an inappropriate field and dt combination
+! Flag an inappropriate field and dt combination
             if(lmyidhead)write(message,'(a,f8.2,a,f8.5,a,a)')
      $           'UNWISE field',Bt,' and dt',dt
      $           ,' Use B.dt less than 1; else inaccurate.'
          endif
          do ispecies=1,nspecies
-c vds(ispecies):
+! vds(ispecies):
             vpars(ispecies)=0.
             do i=1,ndims
                vpars(ispecies)=vpars(ispecies)+vds(ispecies)*vdrifts(i
@@ -550,7 +550,7 @@ c vds(ispecies):
      $           ,(vperps(id,ispecies),id=1,3),',',vwork
          enddo
       else
-c Zero the vparallel and vperp. Probably not necessary; but tidy.
+! Zero the vparallel and vperp. Probably not necessary; but tidy.
          do ispecies=1,nspecies
             vpars(ispecies)=0.
             do i=1,ndims
@@ -558,14 +558,14 @@ c Zero the vparallel and vperp. Probably not necessary; but tidy.
             enddo
          enddo
       endif
-c Set and check particle periodicity logical.
+! Set and check particle periodicity logical.
       lnotallp=.false.
       do i=1,ndims
          if(ipartperiod(i).ne.4)then
             lnotallp=.true.
          else
             if(crelax.ne.0.)then
-c Don't allow unwise operation with periodic particles.
+! Don't allow unwise operation with periodic particles.
                write(*,*)'**** UNWISE operation with periodic particles'
      $              ,' and non-zero crelax=',crelax
                write(*,*)' Add switch -rx0.'
@@ -575,8 +575,8 @@ c Don't allow unwise operation with periodic particles.
       enddo
 
       return
-c------------------------------------------------------------
-c Help text
+!------------------------------------------------------------
+! Help text
  201  continue
       if(lmyidhead)write(*,*)'=====Error reading command line argument '
      $     ,argument(:20)
@@ -647,7 +647,7 @@ c Help text
      $     ,'     E.g. 8201=1(1)+4(8)+13(8192)'
       write(*,301)
      $     '         Bits:1 Mach/Log[=0]  2-7:Face1-6=0  8-13:u''''=k2u'
-c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
+!      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       write(*,*)'-bf   set face bndry conditions  [ off'
      $     ,' Values:  idn,Ain,Bin,C0in[,Cx,Cy,Cz]'
       if(iCFcount.gt.0)write(*,'(10x,l3,i2,6f8.4)')(LPF(1+mod(idn-1,3))
@@ -702,21 +702,21 @@ c      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
       if(lentrim(message).gt.1)write(*,'(a)')message(1:lentrim(message))
       call exit(0)
       end
-c*********************************************************************
+!*********************************************************************
       subroutine argextract(argline,ipos,argstring)
-c Extract an argument from the string starting at ipos and return it in
-c argstring, leaving ipos pointed at the terminating blank.
+! Extract an argument from the string starting at ipos and return it in
+! argstring, leaving ipos pointed at the terminating blank.
       character*(*) argline,argstring
 
       ias=0
  2    continue
-c Skip blanks
+! Skip blanks
       if(argline(ipos:ipos).eq.' ')then
          ipos=ipos+1
          goto 2
       endif
  3    continue
-c Read until we reach a blank.
+! Read until we reach a blank.
       ias=ias+1
       argstring(ias:)=argline(ipos:ipos)
       if(argline(ipos:ipos).ne.' ')then

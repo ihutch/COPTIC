@@ -1,4 +1,4 @@
-c For a non-mpi installation, the subroutines should be dummies, simply
+! For a non-mpi installation, the subroutines should be dummies, simply
       subroutine fluxreduce()
       end
       subroutine psumreduce()

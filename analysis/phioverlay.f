@@ -1,29 +1,29 @@
       program phioverlay
-c Overlay contours obtained using xfig2trace on a contour plot of 
-c potential. 
+! Overlay contours obtained using xfig2trace on a contour plot of 
+! potential. 
 
       include 'examdecl.f'
       parameter (ntheta=4,nr=38)
-c      real thetadist(nr,ntheta),thetaval(ntheta)
+!      real thetadist(nr,ntheta),thetaval(ntheta)
       real rvalneg(0:nr),rval(0:nr)
-c      integer ithetacount(nr,ntheta)
+!      integer ithetacount(nr,ntheta)
 
       parameter (nzmax=500)
       real rzdist(0:nr,nzmax),irzcount(nr,nzmax)
-c      real rzmval(nzmax),rzmpos(nzmax),zpos(nzmax)
+!      real rzmval(nzmax),rzmpos(nzmax),zpos(nzmax)
       character*1 ppath(0:nr,nzmax)
       character*20 string
 
       real cl(100)
       real xl(2),yl(2)
       integer z1,z2
-c xfig2trace parameters.
+! xfig2trace parameters.
       parameter (np=200,nt=50)
       real xtraces(np,nt), ytraces(np,nt)
       integer nl(nt)
       real xyia(4)
       character*(100)overfile
-c 
+! 
       call examargs(rp,iover,overfile)
       ied=1
       call array3read(phifilename,ifull,iuds,ied,u,ierr)
@@ -39,41 +39,41 @@ c
       ry=max(abs(xn(ixnp(2)+1)-x0),abs(xn(ixnp(3))-y0))
       rs=sqrt(rx**2+ry**2)
       call rzbin(nr,rzdist,irzcount,rval,rvalneg,phimax)
-c Now rzdist(nr,nz) is the rz-distribution of the (average) potential.
-c Contour it.
+! Now rzdist(nr,nz) is the rz-distribution of the (average) potential.
+! Contour it.
       call pfset(3)
       nc=30
       call fitrange(-phimax,phimax,nc,ipow,fac10,delta,first,xlast)
-c         write(*,*)ipow,fac10,delta,first,xlast
+!         write(*,*)ipow,fac10,delta,first,xlast
       do k=1,nc
          cl(k)=(first+k*delta)
       enddo
       nc=abs(2.*phimax)/abs(delta)
-c         write(*,*)' Phimax', phimax,' fac10',fac10
-c         write(*,*)' Contours',nc,(cl(k),k=1,nc)
+!         write(*,*)' Phimax', phimax,' fac10',fac10
+!         write(*,*)' Contours',nc,(cl(k),k=1,nc)
       iconsw=1+64
-c Change z1 and z2, and nrp if you want to crop the region plotted.
+! Change z1 and z2, and nrp if you want to crop the region plotted.
       z1=1
       z2=iuds(3)
       nz=z2+1-z1
       nrp=nr-10
-c      call pltinaspect(-rval(nrp),rval(nrp),
+!      call pltinaspect(-rval(nrp),rval(nrp),
       call pltinit(0.,rval(nrp),
      $     xn(ixnp(3)+z1),xn(ixnp(3)+z2))
       call color(15)
       call contourl(rzdist(0,z1),ppath,nr+1,nrp+1,nz,
      $     cl,nc,rval,xn(ixnp(3)+z1),iconsw)
-c      call contourl(rzdist(0,z1),ppath,nr+1,nrp+1,nz,
-c     $     cl,nc,rvalneg,xn(ixnp(3)+z1),iconsw)
+!      call contourl(rzdist(0,z1),ppath,nr+1,nrp+1,nz,
+!     $     cl,nc,rvalneg,xn(ixnp(3)+z1),iconsw)
       call color(15)
-c      call axis()
-c      call axlabels('r','z')
-c         write(*,*)'ipow',ipow
+!      call axis()
+!      call axlabels('r','z')
+!         write(*,*)'ipow',ipow
       call fwrite(delta,iwd,max(-ipow,0)+1,string)
       call boxtitle('!Af!@-contours ('//string(1:iwd)
      $     //'T!de!d spaced)')
       call gradlegend(-phimax,phimax,-.35,0.,-.35,1.,-.02,.false.) 
-c Indicate rectangle limits.
+! Indicate rectangle limits.
       yl(1)=xn(ixnp(3)+z1)
       yl(2)=xn(ixnp(3)+z2)
       call dashset(2)
@@ -89,33 +89,33 @@ c Indicate rectangle limits.
          call polyline(xl,yl,2)
          xl(1)=-ry
          xl(2)=-ry
-c         call polyline(xl,yl,2)
+!         call polyline(xl,yl,2)
       endif
       call dashset(0)
       xl(1)=0.
       xl(2)=0.
       call polyline(xl,yl,2)
       call fwrite(vd,iwd,2,string)
-c         call jdrwstr(.02,.31,'v!dd!d='//string(1:iwd),1.)
+!         call jdrwstr(.02,.31,'v!dd!d='//string(1:iwd),1.)
       call fwrite(debyelen,iwd,1,string)
-c         call jdrwstr(.02,.25,'!Al!@!dDe!d='//string(1:iwd),1.)
+!         call jdrwstr(.02,.25,'!Al!@!dDe!d='//string(1:iwd),1.)
       call fwrite(phip,iwd,2,string)
-c         call jdrwstr(.02,.28,'!Af!@!dp!d='//string(1:iwd),1.)
+!         call jdrwstr(.02,.28,'!Af!@!dp!d='//string(1:iwd),1.)
       call scalewn(0.,rval(nrp)/debyelen,
      $     xn(ixnp(3)+z1)/debyelen,xn(ixnp(3)+z2)/debyelen
      $     ,.false.,.false.)
       call axis()
       call axlabels('r/!Al!@!dDe!d','z/!Al!@!dDe!d')
-c-------------------------------------------------------------------
+!-------------------------------------------------------------------
       if(iover.gt.0)call xfig2trace(np,nt,xtraces,ytraces,il,nl,xyia
      $     ,overfile)
       write(*,*)'Return from xfig2',il,(nl(k),k=1,il),xyia
       if(il.gt.0)then
          do k=1,il
-c            do j=1,nl(k)
-c               xtraces(j,k)=xtraces(j,k)*debyelen
-c               ytraces(j,k)=ytraces(j,k)*debyelen
-c            enddo
+!            do j=1,nl(k)
+!               xtraces(j,k)=xtraces(j,k)*debyelen
+!               ytraces(j,k)=ytraces(j,k)*debyelen
+!            enddo
             write(*,*)k,(xtraces(j,k),j=1,nl(k))
             write(*,*)k,(ytraces(j,k),j=1,nl(k))
             call winset(.true.)
@@ -124,7 +124,7 @@ c            enddo
             call polyline(xtraces(1,k),ytraces(1,k),nl(k))
          enddo
       endif
-c------------------------------------------------------------------
+!------------------------------------------------------------------
 
       call pltend()
 
@@ -132,7 +132,7 @@ c------------------------------------------------------------------
  101  write(*,*)'Error writing output'
       end
 
-c*************************************************************
+!*************************************************************
       subroutine examargs(rp,iover,overfile)
       character*100 overfile
       include 'examdecl.f'
@@ -141,11 +141,11 @@ c*************************************************************
       ifull(2)=na_j
       ifull(3)=na_k
 
-c Defaults and silence warnings.
+! Defaults and silence warnings.
       phifilename=' '
       zp(1,1,1)=0.
 
-c Deal with arguments
+! Deal with arguments
       if(iargc().eq.0) goto 201
       do i=1,iargc()
          call getarg(i,argument)
@@ -169,8 +169,8 @@ c Deal with arguments
          
       enddo
       goto 202
-c------------------------------------------------------------
-c Help text
+!------------------------------------------------------------
+! Help text
  201  continue
       write(*,*)'=====Error reading command line argument'
  203  continue
@@ -183,16 +183,16 @@ c Help text
  202  continue
       if(lentrim(partfilename).lt.5)goto 203
       end
-c*****************************************************************
+!*****************************************************************
       subroutine rzbin(nr,rzdist,irzcount,rval,rvalneg,phimax)
 
       include 'examdecl.f'
       real rzdist(0:nr,iuds(3)),irzcount(nr,iuds(3))
       real rvalneg(0:nr),rval(0:nr)
 
-c r-z binning and plotting
+! r-z binning and plotting
       nz= ixnp(3+1)-ixnp(3)
-c Set up r-mesh.
+! Set up r-mesh.
       do j=1,nr
          do i=1,nz
             rzdist(j,i)=0.
@@ -200,10 +200,10 @@ c Set up r-mesh.
          enddo
          rval(j)=(rs)*(j-0.5)/float(nr)
          rvalneg(j)=-rval(j)
-c            write(*,*)j,rval(j)
+!            write(*,*)j,rval(j)
       enddo
 
-c Bin values
+! Bin values
       rmin=1.e10
       phimax=0.
       do k=1,iuds(3)
@@ -224,7 +224,7 @@ c Bin values
          enddo
       enddo
 
-c         write(*,*)((j,rval(j),irzcount(j,k),j=1,nr),k=1,1)
+!         write(*,*)((j,rval(j),irzcount(j,k),j=1,nr),k=1,1)
       do j=1,nr
          do i=1,iuds(3)
             if(irzcount(j,i).ne.0)then
@@ -232,7 +232,7 @@ c         write(*,*)((j,rval(j),irzcount(j,k),j=1,nr),k=1,1)
             endif
          enddo
       enddo
-c Fix up zero values if necessary.
+! Fix up zero values if necessary.
       do j=1,nr
          do i=1,iuds(3)
             if(irzcount(j,i).eq.0)then
@@ -247,12 +247,12 @@ c Fix up zero values if necessary.
                else
                   write(*,*)'Failed setting rzdist',j,i,jm,jp
      $                 ,' Too coarse a mesh? rmin=',rmin
-c     $                    ,rval(jm),rval(jp)
+!     $                    ,rval(jm),rval(jp)
                endif
             endif
          enddo
       enddo
-c Fill in along the axis.
+! Fill in along the axis.
       rval(0)=0.
       rvalneg(0)=0.
       do k=1,iuds(3)
@@ -260,5 +260,5 @@ c Fill in along the axis.
       enddo
 
       end
-c*****************************************************************
+!*****************************************************************
       include 'xfig2trace.f'

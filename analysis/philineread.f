@@ -11,7 +11,7 @@
       real tp(nfx),vp(nfx)
       integer ip2(ndims)
 
-c philineread commons
+! philineread commons
       logical lrange,lwrite,lvd,ldiff,lbva,llout,llw
       integer iover
       character*(100)overfile
@@ -20,12 +20,12 @@ c philineread commons
      $     ,xlmin,ylmin
 
 
-c xfig2trace parameters.
+! xfig2trace parameters.
       parameter (np=200,nt=50)
       real xtraces(np,nt), ytraces(np,nt)
       integer nl(nt)
       real xyia(4)
-c Specific from IEEE
+! Specific from IEEE
       parameter (nlin=13)
       real zlin(nlin),plin(nlin)
       data zlin/.7,1.3,1.55,1.72,1.85,2.07,2.25,2.4,2.7,2.85,3.2,3.7
@@ -34,9 +34,9 @@ c Specific from IEEE
      $     -.138,-.138/
 
 
-c      character*100 xfigfile
-c 
-c silence warnings:
+!      character*100 xfigfile
+! 
+! silence warnings:
       zp(1,1,1)=0.
       fluxfilename=' '
       overfile=' '
@@ -50,7 +50,7 @@ c silence warnings:
       ild=3
       lbva=.false.
 
-c      write(*,*)nf,idl
+!      write(*,*)nf,idl
       nf=nfx
       call lineargs(filenames,nf,ild,ilinechoice,rp,pp)
       write(*,*)'Filenames',nf
@@ -58,7 +58,7 @@ c      write(*,*)nf,idl
       nplot=0
       do inm=1,nf
          phifilename=filenames(inm)
-c         write(*,*)ifull,iuds
+!         write(*,*)ifull,iuds
          ied=1
          call array3read(phifilename,ifull,iuds,ied,u,ierr)
          if(ierr.eq.1)stop
@@ -78,13 +78,13 @@ c         write(*,*)ifull,iuds
          tp(inm)=Ti
          vp(inm)=vd
          write(*,*)'ild=',ild
-c Select the lineout into the plotting arrays.      
-c         if(ild.ne.0)then
+! Select the lineout into the plotting arrays.      
+!         if(ild.ne.0)then
             write(*,*)'Dim, Mesh-No, Positions, /debye:'
             do k=1,ndims-1
                ik=mod(ild+k-1,ndims)+1
                ip(ik)=ilinechoice(ik,inm)
-c implement default here
+! implement default here
                if(ip(ik).eq.0)ip(ik)=iuds(ik)/2
                ip2(ik)=1
                write(*,'(2i5,2f10.4)')ik,ip(ik),xn(ixnp(ik)+ip(ik))
@@ -92,15 +92,15 @@ c implement default here
             enddo
             bv=0.
             if(lbva)then
-c Find the average boundary value. 
+! Find the average boundary value. 
                do i=1,iuds(ild)
                   ip2(ild)=i
                   bv=bv+ u(ip2(1),ip2(2),ip2(3))
                enddo
                bv=bv/iuds(ild)
             endif
-c Get the line out.
-c            write(*,*)'ild,ip(ild)',ild,ip(ild)
+! Get the line out.
+!            write(*,*)'ild,ip(ild)',ild,ip(ild)
             if(lwrite)write(*,*)iuds(ild)
             do i=1,iuds(ild)
                ip(ild)=i
@@ -114,7 +114,7 @@ c            write(*,*)'ild,ip(ild)',ild,ip(ild)
                write(*,*)iuds(ild)-1
                write(*,'(2f10.5)')(xd(k),dphidx(k),k=1,iuds(ild)-1)
                if(diffval.ne.0.)then
-c Find the mesh position                  
+! Find the mesh position                  
                   ixi=interp(xd,iuds(ild)-1,diffval,xi)
                   if(ixi.ne.0)then
                      xf=xi-ixi
@@ -169,8 +169,8 @@ c Find the mesh position
                call axis2()
             else
                call color(inm)
-c               call iwrite(inm,iwd,string)
-c               call labeline(xline,philine,iuds(ild),string,iwd)
+!               call iwrite(inm,iwd,string)
+!               call labeline(xline,philine,iuds(ild),string,iwd)
                call dashset(inm)
                call polyline(xline,philine,iuds(ild))
                if(ldiff)call polyline(xd,dphidx,iuds(ild)-1)
@@ -196,15 +196,15 @@ c               call labeline(xline,philine,iuds(ild),string,iwd)
      $              string(1:lentrim(string)))
             endif
             nplot=nplot+1
-c         endif
+!         endif
 
          write(*,'(a,3i4,$)')'On grid',iuds
          write(*,*)(',',xn(ixnp(kk)+1),xn(ixnp(kk+1)),kk=1,3)
      $        ,ip
-c         write(*,*)ild,ilinechoice
+!         write(*,*)ild,ilinechoice
       enddo
       if(iover.gt.0)then
-c Overplot traces from specified file.
+! Overplot traces from specified file.
          write(*,*)iover,' Overplot ',overfile(1:40)
          call xfig2trace(np,nt,xtraces,ytraces,il,nl,xyia,overfile)
          write(*,*)'Return from xfig2',il,(nl(k),k=1,il),xyia
@@ -215,7 +215,7 @@ c Overplot traces from specified file.
                call polyline(xtraces(1,k),ytraces(1,k),nl(k))
             enddo
          else
-c No valid file overplot built in.
+! No valid file overplot built in.
             write(*,*)'Plotting internal comparison',nlin
             write(*,*)zlin
             write(*,*)plin
@@ -231,7 +231,7 @@ c No valid file overplot built in.
          call lautomark(darray,pmax,nplot,.true.,.true.,0)
          imark=1
          do k=1,nplot
-c            itc=int(tp(k)/0.0049
+!            itc=int(tp(k)/0.0049
             itc=int(vp(k)*4.001)
             call color(itc)
             if(lvd)then
@@ -259,19 +259,19 @@ c            itc=int(tp(k)/0.0049
          call axlabels('|!Af!@!dp!d|r!dp!d(1+r!dp!d/!Al!@)/!Al!@'
      $        //' = Q/4!Ape!@!d0!d!Al!@',
      $        '!Af!@!dmax!d/( Q/4!Ape!@!d0!d!Al!@)')
-c     $        '!Af!@!dmax!d/(|!Af!@!dp!d|r!dp!d/!Al!@)')
-c         call vecw(0.04,3.,0)
-c         call vecw(1.,.12,1)
-c         call vecw(0.01,2.,0)
-c         call vecw(0.1,2.,1)
+!     $        '!Af!@!dmax!d/(|!Af!@!dp!d|r!dp!d/!Al!@)')
+!         call vecw(0.04,3.,0)
+!         call vecw(1.,.12,1)
+!         call vecw(0.01,2.,0)
+!         call vecw(0.1,2.,1)
          call pltend()
-c         call ticset(.015,.015,-.03,-.02,4,4,1,1) 
+!         call ticset(.015,.015,-.03,-.02,4,4,1,1) 
          call ticset(.015,.015,-.03,-.025,4,4,1,1) 
          call lautomark(darray,punscale,nplot,.true.,.true.,0)
          call color(imark)
          imark=1
          do k=1,nplot
-c            itc=int(tp(k)/0.0049)
+!            itc=int(tp(k)/0.0049)
             itc=int(vp(k)*4.001)
             call color(itc)
             if(lvd)then
@@ -300,29 +300,29 @@ c            itc=int(tp(k)/0.0049)
          call axlabels('|!Af!@!dp!d|r!dp!d(1+r!dp!d/!Al!@)/!Al!@'
      $        //' = Q/4!Ape!@!d0!d!Al!@',
      $        '!Af!@!dmax!d')
-c'|!Af!@!dp!d|r!dp!d/!Al!@'
-c     $        //'!A ~ !@Q/4!Ape!@!d0!d!Al!@',
+!'|!Af!@!dp!d|r!dp!d/!Al!@'
+!     $        //'!A ~ !@Q/4!Ape!@!d0!d!Al!@',
          call pltend()
       endif
 
 
       end
 
-c*************************************************************
+!*************************************************************
       subroutine lineargs(filenames,nf,ild,ilinechoice,rp,pp)
-c Deal with command line arguments.
+! Deal with command line arguments.
 
-c Non-switch arguments are the names of files to read from. For each of
-c those, return the name in filename, the choice of line in ilinechoice,
-c and the radius of object in rp. 
-c On entry nf is array dimension. (IN)
-c On exit nf is the number of files read. (OUT)
-c Switch arguments set -x(min,max) -y(min,max) -l(linechoice for the
-c subsequent files) -r radius (subsequent) -w writing to true. 
-c -o overplot file (xfig with scaling). 
+! Non-switch arguments are the names of files to read from. For each of
+! those, return the name in filename, the choice of line in ilinechoice,
+! and the radius of object in rp. 
+! On entry nf is array dimension. (IN)
+! On exit nf is the number of files read. (OUT)
+! Switch arguments set -x(min,max) -y(min,max) -l(linechoice for the
+! subsequent files) -r radius (subsequent) -w writing to true. 
+! -o overplot file (xfig with scaling). 
 
-c ild is the dimension that is fixed, and must be the same for all files.
-c the logic will break if it is changed by -l in the middle.
+! ild is the dimension that is fixed, and must be the same for all files.
+! the logic will break if it is changed by -l in the middle.
 
       include 'examdecl.f'
       integer nf
@@ -341,10 +341,10 @@ c the logic will break if it is changed by -l in the middle.
       ifull(1)=na_i
       ifull(2)=na_j
       ifull(3)=na_k
-c Passed in array dimension
+! Passed in array dimension
       nfx=nf
 
-c Defaults and silence warnings.
+! Defaults and silence warnings.
       phifilename=' '
       fluxfilename=' '
       nf=1
@@ -364,7 +364,7 @@ c Defaults and silence warnings.
       xlmin=0.5
       ylmin=0.
 
-c Deal with arguments
+! Deal with arguments
       if(iargc().eq.0) goto 201
       do i=1,iargc()
          call getarg(i,argument)
@@ -411,13 +411,13 @@ c Deal with arguments
             endif
             if(argument(1:2).eq.'-h')goto 203
             if(argument(1:2).eq.'-?')goto 203
-c            if(argument(1:2).eq.'-f')goto 204
+!            if(argument(1:2).eq.'-f')goto 204
          else
             read(argument(1:),'(a)',err=201)phifilename
-c               write(*,*)ild, idj
+!               write(*,*)ild, idj
             do k=1,ndims-1
                ilinechoice(mod(ild+k-1,ndims)+1,nf)=idj(k)
-c                  write(*,*)'nf,k,idj(k)',nf,k,idj(k)
+!                  write(*,*)'nf,k,idj(k)',nf,k,idj(k)
             enddo
             filenames(nf)(1:)=phifilename
             rp(nf)=rread
@@ -431,11 +431,11 @@ c                  write(*,*)'nf,k,idj(k)',nf,k,idj(k)
       enddo
       nf=nf-1
 
-c      write(*,*)ild,
-c     $     (ilinechoice(2,i),' ',rp(i),' ',filenames(i)(1:30),i=1,nf)
+!      write(*,*)ild,
+!     $     (ilinechoice(2,i),' ',rp(i),' ',filenames(i)(1:30),i=1,nf)
       goto 202
-c------------------------------------------------------------
-c Help text
+!------------------------------------------------------------
+! Help text
  201  continue
       write(*,*)'=====Error reading command line argument'
  203  continue
@@ -443,8 +443,8 @@ c Help text
  302  format(a,3f8.3)
       write(*,301)'Usage: philineread [switches] <phifile>'//
      $     ' [<phifile2> ...]'
-c      write(*,301)' --objfile<filename>  set name of object data file.'
-c     $     //' [ccpicgeom.dat'
+!      write(*,301)' --objfile<filename>  set name of object data file.'
+!     $     //' [ccpicgeom.dat'
       write(*,301)' -l<idim>,<irow1>,<irow2> set fixed dimension [',ild
       if(idj(1).eq.0)then
          write(*,301)
@@ -472,34 +472,34 @@ c     $     //' [ccpicgeom.dat'
  202  continue
       if(lentrim(partfilename).lt.5)goto 203
       end
-c*****************************************************************
+!*****************************************************************
 
-c***********************************************************************
+!***********************************************************************
       subroutine xfig2trace(np,nt,xtraces,ytraces,il,nl,xyia,filename)
 
-c Read up to nt traces each of length up to np (IN)
-c from xfig format plot file filename (IN).
-c Return il traces of lengths nl(il) in xtraces, ytraces (OUT).
-c Use the optionally updated box xyia(4) (INOUT) to scale them.
+! Read up to nt traces each of length up to np (IN)
+! from xfig format plot file filename (IN).
+! Return il traces of lengths nl(il) in xtraces, ytraces (OUT).
+! Use the optionally updated box xyia(4) (INOUT) to scale them.
 
-c Read polylines in filename as traces. 
-c Use the last rectangle in file as the corners of the plotted region,
-c corresponding to xmin, xmax, ymin, ymax = xyia(4).
+! Read polylines in filename as traces. 
+! Use the last rectangle in file as the corners of the plotted region,
+! corresponding to xmin, xmax, ymin, ymax = xyia(4).
 
-c If a comment exists in the xfig file starting "Box:" 
-c (entered by doing an xfig edit of an object and typing it in)
-c then read 4 values from this comment into xyia. 
-c Otherwise use input values.
+! If a comment exists in the xfig file starting "Box:" 
+! (entered by doing an xfig edit of an object and typing it in)
+! then read 4 values from this comment into xyia. 
+! Otherwise use input values.
 
-c For each comment starting "Scale:" read 1 value 
-c and multiply the xyia y-values by it.
-c For each comment starting "XScale:" read 1 value 
-c and multiply the xyia x-values by it.
-c (Must occur *after* any Box: comment to be effective. Can be 
-c ensured by using the same xfig comment box with a new line.)
+! For each comment starting "Scale:" read 1 value 
+! and multiply the xyia y-values by it.
+! For each comment starting "XScale:" read 1 value 
+! and multiply the xyia x-values by it.
+! (Must occur *after* any Box: comment to be effective. Can be 
+! ensured by using the same xfig comment box with a new line.)
 
-c Abnormal returns are indicated by il. il>=1000 (too many lines)
-c il=-1 (no file) il=0 (no traces) il=-2 (box reading error).
+! Abnormal returns are indicated by il. il>=1000 (too many lines)
+! il=-1 (no file) il=0 (no traces) il=-2 (box reading error).
 
       real xtraces(np,nt),ytraces(np,nt)
       integer il,nl(nt)
@@ -510,28 +510,28 @@ c il=-1 (no file) il=0 (no traces) il=-2 (box reading error).
       character*100 line
       real pvalues(16)
 
-c      write(*,'(a,4f8.3)')'xmin,xmax,ymin,ymax'
-c     $     ,xyia(1),xyia(2),xyia(3),xyia(4)
+!      write(*,'(a,4f8.3)')'xmin,xmax,ymin,ymax'
+!     $     ,xyia(1),xyia(2),xyia(3),xyia(4)
       il=1
       open(10,file=filename,status='old',err=304)
       do i=1,200
          read(10,'(a)',end=302,err=301)line
-c         write(*,'(i4,a)')i,line
+!         write(*,'(i4,a)')i,line
          if(line(1:3).eq.'2 1')then
             read(line,*)pvalues
-c            write(*,'(a,16f4.0)')'Polyline',pvalues
+!            write(*,'(a,16f4.0)')'Polyline',pvalues
             nl(il)=pvalues(16)
             if(nl(il).gt.np)then
                write(*,*)'Polyline ',il,' too long:',nl(il)
                nl(il)=np
             endif
             read(10,*)(xtraces(j,il),ytraces(j,il),j=1,nl(il))
-c            write(*,'(10f7.1)')(xtraces(j,il),j=1,nl(il))
-c            write(*,'(10f7.1)')(ytraces(j,il),j=1,nl(il))
+!            write(*,'(10f7.1)')(xtraces(j,il),j=1,nl(il))
+!            write(*,'(10f7.1)')(ytraces(j,il),j=1,nl(il))
             il=il+1
          elseif(line(1:3).eq.'2 2')then
             read(line,*)pvalues
-c            write(*,'(a,16f4.0)')'Rectangle',pvalues
+!            write(*,'(a,16f4.0)')'Rectangle',pvalues
             nl(il)=pvalues(16)
             if(nl(il).ne.5)then
                write(*,*)'Error. Rectangle has not 5 points',nl(il)
@@ -539,8 +539,8 @@ c            write(*,'(a,16f4.0)')'Rectangle',pvalues
             endif
             irect=il
             read(10,*)(xrect(j),yrect(j),j=1,nl(il))            
-c            write(*,'(10f7.1)')(xrect(j),j=1,nl(il))
-c            write(*,'(10f7.1)')(yrect(j),j=1,nl(il))
+!            write(*,'(10f7.1)')(xrect(j),j=1,nl(il))
+!            write(*,'(10f7.1)')(yrect(j),j=1,nl(il))
          elseif(line(1:6).eq.'# Box:')then
             read(line(7:),*,err=303,end=303)(xyia(k),k=1,4)
             write(*,*)'xfig2trace: xyia',(xyia(k),k=1,4)
@@ -571,16 +571,16 @@ c            write(*,'(10f7.1)')(yrect(j),j=1,nl(il))
  302  continue
       write(*,*)'Completed reading file.'
       il=il-1
-c      write(*,*)'il',il,(nl(k),k=1,il)
-c Now we transform from xfig coordinates to plot world coordinates.
+!      write(*,*)'il',il,(nl(k),k=1,il)
+! Now we transform from xfig coordinates to plot world coordinates.
       xscale=(xyia(2)-xyia(1))/(xrect(2)-xrect(1))
       yscale=(xyia(4)-xyia(3))/(yrect(1)-yrect(4))
       xzero=-(xyia(2)*xrect(1)-xyia(1)*xrect(2))/(xrect(2)-xrect(1))
       yzero=-(xyia(4)*yrect(4)-xyia(3)*yrect(1))/(yrect(1)-yrect(4))
 
-c      write(*,*)'Scalings ',xscale,xzero,yscale,yzero
+!      write(*,*)'Scalings ',xscale,xzero,yscale,yzero
 
-c Transform to world coordinates.
+! Transform to world coordinates.
       do i=1,il
          do j=1,nl(i)
             xtraces(j,i)=xtraces(j,i)*xscale+xzero
@@ -593,13 +593,13 @@ c Transform to world coordinates.
       il=-1
 
       end
-c****************************************************************
+!****************************************************************
       subroutine differentiate(npts,x,y,xd,dydx)
-c On entry x,y are arrays of a fuction y(x) of length npts. 
-c x is not necessarily uniform.
-c On exit the differential dy/dx is in dydx on an x-array xd.
-c xd are the center points of the differences, length strictly npts-1
-c although the arrays will normally have a total of npts.
+! On entry x,y are arrays of a fuction y(x) of length npts. 
+! x is not necessarily uniform.
+! On exit the differential dy/dx is in dydx on an x-array xd.
+! xd are the center points of the differences, length strictly npts-1
+! although the arrays will normally have a total of npts.
       integer npts
       real x(npts),y(npts),dydx(npts),xd(npts)
 

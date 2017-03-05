@@ -3,13 +3,13 @@
       include 'examdecl.f'
 
       parameter (ndiagmax=8)
-c diagmax here must be 7+1 to accommodate potential possibly.
+! diagmax here must be 7+1 to accommodate potential possibly.
       real diagsum(na_i,na_j,na_k,ndiagmax+1)      
-c Volumes are stored in ndiagmax+1
+! Volumes are stored in ndiagmax+1
 
-c Extra work array for arrowplotting in sliceGweb.
+! Extra work array for arrowplotting in sliceGweb.
       real vp(na_m,na_m2,3,3)
-c 1-d plotting arrays.
+! 1-d plotting arrays.
       real z1d(na_m),u1d(na_m),dene1d(na_m),deni1d(na_m)
       real zminmax(2)
       character*20 mname(ndiagmax+1)
@@ -35,8 +35,8 @@ c 1-d plotting arrays.
       mname(ndiagmax+1)='Density'
       xleg=.75
       ipp=0
-c      pscale=3.
-c 
+!      pscale=3.
+! 
       call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
      $     ,mcell,zminmax,icontour)
       if(zminmax(1).gt.zminmax(2))then
@@ -44,14 +44,14 @@ c
       endif
       i1=1
       ied=ndiagmax
-c Create label
+! Create label
       label=diagfilename(lentrim(diagfilename)-3:lentrim(diagfilename))
       call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
       if(ierr.eq.1)stop 'Error reading diag file'
 
       ndiags=ied
 
-c Attempt to read the volumes data.
+! Attempt to read the volumes data.
       istat=1
       call stored3geometry(diagsum(1,1,1,ndiags+1),iuds,ifull,istat
      $     ,.false.)
@@ -64,10 +64,10 @@ c Attempt to read the volumes data.
          write(*,*)'***** No volume-corrected density is available.'
       endif
       endif
-c-------------------------------------
-c These are up to two additional quantities \phi and n for separate plotting
+!-------------------------------------
+! These are up to two additional quantities \phi and n for separate plotting
       if(lentrim(phifilename).gt.1)then
-c Read in a separate potential as well.
+! Read in a separate potential as well.
          ied=1
          ierr=1
          call array3read(phifilename,ifull,iuphi,ied,u,ierr)
@@ -80,7 +80,7 @@ c Read in a separate potential as well.
          enddo
       endif
       if(lentrim(denfilename).gt.1)then
-c Read in a density as well.
+! Read in a density as well.
          ied=1
          ierr=1
          call array3read(denfilename,ifull,iuphi,ied,q,ierr)
@@ -92,12 +92,12 @@ c Read in a density as well.
             endif
          enddo
       endif
-c-------------------------------------
+!-------------------------------------
 
       if(iunp.ne.0)then
-c Unnormalized diagnostic plotting.
+! Unnormalized diagnostic plotting.
          do k=i1,ndiags
-c Suppress help.
+! Suppress help.
             zp(1,1,1)=99
             ifix=2
             write(fluxfilename,'(''diagsum('',i1,'')'',a1)')k,char(0)
@@ -106,8 +106,8 @@ c Suppress help.
          enddo
       endif
 
-c Normalize by dividing by density, which is first diagnostic.
-c But as of 4 Dec 2013 the ndiags is phi, so don't normalize that.
+! Normalize by dividing by density, which is first diagnostic.
+! But as of 4 Dec 2013 the ndiags is phi, so don't normalize that.
       do id=2,ndiags-1
          do k=1,iuds(3)
             do j=1,iuds(2)
@@ -118,7 +118,7 @@ c But as of 4 Dec 2013 the ndiags is phi, so don't normalize that.
                   else
                      diagsum(i,j,k,id)=0.
                   endif
-c Subtract v^2 from the second moment to give temperature.             
+! Subtract v^2 from the second moment to give temperature.             
                   if(id.gt.ndims+1)then
                      diagsum(i,j,k,id)=diagsum(i,j,k,id)
      $                    -diagsum(i,j,k,id-3)**2
@@ -129,7 +129,7 @@ c Subtract v^2 from the second moment to give temperature.
       enddo
       if(istd.gt.0)write(*,*)'rs,debyelen,vd,Ti',rs,debyelen,vd,Ti
 
-c Normalize the density= diagsum(1)/volumes into the volumes 
+! Normalize the density= diagsum(1)/volumes into the volumes 
       do k=1,iuds(3)
          do j=1,iuds(2)
             do i=1,iuds(1)
@@ -138,15 +138,15 @@ c Normalize the density= diagsum(1)/volumes into the volumes
      $                 =diagsum(i,j,k,1)/diagsum(i,j,k,ndiags+1)
                else
                   diagsum(i,j,k,ndiagmax+1)=0.
-c                  write(*,*)'Warning zero volumes',i,j,k
+!                  write(*,*)'Warning zero volumes',i,j,k
                endif
             enddo
          enddo
       enddo
-c---------------------------------------------------------------
-c Decide the actual ends and beginnings of the relevant data.
-c If the middle of a face has zero density, that is a dummy face.
-c e.g. because of periodicity.
+!---------------------------------------------------------------
+! Decide the actual ends and beginnings of the relevant data.
+! If the middle of a face has zero density, that is a dummy face.
+! e.g. because of periodicity.
       isrs(1)=1
       if(diagsum(1,iuds(2)/2,iuds(3)/2,1).eq.0)isrs(1)=2
       iurs(1)=iuds(1)+1-isrs(1)
@@ -160,18 +160,18 @@ c e.g. because of periodicity.
       iurs(3)=iuds(3)+1-isrs(3)
       if(diagsum(iuds(1)/2,iuds(2)/2,iuds(3),1).eq.0)iurs(3)=iurs(3)-1
 
-c      write(*,*)'isrs,iurs',isrs,iurs
-c      write(*,*)'Normalized diagnostics.'
+!      write(*,*)'isrs,iurs',isrs,iurs
+!      write(*,*)'Normalized diagnostics.'
 
-c      lvtk=.false.
+!      lvtk=.false.
       if(lvtk)then
-c Write Visit-readable vtk file of density, velocity, and potential.
+! Write Visit-readable vtk file of density, velocity, and potential.
          if(fluxfilename(1:1).eq.' ')then
             fluxfilename='Velocity'//char(0)
          else
             write(*,*)'Variable name: '
      $           ,fluxfilename(1:lentrim(fluxfilename))
-c Spaces are not allowed in visit data names. Fix:
+! Spaces are not allowed in visit data names. Fix:
             do i=1,lentrim(fluxfilename)
                if(fluxfilename(i:i).eq.' ')fluxfilename(i:i)='_'
             enddo
@@ -192,7 +192,7 @@ c Spaces are not allowed in visit data names. Fix:
      $        ,ibinary
      $        ,'n'//diagfilename(1:lentrim(diagfilename))//char(0)
      $        ,'Density'//char(0))
-c         write(*,*)'Finished density vtkwrite',ifull,iuds,u(1,1,1)
+!         write(*,*)'Finished density vtkwrite',ifull,iuds,u(1,1,1)
          if(ndiags.ge.4)then
             call vtkwritevector(ifull,iurs
      $        ,diagsum(isrs(1),isrs(2),isrs(3),2)
@@ -202,7 +202,7 @@ c         write(*,*)'Finished density vtkwrite',ifull,iuds,u(1,1,1)
      $        ,'V'//diagfilename(1:lentrim(diagfilename))//char(0)
      $        ,fluxfilename)
             write(*,*)'Finished velocity vtkwrite',ifull,iuds,u(1,1,1)
-c This is supposed to be the potential. It is the last array ndiags.
+! This is supposed to be the potential. It is the last array ndiags.
             call vtkwritescalar(ifull,iurs
      $        ,diagsum(isrs(1),isrs(2),isrs(3),ndiags)
      $        ,xn(isrs(1)),xn(isrs(2)+iuds(1))
@@ -210,15 +210,15 @@ c This is supposed to be the potential. It is the last array ndiags.
      $        ,ibinary
      $        ,'u'//diagfilename(1:lentrim(diagfilename))//char(0)
      $        ,'Potential'//char(0))
-c         write(*,*)'Finished potential vtkwrite',ifull,iuds,u(1,1,1)
+!         write(*,*)'Finished potential vtkwrite',ifull,iuds,u(1,1,1)
          endif
         stop
       endif
 
 
-c-------------------------------------------------------------
+!-------------------------------------------------------------
       if(i1d.ne.0)then
-c Calculate average profiles in direction i1d.
+! Calculate average profiles in direction i1d.
          do i=1,iuds(i1d)
             z1d(i)=0.
             u1d(i)=0.
@@ -238,7 +238,7 @@ c Calculate average profiles in direction i1d.
             enddo
          enddo
          znorm=(iuds(1)-2)*(iuds(2)-2)*(iuds(3)-2)/(iuds(i1d)-2)
-c         write(*,*)phifilename
+!         write(*,*)phifilename
          if(phifilename(1:1).ne.' ')write(*,*)'   z           v       '
      $        ,'    phi         n_i        z_E     4pi grad(phi)'
          if(iwr.ne.0)then
@@ -248,7 +248,7 @@ c         write(*,*)phifilename
                write(*,*)iuds(i1d)-2
             endif
          endif
-c Fix up first and last value for gradient calculation
+! Fix up first and last value for gradient calculation
          u1d(1)=(2.*u1d(2)-u1d(3))/znorm
          u1d(iuds(i1d))=(2.*u1d(iuds(i1d)-1)-u1d(iuds(i1d)-2))/znorm
          do i=2,iuds(i1d)-1
@@ -256,7 +256,7 @@ c Fix up first and last value for gradient calculation
             u1d(i)=u1d(i)/znorm
             deni1d(i)=deni1d(i)/znorm
             dene1d(i)=exp(u1d(i))
-c            write(*,*)i,u1d(i),dene1d(i),deni1d(i)
+!            write(*,*)i,u1d(i),dene1d(i),deni1d(i)
             if(iwr.ne.0)then
                if(phifilename(1:1).ne.' ')then
                   write(*,'(6f12.5)')xn(ixnp(i1d)+i),z1d(i),u1d(i)
@@ -269,12 +269,12 @@ c            write(*,*)i,u1d(i),dene1d(i),deni1d(i)
                endif
             endif
          enddo
-c Line-out plot.
+! Line-out plot.
          call fitinit(xn(ixnp(i1d)+1),xn(ixnp(i1d+1)),z1d(2)
      $        ,max(z1d(iuds(i1d)-1),0.))
          call polyline(xn(ixnp(i1d)+2),z1d(2),ixnp(i1d+1)-ixnp(i1d)-2)
          call axptset(1.,0.)
-c xticoff reverses the tics.
+! xticoff reverses the tics.
          call xaxis(0.,0.)
          call ticset(-.015,.015,-.03,.007,0,0,0,0)
          call yaxis(0.,0.)
@@ -306,16 +306,16 @@ c xticoff reverses the tics.
             call axptset(0.,0.)
             call color(5)
             call dashset(2)
-c            write(*,*)i1d,iuds(i1d)-1,u1d(2),dene1d(2),u1d(iuds(i1d)-1)
-c     $           ,dene1d(iuds(i1d)-1)
+!            write(*,*)i1d,iuds(i1d)-1,u1d(2),dene1d(2),u1d(iuds(i1d)-1)
+!     $           ,dene1d(iuds(i1d)-1)
             call fitscale(xn(ixnp(i1d)+1),xn(ixnp(i1d+1)),dene1d(2)
      $           ,dene1d(iuds(i1d)-1),.false.,.false.)
             call polyline(xn(ixnp(i1d)+2),dene1d(2),ixnp(i1d+1)
      $           -ixnp(i1d)-2)
-c            call ticrev()
+!            call ticrev()
             call altyaxis(1.,1.)
             call ticset(.015,.015,-.03,-.007,0,0,0,0)
-c            call ticset(0.,0.,0.,0.,0,0,0,0)
+!            call ticset(0.,0.,0.,0.,0,0,0,0)
             call axlabels('','Density')
             call legendline(xleg,.05,0,'n!de!d')
             call ticset(0.,0.,0.,0.,0,0,0,0)
@@ -323,15 +323,15 @@ c            call ticset(0.,0.,0.,0.,0,0,0,0)
          if(denfilename(1:1).ne.' ')then
             call color(6)
             call dashset(6)
-c            call fitscale(xn(ixnp(i1d)+1),xn(ixnp(i1d+1)),deni1d(2)
-c     $           ,deni1d(iuds(i1d)-1),.false.,.false.)
+!            call fitscale(xn(ixnp(i1d)+1),xn(ixnp(i1d+1)),deni1d(2)
+!     $           ,deni1d(iuds(i1d)-1),.false.,.false.)
             call polyline(xn(ixnp(i1d)+2),deni1d(2),ixnp(i1d+1)
      $           -ixnp(i1d)-2)
             call legendline(xleg,.1,0,'n!di!d')
          endif
          call pltend()
       elseif(lentrim(phifilename).gt.1)then
-c Arrow plotting of velocity:
+! Arrow plotting of velocity:
          fluxfilename=ytitle
          ifix=2+4
          call sliceGweb(ifull,iuds,u,na_m,zp,
@@ -342,22 +342,22 @@ c Arrow plotting of velocity:
             k=ndiagmax+1
             zp(1,1,1)=99
             ifix=2
-c         write(fluxfilename,'(''diagnorm('',i1,'')'')')k
+!         write(fluxfilename,'(''diagnorm('',i1,'')'')')k
             fluxfilename=mname(k)
             write(*,*)k,mname(k),fluxfilename(1:lentrim(fluxfilename))
             call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
      $           ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
      $           ,dum,dum)
          endif
-c----------------------------------------------------------------
-c Default examination of all diagnostics.
+!----------------------------------------------------------------
+! Default examination of all diagnostics.
          do k=i1,ndiags
             zp(1,1,1)=99
             ifix=3
-c            write(fluxfilename,'(''diagnorm('',i1,'')'')')k
+!            write(fluxfilename,'(''diagnorm('',i1,'')'')')k
             fluxfilename=mname(k)(1:lentrim(mname(k)))
      $           //'('//label(1:lentrim(label))//')'
-c            write(*,*)k,mname
+!            write(*,*)k,mname
             if(k.eq.ndiags)
      $           fluxfilename='!Af!@('//label(1:lentrim(label))//')'
             if(istd.gt.0)write(*,*)k,
@@ -371,13 +371,13 @@ c            write(*,*)k,mname
      $                 ,fluxfilename(1:lentrim(fluxfilename)+2) ,dum
      $                 ,dum)   
                elseif(zminmax(1).gt.zminmax(2))then
-c If limits are crossed on entry. Find minimum and maximum.
-c                  call minmaxN(ndims,ifull,iuds,diagsum(1,1,1,k),
-c     $                 zminmax(1),zminmax(2))
+! If limits are crossed on entry. Find minimum and maximum.
+!                  call minmaxN(ndims,ifull,iuds,diagsum(1,1,1,k),
+!     $                 zminmax(1),zminmax(2))
                   call minmaxM(ndims,ifull,iuds,diagsum(1,1,1,k),
      $                 zminmax(1),zminmax(2))
-c                  call minmax3(ifull,iuds,diagsum(1,1,1,k),
-c     $                 zminmax(1),zminmax(2))
+!                  call minmax3(ifull,iuds,diagsum(1,1,1,k),
+!     $                 zminmax(1),zminmax(2))
                   write(*,*)zminmax,'=zmin/max'
                   call exit(0)
                else
@@ -389,18 +389,18 @@ c     $                 zminmax(1),zminmax(2))
             endif
          enddo
       endif
-c----------------------------------------------------------------
-c Arrow plotting of velocity:
-c      fluxfilename=mname(1)
-c      ifix=2+4
-c      if(isingle.eq.0)call sliceGweb(ifull,iuds,diagsum(1,1,1,1),na_m,zp
-c     $     ,ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
-c     $     ,diagsum(1,1,1,2),vp)
+!----------------------------------------------------------------
+! Arrow plotting of velocity:
+!      fluxfilename=mname(1)
+!      ifix=2+4
+!      if(isingle.eq.0)call sliceGweb(ifull,iuds,diagsum(1,1,1,1),na_m,zp
+!     $     ,ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
+!     $     ,diagsum(1,1,1,2),vp)
 
       end
 
 
-c*************************************************************
+!*************************************************************
       subroutine diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle
      $     ,lvtk,mcell,zminmax,icontour)
       integer iunp,isingle,i1d
@@ -414,10 +414,10 @@ c*************************************************************
          ifull(2)=na_j
          ifull(3)=na_k
 
-c silence warnings:
+! silence warnings:
       zp(1,1,1)=0.
       isingle=0
-c Defaults
+! Defaults
       diagfilename=' '
       phifilename=' '
       denfilename=' '
@@ -426,7 +426,7 @@ c Defaults
       mcell=5.
       ipfs=3
 
-c Deal with arguments
+! Deal with arguments
       if(iargc().eq.0) goto 201
       do i=1,iargc()
          call getarg(i,argument)
@@ -462,7 +462,7 @@ c Deal with arguments
      $           read(argument(3:),*,err=201)mcell
             if(argument(1:2).eq.'-z')then
                 read(argument(3:),*,err=201)zminmax
-c Turn on trucation if the z-range is set
+! Turn on trucation if the z-range is set
                 call togi3trunc()
              endif
             if(argument(1:2).eq.'-h')goto 203
@@ -477,8 +477,8 @@ c Turn on trucation if the z-range is set
          
       enddo
       goto 202
-c------------------------------------------------------------
-c Help text
+!------------------------------------------------------------
+! Help text
  201  continue
       write(*,*)'=====Error reading command line argument',argument
  203  continue
@@ -513,10 +513,10 @@ c Help text
  202  continue
       if(lentrim(diagfilename).lt.5)goto 203
       end
-c*****************************************************************
+!*****************************************************************
       subroutine minmax3(ifull,iuds,u,umin,umax)
-c Find the minimum and maximum of a 3d array. Allocated dimensions ifull,
-c used dimensions iuds.
+! Find the minimum and maximum of a 3d array. Allocated dimensions ifull,
+! used dimensions iuds.
       parameter (ndims=3)
       integer ifull(ndims),iuds(ndims)
       real u(ifull(1),ifull(2),ifull(3))
@@ -531,16 +531,16 @@ c used dimensions iuds.
          enddo
       enddo
       end
-c*****************************************************************
-c********************************************************************
+!*****************************************************************
+!********************************************************************
       subroutine minmaxN(ndims,ifull,iuds,u,umin,umax)
-c Find the minimum and maximum of a ndims array. Allocated dimensions ifull,
-c used dimensions iuds. Using the general mditerator. 
+! Find the minimum and maximum of a ndims array. Allocated dimensions ifull,
+! used dimensions iuds. Using the general mditerator. 
       implicit none
       integer ndims
       integer ifull(ndims),iuds(ndims)
       real u(*),umin,umax
-c Need local storage.
+! Need local storage.
       integer ndimsmax,indexcontract,mditerator
       parameter (ndimsmax=5)
       integer indi(ndimsmax),iview(3,ndimsmax),i
@@ -553,8 +553,8 @@ c Need local storage.
          if(u(i).lt.umin)umin=u(i)
       if(mditerator(ndims,iview,indi,0,iuds).eq.0)goto 1
       end
-c*************************************************************
-c This demonstrates the minimalistic iterator.
+!*************************************************************
+! This demonstrates the minimalistic iterator.
       subroutine minmaxM(ndims,ifull,iuds,u,umin,umax)
       integer ndims,ifull(ndims),iuds(ndims)
       real u(*),umin,umax

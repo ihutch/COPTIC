@@ -1,4 +1,4 @@
-c This replaces the block data program com3dset which causes giant objects.
+! This replaces the block data program com3dset which causes giant objects.
       subroutine blockdatainit()
       include 'ndimsdecl.f'
       include 'meshcom.f'
@@ -8,26 +8,26 @@ c This replaces the block data program com3dset which causes giant objects.
       include 'dbgcom.f'
       idbug=0
       ngeomobj=0
-c Default track no objects.
-c Default no subtractive objects
+! Default track no objects.
+! Default no subtractive objects
       do i=1,ngeomobjmax
          nf_map(i)=0
          normv(i)=0
       enddo
-c And no reverse-map pointers.
+! And no reverse-map pointers.
       do i=1,nf_obj
          nf_geommap(i)=0
-c      data nf_geommap/nf_obj*0/
+!      data nf_geommap/nf_obj*0/
       enddo
-c Default particle region: zero boolean. Particles everywhere.
+! Default particle region: zero boolean. Particles everywhere.
       do i=1,ibtotal_part
          ibool_part(i)=0
       enddo
-c Set all the bits of ifield_mask: =2**31-1=2*(2**30-1)+1 avoid overflow.
+! Set all the bits of ifield_mask: =2**31-1=2*(2**30-1)+1 avoid overflow.
       ifield_mask=2*(2**30-1)+1
-c Normally there's no external field.
+! Normally there's no external field.
       lextfield=.false.
-c Mesh default initialization (meshcom.f)
+! Mesh default initialization (meshcom.f)
       do i=1,ndims
          extfield(i)=0
          do j=1,nspec_mesh
@@ -42,11 +42,11 @@ c Mesh default initialization (meshcom.f)
             endif
          enddo
       enddo
-c Default no point charges:
+! Default no point charges:
       iptch_mask=0
       end
 
-c**********************************************************************
+!**********************************************************************
       subroutine geomdocument()
       write(*,*)'######################################################'
       write(*,*)'Format and meaning of the object geometry file'
@@ -131,10 +131,10 @@ c**********************************************************************
       write(*,*)'Set objects irmv1-irmvnrmv as subtractive for nassoc.'
       end
 
-c**********************************************************************
+!**********************************************************************
       subroutine readgeom(filename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
-c Read the geometric data about objects from the file filename
+! Read the geometric data about objects from the file filename
       character*(*) filename
       integer myid
       integer ifull(*)
@@ -147,27 +147,27 @@ c Read the geometric data about objects from the file filename
       real CFin(3+ndims,2*ndims)
       logical LPF(ndims)
       character*256 argline
-c Common data containing the object geometric information. 
-c Each object, i < 64 has: type, data(odata).
-c      integer ngeomobjmax,odata,ngeomobj
-c      parameter (ngeomobjmax=...,odata=...)
-c      real obj_geom(odata,ngeomobjmax)
+! Common data containing the object geometric information. 
+! Each object, i < 64 has: type, data(odata).
+!      integer ngeomobjmax,odata,ngeomobj
+!      parameter (ngeomobjmax=...,odata=...)
+!      real obj_geom(odata,ngeomobjmax)
       intrinsic IBCLR
       real valread(2*nspec_mesh)
       logical lbounded
       external lbounded
 
-c silence spurious warning
+! silence spurious warning
       ist=0
 
       ierr=0
-c Zero the obj_geom data.
+! Zero the obj_geom data.
       do j=1,odata
          do i=1,ngeomobjmax 
             obj_geom(j,i)=0.
          enddo
       enddo
-c Read
+! Read
       open(1,file=filename,status='old',err=101)
  2    continue
       iline=1
@@ -178,7 +178,7 @@ c Read
      $     ,filename
       if(myid.eq.0)write(*,*)'Object Descr   type',
      $     '       (BCs)              (center)            (radii)'
-c Loop over lines of the input file.
+! Loop over lines of the input file.
  1    iline=iline+1
       read(1,'(a)',end=902)cline
       if(cline(1:1).eq.'#') goto 1
@@ -189,7 +189,7 @@ c Loop over lines of the input file.
       endif
 
       read(cline,*,err=901)type
-c Use only lower byte.
+! Use only lower byte.
       itype=int(type)
       type=int(itype - 256*(itype/256))
       ngeomobj=ngeomobj+1
@@ -197,22 +197,22 @@ c Use only lower byte.
          write(*,*)'More objects than can be managed in ',ngeomobjmax
          goto 901
       endif
-c Start of type choices
+! Start of type choices
       if(type.eq.1.)then
-c------------------------------------------------
-c Sphere Read the geometry definition variables and flux counts.
+!------------------------------------------------
+! Sphere Read the geometry definition variables and flux counts.
          read(cline,*,err=901,end=801)
      $        (obj_geom(k,ngeomobj),k=1,oradius+nd-1)
      $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn2)
      $        ,(obj_geom(k,ngeomobj),k=ocgrad,oagrad+2)
  801     if(myid.eq.0)write(*,820)ngeomobj,' Spheroid '
-c Sphere has just one facet and we must make n3=1 too:
+! Sphere has just one facet and we must make n3=1 too:
          obj_geom(ofn3,ngeomobj)=1
          obj_geom(offc,ngeomobj)=1
          if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.2.)then
-c------------------------------------------------
-c Cuboid has 6 facets and uses numbering in three coordinates:
+!------------------------------------------------
+! Cuboid has 6 facets and uses numbering in three coordinates:
          read(cline,*,err=901,end=802)
      $        (obj_geom(k,ngeomobj),k=1,oradius+nd-1)
      $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn3)
@@ -227,14 +227,14 @@ c Cuboid has 6 facets and uses numbering in three coordinates:
             enddo
          endif
       elseif(type.eq.3.)then
-c------------------------------------------------
-c Cylinder
+!------------------------------------------------
+! Cylinder
          read(cline,*,err=901,end=803)
      $        (obj_geom(k,ngeomobj),k=1,ocylaxis)
      $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn3)
      $        ,(obj_geom(k,ngeomobj),k=ocgrad,oagrad+2)
  803     if(myid.eq.0)write(*,820)ngeomobj,' Cylinder '
-c 3 facets.
+! 3 facets.
          obj_geom(offc,ngeomobj)=3
          if(obj_geom(ocylaxis,ngeomobj).le.0. .or.
      $        obj_geom(ocylaxis,ngeomobj).ge.4. )then
@@ -244,13 +244,13 @@ c 3 facets.
          endif
          if(myid.eq.0)write(*,821)(obj_geom(k,ngeomobj),k=1,1+2*nd+3)
       elseif(type.eq.4.)then
-c------------------------------------------------
-c Parallelopiped also serves as general cuboid.
+!------------------------------------------------
+! Parallelopiped also serves as general cuboid.
          read(cline,*,err=901,end=804)
      $        (obj_geom(k,ngeomobj),k=1,oradius+nd*nd-1)
      $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn3)
      $        ,(obj_geom(k,ngeomobj),k=ocgrad,oagrad+2)
-c     $        (obj_geom(k,ngeomobj),k=1,odata)
+!     $        (obj_geom(k,ngeomobj),k=1,odata)
  804     if(myid.eq.0)write(*,820)ngeomobj,
      $        ' Pllelopiped '
          obj_geom(offc,ngeomobj)=2*nd
@@ -258,8 +258,8 @@ c     $        (obj_geom(k,ngeomobj),k=1,odata)
          if(myid.eq.0)write(*,822)(obj_geom(k,ngeomobj),
      $        k=1,1+nd*(1+nd)+3)
       elseif(type.eq.5)then
-c------------------------------------------------
-c Non-aligned cylinder
+!------------------------------------------------
+! Non-aligned cylinder
          read(cline,*,err=901,end=805)
      $        (obj_geom(k,ngeomobj),k=1,ocylrad)
      $        ,(obj_geom(k,ngeomobj),k=ofluxtype,ofn3)
@@ -274,15 +274,15 @@ c Non-aligned cylinder
          if(myid.eq.0)write(*,822)(obj_geom(k,ngeomobj),k=1,1+4*nd+1)
          call cylinit(obj_geom(1,ngeomobj))
       elseif(type.eq.6.or.type.eq.7)then
-c------------------------------------------------
-c Surface of revolution. Now like cylinder except for Base/Apex
+!------------------------------------------------
+! Surface of revolution. Now like cylinder except for Base/Apex
          do k=1,ovlen
             obj_geom(opdiv+k-1,ngeomobj)=0
          enddo
          obj_geom(ofluxtype,ngeomobj)=0
          isrnpair=0
-c Try to read the base,apex,npair,r,z;fluxtype,ntheta,div
-c For type 6 there is one more div than pair, for type 7 one less.
+! Try to read the base,apex,npair,r,z;fluxtype,ntheta,div
+! For type 6 there is one more div than pair, for type 7 one less.
          read(cline,*,err=901,end=806)
      $        (obj_geom(k,ngeomobj),k=1,ocylrad)
      $        ,isrnpair
@@ -295,9 +295,9 @@ c For type 6 there is one more div than pair, for type 7 one less.
             write(*,822)(obj_geom(k,ngeomobj),k=1,oapex+2)
          endif
          obj_geom(onpair,ngeomobj)=isrnpair
-c Make the onpair equal to the number of segment ends.
+! Make the onpair equal to the number of segment ends.
          if(type.eq.6)obj_geom(onpair,ngeomobj)=isrnpair+2
-c         write(*,*)'npair',obj_geom(onpair,ngeomobj)
+!         write(*,*)'npair',obj_geom(onpair,ngeomobj)
          if(isrnpair.le.0.or.isrnpair.gt.ovlen-2.and.myid.eq.0)then
             write(*,*)' Impossible number of pairs specified',isrnpair
             stop
@@ -314,13 +314,13 @@ c         write(*,*)'npair',obj_geom(onpair,ngeomobj)
             endif
          endif
       elseif(type.eq.99)then
-c------------------------------------------------
-c Specify the particle region.
+!------------------------------------------------
+! Specify the particle region.
          read(cline,*,err=901,end=899)idumtype,ibool_part
  899     if(myid.eq.0)write(*,898)
      $        ngeomobj,idumtype,(ibool_part(i),i=1,16)
  898     format(i2,' Boolean ',17i4)
-c Don't count this as an object.
+! Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1
       elseif(type.eq.98)then
@@ -330,8 +330,8 @@ c Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1
       elseif(type.gt.90.and.type.le.90+ndims)then
-c------------------------------------------------
-c Mesh specification for a particular dimension. 
+!------------------------------------------------
+! Mesh specification for a particular dimension. 
          id=int(type-90)
          ist=0
          read(cline,*,err=901,end=880)idumtype,valread
@@ -348,7 +348,7 @@ c Mesh specification for a particular dimension.
          enddo
  881     do j=1,ist-1
             xmeshpos(id,j)=valread(ist+j)
-c            write(*,*)id,j,xmeshpos(id,j)
+!            write(*,*)id,j,xmeshpos(id,j)
             if(j.gt.1)then
                if(xmeshpos(id,j).le.xmeshpos(id,j-1))then
                   write(*,*)'Readgeom: Meshpos not monotonic'
@@ -357,34 +357,34 @@ c            write(*,*)id,j,xmeshpos(id,j)
                endif
             endif
          enddo
-c Don't count this as an object.
+! Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1
       elseif(type.ge.100.and.type.lt.100+2*ndims+1)then
-c------------------------------------------------
-c Face boundary conditions.
+!------------------------------------------------
+! Face boundary conditions.
          id=int(type)-100
-c         if(iCFcount.eq.0)then
-c Reset all, ought not to be necessary here. Set in cmdline.
-c            do ii=1,2*ndims
-c               do idc=1,3+ndims
-c                  CFin(idc,ii)=0.
-c               enddo
-c            enddo
-c         endif
+!         if(iCFcount.eq.0)then
+! Reset all, ought not to be necessary here. Set in cmdline.
+!            do ii=1,2*ndims
+!               do idc=1,3+ndims
+!                  CFin(idc,ii)=0.
+!               enddo
+!            enddo
+!         endif
          read(cline,*,err=901,end=882)idumtype,(CFin(ii,id),ii=1,3
      $        +ndims)
  882     continue
          LPF(mod(id-1,ndims)+1)=.false.
          iCFcount=iCFcount+1
-c Don't count this as an object.
+! Don't count this as an object.
          ngeomobj=ngeomobj-1
          goto 1         
       elseif(type.gt.110.and.type.le.110+ndims)then
-c------------------------------------------------
-c Periodic boundary condition on this dimension
+!------------------------------------------------
+! Periodic boundary condition on this dimension
          if(iCFcount.eq.0)then
-c Reset all if this is the first face call.
+! Reset all if this is the first face call.
             do ii=1,2*ndims
                do idc=1,3+ndims
                   CFin(idc,ii)=0.
@@ -398,11 +398,11 @@ c Reset all if this is the first face call.
             CFin(2,ii)=1.
          enddo
          iCFcount=iCFcount+1
-c Don't count this as an object.
+! Don't count this as an object.
          ngeomobj=ngeomobj-1
       elseif(type.eq.89.or.type.eq.88)then
-c------------------------------------------------
-c Subtraction
+!------------------------------------------------
+! Subtraction
          read(cline,*,err=901,end=883)idumtype,iassoc,normv(iassoc)
      $        ,(ormv(k,iassoc),k=1,normv(iassoc))
          goto 884
@@ -413,49 +413,49 @@ c Subtraction
      $        ngeomobj,
      $        ' Subtract',type ,iassoc,normv(iassoc)
      $        ,(ormv(k,iassoc),k=1,normv(iassoc))
-c Don't count this line as an object.
+! Don't count this line as an object.
          ngeomobj=ngeomobj-1
          if(iassoc.gt.ngeomobj)stop
      $        'Input error subtracting from non-existent object'
          if(type.eq.88)then
-c Implement the implied subtractive effects of each subtracted object.
-c Make the complement of object iassoc subtractive for each subtracted.
+! Implement the implied subtractive effects of each subtracted object.
+! Make the complement of object iassoc subtractive for each subtracted.
          do k=1,normv(iassoc)
-c isoc is the subtractive object
+! isoc is the subtractive object
             isoc=abs(ormv(k,iassoc))
             if(isoc.gt.ngeomobj)stop
      $           'Input error subtracting non-existent object' 
-c Increment its list of subtractives.
+! Increment its list of subtractives.
             normv(isoc)=normv(isoc)+1
-c Make its last entry the complement of the additive.
+! Make its last entry the complement of the additive.
             ormv(normv(isoc),isoc)=-iassoc
             if(obj_geom(oabc,isoc).eq.0.and.
      $           obj_geom(oabc+1,isoc).eq.0.and.
      $           obj_geom(oabc+2,isoc).eq.0.)then
-c Set subtractive boundary conditions equal to additive
+! Set subtractive boundary conditions equal to additive
                do ii=1,ndims
                   obj_geom(oabc+ii-1,isoc)=obj_geom(oabc+ii-1,iassoc)
                enddo
                ifield_mask=IBSET(ifield_mask,isoc-1)
             endif
-c Write only for debugging.
+! Write only for debugging.
             if(.false. .and. myid.eq.0)then
                write(*,'(a,i3,i2,10i3)')
      $              '  Setting subtractive surfaces',isoc,normv(isoc),
      $              (ormv(ii,isoc),ii=1,normv(isoc))
-c     $           ,(obj_geom(oabc+ii-1,isoc),ii=1,3*ndims)
+!     $           ,(obj_geom(oabc+ii-1,isoc),ii=1,3*ndims)
             endif
          enddo
          endif
       endif
-c End of type choices
-c------------------------------------------------
-c If this is a null boundary condition clear the relevant bit.
+! End of type choices
+!------------------------------------------------
+! If this is a null boundary condition clear the relevant bit.
       if(obj_geom(oabc,ngeomobj).eq.0.
      $     .and. obj_geom(oabc+1,ngeomobj).eq.0.
      $     .and. obj_geom(oabc+2,ngeomobj).eq.0.)
      $     ifield_mask=IBCLR(ifield_mask,ngeomobj-1)
-c If this is a point-charge object, set the relevant mask bit.
+! If this is a point-charge object, set the relevant mask bit.
       if(itype/256.eq.2)then
          if(
      $        obj_geom(oradius,ngeomobj).ne.obj_geom(oradius+1,ngeomobj)
@@ -486,7 +486,7 @@ c If this is a point-charge object, set the relevant mask bit.
       write(*,*)cline
       
  902  continue
-c Set whether particle region has a part inside an object.
+! Set whether particle region has a part inside an object.
       lboundp=lbounded(ibool_part,ifield_mask)
       if(lboundp.and.rjscheme(1:4).eq.'cart')then
          write(*,'(3a)')'ERROR: using cartesian injection'
@@ -507,43 +507,43 @@ c Set whether particle region has a part inside an object.
       ierr=1
 
       end
-c****************************************************************
+!****************************************************************
       subroutine cylinit(objg)
-c Initialize the non-aligned cylinder contravariant vectors
-c They are such that they yield the covariant coefficients relative
-c to a unit cylinder.
-c There are two input vectors (that are overwritten on return): 
-c    v the axis (ovec), and 
-c    u the ref-vec (ovec+ndims), plus
-c    r the single scalar radius (ovec+2*ndims=ocylrad)
-c The contravariant vectors are in the order vb,vg,va, (ocontra...)
-c where vb gives the component of u perpendicular to va, vg is the 
-c cross product of va and u, and va is the axial vector v/|v|^2.
-c Consequently, vacontra.x=projected length in axial direction, in units
-c of the length of v.
-c Also the other two contra vector are normalized so that they yield 
-c the length in units of the radius, when dotted into a vector.
-c Finally the ovec storage positions are overwritten with
-c covariant vectors equal to contra/|contra|^2.
+! Initialize the non-aligned cylinder contravariant vectors
+! They are such that they yield the covariant coefficients relative
+! to a unit cylinder.
+! There are two input vectors (that are overwritten on return): 
+!    v the axis (ovec), and 
+!    u the ref-vec (ovec+ndims), plus
+!    r the single scalar radius (ovec+2*ndims=ocylrad)
+! The contravariant vectors are in the order vb,vg,va, (ocontra...)
+! where vb gives the component of u perpendicular to va, vg is the 
+! cross product of va and u, and va is the axial vector v/|v|^2.
+! Consequently, vacontra.x=projected length in axial direction, in units
+! of the length of v.
+! Also the other two contra vector are normalized so that they yield 
+! the length in units of the radius, when dotted into a vector.
+! Finally the ovec storage positions are overwritten with
+! covariant vectors equal to contra/|contra|^2.
       include 'ndimsdecl.f'
       include '3dcom.f'
       real objg(odata)
 
       radius=objg(ovec+2*ndims)
-c Save the radial scale.
+! Save the radial scale.
       objg(orscale)=radius
-c      write(*,*)'Cylinit radius=',radius,' opz=',opz,' odata=',odata
-c     $     ,'ofluxtype=',ofluxtype
+!      write(*,*)'Cylinit radius=',radius,' opz=',opz,' odata=',odata
+!     $     ,'ofluxtype=',ofluxtype
       vamag=0.
       umag=0.
       uv=0.
       do i=1,ndims
-c v^2, u^2
+! v^2, u^2
          vamag=vamag+objg(ovec+i-1)**2
          umag=umag+objg(ovec+ndims+i-1)**2
-c u.v
+! u.v
          uv=uv+objg(ovec+i-1)*objg(ovec+ndims+i-1)
-c v x u
+! v x u
          ip=mod(i,ndims)
          im=mod(i+1,ndims)
          objg(ocontra+ndims+i-1)=
@@ -576,36 +576,36 @@ c v x u
          c2mag=c2mag+objg(ocontra+ndims+i-1)**2
          c3mag=c3mag+objg(ocontra+2*ndims+i-1)**2
       enddo
-c Now ocontra=vb/(|vb|*r), vg/(|vg|r), va/|va^2|
-c The covariant vectors are needed for reconstruction in fluxexamine.
-c They are such that \sum_j (x.contra^j) covar_j = x, which is true
-c for orthogonal vectors when covar = contra/|contra|^2.
+! Now ocontra=vb/(|vb|*r), vg/(|vg|r), va/|va^2|
+! The covariant vectors are needed for reconstruction in fluxexamine.
+! They are such that \sum_j (x.contra^j) covar_j = x, which is true
+! for orthogonal vectors when covar = contra/|contra|^2.
       do i=1,ndims
          objg(ovec+i-1)=objg(ocontra+i-1)/c1mag
          objg(ovec+ndims+i-1)=objg(ocontra+ndims+i-1)/c2mag
          objg(ovec+2*ndims+i-1)=objg(ocontra+2*ndims+i-1)/c3mag
       enddo
-c      write(*,*)'Covariant and contravariant:'
-c      write(*,'(9f8.4)')(objg(ovec+i-1),i=1,18)
-c      stop
+!      write(*,*)'Covariant and contravariant:'
+!      write(*,'(9f8.4)')(objg(ovec+i-1),i=1,18)
+!      stop
 
       end
-c****************************************************************
+!****************************************************************
       subroutine plleloinit(iobj)
-c Initialize the iobj by calculating the contravariant 
-c vectors from the covariant vectors.
+! Initialize the iobj by calculating the contravariant 
+! vectors from the covariant vectors.
       include 'ndimsdecl.f'
       include '3dcom.f'
 
       triple=0.
       do j=1,ndims
          jpv=ovec+(j-1)*ndims-1
-c Other vectors:
+! Other vectors:
          jpv2=ovec+mod(j,ndims)*ndims-1
          jpv3=ovec+mod(j+1,ndims)*ndims-1
          jpc=ocontra+(j-1)*ndims-1
-c Set obj_geom(jpc..,iobj) equal to the cross product between the other
-c vectors.
+! Set obj_geom(jpc..,iobj) equal to the cross product between the other
+! vectors.
          do i=1,ndims
             i2=mod(i,ndims)+1
             i3=mod(i+1,ndims)+1
@@ -613,7 +613,7 @@ c vectors.
      $           +i2,iobj)-obj_geom(jpv2+i2,iobj)*obj_geom(jpv3+i3
      $           ,iobj))
          enddo
-c calculate the scalar triple product the first time:
+! calculate the scalar triple product the first time:
          if(j.eq.1)then
             do i=1,ndims
                triple=triple+obj_geom(jpc+i,iobj)*obj_geom(jpv+i,iobj)
@@ -625,25 +625,25 @@ c calculate the scalar triple product the first time:
             write(*,*)jpv,jpc
             stop
          endif
-c normalize
+! normalize
          do i=1,ndims
             obj_geom(jpc+i,iobj)=obj_geom(jpc+i,iobj)/triple
          enddo
       enddo
 
       end
-c****************************************************************
+!****************************************************************
       subroutine srvinit(iobj,type,myid)
       include 'ndimsdecl.f'
       include '3dcom.f'
       if(type.eq.6.)then
-c Insert the base and apex into the z,r pair arrays.
+! Insert the base and apex into the z,r pair arrays.
          obj_geom(opz,iobj)=0.
          obj_geom(opr,iobj)=0.
          j=int(obj_geom(onpair,iobj))
          obj_geom(opz+j-1,iobj)=1.
          obj_geom(opr+j-1,iobj)=0.
-c Check other z values for consistency.
+! Check other z values for consistency.
          z=0.
          do i=2,j-1
             z1=obj_geom(opz+i-1,iobj)
@@ -655,12 +655,12 @@ c Check other z values for consistency.
             z=z1
          enddo
       else
-c type 7 reads the entire wall. Shuffle in.
+! type 7 reads the entire wall. Shuffle in.
          do i=1,int(obj_geom(onpair,iobj))
             obj_geom(opz+i-1,iobj)=obj_geom(opz+i,iobj)
             obj_geom(opr+i-1,iobj)=obj_geom(opr+i,iobj)
          enddo
-c Inconsistent if not closed and either end not on axis
+! Inconsistent if not closed and either end not on axis
          if((obj_geom(opz,iobj).ne.obj_geom(opz+i-2,iobj).or.
      $        obj_geom(opr,iobj).ne.obj_geom(opr+i-2,iobj)).and.
      $        (obj_geom(opr,iobj).ne.0..or.obj_geom(opr+i-2,iobj).ne.0.)
@@ -671,28 +671,28 @@ c Inconsistent if not closed and either end not on axis
       endif
 
       do j=1,ndims
-c Convert the apex into apex-base and call it ovec
-c ovec is actually the same as oapex
+! Convert the apex into apex-base and call it ovec
+! ovec is actually the same as oapex
          obj_geom(ovec+j-1,iobj)=obj_geom(oapex+j-1,iobj)
      $        -obj_geom(obase+j-1,iobj)
       enddo
 
-c Initialize Surface of Revolution contravariant vectors E.g. the axial
-c ovec whose length is such that axial.(apex-base)=1. So it is
-c (apex-base)/|apex-base|^2. See cylinit for fuller description.
+! Initialize Surface of Revolution contravariant vectors E.g. the axial
+! ovec whose length is such that axial.(apex-base)=1. So it is
+! (apex-base)/|apex-base|^2. See cylinit for fuller description.
       call cylinit(obj_geom(1,iobj))
 
-c Flux accounting requires all relevant facets have non-zero div 
-c number. By this point there is one less facet than npair.
+! Flux accounting requires all relevant facets have non-zero div 
+! number. By this point there is one less facet than npair.
       if(obj_geom(ofluxtype,iobj).ne.0)then
          if(obj_geom(ofn1,iobj).le.0)goto 1
          do i=1,int(obj_geom(onpair,iobj)-1)
             if(obj_geom(opdiv+i-1,iobj).le.0)goto 1
          enddo
-c Here if all is well.
+! Here if all is well.
          return
  1       continue
-c Else There's an inadequacy in the flux collection specification
+! Else There's an inadequacy in the flux collection specification
          if(myid.eq.0)then
             write(*,*)'Flux specification for object' ,iobj
      $           ,' is in ERROR at division',i
@@ -703,11 +703,11 @@ c Else There's an inadequacy in the flux collection specification
          obj_geom(ofluxtype,iobj)=0
       endif
       end
-c*************************************************************
-c Initialize the iregion flags of the existing nodes with boundary
-c object data.
+!*************************************************************
+! Initialize the iregion flags of the existing nodes with boundary
+! object data.
       subroutine iregioninit(ifull)
-c      integer ndims
+!      integer ndims
       include 'ndimsdecl.f'
       integer ifull(ndims)
 
@@ -720,27 +720,27 @@ c      integer ndims
 
       do i=1,oi_cij
          ipoint=idob_cij(ipoint_cij,i)
-c Convert index to multidimensional indices.
+! Convert index to multidimensional indices.
          call indexexpand(ndims,ifull,ipoint,ix)
          do k=1,ndims
             x(k)=xn(ixnp(k)+ix(k))
          enddo
-c Store in object-data.
+! Store in object-data.
          idob_cij(iregion_cij,i)=insidemask(ndims,x)
 
-c         write(*,101)i,ipoint,idob_cij(iregion_cij,i),x
-c 101     format(3i8,5f10.4)
+!         write(*,101)i,ipoint,idob_cij(iregion_cij,i),x
+! 101     format(3i8,5f10.4)
       enddo
 
       end
-c*****************************************************************
+!*****************************************************************
       subroutine reportfieldmask()
       include 'ndimsdecl.f'
       include 'griddecl.f'
       include 'ptchcom.f'
       include '3dcom.f'
       integer ipb(32),ifb(32)
-c Calculate the bits of the field mask and iptch_mask.
+! Calculate the bits of the field mask and iptch_mask.
       ifd=ifield_mask
       ipp=iptch_mask
       do i=1,32
@@ -749,17 +749,17 @@ c Calculate the bits of the field mask and iptch_mask.
          ifb(32-i+1)=ifd - 2*(ifd/2)
          ifd=ifd/2
       enddo
-c      write(*,*)'Initializing Object Regions:No, pointer, region, posn.'
-c This is an unportable extension. Hence the calculation above.
-c      write(*,'('' Mask='',i11,'' ='',b32.32)')ifield_mask,ifield_mask
+!      write(*,*)'Initializing Object Regions:No, pointer, region, posn.'
+! This is an unportable extension. Hence the calculation above.
+!      write(*,'('' Mask='',i11,'' ='',b32.32)')ifield_mask,ifield_mask
       write(*,'('' Field Mask='',i11,'' ='',32i1)')ifield_mask,ifb
-c      if(ipp.ne.0)
+!      if(ipp.ne.0)
       write(*,'('' Ptch Mask= '',i11,'' ='',32i1)')iptch_mask,ipb
       end
-c*******************************************************************
+!*******************************************************************
       subroutine objsetabc(iobject,a,b,c)
-c Set/Reset the boundary conditions for an object that has already been
-c read in. 
+! Set/Reset the boundary conditions for an object that has already been
+! read in. 
       integer iobject
       real a,b,c
 
@@ -775,11 +775,11 @@ c read in.
       obj_geom(oabc,iobject)=a
       obj_geom(oabc+1,iobject)=b
       obj_geom(oabc+2,iobject)=c
-c      write(*,'(''Set obj_geom(oabc,'',i2,'')='',3f8.4)')
-c     $     iobject,(obj_geom((oabc+i),iobject),i=0,2)
+!      write(*,'(''Set obj_geom(oabc,'',i2,'')='',3f8.4)')
+!     $     iobject,(obj_geom((oabc+i),iobject),i=0,2)
       end
-c*******************************************************************
-c*****************************************************************
+!*******************************************************************
+!*****************************************************************
       subroutine phipset(myid)
       include 'ndimsdecl.f'
       include 'plascom.f'
@@ -799,7 +799,7 @@ c*****************************************************************
       endif
 
       end
-c******************************************************************
+!******************************************************************
       integer function oicijfunc()
       include 'ndimsdecl.f'
       include 'objcom.f'

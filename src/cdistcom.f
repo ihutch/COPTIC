@@ -1,5 +1,5 @@
-c Common for storing collisional distribution
-c Requires ndimsdecl.f to give ndims
+! Common for storing collisional distribution
+! Requires ndimsdecl.f to give ndims
       integer ncdistmax
       parameter (ncdistmax=1000000)
       integer ncdist
@@ -7,7 +7,7 @@ c Requires ndimsdecl.f to give ndims
       real fxvcol(ncdistmax+1,ndims)
       real*8 cdistflux(ndimsmax)
       real cdistcum(ndimsmax+1)
-c Multispecies
+! Multispecies
       integer ncdists(nspeciesmax)
       real vcols(ndimsmax,ncdistmax,nspeciesmax)
       real fxvcols(ncdistmax+1,ndims,nspeciesmax)

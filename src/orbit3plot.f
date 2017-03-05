@@ -1,4 +1,4 @@
-c Packaged version of orbit plotting.
+! Packaged version of orbit plotting.
       subroutine orbitplot(ifull,iuds,u,phi,rc,rs)
       include 'ndimsdecl.f'
       integer ifull(ndimsmax),iuds(ndimsmax),itemp(ndimsmax)
@@ -10,9 +10,9 @@ c Packaged version of orbit plotting.
 
       include 'meshcom.f'
       include 'partcom.f'
-c Silence warnings with spurious assigment.
+! Silence warnings with spurious assigment.
       zclv=phi
-c Calculate some stuff for contour plot.
+! Calculate some stuff for contour plot.
       idf=3
       id1=mod(idf,3)+1
       id2=mod(idf+1,3)+1
@@ -25,15 +25,15 @@ c Calculate some stuff for contour plot.
                itemp(id2)=j
                uplot(i,j)=u(itemp(1),itemp(2),itemp(3))
             enddo
-c               write(*,'(10f8.4)')(uplot(i,j),j=1,iuds(id2))
+!               write(*,'(10f8.4)')(uplot(i,j),j=1,iuds(id2))
          enddo
       endif
       call dashset(0)
       nf1=iuds(id1)
       nf2=iuds(id2)
-c      call pltinit(-rs,rs,-rs,rs)
+!      call pltinit(-rs,rs,-rs,rs)
       call pltinit(xmeshstart(1),xmeshend(1),xmeshstart(2),xmeshend(2))
-c Contour without labels, with coloring, using vector coordinates.
+! Contour without labels, with coloring, using vector coordinates.
       zclv=20.
       icl=0
       call contourl(uplot,cwork,Li,nf1,nf2,zclv,icl,
@@ -53,14 +53,14 @@ c Contour without labels, with coloring, using vector coordinates.
       enddo
       enddo
       call pltend()
-c      write(*,*)'Returning from orbit3plot.'
+!      write(*,*)'Returning from orbit3plot.'
       end
-c******************************************************************
-c Called in the middle of a 3-d plot by cijplot.
+!******************************************************************
+! Called in the middle of a 3-d plot by cijplot.
       subroutine orbit3plot()
       include 'ndimsdecl.f'
       include 'partcom.f'
-c      write(*,*)'norbits,length=',norbits,iorbitlen(1)
+!      write(*,*)'norbits,length=',norbits,iorbitlen(1)
       do ispecies=1,nspecies
       do kk=1,norbits
          call color(kk)

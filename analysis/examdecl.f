@@ -1,15 +1,15 @@
-c Storage array spatial count size included in
-c Mesh spacing description structure
+! Storage array spatial count size included in
+! Mesh spacing description structure
       include '../src/ndimsdecl.f'
       include '../src/meshcom.f'
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
       real zp(na_m,na_m2,ndims)
       integer ifull(ndims),iuds(ndims)
-c Object data
+! Object data
       include '../src/objcom.f'
-c Plasma common data
+! Plasma common data
       include '../src/plascom.f'
-c Filenames
+! Filenames
       character*100 partfilename
       character*100 phifilename
       character*100 denfilename

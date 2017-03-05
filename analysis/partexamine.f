@@ -1,8 +1,8 @@
       program partexamine
-c Examine the particle data, showing distribution function(s) for 
-c selected cell ranges.
+! Examine the particle data, showing distribution function(s) for 
+! selected cell ranges.
       include 'examdecl.f' 
-c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
+! (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       parameter (nfilemax=999)
       include '../src/partcom.f'
       include '../src/ptaccom.f'
@@ -13,10 +13,10 @@ c (Examdecl itself includes meshcom.f plascom.f, objcom.f)
       character*100 string
       logical ldoc
       real extra(nptdiagmax,ndimsmax),diff(nptdiagmax,ndimsmax)
-c Spatial limits bottom-top, dimensions
+! Spatial limits bottom-top, dimensions
       real xlimit(2,ndimsmax),xnewlim(2,ndimsmax)
       real Bdirs(ndimsmax+1)
-c Velocity limits
+! Velocity limits
       real vlimit(2,ndimsmax),wicell,wjcell,wkcell
       character*1 axnames(3)
       real vmean(ndimsmax)
@@ -31,20 +31,20 @@ c Velocity limits
       character*200 ivarnames(2*ndimsmax)
 
       nfmax=nfilemax
-c silence warnings:
+! silence warnings:
       zp(1,1,1)=0.
 
-c Defaults
+! Defaults
       ndfirst=1
       ndlast=3
       do id=1,ndimsmax
-c Use very big xlimits by default to include whole domain
-c They are then reset by the accumulation itself.
+! Use very big xlimits by default to include whole domain
+! They are then reset by the accumulation itself.
          xlimit(1,id)=-500.
          xlimit(2,id)=500.
          xnewlim(1,id)=0.
          xnewlim(2,id)=0.
-c Overlapping vlimits make limitdeterm the usual setting method.
+! Overlapping vlimits make limitdeterm the usual setting method.
          vlimit(1,id)=5.
          vlimit(2,id)=-5.
       enddo
@@ -52,28 +52,28 @@ c Overlapping vlimits make limitdeterm the usual setting method.
       call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc,ivtk
      $     ,ispecies,ndfirst,ndlast)
       do id=1,ndimsmax
-c Needed initialization removed from partacinit.
+! Needed initialization removed from partacinit.
          xmeshstart(id)=min(-5.,xlimit(1,id))
          xmeshend(id)=max(5.,xlimit(2,id))
          isuds(id)=iuin(id)
       enddo
-c      write(*,*)' isuds:',isuds
+!      write(*,*)' isuds:',isuds
       if(isuds(1)*isuds(2)*isuds(3).gt.nsub_tot)then
          write(*,*)'Too many blocks requested. Reduce or recompile.'
          stop
       endif
-c      write(*,*)'nptdiag,nsbins',nptdiag,nsbins
+!      write(*,*)'nptdiag,nsbins',nptdiag,nsbins
       if(nptdiag.lt.nsbins)then
          write(*,*)'WARNING nptdiags=',nptdiag,' smaller than nsbins='
      $        ,nsbins,' Incorrect array size choice.'
       endif
-c Now the base filename is in partfilename.
+! Now the base filename is in partfilename.
 
-c      ip=lentrim(partfilename)-3
+!      ip=lentrim(partfilename)-3
       ip=istrstr(partfilename,'.')
-c If filename has an character extension or is a (numbered) pex
-c file. Assume it is complete and that we are reading just one
-c file. Should do this only the first time.
+! If filename has an character extension or is a (numbered) pex
+! file. Assume it is complete and that we are reading just one
+! file. Should do this only the first time.
       if(ip.gt.0)then
       if(partfilename(ip:ip+3).eq.'.pex')then
          nfmax=-1
@@ -89,7 +89,7 @@ c file. Should do this only the first time.
          endif
       endif
       endif
-c Possible multiple files.
+! Possible multiple files.
       il=3
  12   do i=0,nfmax
          if(nfmax.ne.0)then
@@ -114,16 +114,16 @@ c Possible multiple files.
             write(*,*)'eoverm,Bt,Bfield,vpar,vperp=',eoverm,Bt,Bfield
      $           ,vpar,vperp
             write(*,*)'nspecies',nspecies
-c            stop
+!            stop
          endif
          if(Bdirs(4).gt.0. .or. Bt.eq.0)then
-c All directions were set by commandline. Or none were read from file.
+! All directions were set by commandline. Or none were read from file.
             do k=1,ndims
                Bfield(k)=Bdirs(k)
             enddo
          endif
          if(cellvol.eq.-1)write(*,*)'Bfield (projection)',Bfield
-c The cellvol==-1 call will set ivproj=1 in ptaccom.
+! The cellvol==-1 call will set ivproj=1 in ptaccom.
          call partdistup(xlimit,vlimit,xnewlim,cellvol,0,isuds,ispecies)
          write(*,*)'partdistup completed',i
 
@@ -134,24 +134,24 @@ c The cellvol==-1 call will set ivproj=1 in ptaccom.
 
       if(nfmax.eq.-1)then
          call distread(xlimit,vlimit,xnewlim,name,cellvol)
-c Calculate the binned data.
+! Calculate the binned data.
          nfvaccum=0
          do i=1,nptdiag
             nfvaccum=nfvaccum+px(i,1)
          enddo
-c         write(*,*)'nfvaccum,cellvol',nfvaccum,cellvol
-c Don't call bincalc if we read data back.         
-c         call bincalc()
+!         write(*,*)'nfvaccum,cellvol',nfvaccum,cellvol
+! Don't call bincalc if we read data back.         
+!         call bincalc()
       else
          ip=istrstr(name,'.')
          name(ip+1:)='pex'
          call distwrite(xlimit,vlimit,xnewlim,name,cellvol)
       endif
       
-c      write(*,*)'isfull'
-c      write(*,*)'isuds'
-c      write(*,*)'vsbin',vsbin
-c      write(*,*)'fvx',fvx
+!      write(*,*)'isfull'
+!      write(*,*)'isuds'
+!      write(*,*)'vsbin',vsbin
+!      write(*,*)'fvx',fvx
       if (ivtk.eq.1)then
          wicell=(xnewlim(2,1)-xnewlim(1,1))/isuds(1)
          wjcell=(xnewlim(2,2)-xnewlim(1,2))/isuds(2)
@@ -224,7 +224,7 @@ c      write(*,*)'fvx',fvx
             fk=fsv(k,id)
                fsv(k,id)=fk*csbin(k,id)
      $           *nptdiag/(vlimit(2,id)-vlimit(1,id))
-c            write(*,*)k,id,fsv(k,id),csbin(k,id)
+!            write(*,*)k,id,fsv(k,id),csbin(k,id)
             extra(nsbins+1-k,id)=fsv(k,id)
          enddo
          do k=1,nptdiag
@@ -234,7 +234,7 @@ c            write(*,*)k,id,fsv(k,id),csbin(k,id)
          do k=1,nsbins
             diff(k,id)=fsv(k,id)-fsv(nsbins+1-k,id)
          enddo
-c         write(*,*)nsbins
+!         write(*,*)nsbins
          call ticnumset(10)
          call autoplot(vdiag(1,id),fv(1,id),nptdiag)
          call boxtitle('Total particles per unit velocity')
@@ -248,16 +248,16 @@ c         write(*,*)nsbins
          call polymark(vsbin(1,id),fsv(1,id),nsbins,1)
          call polybox(vhbin(0,id),fsv(1,id),nsbins)
          call color(13)
-c         call polybox(vhbin(0,id),extra(1,id),nsbins)
-c         call polybox(vhbin(0,id),diff(1,id),nsbins)
-c         write(*,*) 'vdiag'
-c         write(*,*)(vdiag(kk,id),kk=1,nptdiag)
-c         write(*,*) 'fv'
-c         write(*,*) (fv(kk,id),kk=1,nptdiag)
-c         write(*,*)(vsbin(kk,id),kk=1,nsbins)
-c         write(*,*)(fsv(kk,id),kk=1,nsbins)
+!         call polybox(vhbin(0,id),extra(1,id),nsbins)
+!         call polybox(vhbin(0,id),diff(1,id),nsbins)
+!         write(*,*) 'vdiag'
+!         write(*,*)(vdiag(kk,id),kk=1,nptdiag)
+!         write(*,*) 'fv'
+!         write(*,*) (fv(kk,id),kk=1,nptdiag)
+!         write(*,*)(vsbin(kk,id),kk=1,nsbins)
+!         write(*,*)(fsv(kk,id),kk=1,nsbins)
          call color(15)
-c         call pltend()
+!         call pltend()
          call autoplot(xdiag(1,id),px(1,id),nptdiag)
          if(nptdiag.eq.nsbins)then
             write(*,*)'Density as a function of position dimension',id
@@ -270,18 +270,18 @@ c         call pltend()
       enddo
 
       if(nfmax.eq.-1)then
-c Print to file the distribution.
+! Print to file the distribution.
          il=lentrim(name)
          name(il-2:il-1)='fv'
          open(25,file=name,status='unknown',err=101)
          close(25,status='delete')
          open(25,file=name,status='new',err=101)
          do id=1,ndimsmax
-c            name(il:il)=char(48+id)
+!            name(il:il)=char(48+id)
             write(25,*)'Dimension ',id
             write(25,'(a,a,a)')'legend: f(v!d',axnames(id),'!d)'
-c The following is for ndimsmax>3.
-c            write(25,'(a,i1,a)')'legend: f(v!d',id,'!d)'
+! The following is for ndimsmax>3.
+!            write(25,'(a,i1,a)')'legend: f(v!d',id,'!d)'
             write(25,*)nptdiag
             write(25,'(2g14.6)')(vdiag(i,id),fv(i,id),i=1,nptdiag)
          enddo
@@ -303,7 +303,7 @@ c            write(25,'(a,i1,a)')'legend: f(v!d',id,'!d)'
       enddo
       write(*,'(''Mean velocity:'',3f10.4)')(vmean(i),i=1,ndimsmax)
 
-c Plot the subdistributions at a particular cell.
+! Plot the subdistributions at a particular cell.
       icell=isuds(1)/2+1
       jcell=isuds(2)/2+1
       kcell=isuds(3)/2+1
@@ -311,7 +311,7 @@ c Plot the subdistributions at a particular cell.
      $     ,ndfirst,ndlast)
       endif                   
       end
-c*************************************************************
+!*************************************************************
       subroutine partexamargs(xlimit,vlimit
      $           ,iuin,cellvol,Bdirs,ldoc,ivtk,ispecies,ndfirst,ndlast)
       include 'examdecl.f'
@@ -320,7 +320,7 @@ c*************************************************************
       integer iuin(3)
       logical ldoc
       integer ivtk
-c I think unused here 26 May 12. But I'm not sure.
+! I think unused here 26 May 12. But I'm not sure.
       ifull(1)=na_i
       ifull(2)=na_j
       ifull(3)=na_k
@@ -329,21 +329,21 @@ c I think unused here 26 May 12. But I'm not sure.
 
       do i=1,3
          iuin(i)=9
-c Default field/projection direction:
+! Default field/projection direction:
          Bdirs(i)=0
          if(i.eq.3)Bdirs(i)=1
       enddo
-c Use cellvol=0. by default.
+! Use cellvol=0. by default.
       cellvol=0.
       ldoc=.false.
 
-c silence warnings:
+! silence warnings:
       fluxfilename=' '
       zp(1,1,1)=0.
-c Defaults
+! Defaults
       partfilename=' '
 
-c Deal with arguments
+! Deal with arguments
       if(iargc().eq.0) goto 201
       do i=1,iargc()
          call getarg(i,argument)
@@ -398,13 +398,13 @@ c Deal with arguments
             if(argument(1:2).eq.'-?')goto 203
          else
             read(argument(1:),'(a)',err=201)partfilename
-c            write(*,*)partfilename
+!            write(*,*)partfilename
          endif
          
       enddo
       goto 202
-c------------------------------------------------------------
-c Help text
+!------------------------------------------------------------
+! Help text
  201  continue
       write(*,*)'=====Error reading command line argument'
  203  continue

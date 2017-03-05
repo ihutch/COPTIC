@@ -1,7 +1,7 @@
-c************************************************************************
+!************************************************************************
       subroutine surfmark(Li,ni,nj,x,y,z,cij,ifix)
-c Mark in 3-D the positions of those points at which cij(7,*,*) are non
-c -zero, and there is a fraction<1 to the adjoining points.
+! Mark in 3-D the positions of those points at which cij(7,*,*) are non
+! -zero, and there is a fraction<1 to the adjoining points.
       integer Li,ni,nj
       real x(ni),y(nj)
       real z(Li,nj)
@@ -23,7 +23,7 @@ c -zero, and there is a fraction<1 to the adjoining points.
                      fraction=dob_cij(iobj,ipoint)
                      if(fraction.lt.1. .and. fraction.gt.0.)then
                         call vec3n(xn,yn,zn,0)
-c                        write(*,*)i,j,ipoint,id,jd,fraction
+!                        write(*,*)i,j,ipoint,id,jd,fraction
                         if(idff.eq.1)then
                            xp=x(i)*(1.-fraction)+x(i+(3-2*jd))*fraction
                         else
@@ -47,46 +47,46 @@ c                        write(*,*)i,j,ipoint,id,jd,fraction
       enddo
 
       end
-c*******************************************************************
+!*******************************************************************
       subroutine slice3web(ifull,iuds,u,cij,nw,zp,cijp,ixnp,xn,ifix,
      $           utitle,ictl)
       parameter(ndims=3,nd2=2*ndims)
-c Plot web-projected and/or projected contour representations 
-c of quantity u on slices with
-c fixed values of dimension ifix. Mark cij boundaries.
-c The full dimensions of arrays u, cij are
+! Plot web-projected and/or projected contour representations 
+! of quantity u on slices with
+! fixed values of dimension ifix. Mark cij boundaries.
+! The full dimensions of arrays u, cij are
       integer ifull(ndims)
       real u(ifull(1),ifull(2),ifull(3))
       real cij(2*ndims+1,ifull(1),ifull(2),ifull(3))
-c The used dimensions of each are
+! The used dimensions of each are
       integer iuds(ndims)
-c The dimensions of square working arrays, zp, cijp, (nw) must be larger
-c than the greatest of iuds 
+! The dimensions of square working arrays, zp, cijp, (nw) must be larger
+! than the greatest of iuds 
       integer nw
       real zp(nw,nw)
       real cijp(2*ndims+1,nw,nw)
-c The point positions are given by vectors laminated into xn, whose
-c starts for dimensions id are at ixnp(id)+1. 
+! The point positions are given by vectors laminated into xn, whose
+! starts for dimensions id are at ixnp(id)+1. 
       integer ixnp(ndims)
       real xn(*)
-c The fixed dimension which is chosen to start, and returned after is:
+! The fixed dimension which is chosen to start, and returned after is:
       integer ifix
-c The plotted quantity title is
+! The plotted quantity title is
       character*(*) utitle
-c Needed for perspective plot
+! Needed for perspective plot
       include '../accis/world3.h'
-c Workspace size is problematic.
+! Workspace size is problematic.
       character*1 pp(40000)
-c Contour levels
+! Contour levels
       real cl(30)
-c Local variables:
+! Local variables:
       integer icontour,iweb,iback
       integer isw,jsw
       character*(10) cxlab,cylab
       character*(30) form1
       logical lfirst
       data lfirst/.true./
-c Tell that we are looking from the top by default.
+! Tell that we are looking from the top by default.
       data ze1/1./icontour/1/iweb/1/iback/0/
       data cs/.707/sn/.707/
 
@@ -104,21 +104,21 @@ c Tell that we are looking from the top by default.
       if(ifix.lt.1 .or. ifix.gt.ndims)ifix=ndims
       ips=0
       irotating=0
-c Initial slice number
+! Initial slice number
       n1=iuds(ifix)/2
-c     Plot the surface. With scaling 1. Web color 6, axis color 7.
+!     Plot the surface. With scaling 1. Web color 6, axis color 7.
       jsw=1 + 256*6 + 256*256*7
       call accisgradinit(64000,0,0,-64000,128000,64000)
  21   call pltinit(0.,1.,0.,1.)
-c Set the plotting arrays for fixed dimension ifix.
+! Set the plotting arrays for fixed dimension ifix.
       idp1=mod(ifix,3)+1
       idp2=mod(ifix+1,3)+1
       nf1=iuds(idp1)
       call iwrite(idp1,iwidth,cxlab)
       nf2=iuds(idp2)
       call iwrite(idp2,iwidth,cylab)
-c Only works for 3-D in present implementation.
-c Could be fixed to be general, I suppose.
+! Only works for 3-D in present implementation.
+! Could be fixed to be general, I suppose.
       do i=1,nf1
          do j=1,nf2
             if(ifix.eq.1)then
@@ -140,25 +140,25 @@ c Could be fixed to be general, I suppose.
          enddo
       enddo
 
-c Web drawing. First call is needed to set scaling.
-c      write(*,*)'jsw=',jsw
+! Web drawing. First call is needed to set scaling.
+!      write(*,*)'jsw=',jsw
       if(iweb.eq.1)
      $     call hidweb(xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
      $        zp,nw,nf1,nf2,jsw)
-c Use this scaling until explicitly reset.
+! Use this scaling until explicitly reset.
       jsw=0 + 256*6 + 256*256*7
       write(form1,'(''Dimension '',i1,'' Plane'',i4)')ifix,n1
       call drwstr(.1,.02,form1)
       call ax3labels('axis-'//cxlab,'axis-'//cylab,utitle)
-c Here we want to mark bounding surfaces, which are associated with those
-c cijs that have non-zero pointer.
+! Here we want to mark bounding surfaces, which are associated with those
+! cijs that have non-zero pointer.
       if(ictl.eq.1 .and. iweb.eq.1) call surfmark(nw,nf1,nf2,
      $     xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
      $     zp,cijp,ifix)
 
-c Projected contouring.
+! Projected contouring.
       if(icontour.ne.0)then
-c       Draw a contour plot in perspective. Need to reset color anyway.
+!       Draw a contour plot in perspective. Need to reset color anyway.
          call color(4)
          call axregion(-scbx3,scbx3,-scby3,scby3)
          xmin=xn(ixnp(idp1)+1)
@@ -168,31 +168,31 @@ c       Draw a contour plot in perspective. Need to reset color anyway.
          zmin=xn(ixnp(ifix)+1)
          zmax=xn(ixnp(ifix)+iuds(ifix))
          call scalewn(xmin,xmax,ymin,ymax,.false.,.false.)
-c Calculate place of plane. 
+! Calculate place of plane. 
          zplane=scbz3*(-1+(xn(ixnp(ifix)+n1)-zmin)*2./(zmax-zmin))
-c accis perspective corner for axes and cube.
+! accis perspective corner for axes and cube.
          icorner=igetcorner()
          if(iweb.eq.0)then
-c Draw axes.
+! Draw axes.
             call hdprset(0,0.)
-c Ought to rescale the z-axis, but that was done in hidweb.
+! Ought to rescale the z-axis, but that was done in hidweb.
             call scale3(xmin,xmax,ymin,ymax,zmin,zmax)
-c If we do, then we must reset jsw:
+! If we do, then we must reset jsw:
             jsw=1 + 256*6 + 256*256*7
             call axproj(icorner)
          else
-c Set contour levels using the scaling of the box.
+! Set contour levels using the scaling of the box.
             icl=6
             do ic=1,icl
                cl(ic)=wz3min+(wz3max-wz3min)*(ic-1.)/(icl-1.)
             enddo
          endif
-c Get back current eye position xe1 etc.
+! Get back current eye position xe1 etc.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
          if(icontour.eq.1)call hdprset(-3,sign(scbz3,ze1))
          if(icontour.eq.2)call hdprset(-3,zplane)
          if(icontour.eq.3)call hdprset(-3,-sign(scbz3,ze1))
-c Contour without labels, with coloring, using vector axes
+! Contour without labels, with coloring, using vector axes
          call contourl(zp,pp,nw,nf1,nf2,cl,icl,
      $        xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),17)
          call axis()
@@ -203,25 +203,25 @@ c Contour without labels, with coloring, using vector axes
       if(iweb.eq.1.and.icontour.eq.3)then
          call hidweb(xn(ixnp(idp1)+1),xn(ixnp(idp2)+1),
      $        zp,nw,nf1,nf2,jsw)
-c This was necessary when hidweb used to change jsw.
-c         jsw=0 + 256*6 + 256*256*7
+! This was necessary when hidweb used to change jsw.
+!         jsw=0 + 256*6 + 256*256*7
       endif
 
       if(ips.ne.0)then
-c We called for a local print of plot. Terminate and switch it off.
+! We called for a local print of plot. Terminate and switch it off.
          call pltend()
          call pfset(0)
          ips=0
       endif
 
-c-----------------------------------
-c Double buffering 
+!-----------------------------------
+! Double buffering 
       if(iback.ne.0)then 
-c         call glfront()
+!         call glfront()
       endif
-c Limit framing rate to 30fps.
+! Limit framing rate to 30fps.
       call usleep(30000)
-c User interface interpret key-press.
+! User interface interpret key-press.
       call eye3d(isw)
       if(isw.eq.0) goto 23
       if(isw.eq.65364 .and. n1.gt.1) n1=n1-1
@@ -242,20 +242,20 @@ c User interface interpret key-press.
       if(isw.eq.ichar('c'))icontour=mod(icontour+1,4)
       if(isw.eq.ichar('w'))iweb=mod(iweb+1,2)
       if(isw.eq.ichar('i'))then
-c Get back current eye position xe1 etc.
+! Get back current eye position xe1 etc.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
          xe1=xe1*.9
          ye1=ye1*.9
          ze1=ze1*.9
-c Move it in.
+! Move it in.
          call trn32(0.,0.,0.,xe1,ye1,ze1,1)
       elseif(isw.eq.ichar('o'))then
-c Get back current eye position xe1 etc.
+! Get back current eye position xe1 etc.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
          xe1=xe1*1.1
          ye1=ye1*1.1
          ze1=ze1*1.1
-c Move it out.
+! Move it out.
          call trn32(0.,0.,0.,xe1,ye1,ze1,1)
       elseif(isw.eq.ichar('r'))then
          irotating=1
@@ -267,34 +267,34 @@ c Move it out.
          sn=sin(-.05)
       endif
       if(irotating.gt.0)then
-c         call glback()
+!         call glback()
          iback=1
-c Get back current eye position xe1 etc.
+! Get back current eye position xe1 etc.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
-c         write(*,*)'irotating',irotating,xe1,ye1,ze1,cs,sn
+!         write(*,*)'irotating',irotating,xe1,ye1,ze1,cs,sn
          xex=xe1-xe
          yex=ye1-ye
          xe1=xe+cs*xex-sn*yex
          ye1=ye+sn*xex+cs*yex
-c Must tell to look at zero.
+! Must tell to look at zero.
          call trn32(0.,0.,0.,xe1,ye1,ze1,1)
          irotating=irotating-1
       endif
-c End of user interface.
-c------------------------------------
+! End of user interface.
+!------------------------------------
       goto 21
  23   continue
       call hdprset(0,0.)
       end
-c******************************************************************
-c Testing and examination of the intersection data.
-c Assume 3-d.
-c Use the knowledge that this is really the intersection with a
-c sphere of center xc, and radius rc. For each used triplet,
-c Find the perpendicular distance of xc from the plane, and the 
-c distance from the base of the perpendicular to the point. 
-c Evaluate the difference of the perpendicular length from rc,
-c as a test of correct plane selection, and check base distance.
+!******************************************************************
+! Testing and examination of the intersection data.
+! Assume 3-d.
+! Use the knowledge that this is really the intersection with a
+! sphere of center xc, and radius rc. For each used triplet,
+! Find the perpendicular distance of xc from the plane, and the 
+! distance from the base of the perpendicular to the point. 
+! Evaluate the difference of the perpendicular length from rc,
+! as a test of correct plane selection, and check base distance.
       subroutine boxintersect(ifull,iuds,cij)
       include 'ndimsdecl.f'
       parameter (mdims=3)
@@ -306,7 +306,7 @@ c as a test of correct plane selection, and check base distance.
       integer ijk(3)
       real fracts(2*mdims),xfr(mdims),a(mdims)
       integer ipa(mdims),ipm(mdims)
-c center of sphere
+! center of sphere
       data xc/.0,.0,.0/
       data rc/.48/
       
@@ -323,30 +323,30 @@ c center of sphere
                ijk(1)=i
                iobj=int(cij(2*ndims+1,ijk(1),ijk(2),ijk(3)))
                if(iobj.ne.0)then
-c                  write(*,*)'Found object',ijk,iobj
-c The point:
+!                  write(*,*)'Found object',ijk,iobj
+! The point:
                   do id=1,3
                      xx(id)=xn(ixnp(id)+ijk(id))
                   enddo
-c The intersection fractions (forward and backward for each dim).
+! The intersection fractions (forward and backward for each dim).
                   do if=1,2*ndims
                      no=ndata_cij*(if-1)+1
-c                     write(*,*)'no=',no,' iobj=',iobj
+!                     write(*,*)'no=',no,' iobj=',iobj
                      fracts(if)=dob_cij(no,iobj)
                   enddo
-c The flags
+! The flags
                   iflags=idob_cij(iflag_cij,iobj)
-c                  write(*,*)'xx=',xx
-c                  write(*,*)' fracts=',fracts
-c Treat each box with the appropriate ipmarray. 2**ndims in all.
+!                  write(*,*)'xx=',xx
+!                  write(*,*)' fracts=',fracts
+! Treat each box with the appropriate ipmarray. 2**ndims in all.
                   do jj=1,2**ndims
                      kk=jj-1
-c set the plus-minus directions for this jj. 0->+, 1->-.
-c and other quantities
+! set the plus-minus directions for this jj. 0->+, 1->-.
+! and other quantities
                      iuse=0
                      if(btest(iflags,jj-1))iuse=1
                      sumxx=0.
-c                     suma=0
+!                     suma=0
                      suma2=0.
                      sumxc=0.
                      do ii=1,ndims
@@ -354,9 +354,9 @@ c                     suma=0
                         ipa(ii)=1-2*ipm(ii)
                         dx=xn(ixnp(ii)+ijk(ii)+ipa(ii))
      $                       -xn(ixnp(ii)+ijk(ii))
-c                        if(fracts(2*ii+ipm(ii)-1).eq.1.)iuse=0
-c Throw away recuts. Probably wrong but removes most errors.
-c                        if(fracts(2*ii+ipm(ii)-1).eq.1.001)iuse=0
+!                        if(fracts(2*ii+ipm(ii)-1).eq.1.)iuse=0
+! Throw away recuts. Probably wrong but removes most errors.
+!                        if(fracts(2*ii+ipm(ii)-1).eq.1.001)iuse=0
                         xfr(ii)=dx*fracts(2*ii+ipm(ii)-1)
                         a(ii)=1./xfr(ii)
                         suma2=suma2+a(ii)**2
@@ -366,13 +366,13 @@ c                        if(fracts(2*ii+ipm(ii)-1).eq.1.001)iuse=0
                      enddo
                      if(iuse.eq.1)then
                         nuse=nuse+1
-c Equation of plane is \sum a_i (x_i-xx_i) =1
+! Equation of plane is \sum a_i (x_i-xx_i) =1
                         amag=sqrt(suma2)
-c Distance of xc from the plane is [\sum a_i(xc_i-xx_i) - 1]/|a|
+! Distance of xc from the plane is [\sum a_i(xc_i-xx_i) - 1]/|a|
                         pdist=(sumxc-sumxx-1)/amag
-c Base of perp from xc to plane is xb_i = xc_i-pdist*a_i/|a|
-c The distance of this from xx is the interesting thing
-c It ought to be .le. sqrt(ndims)
+! Base of perp from xc to plane is xb_i = xc_i-pdist*a_i/|a|
+! The distance of this from xx is the interesting thing
+! It ought to be .le. sqrt(ndims)
                         xbxd=0.
                         xcxd=0.
                         do ii=1,3
@@ -382,7 +382,7 @@ c It ought to be .le. sqrt(ndims)
                         enddo
                         xbxd=sqrt(xbxd)
                         xcxd=sqrt(xcxd)
-c                        if(xbxd.gt..05)then
+!                        if(xbxd.gt..05)then
                         err=abs(abs(pdist)-rc)
                         if(err.gt.ermax)ermax=err
                         if(abs(abs(pdist)-rc).gt.error)then
@@ -390,27 +390,27 @@ c                        if(xbxd.gt..05)then
                            write(*,'(a,3f8.4,a,3f8.4,a,3f8.4)')
      $                          'xx=',xx,' xb=',xb
                            write(*,*)nerror,' fracts=',fracts
-c Test of this case
-c      do j1=1,2**ndims
-c         k1=j1-1
-c         do i1=1,ndims
-c This could be done with bit manipulation probably more efficiently:
-c direction(j)=bit(j)of(i). 0->+1, 1->-1.
-c            ipa(i1)=1-2*(k1-2*(k1/2))
-c            k1=k1/2
-c         enddo
-c Now ipa is set. Call boxedge, returning the inverse of fractions
-c in fn, and the number of intersections found in npoints.
-c         call boxedge(ndims,ipa,ijk,xb,npoints,1)
-c         write(*,'(7i3,6f8.4)')ijk,ipa,npoints,xb,(1/xb(m),m=1,3)
-c      enddo
+! Test of this case
+!      do j1=1,2**ndims
+!         k1=j1-1
+!         do i1=1,ndims
+! This could be done with bit manipulation probably more efficiently:
+! direction(j)=bit(j)of(i). 0->+1, 1->-1.
+!            ipa(i1)=1-2*(k1-2*(k1/2))
+!            k1=k1/2
+!         enddo
+! Now ipa is set. Call boxedge, returning the inverse of fractions
+! in fn, and the number of intersections found in npoints.
+!         call boxedge(ndims,ipa,ijk,xb,npoints,1)
+!         write(*,'(7i3,6f8.4)')ijk,ipa,npoints,xb,(1/xb(m),m=1,3)
+!      enddo
 
                         endif
-c                        write(*,*)iobj,ijk,ipm,pdist,xbxd,xcxd,jj
-c     $                       ,(iflags/2**(m-1)-2*(iflags/2**m),m=1,8)
-c     $                       ,(btest(iflags,m),m=0,7)
+!                        write(*,*)iobj,ijk,ipm,pdist,xbxd,xcxd,jj
+!     $                       ,(iflags/2**(m-1)-2*(iflags/2**m),m=1,8)
+!     $                       ,(btest(iflags,m),m=0,7)
                      else
-c                        write(*,*)iobj,ijk,ipa,'  Not used'
+!                        write(*,*)iobj,ijk,ipa,'  Not used'
                      endif
                   enddo
                endif

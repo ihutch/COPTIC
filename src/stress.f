@@ -1,24 +1,24 @@
-c Routines for calculating the force on objects via integrations of the
-c stress. 
-c This requires a "surface representation" of the object.
-c Any object is represented by a set of KM facets. Each facet has
-c a position x_k(ndims) at which the stress is evaluated, and a surface element
-c A_k(ndims) which provides the force vector when the scalar product with
-c the stress is taken. The total force is the sum of the KM force vectors.
-c The surface representation is here a linear array of 2*ndims*km length.
-c But this can be considered to be an array surfobj(2,ndims,km)
+! Routines for calculating the force on objects via integrations of the
+! stress. 
+! This requires a "surface representation" of the object.
+! Any object is represented by a set of KM facets. Each facet has
+! a position x_k(ndims) at which the stress is evaluated, and a surface element
+! A_k(ndims) which provides the force vector when the scalar product with
+! the stress is taken. The total force is the sum of the KM force vectors.
+! The surface representation is here a linear array of 2*ndims*km length.
+! But this can be considered to be an array surfobj(2,ndims,km)
 
       subroutine maxwellforce(ndims,km,surfobj,fieldforce,  u,cij,iLs)
-c Calculate the total maxwell force on a surface from its surface
-c representation which consists of km facets each of which has 
-c ndims position + ndims surface coefficients. 2.ndims.km.
+! Calculate the total maxwell force on a surface from its surface
+! representation which consists of km facets each of which has 
+! ndims position + ndims surface coefficients. 2.ndims.km.
 
       integer km,ndims
       real surfobj(2*ndims*km),fieldforce(ndims)
       real u(*),cij(*)
       integer iLs(*)
 
-c Local storage
+! Local storage
       parameter (mdims=3)
       real field(mdims)
 
@@ -28,7 +28,7 @@ c Local storage
       do k=1,km
          koff=2*ndims*(k-1)
          call fieldatpoint(surfobj(koff+1),u,cij,iLs,field)
-c         call fieldatpointtest(surfobj(koff+1),u,cij,iLs,field)
+!         call fieldatpointtest(surfobj(koff+1),u,cij,iLs,field)
          es=0.
          do i=1,ndims
             es=es+field(i)**2
@@ -44,14 +44,14 @@ c         call fieldatpointtest(surfobj(koff+1),u,cij,iLs,field)
 
       end
 
-c***************************************************************
-c Electron pressure force calculation.
+!***************************************************************
+! Electron pressure force calculation.
       subroutine pressureforce(ndims,km,surfobj,force,u,cij,iLs)
-c Calculate the total pressure force on a surface from its surface
-c representation which consists of km facets each of which has 
-c ndims position + ndims surface coefficients. 2.ndims.km.
-c The normalized pressure is equal to the exponential of the potential,
-c which is the factor by which the electron density is reduced cf infty.
+! Calculate the total pressure force on a surface from its surface
+! representation which consists of km facets each of which has 
+! ndims position + ndims surface coefficients. 2.ndims.km.
+! The normalized pressure is equal to the exponential of the potential,
+! which is the factor by which the electron density is reduced cf infty.
 
       integer km,ndims
       real surfobj(2*ndims*km),force(ndims)
@@ -65,12 +65,12 @@ c which is the factor by which the electron density is reduced cf infty.
       do k=1,km
          koff=2*ndims*(k-1)
          phi=potentialatpoint(surfobj(koff+1),u,cij,iLs)
-c         phi=potentialatpointtest(surfobj(koff+1),u,cij,iLs)
+!         phi=potentialatpointtest(surfobj(koff+1),u,cij,iLs)
          do i=1,ndims
-c 2 Feb 11. The sign was previously +, which was incorrect
-c for an outward directed surface normal. 
+! 2 Feb 11. The sign was previously +, which was incorrect
+! for an outward directed surface normal. 
             force(i)=force(i)-surfobj(koff+ndims+i)*exp(phi)
-c 5 Nov 13 trap for unphysical forces.
+! 5 Nov 13 trap for unphysical forces.
             if(.not.abs(force(i)).lt.1.e20)then 
                write(*,*)'k,i,koff,phi,force(i)',k,i,koff,phi,force(i)
                write(*,*)'x=',(surfobj(koff+kk),kk=1,3)
@@ -92,20 +92,20 @@ c 5 Nov 13 trap for unphysical forces.
       end
 
 
-c***************************************************************
+!***************************************************************
 
       subroutine totalcharge(ndims,km,surfobj,charge,  u,cij,iLs)
-c Calculate the total charge within a surface from the surface
-c representation which consists of km facets each of which has 
-c ndims position + ndims surface coefficients. 2.ndims.km.
-c The charge is simply the integral E.dA over the surface.
+! Calculate the total charge within a surface from the surface
+! representation which consists of km facets each of which has 
+! ndims position + ndims surface coefficients. 2.ndims.km.
+! The charge is simply the integral E.dA over the surface.
 
       integer km,ndims
       real surfobj(2*ndims*km),charge
       real u(*),cij(*)
       integer iLs(*)
 
-c Local storage
+! Local storage
       parameter (mdims=3)
       real field(mdims)
 
@@ -113,7 +113,7 @@ c Local storage
       do k=1,km
          koff=2*ndims*(k-1)
          call fieldatpoint(surfobj(koff+1),u,cij,iLs,field)
-c         call fieldatpointtest(surfobj(koff+1),u,cij,iLs,field)
+!         call fieldatpointtest(surfobj(koff+1),u,cij,iLs,field)
          do j=1,ndims
             charge=charge+surfobj(koff+ndims+j)*field(j)
          enddo
@@ -121,8 +121,8 @@ c         call fieldatpointtest(surfobj(koff+1),u,cij,iLs,field)
 
       end
 
-c***************************************************************
-c Calculate the forces for objects that we are tracking.
+!***************************************************************
+! Calculate the forces for objects that we are tracking.
       subroutine calculateforces(mdims,iLs,cij,u)
       integer mdims,iLs(mdims+1)
       real u(*),cij(*)
@@ -131,13 +131,13 @@ c Calculate the forces for objects that we are tracking.
 
       do i=1,nf_obj
          if(ns_flags(i).eq.1)then
-c Spheroid. Accumulate.
+! Spheroid. Accumulate.
             km=ns_nt*ns_np
             call maxwellforce(ndims,km,
      $           surfobj(1,1,1,i),fieldforce(1,i,nf_step),
      $           u,cij,iLs)
-c            write(*,'(i3,i3,a,3f10.5)')nf_step,i,'  Maxwellforce=',
-c     $           (fieldforce(k,i,nf_step),k=1,3)
+!            write(*,'(i3,i3,a,3f10.5)')nf_step,i,'  Maxwellforce=',
+!     $           (fieldforce(k,i,nf_step),k=1,3)
             call pressureforce(ndims,km,
      $           surfobj(1,1,1,i),pressforce(1,i,nf_step),
      $           u,cij,iLs)
@@ -145,7 +145,7 @@ c     $           (fieldforce(k,i,nf_step),k=1,3)
      $           surfobj(1,1,1,i),charge_ns(i,nf_step),
      $           u,cij,iLs)
          elseif(ns_flags(i).eq.513)then
-c Point charge object. Just fieldforce.
+! Point charge object. Just fieldforce.
             call fieldatpoint(obj_geom(ocenter,nf_geommap(i)),
      $           u,cij,iLs,fieldforce(1,i,nf_step))
             charge_ns(i,nf_step)=obj_geom(oradius,nf_geommap(i))
@@ -156,14 +156,14 @@ c Point charge object. Just fieldforce.
      $              charge_ns(i,nf_step)
             enddo
          else
-c Unknown type. Do nothing.
+! Unknown type. Do nothing.
          endif
       enddo
 
       end
-c***************************************************************
-c Initialize the force tracking for objects
-c Must be called after fluxdatainit.
+!***************************************************************
+! Initialize the force tracking for objects
+! Must be called after fluxdatainit.
       subroutine forcetrackinit()
       include 'ndimsdecl.f'
       include '3dcom.f'
@@ -175,25 +175,25 @@ c Must be called after fluxdatainit.
       do i=1,ngeomobj
          nfmap=nf_map(i)
          if(nfmap.ne.0)then
-c we are tracking this object
+! we are tracking this object
             itype=int(obj_geom(otype,i))
             it=int(itype - 256*(itype/256))
-c            write(*,*)'Forceinit:'
-c     $           ,i,nfmap,'  type',it
+!            write(*,*)'Forceinit:'
+!     $           ,i,nfmap,'  type',it
             if(it.eq.1)then
-c Spheroid.
+! Spheroid.
                if(itype-it.ne.512)then
                   ns_flags(nfmap)=it
-c Initialize the area facet mesh for a unit sphere
+! Initialize the area facet mesh for a unit sphere
                   call spheremesh(ns_nt,ns_np,surfobj(1,1,1,nfmap))
-c Now apply the transformation to a spheroid with possibly different
-c radii in each direction:
+! Now apply the transformation to a spheroid with possibly different
+! radii in each direction:
                   r3=obj_geom(oradius,i)*obj_geom(oradius+1,i)
      $                 *obj_geom(oradius+2,i)
-c               write(*,*)'Object radius cubed',i,r3
+!               write(*,*)'Object radius cubed',i,r3
                   do k=1,ns_np
                      do j=1,ns_nt
-c                     write(*,*)(surfobj(ii,j,k,nfmap),ii=1,3)
+!                     write(*,*)(surfobj(ii,j,k,nfmap),ii=1,3)
                         do id=1,ndims
                            r=obj_geom(oradius+id-1,i)*1.00001
                            surfobj(id,j,k,nfmap)=
@@ -208,35 +208,35 @@ c                     write(*,*)(surfobj(ii,j,k,nfmap),ii=1,3)
                   ns_flags(nfmap)=itype
                endif
             else
-c An object type I don't know how to handle. Ignore.
+! An object type I don't know how to handle. Ignore.
             endif
          endif
       enddo
 
-c      do i=1,nf_obj
-c         iobj=nf_geommap(i)
-c         if(iobj.ne.0)then
-c         do k=1,ns_np
-c            do j=1,ns_nt
-c               r=0.
-c               do id=1,3
-c                  r=r+surfobj(id,j,k,i)**2
-c               enddo
-c               write(*,*)'Radius of surface:',i,j,k,r
-c            enddo
-c         enddo
-c         endif
-c      enddo
+!      do i=1,nf_obj
+!         iobj=nf_geommap(i)
+!         if(iobj.ne.0)then
+!         do k=1,ns_np
+!            do j=1,ns_nt
+!               r=0.
+!               do id=1,3
+!                  r=r+surfobj(id,j,k,i)**2
+!               enddo
+!               write(*,*)'Radius of surface:',i,j,k,r
+!            enddo
+!         enddo
+!         endif
+!      enddo
 
 
       end
-c***************************************************************
-c Calculate the surfobj surface integration structure for a sphere
-c of unit radius, in 3-Dimensions,
-c based on uniform mesh of coordinates in cos\theta and psi. 
+!***************************************************************
+! Calculate the surfobj surface integration structure for a sphere
+! of unit radius, in 3-Dimensions,
+! based on uniform mesh of coordinates in cos\theta and psi. 
       subroutine spheremesh(nt,np,surfobj)
-c nt,np (INPUT) are the number of theta,psi cells
-c surfobj on (OUTPUT) contains the structure 2*ndims*nt*np.
+! nt,np (INPUT) are the number of theta,psi cells
+! surfobj on (OUTPUT) contains the structure 2*ndims*nt*np.
       parameter (ndims=3)
 
       integer nt,np
@@ -244,7 +244,7 @@ c surfobj on (OUTPUT) contains the structure 2*ndims*nt*np.
 
       parameter (PI=3.141593)
 
-c Pointer to start of data
+! Pointer to start of data
       ipt=0
       cim=1.
       acm=0.
@@ -267,20 +267,20 @@ c Pointer to start of data
             psic=0.5*(psi+psim)
             cpc=cos(psic)
             spc=sin(psic)
-c Cartesian Position of this surface:
+! Cartesian Position of this surface:
             surfobj(ipt+1)=cpc*sci
             surfobj(ipt+2)=spc*sci
             surfobj(ipt+3)=cci
-c Cartesian Area vector of this surface:
+! Cartesian Area vector of this surface:
             surfobj(ipt+4)=(spi-spim)*ft
             surfobj(ipt+5)=-(cpi-cpim)*ft
             surfobj(ipt+6)=dpsi*fz
-c            write(*,'(i4,i4,7f8.4,6f8.4)')it,ip
-c     $           ,cci,psic,ci,psi,cpi,spi
-c     $           ,ft,fz
-c           write(*,'(6f8.4)')
-c     $           ,(surfobj(ipt+k),k=1,6)
-c Pointer to start of data for next facet
+!            write(*,'(i4,i4,7f8.4,6f8.4)')it,ip
+!     $           ,cci,psic,ci,psi,cpi,spi
+!     $           ,ft,fz
+!           write(*,'(6f8.4)')
+!     $           ,(surfobj(ipt+k),k=1,6)
+! Pointer to start of data for next facet
             ipt=ipt+2*ndims
             cpim=cpi
             spim=spi
@@ -293,19 +293,19 @@ c Pointer to start of data for next facet
 
       end
 
-c**********************************************************************
+!**********************************************************************
       subroutine chargeforce(ndims,km,surfobj,fieldforce,u,iLs)
-c Calculate the force on a unit point charge inside a surface 
-c By averaging the electric field on the surface whose
-c representation consists of km facets each of which has 
-c ndims position + ndims surface coefficients. 2.ndims.km.
+! Calculate the force on a unit point charge inside a surface 
+! By averaging the electric field on the surface whose
+! representation consists of km facets each of which has 
+! ndims position + ndims surface coefficients. 2.ndims.km.
 
       integer km,ndims
       real surfobj(2*ndims*km),fieldforce(ndims)
       real u(*)
       integer iLs(*)
 
-c Local storage
+! Local storage
       parameter (mdims=3)
       real field(mdims)
 
@@ -316,35 +316,35 @@ c Local storage
       do k=1,km
          koff=2*ndims*(k-1)
          call fieldatpoint(surfobj(koff+1),u,cij,iLs,field)
-c         call fieldsimple3atpoint(surfobj(koff+1),u,iLs,field)
+!         call fieldsimple3atpoint(surfobj(koff+1),u,iLs,field)
          area=0
          do j=1,ndims
             area=area+surfobj(koff+ndims+j)**2
          enddo
          area=sqrt(area)
-c         write(*,*)'k=',k,' area=',area,' psn',(surfobj(koff+i),i=1,3)
+!         write(*,*)'k=',k,' area=',area,' psn',(surfobj(koff+i),i=1,3)
          totarea=totarea+area
          do i=1,ndims
             fieldforce(i)=fieldforce(i)+field(i)*area
          enddo
-c         write(*,*)' field=',field
+!         write(*,*)' field=',field
       enddo
-c      write(*,*)'surfobj',surfobj
-c      write(*,*)'totarea',totarea,' fieldforce',fieldforce
+!      write(*,*)'surfobj',surfobj
+!      write(*,*)'totarea',totarea,' fieldforce',fieldforce
       do i=1,ndims
          fieldforce(i)=fieldforce(i)/totarea
       enddo
       end
-c***************************************************************
-c Initialize the force tracking for one object with center xc and 
-c radius r. With angular mesh ns_nt, ns_np.
+!***************************************************************
+! Initialize the force tracking for one object with center xc and 
+! radius r. With angular mesh ns_nt, ns_np.
       subroutine forceinitone(ns_nt,ns_np,ndims,r,xc,surfobj)
       real surfobj(2*ndims,ns_nt,ns_np)
       real r,xc(ndims)
 
-c Initialize the area facet mesh for a unit sphere
+! Initialize the area facet mesh for a unit sphere
       call spheremesh(ns_nt,ns_np,surfobj(1,1,1))
-c Now apply the transformation to a spheroid with radius r
+! Now apply the transformation to a spheroid with radius r
       do k=1,ns_np
          do j=1,ns_nt
             do id=1,ndims

@@ -1,54 +1,54 @@
-C      ALGORITHM 659, COLLECTED ALGORITHMS FROM ACM.
-C      THIS WORK PUBLISHED IN TRANSACTIONS ON MATHEMATICAL SOFTWARE,
-C      VOL. 14, NO. 1, P.88.
-C
-C      REMARK ON ALGORITHM 659, COLLECTED ALGORITHMS FROM ACM.
-C      THIS WORK PUBLISHED IN TRANSACTIONS ON MATHEMATICAL SOFTWARE,
-C      VOL. 29, NO. 1, P.49.
+!      ALGORITHM 659, COLLECTED ALGORITHMS FROM ACM.
+!      THIS WORK PUBLISHED IN TRANSACTIONS ON MATHEMATICAL SOFTWARE,
+!      VOL. 14, NO. 1, P.88.
+!
+!      REMARK ON ALGORITHM 659, COLLECTED ALGORITHMS FROM ACM.
+!      THIS WORK PUBLISHED IN TRANSACTIONS ON MATHEMATICAL SOFTWARE,
+!      VOL. 29, NO. 1, P.49.
 
-c Edited to replace EXOR external fortran with IEOR intrinsic. IHH
-c*********************************************************************72
+! Edited to replace EXOR external fortran with IEOR intrinsic. IHH
+!*********************************************************************72
       BLOCK DATA BDSOBL
-C
-CC BLOCK DATA BDSOBL initializes labelled common block /SOBDAT/.
-C
-C     THE ARRAY POLY GIVES SUCCESSIVE PRIMITIVE
-C     POLYNOMIALS CODED IN BINARY, E.G.
-C          45 = 100101
-C     HAS BITS 5, 2, AND 0 SET (COUNTING FROM THE
-C     RIGHT) AND THEREFORE REPRESENTS
-C          X**5 + X**2 + X**0
-C
-C     THESE  POLYNOMIALS ARE IN THE ORDER USED BY
-C     SOBOL IN USSR COMPUT. MATHS. MATH. PHYS. 16 (1977),
-C     236-242. A MORE COMPLETE TABLE IS GIVEN IN SOBOL AND
-C     LEVITAN, THE PRODUCTION OF POINTS UNIFORMLY
-C     DISTRIBUTED IN A MULTIDIMENSIONAL CUBE (IN RUSSIAN),
-C     PREPRINT IPM AKAD. NAUK SSSR, NO. 40, MOSCOW 1976.
-C
-C         THE INITIALIZATION OF THE ARRAY VINIT IS FROM THE
-C     LATTER PAPER. FOR A POLYNOMIAL OF DEGREE M, M INITIAL
-C     VALUES ARE NEEDED :  THESE ARE THE VALUES GIVEN HERE.
-C     SUBSEQUENT VALUES ARE CALCULATED IN "INSOBL".
-C
-C     .. Parameters ..
+!
+!C BLOCK DATA BDSOBL initializes labelled common block /SOBDAT/.
+!
+!     THE ARRAY POLY GIVES SUCCESSIVE PRIMITIVE
+!     POLYNOMIALS CODED IN BINARY, E.G.
+!          45 = 100101
+!     HAS BITS 5, 2, AND 0 SET (COUNTING FROM THE
+!     RIGHT) AND THEREFORE REPRESENTS
+!          X**5 + X**2 + X**0
+!
+!     THESE  POLYNOMIALS ARE IN THE ORDER USED BY
+!     SOBOL IN USSR COMPUT. MATHS. MATH. PHYS. 16 (1977),
+!     236-242. A MORE COMPLETE TABLE IS GIVEN IN SOBOL AND
+!     LEVITAN, THE PRODUCTION OF POINTS UNIFORMLY
+!     DISTRIBUTED IN A MULTIDIMENSIONAL CUBE (IN RUSSIAN),
+!     PREPRINT IPM AKAD. NAUK SSSR, NO. 40, MOSCOW 1976.
+!
+!         THE INITIALIZATION OF THE ARRAY VINIT IS FROM THE
+!     LATTER PAPER. FOR A POLYNOMIAL OF DEGREE M, M INITIAL
+!     VALUES ARE NEEDED :  THESE ARE THE VALUES GIVEN HERE.
+!     SUBSEQUENT VALUES ARE CALCULATED IN "INSOBL".
+!
+!     .. Parameters ..
       INTEGER MAXDIM,MAXDEG
       PARAMETER (MAXDIM=1111,MAXDEG=13)
-C     ..
-C     .. Arrays in Common ..
+!     ..
+!     .. Arrays in Common ..
       INTEGER POLY(2:MAXDIM),VINIT(2:MAXDIM,MAXDEG)
-C     ..
-C     .. Local Scalars ..
+!     ..
+!     .. Local Scalars ..
       INTEGER I
-C     ..
-C     .. Common blocks ..
+!     ..
+!     .. Common blocks ..
       COMMON /SOBDAT/POLY,VINIT
-C     ..
-C     .. Save statement ..
+!     ..
+!     .. Save statement ..
       SAVE /SOBDAT/
-C     ..
-C     .. Data statements ..
-C
+!     ..
+!     .. Data statements ..
+!
 
       DATA (POLY(I),I=2,211)/3,7,11,13,19,25,37,59,47,61,55,41,67,97,91,
      +     109,103,115,131,193,137,145,143,241,157,185,167,229,171,213,
@@ -857,105 +857,105 @@ C
      +     6141,955,3537,2157,841,1999,1465,5171,5651,1535,7235,4349,
      +     1263,1453,1005,6893,2919,1947,1635,3963,397,969,4569,655,
      +     6737,2995,7235,7713,973,4821,2377,1673,1,6541/
-C     ..
-C
+!     ..
+!
       END
 
-c*********************************************************************72
+!*********************************************************************72
       SUBROUTINE INSOBL(FLAG,DIMEN,ATMOST,TAUS)
-C
-CC INSOBL initializes the Sobol sequence computation.
-C
-C     FIRST CHECK WHETHER THE USER-SUPPLIED
-C     DIMENSION "DIMEN" OF THE QUASI-RANDOM
-C     VECTORS IS STRICTLY BETWEEN 0 AND 1112.
-C     IF SO, FLAG(1) = .TRUE.
-C
-C     NEXT CHECK "ATMOST", AN UPPER BOUND ON THE NUMBER
-C     OF CALLS THE USER INTENDS TO MAKE ON "GOSOBL".  IF
-C     THIS IS POSITIVE AND LESS THAN 2**30, THEN FLAG(2) = .TRUE.
-C     (WE ASSUME WE ARE WORKING ON A COMPUTER WITH
-C     WORD LENGTH AT LEAST 31 BITS EXCLUDING SIGN.)
-C     THE NUMBER OF COLUMNS OF THE ARRAY V WHICH
-C     ARE INITIALIZED IS
-C          MAXCOL = NUMBER OF BITS IN ATMOST.
-C     IN "GOSOBL" WE CHECK THAT THIS IS NOT EXCEEDED.
-C
-C     THE LEADING ELEMENTS OF EACH ROW OF V ARE
-C     INITIALIZED USING "VINIT" FROM "BDSOBL".
-C     EACH ROW CORRESPONDS TO A PRIMITIVE POLYNOMIAL
-C     (AGAIN, SEE "BDSOBL").  IF THE POLYNOMIAL HAS
-C     DEGREE M, ELEMENTS AFTER THE FIRST M ARE CALCULATED.
-C
-C     THE NUMBERS IN V ARE ACTUALLY BINARY FRACTIONS.
-C     "RECIPD" HOLDS 1/(THE COMMON DENOMINATOR OF ALL
-C     OF THEM).
-C
-C     "INSOBL" IMPLICITLY COMPUTES THE FIRST ALL-ZERO
-C     VECTOR, BUT DOES NOT RETURN IT TO THE CALLING
-C     PROGRAM. SUBSEQUENT VECTORS COME FROM "GOSOBL".
-C     "LASTQ" HOLDS NUMERATORS OF THE LAST VECTOR GENERATED.
-C
-C     "TAUS" IS FOR DETERMINING "FAVORABLE" VALUES. AS
-C     DISCUSSED IN BRATLEY/FOX, THESE HAVE THE FORM
-C     N = 2**K WHERE K .GE. (TAUS+S-1) FOR INTEGRATION
-C     AND K .GT. TAUS FOR GLOBAL OPTIMIZATION.
-C
-C     INPUTS :
-C       FROM USER'S PROGRAM : DIMEN, ATMOST
-C       FROM BLOCK DATA "BDSOBL" : POLY, VINIT
-C
-C     OUTPUTS :
-C       TO USER'S PROGRAM : FLAG, TAUS
-C       TO "GOSOBL" VIA /SOBOL/ :
-C         V, S, MAXCOL, COUNT, LASTQ, RECIPD
-C
-C
-C     .. Parameters ..
+!
+!C INSOBL initializes the Sobol sequence computation.
+!
+!     FIRST CHECK WHETHER THE USER-SUPPLIED
+!     DIMENSION "DIMEN" OF THE QUASI-RANDOM
+!     VECTORS IS STRICTLY BETWEEN 0 AND 1112.
+!     IF SO, FLAG(1) = .TRUE.
+!
+!     NEXT CHECK "ATMOST", AN UPPER BOUND ON THE NUMBER
+!     OF CALLS THE USER INTENDS TO MAKE ON "GOSOBL".  IF
+!     THIS IS POSITIVE AND LESS THAN 2**30, THEN FLAG(2) = .TRUE.
+!     (WE ASSUME WE ARE WORKING ON A COMPUTER WITH
+!     WORD LENGTH AT LEAST 31 BITS EXCLUDING SIGN.)
+!     THE NUMBER OF COLUMNS OF THE ARRAY V WHICH
+!     ARE INITIALIZED IS
+!          MAXCOL = NUMBER OF BITS IN ATMOST.
+!     IN "GOSOBL" WE CHECK THAT THIS IS NOT EXCEEDED.
+!
+!     THE LEADING ELEMENTS OF EACH ROW OF V ARE
+!     INITIALIZED USING "VINIT" FROM "BDSOBL".
+!     EACH ROW CORRESPONDS TO A PRIMITIVE POLYNOMIAL
+!     (AGAIN, SEE "BDSOBL").  IF THE POLYNOMIAL HAS
+!     DEGREE M, ELEMENTS AFTER THE FIRST M ARE CALCULATED.
+!
+!     THE NUMBERS IN V ARE ACTUALLY BINARY FRACTIONS.
+!     "RECIPD" HOLDS 1/(THE COMMON DENOMINATOR OF ALL
+!     OF THEM).
+!
+!     "INSOBL" IMPLICITLY COMPUTES THE FIRST ALL-ZERO
+!     VECTOR, BUT DOES NOT RETURN IT TO THE CALLING
+!     PROGRAM. SUBSEQUENT VECTORS COME FROM "GOSOBL".
+!     "LASTQ" HOLDS NUMERATORS OF THE LAST VECTOR GENERATED.
+!
+!     "TAUS" IS FOR DETERMINING "FAVORABLE" VALUES. AS
+!     DISCUSSED IN BRATLEY/FOX, THESE HAVE THE FORM
+!     N = 2**K WHERE K .GE. (TAUS+S-1) FOR INTEGRATION
+!     AND K .GT. TAUS FOR GLOBAL OPTIMIZATION.
+!
+!     INPUTS :
+!       FROM USER'S PROGRAM : DIMEN, ATMOST
+!       FROM BLOCK DATA "BDSOBL" : POLY, VINIT
+!
+!     OUTPUTS :
+!       TO USER'S PROGRAM : FLAG, TAUS
+!       TO "GOSOBL" VIA /SOBOL/ :
+!         V, S, MAXCOL, COUNT, LASTQ, RECIPD
+!
+!
+!     .. Parameters ..
       INTEGER MAXDIM,MAXDEG,MAXBIT
       PARAMETER (MAXDIM=1111,MAXDEG=13,MAXBIT=30)
-C     ..
-C     .. Scalar Arguments ..
+!     ..
+!     .. Scalar Arguments ..
       INTEGER ATMOST,DIMEN,TAUS
-C     ..
-C     .. Array Arguments ..
+!     ..
+!     .. Array Arguments ..
       LOGICAL FLAG(2)
-C     ..
-C     .. Scalars in Common ..
+!     ..
+!     .. Scalars in Common ..
       DOUBLE PRECISION RECIPD
       INTEGER COUNT,MAXCOL,S
-C     ..
-C     .. Arrays in Common ..
+!     ..
+!     .. Arrays in Common ..
       INTEGER LASTQ(MAXDIM),POLY(2:MAXDIM),V(MAXDIM,MAXBIT),
      +        VINIT(2:MAXDIM,MAXDEG)
-C     ..
-C     .. Local Scalars ..
+!     ..
+!     .. Local Scalars ..
       INTEGER I,J,K,L,M,NEWV
-C     ..
-C     .. Local Arrays ..
+!     ..
+!     .. Local Arrays ..
       INTEGER TAU(MAXDEG)
       LOGICAL INCLUD(MAXDEG)
-C     ..
-C     .. External Functions ..
+!     ..
+!     .. External Functions ..
       INTEGER EXOR
       EXTERNAL EXOR
-C     ..
-C     .. Intrinsic Functions ..
+!     ..
+!     .. Intrinsic Functions ..
       INTRINSIC MOD
-C     ..
-C     .. Common blocks ..
+!     ..
+!     .. Common blocks ..
       COMMON /SOBDAT/POLY,VINIT
       COMMON /SOBOL/RECIPD,V,S,MAXCOL,COUNT,LASTQ
-C     ..
-C     .. Save statement ..
+!     ..
+!     .. Save statement ..
       SAVE /SOBDAT/,/SOBOL/
-C     ..
-C     .. Data statements ..
+!     ..
+!     .. Data statements ..
       DATA TAU/0,0,1,3,5,8,11,15,19,23,27,31,35/
-C     ..
-C
-C     CHECK PARAMETERS
-C
+!     ..
+!
+!     CHECK PARAMETERS
+!
       S = DIMEN
       FLAG(1) = (S.GE.1 .AND. S.LE.MAXDIM)
       FLAG(2) = (ATMOST.GT.0 .AND. ATMOST.LT.2**MAXBIT)
@@ -965,32 +965,32 @@ C
 
       ELSE
           TAUS = -1
-C     RETURN A DUMMY VALUE TO THE CALLING PROGRAM
+!     RETURN A DUMMY VALUE TO THE CALLING PROGRAM
       END IF
 *
-C
-C     FIND NUMBER OF BITS IN ATMOST
-C
+!
+!     FIND NUMBER OF BITS IN ATMOST
+!
       I = ATMOST
       MAXCOL = 0
    10 MAXCOL = MAXCOL + 1
       I = I/2
       IF (I.GT.0) GO TO 10
-C
-C     INITIALIZE ROW 1 OF V
-C
+!
+!     INITIALIZE ROW 1 OF V
+!
       DO 20 I = 1,MAXCOL
           V(1,I) = 1
    20 CONTINUE
-C
-C     INITIALIZE REMAINING ROWS OF V
-C
+!
+!     INITIALIZE REMAINING ROWS OF V
+!
       DO 80 I = 2,S
-C
-C     THE BIT PATTERN OF POLYNOMIAL I GIVES ITS FORM
-C     (SEE COMMENTS TO "BDSOBL")
-C     FIND DEGREE OF POLYNOMIAL I FROM BINARY ENCODING
-C
+!
+!     THE BIT PATTERN OF POLYNOMIAL I GIVES ITS FORM
+!     (SEE COMMENTS TO "BDSOBL")
+!     FIND DEGREE OF POLYNOMIAL I FROM BINARY ENCODING
+!
           J = POLY(I)
           M = 0
    30     J = J/2
@@ -999,47 +999,47 @@ C
               GO TO 30
 
           END IF
-C
-C     WE EXPAND THIS BIT PATTERN TO SEPARATE COMPONENTS
-C     OF THE LOGICAL ARRAY INCLUD.
-C
+!
+!     WE EXPAND THIS BIT PATTERN TO SEPARATE COMPONENTS
+!     OF THE LOGICAL ARRAY INCLUD.
+!
           J = POLY(I)
           DO 40 K = M,1,-1
               INCLUD(K) = (MOD(J,2).EQ.1)
               J = J/2
    40     CONTINUE
-C
-C     THE LEADING ELEMENTS OF ROW I COME FROM VINIT
-C
+!
+!     THE LEADING ELEMENTS OF ROW I COME FROM VINIT
+!
           DO 50 J = 1,M
               V(I,J) = VINIT(I,J)
    50     CONTINUE
-C
-C     CALCULATE REMAINING ELEMENTS OF ROW I AS EXPLAINED
-C     IN BRATLEY AND FOX, SECTION 2
-C
+!
+!     CALCULATE REMAINING ELEMENTS OF ROW I AS EXPLAINED
+!     IN BRATLEY AND FOX, SECTION 2
+!
           DO 70 J = M + 1,MAXCOL
               NEWV = V(I,J-M)
               L = 1
               DO 60 K = 1,M
                   L = 2*L
                   IF (INCLUD(K)) NEWV = IEOR(NEWV,L*V(I,J-K))
-C
-C     IF A FULL-WORD EXCLUSIVE-OR, SAY .XOR., IS AVAILABLE,
-C     THEN REPLACE THE PRECEDING STATEMENT BY
-C
-C         IF (INCLUD(K)) NEWV = NEWV .XOR. (L * V(I, J-K))
-C
-C     TO GET A FASTER, EXTENDED FORTRAN PROGRAM
-C
+!
+!     IF A FULL-WORD EXCLUSIVE-OR, SAY .XOR., IS AVAILABLE,
+!     THEN REPLACE THE PRECEDING STATEMENT BY
+!
+!         IF (INCLUD(K)) NEWV = NEWV .XOR. (L * V(I, J-K))
+!
+!     TO GET A FASTER, EXTENDED FORTRAN PROGRAM
+!
    60         CONTINUE
               V(I,J) = NEWV
    70     CONTINUE
-C
+!
    80 CONTINUE
-C
-C     MULTIPLY COLUMNS OF V BY APPROPRIATE POWER OF 2
-C
+!
+!     MULTIPLY COLUMNS OF V BY APPROPRIATE POWER OF 2
+!
       L = 1
       DO 100 J = MAXCOL - 1,1,-1
           L = 2*L
@@ -1047,84 +1047,84 @@ C
               V(I,J) = V(I,J)*L
    90     CONTINUE
   100 CONTINUE
-C
-C     RECIPD IS 1/(COMMON DENOMINATOR OF THE ELEMENTS IN V)
-C
+!
+!     RECIPD IS 1/(COMMON DENOMINATOR OF THE ELEMENTS IN V)
+!
       RECIPD = 1.0/ (2*L)
-C
-C     SET UP FIRST VECTOR AND VALUES FOR "GOSOBL"
-C
+!
+!     SET UP FIRST VECTOR AND VALUES FOR "GOSOBL"
+!
       COUNT = 0
       DO 110 I = 1,S
           LASTQ(I) = 0
   110 CONTINUE
-C
+!
       RETURN
 
       END
 
-c*********************************************************************72
+!*********************************************************************72
       SUBROUTINE GOSOBL(QUASI)
-C
-CC GOSOBL generates a new quasirandom vector with each call.
-C
-C     IT ADAPTS THE IDEAS OF ANTONOV AND SALEEV,
-C     USSR COMPUT. MATHS. MATH. PHYS. 19 (1980),
-C     252 - 256
-C
-C     THE USER MUST CALL "INSOBL" BEFORE CALLING
-C     "GOSOBL".  AFTER CALLING "INSOBL", TEST
-C     FLAG(1) AND FLAG(2);  IF EITHER IS FALSE,
-C     DO NOT CALL "GOSOBL".  "GOSOBL" CHECKS
-C     THAT THE USER DOES NOT MAKE MORE CALLS
-C     THAN HE SAID HE WOULD : SEE THE COMMENTS
-C     TO "INSOBL".
-C
-C     INPUTS:
-C       FROM USER'S CALLING PROGRAM:
-C         NONE
-C
-C       FROM LABELLED COMMON /SOBOL/:
-C         V        TABLE OF DIRECTION NUMBERS
-C         S        DIMENSION
-C         MAXCOL   LAST COLUMN OF V TO BE USED
-C         COUNT    SEQUENCE NUMBER OF THIS CALL
-C         LASTQ    NUMERATORS FOR LAST VECTOR GENERATED
-C         RECIPD   (1/DENOMINATOR) FOR THESE NUMERATORS
-C
-C
-C     FIND THE POSITION OF THE RIGHT-HAND ZERO IN COUNT
-C
-C     .. Parameters ..
+!
+!C GOSOBL generates a new quasirandom vector with each call.
+!
+!     IT ADAPTS THE IDEAS OF ANTONOV AND SALEEV,
+!     USSR COMPUT. MATHS. MATH. PHYS. 19 (1980),
+!     252 - 256
+!
+!     THE USER MUST CALL "INSOBL" BEFORE CALLING
+!     "GOSOBL".  AFTER CALLING "INSOBL", TEST
+!     FLAG(1) AND FLAG(2);  IF EITHER IS FALSE,
+!     DO NOT CALL "GOSOBL".  "GOSOBL" CHECKS
+!     THAT THE USER DOES NOT MAKE MORE CALLS
+!     THAN HE SAID HE WOULD : SEE THE COMMENTS
+!     TO "INSOBL".
+!
+!     INPUTS:
+!       FROM USER'S CALLING PROGRAM:
+!         NONE
+!
+!       FROM LABELLED COMMON /SOBOL/:
+!         V        TABLE OF DIRECTION NUMBERS
+!         S        DIMENSION
+!         MAXCOL   LAST COLUMN OF V TO BE USED
+!         COUNT    SEQUENCE NUMBER OF THIS CALL
+!         LASTQ    NUMERATORS FOR LAST VECTOR GENERATED
+!         RECIPD   (1/DENOMINATOR) FOR THESE NUMERATORS
+!
+!
+!     FIND THE POSITION OF THE RIGHT-HAND ZERO IN COUNT
+!
+!     .. Parameters ..
       INTEGER MAXDIM,MAXBIT
       PARAMETER (MAXDIM=1111,MAXBIT=30)
-C     ..
-C     .. Array Arguments ..
+!     ..
+!     .. Array Arguments ..
       DOUBLE PRECISION QUASI(MAXDIM)
-C     ..
-C     .. Scalars in Common ..
+!     ..
+!     .. Scalars in Common ..
       DOUBLE PRECISION RECIPD
       INTEGER COUNT,MAXCOL,S
-C     ..
-C     .. Arrays in Common ..
+!     ..
+!     .. Arrays in Common ..
       INTEGER LASTQ(MAXDIM),V(MAXDIM,MAXBIT)
-C     ..
-C     .. Local Scalars ..
+!     ..
+!     .. Local Scalars ..
       INTEGER I,L
-C     ..
-C     .. External Functions ..
+!     ..
+!     .. External Functions ..
       INTEGER EXOR
       EXTERNAL EXOR
-C     ..
-C     .. Intrinsic Functions ..
+!     ..
+!     .. Intrinsic Functions ..
       INTRINSIC MOD
-C     ..
-C     .. Common blocks ..
+!     ..
+!     .. Common blocks ..
       COMMON /SOBOL/RECIPD,V,S,MAXCOL,COUNT,LASTQ
-C     ..
-C     .. Save statement ..
+!     ..
+!     .. Save statement ..
       SAVE /SOBOL/
-C     ..
+!     ..
       L = 0
       I = COUNT
    10 L = L + 1
@@ -1133,65 +1133,65 @@ C     ..
           GO TO 10
 
       END IF
-C
-C     CHECK THAT THE USER IS NOT CHEATING !
-C
+!
+!     CHECK THAT THE USER IS NOT CHEATING !
+!
       IF (L.GT.MAXCOL) STOP ' TOO MANY CALLS ON GOSOBL'
-C
-C     CALCULATE THE NEW COMPONENTS OF QUASI,
-C     FIRST THE NUMERATORS, THEN NORMALIZED
-C
+!
+!     CALCULATE THE NEW COMPONENTS OF QUASI,
+!     FIRST THE NUMERATORS, THEN NORMALIZED
+!
       DO 20 I = 1,S
           LASTQ(I) = IEOR(LASTQ(I),V(I,L))
-C
-C     IF A FULL-WORD EXCLUSIVE-OR, SAY .XOR., IS AVAILABLE
-C     THEN REPLACE THE PRECEDING STATEMENT BY
-C
-C         LASTQ(I) = LASTQ(I) .XOR. V(I,L)
-C
-C     TO GET A FASTER, EXTENDED FORTRAN PROGRAM
-C
+!
+!     IF A FULL-WORD EXCLUSIVE-OR, SAY .XOR., IS AVAILABLE
+!     THEN REPLACE THE PRECEDING STATEMENT BY
+!
+!         LASTQ(I) = LASTQ(I) .XOR. V(I,L)
+!
+!     TO GET A FASTER, EXTENDED FORTRAN PROGRAM
+!
           QUASI(I) = LASTQ(I)*RECIPD
    20 CONTINUE
-C
+!
       COUNT = COUNT + 1
-C
+!
       RETURN
 
       END
       INTEGER FUNCTION EXOR(IIN,JIN)
 
-c*********************************************************************72
-C
-CC EXOR calculates the exclusive OR of its two input parameters.
-C
-C     .. Scalar Arguments ..
+!*********************************************************************72
+!
+!C EXOR calculates the exclusive OR of its two input parameters.
+!
+!     .. Scalar Arguments ..
       INTEGER IIN,JIN
-C     ..
-C     .. Local Scalars ..
+!     ..
+!     .. Local Scalars ..
       INTEGER I,J,K,L
-C     ..
-C     .. Intrinsic Functions ..
+!     ..
+!     .. Intrinsic Functions ..
       INTRINSIC MOD
-C     ..
+!     ..
       I = IIN
       J = JIN
       K = 0
       L = 1
-C
+!
    10 IF (I.EQ.J) THEN
           EXOR = K
           RETURN
 
       END IF
-C
-C     CHECK THE CURRENT RIGHT-HAND BITS OF I AND J.
-C     IF THEY DIFFER, SET THE APPROPRIATE BIT OF K.
-C
+!
+!     CHECK THE CURRENT RIGHT-HAND BITS OF I AND J.
+!     IF THEY DIFFER, SET THE APPROPRIATE BIT OF K.
+!
       IF (MOD(I,2).NE.MOD(J,2)) K = K + L
       I = I/2
       J = J/2
       L = 2*L
       GO TO 10
-C
+!
       END

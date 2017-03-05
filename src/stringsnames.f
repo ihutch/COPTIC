@@ -1,30 +1,30 @@
-c****************************************************************
-c String construction, length, and concatenation routines.
-c***************************************************************
-C Construct a name based on a series of parameters.
-c Example
-c      program nameconstruct
-c      character*30 name
-cc Zero the name first. Very Important!
-c      name=' '
-c      call nameappendexp(name,'F',11.,2)
-c      call nameappendint(name,'second',37,2)
-c      np=nbcat(name,' dat')
-c      write(*,*)name
-c      end
-c*******************************************************************
+!****************************************************************
+! String construction, length, and concatenation routines.
+!***************************************************************
+! Construct a name based on a series of parameters.
+! Example
+!      program nameconstruct
+!      character*30 name
+!c Zero the name first. Very Important!
+!      name=' '
+!      call nameappendexp(name,'F',11.,2)
+!      call nameappendint(name,'second',37,2)
+!      np=nbcat(name,' dat')
+!      write(*,*)name
+!      end
+!*******************************************************************
       subroutine nameappendexp(name,paramname,param,ip)
       character*(*) name,paramname
       real param
       character*12 sval
       sval=' '
       np=nbcat(name,paramname)      
-c      call nbcat(name,paramname)      
+!      call nbcat(name,paramname)      
       call eformati(param,sval,ip)
       np=nbcat(name,sval)
-c      call nbcat(name,sval)
+!      call nbcat(name,sval)
       end
-c*******************************************************************
+!*******************************************************************
       subroutine nameappendint(name,paramname,iparam,ip)
       character*(*) name,paramname
       character*12 form
@@ -38,10 +38,10 @@ c*******************************************************************
       np=nbcat(name,paramname)
       write(name(lentrim(name)+1:),form)iparam
       end
-c******************************************************************
-c Concatenate string2 trimmed of trailing blanks
-c to string1 trimmed of trailing blanks. 
-c Return the number of catenated characters.
+!******************************************************************
+! Concatenate string2 trimmed of trailing blanks
+! to string1 trimmed of trailing blanks. 
+! Return the number of catenated characters.
       function nbcat(string1,string2)
       character*(*) string1,string2
       l1=lentrim(string1)
@@ -50,19 +50,19 @@ c Return the number of catenated characters.
       string1(l1+1:l1+l2)=string2(1:l2)
       nbcat=l2
       end
-c******************************************************************
-c Now included in accis library
-c Obtain the length of a string omitting trailing blanks.
-c      function lentrim(string)
-c      character*(*) string
-c      do i=len(string),1,-1
-c         if(string(i:i).ne.' ') goto 101
-c      enddo
-c      i=0
-c 101  lentrim=i
-c      end
-c******************************************************************
-c Construct an exp-formatted value with ip significant figures.
+!******************************************************************
+! Now included in accis library
+! Obtain the length of a string omitting trailing blanks.
+!      function lentrim(string)
+!      character*(*) string
+!      do i=len(string),1,-1
+!         if(string(i:i).ne.' ') goto 101
+!      enddo
+!      i=0
+! 101  lentrim=i
+!      end
+!******************************************************************
+! Construct an exp-formatted value with ip significant figures.
       subroutine eformati(value,string,ip)
       character*(*) string
       character*6 form
@@ -87,9 +87,9 @@ c Construct an exp-formatted value with ip significant figures.
       endif
       write(string(2+ip:2+ip),'(i1.1)')iti
       end
-c******************************************************************
-c Return the position (not pointer) of match in string
-c Trailing blanks are ignored in either string.
+!******************************************************************
+! Return the position (not pointer) of match in string
+! Trailing blanks are ignored in either string.
       function istrstr(string,match)
       integer istrstr
       character*(*) string,match
@@ -100,7 +100,7 @@ c Trailing blanks are ignored in either string.
          do j=1,lm
             if(string(i+j-1:i+j-1).ne.match(j:j)) goto 101
          enddo
-c Here when matched.
+! Here when matched.
          istrstr=i
          goto 102
  101     continue

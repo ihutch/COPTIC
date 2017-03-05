@@ -3,15 +3,15 @@
       include '../accis/plotcom.h'
       include 'examdecl.f'
 
-c nr ought to be adjustable below to the coarseness of the mesh.
-c For decent resolution 38 works.
+! nr ought to be adjustable below to the coarseness of the mesh.
+! For decent resolution 38 works.
       parameter (ntheta=4,nr=24)
       real thetadist(nr,ntheta),thetaval(ntheta),rval(0:nr)
       real rvalneg(0:nr)
       integer ithetacount(nr,ntheta)
-c Cylindrical scalar distribution:     
+! Cylindrical scalar distribution:     
       real rzdist(0:nr,na_k)
-c Cylindrical vector distribution:
+! Cylindrical vector distribution:
       real vrz(0:nr,na_k,3)
       integer irzcount(nr,na_k)
       real rzmval(na_k),rzmpos(na_k),zpos(na_k)
@@ -20,7 +20,7 @@ c Cylindrical vector distribution:
 
       real oneoverr(100),huckel(100),ro(100),cl(100)
       real xl(2),yl(2)
-c
+!
       logical lsd,lhalf,lvtk,lmeshwrite
       integer ifix(3),isubtract
       parameter (ndiagmax=7)
@@ -28,13 +28,13 @@ c
       real phimax
       data phimax/0./isubtract/0/
       data lsd/.false./lhalf/.false./lvtk/.false./lmeshwrite/.false./
-c 
+! 
 
       diagfilename=''
       isw=1
       call examargs(rp,phimax,isw,lsd,lhalf,lvtk,isubtract,lmeshwrite)
          
-c      write(*,*)(u(16,16,k),k=1,36) 
+!      write(*,*)(u(16,16,k),k=1,36) 
       ied=1
       call array3read(phifilename,ifull,iuds,ied,u,ierr)
       if(ierr.eq.1)stop
@@ -50,10 +50,10 @@ c      write(*,*)(u(16,16,k),k=1,36)
      $        ,ixnp(kk+1)),kk=1,3)
       endif
 
-c      write(*,*)(u(16,16,k),k=1,36) 
-c      call noeye3d(0)
+!      write(*,*)(u(16,16,k),k=1,36) 
+!      call noeye3d(0)
       if(lsd)then
-c Scale the size to debyelen
+! Scale the size to debyelen
          do i=1,ixnp(4)
             xn(i)=xn(i)/debyelen
          enddo
@@ -61,7 +61,7 @@ c Scale the size to debyelen
 
       if(isubtract.ne.0)then
          write(*,*)'isubtract=',isubtract
-c Subtract the edge value face No isubtract from the rest.
+! Subtract the edge value face No isubtract from the rest.
          do k=1,iuds(3)
             do j=1,iuds(2)
                do i=1,iuds(1)
@@ -72,15 +72,15 @@ c Subtract the edge value face No isubtract from the rest.
                   if(isubtract.eq.2)j1=iuds(2)
                   if(isubtract.eq.3)k1=iuds(3)
                   u(i,j,k)=u(i,j,k)-u(i1,j1,k1)
-c                  write(*,*)i,j,k,i1,j1,k1,u(i,j,k)
-c                  u(i,j,k)=1.
+!                  write(*,*)i,j,k,i1,j1,k1,u(i,j,k)
+!                  u(i,j,k)=1.
                enddo
             enddo
          enddo
       endif
 
       if(lvtk)then
-c Write Visit-readable vtk file of potential. And stop.
+! Write Visit-readable vtk file of potential. And stop.
          argument=phifilename
          call termchar(argument)
          if(fluxfilename(1:1).eq.' ')then
@@ -88,7 +88,7 @@ c Write Visit-readable vtk file of potential. And stop.
          else
             write(*,*)'Variable name: '
      $           ,fluxfilename(1:lentrim(fluxfilename))
-c Spaces are not allowed in visit data names. Fix:
+! Spaces are not allowed in visit data names. Fix:
             do i=1,lentrim(fluxfilename)
                if(fluxfilename(i:i).eq.' ')fluxfilename(i:i)='_'
             enddo
@@ -102,7 +102,7 @@ c Spaces are not allowed in visit data names. Fix:
          stop
       endif
 
-c 3-D examination of the array.
+! 3-D examination of the array.
       isw2=isw/2
       if(isw2-(isw2/2)*2.eq.0)then
          ifix(1)=1
@@ -116,7 +116,7 @@ c 3-D examination of the array.
 
 
       iplot=2
-c Default spherical r plot.
+! Default spherical r plot.
       if(ixnp(2).ne.32)then
          iplot=0
          write(*,*)'Non-standard mesh length.',ixnp(2)
@@ -130,16 +130,16 @@ c Default spherical r plot.
                iplot=0
                goto 1
             else
-c               write(*,*)'Unequal y-z mesh dimensions. r-z plot.'
+!               write(*,*)'Unequal y-z mesh dimensions. r-z plot.'
                iplot=1
             endif
          endif
       enddo
  1    continue
-c%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       if(iplot.eq.2)then
-c r-theta spherical plots 
-c For boxes
+! r-theta spherical plots 
+! For boxes
          rs=sqrt(3.)*rs
          do j=1,nr
             do i=1,ntheta
@@ -148,11 +148,11 @@ c For boxes
                if(i.eq.1)thetaval(i)=-1.+ (i-0.5)/float(ntheta)
             enddo
             rval(j)=1.+(rs-1.)*(j-0.5)/float(nr)
-c         write(*,*)j,rval(j)
+!         write(*,*)j,rval(j)
          enddo
 
-c plot potential versus radius.
-c         write(*,*)rs
+! plot potential versus radius.
+!         write(*,*)rs
          call pltinit(0.,rs,u(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
          call axis()
          call axlabels('radius','potential')
@@ -169,7 +169,7 @@ c         write(*,*)rs
                   r=sqrt(x**2+y**2+z**2)
                   call polymark(r,u(i,j,k),1,10)
                   if(r.gt.rs .and. u(i,j,k).ne.0)then
-c                  write(*,'(4f12.6,3i3)')x,y,z,u(i,j,k),i,j,k
+!                  write(*,'(4f12.6,3i3)')x,y,z,u(i,j,k),i,j,k
                   endif
                   if(u(i,j,k).le.phimin.and.r.le.rmin)then
                      rmin=r
@@ -180,17 +180,17 @@ c                  write(*,'(4f12.6,3i3)')x,y,z,u(i,j,k),i,j,k
                enddo
             enddo
          enddo
-c If redge is nearly 1, guess it is exactly 1.
+! If redge is nearly 1, guess it is exactly 1.
          if(abs(redge-1.).lt..1)redge=1.
          do i=1,100
-c            ro(i)=1.+(rs-1.)*i/100
+!            ro(i)=1.+(rs-1.)*i/100
             ro(i)=rmin+(rs-rmin)*(i-1.)/(100-1.)
             oneoverr(i)=phimin*redge/ro(i)
             huckel(i)=phimin*(redge/ro(i))*
      $           exp(-max(0.,(ro(i)-redge))/debyelen)
          enddo
          write(*,*)rmin,redge,phimin,debyelen
-c Average together.
+! Average together.
          denmin=0.
          do k=1,iuds(3)
             do j=1,iuds(2)
@@ -234,18 +234,18 @@ c Average together.
             enddo
          enddo
 
-c Plot binned data:
+! Plot binned data:
          do i=1,ntheta
             call color(mod(i,16))
             call polyline(rval(1),thetadist(1,i),nr)
          enddo
 
-c Uncomment for written output.
-c         write(*,*)'r, phi distribution (ir,itheta)'
-c         write(*,*)nr, ntheta
-c         do j=1,nr
-c            write(*,'(10f8.4)')rval(j),(thetadist(j,i),i=1,ntheta)
-c         enddo
+! Uncomment for written output.
+!         write(*,*)'r, phi distribution (ir,itheta)'
+!         write(*,*)nr, ntheta
+!         do j=1,nr
+!            write(*,'(10f8.4)')rval(j),(thetadist(j,i),i=1,ntheta)
+!         enddo
 
          call charsize(0.,0.)
          call color(2)
@@ -259,32 +259,32 @@ c         enddo
          call legendline(.5,.15,0,'Yukawa Potential')
          call dashset(0)
          call pltend()
-c%%%%%%%%%%%%%%% End of spherical r-theta plotting %%%%%%%%%%%
+!%%%%%%%%%%%%%%% End of spherical r-theta plotting %%%%%%%%%%%
       elseif(iplot.eq.1)then
-c r-z binning and plotting
+! r-z binning and plotting
          x0=(xn(ixnp(1)+1)+xn(ixnp(2)))/2.
          rx=max(abs(xn(ixnp(1)+1)-x0),abs(xn(ixnp(2))-x0))
          y0=(xn(ixnp(2)+1)+xn(ixnp(3)))/2.
          ry=max(abs(xn(ixnp(2)+1)-x0),abs(xn(ixnp(3))-y0))
          rs=sqrt(rx**2+ry**2)
 
-c If phimax is set, don't change it.         
+! If phimax is set, don't change it.         
          phim=0.
          call cyl3bin(nr,rzdist,irzcount,rval,rvalneg,phim,u)
          if(phimax.le.0.)phimax=phim
 
-c Now rzdist(nr,nz) is the rz-distribution of the (average) potential.
-c Contour it.
+! Now rzdist(nr,nz) is the rz-distribution of the (average) potential.
+! Contour it.
          call pfset(3)
          nc=30
          call fitrange(-phimax,phimax,nc,ipow,fac10,delta,first,xlast)
-c         write(*,*)ipow,fac10,delta,first,xlast
+!         write(*,*)ipow,fac10,delta,first,xlast
          do k=1,nc
             cl(k)=(first+k*delta)
          enddo
          nc=abs(2.*phimax)/abs(delta)
-c         write(*,*)' Phimax', phimax,' fac10',fac10
-c         write(*,*)' Contours',nc,(cl(k),k=1,nc)
+!         write(*,*)' Phimax', phimax,' fac10',fac10
+!         write(*,*)' Contours',nc,(cl(k),k=1,nc)
          iconsw=1+64
          if(lhalf)then
             call pltinaspect(0.,rval(nr),
@@ -298,16 +298,16 @@ c         write(*,*)' Contours',nc,(cl(k),k=1,nc)
      $        cl,nc,rval,xn(ixnp(3)+1),iconsw)
          if(.not.lhalf)call contourl(rzdist,ppath,nr+1,nr+1,iuds(3),
      $        cl,nc,rvalneg,xn(ixnp(3)+1),iconsw)
-c         write(*,*)'ipow',ipow
+!         write(*,*)'ipow',ipow
          call fwrite(delta,iwd,max(-ipow,0)+1,string)
          call boxtitle('!Af!@-contours ('//string(1:iwd)
      $        //'T!de!d spaced)')
          if(isw-2*(isw/2).ne.0)then
             xgl=-0.3*(xn(ixnp(3)+iuds(3))-xn(ixnp(3)+1))/(2.*rval(nr))
-c            write(*,*)'xgl=',xgl,phimax
+!            write(*,*)'xgl=',xgl,phimax
             call gradlegend(-phimax,phimax,xgl,0.,xgl,1.,-.04,.false.) 
          endif
-c Indicate rectangle limits.
+! Indicate rectangle limits.
          yl(1)=xn(ixnp(3)+1)
          yl(2)=xn(ixnp(3)+iuds(3))
          call dashset(2)
@@ -331,12 +331,12 @@ c Indicate rectangle limits.
          xl(1)=0.
          xl(2)=0.
          call polyline(xl,yl,2)
-c         call fwrite(vd,iwd,2,string)
-c         call jdrwstr(.02,.31,'v!dd!d='//string(1:iwd),1.)
-c         call fwrite(debyelen,iwd,1,string)
-c         call jdrwstr(.02,.25,'!Al!@!dDe!d='//string(1:iwd),1.)
-c         call fwrite(phip,iwd,2,string)
-c         call jdrwstr(.02,.28,'!Af!@!dp!d='//string(1:iwd),1.)
+!         call fwrite(vd,iwd,2,string)
+!         call jdrwstr(.02,.31,'v!dd!d='//string(1:iwd),1.)
+!         call fwrite(debyelen,iwd,1,string)
+!         call jdrwstr(.02,.25,'!Al!@!dDe!d='//string(1:iwd),1.)
+!         call fwrite(phip,iwd,2,string)
+!         call jdrwstr(.02,.28,'!Af!@!dp!d='//string(1:iwd),1.)
          call color(15)
          if(lsd)then
             call axlabels('r/!Al!@!dDe!d','z/!Al!@!dDe!d')
@@ -355,7 +355,7 @@ c         call jdrwstr(.02,.28,'!Af!@!dp!d='//string(1:iwd),1.)
             call axis()
          endif
 
-c Overplotting arrows.
+! Overplotting arrows.
 
          if(lentrim(diagfilename).ne.0)then
             ndiags=ndiagmax
@@ -366,16 +366,16 @@ c Overplotting arrows.
             rs=sqrt(rx**2+ry**2)
             call cyl3vbin(nr,vrz,irzcount,rval,rvalneg,vmax
      $           ,diagsum,ndiags)
-c Use vector positions. Set skipping
+! Use vector positions. Set skipping
             isw2=1+4
-c Draw arrows every 4,4, points.
+! Draw arrows every 4,4, points.
             call arrowplot(vrz(1,1,2),vrz(1,1,3),vmax*100,nr+1,nr,na_k
      $           ,rval(1),xn(ixnp(3)+1),isw2,4,4)
          endif
  3       call pltend()
       endif
-c Now we want to find the r-position of the peak potential at each
-c z. 
+! Now we want to find the r-position of the peak potential at each
+! z. 
 
 
       write(*,*)'Not finding potential peaks, but could do so ...'
@@ -397,7 +397,7 @@ c z.
          enddo
       enddo
       izt=iuds(3)+1-iz0
-c      call autoplot(rzmpos(iz0),xn(ixnp(3)+iz0),izt)
+!      call autoplot(rzmpos(iz0),xn(ixnp(3)+iz0),izt)
       call pltinaspect(0.,rval(nr)/debyelen,0.,xn(ixnp(3)+iuds(3))
      $     /debyelen)
       call axis()
@@ -411,8 +411,8 @@ c      call autoplot(rzmpos(iz0),xn(ixnp(3)+iz0),izt)
       write(22,'(a,f5.2)')'legend: M=',vd
       write(22,*)izt
       do i=0,izt-1
-c         write(22,*)xn(ixnp(3)+iz0+i),rzmpos(iz0+i)
-c         write(22,*)rzmpos(iz0+i),xn(ixnp(3)+iz0+i)
+!         write(22,*)xn(ixnp(3)+iz0+i),rzmpos(iz0+i)
+!         write(22,*)rzmpos(iz0+i),xn(ixnp(3)+iz0+i)
          write(22,*)rzmpos(iz0+i),zpos(iz0+i)
       enddo
       close(22)
@@ -421,7 +421,7 @@ c         write(22,*)rzmpos(iz0+i),xn(ixnp(3)+iz0+i)
  101  write(*,*)'Error writing output'
       end
 
-c*************************************************************
+!*************************************************************
       subroutine examargs(rp,phimax,isw,lsd,lhalf,lvtk,isubtract
      $     ,lmeshwrite)
       include 'examdecl.f'
@@ -431,12 +431,12 @@ c*************************************************************
       ifull(2)=na_j
       ifull(3)=na_k
 
-c Defaults and silence warnings.
+! Defaults and silence warnings.
       phifilename=' '
       fluxfilename=' '
       zp(1,1,1)=0.
 
-c Deal with arguments
+! Deal with arguments
       if(iargc().eq.0) goto 201
       do i=1,iargc()
          call getarg(i,argument)
@@ -470,15 +470,15 @@ c Deal with arguments
          
       enddo
       goto 202
-c------------------------------------------------------------
-c Help text
+!------------------------------------------------------------
+! Help text
  201  continue
       write(*,*)'=====Error reading command line argument'
  203  continue
  301  format(a,i5)
       write(*,301)'Usage: phiexamine [switches] <phifile>'
-c      write(*,301)' --objfile<filename>  set name of object data file.'
-c     $     //' [copticgeom.dat'
+!      write(*,301)' --objfile<filename>  set name of object data file.'
+!     $     //' [copticgeom.dat'
       write(*,301)' -r<rp> -p<phimax> -l<isw> -b<isub>'
       write(*,301)' isw: Byte 1: gradlegend(1) 2: SliceCont(0) ...'
       write(*,301)' isub: Set dimension whose edge value to subtract'
@@ -495,9 +495,9 @@ c     $     //' [copticgeom.dat'
  202  continue
       if(lentrim(partfilename).lt.5)goto 203
       end
-c*****************************************************************
-c Bin rectangular scalar mesh values into radial (cylindrical) 
-c mesh values and average in angle.
+!*****************************************************************
+! Bin rectangular scalar mesh values into radial (cylindrical) 
+! mesh values and average in angle.
       subroutine cyl3bin(nr,rzdist,irzcount,rval,rvalneg,phimax,up)
       implicit none
       integer nr
@@ -506,16 +506,16 @@ c mesh values and average in angle.
       integer irzcount(nr,na_k)
       real rval(0:nr),rvalneg(0:nr)
       real phimax
-c Passed quantity whose mesh is declared in examdecl. E.g. potential.
-c It is defined for iuds.
+! Passed quantity whose mesh is declared in examdecl. E.g. potential.
+! It is defined for iuds.
       real up(ifull(1),ifull(2),ifull(3))
-c Local variables:
+! Local variables:
       real rmin,x,y,z,r
       integer i,j,k,ir,nz,jp,jm
 
-c r-z binning and plotting
+! r-z binning and plotting
          nz= ixnp(3+1)-ixnp(3)
-c Set up r-mesh.
+! Set up r-mesh.
          do j=1,nr
             do i=1,nz
                rzdist(j,i)=0.
@@ -523,13 +523,13 @@ c Set up r-mesh.
             enddo
             rval(j)=(rs)*(j-0.5)/float(nr)
             rvalneg(j)=-rval(j)
-c            write(*,*)j,rval(j)
+!            write(*,*)j,rval(j)
          enddo
 
-c Bin values
+! Bin values
          rmin=1.e10
-c Now set by calling routine.
-c         phimax=0.
+! Now set by calling routine.
+!         phimax=0.
          do k=1,iuds(3)
             z=xn(ixnp(3)+k)
             do j=1,iuds(2)
@@ -548,7 +548,7 @@ c         phimax=0.
             enddo
          enddo
 
-c         write(*,*)((j,rval(j),irzcount(j,k),j=1,nr),k=1,1)
+!         write(*,*)((j,rval(j),irzcount(j,k),j=1,nr),k=1,1)
          do j=1,nr
             do i=1,iuds(3)
                if(irzcount(j,i).ne.0)then
@@ -556,7 +556,7 @@ c         write(*,*)((j,rval(j),irzcount(j,k),j=1,nr),k=1,1)
                endif
             enddo
          enddo
-c Fix up zero values if necessary.
+! Fix up zero values if necessary.
          do j=1,nr
             do i=1,iuds(3)
                if(irzcount(j,i).eq.0)then
@@ -571,12 +571,12 @@ c Fix up zero values if necessary.
                   else
                      write(*,*)'Failed setting rzdist',j,i,jm,jp
      $                    ,' Too coarse a mesh? rmin=',rmin
-c     $                    ,rval(jm),rval(jp)
+!     $                    ,rval(jm),rval(jp)
                   endif
                endif
             enddo
          enddo
-c Fill in along the axis.
+! Fill in along the axis.
             rval(0)=0.
             rvalneg(0)=0.
          do k=1,iuds(3)
@@ -584,10 +584,10 @@ c Fill in along the axis.
          enddo
 
       end
-c*****************************************************************
-c Bin rectangular vector mesh values into radial (cylindrical) 
-c mesh values and average in angle. Turn a 3-D vector quantity
-c into 2-D vr,vz components over an rz mesh. Normalize by n.
+!*****************************************************************
+! Bin rectangular vector mesh values into radial (cylindrical) 
+! mesh values and average in angle. Turn a 3-D vector quantity
+! into 2-D vr,vz components over an rz mesh. Normalize by n.
       subroutine cyl3vbin(nr,vrz,irzcount,rval,rvalneg,vmax
      $     ,diagsum,ndiags)
       implicit none
@@ -597,9 +597,9 @@ c into 2-D vr,vz components over an rz mesh. Normalize by n.
       integer irzcount(nr,na_k)
       real rval(0:nr),rvalneg(0:nr)
       real vmax
-c Passed diagnostic quantities. n,v1,2,3, at least
+! Passed diagnostic quantities. n,v1,2,3, at least
       real diagsum(na_i,na_j,na_k,ndiags)
-c Local variables:
+! Local variables:
       real rmin,x,y,z,r,den,vz,vr
       integer i,j,k,ir,nz,jp,jm
 
@@ -607,9 +607,9 @@ c Local variables:
          write(*,*)'Too few diagnostics for cyl3vbin'
          return
       endif
-c r-z binning and plotting
+! r-z binning and plotting
          nz= ixnp(3+1)-ixnp(3)
-c Set up r-mesh.
+! Set up r-mesh.
          do j=1,nr
             do i=1,nz
                do k=1,3
@@ -619,10 +619,10 @@ c Set up r-mesh.
             enddo
             rval(j)=(rs)*(j-0.5)/float(nr)
             rvalneg(j)=-rval(j)
-c            write(*,*)j,rval(j)
+!            write(*,*)j,rval(j)
          enddo
 
-c Bin values
+! Bin values
          rmin=1.e10
          do k=1,iuds(3)
             z=xn(ixnp(3)+k)
@@ -650,8 +650,8 @@ c Bin values
             enddo
          enddo
 
-c         write(*,*)((j,rval(j),irzcount(j,k),j=1,nr),k=1,1)
-c Normalize
+!         write(*,*)((j,rval(j),irzcount(j,k),j=1,nr),k=1,1)
+! Normalize
          vmax=0.
          do j=1,nr
             do i=1,iuds(3)
@@ -668,7 +668,7 @@ c Normalize
                endif
             enddo
          enddo
-c Fix up zero values if necessary.
+! Fix up zero values if necessary.
          do j=1,nr
             do i=1,iuds(3)
                if(irzcount(j,i).eq.0)then
@@ -687,12 +687,12 @@ c Fix up zero values if necessary.
                   else
                      write(*,*)'Failed setting vrz',j,i,jm,jp
      $                    ,' Too coarse a mesh? rmin=',rmin
-c     $                    ,rval(jm),rval(jp)
+!     $                    ,rval(jm),rval(jp)
                   endif
                endif
             enddo
          enddo
-c Fill in along the axis.
+! Fill in along the axis.
             rval(0)=0.
             rvalneg(0)=0.
          do j=1,iuds(3)

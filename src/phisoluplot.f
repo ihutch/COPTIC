@@ -4,16 +4,16 @@
       logical ltestplot
       include 'ndimsdecl.f'
       include '3dcom.f'
-c Silence warning:
+! Silence warning:
       r=rs
-c      write(*,*)r,obj_geom(otype,2),ltestplot
-c Do some analytic checking of the case with a fixed potential sphere
-c inside an object 2 sphere with its radius and BC.
+!      write(*,*)r,obj_geom(otype,2),ltestplot
+! Do some analytic checking of the case with a fixed potential sphere
+! inside an object 2 sphere with its radius and BC.
       if(obj_geom(otype,2).ne.257)return
-c Also write out some data for checking.
+! Also write out some data for checking.
       rc=obj_geom(oradius,1)
       phip=-obj_geom(oabc+2,1)/obj_geom(oabc,1)
-c Calculate the object-2 outer boundary correction to phiinf
+! Calculate the object-2 outer boundary correction to phiinf
       a=obj_geom(oabc,2)
       b=obj_geom(oabc+1,2)
       c=obj_geom(oabc+2,2)
@@ -21,13 +21,13 @@ c Calculate the object-2 outer boundary correction to phiinf
       if(r.eq.0)return
       phiinf=-(a*phip*rc/r -b*phip*rc/r**2+c)
      $     /(-a*rc/r + a + b*rc/r**2)
-c         write(*,*)'Vacuum phiinfty=',phiinf,'  rabc=',r,a,b,c,oabc
+!         write(*,*)'Vacuum phiinfty=',phiinf,'  rabc=',r,a,b,c,oabc
       write(*,'(a,f7.4,a,f8.4,a,f7.4,a,f8.4)')
      $     ' Vacuum solution: rc=',rc,' phip=',phip,
      $     ' inside r=',r,' phi_infty=',phiinf
       call spherecheck(ifull,iuds,u,phip,rc,phiinf)
       if(ltestplot)then
-c Plot some of the initial-solver data.
+! Plot some of the initial-solver data.
          call solu3plot(ifull,iuds,u,cij,
      $        phip,phiinf,rc,thetain,nth)
          write(*,*)'Return from solu3plot.'
@@ -35,7 +35,7 @@ c Plot some of the initial-solver data.
       endif
       end
 
-c********************************************************************
+!********************************************************************
       subroutine circleplot(xc,yc,r)
       integer nangle
       parameter (nangle=100,pi=3.1415927)
@@ -49,10 +49,10 @@ c********************************************************************
          if(i.eq.1)ip=1
       enddo
       end
-c********************************************************************
+!********************************************************************
       subroutine spherecheck(ifull,iuds,u,phi,rc,phiinf)
-c Do some analytic checking of the case with a fixed potential sphere
-c inside a logarithmic derivative boundary condition. 1/r solution.
+! Do some analytic checking of the case with a fixed potential sphere
+! inside a logarithmic derivative boundary condition. 1/r solution.
       include 'ndimsdecl.f'
       include 'meshcom.f'
       integer iuds(ndimsmax),ifull(ndimsmax)
@@ -71,7 +71,7 @@ c inside a logarithmic derivative boundary condition. 1/r solution.
      $              r.ge.rc)then
                   count=count+1.
                   e=u(i,j,k)-(phiinf+(phi-phiinf)*rc/r)
-c                     error(i,j,k)=e
+!                     error(i,j,k)=e
                   errvar=errvar+e**2
                   if(abs(e).gt.abs(errmax))then
                      errmax=e
@@ -83,21 +83,21 @@ c                     error(i,j,k)=e
             enddo
          enddo
       enddo
-c      write(*,*)errvar,count,errmax,iuds,u(3,3,3)
+!      write(*,*)errvar,count,errmax,iuds,u(3,3,3)
       errvar=errvar/count
       write(*,'(a,f8.5,a,f10.6)')' Maximum nodal vacuum phi error='
      $     ,errmax,'   Standard Deviation=',sqrt(errvar)
-c      stop
+!      stop
       if(sqrt(errvar).gt.0.4)then
          write(*,*)
      $     '********** Standard Deviation too large *************'
       endif
-c Rarely needed printout of u:
-c      iform=7
-c      uscale=10000000.
-c      call udisplay(ndims,u,ifull,iuds,iform,uscale)
-c Write some data out for cross checking
-c Delete the file first to help with nfs problems.
+! Rarely needed printout of u:
+!      iform=7
+!      uscale=10000000.
+!      call udisplay(ndims,u,ifull,iuds,iform,uscale)
+! Write some data out for cross checking
+! Delete the file first to help with nfs problems.
          open(21,file='smt.round',status='unknown')
          close(21,status='delete')
          open(21,file='smt.round',status='unknown')
@@ -105,7 +105,7 @@ c Delete the file first to help with nfs problems.
          write(21,'(6e12.4)')
      $        ((u(i,j,iuds(3)/2),i=1,iuds(1)/2),j=1,iuds(2)/2)
          close(21)
-c This file has full accuracy.
+! This file has full accuracy.
          open(20,file='smt.out',status='unknown')
          close(20,status='delete')
          open(20,file='smt.out',status='unknown')
@@ -114,8 +114,8 @@ c This file has full accuracy.
      $        ((u(i,j,iuds(3)/2),i=1,iuds(1)/2),j=1,iuds(2)/2)
          close(20)
       end
-c***************************************************************
-c Master plotting routine.
+!***************************************************************
+! Master plotting routine.
       subroutine solu3plot(ifull,iuds,u,cij,
      $     phi,phiinf,rc,thetain,nth)
       real thetain
@@ -128,13 +128,13 @@ c Master plotting routine.
          iLs(i+1)=iLs(i)*ifull(i)
       enddo
       call fixedline(ifull,iuds,u,phi,phiinf,rc)
-c      call slicesolu(ifull,iuds,u,cij)
+!      call slicesolu(ifull,iuds,u,cij)
       call gradradial(ifull,iLs,u,cij,phi,phiinf,rc,thetain,nth)
-c      call phiradial(ifull,iLs,cij,phi,phiinf,rc,thetain,nth,rs)
+!      call phiradial(ifull,iLs,cij,phi,phiinf,rc,thetain,nth,rs)
       call eremesh(ifull,iLs,iuds,u,cij,phi,phiinf,rc)
       end
-c***************************************************************
-c Packaged version of plotting.
+!***************************************************************
+! Packaged version of plotting.
       subroutine slicesolu(ifull,iuds,u,cij)
 
       include 'ndimsdecl.f'
@@ -148,19 +148,19 @@ c Packaged version of plotting.
       include 'meshcom.f'
       include '3dcom.f'
 
-c Plotting slices.
+! Plotting slices.
       ifix=3
       call slice3web(ifull,iuds,u,cij,Li,zp,cijp,ixnp,xn,ifix,
      $     'potential:'//'!Ay!@',1)
       end
-c*******************************************************************
-c Packaged version of plotting.
+!*******************************************************************
+! Packaged version of plotting.
       subroutine gradradial(ifull,iLs,u,cij,phi,phiinf,rc,thetain,nth)
-c     $     ,rs)
+!     $     ,rs)
       include 'ndimsdecl.f'
       parameter (nd2=ndimsmax*2)
       integer ifull(ndimsmax)
-c     integer iuds(ndims)
+!     integer iuds(ndims)
       real cij(2*ndimsmax+1,ifull(1),ifull(2),ifull(3))
       real u(ifull(1),ifull(2),ifull(3))
       integer ifmax
@@ -177,9 +177,9 @@ c     integer iuds(ndims)
       character*40 form1
       include 'meshcom.f'
       include '3dcom.f'      
-c-------------------------------------------------------------------
-c Field plotting for various different lines:
-c Spherical angles in 3-D
+!-------------------------------------------------------------------
+! Field plotting for various different lines:
+! Spherical angles in 3-D
       graderr=0.
       tgraderr=0.
       do iti=1,nth
@@ -189,28 +189,28 @@ c Spherical angles in 3-D
          st=sin(theta)
          cp=cos(varphi)
          sp=sin(varphi)
-c         write(*,*)'rs=',rs
+!         write(*,*)'rs=',rs
          do i=1,Li
-c            zero(i)=0.
-c            rp=rs*i/(Li-1)
-c            rp=.99999*rs*i/Li
+!            zero(i)=0.
+!            rp=rs*i/(Li-1)
+!            rp=.99999*rs*i/Li
             rp=.99999*5.*i/Li
             rprime(i)=rp
-c Coordinates relative to center of first object (sphere).
+! Coordinates relative to center of first object (sphere).
             xprime(1,i)=rp*st*cp + obj_geom(ocenter,1)  
             xprime(2,i)=rp*st*sp + obj_geom(ocenter+1,1)  
             xprime(3,i)=rp*ct + obj_geom(ocenter+2,1)  
             
             iregion=insidemask(ndims,xprime(1,i))
-c Calculate fractional mesh positions of this point, always positive.
-c Thus the origin of the box is below point in all dimensions.
+! Calculate fractional mesh positions of this point, always positive.
+! Thus the origin of the box is below point in all dimensions.
             do id=1,ndims
-c Offset to start of idf position array.
+! Offset to start of idf position array.
                ioff=ixnp(id)
-c xn is the position array for each dimension arranged linearly.
-c Find the index of xprime in the array xn:
+! xn is the position array for each dimension arranged linearly.
+! Find the index of xprime in the array xn:
                ix=interp(xn(ioff+1),ixnp(id+1)-ioff,xprime(id,i),xm)
-c                  ix=xm
+!                  ix=xm
                if(xm.ge.(ixnp(id+1)-ixnp(id)))then
                   write(*,*)'****** ccpicplot xm too big',id,xm
                   xm=ixnp(id+1)-ixnp(id)-1.e-3
@@ -218,7 +218,7 @@ c                  ix=xm
                xff(id)=xm
                xfrac(id)=xm-ix
                itemp(id)=ix
-c attempt to fix getsimple.
+! attempt to fix getsimple.
                if(itemp(id).le.1)then
                   itemp(id)=itemp(id)+1
                   xfrac(id)=xfrac(id)-1.
@@ -228,12 +228,12 @@ c attempt to fix getsimple.
                endif
             enddo
             
-c Get the ndims field components at this point.
-c               write(*,*)'xfrac',(xfrac(kk),kk=1,ndims)
-c     $              ,(xprime(kk,i),kk=1,ndims)
+! Get the ndims field components at this point.
+!               write(*,*)'xfrac',(xfrac(kk),kk=1,ndims)
+!     $              ,(xprime(kk,i),kk=1,ndims)
             do idf=1,ndims
                ioff=ixnp(idf)
-c New approach mirrors padvnc.
+! New approach mirrors padvnc.
                call getfield(
      $              cij(nd2+1,1,1,1)
      $              ,u,iLs,xn(ixnp(idf)+1),idf
@@ -252,7 +252,7 @@ c New approach mirrors padvnc.
             if(ifmax.lt.40)write(*,'(3f8.4,i3,a,3f8.4)')xff,
      $           iregion,' Field',(upnd(k,i),k=1,3)
 
-c Radial component of field
+! Radial component of field
             rfield(i)=
      $           upnd(1,i)*st*cp +
      $           upnd(2,i)*st*sp +
@@ -261,19 +261,19 @@ c Radial component of field
      $           upsimple(1,i)*st*cp +
      $           upsimple(2,i)*st*sp +
      $           upsimple(3,i)*ct
-c Tangential component (magnitude) of field
+! Tangential component (magnitude) of field
             tfield(i)=-sqrt(max(0.,
      $           upnd(1,i)**2+upnd(2,i)**2+upnd(3,i)**2
      $           -rfield(i)**2))
 
-c Analytic comparison.
+! Analytic comparison.
             uanal(i)=(phi-phiinf)*rc/(rprime(i)**2)
-c               write(*,'(''i,rprime,rfield,uanal(i)'',i4,4f10.5)')
-c     $              i,rprime(i),rfield(i),uanal(i)
-c     $              ,rsimple(i)
-c Region of point
+!               write(*,'(''i,rprime,rfield,uanal(i)'',i4,4f10.5)')
+!     $              i,rprime(i),rfield(i),uanal(i)
+!     $              ,rsimple(i)
+! Region of point
             region(i)=insideall(ndims,xprime(1,i))
-c iregion is the masked region.
+! iregion is the masked region.
             if(iregion.eq.2)then 
                gerr=abs(rfield(i)-uanal(i))
                if(gerr.gt.graderr)then 
@@ -290,8 +290,8 @@ c iregion is the masked region.
             endif
             region(i)=-0.1*region(i)
          enddo
-c         write(*,*)'Ended uprime calculation'
-c         write(*,'(10f8.4)')rfield
+!         write(*,*)'Ended uprime calculation'
+!         write(*,'(10f8.4)')rfield
          call dashset(0)
          if(iti.eq.1)then
             call autoplot(rprime,rfield(1),Li)
@@ -337,10 +337,10 @@ c         write(*,'(10f8.4)')rfield
      $     ,rtgraderr ,ttgraderr
       call pltend()
       end
-c-------------------------------------------------------------------
-c-------------------------------------------------------------------
-c***************************************************************
-c Packaged version of potential plotting.
+!-------------------------------------------------------------------
+!-------------------------------------------------------------------
+!***************************************************************
+! Packaged version of potential plotting.
       subroutine phiradial(ifull,iLs,cij,
      $     phi,phiinf,rc,thetain,nth,rs)
       include 'ndimsdecl.f'
@@ -353,7 +353,7 @@ c Packaged version of potential plotting.
       real rfield(ifmax),tfield(ifmax)
       real rprime(ifmax),xprime(ndimsmax,ifmax)
       real xfrac(ndims),xff(ndims)
-c      real upsimple(ndims,ifmax),upnd(ndims,ifmax)
+!      real upsimple(ndims,ifmax),upnd(ndims,ifmax)
       integer itemp(ndims)
       real rsimple(ifmax),region(ifmax)
       integer iLs(ndims+1)
@@ -361,8 +361,8 @@ c      real upsimple(ndims,ifmax),upnd(ndims,ifmax)
       character*40 form1
       include 'meshcom.f'
       include '3dcom.f'
-c Potential plotting for different lines:
-c Spherical angles in 3-D
+! Potential plotting for different lines:
+! Spherical angles in 3-D
       phierr=0
       do iti=1,nth
          theta=thetain*iti
@@ -371,53 +371,53 @@ c Spherical angles in 3-D
          st=sin(theta)
          cp=cos(varphi)
          sp=sin(varphi)
-c         write(*,*)'Starting x calculation'
+!         write(*,*)'Starting x calculation'
          do i=1,Li
-c            zero(i)=0.
-c            rp=rs*i/(Li-1)
+!            zero(i)=0.
+!            rp=rs*i/(Li-1)
             rp=0.99999*rs*i/Li
             rprime(i)=rp
-c Coordinates relative to center of first object (sphere).
+! Coordinates relative to center of first object (sphere).
             xprime(1,i)=rp*st*cp + obj_geom(ocenter,1)  
             xprime(2,i)=rp*st*sp + obj_geom(ocenter+1,1)  
             xprime(3,i)=rp*ct + obj_geom(ocenter+2,1)  
             
             iregion=insidemask(ndims,xprime(1,i))
-c Calculate fractional mesh positions of this point, always positive.
-c Thus the origin of the box is below point in all dimensions.
+! Calculate fractional mesh positions of this point, always positive.
+! Thus the origin of the box is below point in all dimensions.
             do id=1,ndims
-c Offset to start of idf position array.
+! Offset to start of idf position array.
                ioff=ixnp(id)
-c xn is the position array for each dimension arranged linearly.
-c Find the index of xprime in the array xn:
+! xn is the position array for each dimension arranged linearly.
+! Find the index of xprime in the array xn:
                ix=interp(xn(ioff+1),ixnp(id+1)-ioff,xprime(id,i),xm)
                if(ix.eq.0.or.ix.ge.ixnp(id+1)-ioff)then
                   write(*,*)'ccpicplot interp outside range'
      $                 ,xprime(id,i)
      $                 ,ioff,(xn(ioff+k),k=1,ixnp(id+1)-ioff),' end '
                endif
-c                  ix=xm
+!                  ix=xm
                xff(id)=xm
                xfrac(id)=xm-ix
                itemp(id)=ix
             enddo
 
-c               write(*,*)'xfrac',(xfrac(kk),kk=1,ndims)
-c     $              ,(xprime(kk,i),kk=1,ndims)            
+!               write(*,*)'xfrac',(xfrac(kk),kk=1,ndims)
+!     $              ,(xprime(kk,i),kk=1,ndims)            
 
-c Analytic comparison.
+! Analytic comparison.
             uanal(i)=phiinf+(phi-phiinf)*rc/rprime(i)
             if(uanal(i).lt.phi)uanal(i)=phi
-c               write(*,'(''i,rprime,rfield,uanal(i)'',i4,4f10.5)')
-c     $              i,rprime(i),rfield(i),uanal(i)
-c     $              ,rsimple(i)
+!               write(*,'(''i,rprime,rfield,uanal(i)'',i4,4f10.5)')
+!     $              i,rprime(i),rfield(i),uanal(i)
+!     $              ,rsimple(i)
 
             rfield(i)=getpotential(u,cij,iLs,xff,iregion,2)
             rsimple(i)=getpotential(u,cij,iLs,xff,iregion,1)
             tfield(i)=getpotential(u,cij,iLs,xff,iregion,3)
-c Region of point
+! Region of point
             region(i)=insideall(ndims,xprime(1,i))
-c            write(*,*)'region=',region(i)
+!            write(*,*)'region=',region(i)
             if(iregion.eq.2)then 
                perr=abs(rfield(i)-uanal(i))
                if(perr.gt.phierr)then 
@@ -471,7 +471,7 @@ c            write(*,*)'region=',region(i)
       write(*,*)'Max potential error=',phierr,'  at',rphierr,tphierr
       call pltend()
       end
-c********************************************************************
+!********************************************************************
       subroutine fixedline(ifull,iuds,u,phi,phiinf,rc)
       integer iuds(3),ifull(3)
       real u(ifull(1),ifull(2),ifull(3))
@@ -491,7 +491,7 @@ c********************************************************************
          r=sqrt((xr-.0)**2+(yr-.0)**2+(zr-.0)**2)
          z(i)=phiinf+(phi-phiinf)*rc/r
          xp(i)=xr
-c         write(*,*)i,xr
+!         write(*,*)i,xr
       enddo
       call autoplot(xp,u(1,n0,n1),iuds(1))
       call polymark(xp,u(1,n0,n1),iuds(1),1)
@@ -504,9 +504,9 @@ c         write(*,*)i,xr
      $     'u(x) and !Af!@(r!dc!d)r!dc!d/r')
       call pltend()
       end
-c********************************************************************
-c***************************************************************
-c Packaged version of potential error finding and plotting.
+!********************************************************************
+!***************************************************************
+! Packaged version of potential error finding and plotting.
       subroutine eremesh(ifull,iLs,iuds,u,cij,phi,phiinf,rc)
       include 'ndimsdecl.f'
       parameter (nd2=ndimsmax*2)
@@ -523,13 +523,13 @@ c Packaged version of potential error finding and plotting.
 
       integer iLs(ndims+1)
       include 'meshcom.f'
-c      include '3dcom.f'
+!      include '3dcom.f'
 
-c Silence warnings:,thetain,nth,rs)
-c      x0=13.8
-c      y0=12.8
-c      x1=17.8
-c      y1=16.8
+! Silence warnings:,thetain,nth,rs)
+!      x0=13.8
+!      y0=12.8
+!      x1=17.8
+!      y1=16.8
       x0=12.*iuds(1)/32
       y0=12.*iuds(2)/32
       z0=12.*iuds(3)/32
@@ -554,7 +554,7 @@ c      y1=16.8
       do k=k1,k2
          f3=(k-0.999)/(ifmax-0.998)
          xff(idf)=(1.-f3)*z0 + f3*z1
-c         write(*,*)'f3,xff(idf)',f3,xff(idf),z0,z1,errmax
+!         write(*,*)'f3,xff(idf)',f3,xff(idf),z0,z1,errmax
          ixff=int(xff(idf))
          ff=xff(idf)-ixff
          xprime(idf)=xn(ixnp(idf)+ixff)*(1.-ff)
@@ -576,16 +576,16 @@ c         write(*,*)'f3,xff(idf)',f3,xff(idf),z0,z1,errmax
      $           +xn(ixnp(id1)+ixff+1)*ff
             xcont(i)=xprime(id1)
             iregion=insidemask(ndims,xprime)
-c            write(*,*),i,j,iregion,xprime
+!            write(*,*),i,j,iregion,xprime
 
             call getfield(
-c     $           cij(nd2+1,1,1,1)
+!     $           cij(nd2+1,1,1,1)
      $           cij(nd2+1)
      $           ,u,iLs,xn(ixnp(ide)+1),ide
      $           ,xff,iregion,ere(i,j))
 
-c Analytic calculation of field. E= phi _r_ /r^3
-c Assuming sphere is centered on origin. 
+! Analytic calculation of field. E= phi _r_ /r^3
+! Assuming sphere is centered on origin. 
             r2=(xprime(idf)**2+xprime(id1)**2+xprime(id2)**2)
             if(ide.eq.id1)then
                anal=xprime(id1)*(phi-phiinf)*rc/(r2*sqrt(r2))
@@ -620,7 +620,7 @@ c Assuming sphere is centered on origin.
       icl=20
       call fitrange(0.,errmtot,icl/2,ipow,fac10,delta,first,flast)
       icsw=1
-c      write(*,*)errmtot,delta,first,delta
+!      write(*,*)errmtot,delta,first,delta
       do i=1,icl
          zclv(i)=float(i-icl/2)*delta
       enddo
@@ -641,20 +641,20 @@ c      write(*,*)errmtot,delta,first,delta
       write(*,'(2f8.4,a,f8.4,a,f8.4,a,2f8.4)')xff(idf),xprime(idf)
      $     ,' Max Field Error=',errs,' dir ',ide
      $     ,', sd=',sqrt(errvar),sqrt(errvtot)
-c     $     ,' Contours',zclv(2)-zclv(1)
+!     $     ,' Contours',zclv(2)-zclv(1)
       icode=ieye3d()
       if(icode.eq.ichar('u'))then
          k1=k1+1
          k2=k1
-c         write(*,*)xff(idf),xprime(idf)
+!         write(*,*)xff(idf),xprime(idf)
          goto 1 
       elseif(icode.eq.ichar('d'))then
          k1=k1-1
          k2=k1
-c         xff(idf)=xff(idf)-.1
-c         write(*,*)xff(idf),xprime(idf)
+!         xff(idf)=xff(idf)-.1
+!         write(*,*)xff(idf),xprime(idf)
          goto 1
       endif
 
       end
-c*******************************************************************
+!*******************************************************************

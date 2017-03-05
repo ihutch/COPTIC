@@ -1,8 +1,8 @@
-c***********************************************************************
-c This contains code that checks on the writing and reading back of
-c code state. It is for debugging restarts.
-c Because it reads and writes used data in 3-D it is 3-D only code.
-c***********************************************************************
+!***********************************************************************
+! This contains code that checks on the writing and reading back of
+! code state. It is for debugging restarts.
+! Because it reads and writes used data in 3-D it is 3-D only code.
+!***********************************************************************
       subroutine checkuqcij(ifull,u,q,psum,volumes,cij)
       implicit none
       integer ifull(3)
@@ -10,7 +10,7 @@ c***********************************************************************
       real psum(ifull(1),ifull(2),ifull(3)),volumes(ifull(1),ifull(2)
      $     ,ifull(3))
       real cij(7,ifull(1),ifull(2),ifull(3))
-c Local duplicates.
+! Local duplicates.
       integer Li2
       parameter (Li2=32)
       real psum2(Li2,Li2,Li2),volumes2(Li2,Li2,Li2)
@@ -106,11 +106,11 @@ c Local duplicates.
       return
 
       end
-c***********************************************************************
+!***********************************************************************
       subroutine checkx()
       implicit none
-c The storage used here defines how far our checking goes for bigger
-c actual cases. Don't want to use too much, or too little.
+! The storage used here defines how far our checking goes for bigger
+! actual cases. Don't want to use too much, or too little.
       include 'ndimsdecl.f'
       include 'partcom.f'
       integer icp
@@ -202,7 +202,7 @@ c actual cases. Don't want to use too much, or too little.
       return
 
       end
-c****************************************************************
+!****************************************************************
       subroutine checkdelta(delta,deltaold)
 
       logical linit,lend

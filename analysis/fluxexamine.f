@@ -1,4 +1,4 @@
-c**************************************************************
+!**************************************************************
       program fluxexamine
       include '../src/ndimsdecl.f'
       include '../src/3dcom.f'
@@ -9,7 +9,7 @@ c**************************************************************
 
       parameter (ntr=10000)
       real plotdata(ntr,6),stepdata(ntr)
-C      real traceave(ntr)
+!      real traceave(ntr)
       real traceave(ntr)
       character*100 filename,argument,fmt
       integer iplot,iprint,ifmask,idimf,iomask,ivprn,ivtk,istep,irw
@@ -52,9 +52,9 @@ C      real traceave(ntr)
       filename='T1e0v000r05P02L1e0.flx'
  11   continue
       do iarg=iarg1,iargc()
-c         write(*,*)'iarg',iarg
+!         write(*,*)'iarg',iarg
          call getarg(iarg,argument)
-c         write(*,*) argument
+!         write(*,*) argument
          if(argument(1:3).eq.'-n1')
      $        read(argument(4:),'(f10.4)')fn1
          if(argument(1:3).eq.'-n2')
@@ -66,18 +66,18 @@ c         write(*,*) argument
          if(argument(1:3).eq.'-pf')then
             call pfset(3)
          elseif(argument(1:2).eq.'-p')then
-c iplot is the quantity number to plot and average.
+! iplot is the quantity number to plot and average.
             read(argument(3:),'(i5)')iplot
          endif
          if(argument(1:2).eq.'-q')then
-c Any negative iplot value turns off initial plots.
+! Any negative iplot value turns off initial plots.
             iplot=-1
-c            ifmask=0
+!            ifmask=0
             iosw=-99
             iquiet=0
-c Tell not to do the force plots:
+! Tell not to do the force plots:
             ipinit=-1
-c            read(argument(3:),'(i5)')iquiet
+!            read(argument(3:),'(i5)')iquiet
          elseif(argument(1:2).eq.'-g')then
             nget=nget+1
             read(argument(3:),*,end=301,err=301)
@@ -118,8 +118,8 @@ c            read(argument(3:),'(i5)')iquiet
             read(argument(4:),'(i5)')iomask
          elseif(argument(1:2).eq.'-o')then
             read(argument(3:),'(i5)')ims
-c set to mask out all objects if we are starting anew:            
-c            if(iomask.eq.0)iomask=2*(2**30-1)+1
+! set to mask out all objects if we are starting anew:            
+!            if(iomask.eq.0)iomask=2*(2**30-1)+1
             if(iomask.eq.0)iomask=65535
             iomask=IBCLR(iomask,ims-1)
          endif
@@ -135,14 +135,14 @@ c            if(iomask.eq.0)iomask=2*(2**30-1)+1
       iarg1=iargc()+1
  10   continue
       if(ivprn.eq.0)then
-c Give informational messages.
+! Give informational messages.
          ierr=1
       else
          ierr=0
       endif
       call readfluxfile(filename,ierr)
 
-c Test if species requested compatible.
+! Test if species requested compatible.
       if(if_species.lt.1.or.if_species.gt.nf_species)then
          if(ierr.gt.0)write(*,*)'Error reading file:',filename,ierr
          write(*,*)'if_species incompatible',if_species,nf_species
@@ -151,37 +151,37 @@ c Test if species requested compatible.
          write(*,*)'Set iplot for species',if_species
       endif
       
-c      write(*,*)'File:',filename(1:lentrim(filename)) 
+!      write(*,*)'File:',filename(1:lentrim(filename)) 
       write(*,*)'debyelen,Ti,vd,rs,phip,colntime,subcycle,vneut',
      $     ',fcold,dropac,Tneut,Eneut'
       write(*,'(a,12f6.2)')':',debyelen,Ti,vd,rs,phip ,colntime,subcycle
      $     ,vneutral,fcollided,dropaccel,Tneutral,Eneutral
       if(ivprn.eq.0)then
-c      write(*,*)'   No. objects,   No. steps, dt,   No. quantities(obj)'
-c         write(*,'(i12,i12,f10.4,20i3)')mf_obj,nf_step,ff_dt(nf_step),
-c     $     (mf_quant(j),j=1,mf_obj)
+!      write(*,*)'   No. objects,   No. steps, dt,   No. quantities(obj)'
+!         write(*,'(i12,i12,f10.4,20i3)')mf_obj,nf_step,ff_dt(nf_step),
+!     $     (mf_quant(j),j=1,mf_obj)
          write(*,'(a,i3,a,i5,a,f8.4,a,20i3)')'Objects=',mf_obj,' Steps='
      $        ,nf_step,' dt=',ff_dt(nf_step),' Quantities(obj)='
      $        ,(mf_quant(j),j=1,mf_obj)
-c      write(*,*) 'Posn and first 2 step addresses ',
-c     $     (((nf_address(i,j,k),i=1,mf_quant(j)),' ,'
-c     $     ,j=1,mf_obj),k=1-nf_posdim,2),'...'
-c      write(*,*)'geommap for objects',mf_obj,(nf_geommap(k),k=1,mf_obj)
+!      write(*,*) 'Posn and first 2 step addresses ',
+!     $     (((nf_address(i,j,k),i=1,mf_quant(j)),' ,'
+!     $     ,j=1,mf_obj),k=1-nf_posdim,2),'...'
+!      write(*,*)'geommap for objects',mf_obj,(nf_geommap(k),k=1,mf_obj)
       endif
 
-c For all the objects being flux tracked.
+! For all the objects being flux tracked.
       do k=1,mf_obj
          itype=int(obj_geom(otype,nf_geommap(k)))
          itexttype=objnumtotext(itype)
          if(k.eq.iprint.and.nf_posno(nf_flux,k).lt.200)then
-c         if(k.eq.iprint)then
+!         if(k.eq.iprint)then
             if(mf_quant(k).ge.1)then
                write(*,'(a,i3,a,3i4,a,i3)') 'Position data for '
      $              ,nf_posdim,' flux-indices: x,y,z,A. nf_dimlens='
      $              ,(nf_dimlens(1,k,kd),kd=1,nf_posdim-1),' Object',k
                write(*,'(a,i2,a)')'Object type',itype
      $              ,' '//typetext(itexttype)
-c Write out the position data hopefully comprehensibly.
+! Write out the position data hopefully comprehensibly.
                do j=1,nf_posdim
                   write(*,*)poslabel(j,itexttype)
                   if(abs(ff_data(nf_address(nf_flux,k,1-j))).lt.10)then
@@ -195,8 +195,8 @@ c Write out the position data hopefully comprehensibly.
                write(*,*)'addresses',
      $              (nf_address(nf_flux,k,1-j),j=1,nf_posdim),' values'
      $              ,(ff_data(nf_address(nf_flux,k,1-j)),j=1,nf_posdim)
-c               write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i
-c     $              -1),i=1,nf_posno(1,k)),j=1,nf_posdim)
+!               write(*,'(10f8.4)')((ff_data(nf_address(nf_flux,k,1-j)+i
+!     $              -1),i=1,nf_posno(1,k)),j=1,nf_posdim)
             endif
             do kk=max(nf_step/istep,1),nf_step,max(nf_step/istep,1)
                if(mf_quant(k).ge.1)then
@@ -225,7 +225,7 @@ c     $              -1),i=1,nf_posno(1,k)),j=1,nf_posdim)
          if(k.eq.iprint.and.mf_quant(k).ge.1.and..true.)then
             do kk=max(nf_step/istep,1),nf_step,max(nf_step/istep,1)
                if(mf_quant(k).ge.1)then
-c If flag '-vtk' is true then we call vtkoutput
+! If flag '-vtk' is true then we call vtkoutput
                   if (ivtk.eq.1)then
                      vtkflag=1
                      call vtkoutput(filename,kk,abs(iplot),iomask)
@@ -235,15 +235,15 @@ c If flag '-vtk' is true then we call vtkoutput
          endif
          n1=fn1*nf_step
          n2=fn2*nf_step
-c         if(mf_quant(k).ge.iplot)then
-c            write(*,*)'Plotting',k,mf_quant(k),iplot
+!         if(mf_quant(k).ge.iplot)then
+!            write(*,*)'Plotting',k,mf_quant(k),iplot
          ipltp=sign(abs(iplot)+if_quant(k,if_species),iplot)
          call fluxave(n1,n2,k,ipltp,rhoinf)
-c         endif
+!         endif
       enddo
-c Write nicely the fluxdensity versus position for a sphere. 
-c Object k. Face 1, indexed by i,j, [third index 0 ignored].
-c We write out in row-order not column order. Which is 2nd index.
+! Write nicely the fluxdensity versus position for a sphere. 
+! Object k. Face 1, indexed by i,j, [third index 0 ignored].
+! We write out in row-order not column order. Which is 2nd index.
       if(irw.gt.0.)then
          if(irw.gt.mf_obj)then
             write(*,*)'Asked for non-existent object',irw,'of',mf_obj
@@ -271,7 +271,7 @@ c We write out in row-order not column order. Which is 2nd index.
          write(*,*)
          call exit(0)
       endif
-c Section for writing out average flux to specified facets.
+! Section for writing out average flux to specified facets.
       write(*,*)'   dt=',ff_dt(nf_step),'   rhoinf=',rhoinf
       do i=1,nget
          if(i.eq.1)write(*,*)'get,iq,iob,fc,i1,i2,i3,fluxden, flux'
@@ -293,7 +293,7 @@ c Section for writing out average flux to specified facets.
          do i=1,nf_step
             stepdata(i)=i
             plotdata(i,1)=nf_npart(i)
-c            write(*,*)i,nf_npart(i)
+!            write(*,*)i,nf_npart(i)
             plotdata(i,2)=ff_rho(i)
          enddo
          if(nf_npart(1).ne.nf_npart(nf_step))then
@@ -316,7 +316,7 @@ c            write(*,*)i,nf_npart(i)
          endif
          call pltend()
       endif
-c Plots if 
+! Plots if 
       if(rp.ne.0.)write(*,'(a,f10.4,a,f10.4)')
      $     'Radius',rp,' Potential',phip
       if(ivprn.eq.0.and.ifmask.ne.0)write(*,'(2a,2i5)')
@@ -326,7 +326,7 @@ c Plots if
       do k=1,mf_obj
          imk=ifmask/2**(k-1)
          imk=imk-2*(imk/2)
-c         write(*,*)'ifmask=',ifmask,' k=',k,' imk=',imk
+!         write(*,*)'ifmask=',ifmask,' k=',k,' imk=',imk
          if(ifmask.eq.0)goto 50
 
          do j=1,ndims
@@ -338,9 +338,9 @@ c         write(*,*)'ifmask=',ifmask,' k=',k,' imk=',imk
          enddo
          avecharge=0.
          iavenum=0
-c         write(*,'(a,$)')'Step 1 force values part/press/field:'
-c         write(*,*)k,partforce(idimf,k,1),pressforce(idimf,k,1)
-c     $        ,fieldforce(idimf,k,1)
+!         write(*,'(a,$)')'Step 1 force values part/press/field:'
+!         write(*,*)k,partforce(idimf,k,1),pressforce(idimf,k,1)
+!     $        ,fieldforce(idimf,k,1)
          do i=1,nf_step
             plotdata(i,1)=fieldforce(idimf,k,i)*debyelen**2
             if(.not.pressforce(idimf,k,i).lt.4.e7)then
@@ -352,13 +352,13 @@ c     $        ,fieldforce(idimf,k,1)
             endif
 
             if(.not.abs(partforce(idimf,k,i)).lt.4.e2)then
-c               write(*,*)i-3,partforce(idimf,k,i-3)
-c               write(*,*)i-2,partforce(idimf,k,i-2)
-c               write(*,*)i-1,partforce(idimf,k,i-1)
+!               write(*,*)i-3,partforce(idimf,k,i-3)
+!               write(*,*)i-2,partforce(idimf,k,i-2)
+!               write(*,*)i-1,partforce(idimf,k,i-1)
                write(*,*)'***Giant partforce at step',i
      $              ,partforce(idimf,k,i),'  zeroed!'               
-c               write(*,*)i+1,partforce(idimf,k,i+1)
-c               stop
+!               write(*,*)i+1,partforce(idimf,k,i+1)
+!               stop
                plotdata(i,3)=0.
             else
                plotdata(i,3)=partforce(idimf,k,i)               
@@ -404,19 +404,19 @@ c               stop
                ipinit=ipinit+1
             endif
             if(ipinit.gt.0)then
-c               write(*,*)'FLUXEXAMINE calling color',k
+!               write(*,*)'FLUXEXAMINE calling color',k
                call color(k)
                call dashset(4)
                call iwrite(k,iwd,argument)
                call boxcarave(nf_step,nbox,plotdata(1,3),traceave)
                call polyline(stepdata,traceave,nf_step)
-c            call polyline(stepdata,plotdata(1,3),nf_step)
+!            call polyline(stepdata,plotdata(1,3),nf_step)
                call legendline(.1+.4*(nplot-1),.2,0,
      $              'partforce '//argument(1:iwd))
                call dashset(1)
                call boxcarave(nf_step,nbox,plotdata(1,1),traceave)
                call polyline(stepdata,traceave,nf_step)
-c            call polyline(stepdata,plotdata(1,1),nf_step)
+!            call polyline(stepdata,plotdata(1,1),nf_step)
                call legendline(.1+.4*(nplot-1),.15,0,
      $              'fieldforce '//argument(1:iwd))
                call dashset(2)
@@ -428,7 +428,7 @@ c            call polyline(stepdata,plotdata(1,1),nf_step)
                   call dashset(3)
                   call boxcarave(nf_step,nbox,plotdata(1,6),traceave)
                   call polyline(stepdata,traceave,nf_step)
-c               call polyline(stepdata,plotdata(1,6),nf_step)
+!               call polyline(stepdata,plotdata(1,6),nf_step)
                   call legendline(.1+.4*(nplot-1),.05,0,
      $                 'collisions '//argument(1:iwd))
                endif
@@ -453,7 +453,7 @@ c               call polyline(stepdata,plotdata(1,6),nf_step)
             enddo
          endif
          if(btest(ivprn,k-1))then
-c v printing this object
+! v printing this object
             write(*,*)vd,avefield(idimf)+avepart(idimf)+avepress(idimf)
      $           +avecoln(idimf)
          endif
@@ -461,16 +461,16 @@ c v printing this object
       enddo
  50   continue
 
-c      write(*,*)'iomask=',iomask,' iosw=',iosw,' iplot=',iplot
+!      write(*,*)'iomask=',iomask,' iosw=',iosw,' iplot=',iplot
 
       if(iplot.ne.0.and.vtkflag.eq.0.and.iosw.ge.-3.and.iosw.lt.3)then
          call pltend()
-c         write(*,*)'abs(iplot),rview,cv,iosw,iomask',abs(iplot),rview,cv
-c     $        ,iosw,iomask
+!         write(*,*)'abs(iplot),rview,cv,iosw,iomask',abs(iplot),rview,cv
+!     $        ,iosw,iomask
          call objplot(abs(iplot),rview,cv,iosw,iomask)
       endif
 
-c Read more arguments if there are any.
+! Read more arguments if there are any.
       if(iarg1.le.iargc())goto 11
       
       call exit(0)
@@ -505,22 +505,22 @@ c Read more arguments if there are any.
       write(*,*)'-g<i,j,k,l,m,n> specify a facet to print average'
      $     ,' iquant,iobj,iface,i1,i2,i3'
       write(*,*)'-pf Write plots to files.'
-c      write(*,*)'-rp... Write potential phip' 
+!      write(*,*)'-rp... Write potential phip' 
       write(*,*)'-rwiii Row write average fluxdensity for object iii'
       write(*,*)'Turn off plots progressively: -p-1 -m0 -i9 -q'
       write(*,*)'Turn off print progressively: -w0 -v1024 -p256 ' 
 
       end
-c********************************************************************
+!********************************************************************
       subroutine fluxcheck()
       include '../src/ndimsdecl.f'
       include '../src/3dcom.f'
       include '../src/plascom.f'
       include '../src/sectcom.f'
       end
-c*********************************************************************
-c This subroutine calls vtkwrite to write in the common blocks our vtk data
-c then it calls vtkwritescalarfacets to write vtk files for unstructred meshes
+!*********************************************************************
+! This subroutine calls vtkwrite to write in the common blocks our vtk data
+! then it calls vtkwritescalarfacets to write vtk files for unstructred meshes
       subroutine vtkoutput(filename,kk,iplot,iomask)
       include '../src/ndimsdecl.f'
       include '../src/3dcom.f'

@@ -1,22 +1,22 @@
-c********************************************************************
+!********************************************************************
       subroutine partdistup(xlimit,vlimit,xnewlim,cellvol,myid,ibinit
      $     ,ispecies)
-c Routine to update the particle distribution diagnostics for using the
-c current particle information for species ispecies.
-c
-c If this is called for the first time, i.e. with cellvol.le.0, then
-c calculate the bins for accumulating the distribution. Also, in this
-c case, if cellvol=-1 project in the direction of Bfield, else cellvol=0
-c just use cartesian components.  For this first call, in a
-c multiprocessor situation, we all-reduce the accumulated fine
-c distribution fv, nvaccum (and fsv) on which the binning is calculated.
-c Thus the bin calculation is based upon the total particles, not just
-c the particles for the head node.  However, for use with multiple
-c particle files by partexamine, only the first file read is used to
-c determine the bin mapping. [Otherwise we would have to read all files
-c a second time for the subbinning.]
-c
-c Otherwise if cellvol.gt.0 just accumulate to bins.
+! Routine to update the particle distribution diagnostics for using the
+! current particle information for species ispecies.
+!
+! If this is called for the first time, i.e. with cellvol.le.0, then
+! calculate the bins for accumulating the distribution. Also, in this
+! case, if cellvol=-1 project in the direction of Bfield, else cellvol=0
+! just use cartesian components.  For this first call, in a
+! multiprocessor situation, we all-reduce the accumulated fine
+! distribution fv, nvaccum (and fsv) on which the binning is calculated.
+! Thus the bin calculation is based upon the total particles, not just
+! the particles for the head node.  However, for use with multiple
+! particle files by partexamine, only the first file read is used to
+! determine the bin mapping. [Otherwise we would have to read all files
+! a second time for the subbinning.]
+!
+! Otherwise if cellvol.gt.0 just accumulate to bins.
       implicit none
       include 'ndimsdecl.f'
       include 'plascom.f'
@@ -30,19 +30,19 @@ c Otherwise if cellvol.gt.0 just accumulate to bins.
       integer ispecies
       integer id
 
-c Use the first occasion to establish the accumulation range.
-c Indicated by cellvolume le 0.
+! Use the first occasion to establish the accumulation range.
+! Indicated by cellvolume le 0.
       if(cellvol.le.0.)then
-c Decide whether to project velocity in the direction of Bfield.
+! Decide whether to project velocity in the direction of Bfield.
          if(cellvol.eq.-1)then
             ivproj=1
          else
             ivproj=0
          endif
-c This ought to be determined based on the number of samples.
-c But xlimits mean that's problematic.
-c            nvlist=100
-c A small nvlist means we go right to the edge of actual particles.
+! This ought to be determined based on the number of samples.
+! But xlimits mean that's problematic.
+!            nvlist=100
+! A small nvlist means we go right to the edge of actual particles.
          nvlist=5
          call vlimitdeterm(vlimit,nvlist,ivproj,Bfield,ispecies)
          call minmaxreduce(ndims,vlimit)
@@ -51,40 +51,40 @@ c A small nvlist means we go right to the edge of actual particles.
          enddo
          if(myid.eq.0)write(*,'('' Velocity limits:'',6f8.3)')
      $        vlimit
-c Indicate csbin not initialized and start initialization
+! Indicate csbin not initialized and start initialization
          csbin(1,1)=-1.
          call partacinit(vlimit)
 
-c Do the accumulation for this file up to maximum relevant slot. 
+! Do the accumulation for this file up to maximum relevant slot. 
          nfvaccum=0
          call partsaccum(xlimit ,vlimit,xnewlim,nfvaccum,ispecies)
          if(myid.eq.0)write(*,*)'Accumulated',nfvaccum,' of',ioc_part
      $        ,' total',' in',xlimit
-c Reduce back the data for MPI cases.
+! Reduce back the data for MPI cases.
          call ptdiagreduce()
          call minmaxreduce(ndims,xnewlim)
          if(myid.eq.0)write(*,'(a,i8,a,6f8.3)')'Reduced',nfvaccum
      $        ,' Xnewlim=',xnewlim
-c Should do this only the first time.
+! Should do this only the first time.
          call bincalc()
          call fvxinit(xnewlim,cellvol,ibinit)
       else
          call partsaccum(xlimit ,vlimit,xnewlim,nfvaccum,ispecies)
       endif
-c         write(*,*)'isfull',isfull,cellvol
-c         write(*,*)'calling subaccum'
+!         write(*,*)'isfull',isfull,cellvol
+!         write(*,*)'calling subaccum'
       call subaccum(isuds,vlimit,xnewlim,ispecies)
       end
-c****************************************************************
+!****************************************************************
       subroutine partacinit(vlimit)
-c Initialize uniform bins for accumulation of the particles.
+! Initialize uniform bins for accumulation of the particles.
       include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
       include 'plascom.f'
       real vlimit(2,ndims)
 
-c Initialization.
+! Initialization.
       do id=1,ndims
          do i=1,nptdiag
             fv(i,id)=0.
@@ -94,15 +94,15 @@ c Initialization.
             xdiag(i,id)=xmeshstart(id)+(i-0.5)*
      $           (xmeshend(id)-xmeshstart(id))/(nptdiag)
          enddo
-c         write(*,*)'Position cell-center range',
-c     $        id,xdiag(1,id),xdiag(nptdiag,id)
-c         write(*,*)'Velocity cell-center range',
-c     $        id,vdiag(1,id),vdiag(nptdiag,id)
+!         write(*,*)'Position cell-center range',
+!     $        id,xdiag(1,id),xdiag(nptdiag,id)
+!         write(*,*)'Velocity cell-center range',
+!     $        id,vdiag(1,id),vdiag(nptdiag,id)
       enddo
       end
-c*****************************************************************
+!*****************************************************************
       subroutine oneaccum(xr,vlimit)
-c Accumulate a particle into velocity bins.
+! Accumulate a particle into velocity bins.
       include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
@@ -111,11 +111,11 @@ c Accumulate a particle into velocity bins.
       real xr(3*ndims)
 
       do id=1,ndims
-c Assign velocities to bins.
+! Assign velocities to bins.
          if(ivproj.eq.0)then
             v=xr(ndims+id)
          else
-c Projected.
+! Projected.
             v=vproject(ndims,id,xr,Bfield)
          endif
 
@@ -129,11 +129,11 @@ c Projected.
          endif
          fv(ibin,id)=fv(ibin,id)+1.
          if(csbin(1,1).ne.-1.)then
-c Doing summed bin accumulation
+! Doing summed bin accumulation
             ibs=ibinmap(ibin,id)
             fsv(ibs,id)=fsv(ibs,id)+1.
          endif
-c Assign positions to bins
+! Assign positions to bins
          x=(xr(id)-xmeshstart(id))/(xmeshend(id)-xmeshstart(id))
          ibin=nint(0.500001+x*(nptdiag-.0002))
          if(ibin.lt.1 .or. ibin.gt.nptdiag)then
@@ -144,18 +144,18 @@ c Assign positions to bins
       enddo
 
       end
-c**********************************************************************
+!**********************************************************************
       subroutine partsaccum(xlimit,vlimit,xnewlim,nfvaccum,ispecies)
       implicit none
       integer nfvaccum,ispecies
       include 'ndimsdecl.f'
       include 'partcom.f'
 
-c Accumulate all particles in the xlimit range into velocity bins.
-c If on entry xnewlim(2).eq.xnewlim(1) then adjust those limits.
-c Spatial limits bottom-top, dimensions
+! Accumulate all particles in the xlimit range into velocity bins.
+! If on entry xnewlim(2).eq.xnewlim(1) then adjust those limits.
+! Spatial limits bottom-top, dimensions
       real xlimit(2,ndims),xnewlim(2,ndims)
-c Velocity limits
+! Velocity limits
       real vlimit(2,ndims)
       integer limadj,j,id
       real x
@@ -166,13 +166,13 @@ c Velocity limits
          limadj=0
       endif
       do j=iicparta(ispecies),iocparta(ispecies)
-c Only for filled slots
+! Only for filled slots
          if(x_part(iflag,j).ne.0)then
             do id=1,ndims
                x=x_part(id,j)
                if(x.lt.xlimit(1,id).or.x.gt.xlimit(2,id))goto 12
                if(limadj.eq.1)then
-c Adjust the xnewlim.
+! Adjust the xnewlim.
                   if(x.lt.xnewlim(1,id))xnewlim(1,id)=x
                   if(x.gt.xnewlim(2,id))xnewlim(2,id)=x
                endif
@@ -182,13 +182,13 @@ c Adjust the xnewlim.
          endif
  12      continue
       enddo
-c      write(*,*)'Accumulated',nfvaccum,' in',xlimit,' of',iocpart
-c     $        ,' total'
-c      if(limadj.eq.1)write(*,'(a,6f10.5)')' xnewlim=',xnewlim
+!      write(*,*)'Accumulated',nfvaccum,' in',xlimit,' of',iocpart
+!     $        ,' total'
+!      if(limadj.eq.1)write(*,'(a,6f10.5)')' xnewlim=',xnewlim
 
              
       end
-c**********************************************************************
+!**********************************************************************
       subroutine vlimitdeterm(vlimit,nvlist,ivproj,Bfield,ispecies)
       implicit none
       include 'ndimsdecl.f'
@@ -197,17 +197,17 @@ c**********************************************************************
       integer ivproj
       integer ispecies
 
-c Determine the required vlimits for this particle distribution.
-c On entry
-c    x_part contains all the particles.
-c    nvlist is the number of particles in the top and bottom bins.
-c    ispecies is the species number to operate on => iic, ioc
-c On exit
-c    vlimit contains the velocity of the nvlist'th particle from the 
-c           bottom and the top of the list.
-c Velocity limits
+! Determine the required vlimits for this particle distribution.
+! On entry
+!    x_part contains all the particles.
+!    nvlist is the number of particles in the top and bottom bins.
+!    ispecies is the species number to operate on => iic, ioc
+! On exit
+!    vlimit contains the velocity of the nvlist'th particle from the 
+!           bottom and the top of the list.
+! Velocity limits
       real vlimit(2,ndims)
-c Velocity Sorting arrays
+! Velocity Sorting arrays
       integer nvlistmax
       parameter (nvlistmax=200)
       real vtlist(nvlistmax),vblist(nvlistmax)
@@ -223,25 +223,25 @@ c Velocity Sorting arrays
             vtlist(j)=vlimit(2,id)
          enddo
          do j=iicparta(ispecies),iocparta(ispecies)
-c Only for filled slots
+! Only for filled slots
             if(x_part(iflag,j).ne.0)then
                if(ivproj.eq.0)then
-c Straight cartesian.
+! Straight cartesian.
                   v=x_part(id+ndims,j)
                else
-c Projected
+! Projected
                   v=vproject(ndims,id,x_part(1,j),Bfield)
                endif
-c Insert the value v into its ordered place in vtlist, retaining the top
-c nvlist values, and into vblist retaining the bottom-most nvlist values.
+! Insert the value v into its ordered place in vtlist, retaining the top
+! nvlist values, and into vblist retaining the bottom-most nvlist values.
                call sorttoplimit(v,vtlist,nvlist)
                call sortbottomlimit(v,vblist,nvlist)
             endif
          enddo
-c         write(*,*)vblist
-c         write(*,*)vtlist
+!         write(*,*)vblist
+!         write(*,*)vtlist
          if(vblist(nvlist).lt.vtlist(nvlist))then
-c Take the vlimits to be the position of the nvlist velocity.
+! Take the vlimits to be the position of the nvlist velocity.
             vlimit(1,id)=vblist(nvlist)
             vlimit(2,id)=vtlist(nvlist)
          else
@@ -253,18 +253,18 @@ c Take the vlimits to be the position of the nvlist velocity.
       enddo
 
       end
-c========================================================================
+!========================================================================
       subroutine sortbottomlimit(v,vlist,nvlist)
       real vlist(nvlist)
-c Insert the value v into its ordered place in vlist, retaining the bottom
-c nvlist values. 
-c So on return vlist(1:nvlist) are the ordered bottommost v-values.
-c      write(*,*)'bot',v,nvlist,vlist
+! Insert the value v into its ordered place in vlist, retaining the bottom
+! nvlist values. 
+! So on return vlist(1:nvlist) are the ordered bottommost v-values.
+!      write(*,*)'bot',v,nvlist,vlist
       if(v.ge.vlist(nvlist))return
       if(v.ge.vlist(1))then
          i1=1
          i2=nvlist
-c Find my position by bisection.
+! Find my position by bisection.
  1       i=(i1+i2)/2
          if(v.lt.vlist(i))then
             i2=i
@@ -275,26 +275,26 @@ c Find my position by bisection.
       else
          i2=1
       endif
-c Here i2 is the position of list value just greater than v.
-c      write(*,*)'botend',i1,i2,i,vlist(i2),v
+! Here i2 is the position of list value just greater than v.
+!      write(*,*)'botend',i1,i2,i,vlist(i2),v
       do i=nvlist,i2+1,-1
          vlist(i)=vlist(i-1)
       enddo
       vlist(i2)=v
 
       end
-c*********************************************************************
+!*********************************************************************
       subroutine sorttoplimit(v,vlist,nvlist)
       real vlist(nvlist)
-c Insert the value v into its reverse-ordered place in vlist, retaining
-c the top nvlist values. 
-c On return vlist(1:nvlist) contain the (reversed) topmost nvlist values.
-c      write(*,*)'topstart',nvlist,v,vlist
+! Insert the value v into its reverse-ordered place in vlist, retaining
+! the top nvlist values. 
+! On return vlist(1:nvlist) contain the (reversed) topmost nvlist values.
+!      write(*,*)'topstart',nvlist,v,vlist
       if(v.le.vlist(nvlist))return
       if(v.le.vlist(1))then
          i1=1
          i2=nvlist
-c Find my position by bisection.
+! Find my position by bisection.
  1       i=(i1+i2)/2
          if(v.gt.vlist(i))then
             i2=i
@@ -305,35 +305,35 @@ c Find my position by bisection.
       else
          i2=1
       endif
-c Here i2 is the position of list value just less than v.
-c      write(*,*)'topend',i1,i2,i,vlist(i2),v
+! Here i2 is the position of list value just less than v.
+!      write(*,*)'topend',i1,i2,i,vlist(i2),v
       do i=nvlist,i2+1,-1
          vlist(i)=vlist(i-1)
       enddo
       vlist(i2)=v
       end
 
-c***********************************************************************
+!***********************************************************************
       subroutine bincalc()
-c Calculate the non-uniform bins for particle distribution accumlation.
-c There are nsbins combined bins for each dimension. 
-c These are in common subdiag:
-c ibinmap(nptdiag,ndimsmax) is the map from uniform to combined bins
-c pointing to an nsbins bin for each of the nptdiag uniform bins.
-c vsbin(nsbins,ndimsmax) is the center velocity of the combined bins
-c csbin(nsbins,ndimsmax) is the number of fine bins in each combined bin
-c fsv is the sum of fv in each combined bin during the initial
-c     accumulation and bin calculation.
-c vhbin(0:nsbins,ndimsmax) is the histogram boundaries of the combined bins
-c If nptdiag.le.nsbins, implying no compression of the data, then
-c a simple identification of summed and uniform bins is used so that the
-c summed bins are actually uniform. The lengths must be set in ptaccom.f
+! Calculate the non-uniform bins for particle distribution accumlation.
+! There are nsbins combined bins for each dimension. 
+! These are in common subdiag:
+! ibinmap(nptdiag,ndimsmax) is the map from uniform to combined bins
+! pointing to an nsbins bin for each of the nptdiag uniform bins.
+! vsbin(nsbins,ndimsmax) is the center velocity of the combined bins
+! csbin(nsbins,ndimsmax) is the number of fine bins in each combined bin
+! fsv is the sum of fv in each combined bin during the initial
+!     accumulation and bin calculation.
+! vhbin(0:nsbins,ndimsmax) is the histogram boundaries of the combined bins
+! If nptdiag.le.nsbins, implying no compression of the data, then
+! a simple identification of summed and uniform bins is used so that the
+! summed bins are actually uniform. The lengths must be set in ptaccom.f
 
       include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
 
-c 
+! 
       ifixed=0
       do id=1,ndims
          cumfv(0,id)=0.
@@ -346,25 +346,25 @@ c
          vhbin(0,id)=vdiag(1,id)-dv*0.5
          ib=1
          if(nsbins.lt.nptdiag)then
-c Normal summed binning compression.
+! Normal summed binning compression.
             do k=1,nptdiag
                cumfv(k,id)=cumfv(k-1,id)+fv(k,id)/float(nfvaccum)
-c Prevent rounding overflow here rather than by increments:
+! Prevent rounding overflow here rather than by increments:
                cumfv(k,id)=min(1.,cumfv(k,id))
-c            write(*,*)id,k,fv(k,id),cumfv(k,id),ib
-c This linear mapping does not work well.
-c            ib=1+ int(cumfv(k,id)*(nsbins)*(.99999))
+!            write(*,*)id,k,fv(k,id),cumfv(k,id),ib
+! This linear mapping does not work well.
+!            ib=1+ int(cumfv(k,id)*(nsbins)*(.99999))
                bx=float(ib)/nsbins
-c cubic progression.
-c               cfn=1.0001*(3.*bx**2-2.*bx**3)
-c quintic progression puts more bins further out.
-c            cfn=1.00002*bx**3*(10.-15.*bx+6*bx**2) -.00001
-c Does not help to reduce the number of zeroes in 1.0002.
-c septic progression is broadest, but still good.
+! cubic progression.
+!               cfn=1.0001*(3.*bx**2-2.*bx**3)
+! quintic progression puts more bins further out.
+!            cfn=1.00002*bx**3*(10.-15.*bx+6*bx**2) -.00001
+! Does not help to reduce the number of zeroes in 1.0002.
+! septic progression is broadest, but still good.
                cfn=(((-20.*bx+70.)*bx-84.)*bx+35.)*bx**4
-c            write(*,*)'cfn',cfn,cumfv(k,id)
+!            write(*,*)'cfn',cfn,cumfv(k,id)
                if(cumfv(k,id).gt.cfn)then
-c find the histogram bin-boundary.
+! find the histogram bin-boundary.
                   vhbin(ib,id)=vhbin(0,id)+(k-1)*dv
                   ib=ib+1
                endif
@@ -375,26 +375,26 @@ c find the histogram bin-boundary.
                endif
                vsbin(ib,id)=vsbin(ib,id)+vdiag(k,id)
                csbin(ib,id)=csbin(ib,id)+1.
-c Also accumulate this data into the summed bins
+! Also accumulate this data into the summed bins
                fsv(ib,id)=fsv(ib,id)+fv(k,id)
             enddo
-c Fix any summed bins that are off the end, and hence zero width.
+! Fix any summed bins that are off the end, and hence zero width.
             do ibk=ib,nsbins
                vhbin(ibk,id)=vhbin(0,id)+nptdiag*dv
             enddo
-c Now cumfv is the cumulative probability distribution (to 1.0) over the
-c uniform bins, and ibinmap maps those bins to nonuniform bins.  The
-c uniform bin centers are in vdiag. Each non-uniform bin is composed of
-c the sum of the uniform bins that map to it. Its center is therefore at
-c the centroid of those bins = vsbin. 
-c The number of uniform bins that they contain is csbin.
-c But we invert csbin so that a multiplication is needed and zeros are 
-c corrected for. 
+! Now cumfv is the cumulative probability distribution (to 1.0) over the
+! uniform bins, and ibinmap maps those bins to nonuniform bins.  The
+! uniform bin centers are in vdiag. Each non-uniform bin is composed of
+! the sum of the uniform bins that map to it. Its center is therefore at
+! the centroid of those bins = vsbin. 
+! The number of uniform bins that they contain is csbin.
+! But we invert csbin so that a multiplication is needed and zeros are 
+! corrected for. 
             do k=1,nsbins
                if(csbin(k,id).eq.0)then
                   ifixed=ifixed+1
-c               write(*,*)'Fixing csbin zero',k,id,fv(k,id)
-c     $              ,vhbin(k,id)
+!               write(*,*)'Fixing csbin zero',k,id,fv(k,id)
+!     $              ,vhbin(k,id)
                   vsbin(k,id)=vhbin(k,id)
                else
                   vsbin(k,id)=vsbin(k,id)/csbin(k,id)
@@ -402,13 +402,13 @@ c     $              ,vhbin(k,id)
                endif
             enddo
          else
-c Ignore the cumulative calculation and do uniform mapping
+! Ignore the cumulative calculation and do uniform mapping
             if(id.eq.1)write(*,*)'****Uniform Bins for nptdiag,nsbins='
      $           ,nptdiag,nsbins
             do k=1,nptdiag
                ibinmap(k,id)=k
                vsbin(k,id)=vdiag(k,id)
-c               vhbin(k,id)=vhbin(0,id)+(k-1)*dv
+!               vhbin(k,id)=vhbin(0,id)+(k-1)*dv
                vhbin(k,id)=vhbin(0,id)+(k)*dv
                csbin(k,id)=1.
                fsv(k,id)=fv(k,id)
@@ -418,46 +418,46 @@ c               vhbin(k,id)=vhbin(0,id)+(k-1)*dv
       if(ifixed.gt.0)then
          write(*,*)'Bincalc had to fix some zero csbins.'
       endif
-c      write(*,*)'Bincalc has chosen',nsbins,' bin placement.'
-c      write(*,*)' vsbin',vsbin
-c      write(*,*)(vhbin(k,1),k=0,nsbins)
-c      write(*,*)' csbin',csbin
-c      write(*,*)' fsv  ',fsv
-c      write(*,*)' ibinmap',ibinmap
+!      write(*,*)'Bincalc has chosen',nsbins,' bin placement.'
+!      write(*,*)' vsbin',vsbin
+!      write(*,*)(vhbin(k,1),k=0,nsbins)
+!      write(*,*)' csbin',csbin
+!      write(*,*)' fsv  ',fsv
+!      write(*,*)' ibinmap',ibinmap
       end
-c**********************************************************************
+!**********************************************************************
       subroutine subaccum(isuds,vlimit,xnewlim,ispecies)
       implicit none
       include 'ndimsdecl.f'
       include 'partcom.f'
       integer isuds(ndims)
       integer ispecies
-c Spatial limits bottom-top, dimensions
+! Spatial limits bottom-top, dimensions
       real xnewlim(2,ndims)
-c Velocity limits
+! Velocity limits
       real vlimit(2,ndims)
-c Subbin addressing.
+! Subbin addressing.
       integer isind(ndims)
-c Local storage
+! Local storage
       real xsf(ndims)
-c The equal bins fill the ranges xnewlim with index lengths isuds.
+! The equal bins fill the ranges xnewlim with index lengths isuds.
       integer id,j,ip,ipfindex
       external ipfindex
       do id=1,ndims
          xsf(id)=.999999/(xnewlim(2,id)-xnewlim(1,id))
       enddo
       do j=iicparta(ispecies),iocparta(ispecies)
-c Only for filled slots
+! Only for filled slots
          if(x_part(iflag,j).ne.0)then
             do id=1,ndims
-c Calculate the spatial sub-bin pointer.
+! Calculate the spatial sub-bin pointer.
                isind(id)=1+int(isuds(id)*
      $              (x_part(id,j)-xnewlim(1,id))*xsf(id))
-c If we are outside the range skip this particle.
+! If we are outside the range skip this particle.
                if(isind(id).gt.isuds(id).or.isind(id).le.0)goto 1
             enddo
             ip=ipfindex(ndims,isuds,isind)
-c            if(ip.gt.1000)write(*,*)isuds,isind,ip
+!            if(ip.gt.1000)write(*,*)isuds,isind,ip
             if(ip.lt.0)write(*,*)isind,ip
             call subvaccum(x_part(1,j),vlimit,ip+1)
          endif
@@ -465,9 +465,9 @@ c            if(ip.gt.1000)write(*,*)isuds,isind,ip
       enddo
              
       end
-c*****************************************************************
+!*****************************************************************
       subroutine subvaccum(xr,vlimit,ip)
-c Accumulate a particle into velocity bin corresponding to position ip
+! Accumulate a particle into velocity bin corresponding to position ip
       include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'ptaccom.f'
@@ -477,7 +477,7 @@ c Accumulate a particle into velocity bin corresponding to position ip
       integer ibin3(ndims)
 
       do id=1,ndims
-c Assign velocities to bins.
+! Assign velocities to bins.
          if(ivproj.eq.0)then
             v=xr(ndims+id)
          else
@@ -491,9 +491,9 @@ c Assign velocities to bins.
          if(ibin.lt.1.or.ibin.gt.nptdiag) write(*,*)id,' ibin',ibin
      $        ,nptdiag,v,vlimit(1,id),vlimit(2,id)
          if(csbin(1,1).ne.-1.)then
-c Doing summed bin accumulation
+! Doing summed bin accumulation
             ibs=ibinmap(ibin,id)
-c Test for corruption ought not eventually to be necessary.
+! Test for corruption ought not eventually to be necessary.
             if(ip.le.0.or.ibs.lt.0.or.id.lt.0.or.ip.gt.nsub_tot)then
                write(*,*)'Bin address corruption ibs,id,ip,nsub_tot'
      $              ,ibs,id,ip,nsub_tot
@@ -502,7 +502,7 @@ c Test for corruption ought not eventually to be necessary.
          endif
       enddo
       denfvx(ip)=denfvx(ip)+1
-c Now we have the bin number for all three dimensions. Increment f2vx.
+! Now we have the bin number for all three dimensions. Increment f2vx.
       if(nptdiag.eq.nsbins)then
          do id=1,ndims
             j=mod(id,ndims)+1
@@ -512,7 +512,7 @@ c Now we have the bin number for all three dimensions. Increment f2vx.
          enddo
       endif
       end
-c*******************************************************************
+!*******************************************************************
       subroutine fvxinit(xnewlim,cellvol,ibinit)
       include 'ndimsdecl.f'
       include 'meshcom.f'
@@ -541,11 +541,11 @@ c*******************************************************************
       cellvol=1.
       do id=1,ndims
          cellvol=cellvol*(xnewlim(2,id)-xnewlim(1,id))/isuds(id)
-c         write(*,*)xnewlim(2,id),xnewlim(1,id)
+!         write(*,*)xnewlim(2,id),xnewlim(1,id)
       enddo
-c      write(*,*)'cellvol=',cellvol
+!      write(*,*)'cellvol=',cellvol
       end
-c**********************************************************************
+!**********************************************************************
       subroutine distread(xlimit,vlimit,xnewlim,name,cellvol)
 
       include 'ndimsdecl.f'
@@ -567,7 +567,7 @@ c**********************************************************************
       do i=1,ndims
          isftot=isftot*isfull(i)
       enddo
-c Check if the nsbins is correct and there's enough storage.
+! Check if the nsbins is correct and there's enough storage.
       if(nsbf.ne.nsbins)goto 103
       if(isftot.gt.nsub_tot)goto 103
       read(25)(((fvx(i,j,k),i=1,nsbins),j=1,ndims),k=1,isftot)
@@ -593,7 +593,7 @@ c Check if the nsbins is correct and there's enough storage.
  104  write(*,*)'Error reading f2vx',nsbf
 
       end
-c**********************************************************************
+!**********************************************************************
       subroutine distwrite(xlimit,vlimit,xnewlim,name,cellvol)
       include 'ndimsdecl.f'
       include 'meshcom.f'
@@ -609,7 +609,7 @@ c**********************************************************************
      $     j=1,ndims)
       write(25)((xdiag(i,j),px(i,j),i=1,nptdiag),j=1,ndims)
       write(25)((vdiag(i,j),fv(i,j),i=1,nptdiag),j=1,ndims)
-c      write(*,'(2f10.4)')((vdiag(i,j),fv(i,j),i=1,5),j=1,ndims)
+!      write(*,'(2f10.4)')((vdiag(i,j),fv(i,j),i=1,5),j=1,ndims)
       write(25)(xnewlim(1,j),xnewlim(2,j),j=1,ndims)
       write(25)nsbins,(isfull(i),i=1,ndims),cellvol
       write(25)(isuds(i),i=1,ndims)
@@ -633,8 +633,8 @@ c      write(*,'(2f10.4)')((vdiag(i,j),fv(i,j),i=1,5),j=1,ndims)
       close(25,status='delete')
 
       end
-c******************************************************************
-c 3-D only code.
+!******************************************************************
+! 3-D only code.
       subroutine pltsubdist(icellin,jcellin,kcellin,vlimit,xnewlim
      $     ,cellvol,ndfirst,ndlast)
       implicit none
@@ -645,7 +645,7 @@ c 3-D only code.
       include 'partcom.f'
       include 'ptaccom.f'
       include 'plascom.f'
-c Distributions in ptaccom.f
+! Distributions in ptaccom.f
       real vlimit(2,ndims),xnewlim(2,ndims)
       real cellvol,ftot,vtot,v2tot
       real fvplt(nsbins)
@@ -655,7 +655,7 @@ c Distributions in ptaccom.f
       integer lentrim
       external lentrim
       character*100 string,cellstring
-c 2-D variables
+! 2-D variables
       character pp(4,nsbins,nsbins)
       integer nl,j
       parameter (nl=10)
@@ -670,11 +670,11 @@ c 2-D variables
       real xylim(4)
       integer ips,itrace,ies,level
       logical loverplot
-c      data ndfirst/3/ndlast/3/
+!      data ndfirst/3/ndlast/3/
       data ips/0/itrace/0/loverplot/.false./
       data idw/0/level/1/
       data iup/1/jicell/0/jjcell/0/jkcell/0/
-c------------------------------------------
+!------------------------------------------
       if(ndims.ne.3)then
          write(*,*)'Skipping pltsubdist 3-D only code for ndims=',ndims
          write(*,*)'But it might work ok if cellvol and xnewlim are ok'
@@ -711,14 +711,14 @@ c------------------------------------------
      $     ,xnewlim(1,3)+(kcell-1)*wkcell,xnewlim(1,3)+kcell*wkcell
      $     ,Bfield
       endif
-c      write(*,'(a,$)')'v, T in bin'
-c ----------------- Start of 1-d distribution drawing.
+!      write(*,'(a,$)')'v, T in bin'
+! ----------------- Start of 1-d distribution drawing.
       call multiframe(ndlast-ndfirst+1,1,2)
       do id=ndfirst,ndlast
-c Do correct scaling:
+! Do correct scaling:
          do iv=1,nsbins
-c Alternatively we combine bins in possibly multiple
-c dimensions, if jicell, jjcell, or jkcell are non-zero.
+! Alternatively we combine bins in possibly multiple
+! dimensions, if jicell, jjcell, or jkcell are non-zero.
             fvplt(iv)=0.
             do iw=1,nsbins
                f2vc(iv,iw,id)=0.
@@ -732,10 +732,10 @@ c dimensions, if jicell, jjcell, or jkcell are non-zero.
             fvplt(iv)=fvplt(iv)+fvx(iv,id,ip3)*csbin(iv,id)
      $              *nptdiag/(vlimit(2,id)-vlimit(1,id))/cellvol
             do iw=1,nsbins
-c I'm not clear about the normalization here.
+! I'm not clear about the normalization here.
                f2vc(iv,iw,id)=f2vc(iv,iw,id)+f2vx(iv,iw,id,ip3)
-c*csbin(iv,id)
-c     $              *nsbins/(vlimit(2,id)-vlimit(1,id))/cellvol
+!*csbin(iv,id)
+!     $              *nsbins/(vlimit(2,id)-vlimit(1,id))/cellvol
             enddo
                   enddo
                enddo 
@@ -749,8 +749,8 @@ c     $              *nsbins/(vlimit(2,id)-vlimit(1,id))/cellvol
             v2tot=v2tot+vsbin(iv,id)**2*fvx(iv,id,ip)
             ftot=ftot+fvx(iv,id,ip)
          enddo
-c         write(*,'('','',2f10.5,$)')vtot/ftot,sqrt(v2tot/ftot-(vtot/ftot
-c     $        )**2)
+!         write(*,'('','',2f10.5,$)')vtot/ftot,sqrt(v2tot/ftot-(vtot/ftot
+!     $        )**2)
          if(loverplot.and.ndlast-ndfirst.eq.0)then
             itrace=itrace+1
             call color(itrace)
@@ -761,7 +761,7 @@ c     $        )**2)
             call axis()
          endif
          if(btest(idw,id-1))then
-c         if(id.eq.3)then
+!         if(id.eq.3)then
             write(*,*)'#',icell*(1-jicell),jcell*(1-jjcell),kcell*(1
      $        -jkcell),' dimension',id
             write(*,*)nsbins
@@ -788,7 +788,7 @@ c         if(id.eq.3)then
          call axlabels(' ',string(1:lentrim(string)))
          call winset(.true.)
          call polymark(vsbin(1,id),fvplt,nsbins,1)
-c         call polybox(vhbin(0,id),fvx(1,id,ip),nsbins)
+!         call polybox(vhbin(0,id),fvx(1,id,ip),nsbins)
          if(nsbins.ne.nptdiag)then
             call polybox(vhbin(0,id),fvplt,nsbins)
          else
@@ -798,9 +798,9 @@ c         call polybox(vhbin(0,id),fvx(1,id,ip),nsbins)
       call winset(.false.)
       call axlabels('Velocity',' ')
       call eye3d(ip)
-c ------------ End of 1-d distribution drawing.
+! ------------ End of 1-d distribution drawing.
       if(nsbins.eq.nptdiag)then
-c Start of 2-d distribution drawing.
+! Start of 2-d distribution drawing.
          write(*,*)'Space key advances v-projection direction. f-count'
          call multiframe(0,0,0)
          id=3
@@ -809,8 +809,8 @@ c Start of 2-d distribution drawing.
          call iwrite(id,iwidth,string)
          call jdrwstr(0.02,0.02,'Direction ',1.)
          call drcstr(string)
-c         call drcstr(' Advance with space.')
-c       Plot the surface. With axes (1). Web color 10, axis color 7.
+!         call drcstr(' Advance with space.')
+!       Plot the surface. With axes (1). Web color 10, axis color 7.
          j=level + 256*10 + 256*256*7
          call hidweb(vsbin(1,1),vsbin(1,2),f2vc(1,1,id),nsbins,nsbins
      $        ,nsbins,j)
@@ -828,17 +828,17 @@ c       Plot the surface. With axes (1). Web color 10, axis color 7.
          call cont3proj(f2vc(1,1,id),pp,nsbins,nsbins,nsbins,cl,0,
      $        vsbin(1,1),vsbin(1,2),1,1.)
          call hdprset(0,0.)
-c How to enable interactive plot rotation. Just this call instead of pltend:
+! How to enable interactive plot rotation. Just this call instead of pltend:
          ies=ieye3d()
          call rotatezoom(ies)
-c Space key changes f-integration direction.
+! Space key changes f-integration direction.
          if(ies.eq.ichar(' '))id=mod(id,ndims)+1
-c Exit on 0,q, or an arrow key.
+! Exit on 0,q, or an arrow key.
          if(ies.ne.0 .and. ies.ne.ichar('q') .and. ies.lt.65300 )goto 98    
       endif
-c -------------- End of 2-d. 
-c      write(*,*)'ip',ip
-c Increment one of the dimensions using arrow keys.
+! -------------- End of 2-d. 
+!      write(*,*)'ip',ip
+! Increment one of the dimensions using arrow keys.
       if(ip.eq.65361)then
          icell=mod(icell-1+isuds(1)+iup,isuds(1))+1
       elseif(ip.eq.65362)then
@@ -848,16 +848,16 @@ c Increment one of the dimensions using arrow keys.
       elseif(ip.eq.65363)then
          jcell=mod(jcell-1+isuds(2)+iup,isuds(2))+1
       elseif(ip.eq.65505)then
-c ffe1 shift_L=2^16-31=65505
+! ffe1 shift_L=2^16-31=65505
          iup=-iup
-c Control averaging over dimensions
+! Control averaging over dimensions
       elseif(ip.eq.ichar('x'))then
          jicell=1-jicell
       elseif(ip.eq.ichar('y'))then
          jjcell=1-jjcell
       elseif(ip.eq.ichar('z'))then
          jkcell=1-jkcell
-c Control overplotting
+! Control overplotting
       elseif(ip.eq.ichar('o'))then
          if(loverplot)itrace=0
          loverplot=.not.loverplot
@@ -873,39 +873,39 @@ c Control overplotting
             call pfset(0)
          endif
       elseif(ip.eq.ichar('a'))then
-c------------------------------
-c Control axis settings.
-c Get another key input
+!------------------------------
+! Control axis settings.
+! Get another key input
          write(*,*)'Axis control.'
      $        ,' Type axis-end switch 1-4, xmin,xmax,ymin,ymax.'
  200     call eye3d(ip)
-c         write(*,*)ip
+!         write(*,*)ip
          if((ip.ge.49 .and. ip.le.52))then
-c            write(*,*)char(ip)
-c Toggle the isw accordingly.
+!            write(*,*)char(ip)
+! Toggle the isw accordingly.
             isw=ieor(isw,2**(ip-49))
             write(*,'(a,i3,$)')'isw set to',isw
-c Get the real number
+! Get the real number
             if(isw/2**(ip-49)-(isw/2**(ip-48))*2.ne.0)then
                write(*,*)'  enter axis end value:'
                call eyereadreal(xylim(ip-48))
             else
                write(*,*)' manual value toggled off.'
             endif
-c            write(*,*)'eyeread return',ip-48,xylim(ip-48)
+!            write(*,*)'eyeread return',ip-48,xylim(ip-48)
          else
             write(*,*)'Not a number in [1,4]:', char(ip)
             goto 200
          endif
-c------------------------------
+!------------------------------
       else
-c         write(*,*)ip
+!         write(*,*)ip
          return
       endif
       goto 1
-c--------------------------------------
+!--------------------------------------
       end
-c****************************************************************
+!****************************************************************
       subroutine eyereadreal(x)
       real x
       logical ldec
@@ -923,7 +923,7 @@ c****************************************************************
             x=x*10.+sign*(i-48)
          endif
          write(*,*)x
-c,'  decfac=',decfac
+!,'  decfac=',decfac
          goto 1
       else
          if(i.eq.46)then
@@ -932,17 +932,17 @@ c,'  decfac=',decfac
          elseif(i.eq.45)then
             x=-x
             sign=-sign
-c            write(*,*)x
+!            write(*,*)x
             goto 1
          elseif(i.ne.65293)then
-c Return indicates end. Anything else starts over.           
-c Backspace is 65288
+! Return indicates end. Anything else starts over.           
+! Backspace is 65288
             write(*,*)'Starting Read Real Over:',i,char(i)
             goto 2
          endif
       endif
       end
-c****************************************************************
+!****************************************************************
       subroutine fsvzero()
       include 'ndimsdecl.f'
       include 'meshcom.f'
@@ -954,37 +954,37 @@ c****************************************************************
          enddo
       enddo
       end
-c****************************************************************
+!****************************************************************
       real function vproject(ndims,id,xr,Bfield)
-c Return the id'th component of the "Projected" velocity xr(ndims+ii)
-c relative to the direction cosines Bfield(ndims). 
-c id=1 Parallel, id=2 Perpendicular, id=3 3rd (=id'th) component.
+! Return the id'th component of the "Projected" velocity xr(ndims+ii)
+! relative to the direction cosines Bfield(ndims). 
+! id=1 Parallel, id=2 Perpendicular, id=3 3rd (=id'th) component.
       implicit none
       integer ndims,id
       real xr(ndims),Bfield(ndims) 
       real v,v2
       integer ii
-c Projected. Very clumsy.
+! Projected. Very clumsy.
       v=0
       do ii=1,ndims
          v=v+xr(ii+ndims)*Bfield(ii)
       enddo
       if(id.eq.2)then
-c Perpendicular
+! Perpendicular
          v2=0
          do ii=1,ndims
             v2=v2+(xr(ii+ndims)-v*Bfield(ii))**2
          enddo
          v=sqrt(v2)
       elseif(id.eq.3)then
-c Z-component.
+! Z-component.
          v=xr(id+ndims)
       endif
       vproject=v
       end
 
-c********************************************************************
-c Convert 3-D indices into pointer. Only used in pltsubdist.
+!********************************************************************
+! Convert 3-D indices into pointer. Only used in pltsubdist.
       function ip3index(ifull,i,j,k)
       integer ifull(3),i,j,k 
       ip3index=0
@@ -992,17 +992,17 @@ c Convert 3-D indices into pointer. Only used in pltsubdist.
       ip3index=(j-1)+ip3index*ifull(2)
       ip3index=(i-1)+ip3index*ifull(1)
       end
-c********************************************************************
+!********************************************************************
       block data ptaccomdata
       include 'ndimsdecl.f'
       include 'ptaccom.f'
       data nptdiag/nptdiagmax/
       end
-c*******************************************************************
+!*******************************************************************
       subroutine adjustlimit(nptdiag,vlimit)
-c Make the value zero lie either at the center of a v-cell or on the
-c boundary between cells, so that uniform cells are symmetrically placed
-c with respect to zero.
+! Make the value zero lie either at the center of a v-cell or on the
+! boundary between cells, so that uniform cells are symmetrically placed
+! with respect to zero.
       integer nptdiag
       real vlimit(2)
       dv=(vlimit(2)-vlimit(1))/nptdiag
@@ -1010,5 +1010,5 @@ c with respect to zero.
       delta=(svi-int(svi))*dv/2.
       vlimit(1)=vlimit(1)-delta
       vlimit(2)=vlimit(2)-delta
-c      write(*,*)'Adjusted vlimits to',vlimit,vlimit(1)/dv
+!      write(*,*)'Adjusted vlimits to',vlimit,vlimit(1)/dv
       end

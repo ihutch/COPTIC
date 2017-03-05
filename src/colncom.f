@@ -1,4 +1,4 @@
-c Collision settings
+! Collision settings
       real colntime,subcycle,vneutral,fcollided,dropaccel,Tneutral
       real Eneutral,colpow,Enfrac
       integer nsubc,ncollided,ndropped
@@ -6,4 +6,4 @@ c Collision settings
       common /colncom/colntime,subcycle,nsubc,vneutral,Tneutral
      $     ,ncollided,fcollided,ndropped,dropaccel,Eneutral,Enfrac
      $     ,colpow,ldistshow
-c Tneutral is obsolete. Ti is now used instead.
+! Tneutral is obsolete. Ti is now used instead.

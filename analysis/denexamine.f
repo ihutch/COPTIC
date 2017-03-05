@@ -6,18 +6,18 @@
       real thetadist(nr,ntheta),thetaval(ntheta),rval(nr)
       integer ithetacount(nr,ntheta)
       
-c silence warnings:
+! silence warnings:
       fluxfilename=' '
-c 
+! 
       call denexamargs
 
-c      write(*,*)ifull
+!      write(*,*)ifull
       ied=1
       call array3read(denfilename,ifull,iuds,ied,q,ierr)
       if(ierr.eq.1)stop
 
       rs=sqrt(3.)*rs
-c      write(*,*)na_i,na_j,na_k,na_m,ifull,iuds
+!      write(*,*)na_i,na_j,na_k,na_m,ifull,iuds
 
       do j=1,nr
          do i=1,ntheta
@@ -26,10 +26,10 @@ c      write(*,*)na_i,na_j,na_k,na_m,ifull,iuds
             if(i.eq.1)thetaval(i)=-1.+ (i-0.5)/float(ntheta)
          enddo
          rval(j)=1.+(rs-1.)*(j-0.5)/float(nr)
-c         write(*,*)j,rval(j)
+!         write(*,*)j,rval(j)
       enddo
 
-c      write(*,*)(q(16,16,k),k=1,ifull(3))
+!      write(*,*)(q(16,16,k),k=1,ifull(3))
       ifix=2
       call sliceGweb(ifull,iuds,q,na_m,zp,
      $        ixnp,xn,ifix,'Density: n',dum,dum)
@@ -37,12 +37,12 @@ c      write(*,*)(q(16,16,k),k=1,ifull(3))
 
       write(*,*)argument,'TheEnd'
       stop
-c plot density versus radius.
+! plot density versus radius.
 
       write(*,*)rs,debyelen,vd,Ti
       write(*,*)'Plotting radial distribution'
-c      write(*,*)rs
-c      call pltinit(0.,rs,q(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
+!      write(*,*)rs
+!      call pltinit(0.,rs,q(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
       call pltinit(0.,rs,0.,2.)
       call axis()
       call axis2()
@@ -66,7 +66,7 @@ c      call pltinit(0.,rs,q(iuds(1)/2,iuds(2)/2,iuds(3)/2),0.)
                call polymark(r,q(i,j,k),1,10)
                if(r.gt.rs .and.
      $              .not.(q(i,j,k).eq.0. .or. q(i,j,k).eq.1.))then
-c                  write(*,'(4f12.6,3i3)')x,y,z,q(i,j,k),i,j,k
+!                  write(*,'(4f12.6,3i3)')x,y,z,q(i,j,k),i,j,k
                endif
                if(q(i,j,k).lt.denmin)denmin=q(i,j,k)
             enddo
@@ -113,7 +113,7 @@ c                  write(*,'(4f12.6,3i3)')x,y,z,q(i,j,k),i,j,k
       end
 
 
-c*************************************************************
+!*************************************************************
       subroutine denexamargs()
       include 'examdecl.f'
 
@@ -121,12 +121,12 @@ c*************************************************************
          ifull(2)=na_j
          ifull(3)=na_k
 
-c silence warnings:
+! silence warnings:
       zp(1,1,1)=0.
-c Defaults
+! Defaults
       denfilename=' '
 
-c Deal with arguments
+! Deal with arguments
       if(iargc().eq.0) goto 201
       do i=1,iargc()
          call getarg(i,argument)
@@ -143,8 +143,8 @@ c Deal with arguments
          
       enddo
       goto 202
-c------------------------------------------------------------
-c Help text
+!------------------------------------------------------------
+! Help text
  201  continue
       write(*,*)'=====Error reading command line argument'
  203  continue
@@ -159,4 +159,4 @@ c Help text
  202  continue
       if(lentrim(denfilename).lt.5)goto 203
       end
-c*****************************************************************
+!*****************************************************************

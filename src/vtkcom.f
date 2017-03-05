@@ -1,4 +1,4 @@
-c Common data for vtkoutput subroutine
+! Common data for vtkoutput subroutine
       integer nvtkindmax, vtkindex, vtkflag
       parameter (nvtkindmax=100000)
       real vtkpoints(nvtkindmax)
