@@ -1,4 +1,4 @@
-***********************************************************************
+!***********************************************************************
 ! Block boundary communication.
       subroutine bbdy(iLs,ifull,iuds,u,kc,
      $     ndims,idims,icoords,iLcoords,myside,myorig,

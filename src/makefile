@@ -163,6 +163,9 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 %.o : %.f makefile $(HEADERS)
 	$(G77) -c $(NOGLOBALS) $(PROFILING) $*.f
 
+%.o : %.f90  makefile $(HEADERS)
+	$(G77) -c $(NOGLOBALS) $(PROFILING) $*.f90
+
 %.o : %.c makefile
 	cc -c $(PROFILING) $*.c
 

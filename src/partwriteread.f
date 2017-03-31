@@ -369,11 +369,12 @@
 !************************************************************************
       subroutine periodicwrite(ifull,iuds,iLs,diagsum,uave,lmyidhead
      $     ,ndiags,ndiagmax,nf_step,nsteps,idistp,vlimit
-     $     ,xnewlim,cellvol,ibinit,idcount,restartpath)
+     $     ,xnewlim,cellvol,ibinit,idcount,restartpath,iavesteps)
 ! Periodic reduction, reporting, and writing of information on the 
 ! state of the simulation.
       implicit none
       integer ndiags,ndiagmax,nf_step,nsteps,idistp,ibinit,idcount
+      integer iavesteps
       logical lmyidhead
       real cellvol
       include 'ndimsdecl.f'
@@ -398,7 +399,12 @@
      $           ,iuds,iLs,ndiags)
             call diagperiod(diagsum(1,1,1,1,ispecies),ifull,iuds
      $           ,iLs,ndiags)
-! Do any other processing? Here or later?
+! Do any other processing? 
+! Divide diagsums by iavsteps, to give average diagnostic density.
+            do idiag=1,ndiags
+               call mditermults(diagsum(1,1,1,idiag,ispecies),ndims
+     $              ,ifull,iuds,0,1./iavesteps,0.)
+            enddo
 ! Write the ave potential into the ndiags+1 slot of diagsum (by adding
 ! to the previously zeroed values).
             ipin=0

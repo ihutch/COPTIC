@@ -14505,3 +14505,29 @@ reduce at the end. In which case all nodes (assuming all nodes are filled)
 end up with the potential data. This is substantially more complicated
 though, and I don't know how to exclude nodes from creating a cartesian
 communicator. Doesn't sound worth it.
+
+6 Mar 17
+
+I showed how to generate f90-compatible source.
+Gave serious consideration to restructuring the code to use modules
+rather than the commons in include files. It emerges that the rewrite
+would be very difficult because of several incompatibilities. In
+general the problem surrounds dependencies of include files modules on
+one another, such as the dependence upon ndimsdecl and griddecl. Modules
+cannot tolerate multiple definitions of the same things within a
+program unit. If something is defined in a module that is USEd, then
+it can't be defined anywhere else in the same unit. However, a module
+is modular, and MUST have the definitions of what it operates on declared
+within itself. This is contrary to some of coptic where declarations are
+required by some includes, but their requirements are satisfied by prior
+inclusions, rather than by nested inclusions.
+
+Based on this realization and some reading concerning other people's
+experience with code conversion, it seems not worth converting to
+modules.  The benefits are limited, the complexity will actually be
+increased, not reduced (because of .mod files and nesting), and quite
+likely compilation will be substantially slowed.
+
+31 Mar 17
+Implemented dividing diagsum by iavesteps, to make the diagnostic density
+and average not sum over iavesteps.
