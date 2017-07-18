@@ -242,38 +242,38 @@
          if(argument(1:3).eq.'-gd')ldenplot=.not.ldenplot
          if(argument(1:3).eq.'-gp')lphiplot=.not.lphiplot
          if(argument(1:3).eq.'-gi')linjplot=.true.
-         if(argument(1:3).eq.'-gf')read(argument(4:),*,err=201)ifplot
-         if(argument(1:3).eq.'-go')read(argument(4:),*,err=201)norbits
+         if(argument(1:3).eq.'-gf')read(argument(4:),*,end=201)ifplot
+         if(argument(1:3).eq.'-go')read(argument(4:),*,end=201)norbits
          if(argument(1:3).eq.'-gg')call noeye3d(0)
          if(argument(1:3).eq.'-gx')call pfset(-3)
          if(argument(1:3).eq.'-at')then
-            read(argument(4:),*,err=201)thetain
+            read(argument(4:),*,end=201)thetain
          elseif(argument(1:3).eq.'-an')then
-            read(argument(4:),*,err=201)nth
+            read(argument(4:),*,end=201)nth
          elseif(argument(1:2).eq.'-a')then 
-            read(argument(3:),*,err=201)iavesteps
+            read(argument(3:),*,end=201)iavesteps
          endif
          if(argument(1:3).eq.'-ni')read(argument(4:),*,err
      $        =201)nparta(nspecies)
-         if(argument(1:3).eq.'-ri')read(argument(4:),*,err=201)ripernode
-         if(argument(1:3).eq.'-rx')read(argument(4:),*,err=201)crelax
-         if(argument(1:3).eq.'-ck')read(argument(4:),*,err=201)ickst
-         if(argument(1:3).eq.'-ct')read(argument(4:),*,err=201)colntime
-         if(argument(1:3).eq.'-Ef')read(argument(4:),*,err=201)Enfrac
-         if(argument(1:3).eq.'-cp')read(argument(4:),*,err=201)colpow
-         if(argument(1:3).eq.'-dt')read(argument(4:),*,err=201)dt
-         if(argument(1:3).eq.'-da')read(argument(4:),*,err=201)bdt
-         if(argument(1:3).eq.'-ds')read(argument(4:),*,err=201)subcycle
-         if(argument(1:3).eq.'-dd')read(argument(4:),*,err=201)dropaccel
+         if(argument(1:3).eq.'-ri')read(argument(4:),*,end=201)ripernode
+         if(argument(1:3).eq.'-rx')read(argument(4:),*,end=201)crelax
+         if(argument(1:3).eq.'-ck')read(argument(4:),*,end=201)ickst
+         if(argument(1:3).eq.'-ct')read(argument(4:),*,end=201)colntime
+         if(argument(1:3).eq.'-Ef')read(argument(4:),*,end=201)Enfrac
+         if(argument(1:3).eq.'-cp')read(argument(4:),*,end=201)colpow
+         if(argument(1:3).eq.'-dt')read(argument(4:),*,end=201)dt
+         if(argument(1:3).eq.'-da')read(argument(4:),*,end=201)bdt
+         if(argument(1:3).eq.'-ds')read(argument(4:),*,end=201)subcycle
+         if(argument(1:3).eq.'-dd')read(argument(4:),*,end=201)dropaccel
          if(argument(1:3).eq.'-zm')then
             read(argument(4:),*,err =201)eoverms(nspecies)
             numratioa(nspecies)=1
          endif
-         if(argument(1:3).eq.'-nr')read(argument(4:),*,err=201)
+         if(argument(1:3).eq.'-nr')read(argument(4:),*,end=201)
      $        numratioa(nspecies)
-         if(argument(1:3).eq.'-bc')read(argument(4:),*,err=201)islp
+         if(argument(1:3).eq.'-bc')read(argument(4:),*,end=201)islp
          if(argument(1:3).eq.'-bp')then
-            read(argument(4:),*,err=201)idn
+            read(argument(4:),*,end=201)idn
             if(0.lt.idn.and.idn.lt.4)then
                LPF(idn)=.not.LPF(idn)
                do id=idn,idn+ndims,ndims
@@ -286,7 +286,7 @@
          if(argument(1:3).eq.'-bf')then
             idn=-1
 ! Make sure at least the first parameter is readable and sensible
-            read(argument(4:),*,err=201)idn
+            read(argument(4:),*,end=201)idn
             if(idn.eq.0)then
 ! Reset all.
                do idn=1,2*ndims
@@ -330,22 +330,22 @@
             read(argument(4:),*,err=201,end=201)idims
          endif
          if(argument(1:3).eq.'-Bx')then
-            read(argument(4:),*,err=201)Bfield(1)
+            read(argument(4:),*,end=201)Bfield(1)
          elseif(argument(1:3).eq.'-By')then
-            read(argument(4:),*,err=201)Bfield(2)
+            read(argument(4:),*,end=201)Bfield(2)
          elseif(argument(1:3).eq.'-Bz')then
-            read(argument(4:),*,err=201)Bfield(3)
+            read(argument(4:),*,end=201)Bfield(3)
          endif
          if(argument(1:7).eq.'--reinj')
-     $        read(argument(8:),*,err=201)ninjcomp
+     $        read(argument(8:),*,end=201)ninjcomp
          if(argument(1:3).eq.'-rn')
-     $        read(argument(4:),*,err=201)ninjcomp
+     $        read(argument(4:),*,end=201)ninjcomp
          if(argument(1:3).eq.'-sb')then
 ! Boltzamp setting
-            read(argument(4:),*,err=201)boltzamp
+            read(argument(4:),*,end=201)boltzamp
          elseif(argument(1:4).eq.'-spb')then
 ! Boltzamp setting obsolete switch
-            read(argument(5:),*,err=201)boltzamp
+            read(argument(5:),*,end=201)boltzamp
          elseif(argument(1:3).eq.'-sp')then
             if(nspecies+1.gt.nspeciesmax)then
                write(*,*)'***Disallowed more species than available'
@@ -367,7 +367,7 @@
             endif
 ! Drifts must be respecified for this species if different.
          elseif(argument(1:2).eq.'-s')then
-            read(argument(3:),*,err=201)nsteps
+            read(argument(3:),*,end=201)nsteps
             if(nsteps.gt.nf_maxsteps)then
                if(lmyidhead)write(*,*)'Asked for more steps',nsteps,
      $              ' than allowed. Limit ',nf_maxsteps-1
@@ -375,72 +375,72 @@
             endif
          endif
          if(argument(1:3).eq.'-vn')then
-            read(argument(4:),*,err=201)vneutral
+            read(argument(4:),*,end=201)vneutral
          elseif(argument(1:3).eq.'-vx')then
-            read(argument(4:),*,err=201)vdrifts(1,nspecies)
+            read(argument(4:),*,end=201)vdrifts(1,nspecies)
          elseif(argument(1:3).eq.'-vy')then
-            read(argument(4:),*,err=201)vdrifts(2,nspecies)
+            read(argument(4:),*,end=201)vdrifts(2,nspecies)
          elseif(argument(1:3).eq.'-vz')then
-            read(argument(4:),*,err=201)vdrifts(3,nspecies)
+            read(argument(4:),*,end=201)vdrifts(3,nspecies)
          elseif(argument(1:2).eq.'-v')then
-            read(argument(3:),*,err=201)vds(nspecies)
+            read(argument(3:),*,end=201)vds(nspecies)
 ! For Mach bdy, set slpD equal to M.
             slpD=vds(nspecies)
 ! By default put the vneutral the same as first species
             vneutral=vds(1)
          endif
          if(argument(1:3).eq.'-md')then 
-            read(argument(4:),*,err=201)ndiags
+            read(argument(4:),*,end=201)ndiags
             if(ndiags.gt.ndiagmax)then
                write(*,*)'Error: Too many diag-moments',ndiags
                stop
             endif
          endif
-         if(argument(1:2).eq.'-l')read(argument(3:),*,err=201)debyelen
+         if(argument(1:2).eq.'-l')read(argument(3:),*,end=201)debyelen
          if(argument(1:3).eq.'-ng')then
-            read(argument(4:),*,err=201)gn
+            read(argument(4:),*,end=201)gn
             gnt=sqrt(gn(1)**2+gn(2)**2+gn(3)**2)
          endif
          if(argument(1:4).eq.'-tge')then
 ! Electron temperature gradient parameters
-            read(argument(5:),*,err=201)gp0,gt
+            read(argument(5:),*,end=201)gp0,gt
             gtt=sqrt(gt(1)**2+gt(2)**2+gt(3)**2)
          elseif(argument(1:3).eq.'-tn')then
             write(*,*)'***Tneutral setting is obsolete. No can do.'
             stop
-!            read(argument(4:),*,err=201)Tneutral
+!            read(argument(4:),*,end=201)Tneutral
          elseif(argument(1:3).eq.'-tp')then
-            read(argument(4:),*,err=201)Tperps(nspecies)
+            read(argument(4:),*,end=201)Tperps(nspecies)
          elseif(argument(1:2).eq.'-t')then
-            read(argument(3:),*,err=201)Ts(nspecies)
+            read(argument(3:),*,end=201)Ts(nspecies)
             Tperps(nspecies)=Ts(nspecies)
 ! Default Tneutral=Ts(nspecies)
 !            Tneutral=Ts(nspecies)
          endif
          
-         if(argument(1:2).eq.'-w')read(argument(3:),*,err=201)iwstep
+         if(argument(1:2).eq.'-w')read(argument(3:),*,end=201)iwstep
          if(argument(1:3).eq.'-pd')then
             idistp=1
-            read(argument(4:),*,err=240)idistp
+            read(argument(4:),*,end=240,err=240)idistp
          endif
          if(argument(1:3).eq.'-pu')nptdiag=0
          if(argument(1:3).eq.'-fs')then
-            read(argument(4:),*,err=201)lrestart
+            read(argument(4:),*,end=201)lrestart
          endif
          if(argument(1:3).eq.'-fn')then
-            read(argument(4:),'(a)',err=201)restartpath
+            read(argument(4:),'(a)',end=201)restartpath
          endif
          if(argument(1:3).eq.'-fp')then
          endif         
          if(argument(1:10).eq.'--extfield')then
-            read(argument(11:),*,err=201)extfield
+            read(argument(11:),*,end=201)extfield
 !            write(*,*)'||||||||||||||extfield',extfield
             lextfield=.true.
          endif
          if(argument(1:3).eq.'-of')
-     $        read(argument(4:),'(a)',err=201)objfilename
+     $        read(argument(4:),'(a)',end=201)objfilename
          if(argument(1:1).ne.'-')
-     $        read(argument(1:),'(a)',err=201)objfilename
+     $        read(argument(1:),'(a)',end=201)objfilename
          if(argument(1:3).eq.'-ih')then
             hspecies=nspecies
             read(argument(4:),*,err=201,end=231)holepsi,holeum,holelen

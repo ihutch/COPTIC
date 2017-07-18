@@ -354,7 +354,8 @@
          call psumreduce(psum,nrein,phirein,ndims,ifull,iuds,iLs)
 ! Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
-         if(bdt.lt.0)write(*,*)'Rising N. injcomp,rhoinf=',dum,rhoinf
+         if(bdt.lt.0.and.lmyidhead)write(*,*)'Rising N. injcomp,rhoinf='
+     $        ,dum,rhoinf
 ! Convert psums to charge density, q. Remember external psumtoq!
          bckgd=0.
          if(nspecies.eq.1.)bckgd=(1.-boltzamp)*eoverms(1)
