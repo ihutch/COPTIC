@@ -607,6 +607,8 @@
       write(*,302)' -dt   set Timestep.              [',dt
       write(*,304)' -da   set Initial dt accel-factor[',bdt
      $     ,'  first 33% of timesteps larger.'
+      write(*,'(3a)')'       Negative=> fractional density increase'
+     $     ,' per unit time'
       write(*,304)' -ds   set Subcycle impulse/step  [',subcycle
      $     ,'  subcycling invoked above nonzero.'
       write(*,304)' -dd   set Drop-ion impulse/step  [',dropaccel

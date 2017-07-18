@@ -238,7 +238,6 @@
 ! Standard case. Use total charge density sum.
          rho(ind)=psum(ind)/(abs(rhoinf)*volumes(ind))
       endif
-!      endif
       inc=1
       end
 !********************************************************************

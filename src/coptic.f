@@ -73,11 +73,11 @@
 ! Various local parameters
       real bckgd,bdt,bdtnow,boltzamp0,cellvol,dtf
       real dum,dum2,dum3,dum4,dum5
-      real error,pinjcomp0,rc,rcij,rinf,rs1,thetain
+      real error,pinjcomp0(nspeciesmax),rc,rcij,rinf,rs1,thetain
       integer i,iavesteps,ibinit,iCFcount,ickst,ictl,id,idiag,idn
       integer ied,ierr,ierrsor,ifix,ifobj,ifplot,iobpl
       integer ipoint,ispecies,istat,istepave,iobpsw,j,k,maccel
-      integer mbzero,ninjcomp0,nsteps,nth,ndiags
+      integer mbzero,ninjcomp0(nspeciesmax),nsteps,nth,ndiags
 ! And Functions
       integer lentrim,nbcat,nameappendint,oicijfunc
       external lentrim,nbcat,nameappendint,oicijfunc
@@ -300,8 +300,10 @@
 !---------------------------------------------
 ! Acceleration parameters etc.
       phirein=0.
-      ninjcomp0=ninjcomp
-      pinjcomp0=pinjcompa(1)
+      do i=1,nspecies
+         ninjcomp0(i)=ninjcompa(i)
+         pinjcomp0(i)=pinjcompa(i)
+      enddo
       if(ninjcomp.ne.0.and.lmyidhead)
      $     write(*,'(a,i8,f8.5,i8,f8.5)')' Fixed injection count:'
      $     ,(ninjcompa(i),pinjcompa(i),i=1,nspecies)
@@ -330,17 +332,29 @@
 ! Main step iteration ##############################################
       do j=1,nsteps
          nf_step=nf_step+1
+         if(bdt.gt.0)then
 ! Acceleration code.
-         bdtnow=max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)
-         dt=bdtnow*dtf
-         ninjcomp=int(bdtnow*ninjcomp0)
-! The new version rhoinfcalc does a more accurate calculation but needs
-         pinjcompa(1)=bdtnow*pinjcomp0
+            bdtnow=max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)
+            dt=bdtnow*dtf
+         else
+! Density growth code. Negative -da switch instead says enhance the density
+! of external plasma by increasing the injection rate bdt*t.
+            bdtnow=1.+abs(bdt)*j*dt
+! Rising density needs rhoinf recalculated. Trigger by setting zero.
+            rhoinf=0.
+         endif
+! Set new injcomp (as needed)
+         do ispecies=1,nspecies
+            dum=bdtnow*(ninjcomp0(ispecies)+pinjcomp0(ispecies))
+            ninjcompa(ispecies)=int(dum)
+            pinjcompa(ispecies)=dum-ninjcompa(ispecies)
+         enddo
 ! Transfer deposits periodically or from ghost cells.
          call diagperiod(psum,ifull,iuds,iLs,1)
          call psumreduce(psum,nrein,phirein,ndims,ifull,iuds,iLs)
 ! Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
+         if(bdt.lt.0)write(*,*)'Rising N. injcomp,rhoinf=',dum,rhoinf
 ! Convert psums to charge density, q. Remember external psumtoq!
          bckgd=0.
          if(nspecies.eq.1.)bckgd=(1.-boltzamp)*eoverms(1)
