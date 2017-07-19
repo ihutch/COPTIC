@@ -14597,3 +14597,7 @@ the number of cells. It's more subtle. Found the problem. Had to have
 an extra factor (1+bdt*dt) because rhoinfcalc uses nrein which was 
 evaluated at the previous advancing step. I'm not sure I fully understand
 this, but it seems to work. 
+
+Unfortunately it does not work with multiple processes. Need an
+additional factor numprocs, since rhoinf is for the total density, but
+n_part is only on this processor.

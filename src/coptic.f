@@ -352,7 +352,7 @@
          call rhoinfcalc(dt)
 ! Subtract specified weight uniform background (for single-species running).
          if(bdt.lt.0 .and. j.gt.1)then
-            bckgd=(1+bdt*dt)*(n_part)*(1.-boltzamp)*eoverms(1)
+            bckgd=numprocs*(1+bdt*dt)*(n_part)*(1.-boltzamp)*eoverms(1)
      $           /(voltotal*rhoinf)
 ! Density growth code. Negative -da switch instead says enhance the density
 ! of external plasma by increasing the injection rate bdt*t.
