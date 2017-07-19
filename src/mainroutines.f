@@ -165,3 +165,32 @@
       endif
 
       end
+!***********************************************************************
+      subroutine phasescatter(ifull,iuds,u)
+      implicit none
+      include 'ndimsdecl.f'
+      include 'meshcom.f'
+      include 'partcom.f'
+      integer ifull(ndims),iuds(ndims)
+      real u(ifull(1),ifull(2),ifull(3))
+      integer id
+      real vrange,phirange
+      parameter (id=1,vrange=3.,phirange=.5)
+! Only if this is a one-dimensional problem (for now)
+      if(iuds(2).ge.4 .and. iuds(3).ge.4) return
+
+      call multiframe(2,1,0)
+      call pltinit(xmeshstart(id),xmeshend(id),-phirange,phirange)
+      call axis()
+      call axlabels(' ','  !Af!@')
+      call polyline(xn(ixnp(1)+1),u(1,2,2),ixnp(2)-ixnp(1))
+      call pltinit(xmeshstart(id),xmeshend(id),-vrange,vrange)
+      call axis()
+      call axlabels('x','  v')
+      call winset(.true.)
+      call color(1)
+      call scatterxy(x_part(id,1),x_part(id+3,1),iocparta(1),idtp)
+      call accisflush()
+      call color(15)
+      call multiframe(0,0,0)
+      end

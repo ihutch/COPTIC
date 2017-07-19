@@ -185,9 +185,9 @@ c Do logarithmic contour coloring fitting
             c1st=clast*1.e-4
 c            stop
          endif
+         c1stlog=log(c1st)
+         cdiflog=1./(log(clast)-c1stlog)
       endif
-      c1stlog=log(c1st)
-      cdiflog=1./(log(clast)-c1stlog)
 c Coloring.
 c      write(*,*)'minz,maxz,c1st,clast',minz,maxz,c1st,clast
       if(icfil.ne.0)then

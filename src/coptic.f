@@ -14,7 +14,7 @@
 ! Running averages.
       real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
 !
-      real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k)
+      real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k),voltotal
       real cij(2*ndimsmax+1,na_i,na_j,na_k)
 ! Diagnostics (moments)
       integer ndiagmax
@@ -142,6 +142,11 @@
       if(lmyidhead.and.rs.gt.rs1 .and. islp.eq.0.and.iCFcount.le.0)
      $     write(*,*)'UNUSUAL choice islp=',islp
      $     ,' when non-square domain in use.'
+      voltotal=1.
+      do i=1,ndims
+         voltotal=voltotal*(xmeshend(i)-xmeshstart(i))
+      enddo
+!      write(*,*)'voltotal=',voltotal
 ! Initialize reinjection geometry if needed for particular case.
       call geominit(myid)
 !-----------------------------------------------------------------
@@ -332,34 +337,37 @@
 ! Main step iteration ##############################################
       do j=1,nsteps
          nf_step=nf_step+1
+! Transfer deposits periodically or from ghost cells.
+         call diagperiod(psum,ifull,iuds,iLs,1)
+         call psumreduce(psum,nrein,phirein,ndims,ifull,iuds,iLs)
          if(bdt.gt.0)then
 ! Acceleration code.
             bdtnow=max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)
             dt=bdtnow*dtf
          else
-! Density growth code. Negative -da switch instead says enhance the density
-! of external plasma by increasing the injection rate bdt*t.
-            bdtnow=1.+abs(bdt)*j*dt
 ! Rising density needs rhoinf recalculated. Trigger by setting zero.
             rhoinf=0.
          endif
-! Set new injcomp (as needed)
-         do ispecies=1,nspecies
-            dum=bdtnow*(ninjcomp0(ispecies)+pinjcomp0(ispecies))
-            ninjcompa(ispecies)=int(dum)
-            pinjcompa(ispecies)=dum-ninjcompa(ispecies)
-         enddo
-! Transfer deposits periodically or from ghost cells.
-         call diagperiod(psum,ifull,iuds,iLs,1)
-         call psumreduce(psum,nrein,phirein,ndims,ifull,iuds,iLs)
 ! Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
-         if(bdt.lt.0.and.lmyidhead)write(*,*)'Rising N. injcomp,rhoinf='
-     $        ,dum,rhoinf
-! Convert psums to charge density, q. Remember external psumtoq!
-         bckgd=0.
-         if(nspecies.eq.1.)bckgd=(1.-boltzamp)*eoverms(1)
 ! Subtract specified weight uniform background (for single-species running).
+         if(bdt.lt.0 .and. j.gt.1)then
+            bckgd=(1+bdt*dt)*(n_part)*(1.-boltzamp)*eoverms(1)
+     $           /(voltotal*rhoinf)
+! Density growth code. Negative -da switch instead says enhance the density
+! of external plasma by increasing the injection rate bdt*t.
+            bdtnow=1.+abs(bdt)*j*dt
+            do ispecies=1,nspecies
+               dum=bdtnow*(ninjcomp0(ispecies)+pinjcomp0(ispecies))
+               ninjcompa(ispecies)=int(dum)
+               pinjcompa(ispecies)=dum-ninjcompa(ispecies)
+            enddo
+         else
+            bckgd=(1.-boltzamp)*eoverms(1)
+         endif
+! If more than one species, no background subtraction.
+         if(nspecies.gt.1)bckgd=0.
+! Convert psums to charge density, q. Remember external psumtoq!
          call mditerarg(psumtoq,ndims,ifull,ium2,0,psum(2,2,2)
      $        ,q(2,2,2),volumes(2,2,2),bckgd,rhoinf)
          istepave=min(nf_step,iavesteps)
@@ -391,8 +399,10 @@
 ! Slice plots
                if(ldenplot)call sliceGweb(ifull,iuds,q,na_m,zp,
      $              ixnp,xn,ifix,'density: n'//char(0),dum,dum)
-               if(lphiplot)call sliceGweb(ifull,iuds,u,na_m,zp,
-     $              ixnp,xn,ifix,'potential:'//'!Ay!@'//char(0),dum,dum)
+               if(lphiplot.and.iuds(2).gt.3.and.iuds(3).gt.3)
+     $              call sliceGweb(ifull,iuds,u,na_m,zp,
+     $              ixnp,xn,ifix,'potential:'//'!Af!@'//char(0),dum,dum)
+               if(lphiplot)call phasescatter(ifull,iuds,u)
             endif
          endif
 
@@ -429,10 +439,16 @@
          call averagegd(u,uave,ifull,iuds,istepave)
 ! Every iavesteps, calculate the box average of the moments, and write it
 ! out, if we are doing diagnostics.
-         if(mod(j,iavesteps).eq.0)call periodicwrite(ifull,iuds,iLs
+         if(mod(j,iavesteps).eq.0)then
+            call periodicwrite(ifull,iuds,iLs
      $        ,diagsum,uave,lmyidhead,ndiags,ndiagmax,nf_step,nsteps
      $        ,idistp,vlimit,xnewlim,cellvol,ibinit,idcount,restartpath
      $        ,iavesteps)
+            if(bdt.lt.0.and.lmyidhead)then
+               write(*,'(a,f8.2,3f8.4)')'injcomp,rhoinf,phirein,bckgd='
+     $              ,dum,rhoinf,phirein,bckgd
+            endif
+         endif
 ! Particle distribution diagnostics.
 ! The serial cost for this call with 1M particles is about 1s in 17s.
 ! Or less than 2s if both partaccum and vaccum are called. Thus the

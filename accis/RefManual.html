@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
            "http://www.w3.org/TR/REC-html40/loose.dtd">
 <html>
-<meta name="GENERATOR" content="TtH 4.08">
+<meta name="GENERATOR" content="TtH 4.09">
  <style type="text/css"> div.p { margin-top: 7pt;}</style>
  <style type="text/css"><!--
  td div.comp { margin-top: -0.6ex; margin-bottom: -1ex;}
@@ -303,7 +303,7 @@ units. Width of color bar is colwith times axis-box
 width. lpara=.true. says use parallel labels.
 
 <div class="p"><!----></div>
-agradcolor(icol) set gradient color 0-239.
+acgradcolor(icol) set gradient color 0-239.
 
 <div class="p"><!----></div>
 getrgbcolor(icol,ired,igreen,iblue) get the gradient color RGB
@@ -706,6 +706,11 @@ by the third bit of ifix being set; the work array vp(nw,nw,3,3)
 must then be provided.
 
 <div class="p"><!----></div>
+IXNPCREATE(Nx,Ny,Nz,xposv,yposv,zposv,ixnpv,xnv) Is a utility that
+creates the vectors ixnpv,xnv, needed for slicegweb and slicegcont
+from three coordinate arrays: xposv,yposv,zposv, of lengths Nx,Ny,Nz.
+
+<div class="p"><!----></div>
  <a id="tth_sEc13"></a><h2>
 13&nbsp;&nbsp;Primitives</h2>
 
@@ -816,7 +821,16 @@ For X window systems, the X11 driver (vecx.c) requires linking against
 the Xlib library using compiler/linker arguments such as
 -L/usr/X11R6/lib/-lX11.  The OpenGL driver vecglx.c requires in
 addition -lGL and -lGLU. The development versions of the X11 and
-OpenGL packages may be required to provide these.
+OpenGL packages may be required to provide these. The driver can be
+selected by e.g. <tt>$&nbsp;make&nbsp;VECX=vecx</tt> or  <tt>$&nbsp;make&nbsp;VECX=vecglx</tt>. 
+These drivers reside in the library <tt>libaccisX.a</tt>.
+Non-X drivers reside in <tt>libaccis.a</tt> which normally needs no
+additional libraries. 
+The make command <tt>$&nbsp;make&nbsp;VECX=noscreen</tt>  like <tt>$&nbsp;make&nbsp;VECX=vec4014</tt>
+makes a version which requires only a fortran
+compiler (no C). The noscreen option outputs no graphics to screen and does not
+wait for any input. It will however generate postscript plot files if the code
+calls for them.
 
 <div class="p"><!----></div>
 All the ACCIS code with the exception of the drivers is fortran 77.
@@ -839,5 +853,5 @@ for operation of debugged correct code.
 T<sub><span class="small">E</span></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><span class="small">T</span></sub>H</a>,
-version 4.08.<br />On 21 Jan 2016, 18:01.</small>
+version 4.09.<br />On 18 Jul 2017, 15:39.</small>
 </html>

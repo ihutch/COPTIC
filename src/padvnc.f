@@ -55,6 +55,7 @@
       include 'partcom.f'
 
 !-------------------------------------------------------------
+      ndeposits=0
       tisq=sqrt(Ts(ispecies))
       lcollided=.false.
       ncollided=0
@@ -386,12 +387,6 @@
 !         write(*,*)'Calling reinject',i,ispecies
          call reinject(x_part(1,i),ilaunch,ispecies)
          call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
-!         if(ispecies.eq.2.and.abs(x_part(5,i)).gt..001
-!     $        .and.i.lt.131000)then
-! Testing
-!            write(*,*)'reinject vynonzero',i
-!            write(*,*)(x_part(j,i),j=1,6)
-!         endif
          if(.not.linmesh)then
             write(*,*)'Reinject out of mesh',i,xfrac
             stop
@@ -444,19 +439,13 @@
             call achargetomesh(i,psum,iLs
      $           ,diagsum(1+iLs(ndims+1)*(ndiagmax+1)*(ispecies-1))
      $           ,ndiags,echarge,xprior)
-!            if(mod(i,500).eq.0)write(*,*)'achargetomesh',ispecies,i,iLs
-!     $           ,ndiags,ndiagmax
-!     $           ,diagsum(1+iLs(ndims+1)*(ndiagmax+1)*(ispecies-1)+1)
+!            ndeposits=ndeposits+1
          endif
 ! End of icycle step subloop.
          enddo
+!         if(ndeposits.ne.n_part)write(*,*)'ndeposits,nparta',ndeposits
+!     $        ,n_part
 ! End of this particle's advance.
-!         if(ispecies.eq.2.and.abs(x_part(ndims+2,i)).gt.0.001
-!     $        .and.i.lt.131000)then
-! Test if we have a non-zero vy.
-!            write(*,*)'vynonzero',i
-!            write(*,*)(x_part(k,i),k=1,6)
-!         endif
  400     continue
       enddo
       write(*,*)'nrein=',nrein

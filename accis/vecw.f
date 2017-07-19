@@ -404,4 +404,25 @@ c***************************************************************************
       endif
       return
       end
-
+c***************************************************************************
+      subroutine winsetmargin(wsw,themargin)
+      logical wsw
+      real themargin
+      include 'plotcom.h'
+      if(wsw)then
+         call truncf(naxmin+themargin,naxmax-themargin,naymin+themargin
+     $        ,naymax-themargin)
+      else
+      call truncf(0.,0.,0.,0.)
+      endif
+      return
+      end
+c**************************************************************************
+      subroutine scatterxy(x,y,n,istrd)
+c Do a scatter plot of points x,y vectors with stride istrd.
+      integer n,istrd
+      real x(n),y(n)
+      do i=0,n-1
+         call vecw(x(1+i*istrd),y(1+i*istrd),-1)
+      enddo
+      end

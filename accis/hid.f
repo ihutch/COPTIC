@@ -257,18 +257,18 @@ c     $                    ,dx,dydx,xo,yo
             elseif(nstate.eq.1.and.lmidl)then
 c Drawing above. If previously was not, draw start.
                if(istate.eq.0) then
-                  xp=dx*(ix-signd)
-                  yp=ytop(ix-signd)
-c                  if(ytop(ix-signd).eq.0.)
-c     $                 write(*,*)ix1,ix2,ix,signd,x1,x2,x,xp
+                  ixms=min(max(ix-signd,1),ngrid)
+                  xp=dx*ixms
+                  yp=ytop(ixms)
                   call vecn(xp,yp,0)
                   call vecn(x,y,1)
                endif
             elseif(nstate.eq.2.and.lmidl)then
 c Drawing below. If previously was not, draw start.
                if(istate.eq.0) then
-                  xp=dx*(ix-signd)
-                  yp=ybot(ix-signd)
+                  ixms=min(max(ix-signd,1),ngrid)
+                  xp=dx*ixms
+                  yp=ybot(ixms)
                   call vecn(xp,yp,0)
                   call vecn(x,y,1)
                endif

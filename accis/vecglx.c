@@ -402,8 +402,9 @@ void accisclear_()  /* Simply clear to background fortran callable*/
 /* Flush the plot buffer Subroutine */ 
 void accisflush_()
 {
-  XFlush(accis_display);  
   glFlush();
+  XFlush(accis_display);
+  if(accis_glback)ACCIS_SWAP
 }
 /* ********************************************************************* */
 /* Set the Color Subroutine */ int scolor_(li)

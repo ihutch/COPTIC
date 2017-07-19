@@ -1177,6 +1177,29 @@ c Now iql and iqr, Ql and Qr bracket Q
       endif
       end
 c******************************************************************
+      subroutine ixnpcreate(Nx,Ny,Nz,vx,vy,vz,ixnp,xn)
+c Create the ixnp and xn combined vectors from three vectors for
+c different directions vx,vy,vz,Nx,Ny,Nz
+      integer ixnp(4)
+      real xn(*),vx(Nx),vy(Ny),vz(Nz)
+
+c      write(*,*)'Nx,Ny,Nz',Nx,Ny,Nz
+c      write(*,'(10f8.3)')vx,vy,vz
+      ixnp(1)=0
+      do i=1,Nx
+         xn(i+ixnp(1))=vx(i)
+      enddo
+      ixnp(2)=ixnp(1)+Nx
+      do i=1,Ny
+         xn(i+ixnp(2))=vy(i)
+      enddo
+      ixnp(3)=ixnp(2)+Ny
+      do i=1,Nz
+         xn(i+ixnp(3))=vz(i)
+      enddo
+      ixnp(4)=ixnp(3)+Nz
+      end
+c******************************************************************
 c Some gradients.
 c red-green gradient:
 c      call accisgradinit(64000,0,0,-64000,128000,64000)

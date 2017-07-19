@@ -14531,3 +14531,69 @@ likely compilation will be substantially slowed.
 31 Mar 17
 Implemented dividing diagsum by iavesteps, to make the diagnostic density
 and average not sum over iavesteps.
+
+18 Jul 17
+Implementation of rising density. Not obviously what I wanted. If rhoinf
+is allowed to increase in accordance with the increase in ninjcomp, then
+the potential develops a hill that attracts electrons and causes them to
+have a hollow top of f(v) (in a 1-D configuration). Alternatively, if
+rhoinf is not updated, (but the ninjcomp is ramped up) then a negative
+potential trough develops, and the electron distribution is hardly 
+changed. I presume that is because the trough repells just enough electrons
+to keep the density constant. So the trough defeats the effective density
+rise. What I really want is for no overall trough or hill to develop. 
+That seems to require rhoinf to rise more slowly than the density. But 
+it is hard to guess how much. Reduced the rhoinf update rate to half
+that of ninjcomp. This gave a shallower trough and the dimple began to
+show up. 0.7 is nearer a zero potental trough at least for -da-.001
+
+I need a good way to see phase space and holes, in 1-dimension. 
+The xes1 scatter plot is a good display. All it does is XDrawPoints
+instead of XDrawLines. But it would need some accis programming.
+Tested with pointtest.f and found that the mechanism I have put in place
+is probably fast enough. Something like 2M points per second (with PS writing
+enabled) and 10M/s with PS writing off.
+
+19 Jul 17
+Implemented scatterxy plot in accis and it sort of works in coptic.
+Signs of hole formation only towards the end of 1000 steps with the
+above parameters, and a couple of clear holes for -da-.003.
+What's needed for this density rising case is a way to make the 
+background (effective ion density) and the injection rate change
+consistently in such a way as not to induce big potential gradients
+across the domain.
+
+Implemented a different approach to bckgd adjustment. The ninjcomp
+is ramped up at a constant rate specified by -da-.03 being the fraction
+of initial bdtnow=1.+abs(bdt)*j*dt by which the injection is incremented 
+in time unit 1. Then the bckgd charge subtraction is adjusted at each
+step via
+            bckgd=bckgd-crelax*phirein*(1.-boltzamp)*eoverms(1)
+(from its initial value (1.-boltzamp)*eoverms(1)). This is essentially 
+an integral controller. It goes unstable unless crelax is quite small
+-rx.03 was small enough for my tests. If we detect a large phirein, then
+a trap declares this is going to be unstable and stops. The boundary 
+conditions at the injecting ends must not be fixed. 1 5 0 (mostly gradient)
+worked fine. 
+
+This produces a potential that adjusts its end values to be approximately
+zero on a longish timescale. It then shows clear hole formation as a
+result of density ramp -da-.003 (which is +1.5 in 1000 steps). The holes
+are very deep: \psi~0.5, in a domain 128\lambda_D wide. Diagnostics
+work ok, but I would really like to have a compact movie production
+facility. 
+
+Another approach would be to change bckgd in accordance with the total
+number of particles in the domain n_part. The bckgd value should be
+such that V.bckgd.rhoinf = n_part*eoverms, so the scaling factor is
+bckgd -> [n_part/(V.rhoinf)]*(1-boltzamp)*eoverms. This appears nearly
+correct, and nicely stable. However, we need to subtract about 1000 from
+n_part to give an approximately zero potential. So there's something not
+quite right. Found that n_part is exactly ndeposits. So that's not the
+problem. I think probably it is at the non-periodic faces where the 
+potential boundary condition is applied we are not using all the particle
+weight in the poisson equation. No, that is not confirmed by reducing
+the number of cells. It's more subtle. Found the problem. Had to have
+an extra factor (1+bdt*dt) because rhoinfcalc uses nrein which was 
+evaluated at the previous advancing step. I'm not sure I fully understand
+this, but it seems to work. 

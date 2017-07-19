@@ -102,6 +102,10 @@ c             lying outside the range (xmin,xmax).
          write(*,'('' ntics<=0'')')
          return
       endif
+      if(span.eq.0)then
+         write(*,'('' Fitrange error span. Range:'',2g11.4)')xmin,xmax
+         span=max(1.e-6,max(abs(xmin),abs(xmax)))
+      endif
       xtic=span/ntics
       nsfac=nint(log10(0.099999*abs(xtic))+0.500001)
       sfac=10.**nsfac

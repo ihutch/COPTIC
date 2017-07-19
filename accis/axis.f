@@ -221,14 +221,19 @@ c Iterate over major tics.
 c gw is being incremented from amin to amax.
                gw1=gw+ams*abs(xdelta)
 c Minor tics
+               ic=20               
  6             gwm=gwm+ams*gwmt
+c               write(*,*)'aax,ain,gwm,gwmt,gw1'
+c               write(*,*)aax,ain,gwm,gwmt ,gw1
                if(ams*gwm.lt.ams*gw1 .and.
      $              (gwm-(aax+0.0001*(aax-ain)))*ams.le.0.)then
                   if((gwm-(ain-0.0001*(aax-ain)))*ams.ge.0.)then
                      call gtic(gwm,0,xgmin+dx*(gwm-ain),ygmin+dy*(gwm
      $                    -ain),tcos,tsin,axcos,axsin,lpara)
                   endif
-                  goto 6
+c Prevent infinite loop. Allow only max 20 minor tics.
+                  ic=ic-1
+                  if(ic.gt.0)goto 6
                endif
             endif
             if((gw-(aax+0.0001*(aax-ain)))*ams.gt.0.)goto 5

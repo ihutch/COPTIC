@@ -564,7 +564,7 @@
          if(ipartperiod(i).ne.4)then
             lnotallp=.true.
          else
-            if(crelax.ne.0.)then
+            if(crelax.ne.0. .and. bdt.ge.0.)then
 ! Don't allow unwise operation with periodic particles.
                write(*,*)'**** UNWISE operation with periodic particles'
      $              ,' and non-zero crelax=',crelax
