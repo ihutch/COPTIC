@@ -394,15 +394,16 @@
          endif
 ! ------------------------------------------------
          call calculateforces(ndims,iLs,cij,u)
-         if(lsliceplot)then
-            if(ipstep.eq.0.or.mod(j,ipstep).eq.0)then
+         if(ipstep.eq.0.or.mod(j,ipstep).eq.0)then
 ! Slice plots
-               if(ldenplot)call sliceGweb(ifull,iuds,q,na_m,zp,
-     $              ixnp,xn,ifix,'density: n'//char(0),dum,dum)
-               if(lphiplot.and.iuds(2).gt.3.and.iuds(3).gt.3)
-     $              call sliceGweb(ifull,iuds,u,na_m,zp,
-     $              ixnp,xn,ifix,'potential:'//'!Af!@'//char(0),dum,dum)
-               if(lphiplot)call phasescatter(ifull,iuds,u)
+            if(lsliceplot.and.ldenplot)call sliceGweb(ifull,iuds,q,na_m
+     $           ,zp,ixnp,xn,ifix,'density: n'//char(0),dum,dum)
+            if(lsliceplot.and.lphiplot.and.iuds(2).gt.3
+     $           .and.iuds(3).gt.3) call sliceGweb(ifull,iuds,u,na_m,zp,
+     $           ixnp,xn,ifix,'potential:'//'!Af!@'//char(0),dum,dum)
+! Phase space done by all processes, even though only one of them plots.
+            if(ldistshow.and.iuds(2).eq.3.and.iuds(3).eq.3)then
+               call phasepscont(ifull,iuds,u,nf_step,lphiplot)
             endif
          endif
 
@@ -447,6 +448,12 @@
             if(bdt.lt.0.and.lmyidhead)then
                write(*,'(a,f8.2,3f8.4)')'injcomp,rhoinf,phirein,bckgd='
      $              ,dum,rhoinf,phirein,bckgd
+            endif
+            if(.not.ldistshow.and.idistp.ne.0.and.
+     $           iuds(2).eq.3.and.iuds(3).eq.3)then
+! If we have not already written phaseplot, but we are writing distribs
+! and it is a 1-d calculation:
+               call phasepscont(ifull,iuds,u,nf_step,lphiplot)
             endif
          endif
 ! Particle distribution diagnostics.

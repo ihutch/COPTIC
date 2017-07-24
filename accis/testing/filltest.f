@@ -15,7 +15,7 @@ c Demo of filling and line simultaneously
          y(j)=j
       enddo
 
-      call pfset(4)
+      call pfset(3)
       call pltinit(x(1),x(nx),y(1),y(ny))
       call accisgradinit(-40000,12000,-40000,64000,64000,64000)
       do j=1,ny-1

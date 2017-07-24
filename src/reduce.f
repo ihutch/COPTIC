@@ -306,3 +306,31 @@
      $        invec,inoutvec,dum3,dum4)
       end
 !**************************************************************
+! Generic All Reduce Sum Inplace Real. 
+! For contiguous real array (of any actual shape).
+      subroutine mpiallreducesum(array,nsize,ierr)
+      include 'mpif.h'
+      include 'myidcom.f'
+      integer nsize,ierr
+      real array(*)
+      call MPI_ALLREDUCE(MPI_IN_PLACE,array,nsize,MPI_REAL,MPI_SUM,
+     $     MPI_COMM_WORLD,ierr)
+      end
+!**************************************************************
+! Generic Reduce Sum Inplace Real. Single destination: iddest 
+! For contiguous real array (of any actual shape).
+      subroutine mpireducesum(array,nsize,iddest,ierr)
+      include 'mpif.h'
+      include 'myidcom.f'
+      integer nsize,ierr,iddest
+      real array(nsize)
+      if(myid.eq.iddest)then
+         call MPI_REDUCE(MPI_IN_PLACE,array,nsize,MPI_REAL,MPI_SUM,
+     $        iddest,MPI_COMM_WORLD,ierr)
+      else
+! When I am not the destination, the destination array is irrelevant.
+         call MPI_REDUCE(array,array,nsize,MPI_REAL,MPI_SUM,
+     $        iddest,MPI_COMM_WORLD,ierr)
+      endif
+      end
+!**************************************************************

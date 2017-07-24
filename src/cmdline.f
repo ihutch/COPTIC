@@ -113,7 +113,7 @@
       integer nspecies,nspeciesmax,hspecies
 
 ! Local variables:
-      integer lentrim,iargc
+      integer lentrim,iargc,ipfset
       external lentrim
       integer i,id,idn,idcn,i0,i1,iargcount,iargpos,ispecies
       real vwork,bdotgn,vdotgn
@@ -245,7 +245,12 @@
          if(argument(1:3).eq.'-gf')read(argument(4:),*,end=201)ifplot
          if(argument(1:3).eq.'-go')read(argument(4:),*,end=201)norbits
          if(argument(1:3).eq.'-gg')call noeye3d(0)
-         if(argument(1:3).eq.'-gx')call pfset(-3)
+         if(argument(1:3).eq.'-gx')then
+            read(argument(4:),*,err=201,end=213)ipfset
+            call pfset(ipfset)
+            goto 240
+ 213        call pfset(-3)
+         endif
          if(argument(1:3).eq.'-at')then
             read(argument(4:),*,end=201)thetain
          elseif(argument(1:3).eq.'-an')then
@@ -678,9 +683,10 @@
       write(*,301)'Debugging switches for testing'
       write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
-      write(*,301)' -gn   Plot collisional reinjection distribution.'
+      write(*,*)'-gn   Plot collisional reinjection distribution.'
+     $     ,' Or 1-d phase space (clnless)'
       write(*,301)' -gg   Run continuously without pausing.'
-      write(*,301)' -gx   Graphics output (if any) only to eps file.'
+      write(*,301)' -gx[i]Graphics filing [alone if i<0 or absent].'
       write(*,301)
      $      ' -gp -gd[] Plot slices of setup; plus potential, '
      $     //'density. [At step n]. [',ipstep

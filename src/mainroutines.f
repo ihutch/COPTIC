@@ -194,3 +194,51 @@
       call color(15)
       call multiframe(0,0,0)
       end
+!***********************************************************************
+      subroutine phasepscont(ifull,iuds,u,nstep,lplot)
+      implicit none
+      include 'ndimsdecl.f'
+      include 'meshcom.f'
+      include 'partcom.f'
+      include 'myidcom.f'
+      integer ifull(ndims),iuds(ndims),nstep
+      logical lplot
+      real u(ifull(1),ifull(2),ifull(3))
+      integer id
+      real vrange,phirange
+      real wx2nx,wy2ny
+      parameter (id=1,vrange=3.,phirange=.5)
+      character*100 phasefilename
+      character*10 string
+      integer lentrim
+      external lentrim
+! Only if this is a one-dimensional problem (for now)
+      if(iuds(2).ge.4 .and. iuds(3).ge.4) return
+c psaccum must be asked for by all processes.
+      call psaccum(1,1)
+c      write(string,'(i5)')nstep
+      write(string,'(f10.2)')nstep*dt
+c but writing and plotting only by top process
+      if(myid.eq.nprocs-1)then
+         phasefilename=' '
+         call nameconstruct(phasefilename)
+         write(phasefilename(lentrim(phasefilename)+1:)
+     $        ,'(''.pps'',i4.4)')nstep
+         call phasewrite(phasefilename,
+     $        ixnp(2)-ixnp(1),xn(ixnp(1)+1),u(1,2,2),nstep*dt)
+
+         if(lplot)then
+         call multiframe(2,1,0)
+         call pltinit(xmeshstart(id),xmeshend(id),-phirange,phirange)
+         call axis()
+         call axlabels(' ','  !Af!@')
+         call polyline(xn(ixnp(1)+1),u(1,2,2),ixnp(2)-ixnp(1))
+         call jdrwstr(wx2nx(xmeshend(id)),wy2ny(.9*phirange),string,-1.)
+         call phaseplot
+         call color(15)
+         call multiframe(0,0,0)
+         call accisflush()
+         call prtend
+         endif
+      endif
+      end

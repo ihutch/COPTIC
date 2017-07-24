@@ -86,7 +86,7 @@ c Maximum length of a single contour. Increase if necessary.
       integer inc,in,nxfac,theconsw,icfil,itri
       parameter (inc=7)
       real minz,maxz,xfac,xtic,x1st,xlast
-      real xd(4),yd(4),zd(4)
+      real xd(5),yd(5),zd(5)
       parameter (ngradcol=240)
       common/cont1stlast/c1st,clast
 
@@ -191,7 +191,6 @@ c            stop
 c Coloring.
 c      write(*,*)'minz,maxz,c1st,clast',minz,maxz,c1st,clast
       if(icfil.ne.0)then
-         id=4
          incolor=igetcolor() 
 c      write(*,*)'ncolor=',ncolor,'incolor=',incolor
 c      write(*,*)'c1st,clast,ngradcol,itri',c1st,clast,ngradcol,itri
@@ -203,6 +202,7 @@ c      write(*,*)'c1st,clast,ngradcol,itri',c1st,clast,ngradcol,itri
             do i=1,imax
                if(itri.eq.0)then
 c Block chunky.
+                  id=5
                   x1=i-0.500001
                   x2=i+0.500001
                   if(i.eq.1)x1=1.001
@@ -225,12 +225,15 @@ c               write(*,*)'icolor=',icolor
                   xd(3)=x2
                   yd(3)=y2
                   xd(4)=x1
-                  yd(4)=y2 
+                  yd(4)=y2
+                  xd(5)=x1
+                  yd(5)=y1
                   call mesh2w(xd,yd,id,x,y,l,theconsw) 
                   call polyline(xd,yd,id)
                   call pathfill() 
                else
 c Triangle gradients.
+                  id=4
                   if(i.lt.imax .and. j.lt.jmax)then
                      xd(1)=i
                      yd(1)=j

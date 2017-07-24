@@ -12,7 +12,7 @@ c      parameter  (nx=20,ny=17,nlmax=50)
 
       icolsmooth=0
       nl=8
-      icolsmooth=1
+c      icolsmooth=1
 c icolsmooth determines if we use gradients, and then color-step.
 c      write(*,'('' Enter No of contours (<50), and colorsmooth'')')
 c      read(*,*)nl,icolsmooth
@@ -33,6 +33,7 @@ c      read(*,*)nl,icolsmooth
 c      call pfPSset(1)
 c      call pfset(3)
 c 3.General call. 
+       call pfset(3)
        call pltinit(x(1,1),x(nx,1),y(1,1),y(1,ny))
 c Poor-man's gamma effect with truncated color curves.
 c Vecx version:
@@ -48,7 +49,7 @@ c x,y matrices used since last arg 2. Coloring since +16. +64 tricolor.
        isw=2+16
        if(icolsmooth.ne.0)isw=isw+64+256*icolsmooth
        call contourl(z,ppath,nx,nx,ny,cl,snl,x,y,isw)
-       call axis
+c       call axis
        call axlabels('x','y')
        call pltend
        if(.false.)then
@@ -77,7 +78,6 @@ c x,y matrices used since last arg 2. Coloring since +16. +64 tricolor.
 c Individual contour filling.
 c The switch in contourl is 
 c      ifcolor=(theconsw/65536-256*(theconsw/(256*65536)))
-       call pfset(3)
        call pltinit(x(1,1),x(nx,1),y(1,1),y(1,ny))
        do i=4,4
           isw=2+i*65536

@@ -374,6 +374,7 @@ void accisclear_()  /* Simply clear to background fortran callable*/
 /* Flush the plot buffer Subroutine */ 
 void accisflush_()
 {
+  if(accis_nodisplay) return;
   if(accis_back==1)XCopyArea(accis_display,accis_pixmap,accis_window,
 			 accis_gc,0,0,accis_gwa.width,accis_gwa.height,0,0);
   XFlush(accis_display);

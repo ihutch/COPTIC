@@ -14601,3 +14601,38 @@ this, but it seems to work.
 Unfortunately it does not work with multiple processes. Need an
 additional factor numprocs, since rhoinf is for the total density, but
 n_part is only on this processor.
+
+21 July 17
+Got a decent plotting of phase-space going. Implemented meanings of 
+switches to control it. 
+
+-gn which is to do with collisional distributions but is now overloaded,
+now means plot out the phasespace at every step, if this is effectively
+a 1-d calculation. (Nx3x3). 
+
+Without that switch, a phasespace plot is output every time a .pex file
+is output (every -a steps) (i.e. if ldistshow is set.) The phasespace
+plot is a snap-shot, not a running average. Which means the accumulation
+is only done on diag-output steps.
+
+Might be as good just to write out the data. Implemented routine
+adjustments to do so and include u (phi). Size is tiny:
+24k. Essentially the size of the pixel buffer plus a bit.  This would
+allow us to use more pixels without getting too big.
+
+Implemented main routine phasereadplot to create the ps files from the
+pps files, via phasereadplot *.pps* Works, and is very quick. 
+
+Reorganized as follows. 
+-gp[M] asks for plots to be output but phasespace plots only every -a unless:
+-gn asks phase-space outputs regardless of plotting at every [Mth] step.
+And if -gn and -gp are used then to turn off displaying the plots we need:
+-gx[NN] sets the accis pfswitch (to -3) if no NN.
+
+Examples
+-gn outputs just a pps file every step, no display.
+-gp outputs a pps file and displays every -a steps.
+-gn -gp outputs a pps file and displays every step
+-gn -gp5 outputs a pps file and displays every 5 steps.
+-gn -gp -gx outputs a pps file and a ps file each step but does not display.
+-gn2 -gp -gx3 outputs pps and ps files and displays every 2 steps.

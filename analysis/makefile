@@ -37,7 +37,7 @@ NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
 HEADERS=${COPTIC_ROOT}/${SRC}/ptaccom.f
 ##########################################################################
-TARGETS=partexamine denexamine phiexamine diagexamine fluxexamine philineread phioverlay phasespace
+TARGETS=partexamine denexamine phiexamine diagexamine fluxexamine philineread phioverlay phasespace phasereadplot
 
 
 all: $(TARGETS)
