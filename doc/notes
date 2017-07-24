@@ -14624,15 +14624,15 @@ Implemented main routine phasereadplot to create the ps files from the
 pps files, via phasereadplot *.pps* Works, and is very quick. 
 
 Reorganized as follows. 
--gp[M] asks for plots to be output but phasespace plots only every -a unless:
--gn asks phase-space outputs regardless of plotting at every [Mth] step.
-And if -gn and -gp are used then to turn off displaying the plots we need:
+-gp[M] (when 1-D) gives phasespace plots only every -a unless:
+-gn asks phase-space outputs regardless of plotting, at every [Mth] step.
+And if -gn and -gp are used, then to turn off displaying the plots we need:
 -gx[NN] sets the accis pfswitch (to -3) if no NN.
 
 Examples
 -gn outputs just a pps file every step, no display.
 -gp outputs a pps file and displays every -a steps.
--gn -gp outputs a pps file and displays every step
+-gn -gp outputs a pps file and displays every step.
 -gn -gp5 outputs a pps file and displays every 5 steps.
 -gn -gp -gx outputs a pps file and a ps file each step but does not display.
--gn2 -gp -gx3 outputs pps and ps files and displays every 2 steps.
+-gn -gp2 -gx3 outputs pps and ps files and displays every 2 steps.

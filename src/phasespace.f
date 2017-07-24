@@ -2,7 +2,7 @@ c Code for phasespace accumulation, reading, writing, plotting.
 c**********************************************************************
       block data phaseblockdata
       include 'phasecom.f'
-      data psfmax/0./
+      data psfmax/0./ipsftri/0/
       end
 c**********************************************************************
       subroutine pszero
@@ -111,13 +111,14 @@ c***********************************************************************
       call axis()
       call axlabels('x','v')
 c If unset, set psfmax for less than full range. But better set earlier.
-      if(psfmax.eq.0.)call psfmaxset(1.5)
+      call minmax2(psfxv,npsx,npsx,npsv,pmin,pmax)
+      if(pmax.gt.psfmax*1.1)call psfmaxset(2.)
 c Set extrema of coloring range from psfmax.
       zclv(1)=0.
       zclv(2)=psfmax
       icl=2
-      icsw=1+16+32
-c Using triangular gradients gives too large a ps file. +64 not.
+      icsw=1+16+32+ipsftri
+c Using triangular gradients +64 gives too large ps output.
       call contourl(psfxv,cworka,npsx,npsx,npsv,zclv,icl,psx,psv,icsw) 
       call gradlegend(zclv(1),zclv(2),.3,1.15,.7,1.15,.003,.true.)
 c If needed, do pltend externally.
@@ -129,4 +130,14 @@ c Set the value of psfmax to fac times the maximum in the current array.
       include 'phasecom.f'
       call minmax2(psfxv,npsx,npsx,npsv,pmin,pmax)
       psfmax=pmax*fac
+      end
+c**********************************************************************
+      subroutine psftri
+c Toggle the phase contour triangular gradients
+      include 'phasecom.f'
+      if(ipsftri.eq.0)then
+         ipsftri=64
+      else
+         ipsftri=0
+      endif
       end

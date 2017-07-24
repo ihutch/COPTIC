@@ -271,6 +271,9 @@ $(ACCISLIB) : $(COPTIC_ROOT)/accis/*.f $(COPTIC_ROOT)/accis/*.c $(COPTIC_ROOT)/a
 	make -C $(COPTIC_ROOT)/accis
 	@if [ -f $(COPTIC_ROOT)/accis/$(VECX) ] ; then echo ; else echo "Failed making accis with $(VECX). Might need to specify a different driver."; fi
 
+phasespace.o : phasespace.f makefile $(HEADERS) phasecom.f
+	$(G77) -c $(NOGLOBALS) $(PROFILING) phasespace.f
+
 vecx :
 	make clean
 	make VECX=vecx
