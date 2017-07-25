@@ -356,7 +356,7 @@
      $           /(voltotal*rhoinf)
 ! Density growth code. Negative -da switch instead says enhance the density
 ! of external plasma by increasing the injection rate bdt*t.
-            bdtnow=1.+abs(bdt)*j*dt
+            bdtnow=1.+abs(bdt)*nf_step*dt
             do ispecies=1,nspecies
                dum=bdtnow*(ninjcomp0(ispecies)+pinjcomp0(ispecies))
                ninjcompa(ispecies)=int(dum)
