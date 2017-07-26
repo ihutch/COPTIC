@@ -346,7 +346,7 @@
             dt=bdtnow*dtf
          else
 ! Rising density needs rhoinf recalculated. Trigger by setting zero.
-            rhoinf=0.
+!            if(j.gt.1)rhoinf=0.
          endif
 ! Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
          call rhoinfcalc(dt)
@@ -365,6 +365,12 @@
          else
             bckgd=(1.-boltzamp)*eoverms(1)
          endif
+!         if(lmyidhead)then
+!            write(*,*)'nf_step,ninjcomp,numprocs,'
+!     $           ,'nprocs,bdtnow,bckgd,rhoinf'
+!            write(*,'(4i8,3f8.3)')nf_step,ninjcomp,numprocs,nprocs
+!     $           ,bdtnow,bckgd,rhoinf
+!         endif
 ! If more than one species, no background subtraction.
          if(nspecies.gt.1)bckgd=0.
 ! Convert psums to charge density, q. Remember external psumtoq!

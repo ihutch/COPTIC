@@ -132,8 +132,12 @@
 ! Only read the phi-file if the flux file was present. Full restart.
                if(iferr.eq.0)then
 !                  write(*,*)'Reading phifile',ierr,phifilename
+                  ierr=0  ! to suppress commentary
                   call array3read(phifilename,ifull,iuds,ied,u,ierr)
                endif
+            else
+               write(*,*)'Restartread failed to read',partfilename
+               stop
             endif
          endif
 ! In case we have overwritten phip with the value from the restart file,

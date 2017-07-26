@@ -88,6 +88,7 @@
       include 'partcom.f'
       include 'plascom.f'
       include 'rancom.f'
+      include 'myidcom.f'
       character*(100) charout
 
       ierr=0
@@ -95,7 +96,7 @@
       read(23)charout
       if(charout(1:2).eq.'MV')then
 ! Multispecies versions:
-         write(*,*)'Partread MV version detected'
+         if(myid.eq.0)write(*,*)'Partread MV version detected'
          read(23)debyelen,rs,phip,dt,ldiags
          if(.not.ichar(charout(3:3)).ge.2)read(23)ranstate
          read(23)nspecies,rhoinf,nrein,phirein,numprocs
@@ -114,13 +115,13 @@
          read(23)ranstate
          read(23)ioc_part
          if(charout(1:2).eq.'de')then
-            write(*,*)'Version 1 detected'
+            if(myid.eq.0)write(*,*)'Version 1 detected'
             read(23)iic_part,n_part,dt,ldiags,rhoinf,nrein,
      $           phirein,numprocs,
      $           ((x_part(j,i),j=1,3*ndims),ifp,i=1,ioc_part)
             x_part(iflag,i)=ifp
          elseif(charout(1:2).eq.'V2')then
-            write(*,*)'Version 2 detected'
+            if(myid.eq.0)write(*,*)'Version 2 detected'
             read(23)iic_part,n_part,dt,ldiags,rhoinf,nrein,
      $           phirein,numprocs,
      $           ((x_part(j,i),j=1,iflag),i=1,ioc_part)
@@ -129,6 +130,14 @@
          read(23,err=102,end=102)(x_part(idtp,i),i=1,ioc_part)
          read(23,err=104,end=104)eoverm,Bt,Bfield,vpar,vperp
          read(23,err=105,end=105)caverein,chi
+      endif
+      if(numprocs.gt.nprocs)then
+! Adjust values for reduced restart processes.
+         if(myid.eq.0)write(*,*)'Partread numprocs'
+     $        ,' bigger than nprocs.',numprocs,nprocs,' Adjusted.'
+         rhoinf=rhoinf*nprocs/numprocs
+         numprocs=nprocs
+         ierr=ierr+16
       endif
       goto 103
  102  write(*,*)'=========== No dtprec data in partfile.========='
@@ -216,7 +225,7 @@
       data istop/0/
 
       open(23,file=name,status='old',form='unformatted',err=101)
-      write(*,*)'Opened ',name(1:lentrim(name))
+      if(ierr.ne.0)write(*,*)'Opened ',name(1:lentrim(name))
       read(23)charout
 ! --------- Parsing the leading string to test parameter consistency.
 !      write(*,'(2a)')'Charout=',charout(1:lentrim(charout))

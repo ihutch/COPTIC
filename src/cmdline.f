@@ -704,6 +704,16 @@
       write(*,301)' -at   set test angle.'
      $     //' -an   set No of angles. '
       write(*,301)' -ck   set checking timestep No. [',ickst
+      write(*,'(a)')
+     $ 'Examples of 1-d output controls.'
+     $ ,'  -gn outputs just a pps file every step, no display.'
+     $ ,'  -gp outputs a pps file and displays every -a steps.'
+     $ ,'  -gn -gp outputs a pps file and displays every step.'
+     $ ,'  -gn -gp5 outputs a pps file and displays every 5 steps.'
+     $ ,'  -gn -gp -gx outputs a pps file and a ps file each step'
+     $ ,'         but does not display.'
+     $ ,'  -gn -gp2 -gx3 outputs pps and ps files'
+     $ ,'         and displays every 2 steps.'
  401  write(*,301)' -h -?   Print usage.'
       write(*,301)' -hg     Print debugging/plotting switch usage.'
       write(*,301)' -ho     Print geomobj file format description'

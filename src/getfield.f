@@ -423,6 +423,8 @@
 !      integer idn(ndims)
       real xf(ndims),uval(2**ndims)
       integer ival(2**ndims)
+      integer ierr
+      data ierr/0/
       
 ! Do not allow passing just fraction. For fractions, ix=0. 
 ! Calculate offset and remainder the fractions.
@@ -524,7 +526,9 @@
       if(abs(getpotential).gt.20)then
          write(*,*)'Getpotential',getpotential,(xff(kk),kk=1,ndims)
      $        ,itype,imin,imissing
+         ierr=ierr+1
       endif
+      if(ierr.gt.50)stop
       end
 !*******************************************************************
       real function smultilinearinterp(ndims,uval,xf)

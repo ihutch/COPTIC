@@ -14636,3 +14636,9 @@ Examples
 -gn -gp5 outputs a pps file and displays every 5 steps.
 -gn -gp -gx outputs a pps file and a ps file each step but does not display.
 -gn -gp2 -gx3 outputs pps and ps files and displays every 2 steps.
+
+27 Jul 17 
+
+Fixed the restart code for density rising and related problems to do
+restart correctly. The issue was getting rhoinfinity and bckgd correct
+whether or not we use the same number of processes for restart.
