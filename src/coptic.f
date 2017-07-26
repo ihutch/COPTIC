@@ -340,31 +340,37 @@
 ! Transfer deposits periodically or from ghost cells.
          call diagperiod(psum,ifull,iuds,iLs,1)
          call psumreduce(psum,nrein,phirein,ndims,ifull,iuds,iLs)
-         if(bdt.gt.0)then
+!------------- 
+         if(bdt.eq.0)then
+! Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
+            call rhoinfcalc(dt)
+            bckgd=(1.-boltzamp)*eoverms(1)
+         elseif(bdt.gt.0)then
 ! Acceleration code.
             bdtnow=max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)
             dt=bdtnow*dtf
-         else
-! Rising density needs rhoinf recalculated. Trigger by setting zero.
-!            if(j.gt.1)rhoinf=0.
-         endif
-! Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
-         call rhoinfcalc(dt)
-! Subtract specified weight uniform background (for single-species running).
-         if(bdt.lt.0 .and. nf_step.gt.1)then
-            bckgd=numprocs*(1+bdt*dt)*(n_part)*(1.-boltzamp)*eoverms(1)
-     $           /(voltotal*rhoinf)
+            call rhoinfcalc(dt)
+            bckgd=(1.-boltzamp)*eoverms(1)
+         elseif(bdt.lt.0)then
 ! Density growth code. Negative -da switch instead says enhance the density
 ! of external plasma by increasing the injection rate bdt*t.
-            bdtnow=1.+abs(bdt)*nf_step*dt
-            do ispecies=1,nspecies
-               dum=bdtnow*(ninjcomp0(ispecies)+pinjcomp0(ispecies))
-               ninjcompa(ispecies)=int(dum)
-               pinjcompa(ispecies)=dum-ninjcompa(ispecies)
-            enddo
-         else
-            bckgd=(1.-boltzamp)*eoverms(1)
+            call rhoinfcalc(dt)
+! Subtract specified weight uniform background (for single-species running).
+! Adjusted for prior step.
+            if(nf_step.gt.1)then
+               bckgd=numprocs*(1+bdt*dt)*(n_part)*(1.-boltzamp)
+     $              *eoverms(1)/(voltotal*rhoinf)
+               bdtnow=1.+abs(bdt)*nf_step*dt
+               do ispecies=1,nspecies
+                  dum=bdtnow*(ninjcomp0(ispecies)+pinjcomp0(ispecies))
+                  ninjcompa(ispecies)=int(dum)
+                  pinjcompa(ispecies)=dum-ninjcompa(ispecies)
+               enddo
+            else
+               bckgd=(1.-boltzamp)*eoverms(1)
+            endif
          endif
+!-------------
 !         if(lmyidhead)then
 !            write(*,*)'nf_step,ninjcomp,numprocs,'
 !     $           ,'nprocs,bdtnow,bckgd,rhoinf'
