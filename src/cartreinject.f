@@ -972,10 +972,12 @@
       real function ranlenposition(id)
 ! Return a random fractional position in the coordinate direction id,
 ! accounting for the density scale length if present
+! or for nonuniform background if present.
       include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'creincom.f'
       include 'plascom.f'
+      include 'partcom.f'
       real expsa(ndims),expsi(ndims)
       logical lfirst
       data lfirst/.true./
@@ -994,12 +996,20 @@
          lfirst=.false.
       endif
       g=gn(id)
-      call ranlux(P,1)
+ 1    call ranlux(P,1)
       if(abs(g).ne.0)then
-!         write(*,*)'Nonuniform ranlenposition'
+!         write(*,*)'Nonuniform plasma ranlenposition'
          sp=gp0(id)+alog(P*expsa(id)+(1.-P)*expsi(id))/g
       else
          sp=(1.-P)*xmeshstart(id)+P*xmeshend(id)
+         if(bgmax(id).gt.0.)then
+! Nonuniform initialization using a rejection scheme.
+            call ranlux(Q,1)
+            if(Q.gt.(1.+bgofx(sp,id))/(1.+bgmax(id)))then
+!               write(*,*)'Nonuniform pinit',Q,bgmax(id)
+               goto 1
+            endif
+         endif
       endif
       ranlenposition=sp*0.999999+.0000005
       if(.false.)then

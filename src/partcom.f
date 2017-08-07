@@ -51,18 +51,25 @@
       integer ibtotal_part
       parameter (ibtotal_part=100)
       integer ibool_part(ibtotal_part)
-!
-      integer n_part,iic_part,ioc_part,ninjcomp,hspecies
+! Parameters of multidimensional hole initialization:
+      integer hspecies
       real holepsi,holelen,holeum,holespeed,holeeta,holepow,holerad
+! Coefficients etc of spatially-varying background
+      integer bgnmax,bgn(ndims)
+      parameter (bgnmax=3)
+      real bga(bgnmax,ndims),bgmax(ndims)      
+! These are equivalences for single-species code.
+      integer n_part,iic_part,ioc_part,ninjcomp
       equivalence (n_part,nparta(1)),(iic_part,iicparta(1))
      $     ,(ioc_part,iocparta(1)),(ninjcomp,ninjcompa(1))
+
       common/particles/x_part,nspecies
      $     ,nparta,iicparta,iocparta,ninjcompa,pinjcompa,numratioa
      $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs,npassthrough
      $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp,ibool_part
      $     ,caverein,chi,notseparable
      $     ,holepsi,holelen,holeum,holespeed,holeeta,holepow,holerad
-     $     ,hspecies
+     $     ,hspecies,bgn,bga,bgmax
 
 ! Orbit plotting storage for tracking the first norbits orbits.
 ! This nstepmax does NOT control the maximum number of steps.

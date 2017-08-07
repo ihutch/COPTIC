@@ -74,8 +74,6 @@
 ! Set tperp to a tiny number if species is infinitely magnetized.
          theta=Bt*eoverms(ispecies)*dt
          if(abs(theta).gt.thetamax)Tperps(ispecies)=1.e-24
-!/sqrt(abs(eoverms(ispecies)))
-!         write(*,*)'theta=',theta,Bt,dt,Tperps(ispecies)
          notseparable(ispecies)=0
          if(colntime.ne.0..and.ispecies.eq.1)then
 ! At this point vperp refers to the perp part of flow, set by cmdline.

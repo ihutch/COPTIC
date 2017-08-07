@@ -52,7 +52,7 @@
 ! Debugging
       include 'dbgcom.f'
       external bdyshare,bdyset,cijroutine,cijedge,psumtoq
-     $     ,quasineutral,fadcomp
+     $     ,quasineutral,fadcomp,qvary
       real fadcomp
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
@@ -135,6 +135,7 @@
 !---------------------------------------------------------------
 ! Construct the mesh vector(s) and ium2
  250  call meshconstruct(ndims,iuds,ifull,ipartperiod,rs)
+      if(bgn(1)+bgn(2)+bgn(3).gt.0)call bgaadj
       if(lmyidhead)write(*,'(a,3i4,6f8.3)')
      $     ' Constructed mesh',iuds
      $     ,(xmeshstart(k),xmeshend(k),k=1,ndims)
@@ -337,23 +338,22 @@
 ! Main step iteration ##############################################
       do j=1,nsteps
          nf_step=nf_step+1
+         istepave=min(nf_step,iavesteps)
 ! Transfer deposits periodically or from ghost cells.
          call diagperiod(psum,ifull,iuds,iLs,1)
          call psumreduce(psum,nrein,phirein,ndims,ifull,iuds,iLs)
 !------------- 
          if(bdt.eq.0)then
-! Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
-            call rhoinfcalc(dt)
             bckgd=(1.-boltzamp)*eoverms(1)
          elseif(bdt.gt.0)then
 ! Acceleration code.
             bdtnow=max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)
             dt=bdtnow*dtf
-            call rhoinfcalc(dt)
             bckgd=(1.-boltzamp)*eoverms(1)
          elseif(bdt.lt.0)then
 ! Density growth code. Negative -da switch instead says enhance the density
 ! of external plasma by increasing the injection rate bdt*t.
+            rhoinf=0.
             call rhoinfcalc(dt)
 ! Subtract specified weight uniform background (for single-species running).
 ! Adjusted for prior step.
@@ -370,21 +370,21 @@
                bckgd=(1.-boltzamp)*eoverms(1)
             endif
          endif
+! Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
+! Does nothing if ninjcomp and rhoinf!=0
+         call rhoinfcalc(dt)
 !-------------
-!         if(lmyidhead)then
-!            write(*,*)'nf_step,ninjcomp,numprocs,'
-!     $           ,'nprocs,bdtnow,bckgd,rhoinf'
-!            write(*,'(4i8,3f8.3)')nf_step,ninjcomp,numprocs,nprocs
-!     $           ,bdtnow,bckgd,rhoinf
-!         endif
 ! If more than one species, no background subtraction.
          if(nspecies.gt.1)bckgd=0.
 ! Convert psums to charge density, q. Remember external psumtoq!
          call mditerarg(psumtoq,ndims,ifull,ium2,0,psum(2,2,2)
      $        ,q(2,2,2),volumes(2,2,2),bckgd,rhoinf)
-         istepave=min(nf_step,iavesteps)
 ! Reset psum, after psumtoq.
          call mditerset(psum,ndims,ifull,iuds,0,0.)
+! Possibly adjust q for variable background
+         if(bckgd.ne.0.and.bgn(1)+bgn(2)+bgn(3).gt.0) call
+     $        mditerarg(qvary,ndims,ifull,ium2,0,q(2,2,2),bckgd
+     $        ,boltzamp)         
 
 ! Solve for the new potential:-------------------
          if(debyelen.eq.0)then
@@ -420,8 +420,7 @@
          endif
 
          if(nspecies.gt.1.or.holepsi.ne.0.)then
-! Ramp down boltzamp to zero if electrons are present,
-! or this is a hole run
+! Ramp down boltzamp to zero if multiple species or initial holes.
             boltzamp=max(0.,boltzamp0*(mbzero-j+2)/(mbzero+1.))
          endif
 

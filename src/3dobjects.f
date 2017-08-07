@@ -44,6 +44,15 @@
       enddo
 ! Default no point charges:
       iptch_mask=0
+! Default no background variation
+      do i=1,ndims
+         bgn(i)=0
+         bgmax(i)=0.
+         do j=1,bgnmax
+            bga(i,j)=0.
+         enddo
+      enddo
+
       end
 
 !**********************************************************************
@@ -129,6 +138,8 @@
       write(*,8)'Subtractive object association; 89, nassoc, nrmv,'
      $     ,' irmv1,irmv2,...,irmvnrmv.'
       write(*,*)'Set objects irmv1-irmvnrmv as subtractive for nassoc.'
+      write(*,8)'Background variation: 12d,Nterms,Coefs(2...Nterms)'
+     $     ,' fractional polynomial.'
       end
 
 !**********************************************************************
@@ -398,6 +409,27 @@
             CFin(2,ii)=1.
          enddo
          iCFcount=iCFcount+1
+! Don't count this as an object.
+         ngeomobj=ngeomobj-1
+      elseif(type.gt.120.and.type.le.120+ndims)then
+!------------------------------------------------
+! Spatial variation of background subtraction.
+         id=int(type-120)
+         read(cline,*,err=901)idumtype,bgn(id)
+         if(bgn(id).gt.bgnmax.or.bgn(id).le.0)then
+            if(bgn(id).ne.0)write(*,*)'Error in bgn value:',bgn(id)
+            bgn(id)=0
+         else
+            read(cline,*,err=901,end=890)idumtype,idumtype,(bga(i,id),i
+     $           =1,bgn(id))
+            goto 891
+ 890        write(*,*)'Too few spatial variation bga coefficients'
+            goto 901
+ 891        continue
+            if(myid.eq.0)write(*,'(a,i1,a,6g10.3)'
+     $           )'Background variation, dimension:',id,', Coefs',(bga(i
+     $           ,id),i=1,bgn(id))
+         endif
 ! Don't count this as an object.
          ngeomobj=ngeomobj-1
       elseif(type.eq.89.or.type.eq.88)then
@@ -804,4 +836,55 @@
       include 'ndimsdecl.f'
       include 'objcom.f'
       oicijfunc=oi_cij
+      end
+!*******************************************************************
+      subroutine bgaadj
+! Set the value of bga1 for each direction so that the integral
+! of the background adjustment from xmeshstart to xmeshend is zero.
+! adj=sum_1^bgn bga(i) x^{i-1}, so \int a dx = sum bga(i) x^i/i.
+      include 'ndimsdecl.f'
+      include 'meshcom.f'
+      include 'partcom.f'
+      include 'myidcom.f'
+
+      do id=1,ndims
+         if(bgn(id).gt.1)then
+            abot=bga(bgn(id),id)*xmeshstart(id)**2/bgn(id)
+            atop=bga(bgn(id),id)*xmeshend(id)**2  /bgn(id)
+            do i=bgn(id)-1,2,-1
+               abot=xmeshstart(id)*(abot+xmeshstart(id)*bga(i,id)/i)
+               atop=xmeshend(id)  *(atop+xmeshend(id)  *bga(i,id)/i)
+            enddo
+            bga(1,id)=-(atop-abot)/(xmeshend(id)-xmeshstart(id))
+            if(myid.eq.0) write(*,'(a,i1,a,6G10.3)')
+     $           'Adjusted background bga(*,',id,') '
+     $           ,(bga(i,id),i=1,bgn(id))
+! Find approximate maximum of bgofx.
+            do i=1,100
+               x=(xmeshstart(id)*(i-1)+xmeshend(id)*(100-i))/99.
+               bm=bgofx(x,id)
+               if(bgmax(id).lt.bm)bgmax(id)=bm
+            enddo
+!            bgmax(id)=bgmax(id)*1.05 ! Clearance for rounding?
+         else
+            bga(1,id)=0.
+         endif
+      enddo
+      end
+!*******************************************************************
+      real function bgofx(x,id)
+! Return the value of the bg adjustment at position x, in direction id.
+      integer id
+      real x
+      include 'ndimsdecl.f'
+!      include 'meshcom.f'
+      include 'partcom.f'
+      include 'myidcom.f'
+      bgofx=0.
+      if(bgn(id).ge.1)then
+         bgofx=bga(bgn(id),id)
+         do i=bgn(id)-1,1,-1
+            bgofx=x*bgofx+bga(i,id)
+         enddo
+       endif
       end

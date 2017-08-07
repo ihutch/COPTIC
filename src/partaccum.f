@@ -869,7 +869,7 @@
          else
             write(*,*)'Postscript output off'
             ips=0
-            call prtend()
+            call prtend(' ')
             call pfset(0)
          endif
       elseif(ip.eq.ichar('a'))then

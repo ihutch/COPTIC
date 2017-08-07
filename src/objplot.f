@@ -1077,7 +1077,7 @@
 ! User interface:
       iprinting=0
       call accisflush()
-      call prtend()
+      call prtend(' ')
       call eye3d(isw)
       call rotatezoom(isw)
       if(isw.eq.ichar('p'))iprinting=mod(iprinting+1,2)

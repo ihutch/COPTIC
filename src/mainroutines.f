@@ -242,7 +242,7 @@ c but writing and plotting only by top process
          call color(15)
          call multiframe(0,0,0)
          call accisflush()
-         call prtend
+         call prtend(' ')
          endif
       endif
       end

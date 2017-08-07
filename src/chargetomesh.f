@@ -213,34 +213,6 @@
       end
 
 !********************************************************************
-! Obsolete version that does no background subtraction.
-      subroutine psumtoqnominus(inc,ipoint,indi,ndims,iLs,iused,
-     $     psum,rho,volumes,u,rhoinf)
-      integer ipoint,inc
-      integer indi(ndims),iused(ndims)
-      real psum(*),rho(*),volumes(*),u(*),rhoinf
-
-! Silence warnings with spurious access.
-      ind=iLs
-      ind=iused(1)
-      ind=indi(1)
-! This routine for use in mditerarg.
-! But we iterate only over the inner mesh (not edges).
-! Here, t=psum, u=rho, v=volumes, w=u, x=rhoinf 
-! Set the density
-      ind=1+ipoint
-      if(volumes(ind).ge.1.e20)then
-! This is outside the region. 
-!         if(volumes(ind).ge.1.e30)then
-! And all point-charge regions.
-         rho(ind)=0.
-      else
-! Standard case. Use total charge density sum.
-         rho(ind)=psum(ind)/(abs(rhoinf)*volumes(ind))
-      endif
-      inc=1
-      end
-!********************************************************************
       subroutine quasineutral(inc,ipoint,indi,mdims,iLs,iused,
      $     q,u,volumes,uc)
       integer ipoint,inc
@@ -297,5 +269,46 @@
          rho(ind)=psum(ind)/(abs(rhoinf)*volumes(ind))-bckgd
       endif
 !      endif
+      inc=1
+      end
+!********************************************************************
+      subroutine qvary(inc,ipoint,indi,ndimspass,iLs,iused,
+     $     rho,bckgd,boltzamp)
+! Implement (rho) q adjustment for spatially varying background
+      implicit none
+      integer ipoint,inc,ndimspass
+      integer indi(ndimspass),iused(ndimspass),iLs(ndimspass+1)
+      real rho(*),bckgd,boltzamp
+      include 'ndimsdecl.f'
+      include 'partcom.f'
+      include 'meshcom.f'
+      integer j,k,ind
+      real x,a,bgboltadj
+
+! This routine for use in mditerarg.
+! indi is the offset with respect to the passed base array and iused.
+! The call generally sets the base as 2,2,2 and the lengths as ium2.
+! We iterate only over the inner mesh (not edges). So indi=0 is mesh 2. 
+! Variation coefficients come from partcom.f, position from meshcom. 
+      ind=1+ipoint
+      do k=1,ndims
+         if(bgn(k).gt.0)then
+            x=xn(ixnp(k)+2+indi(k))
+! Evaluate the polynomial at the spatial postion.
+            a=bga(bgn(k),k)
+            do j=bgn(k)-1,1,-1
+               a=a*x+bga(j,k)
+            enddo
+!            write(*,*)k,bgn(k),x,a
+! Adjust rho[=q], with an adjusted bckgd aimed at correcting the
+! Total charge when the edge potential is zero. It's a hack.
+            bgboltadj=(bga(3,k)*2.*xn(ixnp(k)+1)**2*boltzamp/3.)
+!            rho(ind)=rho(ind) -(a-bgboltadj)*bckgd
+            rho(ind)=rho(ind) -a*bckgd-bgboltadj
+!            rho(ind)=rho(ind)-a*bckgd
+!            if(ind.eq.1)write(*,*)a,bckgd,xn(ixnp(k)+1),boltzamp,bga(3
+!     $           ,k),bgboltadj
+         endif
+      enddo
       inc=1
       end
