@@ -715,9 +715,9 @@ c      r=sqrt((y2-y1)**2+(x2-x1)**2)
       ct=cos(th)
       st=sin(th)
       if(colwidth.eq.0.)then
-         cpb=0.01*(ct*(wxmax-wxmin)+st*(wymax-wymin))
+         cpb=0.01*(st*(wxmax-wxmin)+ct*(wymax-wymin))
       else
-         cpb=colwidth*(ct*(wxmax-wxmin)+st*(wymax-wymin))
+         cpb=colwidth*(st*(wxmax-wxmin)+ct*(wymax-wymin))
       endif
       incolor=igetcolor()
 

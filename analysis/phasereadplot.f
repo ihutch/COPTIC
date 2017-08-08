@@ -10,13 +10,13 @@ c problems with the colorscale legend. So use makepnganim
       character*10 string
 
       phirange=phirangeinit
-      n=npsbuf
       do i=1,iargc()
          call getarg(i,phasefilename)
          write(*,*)phasefilename(1:50)
          if(phasefilename(1:2).eq.'-t'.and.ipsftri.eq.0)then
             call psftri
          else
+            n=npsbuf
             call phaseread(phasefilename,n,x,u,t)
             if(n.eq.0)goto 1
             call minmax(u,n,umin,umax)

@@ -182,6 +182,13 @@ PLTEND() Flush graphics, wait for mouse click in plotting window; then
 return.
 
 <div class="p"><!----></div>
+PRTEND('cformat') Terminate graphics frame without waiting or closing
+windows. The string cformat, if longer than 2 characters [else do
+nothing extra], specifies a format string expecting a write of one
+character variable, being the output filename, into a system call,
+e.g. to do automatic graphics conversion.
+
+<div class="p"><!----></div>
  <a id="tth_sEc5"></a><h2>
 5&nbsp;&nbsp;Data plotting</h2>
 
@@ -853,5 +860,5 @@ for operation of debugged correct code.
 T<sub><span class="small">E</span></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><span class="small">T</span></sub>H</a>,
-version 4.09.<br />On 18 Jul 2017, 15:39.</small>
+version 4.09.<br />On  8 Aug 2017, 08:25.</small>
 </html>
