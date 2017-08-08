@@ -415,7 +415,8 @@
      $           ixnp,xn,ifix,'potential:'//'!Af!@'//char(0),dum,dum)
 ! Phase space done by all processes, even though only one of them plots.
             if(ldistshow.and.iuds(2).eq.3.and.iuds(3).eq.3)then
-               call phasepscont(ifull,iuds,u,nf_step,lphiplot)
+               call phasepscont(ifull,iuds,u,nf_step,lphiplot
+     $              ,restartpath)
             endif
          endif
 
@@ -464,7 +465,8 @@
      $           iuds(2).eq.3.and.iuds(3).eq.3)then
 ! If we have not already written phaseplot, but we are writing distribs
 ! and it is a 1-d calculation:
-               call phasepscont(ifull,iuds,u,nf_step,lphiplot)
+               call phasepscont(ifull,iuds,u,nf_step,lphiplot
+     $              ,restartpath)
             endif
          endif
 ! Particle distribution diagnostics.

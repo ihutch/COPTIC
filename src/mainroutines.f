@@ -199,7 +199,7 @@
       call multiframe(0,0,0)
       end
 !***********************************************************************
-      subroutine phasepscont(ifull,iuds,u,nstep,lplot)
+      subroutine phasepscont(ifull,iuds,u,nstep,lplot,restartpath)
       implicit none
       include 'ndimsdecl.f'
       include 'meshcom.f'
@@ -208,6 +208,7 @@
       integer ifull(ndims),iuds(ndims),nstep
       logical lplot
       real u(ifull(1),ifull(2),ifull(3))
+      character*(*) restartpath
       integer id
       real vrange,phirange
       real wx2nx,wy2ny
@@ -224,7 +225,7 @@ c      write(string,'(i5)')nstep
       write(string,'(f10.2)')nstep*dt
 c but writing and plotting only by top process
       if(myid.eq.nprocs-1)then
-         phasefilename=' '
+         phasefilename=restartpath
          call nameconstruct(phasefilename)
          write(phasefilename(lentrim(phasefilename)+1:)
      $        ,'(''.pps'',i4.4)')nstep
