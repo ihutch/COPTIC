@@ -100,7 +100,7 @@
 ! Number of slots needed for position descriptors. Dimensions.
       parameter (nf_posdim=4)
 ! Maximum (i.e. storage size) of array 
-      parameter (nf_quant=5*nspeciesmax,nf_obj=20,nf_maxsteps=6000)
+      parameter (nf_quant=5*nspeciesmax,nf_obj=20,nf_maxsteps=10001)
       parameter (nf_datasize=100000000)
 ! Mnemonics for quantities:
       integer nf_flux,nf_gx,nf_gy,nf_gz,nf_heat
