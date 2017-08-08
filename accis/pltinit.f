@@ -100,7 +100,7 @@ c the print buffers etc.
       elseif(abs(pfsw).ne.0)then
          call flushb(12)
 c Convert ps to png:
-         write(*,*)'len=',len(cmdformat)
+c         write(*,*)'len=',len(cmdformat)
          if(len(cmdformat).gt.2) call pstoother(cmdformat)
       endif
       updown=99
