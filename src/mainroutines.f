@@ -228,7 +228,7 @@ c but writing and plotting only by top process
          phasefilename=restartpath
          call nameconstruct(phasefilename)
          write(phasefilename(lentrim(phasefilename)+1:)
-     $        ,'(''.pps'',i4.4)')nstep
+     $        ,'(''.pps'',i5.5)')nstep
          call phasewrite(phasefilename,
      $        ixnp(2)-ixnp(1),xn(ixnp(1)+1),u(1,2,2),nstep*dt)
 
