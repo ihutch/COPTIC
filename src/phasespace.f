@@ -121,7 +121,7 @@ c Set extrema of coloring range from psfmax.
       icsw=1+16+32+ipsftri
 c Using triangular gradients +64 gives too large ps output.
       call contourl(psfxv,cworka,npsx,npsx,npsv,zclv,icl,psx,psv,icsw) 
-      call gradlegend(zclv(1),zclv(2),.3,1.15,.7,1.15,.003,.true.)
+      call gradlegend(zclv(1),zclv(2),.3,1.15,.7,1.15,.05,.true.)
 c If needed, do pltend externally.
       end
 c**********************************************************************
