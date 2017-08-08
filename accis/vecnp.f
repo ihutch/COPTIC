@@ -131,8 +131,8 @@ c*********************************************************************/
       integer sblen
       include 'plotcom.h'
 
-      character*80 sbuf
-      common /wbuf/sblen,sbuf
+      character*80 sbuf,plname
+      common /wbuf/sblen,sbuf,plname
       integer plx,ply
       common /plcoord/ plx,ply
 
@@ -148,6 +148,7 @@ c      write(*,*)'Initializing bxllx. Was',bxllx,bxlly,bxurx,bxury
 c      write(*,*)'Starting inib',iunit,'  ',filen
 c The following ensures we can open the file for writing. If not then 
 c an error condition exists.
+      plname=filen
       open(unit=iunit,FILE=filen,status='unknown',err=901)
       close(unit=iunit,status='delete',err=901)
       open(unit=iunit,FILE=filen,status='new',err=901)
@@ -279,8 +280,8 @@ c*********************************************************************/
       subroutine flushb(iunit)
       integer iunit
       integer sblen
-      character*80 sbuf
-      common /wbuf/sblen,sbuf
+      character*80 sbuf,plname
+      common /wbuf/sblen,sbuf,plname
       include 'plotcom.h'
       include 'npcom.f'
 
@@ -562,8 +563,8 @@ c Add a string str of length la to the line buffer for unit iunit
 c If overflowing the line, write line.
       character*(*) str
       integer sblen,iunit,la
-      character*80 sbuf
-      common /wbuf/sblen,sbuf
+      character*80 sbuf,plname
+      common /wbuf/sblen,sbuf,plname
 c      write(*,*)'abufwrt:',str(1:la)
       if(sblen.le.0) write(*,*)'sblen error:',sblen,la,sbuf,iunit
       if(sblen+la.gt.78) then
@@ -594,8 +595,8 @@ c********************************************************************
       subroutine nlwrt(iunit)
 c Start a new line on the unit iunit.
       integer sblen,iunit
-      character*80 sbuf
-      common /wbuf/sblen,sbuf
+      character*80 sbuf,plname
+      common /wbuf/sblen,sbuf,plname
       if(sblen.le.0) write(*,*)'sblen error:',sblen,sbuf,iunit
       write(iunit,*)sbuf(1:sblen-1)
       sblen=1
@@ -735,4 +736,32 @@ c      write(*,*)'bxupdate',px,py
       if(py.lt.bxlly)bxlly=py
       if(px.gt.bxurx)bxurx=px
       if(py.gt.bxury)bxury=py
+      end
+c***********************************************************************
+      subroutine crbufwrt(iunit)
+c Do an end of line on the output string buffer.
+      integer sblen,iunit
+      character*80 sbuf,plname
+      common /wbuf/sblen,sbuf,plname
+      write(iunit,*)sbuf(1:sblen-1)
+      sblen=1
+      end
+c***********************************************************************
+      subroutine pstoother(cmdformat)
+c Call a system command on the plotter file. Usually to convert it
+c into some other graphical format. cmdformat is a format string
+c that accepts one ascii string, which is the filename. 
+c E.g. '(''ps2pngcrop '',a)'
+      character*(*) cmdformat
+
+      character*120 command
+
+      integer sblen,iunit
+      character*80 sbuf,plname
+      common /wbuf/sblen,sbuf,plname
+
+      write(command,cmdformat)plname(1:lentrim(plname))
+      i=system(command)
+      write(*,*)i,command
+
       end

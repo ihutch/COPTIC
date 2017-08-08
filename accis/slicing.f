@@ -277,7 +277,7 @@ c we need an immediate turn off of the pfsw. This is fixed by calling
 c pfset before pltend. On entry, pltend sees pfsw as negative, so does
 c not pause. The last thing pltend does is set the pfsw from
 c the pfnextsw set by pfset to zero.
-         call prtend()
+         call prtend(' ')
          write(*,*)'Terminating sliceweb ips=',ips,pfsw
          ips=0
       endif
@@ -286,7 +286,7 @@ c User interface
       call ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping,ips
      $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice)
       if(iquit.eq.0)goto 21
-      call prtend()
+      call prtend(' ')
       idflast=idfix
       call hdprset(0,0.)
       end
@@ -720,7 +720,7 @@ c Prevent pltend from querying the interface.
 c         pfsw=-ips
 c         call pfset(0)
 c         call pltend()
-         call prtend()
+         call prtend(' ')
          ips=0
       endif
       call gradlegend(c1st,clast,-.55,0.,-.55,1.,.03,.false.) 
@@ -854,7 +854,7 @@ c Show the lineout position if it is changed.
 c      write(*,*)'Returning to 21'
       goto 21
  23   continue
-      call prtend()
+      call prtend(' ')
       call hdprset(0,0.)
 
       end

@@ -32,8 +32,13 @@ c Attempt to avoid g95 incompatibility.
          if(pfsw .ne. 0) then
 c     Initialize buffer and open file on unit 12.
             pfilno=pfilno+1
-            write(str1(5:8),'(i4.4)')pfilno
-            str1(1:4)='plot'
+            if(pfilno.lt.10000)then
+               write(str1(5:8),'(i4.4)')pfilno
+               str1(1:4)='plot'
+            else ! For large number of plots drop the 't'.
+               write(str1(4:8),'(i5.5)')pfilno
+               str1(1:3)='plo'
+            endif
             if(abs(pfsw).eq.1)then
                str1(9:11)='.hp'
                call inib(12,str1(1:11))
@@ -74,24 +79,29 @@ c Wait for return, then switch to text mode
          write(*,*)'Abnormal accis pltend called prior to pltinit.'
          return
       endif
-      call prtend()
-      call truncf(0.,0.,0.,0.)
+      call prtend(' ')  ! Normal case. 
+c      call prtend('(''ps2pngcrop '',a,'' 200; rm plot*.ps'')')
       if(pfsw.ge.0)call txtmode
+      call truncf(0.,0.,0.,0.)
       if(nrows.ne.0) then
          call ticset(0.,0.,0.,0.,0,0,0,0)
          nframe=0
       endif
       end
 c*********************************************************************
-      subroutine prtend()
+      subroutine prtend(cmdformat)
 c Version of pltend that does not call txtmode or wait. Just flushes
 c the print buffers etc.
+      character*(*) cmdformat
       include 'plotcom.h'
       call vecn(crsrx,crsry,2)
       if(abs(pfsw).eq.4.or.abs(pfsw).eq.5) then
          call flushb(13)
       elseif(abs(pfsw).ne.0)then
          call flushb(12)
+c Convert ps to png:
+         write(*,*)'len=',len(cmdformat)
+         if(len(cmdformat).gt.2) call pstoother(cmdformat)
       endif
       updown=99
       pfsw=pfnextsw

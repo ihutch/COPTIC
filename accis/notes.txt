@@ -903,3 +903,21 @@ Adjusted noeye interpretation in vecglx, vecx, to allow consistent use.
 23 Oct 2016
 
 Implemented a make target noscreen that runs the vec4014 with no display.
+
+6 Aug 2017
+
+Implemented a character argument to prtend which specifies a system
+call as a format statement character variable. It accepts one
+character argument that is the name of the current plotfile
+(determined within the accis system) and writes the command line to
+be executed by the system call. This enables, for example, automatic
+conversion (using a script on the system) from postscript to some
+other graphical format for each graphics file output. One could also 
+automatically delete the ps file if desired. For example
+
+      call prtend('(''ps2pngcrop '',a,'' 200; rm plot*.ps'')')
+      if(pfsw.ge.0)call txtmode
+
+is most of what pltend() does. The txtmode call in unneeded for 
+file-only graphics output, which is implied by most direct uses of
+prtend.

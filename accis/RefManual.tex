@@ -126,6 +126,11 @@ If all args=0, switch off (default).
 PLTEND() Flush graphics, wait for mouse click in plotting window; then
 return.
 
+PRTEND('cformat') Terminate graphics frame without waiting or closing
+windows. The string cformat, if longer than 2 characters [else do
+nothing extra], specifies a format string expecting a write of one
+character variable, being the output filename, into a system call,
+e.g. to do automatic graphics conversion.
 
 \section{Data plotting}
 

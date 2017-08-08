@@ -98,8 +98,9 @@ c***********************************************************************
       endif
       close(13)
       return
- 101  write(*,*)'Error opening file:',
+ 101  write(*,*)'Phase read ERROR opening file:',
      $     phasefilename(1:lentrim(phasefilename))
+      nu=0
       end
 c***********************************************************************
       subroutine phaseplot

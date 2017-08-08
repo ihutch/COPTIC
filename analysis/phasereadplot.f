@@ -18,6 +18,7 @@ c problems with the colorscale legend. So use makepnganim
             call psftri
          else
             call phaseread(phasefilename,n,x,u,t)
+            if(n.eq.0)goto 1
             call minmax(u,n,umin,umax)
             if(max(umax,abs(umin)).gt.phirange)phirange=phirange
      $           +phirangeinit
@@ -32,7 +33,10 @@ c problems with the colorscale legend. So use makepnganim
             call phaseplot
             call pltend
          endif
+ 1       continue
       enddo
-
+      if(i.lt.2)then
+         write(*,*)'Usage phasereadplot file1 file2 ....'
+      endif
       end
  

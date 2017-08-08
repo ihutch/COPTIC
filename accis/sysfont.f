@@ -147,15 +147,6 @@ c add the full length of string to output buffer
       endif
       end
 c***********************************************************************
-      subroutine crbufwrt(iunit)
-c Do an end of line on the output string buffer.
-      integer sblen,iunit
-      character*80 sbuf
-      common /wbuf/sblen,sbuf
-      write(iunit,*)sbuf(1:sblen-1)
-      sblen=1
-      end
-c***********************************************************************
       subroutine PSchardrw(char)
       character*(*) char
 c Ghastly kludge because concatenation of *(*) does not work.

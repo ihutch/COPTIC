@@ -1,7 +1,7 @@
 c************************************************************************
 c       Automatic setup of arrays with logarithmic scales.
       subroutine lautoinit(x,y,n,lx,ly)
-      real x(1),y(1)
+      real x(*),y(*)
       integer n
       logical lx,ly
       include 'plotcom.h'
@@ -38,7 +38,7 @@ c       Automatic setup of arrays with logarithmic scales.
 c********************************************************************
 c         Automatic plotting of Arrays*/
       subroutine lautoplot(x,y,n,lx,ly)
-      real x(1),y(1)
+      real x(*),y(*)
       integer n
       logical lx,ly
       call lautoinit(x,y,n,lx,ly)
@@ -49,7 +49,7 @@ c         Automatic plotting of Arrays*/
 c********************************************************************
 c         Automatic symbol plotting of Arrays*/
       subroutine lautomark(x,y,n,lx,ly,isym)
-      real x(1),y(1)
+      real x(*),y(*)
       integer n,isym
       logical lx,ly
       call lautoinit(x,y,n,lx,ly)
