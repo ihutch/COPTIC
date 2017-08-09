@@ -15,9 +15,9 @@ c problems with the colorscale legend. So use makepnganim
          call getarg(i,phasefilename)
          if(phasefilename(1:2).eq.'-N')then
 c Set the starting number of filewriting to be N
-            read(phasefilename(3:),*,err=2,end=2)N
-            pfilno=N
-            write(*,*)'Plot file number offset:',N
+            read(phasefilename(3:),*,err=2,end=2)Np
+            pfilno=Np
+            write(*,*)'Plot file number offset:',Np
             goto 1
  2          write(*,*)'Garbled -N flag (needs number):',phasefilename
             goto 1
