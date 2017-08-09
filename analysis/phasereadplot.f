@@ -20,7 +20,7 @@ c problems with the colorscale legend. So use makepnganim
             call phaseread(phasefilename,n,x,u,t)
             if(n.eq.0)goto 1
             call minmax(u,n,umin,umax)
-            if(max(umax,abs(umin)).gt.phirange)phirange=phirange
+            if(max(umax,abs(umin)).gt.phirange*1.2)phirange=phirange
      $           +phirangeinit
             write(string,'(f10.2)')t
             call pfset(-3)      ! Just output the files; don't plot.
