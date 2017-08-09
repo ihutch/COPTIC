@@ -3,6 +3,7 @@ c If switch -t is given do triangular contouring.
 c Trouble is, it gives too many colors for ps2gif, and pnmquant has
 c problems with the colorscale legend. So use makepnganim
       include 'phasecom.f'
+      include '../accis/plotcom.h'
       character*100 phasefilename
       real x(npsbuf),u(npsbuf)
       real phirange,phirangeinit
@@ -12,6 +13,15 @@ c problems with the colorscale legend. So use makepnganim
       phirange=phirangeinit
       do i=1,iargc()
          call getarg(i,phasefilename)
+         if(phasefilename(1:2).eq.'-N')then
+c Set the starting number of filewriting to be N
+            read(phasefilename(3:),*,err=2,end=2)N
+            pfilno=N
+            write(*,*)'Plot file number offset:',N
+            goto 1
+ 2          write(*,*)'Garbled -N flag (needs number):',phasefilename
+            goto 1
+         endif
          write(*,*)phasefilename(1:50)
          if(phasefilename(1:2).eq.'-t'.and.ipsftri.eq.0)then
             call psftri
@@ -36,7 +46,7 @@ c problems with the colorscale legend. So use makepnganim
  1       continue
       enddo
       if(i.lt.2)then
-         write(*,*)'Usage phasereadplot file1 file2 ....'
+         write(*,*)'Usage phasereadplot [-N<number>] file1 [file2 ....]'
       endif
       end
  
