@@ -59,7 +59,7 @@ c Set the starting number of filewriting to be N
             call axlabels(' ','  !Af!@')
             call jdrwstr(wx2nx(x(n)),wy2ny(.9*phirange),string,-1.)
             if(Nave.gt.1)then
-               call dashset(1)
+               call dashset(4)
                call polyline(x,u,n)
                call dashset(0)
                call polyline(x,uave,n)
