@@ -51,7 +51,7 @@ c Set the starting number of filewriting to be N
             call minmax(uave,n,umin,umax)
             if(max(umax,abs(umin)).gt.phirange*1.2)phirange=phirange
      $           +phirangeinit
-            write(string,'(f10.2)')
+            write(string,'(f10.2)')t
             call pfset(-3)      ! Just output the files; don't plot.
             call multiframe(2,1,0)
             call pltinit(x(1),x(n),-phirange,phirange)
