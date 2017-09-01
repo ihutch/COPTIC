@@ -3,6 +3,8 @@ c       Set character width and height in NORMAL units. 0 resets.
       subroutine charsize(wd, ht)
       real wd,ht
       include 'plotcom.h'
+      pchrswdth=chrswdth
+      pchrshght=chrshgth
       chrswdth=wd
       if(abs(wd) .le. 0.)chrswdth=0.015
       chrshght=ht
@@ -10,14 +12,30 @@ c       Set character width and height in NORMAL units. 0 resets.
       return
       end
 c*********************************************************************
+c Restore immediate prior charsize
+      subroutine pcharsize()
+      include 'plotcom.h'
+      chrswdth=phrswdth
+      chrshght=phrshgth
+      end
+c*********************************************************************
 c    Set character angle in degrees.
         subroutine charangl(theta)
         real theta,tr
       include 'plotcom.h'
         tr=3.14159*theta/180.
+        pchrscos=chrscos
+        pchrssin=chrssin
         chrscos=cos(tr)
         chrssin=sin(tr)
         end
+c*********************************************************************
+c Restore immediate prior charsize
+      subroutine pcharangl()
+      include 'plotcom.h'
+        chrscos=pchrscos
+        chrssin=pchrssin
+      end
 c*********************************************************************
 c     Get character angle in degrees.
       subroutine getcangl(theta)
