@@ -14642,3 +14642,7 @@ Examples
 Fixed the restart code for density rising and related problems to do
 restart correctly. The issue was getting rhoinfinity and bckgd correct
 whether or not we use the same number of processes for restart.
+
+16 Oct 17
+Made diagexamine able to accept multiple files on the command line and
+put out .ps files for each one. This is for generating animations etc.

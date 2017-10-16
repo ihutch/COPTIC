@@ -460,6 +460,7 @@ c Tell that we are looking from the top by default.
 c      data jsw/1+256*6+256*256*7/
       data jsw/460289/
 
+c      write(*,*)'ifixpt',ifixpt
       ierr=1
       imv=1
       itri=0
@@ -470,11 +471,12 @@ c      data jsw/1+256*6+256*256*7/
          larrow=.not.larrow
          ifixpt(1)=-ifixpt(1)
       endif
-      if(ifixpt(1).eq.0)ifixpt(1)=(iuds(1)+1)/2
-      if(ifixpt(2).eq.0)ifixpt(2)=(iuds(2)+1)/2
-      if(ifixpt(3).eq.0)ifixpt(3)=(iuds(3)+1)/2
+      if(ifixpt(1).le.0.or.ifixpt(1).gt.iuds(1))ifixpt(1)=(iuds(1)+1)/2
+      if(ifixpt(2).le.0.or.ifixpt(2).gt.iuds(2))ifixpt(2)=(iuds(2)+1)/2
+      if(ifixpt(3).le.0.or.ifixpt(3).gt.iuds(3))ifixpt(3)=(iuds(3)+1)/2
       ips=0
       irotating=0
+c      write(*,*)'ifixpt',ifixpt
       call minmax2(u(1,1,ifixpt(3)),ifull(1),iuds(1),iuds(2),umin,umax)
       call accisgradinit(64000,0,0,-64000,128000,64000)
 

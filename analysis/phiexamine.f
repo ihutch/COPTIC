@@ -28,6 +28,7 @@
       real phimax
       data phimax/0./isubtract/0/
       data lsd/.false./lhalf/.false./lvtk/.false./lmeshwrite/.false./
+      data ifix/1,1,1/
 ! 
 
       diagfilename=''
@@ -110,6 +111,7 @@
      $        ixnp,xn,ifix,'potential:'//'!Af!@',dum,dum)
       else
          ifix(3)=iuds(3)/2
+         write(*,*),ifull,iuds,na_m,ixnp,ifix
          call sliceGcont(ifull,iuds,u,na_m,zp,
      $        ixnp,xn,ifix,'potential:'//'!Af!@',dum,dum)
       endif

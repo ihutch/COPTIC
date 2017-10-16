@@ -35,10 +35,13 @@
       mname(ndiagmax+1)='Density'
       xleg=.75
       ipp=0
+      iworking=0
 !      pscale=3.
 ! 
+ 1    continue
       call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
-     $     ,mcell,zminmax,icontour)
+     $     ,mcell,zminmax,icontour,iworking)
+      if(iworking.lt.0)call exit(0)
       if(zminmax(1).gt.zminmax(2))then
          istd=0
       endif
@@ -357,10 +360,10 @@
 !            write(fluxfilename,'(''diagnorm('',i1,'')'')')k
             fluxfilename=mname(k)(1:lentrim(mname(k)))
      $           //'('//label(1:lentrim(label))//')'
-!            write(*,*)k,mname
+!            write(*,*)k,isingle
             if(k.eq.ndiags)
      $           fluxfilename='!Af!@('//label(1:lentrim(label))//')'
-            if(istd.gt.0)write(*,*)k,
+            if(istd.gt.0.and.(k.eq.isingle.or.isingle.eq.0))write(*,*)k,
      $           fluxfilename(1:lentrim(fluxfilename))
             if(isingle.eq.0.or.isingle.eq.k)then
                if(zminmax(1).lt.zminmax(2))then
@@ -397,12 +400,13 @@
 !     $     ,ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
 !     $     ,diagsum(1,1,1,2),vp)
 
+      goto 1
       end
 
 
 !*************************************************************
       subroutine diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle
-     $     ,lvtk,mcell,zminmax,icontour)
+     $     ,lvtk,mcell,zminmax,icontour,iworking)
       integer iunp,isingle,i1d
       integer mcell,icontour
       real zminmax(2)
@@ -410,13 +414,12 @@
       logical lvtk
       include 'examdecl.f'
 
-         ifull(1)=na_i
-         ifull(2)=na_j
-         ifull(3)=na_k
+      ifull(1)=na_i
+      ifull(2)=na_j
+      ifull(3)=na_k
 
 ! silence warnings:
       zp(1,1,1)=0.
-      isingle=0
 ! Defaults
       diagfilename=' '
       phifilename=' '
@@ -426,9 +429,11 @@
       mcell=5.
       ipfs=3
 
+      write(*,*)'diagexamargs',iworking,iargc()
 ! Deal with arguments
       if(iargc().eq.0) goto 201
-      do i=1,iargc()
+      do i=iworking+1,iargc()
+         iworking=i
          call getarg(i,argument)
          if(argument(1:1).eq.'-')then
             if(argument(1:13).eq.'--objfilename')
@@ -473,9 +478,11 @@
             endif
          else
             read(argument(1:),'(a)',err=201)diagfilename
-         endif
-         
+            return
+         endif         
       enddo
+      iworking=-1
+      return
       goto 202
 !------------------------------------------------------------
 ! Help text
