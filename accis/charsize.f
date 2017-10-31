@@ -4,7 +4,7 @@ c       Set character width and height in NORMAL units. 0 resets.
       real wd,ht
       include 'plotcom.h'
       pchrswdth=chrswdth
-      pchrshght=chrshgth
+      pchrshght=chrshght
       chrswdth=wd
       if(abs(wd) .le. 0.)chrswdth=0.015
       chrshght=ht
@@ -15,8 +15,9 @@ c*********************************************************************
 c Restore immediate prior charsize
       subroutine pcharsize()
       include 'plotcom.h'
-      chrswdth=phrswdth
-      chrshght=phrshgth
+      write(*,*)chrswdth,pchrswdth,chrshght,pchrshght
+      chrswdth=pchrswdth
+      chrshght=pchrshght
       end
 c*********************************************************************
 c    Set character angle in degrees.

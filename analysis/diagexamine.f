@@ -22,6 +22,7 @@
       data iunp/0/i1d/0/iwr/0/zminmax/0.,0./icontour/0/istd/1/
       data ierr/0/
 
+      isingle=0
       lvtk=.false.
       fluxfilename=' '
       mname(1)='Cellcount'

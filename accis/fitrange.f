@@ -99,7 +99,7 @@ c             lying outside the range (xmin,xmax).
       endif
       xfac=10.**nxfac
       if(ntics.le.0)then
-         write(*,'('' ntics<=0'')')
+         write(*,'('' ntics<=0'',i8)')ntics
          return
       endif
       if(span.eq.0)then

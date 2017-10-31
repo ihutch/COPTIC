@@ -85,7 +85,7 @@ c Statement functions for scaling.
 c      xgnlin(gw)=xgmin+dx*(gw-ain)
 c      ygnlin(gw)=ygmin+dy*(gw-ain)
 c
-      inlabp=0
+      inlabp=nxlabp
       iticnum=ticnum
       axcos=xgmax-xgmin
       axsin=ygmax-ygmin
@@ -188,12 +188,12 @@ c  Linear axes: Put ticks at first+n*delta for n integral only within axis.
          dy=(ygmax-ygmin)/(aax-ain)
          gw=x1st+ xdelta*nint(.4999+(ain-x1st)/xdelta)
 c If needed increase decimal places in tic.
-         ipoint=nint(log10(abs(x1st)+1.)-.49999)
-     $        -nint(log10(abs(xdelta))-.49999)
+         ipoint=-nint(log10(abs(xdelta))-.49999)
 c         write(*,*)'ipoint',ipoint,x1st,xdelta
          if(ipoint.gt.1)then
-            inlabp=nxlabp
             nxlabp=ipoint
+         elseif(ipoint.lt.0)then
+            nxlabp=0
          endif
          if(lminor)then
 c Choose the spacing of minor tics gwmt.
@@ -260,7 +260,7 @@ c           if((gw-(ain-0.0001*(aax-ain)))*ams.lt.0.)goto 5
             gwm=gw
     4    continue
     5    continue
-         if(ipoint.gt.1)then
+         if(nxlabp.ne.inlabp)then
 c     reset tic label places.
             nxlabp=inlabp
          endif

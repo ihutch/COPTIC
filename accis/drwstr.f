@@ -1,3 +1,8 @@
+c Mingw does not correctly link this with only the external statement below
+c It is apparently something to do with linker incompatibilities present in
+c cygwin gfortran and ld or ar. (And Mingw evidently). 
+      include 'fontdata.f'
+
 c*******************************************************************
       subroutine drwstrdo( px, py, str1,drw,width)
 c  Draw string code. drw.ne.0 means actually draw, else just return length.

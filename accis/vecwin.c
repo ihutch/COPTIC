@@ -1,9 +1,9 @@
-/* Windows Driver for accis graphics routines.
-Now up to date except for the file-only code  Mar 05*/
-int accis_driver_(){return 2;}
+/* Now up to date except for the file-only code  Mar 05*/
+/* Modified Sep 2017 to get lorentztrack animation working */
 
 #include <windows.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #define accis_path_max 4000
 POINT accis_path[accis_path_max];
@@ -53,8 +53,8 @@ char *accis_colornames[accis_maxPixels]=
 };
 */
 
-#define ACCIS_DEFWIDTH 640
-#define ACCIS_DEFHEIGHT 480
+#define ACCIS_DEFWIDTH 800
+#define ACCIS_DEFHEIGHT 600
 
 static char g_szClassName[] = "MyWindowClass";
 static HINSTANCE g_hInst = NULL;
@@ -72,6 +72,7 @@ static HPEN accis_pen;
 static WNDCLASSEX WndClass;
 static HWND hwnd;
 static MSG Msg;
+static int accis_eye3d=9999;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
@@ -333,7 +334,23 @@ int eye3d_(value)
 {
   float xmoved,ymoved;
   if(accis_nodisplay){ *value=0; return 0; }
-  
+  if(accis_eye3d == 1){ *value=0; return 0; }  
+
+  /* printf("accis_eye3d %d\n",accis_eye3d); */
+
+  /*Disabled response route may not be working*/
+  if(accis_eye3d != 9999){
+    if(PeekMessage(&Msg,hwnd,0,0,PM_REMOVE)){
+      if(Msg.message == WM_KEYDOWN){
+	accis_eye3d=9999;
+      }else{
+	*value=accis_eye3d; return 0;
+      }
+    }else{
+      *value=accis_eye3d; return 0;
+    }
+  }
+
   GetMessage(&Msg,hwnd,0,0);
   while( (Msg.message != WM_LBUTTONDOWN) && (Msg.message != WM_KEYDOWN)){
     /*  while(!cmpmessage(WM_LBUTTONDOWN)){*/
@@ -363,7 +380,15 @@ int eye3d_(value)
     if(  !( xeye==xeye0 && yeye==yeye0 && zeye==zeye0) ) *value=1;
     return 0;
   }else{/* KeyPress event.*/
-    printf("Msg.wParam=keycode=%d\n",Msg.wParam);
+
+    /*left up right down 37 38 39 40 -> 65361 -64*/
+    if(Msg.wParam >36 && Msg.wParam < 41){
+      *value=Msg.wParam+ 65324;
+    }else{
+    /* tolower equivalent */
+    *value= (Msg.wParam > 96 ? Msg.wParam : Msg.wParam+32) ;    
+    }
+    /*printf("Msg.wParam=keycode=%d\n",Msg.wParam);*/
     return Msg.wParam;
   }
 }
@@ -430,6 +455,11 @@ int accisgraddef_()
   a_grad_inited=1;
   return 0;
 }
+/**********************************************************************/
+int accisgradset_(red,green,blue,npixel)
+     int *red,*green,*blue,*npixel;
+{;/* dummy needs to be fixed */
+}
 
 /**********************************************************************/
 int acgradcolor_(long *li)
@@ -479,24 +509,70 @@ int svganodisplay_(int *scrxpix, int *scrypix, int *vmode, int *ncolor)
   return 0;
 }
 /***********************************************************************/
-int accisflush_()
+int accisclear_()
 {
+  AccisRenewBitmap(hwnd);
   return 0;
 }
-/*************************************************************************/
+/***********************************************************************/
+/* Windows version based on guess and experiment!*/
+int accisflush_()
+{
+ if(PeekMessage(&Msg,hwnd,0,0,PM_REMOVE)){
+    TranslateMessage(&Msg);
+    DispatchMessage(&Msg);
+}
+  return 0;
+}
+/***********************************************************************/
+#include <windows.h>	/* WinAPI */
+/* Windows sleep in 100ns units from 
+https://gist.github.com/Youka/4153f12cf2e17a77314c*/
+BOOLEAN nanosleep(LONGLONG ns){
+	/* Declarations */
+	HANDLE timer;	/* Timer handle */
+	LARGE_INTEGER li;	/* Time defintion */
+	/* Create timer */
+	if(!(timer = CreateWaitableTimer(NULL, TRUE, NULL)))
+		return FALSE;
+	/* Set timer properties */
+	li.QuadPart = -ns;
+	if(!SetWaitableTimer(timer, &li, 0, NULL, NULL, FALSE)){
+		CloseHandle(timer);
+		return FALSE;
+	}
+	/* Start & wait for timer */
+	WaitForSingleObject(timer, INFINITE);
+	/* Clean resources */
+	CloseHandle(timer);
+	/* Slept without problems */
+	return TRUE;
+}
+/***********************************************************************/
 /* G77 fortran callable usleep */
 void usleep_(usecs)
      long *usecs;
 {
-  Sleep(  (unsigned long) *usecs/1000);
+  int msecs;
+  int nsecs;
+  msecs=*usecs/1000;
+  nsecs=*usecs*10;
+
+  nanosleep(nsecs);
+  /*Sleep(msecs);*/
 }
-/************************************************************************/
-/* Switch to drawing to the back buffer only */
-void glback_()
+/* ******************************************************************** */
+/* Externally callable routine to set noeye3d return value.
+   Set to 9999 to disable. */ 
+int noeye3d_(value)
+     int *value;
 {
+  if(*value>1000)accis_eye3d=9999;
+  accis_eye3d=*value;
+  while (PeekMessage(&Msg, hwnd,  0, 0, PM_REMOVE)){};
+  return 0;
 }
-/************************************************************************/
-/* Bring back buffer to front and return to writing there.*/
-void glfront_()
-{
-}
+/*************************************************************************/
+/* Dummy here, returning 0 */
+int igradtri_() { return 0;}
+int accisrefresh_() { return 0;}

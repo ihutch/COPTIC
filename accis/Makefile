@@ -2,6 +2,9 @@
 # Makefile for accis routines.
 # The shell assumed in this Makefile
 SHELL=/bin/bash
+# By the following definition we make vecx the default.
+# Comment out if you want instead to search in order vecglx, vecx, vec4014
+VECX=vecx
 #########################################################################
 # To get to compile with X, you might need to supplement this path.
 LIBPATH:=-L.
@@ -51,9 +54,13 @@ endif
 ##########################################################################
 ifneq ("$(VECX)","")
 # VECX explicitly set. Use the tests to convey the choice.
- ifneq ("$(VECX)","vecglx")
-  TESTGL=NO
+ ifeq ("$(TESTX11)","")
+# If vecx is available, then rule out vecglx if not set.
+  ifneq ("$(VECX)","vecglx")
+   TESTGL=NO
+  endif
  endif
+# And if vecx is not set, rule it out.
  ifneq ("$(VECX)","vecx")
   TESTX11=NO
  endif
@@ -61,19 +68,19 @@ endif
 ##########################################################################
 # VECX choice. Preference order vecglx, vecx, vec4014.
 ifeq ("$(TESTGL)","")
-    VECX=vecglx
-    ACCISDRV=accisX
-    libraries=-lX11 -lGL -lGLU $(LIBPATH)
+  VECX=vecglx
+  ACCISDRV=accisX
+  libraries=-lX11 -lGL -lGLU $(LIBPATH)
 else
-    ifeq ("$(TESTX11)","")
-     VECX=vecx
-     ACCISDRV=accisX
-     libraries=-lX11 $(LIBPATH)
-    else
-     VECX=vec4014
-     ACCISDRV=accis
-     libraries=-L.
-    endif
+  ifeq ("$(TESTX11)","")
+    VECX=vecx
+    ACCISDRV=accisX
+    libraries=-lX11 $(LIBPATH)
+  else
+    VECX=vec4014
+    ACCISDRV=accis
+    libraries=-L.
+  endif
 endif
 #########################################################################
 ifeq ("$(G77)","gfortran")

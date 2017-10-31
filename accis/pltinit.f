@@ -1,3 +1,7 @@
+c In mingw the block data do not seem to be included by the expedient
+c of doing an external. Instead they seem to need specific inclusion.
+      include 'initiald.f'
+
       subroutine accisinit()
       call pltinit(0.,1.,0.,1.)
       end
@@ -101,7 +105,7 @@ c the print buffers etc.
          call flushb(12)
 c Convert ps to png:
 c         write(*,*)'len=',len(cmdformat)
-         if(len(cmdformat).gt.2) call pstoother(cmdformat)
+         if(lentrim(cmdformat).gt.2) call pstoother(cmdformat)
       endif
       updown=99
       pfsw=pfnextsw
