@@ -371,7 +371,7 @@
                   write(*,*)'zminmax',zminmax
                   call scale3(0.,1.,0.,1.,zminmax(1),zminmax(2))
                   call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
-     $                 ixnp,xn,ifix+256+icontour*16
+     $                 ixnp,xn,ifix+256+icontour*16+512
      $                 ,fluxfilename(1:lentrim(fluxfilename)+2) ,dum
      $                 ,dum)   
                elseif(zminmax(1).gt.zminmax(2))then
@@ -386,7 +386,7 @@
                   call exit(0)
                else
                   call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
-     $                 ixnp,xn,ifix+icontour*16
+     $                 ixnp,xn,ifix+icontour*16+512
      $                 ,fluxfilename(1:lentrim(fluxfilename)+2) ,dum
      $                 ,dum)
                endif
