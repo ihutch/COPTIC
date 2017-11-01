@@ -58,22 +58,32 @@ c Local variables:
 c Tell that we are looking from the top by default.
       data ze1/1./
 
-c Need to get more systematic with idfix. 
+c Need to get more systematic with idfixin. 
 c Sign negative  toggle (off) aspect ratio maintenance.
-c Bits 0 (1) and 1 (2)  specify the id fixed. 
+c Bits 0 (1) and 1 (2)  specify the id fixed.
+c The rest become idfixf: 
 c Bit 2 (4)  toggle (on) plotting of svec arrows.
 c Bit 3 (8)  reinitialize.
 c Bits 4,5 (16xicontour)  set the initial icontour number 0...3
 c Bit 6 (64)  Toggle ltellslice 
 c Bit 7 (128) Return continuously. (Equivalent of d-control).
 c Bit 8 (256) Do no internal scaling initially. 
+c Bit 9 (512) Turn off contour labelling.
+
+      if(idfixin/512-1024*(idfixin/1024).ne.0)then
+c kluge because higher bits break something I don't understand
+         iclsign=-1.
+         idfixin=idfixin-512
+      else
+         iclsign=1.
+      endif
 
       idfixf=abs(idfixin)/4
+      idfix=abs(idfixin)-4*(idfixf)
 c Sign
       if(idfixin.lt.0)then
          laspect=.not.laspect
       endif
-      idfix=abs(idfixin)-4*(idfixf)
       if(idfix.eq.0)then
 c Bits 0,1 set direction, or reinitialize and use default ndims.
          if(idflast.eq.-9999)then
@@ -243,9 +253,10 @@ c Get back current eye position xe1 etc.
          if(icontour.eq.1)call hdprset(-3,sign(scbz3,ze1))
          if(icontour.eq.2)call hdprset(-3,zplane)
          if(icontour.eq.3)call hdprset(-3,-sign(scbz3,ze1))
-c Contour without labels, with coloring, using vector axes
+c Contour with coloring, using vector axes, maybe without labelling.
+         iclhere=iclsign*icl
          call contourl(zp(if1,if2),pp,nw,
-     $        nf1+1-if1,nf2+1-if2,cl,icl,
+     $        nf1+1-if1,nf2+1-if2,cl,iclhere,
      $        xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),17)
          Erange=0.
          iasw=9
@@ -681,9 +692,10 @@ c Poor man's top lighting:
 c Contour without labels, with coloring, using vector axes
 c            write(*,*)it1,ib1,it2,ib2,ifix
             if(it1-ib1.gt.0 .and. it2-ib2.gt.0)then
+               iclhere=iclsign*icl
                call contourl(zp(ib1,ib2,ifix),
      $           pp,nw,it1-ib1+1,it2-ib2+1,
-     $           cl,icl,
+     $           cl,iclhere,
      $           xn(ixnp(id1)+ib1),xn(ixnp(id2)+ib2),17+itri*64)
                if(larrow)then
 c We need a sensible arrow scale. Can't make individual plots different. 

@@ -110,12 +110,13 @@ vec3.o \
 examine.o \
 axon.o \
 arrowplot.o\
-initiald.o\
 sysfont.o\
 slicing.o\
 fillgrad.o\
 boxcarave.o\
 surfaces.o
+
+#initiald.o\  Now included in pltinit.f
 
 noback_object_files = drwstr.o fontdata.o vecnp.o 
 

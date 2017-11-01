@@ -96,7 +96,7 @@ c How to turn off pausing:
 c And turn it on again.
          if(i.eq.ntimes)call noeye3d(9999)
 c Arrowplot call, on contour plot in position 1, tell slice.
-         ifix=4+16*1+64
+         ifix=4+16*1+64+512
 c This is how to call with a fixed z-scale. Only the last two scale3
 c arguments are relevant, adding 256 to ifix turns off z-scaling.
 c         call scale3(0.,1.,0.,1.,-2.,7.)
