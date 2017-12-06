@@ -252,10 +252,13 @@
             istop=1
          endif
       endif
- 102  if(istop.gt.0)then
+ 102  if(istop.gt.0)then 
+         read(23)debyelen
+         read(23)ixnp
+         read(23)iuds
          write(*,*)charout(1:lentrim(charout))
          write(*,'(a,3i5,a)')'To read this file run $ ./setdimens'
-     $              ,ifulr,'  to adjust griddecl.f'
+     $              ,iuds,'  to adjust griddecl.f'
          stop '********  array3read fatal error  *********'
       endif
 !-----------
@@ -263,6 +266,11 @@
       read(23)debyelen,Ti,vd,rs,phip
       read(23)ixnp,(xn(kk),kk=1,ixnlen)
       read(23)iuds
+      if(iuds(1).gt.ifull(1).or.iuds(2).gt.ifull(2).or.iuds(3).gt
+     $     .ifull(3))then 
+         write(*,*)'iuds',iuds,' bigger than ifull',ifull
+         stop '********  array3read fatal error  *********'
+      endif
       if(charout(1:2).eq.'de')then
 ! First version
          if(ierr.ne.0)write(*,*)'Old version file'

@@ -16,13 +16,19 @@
   
   This manual documents the particle-in-cell code COPTIC. COPTIC is a
   cartesian-mesh, oblique-boundary, particles and thermals in cell
-  code.  It moves ions in three dimensions of space and time (6
+  code.  It moves particles in three dimensions of space and time (6
   phase-space dimensions) and simultaneously calculates the
-  self-consistent potential in the presence of neutralizing electrons
-  governed by a thermal Boltzmann factor, or particle
-  electrons. Objects of various shapes on which boundary conditions
-  can be specified can be placed in the computational domain, and can
-  be used to define the plasma domain. The code is substantially
+  self-consistent electrostatic potential in the presence of a
+  neutralizing species governed by a thermal Boltzmann factor, or of a
+  second particle species. Normally the first species is ions and the
+  second electrons; but various other options are possible.  An
+  arbitrary uniform magnetic field can be applied.  Objects of various
+  shapes on which boundary conditions can be specified can be placed
+  in the computational domain, and can be used to define the plasma
+  domain. Various options also exist for simulating open or periodic
+  domains with various velocity distributions. A particular facility
+  is to initialize the plasma with a self consistent electron hole,
+  whose evolution can then be simulated.  The code is substantially
   self-documenting through comments, but the manual ought to assist a
   newcomer with fuller explanations. To run the code, the material of
   sections \ref{infile} and \ref{cmdline} are sufficient. Subsequent

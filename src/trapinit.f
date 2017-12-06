@@ -47,9 +47,6 @@
       include 'colncom.f'
       include 'cdistcom.f'
       real sprior
-! Installed in partcom
-!      real holelen,holepsi
-!      parameter (holelen=4.,holepsi=.1)
       external linregion,ranlenposition,gasdev,interp
       real ranlenposition,gasdev
       integer interp
@@ -70,16 +67,33 @@
 ! Arguments of untrapcum
       real um,eta,psi,phi
       integer nt,nin,np,nm,ntot
-      parameter (nin=300,nt=8,ntot=nin+nt)
+      parameter (nin=400,nt=16,ntot=nin+nt)
       real fpa(nin),fma(nin),ua(nin)
       real cump(-ntot:ntot),cumv(-ntot:ntot)
-
+! Internal diagnostics of the initialized distribution
+! Collect particles in bins from -vdrange to +vdrange as initialized.
+      integer idiag,npbins,ibin
+      parameter (npbins=50)
+      real vdrange,xcount(npbins,ndims),vdist(npbins),emax
+      
+      idiag=0
+      vdrange=4.
+      emax=0.7
+      if(idiag.ne.0)then
+         do i=1,npbins
+            vdist(i)=-vdrange+2.*vdrange*(i-1.)/(npbins-1.)
+            do j=1,ndims
+               xcount(i,j)=0.
+            enddo
+         enddo
+      endif
       npassthrough=0
       iaccept=0
       ireject=0
       ntrapcount=0
 ! silence a spurious warning.
       r2=0.
+      eopsi=0.
 !-----------------------------------------------------------------
       i1=1
 ! Point to the bottom of the particle stack for start of species 1.
@@ -208,7 +222,7 @@
 ! Start with the id direction, then the others.
                j=mod(id+jj-2,ndims)+1
                if(j.eq.id.and.psi.gt.0..and.ispecies.eq.hspecies)then
-! Trapped distribution. Get potential. Decide if to reject.
+! Parallel distribution. Get potential. Decide if to reject.
 ! Decide velocity component.
                   call getholepotl(psi,holelen,phi,x_part(id,i),id)
 ! Total electron density based upon the sech^4 potential variation
@@ -223,10 +237,27 @@
 ! Accept
                      iaccept=iaccept+1
                      eta=holeeta
+! Calculate the probability distribution for both untrapped and trapped
+! velocities in this direction at this phi.
                      call untrapcum(phi,um,psi,nin,np,nm,fpa,fma,ua,nt
      $                    ,cump,cumv,eta)
-! Now cump contains the offset cumulative probability function at cumv. 
-                     vs=vr+cump(-nm-nt)
+! Now cump contains the offset cumulative probability function at cumv.
+! It begins at -nm-nt. We decide the velocity using the rejection random.
+! But I don't see why this is correct. At this point, vr is randomly
+! uniformly distributed between 0 and dentot; shift it to cump minimum.
+!                     vs=vr+cump(-nm-nt)
+! Find the position in the array where cump=vs. Why is cump normalized
+! such that this is the right choice? This seems an error prior to Nov
+! 17. It was not obvious in results because actually the cump range is
+! close to 1 and denmax is close to 1, so the selection is not too
+! bad. Also no moving holes were investigated.  We ought to scale vs as
+! follows.
+                     vs=vr*(cump(np+nt)-cump(-nm-nt))/dentot
+     $                    +cump(-nm-nt)
+! However, printing out the following shows that the new vr scaling
+! is only 1.0002 times the old, so the correction is negligible.
+!                     if(mod(i,1000).eq.0)write(*,'(3f8.4)')
+!     $                    (cump(np+nt)-cump(-nm-nt))/dentot,dentot
                      iv=interp(cump(-nm-nt),np+nm+2*nt+1,vs,v)
                      if(iv.eq.0)then
                         write(*,*)'vr overflow',cump(-nm-nt),vr,vs
@@ -235,10 +266,13 @@
                         stop
                      endif 
                      v=v-iv
+! Make iv the absolute (not relative) index of the cumulative arrays.
                      iv=iv-1-nm-nt
-! Units of cumv are sqrt(2T/m). Add holespeed in sqrt(T/m) units.
+! Interpolate back the velocity.
                      vid=(cumv(iv)*(1-v)+cumv(iv+1)*(v))
+! Units of cumv are sqrt(2T/m). Add holespeed in sqrt(T/m) units.
                      x_part(ndims+id,i)=vid*sqrt(2.)+holespeed
+! Now we have selected the particle velocity 
 ! Calculate the id energy in the hole frame and hence the transverse
 ! temperature for cases where it is anisotropic.  Here charge is
 ! presumed negative, psi positive (since several places the sqrt of psi
@@ -261,11 +295,22 @@
                   endif
                else
 ! Transverse directions unaffected by hole potential.
+!                  if(mod(i,1000).eq.0)write(*,'(3f8.4)')tisq,Ttr,phi
                   x_part(ndims+j,i)=tisq*gasdev(myid)
      $                 + vds(ispecies)*vdrift(j)
                endif
             enddo
-
+! Selective velocity diagnostics.
+            if(idiag.ne.0.and.eopsi.gt.emax)then
+!            if(idiag.ne.0.and.phi.gt..5*psi)then
+               do j=1,ndims
+                  ibin=1+nint((npbins-1)*(x_part(ndims+j,i)+vdrange)
+     $                 /(2.*vdrange))
+                  if(ibin.lt.1)ibin=1
+                  if(ibin.gt.npbins)ibin=npbins
+                  xcount(ibin,j)=xcount(ibin,j)+1
+               enddo
+            endif
 ! The previous timestep length.
             x_part(idtp,i)=0.
 ! Initialize the mesh fraction data in x_part.
@@ -274,6 +319,17 @@
             if(.not.linmesh)goto 1
 ! 2          continue
          enddo
+         if(idiag.ne.0)then
+! Plot the diagnostic histograms
+            call multiframe(3,1,2)
+            call autoplot(vdist,xcount(1,1),npbins)
+            call axlabels(' ','v!d1!d')
+            call autoplot(vdist,xcount(1,2),npbins)
+            call axlabels(' ','v!d2!d')
+            call autoplot(vdist,xcount(1,3),npbins)
+            call axlabels(' ','v!d3!d')
+            call pltend()
+         endif
 !         write(*,*)'Accept,Reject,Ntrap',iaccept,ireject,ntrapcount
 !------------------------------- End of Actual Particle Setting --
 ! The maximum used slot for this species
@@ -642,14 +698,14 @@
 !*********************************************************************
       subroutine untrapcumtest
       integer nin,np,nm
-      parameter (nin=300,nt=8,ntot=nin+nt)
+      parameter (nin=400,nt=16,ntot=nin+nt)
       real fpa(nin),fma(nin),ua(nin)
       real cump(-ntot:ntot),cumv(-ntot:ntot)
 
       idebug=2
-      phi=0.1
+      phi=0.2
       psi=phi
-      um=0.1
+      um=0.3
       eta=2.
       call untrapcum(phi,um,psi,nin,np,nm,fpa,fma,ua,nt,cump,cumv,eta)
 
@@ -716,6 +772,13 @@
 ! Deficit calculation
          trapden=dentot-untrapden
          ratio=min(1.,trapden/(2.*sepf*sqphi))
+         if(ratio.lt.1./(1.+eta))then
+            if(idebug.ne.0)write(*,'(a,4f8.4)')
+     $           'Trapden impossible. phi,trapden,dentot,ratio='
+     $           ,phi,trapden,dentot,ratio
+            ratio=max(.01,ratio)
+            eta=1/ratio-.9999
+         endif
          gamma=(1-ratio)/(ratio-1./(1.+eta))
       else
 ! Flattop calculation
@@ -725,12 +788,6 @@
          write(*,*)'Flattop: untrapden',untrapden,' trapden',trapden
          write(*,*)'dentot',dentot,' flattop',flattop
          gamma=0.
-      endif
-      if(gamma.lt.0.)then
-         write(*,*)'gamma=',gamma,' ratio=',ratio,' phi=',phi
-         eta=1/ratio-.9999
-         gamma=(1-ratio)/(ratio-1./(1.+eta))
-         write(*,*)'Adjusted eta=',eta,' gamma=',gamma
       endif
       holeheight=1/(1.+gamma)
 
@@ -745,6 +802,7 @@
 ! Add enough to t2 to prevent vr overflow.
       t2=0.5*trapden+.0001
       dv=sqphi/(nt+1.)
+! Trapped part (which is antisymmetric)
       do i=0,nt
          cumv(i)=i*dv
          cumv(-i)=-i*dv
@@ -752,6 +810,7 @@
      $        /(1.+gamma) *sepf
          cump(-i)=-cump(i)
       enddo
+! Untrapped part. 
       do i=nt+1,nt+nin
          if(i.le.nm)then
             cump(-i)=-fma(i-nt)-t2

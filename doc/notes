@@ -14646,3 +14646,35 @@ whether or not we use the same number of processes for restart.
 16 Oct 17
 Made diagexamine able to accept multiple files on the command line and
 put out .ps files for each one. This is for generating animations etc.
+
+3 Nov 17
+Investigating the trapinit code for hole formation and reduced transverse
+temperature, because of interest in hole stability. Found something in 
+the normalization of the parallel velocity selection that I did not understand
+It appeared that the unnormalized cump was used incorrectly. However, it
+turned out that the factor that was the ratio of cump-range to dentot, was
+1.0002, i.e. it is correct. I still don't quite understand why, but it means
+prior runs were not significantly affected. 
+
+Implemented local diagnostics inside trapinit, that are turned on in the 
+code by making idiag non zero. Various selections of particles whose 
+distributions are to be histogrammed are possible. Experiments show that
+if one selects for deeply trapped particles, then the transverse temperature
+is indeed narrowed for tp0.1. and widened for tp10. So that code does
+seem to work ~ correctly. However, I notice that the effects apply to 
+a rather small fraction of the particles. Maybe that's why you can't
+stabilize by reducing tp but you can _de_stabilize by tp10. 
+
+6 Dec 17
+Trying to make very deep holes with large \psi. There are various problems
+associated with the calculation of the untrapped density, and warning
+messages associated with eta adjustments. Looked at that code and 
+somewhat rationalized it. Basically, the quantity 'ratio' must lie 
+between 1/(1+eta) and 1. If it doesn't, I now simply set it to be 0.01
+and set eta accordingly. That will generally make the trapped density
+at that point very small, with steep sides. The resulting potential 
+won't so well be given by the sech^4 profile. However, it looks as if
+the result is actually pretty good up to psi=4. Higher values of -ih
+do not make the psi larger. Instead they produce non-monotonic potential
+shapes. psi of 4 may be just enough to do what I wanted which is to 
+explore holes deeper than psi=3 for transverse stability.
