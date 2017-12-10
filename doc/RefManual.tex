@@ -546,6 +546,8 @@ properties (e.g. velocity) they left with.
 Use of boundary-setting lines like these in the object file
 \emph{is over-ridden} by any values set by command-line switches.
 
+
+
 \subsection{Boolean Region}
 
 An object line of type 99 defines the particle region, the region
@@ -579,6 +581,35 @@ objects can be implemented by intersection of the complement.  The
 default boolean (if no boolean line is in the object file) is that the
 particle region is everywhere within the mesh.
 
+
+\subsection{Nonuniform Background}
+
+The subtraction of background charge assumed to be attributable to
+another species can be chosen in special cases to be non-uniform. 
+The non-uniformity is specified by an object file line like this
+for example
+\begin{verbatim}
+# Direction1, 3 terms, coefs 1-3 
+   121,         3,     0., 0. ,0.1e-4
+\end{verbatim}
+The generic form is 
+\begin{verbatim}
+   12d, Nterms, C1, C2, ..., CNterms
+\end{verbatim}
+and nonuniformity is permitted in all three directions, each specified
+by a polynomial $p_{id}=c_1+c_2x_{id}+c_3x_{id}^2+\dots$ whose
+coefficients are read from this line. The coefficients for direction
+\verb!id! are stored in an array \verb!bga(i,id)!. Actually the
+coefficient C1 is currently irrelevant, because it is overruled by a
+calculation that insists that $\int p_{id} dx_{id}=0$, i.e.\ that the
+mean nonuniformity in each direction is zero, and adjusts \verb!C1! to
+ensure it. As a result, the adjustment, which consists of multiplying
+the background by $p_{id}$ (in each specified direction) does not
+change the total charge in the domain (if it is empty of objects). If
+just the third coefficient is set, then the nonuniformity is
+parabolic and the variation term can be considered to be $x^2/2x_c^2$
+where $x_c=1/\sqrt{2.C3}$.
+
 \subsubsection*{Summary of domain and boundary setting lines}
 
 \par
@@ -592,6 +623,7 @@ Leading Entry & Meaning\\
 99       & Boolean of particle region.\\
 101-106  & Face potential boundary condition.\\
 111-113  & Potential periodicity setting.\\
+121-123  & Background nonuniformity.\\
 \hline
 \end{tabular}
 
@@ -654,12 +686,18 @@ ought to use \verb!-rx0.! Stability generally requires \verb!crelax<Ti!.
 \paragraph{-dt....}
  Set the timestep during the main part of the iteration. Default .1
 
-\paragraph{-da....}
+\paragraph{-da.... with postive value}
  Set the timestep acceleration factor during the first part of
  the time duration, bdt. Default 1. The timestep dt is multiplied by a
  factor $max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)$, where
  \verb!maccel=nsteps/3!.  So the timestep ramps down linearly from bdt*dt to
  dt in the first 1/3 of the timesteps.
+
+\paragraph{-da... with negative value} Instead means increase the
+boundary total injection rate by a factor
+\verb!bdtnow=1.+abs(bdt)*nf_step*dt! where \verb!bdt! is the value
+specified. (You can't both use acceleration and ramp the injection rate.)
+
 
 \paragraph{-ds....}
 Set the particle-advance subcycling. Default 0.  If non-zero, sets the

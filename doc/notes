@@ -14678,3 +14678,19 @@ the result is actually pretty good up to psi=4. Higher values of -ih
 do not make the psi larger. Instead they produce non-monotonic potential
 shapes. psi of 4 may be just enough to do what I wanted which is to 
 explore holes deeper than psi=3 for transverse stability.
+
+Unfortunately it looks as if the potential quickly relaxes to a lower
+peak of order 2-3 (or lower after 20 steps), so I think it is not
+going to work for what I want. 
+Also, I notice that there are 5M tries for 0.8M particles. A lot of 
+rejections!
+
+It is not obvious what is happening to the hole after initialization,
+but it appears to broaden and suffer a perturbation that is symmetric
+in x. All this investigation can be done on the laptop, because noise
+is not a problem with such deep holes. Maybe not. Even a potential of
+1 has problems perhaps noise is not so benign as I thought.
+
+I think there really needs to be a major upgrade if I am going to make
+holes deeper than psi=1, because the current holes are based on small
+psi approximations that don't give self-consistent deep holes.
