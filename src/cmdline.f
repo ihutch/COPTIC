@@ -172,7 +172,7 @@
          holelen=4.
          holeeta=2.
          holeum=0.
-         holepow=1.
+         holepow=0.
          holerad=0.
          hspecies=0
 ! Boundary condition switch and value. 0=> logarithmic.

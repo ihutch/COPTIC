@@ -16,7 +16,7 @@
 ! holeeta, the requested power of u determining trapped distribution shape
 !          2 gives parabolic. <=0 gives flattop [h,2]
 ! holepow, the power governing trapped transverse temperature variation [p,1]
-! holerad, the transvers hole radius [r,0]
+! holerad, the transverse hole radius [r,0]
 ! holespeed, the rest-frame hole speed [derived: =holeum+vds]
 !
 ! The hole is created by adjusting the particle density consistent with
@@ -113,21 +113,21 @@
          theta=Bt*eoverms(ispecies)*dt
          if(abs(theta).gt.thetamax)Tperps(ispecies)=1.e-24
          notseparable(ispecies)=0
-         Ttrans=Ts(ispecies)
+         Ttrans=Tperps(ispecies)
          if(colntime.ne.0..and.ispecies.eq.1)then
             if(myid.eq.0)write(*,*)'Collisional holes not implemented'
      $           ,colntime
             stop
          elseif(Tperps(ispecies).gt.1.e-20
-     $           .and.Tperps(ispecies).ne.Ts(ispecies))then
-! Interpret Tperp unequal to T as being the trapped particle 
+     $           .and.Tperps(ispecies).ne.Ts(ispecies)
+     $           .and.holepow.ne.0.)then
+! Interpret Tperp unequal to T as being the trapped-only particle 
 ! transverse temperature. 
             if(myid.eq.0)write(*,'(a,f8.4,a,f8.4,a,i3,/,a,f8.4)')
      $           ' Tperp',Tperps(ispecies),' !=Ts',Ts(ispecies)
      $           ,' interpreted as trapped only. Species',ispecies
      $           ,' Resetting passing Tperp as isotropic.'
      $           ,Ts(ispecies)
-            Ttrans=Tperps(ispecies)
             Tperps(ispecies)=Ts(ispecies)
          else
 ! Count the number of non-zero vdrift components. If it is more than one
@@ -277,14 +277,17 @@
 ! temperature for cases where it is anisotropic.  Here charge is
 ! presumed negative, psi positive (since several places the sqrt of psi
 ! is taken).
-                     Ttr=Ts(ispecies)
+                     Ttr=Tperps(ispecies)
                      if(phi.gt.0)then
 ! eopsi=1 at psi and zero at sepx.
                         eopsi=(phi-vid**2)/psi
                         if(eopsi.lt.0.)eopsi=0.
-                        eopsi=eopsi**holepow
-                        Ttr=(Ttrans*eopsi + Ts(ispecies)*(1.-eopsi))
+                        if(holepow.ne.0.)then
+                           eopsi=eopsi**holepow
+                           Ttr=(Ttrans*eopsi
+     $                          +Tperps(ispecies)*(1.-eopsi))
 !                        write(*,*)'phi=',phi,' eopsi=',eopsi,' Ttr=',Ttr
+                        endif
                         if(eopsi.gt.0.)ntrapcount=ntrapcount+1
                      endif
                      tisq=sqrt(Ttr*abs(eoverms(ispecies)))
@@ -295,7 +298,6 @@
                   endif
                else
 ! Transverse directions unaffected by hole potential.
-!                  if(mod(i,1000).eq.0)write(*,'(3f8.4)')tisq,Ttr,phi
                   x_part(ndims+j,i)=tisq*gasdev(myid)
      $                 + vds(ispecies)*vdrift(j)
                endif
@@ -703,7 +705,7 @@
       real cump(-ntot:ntot),cumv(-ntot:ntot)
 
       idebug=2
-      phi=0.2
+      phi=2.8
       psi=phi
       um=0.3
       eta=2.

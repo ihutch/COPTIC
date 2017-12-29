@@ -14694,3 +14694,29 @@ is not a problem with such deep holes. Maybe not. Even a potential of
 I think there really needs to be a major upgrade if I am going to make
 holes deeper than psi=1, because the current holes are based on small
 psi approximations that don't give self-consistent deep holes.
+
+16 Dec 17
+Running trapcumtest for higher phi values shows that bad things happen for 
+phi>~2.5. The cumulative distribution becomes non-monotonic, which shows
+that nothing is really working correctly in this region of psi. It looks 
+as if the trapped density is becoming negligibly small. Actually it is
+becoming negative.
+
+I have this idea that possibly I should be using the numerical hole code
+developed for the integral approach to give deeper holes.
+
+Playing around with BGKint, I find that negative-f is required for 
+sech^4 holes deeper than roughly 2, which seems to be the problem. 
+However, if we use tl=0, coshlen=4.+psi.2., then I find that we can
+make holes up to great depths without negative f. The formula is
+then phi=psi*2/(1+cosh^4(x/coshlen)). But I don't have a formula for
+what f_trapped is.
+
+29 Dec 17
+
+Adjust hole initialization so that the Tperp refers to trapped
+particles and not to untrapped, ONLY if holepow is not equal to zero.
+This is logical since holepow constrols the connection of trapped
+perp temperature to external. Also make the default value of holepow
+equal to zero, so the default is the same Tperp for trapped and 
+untrapped.
