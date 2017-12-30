@@ -21,3 +21,7 @@
       common/examcom/ifull,iuds,u,q,zp
      $     ,partfilename,phifilename,denfilename,objfilename,argument
      $     ,fluxfilename,diagfilename
+
+      integer ndiagmax
+      parameter (ndiagmax=8)
+! diagmax here must be 7+1 to accommodate potential possibly.

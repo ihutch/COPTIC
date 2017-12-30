@@ -2,8 +2,6 @@
 ! Stripped down diagexamine to facilitate plotting of chosen slices.
 
       include 'examdecl.f'
-      parameter (ndiagmax=8)
-! diagmax here must be 7+1 to accommodate potential possibly.
       real diagsum(na_i,na_j,na_k,ndiagmax+1)      
 ! Volumes are stored in ndiagmax+1
 

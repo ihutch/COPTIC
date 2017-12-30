@@ -23,7 +23,6 @@
 !
       logical lsd,lhalf,lvtk,lmeshwrite
       integer ifix(3),isubtract
-      parameter (ndiagmax=7)
       real diagsum(na_i,na_j,na_k,ndiagmax)
       real phimax
       data phimax/0./isubtract/0/
