@@ -355,43 +355,8 @@
          endif
 !----------------------------------------------------------------
 ! Default examination of all diagnostics.
-         do k=i1,ndiags
-            zp(1,1,1)=99
-            ifix=3
-!            write(fluxfilename,'(''diagnorm('',i1,'')'')')k
-            fluxfilename=mname(k)(1:lentrim(mname(k)))
-     $           //'('//label(1:lentrim(label))//')'
-!            write(*,*)k,isingle
-            if(k.eq.ndiags)
-     $           fluxfilename='!Af!@('//label(1:lentrim(label))//')'
-            if(istd.gt.0.and.(k.eq.isingle.or.isingle.eq.0))write(*,*)k,
-     $           fluxfilename(1:lentrim(fluxfilename))
-            if(isingle.eq.0.or.isingle.eq.k)then
-               if(zminmax(1).lt.zminmax(2))then
-                  write(*,*)'zminmax',zminmax
-                  call scale3(0.,1.,0.,1.,zminmax(1),zminmax(2))
-                  call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
-     $                 ixnp,xn,ifix+256+icontour*16+512
-     $                 ,fluxfilename(1:lentrim(fluxfilename)+2) ,dum
-     $                 ,dum)   
-               elseif(zminmax(1).gt.zminmax(2))then
-! If limits are crossed on entry. Find minimum and maximum.
-!                  call minmaxN(ndims,ifull,iuds,diagsum(1,1,1,k),
-!     $                 zminmax(1),zminmax(2))
-                  call minmaxM(ndims,ifull,iuds,diagsum(1,1,1,k),
-     $                 zminmax(1),zminmax(2))
-!                  call minmax3(ifull,iuds,diagsum(1,1,1,k),
-!     $                 zminmax(1),zminmax(2))
-                  write(*,*)zminmax,'=zmin/max'
-                  call exit(0)
-               else
-                  call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
-     $                 ixnp,xn,ifix+icontour*16+512
-     $                 ,fluxfilename(1:lentrim(fluxfilename)+2) ,dum
-     $                 ,dum)
-               endif
-            endif
-         enddo
+            call examineall(diagsum,zminmax,mname,i1,isingle,istd
+     $     ,ndiags,icontour,label)
       endif
 !----------------------------------------------------------------
 ! Arrow plotting of velocity:
@@ -575,4 +540,59 @@
  1       if(u(i).gt.umax)umax=u(i)
          if(u(i).lt.umin)umin=u(i)
       if(mditer(ndims,ifull,iuds,i).eq.0)goto 1
+      end
+!**************************************************************
+      subroutine examineall(diagsum,zminmax,mname,i1,isingle,istd
+     $     ,ndiags,icontour,label)
+! Default examination of all diagnostics.
+      implicit none
+      include 'examdecl.f'
+      integer ndiagmax
+      parameter (ndiagmax=8)
+! diagmax here must be 7+1 to accommodate potential possibly.
+      real diagsum(na_i,na_j,na_k,ndiagmax+1)      
+! Volumes are stored in ndiagmax+1
+      real zminmax(2)
+      integer i1,isingle,istd,ndiags,icontour
+      character*20 mname(ndiagmax+1)
+      character*70 label
+      integer lentrim
+      external lentrim
+
+! Local variables
+      real dum
+      integer k,ifix
+      do k=i1,ndiags
+         zp(1,1,1)=99
+         ifix=3
+!            write(fluxfilename,'(''diagnorm('',i1,'')'')')k
+         fluxfilename=mname(k)(1:lentrim(mname(k)))
+     $        //'('//label(1:lentrim(label))//')'
+!            write(*,*)k,isingle
+         if(k.eq.ndiags)
+     $        fluxfilename='!Af!@('//label(1:lentrim(label))//')'
+         if(istd.gt.0.and.(k.eq.isingle.or.isingle.eq.0))write(*,*)k,
+     $        fluxfilename(1:lentrim(fluxfilename))
+         if(isingle.eq.0.or.isingle.eq.k)then
+            if(zminmax(1).lt.zminmax(2))then
+               write(*,*)'zminmax',zminmax
+               call scale3(0.,1.,0.,1.,zminmax(1),zminmax(2))
+               call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
+     $              ixnp,xn,ifix+256+icontour*16+512
+     $              ,fluxfilename(1:lentrim(fluxfilename)+2) ,dum
+     $              ,dum)   
+            elseif(zminmax(1).gt.zminmax(2))then
+! If limits are crossed on entry. Find minimum and maximum.
+               call minmaxM(ndims,ifull,iuds,diagsum(1,1,1,k),
+     $              zminmax(1),zminmax(2))
+               write(*,*)zminmax,'=zmin/max'
+               call exit(0)
+            else
+               call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
+     $              ixnp,xn,ifix+icontour*16+512
+     $              ,fluxfilename(1:lentrim(fluxfilename)+2) ,dum
+     $              ,dum)
+            endif
+         endif
+      enddo
       end

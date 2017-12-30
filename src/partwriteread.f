@@ -258,7 +258,7 @@
          read(23)iuds
          write(*,*)charout(1:lentrim(charout))
          write(*,'(a,3i5,a)')'To read this file run $ ./setdimens'
-     $              ,iuds,'  to adjust griddecl.f'
+     $              ,ifulr,'  to adjust griddecl.f'
          stop '********  array3read fatal error  *********'
       endif
 !-----------
