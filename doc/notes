@@ -14720,3 +14720,8 @@ This is logical since holepow constrols the connection of trapped
 perp temperature to external. Also make the default value of holepow
 equal to zero, so the default is the same Tperp for trapped and 
 untrapped.
+
+3 Jan 18
+
+Implement diagexamine analysis of kink amplitude measurement and 
+fitting an exponential to the growth of the kink. 

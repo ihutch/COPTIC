@@ -10,6 +10,10 @@
       real z1d(na_m),u1d(na_m),dene1d(na_m),deni1d(na_m)
       real zminmax(2)
       character*20 mname(ndiagmax+1)
+      integer nfiles
+      parameter (nfiles=1000)
+      real xmean(nfiles),xvar(nfiles),xmax(nfiles),xmin(nfiles)
+      real xcentroid(na_m),dt,time(nfiles),xamp(nfiles),work(nfiles)
 
       integer mcell,icontour
       logical lvtk
@@ -34,13 +38,18 @@
       xleg=.75
       ipp=0
       iworking=0
+      iyp=0
+      dt=1.
 
-! Loop over a maximum of 4000 files: 
-      do ifile=1,4000
+! Loop over a maximum of nfiles files: 
+      do ifile=1,nfiles
       call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
-     $     ,mcell,zminmax,icontour,iworking)
+     $     ,mcell,zminmax,icontour,iworking,iyp,dt)
 ! diagexamargs returns here when it reads a diagnostic file.
-      if(iworking.lt.0)call exit(0)
+      if(iworking.lt.0)then
+         if(iyp.gt.0)goto 101
+         call exit(0)
+      endif
       if(zminmax(1).gt.zminmax(2))then
          istd=0
       endif
@@ -48,7 +57,12 @@
       i1=1
       ied=ndiagmax
 ! Create label
-      label=diagfilename(lentrim(diagfilename)-3:lentrim(diagfilename))
+!      label=diagfilename(lentrim(diagfilename)-3:lentrim(diagfilename))
+      label=diagfilename(istrstr(diagfilename,'dia')+3
+     $     :lentrim(diagfilename))
+      read(label,*)istep
+      time(ifile)=dt*istep
+!      write(*,*)'Istep, time',istep,time(ifile)
 ! Read the file whose name we have found in the arguments.
       call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
       if(ierr.eq.1)stop 'Error reading diag file'
@@ -61,7 +75,7 @@
       if(istd.gt.0)then
 ! Only alert about volumes if we are doing more than getting min/max.
          if(istat.eq.1)then
-            write(*,*)'Read volumes successfully'
+            if(ifile.eq.1)write(*,'(a,f8.4,$)')'Read volumes '
      $           ,diagsum(2,2,2,ndiags+1)
          else
             write(*,*)'Storedgeom failed; returned',istat,iuds,ifull
@@ -76,7 +90,8 @@
 !-------------------------------------
 ! Normalize the diagnostics.
       call donormalize(ndiags,diagsum,mcell,isrs,iurs)
-      if(istd.gt.0)write(*,*)'rs,debyelen,vd,Ti',rs,debyelen,vd,Ti
+      if(istd.gt.0.and.ifile.eq.1)write(*,'(a,4f8.4)'
+     $     )' rs,debyelen,vd,Ti',rs,debyelen,vd,Ti
 !      write(*,*)'isrs,iurs',isrs,iurs
 !------------------------------------
 ! Maybe write vtk files and stop.
@@ -94,6 +109,13 @@
          call sliceGweb(ifull,iuds,u,na_m,zp,
      $        ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
      $        ,diagsum(1,1,1,2),vp)
+      elseif(iyp.gt.0)then
+! Hole position analysis.
+         call hole2position(diagsum,xcentroid,ndiags)
+         call getstats(xcentroid,iuds(2),xmean(ifile),xvar(ifile)
+     $        ,xmax(ifile),xmin(ifile))
+         xamp(ifile)=xmax(ifile)-xmin(ifile)
+         write(*,*)'xmean.max.min',xmean(ifile),xmax(ifile),xmin(ifile)
       else
 ! Normal case. Plot the diagnostics.
          if(istat.eq.1.and.isingle.eq.0)then
@@ -121,6 +143,15 @@
 !     $     ,ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
 !     $     ,diagsum(1,1,1,2),vp)
       enddo
+ 101  if(iyp.gt.0)then
+         ifile=ifile-1
+! Plot the hole position and excursion.         
+         call plotexcursion(ifile,time,xmean,xmax,xmin,dt)
+! Fit and plot the exponential growth.
+         call fitexp(time,xamp,ifile,work,it0,imax,A,tau)
+
+      endif
+
       end
 ! End of main program.
 !*************************************************************
@@ -128,7 +159,7 @@
 ! Operational subroutines:
 !*************************************************************
       subroutine diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle
-     $     ,lvtk,mcell,zminmax,icontour,iworking)
+     $     ,lvtk,mcell,zminmax,icontour,iworking,iyp,dt)
 ! Read command line arguments, until a diag name is found.
 ! If we reach the end of them, return iworking=-1, otherwise return
 ! iworking= the argument we are working on.
@@ -154,7 +185,7 @@
       mcell=5.
       ipfs=3
 
-      write(*,*)'diagexamargs',iworking,iargc()
+!      write(*,*)'diagexamargs',iworking,iargc()
 ! Deal with arguments
       if(iargc().eq.0) goto 201
       do i=iworking+1,iargc()
@@ -175,8 +206,11 @@
             if(argument(1:3).eq.'-lx')
      $           read(argument(4:),'(a)',err=201)xtitle
             if(argument(1:2).eq.'-u')iunp=1
-            if(argument(1:2).eq.'-d')
-     $           read(argument(3:),*,err=201)isingle
+            if(argument(1:3).eq.'-dt')then
+               read(argument(4:),*,err=201)dt
+            elseif(argument(1:2).eq.'-d')then
+               read(argument(3:),*,err=201)isingle
+            endif
             if(argument(1:2).eq.'-o')iwr=1
             if(argument(1:2).eq.'-f')ipp=1
             if(argument(1:2).eq.'-g')then
@@ -190,6 +224,7 @@
      $           read(argument(3:),*,err=201)i1d
             if(argument(1:2).eq.'-m')
      $           read(argument(3:),*,err=201)mcell
+            if(argument(1:3).eq.'-yp')iyp=1
             if(argument(1:2).eq.'-z')then
                 read(argument(3:),*,err=201)zminmax
 ! Turn on trucation if the z-range is set
@@ -203,6 +238,7 @@
             endif
          else
             read(argument(1:),'(a)',err=201)diagfilename
+            write(*,*)diagfilename(1:lentrim(diagfilename))
             return
          endif         
       enddo
@@ -225,6 +261,7 @@
       write(*,301)' -ly  set label of parameter. -lx label of xaxis'
       write(*,301)' -d   set single diagnostic to be examined [',isingle
       write(*,301)' -a   set dimension number for ave profile [',i1d
+      write(*,301)' -yp  get posn of hole as fn of y          [',iyp
       write(*,301)' -o   write out the profiles               [',iwr
       write(*,301)' -f   plot potential profile (if -p given) [',ipp
       write(*,301)' -u   plot un-normalized diagnostics       [',iunp
@@ -232,6 +269,7 @@
      $     ,icontour
       write(*,301)' -m<f>  set minimum non-zero cell count    [',mcell
       write(*,302)' -z<min><max> set range of values plotted  [',zminmax
+      write(*,302)' -dt  set time-step for multiple steps     [',dt
       write(*,*)' if zmin>zmax, print zmin and zmax of first diag'
       write(*,*)'-g<i>   print ps-graphics files to unit i [3,-3]'
       write(*,*)'-r   run without pausing'
@@ -656,5 +694,136 @@
 !         write(*,*)'Finished potential vtkwrite',ifull,iuds,u(1,1,1)
       endif
       stop
+      end
+!*****************************************************************
+      real function thecentroid(diagsum,idiag,id,idp1,idp2)
+! Calculate the centroid, \sum_i diagsum()*x(idiag,i) of the idiag
+! diagnostic, in direction id, at orthogonal index values idp1, idp2
+      include 'examdecl.f'
+      real diagsum(na_i,na_j,na_k,ndiagmax+1)      
+      integer idims(ndims)
+
+      idims(mod(id,ndims)+1)=idp1
+      idims(mod(id+1,ndims)+1)=idp2
+      thecentroid=0.
+      thetotal=0.
+      do i=1,iuds(id)
+         idims(id)=i
+         thecentroid=thecentroid+xn(ixnp(id)+i)*
+     $        diagsum(idims(1),idims(2),idims(3),idiag)**2
+         thetotal=thetotal+diagsum(idims(1),idims(2),idims(3),idiag)**2
+!         write(*,'(a,3i5,2f8.4)')'thecentroid',idims,thecentroid,
+!     $        diagsum(idims(1),idims(2),idims(3),idiag)
+      enddo
+!      write(*,*)'thecentroid,thetotal',thecentroid,thetotal,idiag
+      thecentroid=thecentroid/thetotal
+      end
+!*****************************************************************
+      subroutine hole2position(diagsum,xcentroid,ndiags)
+! Detect the hole position in direction id defined as the centroid of the
+! potential in the x-direction, for a 2-D x,y calculation.
+! Assume that the z-position is 2 because it is ignorable. 
+      include 'examdecl.f'
+      real xcentroid(ifull(2))
+      real diagsum(na_i,na_j,na_k,ndiagmax+1)      
+      do j=1,iuds(2)
+         xcentroid(j)=thecentroid(diagsum,ndiags,1,j,2)
+!         write(*,*)j,xcentroid(j)
+      enddo
+      end
+!*****************************************************************
+      subroutine getstats(xcentroid,ncen,xmean,xvar,xmax,xmin)
+! Get the mean, variance, max and min of xcentroid(1:ncen)
+      real xcentroid(ncen)
+      xmean=0.
+      xvar=0.
+      xmax=-1.e20
+      xmin=+1.e20
+      do i=1,ncen
+         x=xcentroid(i)
+         xmean=xmean+x
+         xvar=xvar+x**2
+         if(x.gt.xmax)xmax=x
+         if(x.lt.xmin)xmin=x
+      enddo
+      xmean=xmean/ncen
+      xvar=xvar/ncen-xmean**2
+      end
+!*****************************************************************
+      subroutine holemotion(itime,ncen,xmean,xvar,xmax,xmin)
+      include 'examdecl.f'
+      real xcentroid(ifull(2))
+      integer nfiles
+      parameter (nfiles=1000)
+      real xmean(nfiles),xvar(nfiles),xmax(nfiles),xmin(nfiles)
 
       end
+!*****************************************************************
+      subroutine fitexp(time,xamp,ifile,work,it0,i,A,tau)
+! Fit an exponential line to the data of the growth phase of a trace.
+! The line is xamp~=A exp(time/tau), but is fitted to the range defined
+! by the first maximum value of xamp after entry it0 at itmax through the
+! two points at (itmax+2*it0)/3 and (2*itmax+it0)/3.
+      real time(ifile),xamp(ifile),work(ifile)
+
+      it0=10
+      write(*,*)'fitexp',ifile,it0
+      if(it0.gt.ifile/2)it0=ifile/2
+ 1    continue
+      xamax=0.
+! Find the first peak
+      do i=it0,ifile
+         if(xamp(i).lt.xamax)goto 3
+         xamax=xamp(i)
+      enddo
+      i=i-1
+ 3    continue
+      imax=i
+      it1=(imax+2*it0)/3
+      xa1=xamp(it1)
+      it2=(2*imax+it0)/3
+      xa2=xamp(it2)
+      dt=time(it2)-time(it1)
+      tau=dt/alog(xa2/xa1)
+      A=xa1/exp(time(it1)/tau)
+      write(*,*)'it0,imax,A,tau',it0,imax,A,tau
+! If it has given us a sensible fit accept it.
+      if((imax-it0.gt.min(10,ifile/3)).and.(tau.gt.5))goto 2
+! If we are too far into the trace, quit
+      if(it0.gt.ifile/2)goto 4
+! Else try again, starting later.
+      it0=it0+max(2,it0/4)
+      goto 1
+ 2    continue
+      do i=it0,imax
+         work(i)=A*exp(time(i)/tau)
+      enddo
+      call lautoplot(time,xamp,ifile,.false.,.true.)
+      call axlabels('time','displacement p-p amplitude')
+      call dashset(1)
+      call color(4)
+      call polyline(time(it0),work(it0),imax-it0+1)
+      call color(15)
+      call dashset(0)
+      call pltend()
+      return
+ 4    write(*,*)'fitexp failed to fit',it0,imax,ifile
+      end
+!****************************************************************
+      subroutine plotexcursion(ifile,time,xmean,xmax,xmin,dt)
+      real xmean(ifile),xmax(ifile),xmin(ifile),time(ifile),dt
+! Plot the hole position and excursion.         
+         call pltinit(0.,time(ifile),-5.,5.)
+         call axis()
+         if(dt.eq.1)then
+            call axlabels('File','x-positions')
+         else
+            call axlabels('time [!AXw!@!dp!d]','x-positions')
+         endif
+         call polyline(time,xmean,ifile)
+         call color(1)
+         call polyline(time,xmax,ifile)
+         call color(2)
+         call polyline(time,xmin,ifile)
+         call pltend()
+         end
