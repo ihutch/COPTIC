@@ -16,12 +16,12 @@
       real xcentroid(na_m),dt,time(nfiles),xamp(nfiles),work(nfiles)
 
       integer mcell,icontour
-      logical lvtk
+      logical lvtk,ldebug,nopause
       character*70 xtitle,ytitle,label
       integer iuphi(3),iurs(3),isrs(3)
       integer iunp,i1d,isingle,i1,iwr,istd
       data iunp/0/i1d/0/iwr/0/zminmax/0.,0./icontour/0/istd/1/
-      data ierr/0/
+      data ierr/0/ldebug/.false./nopause/.false./
 
       isingle=0
       lvtk=.false.
@@ -44,7 +44,7 @@
 ! Loop over a maximum of nfiles files: 
       do ifile=1,nfiles
       call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
-     $     ,mcell,zminmax,icontour,iworking,iyp,dt)
+     $     ,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause)
 ! diagexamargs returns here when it reads a diagnostic file.
       if(iworking.lt.0)then
          if(iyp.gt.0)goto 101
@@ -75,8 +75,8 @@
       if(istd.gt.0)then
 ! Only alert about volumes if we are doing more than getting min/max.
          if(istat.eq.1)then
-            if(ifile.eq.1)write(*,'(a,f8.4,$)')'Read volumes '
-     $           ,diagsum(2,2,2,ndiags+1)
+            if(ifile.eq.1.and.ldebug)write(*,'(a,f8.4,$)'
+     $           )'Read volumes ',diagsum(2,2,2,ndiags+1)
          else
             write(*,*)'Storedgeom failed; returned',istat,iuds,ifull
             write(*,*)'***** No volume-corrected density is available.'
@@ -90,9 +90,8 @@
 !-------------------------------------
 ! Normalize the diagnostics.
       call donormalize(ndiags,diagsum,mcell,isrs,iurs)
-      if(istd.gt.0.and.ifile.eq.1)write(*,'(a,4f8.4)'
+      if(ldebug.and.istd.gt.0.and.ifile.eq.1)write(*,'(a,4f8.4)'
      $     )' rs,debyelen,vd,Ti',rs,debyelen,vd,Ti
-!      write(*,*)'isrs,iurs',isrs,iurs
 !------------------------------------
 ! Maybe write vtk files and stop.
       if(lvtk)call diavtkwrite(iurs,isrs,diagsum,ndiags,istat)
@@ -115,7 +114,8 @@
          call getstats(xcentroid,iuds(2),xmean(ifile),xvar(ifile)
      $        ,xmax(ifile),xmin(ifile))
          xamp(ifile)=xmax(ifile)-xmin(ifile)
-         write(*,*)'xmean.max.min',xmean(ifile),xmax(ifile),xmin(ifile)
+         if(ldebug)write(*,*)'xmean.max.min',xmean(ifile),xmax(ifile)
+     $        ,xmin(ifile)
       else
 ! Normal case. Plot the diagnostics.
          if(istat.eq.1.and.isingle.eq.0)then
@@ -144,11 +144,12 @@
 !     $     ,diagsum(1,1,1,2),vp)
       enddo
  101  if(iyp.gt.0)then
+! Fitting of xpos vs y kink amplitudes as fn of time.
          ifile=ifile-1
 ! Plot the hole position and excursion.         
-         call plotexcursion(ifile,time,xmean,xmax,xmin,dt)
+         if(ldebug)call plotexcursion(ifile,time,xmean,xmax,xmin,dt)
 ! Fit and plot the exponential growth.
-         call fitexp(time,xamp,ifile,work,it0,imax,A,tau)
+         call fitexp(time,xamp,ifile,work,it0,imax,A,tau,ldebug,nopause)
 
       endif
 
@@ -159,7 +160,7 @@
 ! Operational subroutines:
 !*************************************************************
       subroutine diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle
-     $     ,lvtk,mcell,zminmax,icontour,iworking,iyp,dt)
+     $     ,lvtk,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause)
 ! Read command line arguments, until a diag name is found.
 ! If we reach the end of them, return iworking=-1, otherwise return
 ! iworking= the argument we are working on.
@@ -167,7 +168,7 @@
       integer mcell,icontour
       real zminmax(2)
       character*70 xtitle,ytitle
-      logical lvtk
+      logical lvtk,ldebug,nopause
       include 'examdecl.f'
 
       ifull(1)=na_i
@@ -217,7 +218,11 @@
                read(argument(3:),*,err=204,end=204)ipfs
  204           call pfset(ipfs)
             endif
-            if(argument(1:2).eq.'-r')call noeye3d(0)
+            if(argument(1:2).eq.'-r')then 
+               call noeye3d(0)
+               nopause=.true.
+            endif
+            if(argument(1:2).eq.'-i')ldebug=.not.ldebug
             if(argument(1:2).eq.'-c')
      $           read(argument(3:),*,err=201)icontour
             if(argument(1:2).eq.'-a')
@@ -238,7 +243,7 @@
             endif
          else
             read(argument(1:),'(a)',err=201)diagfilename
-            write(*,*)diagfilename(1:lentrim(diagfilename))
+            if(ldebug)write(*,*)diagfilename(1:lentrim(diagfilename))
             return
          endif         
       enddo
@@ -273,6 +278,7 @@
       write(*,*)' if zmin>zmax, print zmin and zmax of first diag'
       write(*,*)'-g<i>   print ps-graphics files to unit i [3,-3]'
       write(*,*)'-r   run without pausing'
+      write(*,*)'-i   toggle debugging information'
       write(*,*)'-w<name> toggle vtk file writing,'
      $     ,' optionally name the vector[',lvtk,' '
      $     ,fluxfilename(1:lentrim(fluxfilename))
@@ -759,15 +765,17 @@
 
       end
 !*****************************************************************
-      subroutine fitexp(time,xamp,ifile,work,it0,i,A,tau)
+      subroutine fitexp(time,xamp,ifile,work,it0,i,A,tau,ldebug,nopause)
 ! Fit an exponential line to the data of the growth phase of a trace.
-! The line is xamp~=A exp(time/tau), but is fitted to the range defined
-! by the first maximum value of xamp after entry it0 at itmax through the
-! two points at (itmax+2*it0)/3 and (2*itmax+it0)/3.
+! The line is xamp=A exp(time/tau), but is fitted to the range defined
+! by the first maximum value of xamp after entry it0 at i through the
+! two points at (i+2*it0)/3 and (2*i+it0)/3. it0 is adjusted
+! if the fit is unsatisfactory, and it0 and i are set on return.
       real time(ifile),xamp(ifile),work(ifile)
+      logical ldebug,nopause
 
       it0=10
-      write(*,*)'fitexp',ifile,it0
+      if(ldebug)write(*,*)'fitexp',ifile,it0
       if(it0.gt.ifile/2)it0=ifile/2
  1    continue
       xamax=0.
@@ -786,7 +794,7 @@
       dt=time(it2)-time(it1)
       tau=dt/alog(xa2/xa1)
       A=xa1/exp(time(it1)/tau)
-      write(*,*)'it0,imax,A,tau',it0,imax,A,tau
+      if(ldebug)write(*,*)'it0,imax,A,tau',it0,imax,A,tau
 ! If it has given us a sensible fit accept it.
       if((imax-it0.gt.min(10,ifile/3)).and.(tau.gt.5))goto 2
 ! If we are too far into the trace, quit
@@ -795,6 +803,8 @@
       it0=it0+max(2,it0/4)
       goto 1
  2    continue
+      write(*,'(a)')'Fit: tau,    A    tmin,    tmax'
+      write(*,'(f8.3,f7.4,2f8.2)')tau,A,time(it0),time(imax)
       do i=it0,imax
          work(i)=A*exp(time(i)/tau)
       enddo
@@ -805,7 +815,11 @@
       call polyline(time(it0),work(it0),imax-it0+1)
       call color(15)
       call dashset(0)
-      call pltend()
+      if(nopause)then
+         call prtend(' ')
+      else
+         call pltend()
+      endif
       return
  4    write(*,*)'fitexp failed to fit',it0,imax,ifile
       end
