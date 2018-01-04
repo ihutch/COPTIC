@@ -14,6 +14,7 @@
       parameter (nfiles=1000)
       real xmean(nfiles),xvar(nfiles),xmax(nfiles),xmin(nfiles)
       real xcentroid(na_m),dt,time(nfiles),xamp(nfiles),work(nfiles)
+      real xampsmooth(nfiles)
 
       integer mcell,icontour
       logical lvtk,ldebug,nopause
@@ -54,6 +55,9 @@
          istd=0
       endif
 !-------------------------------------
+! Attempt to read dt from the copticgeom.dat file.
+      call findargvalue('-dt',dt,istat,ldebug)
+!-------------------------------------
       i1=1
       ied=ndiagmax
 ! Create label
@@ -68,8 +72,6 @@
       if(ierr.eq.1)stop 'Error reading diag file'
       ndiags=ied
 !-------------------------------------
-! Attempt to read dt from the copticgeom.dat file.
-      call findargvalue('-dt',dt,istat,ldebug)
 ! Attempt to read the volumes data.
       istat=1
       call stored3geometry(diagsum(1,1,1,ndiags+1),iuds,ifull,istat
@@ -152,7 +154,13 @@
          if(ldebug)call plotexcursion(ifile,time,xmean,xmax,xmin,dt)
 ! Fit and plot the exponential growth.
          call fitexp(time,xamp,ifile,work,it0,imax,A,tau,ldebug,nopause)
-
+         if(imax.eq.0)then
+! First attempt failed to fit. Try smoothing and do again.
+            nb=4
+            call boxcarave(ifile,nb,xamp,xampsmooth)
+            call fitexp(time,xampsmooth,ifile,work,it0,imax,A,tau,ldebug
+     $           ,nopause)
+         endif
       endif
 
       end
@@ -776,14 +784,17 @@
       real time(ifile),xamp(ifile),work(ifile)
       logical ldebug,nopause
 
+! By default skip the first few files.
       it0=10
+      if(it0.gt.ifile/2)it0=ifile/2+1
       if(ldebug)write(*,*)'fitexp',ifile,it0
-      if(it0.gt.ifile/2)it0=ifile/2
  1    continue
       xamax=0.
 ! Find the first peak
-      do i=it0,ifile
-         if(xamp(i).lt.xamax)goto 3
+      do i=it0,ifile-1
+!         if(xamp(i).lt.xamax)goto 3  ! simple maximum
+! Count as a peak only something that stays down for 2 steps:
+         if(xamp(i).lt.xamax.and.xamp(i+1).lt.xamax)goto 3
          xamax=xamp(i)
       enddo
       i=i-1
@@ -824,12 +835,13 @@
       endif
       return
  4    write(*,*)'fitexp failed to fit',it0,imax,ifile
+      i=0
       end
 !****************************************************************
       subroutine plotexcursion(ifile,time,xmean,xmax,xmin,dt)
       real xmean(ifile),xmax(ifile),xmin(ifile),time(ifile),dt
 ! Plot the hole position and excursion.         
-         call pltinit(0.,time(ifile),-5.,5.)
+         call pltinit(0.,time(ifile),-10.,10.)
          call axis()
          if(dt.eq.1)then
             call axlabels('File','x-positions')
