@@ -68,6 +68,8 @@
       if(ierr.eq.1)stop 'Error reading diag file'
       ndiags=ied
 !-------------------------------------
+! Attempt to read dt from the copticgeom.dat file.
+      call findargvalue('-dt',dt,istat,ldebug)
 ! Attempt to read the volumes data.
       istat=1
       call stored3geometry(diagsum(1,1,1,ndiags+1),iuds,ifull,istat
@@ -841,3 +843,36 @@
          call polyline(time,xmin,ifile)
          call pltend()
          end
+!****************************************************************
+      subroutine findargvalue(carg,varg,istat,ldebug)
+! If there's a copticgeom.dat file, then look for the value of the 
+! argument whose switch is carg, and return it in varg. istat=1
+! denotes success, istat=0 failure
+      character*(*) carg
+      real varg
+      logical ldebug
+      
+      character*80 line
+      parameter (nlinemax=200)
+      real vread
+
+      istat=0
+      open(14,file='copticgeom.dat',status='old',err=101)
+      do i=1,nlinemax
+         read(14,'(a)',end=102,err=102)line
+!         write(*,*)line
+         imatch=istrstr(line,carg)
+         if(imatch.ne.0)then
+            read(line(imatch+lentrim(carg):),*,err=102,end=102)vread
+            varg=vread
+            istat=1
+            if(ldebug)write(*,*)'Found value of ',carg,varg
+            goto 103
+         endif
+      enddo
+ 101  continue
+      if(ldebug)write(*,*)'No copticgeom.dat file found'
+      return
+ 102  if(ldebug)write(*,*)'Error reading argvalue in line',line
+ 103  close(14)
+      end
