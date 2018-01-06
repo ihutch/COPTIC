@@ -3,7 +3,6 @@
       include 'examdecl.f'
       real diagsum(na_i,na_j,na_k,ndiagmax+1)      
 ! Volumes are stored in ndiagmax+1
-
 ! Extra work array for arrowplotting in sliceGweb.
       real vp(na_m,na_m2,3,3)
 ! 1-d plotting arrays.
@@ -13,29 +12,23 @@
       integer nfiles
       parameter (nfiles=1000)
       real xmean(nfiles),xvar(nfiles),xmax(nfiles),xmin(nfiles)
-      real xcentroid(na_m),dt,time(nfiles),xamp(nfiles),work(nfiles)
-      real xampsmooth(nfiles)
+      real xampsmooth(nfiles),time(nfiles),xamp(nfiles),work(nfiles)
+      real xcentroids(na_m,nfiles),xwork(na_m)
+      real dt
 
       integer mcell,icontour
       logical lvtk,ldebug,nopause
       character*70 xtitle,ytitle,label
-      integer iuphi(3),iurs(3),isrs(3)
+      integer iuphi(ndims),iurs(ndims),isrs(ndims)
       integer iunp,i1d,isingle,i1,iwr,istd
       data iunp/0/i1d/0/iwr/0/zminmax/0.,0./icontour/0/istd/1/
       data ierr/0/ldebug/.false./nopause/.false./
-
+      data mname(1)/'Cellcount'/mname(2)/'v!d1!d'/mname(3)/'v!d2!d'/
+      data mname(4)/'v!d3!d'/mname(5)/'T!d1!d'/mname(6)/'T!d2!d'/
+      data mname(7)/'T!d3!d'/mname(ndiagmax)/'Potential'/
+      data mname(ndiagmax+1)/'Density'/fluxfilename/' '/
       isingle=0
       lvtk=.false.
-      fluxfilename=' '
-      mname(1)='Cellcount'
-      mname(2)='v!d1!d'
-      mname(3)='v!d2!d'
-      mname(4)='v!d3!d'
-      mname(5)='T!d1!d'
-      mname(6)='T!d2!d'
-      mname(7)='T!d3!d'
-      mname(ndiagmax)='Potential'
-      mname(ndiagmax+1)='Density'
       xleg=.75
       ipp=0
       iworking=0
@@ -44,101 +37,99 @@
 
 ! Loop over a maximum of nfiles files: 
       do ifile=1,nfiles
-      call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
-     $     ,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause)
+         call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
+     $        ,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause)
 ! diagexamargs returns here when it reads a diagnostic file.
-      if(iworking.lt.0)then
-         if(iyp.gt.0)goto 101
-         call exit(0)
-      endif
-      if(zminmax(1).gt.zminmax(2))then
-         istd=0
-      endif
+         if(iworking.lt.0)then
+! finished all the arguments:
+            if(iyp.gt.0)goto 101
+            call exit(0)
+         endif
+         if(zminmax(1).gt.zminmax(2))istd=0
 !-------------------------------------
 ! Attempt to read dt from the copticgeom.dat file.
-      call findargvalue('-dt',dt,istat,ldebug)
+         call findargvalue('-dt',dt,istat,ldebug)
 !-------------------------------------
-      i1=1
-      ied=ndiagmax
+         i1=1
+         ied=ndiagmax
 ! Create label
-!      label=diagfilename(lentrim(diagfilename)-3:lentrim(diagfilename))
-      label=diagfilename(istrstr(diagfilename,'dia')+3
-     $     :lentrim(diagfilename))
-      read(label,*)istep
-      time(ifile)=dt*istep
-!      write(*,*)'Istep, time',istep,time(ifile)
+         label=diagfilename(istrstr(diagfilename,'dia')+3
+     $        :lentrim(diagfilename))
+         read(label,*)istep
+         time(ifile)=dt*istep
 ! Read the file whose name we have found in the arguments.
-      call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
-      if(ierr.eq.1)stop 'Error reading diag file'
-      ndiags=ied
+         call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
+         if(ierr.eq.1)stop 'Error reading diag file'
+         ndiags=ied
 !-------------------------------------
 ! Attempt to read the volumes data.
-      istat=1
-      call stored3geometry(diagsum(1,1,1,ndiags+1),iuds,ifull,istat
-     $     ,.false.)
-      if(istd.gt.0)then
+         istat=1
+         call stored3geometry(diagsum(1,1,1,ndiags+1),iuds,ifull,istat
+     $        ,.false.)
+         if(istd.gt.0)then
 ! Only alert about volumes if we are doing more than getting min/max.
-         if(istat.eq.1)then
-            if(ifile.eq.1.and.ldebug)write(*,'(a,f8.4,$)'
-     $           )'Read volumes ',diagsum(2,2,2,ndiags+1)
-         else
-            write(*,*)'Storedgeom failed; returned',istat,iuds,ifull
-            write(*,*)'***** No volume-corrected density is available.'
+            if(istat.eq.1)then
+               if(ifile.eq.1.and.ldebug)write(*,'(a,f8.4,$)'
+     $              )'Read volumes ',diagsum(2,2,2,ndiags+1)
+            else
+               write(*,*)'Storedgeom failed; returned',istat,iuds,ifull
+               write(*,*
+     $              )'***** No volume-corrected density is available.'
+            endif
          endif
-      endif
 !-------------------------------------
 ! Maybe Get up to two additional quantities \phi and n for separate plotting
-      call readextra(iuphi)
+         call readextra(iuphi)
 !-------------------------------------
-      if(iunp.ne.0) call unnormplot(diagsum,i1,ndiags)
+         if(iunp.ne.0) call unnormplot(diagsum,i1,ndiags)
 !-------------------------------------
 ! Normalize the diagnostics.
-      call donormalize(ndiags,diagsum,mcell,isrs,iurs)
-      if(ldebug.and.istd.gt.0.and.ifile.eq.1)write(*,'(a,4f8.4)'
-     $     )' rs,debyelen,vd,Ti',rs,debyelen,vd,Ti
+         call donormalize(ndiags,diagsum,mcell,isrs,iurs)
+         if(ldebug.and.istd.gt.0.and.ifile.eq.1)write(*,'(a,4f8.4)'
+     $        )' rs,debyelen,vd,Ti',rs,debyelen,vd,Ti
 !------------------------------------
 ! Maybe write vtk files and stop.
-      if(lvtk)call diavtkwrite(iurs,isrs,diagsum,ndiags,istat)
+         if(lvtk)call diavtkwrite(iurs,isrs,diagsum,ndiags,istat)
 !-------------------------------------------------------------
-! Process and plot:
-      if(i1d.ne.0)then
+! Process and plot in various optional ways:
+         if(i1d.ne.0)then
 ! Calculate average profiles in direction i1d.
-         call lineout(i1d,ipp,iwr,xtitle,ytitle,xleg,diagsum)
-      elseif(lentrim(phifilename).gt.1)then
+            call lineout(i1d,ipp,iwr,xtitle,ytitle,xleg,diagsum)
+         elseif(lentrim(phifilename).gt.1)then
 ! Arrow plotting of velocity:
-         fluxfilename=ytitle
-         ifix=2+4
-         write(*,*)'Arrow plotting of ',phifilename
-         call sliceGweb(ifull,iuds,u,na_m,zp,
-     $        ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
-     $        ,diagsum(1,1,1,2),vp)
-      elseif(iyp.gt.0)then
-! Hole position analysis.
-         call hole2position(diagsum,xcentroid,ndiags)
-         call getstats(xcentroid,iuds(2),xmean(ifile),xvar(ifile)
-     $        ,xmax(ifile),xmin(ifile))
-         xamp(ifile)=xmax(ifile)-xmin(ifile)
-         if(ldebug)write(*,*)'xmean.max.min',xmean(ifile),xmax(ifile)
-     $        ,xmin(ifile)
-      else
-! Normal case. Plot the diagnostics.
-         if(istat.eq.1.and.isingle.eq.0)then
-! Plot the density if volumes found successfully.
-            k=ndiagmax+1
-            zp(1,1,1)=99
-            ifix=2
-!         write(fluxfilename,'(''diagnorm('',i1,'')'')')k
-            fluxfilename=mname(k)
-            write(*,*)k,mname(k),fluxfilename(1:lentrim(fluxfilename))
-            call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
+            fluxfilename=ytitle
+            ifix=2+4
+            write(*,*)'Arrow plotting of ',phifilename
+            call sliceGweb(ifull,iuds,u,na_m,zp,
      $           ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
-     $           ,dum,dum)
-         endif
+     $           ,diagsum(1,1,1,2),vp)
+         elseif(iyp.gt.0)then
+! Hole position analysis.
+            call hole2position(diagsum,xcentroids(1,ifile),ndiags)
+            call getstats(xcentroids(1,ifile),iuds(2),xmean(ifile)
+     $           ,xvar(ifile),xmax(ifile),xmin(ifile))
+            xamp(ifile)=xmax(ifile)-xmin(ifile)
+            if(ldebug)write(*,*)'xmean.max.min',xmean(ifile),xmax(ifile)
+     $           ,xmin(ifile)
+         else
+! Default case. Plot the diagnostics.
+            if(istat.eq.1.and.isingle.eq.0)then
+! Plot the density if volumes found successfully.
+               k=ndiagmax+1
+               zp(1,1,1)=99
+               ifix=2
+               fluxfilename=mname(k)
+               write(*,*)k,mname(k)
+     $              ,fluxfilename(1:lentrim(fluxfilename))
+               call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
+     $              ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
+     $              ,dum,dum)
+            endif
 !----------------------------------------------------------------
 ! Default examination of all diagnostics.
-         call examineall(diagsum,zminmax,mname,i1,isingle,istd
-     $        ,ndiags,icontour,label)
-      endif
+            call examineall(diagsum,zminmax,mname,i1,isingle,istd
+     $           ,ndiags,icontour,label)
+         endif
 !----------------------------------------------------------------
 ! Arrow plotting of velocity:
 !      fluxfilename=mname(1)
@@ -147,6 +138,7 @@
 !     $     ,ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
 !     $     ,diagsum(1,1,1,2),vp)
       enddo
+!---------  End of loop over filenames ----------------------------
  101  if(iyp.gt.0)then
 ! Fitting of xpos vs y kink amplitudes as fn of time.
          ifile=ifile-1
@@ -154,13 +146,14 @@
          if(ldebug)call plotexcursion(ifile,time,xmean,xmax,xmin,dt)
 ! Fit and plot the exponential growth.
          call fitexp(time,xamp,ifile,work,it0,imax,A,tau,ldebug,nopause)
-         if(imax.eq.0)then
-! First attempt failed to fit. Try smoothing and do again.
-            nb=4
-            call boxcarave(ifile,nb,xamp,xampsmooth)
-            call fitexp(time,xampsmooth,ifile,work,it0,imax,A,tau,ldebug
-     $           ,nopause)
-         endif
+! Show the wiggles
+ 51      call accisinit()
+         isw=1
+         call hidweb(xn(ixnp(2)+1),time,xcentroids,na_m,iuds(2),ifile
+     $        ,isw)
+         call ax3labels('y','time','x!dh!d      ')
+         isw=irotatezoom()
+         if(isw.ne.ichar('q').and.isw.ne.0)goto 51
       endif
 
       end
@@ -740,7 +733,7 @@
 ! potential in the x-direction, for a 2-D x,y calculation.
 ! Assume that the z-position is 2 because it is ignorable. 
       include 'examdecl.f'
-      real xcentroid(ifull(2))
+      real xcentroid(na_m)
       real diagsum(na_i,na_j,na_k,ndiagmax+1)      
       do j=1,iuds(2)
          xcentroid(j)=thecentroid(diagsum,ndiags,1,j,2)
@@ -768,7 +761,7 @@
 !*****************************************************************
       subroutine holemotion(itime,ncen,xmean,xvar,xmax,xmin)
       include 'examdecl.f'
-      real xcentroid(ifull(2))
+      real xcentroid(na_m)
       integer nfiles
       parameter (nfiles=1000)
       real xmean(nfiles),xvar(nfiles),xmax(nfiles),xmin(nfiles)
@@ -784,14 +777,20 @@
       real time(ifile),xamp(ifile),work(ifile)
       logical ldebug,nopause
 
+      idone=0
 ! By default skip the first few files.
-      it0=10
+ 10   it0=10
       if(it0.gt.ifile/2)it0=ifile/2+1
       if(ldebug)write(*,*)'fitexp',ifile,it0
  1    continue
+      xamin=1.e20
       xamax=0.
 ! Find the first peak
       do i=it0,ifile-1
+         if(xamp(i).lt.xamin)then
+            xamin=xamp(i)
+            imin=i
+         endif
 !         if(xamp(i).lt.xamax)goto 3  ! simple maximum
 ! Count as a peak only something that stays down for 2 steps:
          if(xamp(i).lt.xamax.and.xamp(i+1).lt.xamax)goto 3
@@ -809,11 +808,14 @@
       A=xa1/exp(time(it1)/tau)
       if(ldebug)write(*,*)'it0,imax,A,tau',it0,imax,A,tau
 ! If it has given us a sensible fit accept it.
-      if((imax-it0.gt.min(10,ifile/3)).and.(tau.gt.5))goto 2
+!      write(*,*)xamin,xamax
+      if((imax-it0.gt.min(10,ifile/3)).and.(tau.gt.5)
+     $     .and.(xamax.gt.1.6*xamin))goto 2
 ! If we are too far into the trace, quit
       if(it0.gt.ifile/2)goto 4
 ! Else try again, starting later.
-      it0=it0+max(2,it0/4)
+!      it0=it0+max(2,it0/4)
+      it0=imin+max(2,it0/4)
       goto 1
  2    continue
       write(*,'(a)')'Fit: tau,    A    tmin,    tmax'
@@ -834,7 +836,21 @@
          call pltend()
       endif
       return
- 4    write(*,*)'fitexp failed to fit',it0,imax,ifile
+ 4    continue
+! Fit failure.
+      if(idone.lt.5)then
+! First attempt failed to fit. Try smoothing and do again.
+         idone=idone+1
+         nb=idone**2
+         write(*,*)'Trying smoothing',nb
+! This leaves xamp smoothed, not in original form.
+         do i=1,ifile
+            work(i)=xamp(i)
+         enddo
+         call boxcarave(ifile,nb,work,xamp)
+         goto 10
+      endif
+      write(*,*)'fitexp failed to fit',it0,imax,ifile
       i=0
       end
 !****************************************************************

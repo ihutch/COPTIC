@@ -499,6 +499,10 @@ to set the perspective explicitly (through a call to trn32) else a
 call to puteye must be inserted after rotatezoom to ensure the eye.dat
 is updated, otherwise the adjustment will be overridden.
 
+IROTATEZOOM() Integer function that calls eye3d, rotatezoom, and
+puteye returning the isw value of eye3d. Use isw=irotatezoom() instead
+of call eye3d(isw) for functionality with wider routines (e.g. hidweb). 
+
 DRAW3ARROW(arrowdata) Draw a 3-D arrow according to settings of
 arrowdata(10): Base position world coords (3), Point position (3),
 Barb parallel, perp size as fraction of length (2). 

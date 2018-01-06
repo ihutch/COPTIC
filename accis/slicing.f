@@ -1007,9 +1007,18 @@ c         call trn32(0.,0.,0.,xe1,ye1,ze1,1)
 c         irotating=irotating-1
          irotating=0
 c Is this necessary?
-c         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
       endif
-
+      end
+c******************************************************************
+      integer function irotatezoom()
+c Functionalized rotatezoom that calls eye3d and also sets the 
+c perspective file so that calls that set the perspective based
+c on the eye.dat file obey the rotation. 
+      call eye3d(isw)
+      call rotatezoom(isw)
+      call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
+      call puteye(xe1,ye1,ze1)
+      irotatezoom=isw
       end
 c******************************************************************
 c Obtain a line profile through a quantity u on n-dimensional space.
