@@ -320,22 +320,35 @@
       include 'meshcom.f'
 ! Construct a filename that contains many parameters
 ! Using the routines in strings_names.f
-! We do not now start by zeroing the string. Has to be done earlier.
-!      name=' '
-      call nameappendexp(name,'T',Ti,1)
-      if(vd.lt.9.5)then
+! Initializing the name must done earlier.
+      if(Ti.ge.1 .and. Ti.lt.10)then
+         call nameappendint(name,'T',nint(Ti),1)
+      else
+         call nameappendexp(name,'T',Ti,1)
+      endif
+      if(vd.eq.0.)then
+      elseif(vd.lt.9.5)then
          call nameappendint(name,'v',nint(100*vd),3)
       else
          call nameappendint(name,'v',nint(10*vd),3)
       endif
-      if(abs(phip).lt.9.5)then
-         call nameappendint(name,'P',nint(abs(phip*100)),3)
+      if(phip.eq.0.)then
+      elseif(phip.lt.9.5)then
+         call nameappendint(name,'P',nint(100*phip),3)
       else
-         call nameappendint(name,'P',nint(abs(phip*10)),3)
+         call nameappendint(name,'P',nint(10*phip),3)
       endif
-      call nameappendexp(name,'L',debyelen,1)
-      call nameappendint(name,'z',nint(xmeshend(3)),3)
-      call nameappendint(name,'x',nint(xmeshend(2)),2)
+      if(debyelen.ge.1 .and. debyelen.lt.10.)then
+         call nameappendint(name,'L',nint(debyelen),1)
+      else
+         call nameappendexp(name,'L',debyelen,1)
+      endif
+      if(ixnp(2)-ixnp(1).gt.3)call nameappendint(name,'x'
+     $     ,int(xmeshend(1)) ,int(alog10(xmeshend(1))+1))      
+      if(ixnp(3)-ixnp(2).gt.3)call nameappendint(name,'y'
+     $     ,int(xmeshend(2)),int(alog10(xmeshend(2))+1))
+      if(ixnp(4)-ixnp(3).gt.3)call nameappendint(name,'z'
+     $     ,int(xmeshend(3)),int(alog10(xmeshend(3))+1))
       if(colntime.ne.0)call nameappendexp(name,'c',colntime,1)
       if(Bt.gt..01)call nameappendexp(name,'B',Bt,1)
       end
