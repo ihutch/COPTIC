@@ -8,7 +8,7 @@ ACCISLIB=${COPTIC_ROOT}/accis/libaccisX.a
 ifeq ("$(LIBPATH)","")
    LIBPATH:=-L/usr/X11R6/lib/ -L/usr/lib/mesa
 endif
-LIBRARIES = $(LIBPATH) -L${COPTIC_ROOT}/accis/ -laccisX -lX11 $(GLULIBS) -L. -lvtkwrite
+LIBRARIES = $(LIBPATH) -L${COPTIC_ROOT}/accis/ -laccisX -lX11 $(GLULIBS) -L. -lvtkwrite -lfftpack5.1
 #Default accis driver choice
 #Alternatives are vecx or vecglx, can be overriden by commandline option
 VECX=vecglx
@@ -46,7 +46,7 @@ all: $(TARGETS)
 dummyreduce.o : ${COPTIC_ROOT}/${SRC}/dummyreduce.f
 	$(G77) -c ${COPTIC_ROOT}/${SRC}/dummyreduce.f
 
-% : %.f  makefile examdecl.f $(ACCISLIB) dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(HEADERS) libvtkwrite.a
+% : %.f  makefile examdecl.f $(ACCISLIB) dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(HEADERS) libvtkwrite.a libfftpack5.1.a
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(LIBRARIES)
 
 # Don't recompile accis every time the makefile is changed.
@@ -65,6 +65,11 @@ ${COPTIC_ROOT}/libcoptic.a :
 
 libvtkwrite.a : vtkwritewrap.o visit_writer.o
 	@ar -rs libvtkwrite.a vtkwritewrap.o visit_writer.o
+
+libfftpack5.1.a : fftpack5.1.f
+	$(G77) -c -w fftpack5.1.f
+	ar cr libfftpack5.1.a fftpack5.1.o
+	rm -f fftpack5.1.o
 
 ########################################################
 $(ACCISLIB) : ${COPTIC_ROOT}/accis/*.f ${COPTIC_ROOT}/accis/*.c ${COPTIC_ROOT}/accis/*.h

@@ -10,10 +10,14 @@
       real zminmax(2)
       character*20 mname(ndiagmax+1)
       integer nfiles
-      parameter (nfiles=1000)
+      parameter (nfiles=1000,nmodes=11)
       real xmean(nfiles),xvar(nfiles),xmax(nfiles),xmin(nfiles)
+      real xms(nfiles)
       real xampsmooth(nfiles),time(nfiles),xamp(nfiles),work(nfiles)
-      real xcentroids(na_m,nfiles),xwork(na_m)
+      real xcentroids(na_m,nfiles),xwork(na_m),xmodes(nmodes,nfiles)
+      real xmodenums(nmodes)
+      data xmodenums/0,1,2,3,4,5,6,7,8,9,10/
+      complex cfft(na_m)
       real dt
 
       integer mcell,icontour
@@ -142,24 +146,27 @@
  101  if(iyp.gt.0)then
 ! Fitting of xpos vs y kink amplitudes as fn of time.
          ifile=ifile-1
+! Fourier transform the xcentroids and sum low order 3 modes into xms.
+         call getmodes(iuds(2),ifile,xcentroids,nmodes,xmodes,3,xms)
 ! Plot the hole position and excursion.         
          if(ldebug)call plotexcursion(ifile,time,xmean,xmax,xmin,dt)
+! Show the wiggles and modes
+         call webinteract(xn(ixnp(2)+1),time,xcentroids,na_m,iuds(2)
+     $        ,ifile,'y','time','x!dh!d      ')
+         call webinteract(xmodenums,time,xmodes,nmodes,nmodes,ifile,
+     $        'mode','time','Amplitude    ')
 ! Fit and plot the exponential growth.
-         call fitexp(time,xamp,ifile,work,it0,imax,A,tau,ldebug,nopause)
-! Show the wiggles
- 51      call accisinit()
-         isw=1
-         call hidweb(xn(ixnp(2)+1),time,xcentroids,na_m,iuds(2),ifile
-     $        ,isw)
-         call ax3labels('y','time','x!dh!d      ')
-         isw=irotatezoom()
-         if(isw.ne.ichar('q').and.isw.ne.0)goto 51
+         call fitexp(time,xamp,ifile,work,it0,imax,A,tau,ldebug,nopause
+     $        ,'p-p amplitude')
+! Fit to modesum gives nearly the same answer but might be quieter.
+         call fitexp(time,xms,ifile,work,it0,imax,A,tau,ldebug,nopause
+     $        ,'Mode amplitude')
       endif
 
       end
 ! End of main program.
-!*************************************************************
-!*************************************************************
+!********************************************************************
+!#####################################################################
 ! Operational subroutines:
 !*************************************************************
       subroutine diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle
@@ -768,7 +775,8 @@
 
       end
 !*****************************************************************
-      subroutine fitexp(time,xamp,ifile,work,it0,i,A,tau,ldebug,nopause)
+      subroutine fitexp(time,xamp,ifile,work,it0,i,A,tau,ldebug,nopause
+     $     ,ylabel)
 ! Fit an exponential line to the data of the growth phase of a trace.
 ! The line is xamp=A exp(time/tau), but is fitted to the range defined
 ! by the first maximum value of xamp after entry it0 at i through the
@@ -776,6 +784,7 @@
 ! if the fit is unsatisfactory, and it0 and i are set on return.
       real time(ifile),xamp(ifile),work(ifile)
       logical ldebug,nopause
+      character*(*) ylabel
 
       idone=0
 ! By default skip the first few files.
@@ -818,13 +827,13 @@
       it0=imin+max(2,it0/4)
       goto 1
  2    continue
-      write(*,'(a)')'Fit: tau,    A    tmin,    tmax'
+      write(*,'(2a)')'Fit: tau,    A    tmin,    tmax   ',ylabel
       write(*,'(f8.3,f7.4,2f8.2)')tau,A,time(it0),time(imax)
       do i=it0,imax
          work(i)=A*exp(time(i)/tau)
       enddo
       call lautoplot(time,xamp,ifile,.false.,.true.)
-      call axlabels('time','displacement p-p amplitude')
+      call axlabels('time',ylabel)
       call dashset(1)
       call color(4)
       call polyline(time(it0),work(it0),imax-it0+1)
@@ -903,4 +912,87 @@
       return
  102  if(ldebug)write(*,*)'Error reading argvalue in line',line
  103  close(14)
+      end
+!******************************************************************
+      subroutine realtocomplexfft(n,rarray,cfft)
+! Calculate the complex fft cfft of a real array rarray of length N.
+! Library fftpack5.1 is used. Maximum length of array nmax parameter.
+      integer n
+      real rarray(n)
+      complex cfft(n)
+
+      integer nmax
+      INTEGER INC, LENC, LENSAV, LENWRK, IER
+      parameter (nmax=2000,inc=1,lensav=(2*nmax+30),lenwrk=2*nmax)
+      REAL       WSAVE(LENSAV), WORK(LENWRK)
+
+      if(n.gt.nmax)then
+         write(*,*)'realtocomplexfft array length too great',n
+         return
+      endif
+      lenc=n
+      do j=1,n
+         cfft(j)=rarray(j)
+      enddo
+      call CFFT1I (n, WSAVE, LENSAV, IER)
+      call CFFT1F (n,INC,cfft,LENC,WSAVE,LENSAV,WORK,LENWRK,IER)
+c B is a straight sum, F is sum divided by N.
+c      call CFFT1B (n,INC,cfft,LENC,WSAVE,LENSAV,WORK,LENWRK,IER)
+      if(ier.ne.0)then
+         write(*,*)'CFFT1F error',ier
+      endif
+
+c$$$ Documentation:
+c$$$ Output Arguments
+c$$$ 
+c$$$ C       For index J*INC+1 where J=0,...,N-1 (that is, for the Jth 
+c$$$         element of the sequence),
+c$$$ 
+c$$$            C(J*INC+1) = 
+c$$$            N-1
+c$$$            SUM C(K*INC+1)*EXP(-I*J*K*2*PI/N)
+c$$$            K=0
+c$$$         where I=SQRT(-1).
+c$$$
+c$$$         At other indices, the output value of C does not differ
+c$$$         from input.
+c$$$ 
+c$$$ IER     =  0 successful exit
+c$$$         =  1 input parameter LENC   not big enough
+c$$$         =  2 input parameter LENSAV not big enough
+c$$$         =  3 input parameter LENWRK not big enough
+c$$$         = 20 input error returned by lower level routine
+      end
+!*******************************************************************
+      subroutine getmodes(n,ifile,xcentroids,nmodes,xmodes,nml,xms)
+! Fourier transform xcentroids and return nmode modes in xmodes
+! Also sum the amplitudes of the lower order nml modes into xms.
+      integer n,ifile,nmodes,nml
+      real xcentroids(n,ifile),xmodes(nmodes,ifile),xms(ifile)
+      include 'examdecl.f'
+      complex cfft(na_m)
+      
+      do i=1,ifile
+         call realtocomplexfft(n,xcentroids(1,i),cfft)
+         xms(i)=0.
+         do j=1,nmodes
+            xmodes(j,i)=abs(cfft(j))
+! Fit xms to low order modes
+            if(j.gt.1.and.j.le.nm+1)xms(i)=xms(i)+xmodes(j,i)
+         enddo
+      enddo
+      end
+!*********************************************************************
+      subroutine webinteract(y,time,xcentroids,na_m,ny,ifile,
+     $     lx,ly,lz)
+      character*(*) lx,ly,lz
+      integer na_m,ifile
+      real y(ny),time(ifile)
+      real xcentroids(na_m,ifile)
+ 51   call accisinit()
+      isw=1
+      call hidweb(y,time,xcentroids,na_m,ny,ifile,isw)
+      call ax3labels(lx,ly,lz)
+      isw=irotatezoom()
+      if(isw.ne.ichar('q').and.isw.ne.0)goto 51
       end
