@@ -960,6 +960,8 @@ c$$$         = 20 input error returned by lower level routine
 ! Fourier transform xcentroids and return nmode modes in xmodes
 ! Also sum the amplitudes of the lower order nml modes into xms.
 ! And the centroid of the lower modes into xmcent
+! Getting the centroid using symmetric modes on either side of
+! the peak mode.
       integer n,ifile,nmodes,nml
       real xcentroids(n,ifile),xmodes(nmodes,ifile),xms(ifile)
       real xmcent(ifile)
@@ -980,6 +982,31 @@ c$$$         = 20 input error returned by lower level routine
             endif
          enddo
          xmcent(i)=xmcent(i)/(xms(i)+xmodes(1,i))
+! Alternative limited to near the maximum
+         if(.true.)then
+! Find the maximum mode (mode of modes!)
+            xcmax=0.
+            do k=1,nml
+               if(xmodes(k,i).gt.xcmax)then
+                  xcmax=xmodes(k,i)
+                  kmax=k
+               endif
+            enddo
+            if(kmax.le.2)then
+! If the maximum is m=1, take that, not the xcentroid.
+               xmcent(i)=kmax-1
+               xms(i)=xmodes(kmax,i)
+            else
+! Use the centroid of the three modes centered on kmax.
+               xmcent(i)=0
+               xms(i)=0.
+               do j=kmax-1,kmax+1
+                  xmcent(i)=xmcent(i)+xmodes(j,i)*(j-1)
+                  xms(i)=xms(i)+xmodes(j,i)
+               enddo
+               xmcent(i)=xmodes(kmax,i)/xms(i)
+            endif
+         endif
       enddo
       end
 !*********************************************************************
@@ -998,6 +1025,7 @@ c$$$         = 20 input error returned by lower level routine
       end
 !***********************************************************************
       subroutine modefortime(time,xmcent,ifile,it0,imax,lplot)
+! Find the dominant mode averaged over ilow to ihigh.
       real time(ifile),xmcent(ifile)
       logical lplot
       icount=0
