@@ -12,7 +12,7 @@
       integer nfiles
       parameter (nfiles=1000,nmodes=11)
       real xmean(nfiles),xvar(nfiles),xmax(nfiles),xmin(nfiles)
-      real xms(nfiles)
+      real xms(nfiles),xmcent(nfiles)
       real xampsmooth(nfiles),time(nfiles),xamp(nfiles),work(nfiles)
       real xcentroids(na_m,nfiles),xwork(na_m),xmodes(nmodes,nfiles)
       real xmodenums(nmodes)
@@ -146,8 +146,9 @@
  101  if(iyp.gt.0)then
 ! Fitting of xpos vs y kink amplitudes as fn of time.
          ifile=ifile-1
-! Fourier transform the xcentroids and sum low order 3 modes into xms.
-         call getmodes(iuds(2),ifile,xcentroids,nmodes,xmodes,3,xms)
+! Fourier transform the xcentroids and sum low order 10 modes into xms.
+         call getmodes(iuds(2),ifile,xcentroids,nmodes,xmodes,10,xms
+     $        ,xmcent)
 ! Plot the hole position and excursion.         
          if(ldebug)call plotexcursion(ifile,time,xmean,xmax,xmin,dt)
 ! Show the wiggles and modes
@@ -161,6 +162,8 @@
 ! Fit to modesum gives nearly the same answer but might be quieter.
          call fitexp(time,xms,ifile,work,it0,imax,A,tau,ldebug,nopause
      $        ,'Mode amplitude')
+! Get the mode centroid, averaged over the fit time.
+         call modefortime(time,xmcent,ifile,it0,imax,.not.nopause)
       endif
 
       end
@@ -713,23 +716,21 @@
       end
 !*****************************************************************
       real function thecentroid(diagsum,idiag,id,idp1,idp2)
-! Calculate the centroid, \sum_i diagsum()*x(idiag,i) of the idiag
+! Calculate the centroid, \sum_i diagsum()**2*x(idiag,i) of the idiag
 ! diagnostic, in direction id, at orthogonal index values idp1, idp2
+! (weighted by its square value). 
       include 'examdecl.f'
       real diagsum(na_i,na_j,na_k,ndiagmax+1)      
       integer idims(ndims)
-
       idims(mod(id,ndims)+1)=idp1
       idims(mod(id+1,ndims)+1)=idp2
       thecentroid=0.
       thetotal=0.
       do i=1,iuds(id)
          idims(id)=i
-         thecentroid=thecentroid+xn(ixnp(id)+i)*
-     $        diagsum(idims(1),idims(2),idims(3),idiag)**2
-         thetotal=thetotal+diagsum(idims(1),idims(2),idims(3),idiag)**2
-!         write(*,'(a,3i5,2f8.4)')'thecentroid',idims,thecentroid,
-!     $        diagsum(idims(1),idims(2),idims(3),idiag)
+         weight=diagsum(idims(1),idims(2),idims(3),idiag)**2
+         thecentroid=thecentroid+xn(ixnp(id)+i)*weight
+         thetotal=thetotal+weight
       enddo
 !      write(*,*)'thecentroid,thetotal',thecentroid,thetotal,idiag
       thecentroid=thecentroid/thetotal
@@ -744,7 +745,6 @@
       real diagsum(na_i,na_j,na_k,ndiagmax+1)      
       do j=1,iuds(2)
          xcentroid(j)=thecentroid(diagsum,ndiags,1,j,2)
-!         write(*,*)j,xcentroid(j)
       enddo
       end
 !*****************************************************************
@@ -764,15 +764,6 @@
       enddo
       xmean=xmean/ncen
       xvar=xvar/ncen-xmean**2
-      end
-!*****************************************************************
-      subroutine holemotion(itime,ncen,xmean,xvar,xmax,xmin)
-      include 'examdecl.f'
-      real xcentroid(na_m)
-      integer nfiles
-      parameter (nfiles=1000)
-      real xmean(nfiles),xvar(nfiles),xmax(nfiles),xmin(nfiles)
-
       end
 !*****************************************************************
       subroutine fitexp(time,xamp,ifile,work,it0,i,A,tau,ldebug,nopause
@@ -865,7 +856,7 @@
 !****************************************************************
       subroutine plotexcursion(ifile,time,xmean,xmax,xmin,dt)
       real xmean(ifile),xmax(ifile),xmin(ifile),time(ifile),dt
-! Plot the hole position and excursion.         
+! Plot the hole position and excursion as a function of time.
          call pltinit(0.,time(ifile),-10.,10.)
          call axis()
          if(dt.eq.1)then
@@ -941,8 +932,7 @@ c      call CFFT1B (n,INC,cfft,LENC,WSAVE,LENSAV,WORK,LENWRK,IER)
       if(ier.ne.0)then
          write(*,*)'CFFT1F error',ier
       endif
-
-c$$$ Documentation:
+c$$$ fftpack5.1 Documentation:
 c$$$ Output Arguments
 c$$$ 
 c$$$ C       For index J*INC+1 where J=0,...,N-1 (that is, for the Jth 
@@ -952,6 +942,7 @@ c$$$            C(J*INC+1) =
 c$$$            N-1
 c$$$            SUM C(K*INC+1)*EXP(-I*J*K*2*PI/N)
 c$$$            K=0
+c Actually by experiment, forward transform is divided by N, backward not.
 c$$$         where I=SQRT(-1).
 c$$$
 c$$$         At other indices, the output value of C does not differ
@@ -964,22 +955,31 @@ c$$$         =  3 input parameter LENWRK not big enough
 c$$$         = 20 input error returned by lower level routine
       end
 !*******************************************************************
-      subroutine getmodes(n,ifile,xcentroids,nmodes,xmodes,nml,xms)
+      subroutine getmodes(n,ifile,xcentroids,nmodes,xmodes,nml,xms
+     $     ,xmcent)
 ! Fourier transform xcentroids and return nmode modes in xmodes
 ! Also sum the amplitudes of the lower order nml modes into xms.
+! And the centroid of the lower modes into xmcent
       integer n,ifile,nmodes,nml
       real xcentroids(n,ifile),xmodes(nmodes,ifile),xms(ifile)
+      real xmcent(ifile)
       include 'examdecl.f'
       complex cfft(na_m)
       
       do i=1,ifile
          call realtocomplexfft(n,xcentroids(1,i),cfft)
          xms(i)=0.
+         xmcent(i)=0.
          do j=1,nmodes
             xmodes(j,i)=abs(cfft(j))
-! Fit xms to low order modes
-            if(j.gt.1.and.j.le.nm+1)xms(i)=xms(i)+xmodes(j,i)
+            if(j.le.nml+1)then 
+! Fit xms to low order modes omitting uniform mode 1.
+               if(j.gt.1)xms(i)=xms(i)+xmodes(j,i)
+! Centroid of low order modes shifted to origin 0.
+               xmcent(i)=xmcent(i)+xmodes(j,i)*(j-1)
+            endif
          enddo
+         xmcent(i)=xmcent(i)/(xms(i)+xmodes(1,i))
       enddo
       end
 !*********************************************************************
@@ -995,4 +995,26 @@ c$$$         = 20 input error returned by lower level routine
       call ax3labels(lx,ly,lz)
       isw=irotatezoom()
       if(isw.ne.ichar('q').and.isw.ne.0)goto 51
+      end
+!***********************************************************************
+      subroutine modefortime(time,xmcent,ifile,it0,imax,lplot)
+      real time(ifile),xmcent(ifile)
+      logical lplot
+      icount=0
+      xmave=0.
+      ilow=(2*it0+imax)/3
+      ihigh=(it0+2*imax)/3
+      do i=ilow,ihigh
+         icount=icount+1
+         xmave=xmave+xmcent(i)
+      enddo
+      xmave=xmave/icount
+      write(*,'(a,f6.2,a,2f6.1)')'Mode centroid',xmave
+     $     ,' averaged over time',time(ilow),time(ihigh)
+      if(lplot)then
+         call autoinit(time,xmcent,ifile)
+         call axis()
+         call polyline(time(it0),xmcent(it0),imax-it0)
+         call pltend()
+      endif
       end
