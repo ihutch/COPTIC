@@ -777,6 +777,8 @@
       logical ldebug,nopause
       character*(*) ylabel
 
+! Hack to smooth once first
+      call boxcarover(ifile,1,work,xamp)         
       idone=0
 ! By default skip the first few files.
  10   it0=10
@@ -843,11 +845,7 @@
          idone=idone+1
          nb=idone**2
          write(*,*)'Trying smoothing',nb
-! This leaves xamp smoothed, not in original form.
-         do i=1,ifile
-            work(i)=xamp(i)
-         enddo
-         call boxcarave(ifile,nb,work,xamp)
+         call boxcarover(ifile,nb,work,xamp)         
          goto 10
       endif
       write(*,*)'fitexp failed to fit',it0,imax,ifile
@@ -1004,7 +1002,7 @@ c$$$         = 20 input error returned by lower level routine
                   xmcent(i)=xmcent(i)+xmodes(j,i)*(j-1)
                   xms(i)=xms(i)+xmodes(j,i)
                enddo
-               xmcent(i)=xmodes(kmax,i)/xms(i)
+               xmcent(i)=xmcent(i)/xms(i)
             endif
          endif
       enddo
@@ -1045,4 +1043,13 @@ c$$$         = 20 input error returned by lower level routine
          call polyline(time(it0),xmcent(it0),imax-it0)
          call pltend()
       endif
+      end
+!********************************************************************
+      subroutine boxcarover(ifile,nb,work,xamp)
+      real work(ifile),xamp(ifile)
+! This leaves xamp smoothed, not in original form.
+      do i=1,ifile
+         work(i)=xamp(i)
+      enddo
+      call boxcarave(ifile,nb,work,xamp)
       end

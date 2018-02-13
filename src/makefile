@@ -56,23 +56,13 @@ export LIBPATH
 ########################################################################
 # Decide accis driver choice. Alternatives are vec4014 vecx or vecglx. 
 # Automatic choice can be overriden by commandline option e.g. 
-# make VECX=vec4014
+# make VECX=vec4014. Default order now: vecx, vec4014.
+# This avoids dependency headaches with libGL and remote displays.
 ifeq ("$(VECX)","vec4014")
  ACCISDRV=accis
  LIBRARIES = $(LIBPATH) -l$(ACCISDRV)
 else
- ifeq ("$(VECX)","vecx")
-   ifeq ("$(TESTX11)","")
-     ACCISDRV=accisX
-     LIBRARIES = $(LIBPATH) -l$(ACCISDRV) -lX11 $(GLULIBS)
-   else
-# Wanted vecx but could not have it:
-     ACCISDRV=accis
-     LIBRARIES=$(LIBPATH) -l$(ACCISDRV)
-     VECX:=vec4014
-   endif
- else
-# VECX not vec4014 or vecx
+ ifeq ("$(VECX)","vecglx")
    ifeq ("$(TESTGL)","")
      ACCISDRV=accisX
      GLULIBS=-lGL -lGLU
@@ -89,6 +79,18 @@ else
      LIBRARIES=$(LIBPATH) -l$(ACCISDRV)
      VECX:=vec4014
     endif
+   endif
+ else
+# VECX not vec4014 or vecglx. Default trying vecx.
+   ifeq ("$(TESTX11)","")
+     ACCISDRV=accisX
+     LIBRARIES = $(LIBPATH) -l$(ACCISDRV) -lX11
+     VECX:=vecx
+   else
+# Wanted vecx but could not have it:
+     ACCISDRV=accis
+     LIBRARIES=$(LIBPATH) -l$(ACCISDRV)
+     VECX:=vec4014
    endif
  endif
 endif
