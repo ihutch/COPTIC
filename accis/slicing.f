@@ -45,7 +45,7 @@ c Contour levels
 c Local variables:
       integer icontour,iweb
       integer jsw
-      integer iclipping,idflast,idfinlast
+      integer iclipping,idflast,idfinlast,igradleg
       integer idpa(2)
       character*(10) cxlab,cylab
       character*(30) form1
@@ -54,6 +54,7 @@ c Local variables:
       data laspect/.true./larrow/.false./
       data ltellslice/.false./
       data iclipping/0/idflast/-9999/jsw/0/n1/0/icontour/1/iweb/1/
+      data igradleg/0/
       data idfinlast/-9999/
 c Tell that we are looking from the top by default.
       data ze1/1./
@@ -215,6 +216,8 @@ c This is the standard call that normally does internal scaling:
      $           zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
          endif
       endif
+      call color(7)
+
 c Use this scaling until explicitly reset.
       jsw=0 + 256*6 + 256*256*7
       
@@ -228,9 +231,9 @@ c Use this scaling until explicitly reset.
 c Projected contouring.
       if(icontour.ne.0)then
 c       Draw a contour plot in perspective. Need to reset color anyway.
-         call color(4)
          call axregion(-scbx3,scbx3,-scby3,scby3)
          call scalewn(xmin,xmax,ymin,ymax,.false.,.false.)
+         call color(7)
 c Calculate place of plane. 
          zplane=scbz3*(-1+(xn(ixnp(idfix)+n1)-zmin)*2./(zmax-zmin))
          if(iweb.eq.0)then
@@ -260,6 +263,11 @@ c Contour with coloring, using vector axes, maybe without labelling.
      $        xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),17)
          Erange=0.
          iasw=9
+         if(igradleg.eq.1)then
+            call gradlegend(cl(1),cl(icl),0.,1.1,1.,1.1,.02,.false.)
+         elseif(igradleg.eq.2)then
+            call gradlegend(cl(1),cl(icl),1.1,1.,1.1,0.,.02,.true.)
+         endif
          call color(igray())
          if(larrow)call arrowplot(vp(if1,if2,1),vp(if1,if2,2),Erange,nw
      $        ,nf1+1-if1,nf2+1-if2,xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2)
@@ -270,7 +278,6 @@ c Contour with coloring, using vector axes, maybe without labelling.
          call axis2()
          if(iweb.ne.1)call cubed(igetcubecorner())
       endif
-
       if(iweb.eq.1.and.icontour.eq.3)then
          call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
      $        zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
@@ -294,16 +301,16 @@ c the pfnextsw set by pfset to zero.
       endif
 
 c User interface
-      call ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping,ips
-     $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice)
+      call ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping,ips,if1,if2
+     $     ,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice,igradleg)
       if(iquit.eq.0)goto 21
       call prtend(' ')
       idflast=idfix
       call hdprset(0,0.)
       end
 c******************************************************************
-      subroutine ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping,ips
-     $     ,if1,if2,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice)
+      subroutine ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping,ips,if1
+     $     ,if2,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice,igradleg)
 c Encapsulated routine for controlling a 3-D plot.
 c But many things have to be passed at present. A proper API needs
 c to be designed but here's the approximate description.
@@ -336,6 +343,7 @@ c      write(*,*)'isw',isw
       if(isw.eq.ichar('d')) call noeye3d(0)
       if(isw.eq.ichar('s')) jsw=1 + 256*6 + 256*256*7
       if(isw.eq.ichar('t')) call togi3trunc()
+      if(isw.eq.ichar('g')) igradleg=mod(igradleg+1,3)
       if(isw.eq.ichar('p'))then
          call pfset(3)
          ips=3
@@ -399,7 +407,7 @@ c ;
      $        ' c: contour plane position. w: toggle web.'
      $        ,' a: aspect'
      $        ,' t: truncation.'
-         write(*,*)' u: slice-telling'
+         write(*,*)' u: slice-telling; g: contour gradlegend;'
          write(*,*)
      $        ' d: disable interface; run continuously.',
      $        ' depress f: to interrupt running.'
@@ -692,11 +700,14 @@ c Poor man's top lighting:
 c Contour without labels, with coloring, using vector axes
 c            write(*,*)it1,ib1,it2,ib2,ifix
             if(it1-ib1.gt.0 .and. it2-ib2.gt.0)then
-               iclhere=iclsign*icl
+c               iclhere=iclsign*icl   ! wrong here iclsign not set.
+               iclhere=icl
+c               write(*,*)iclsign,icl,iclhere
                call contourl(zp(ib1,ib2,ifix),
      $           pp,nw,it1-ib1+1,it2-ib2+1,
      $           cl,iclhere,
      $           xn(ixnp(id1)+ib1),xn(ixnp(id2)+ib2),17+itri*64)
+
                if(larrow)then
 c We need a sensible arrow scale. Can't make individual plots different. 
                   Erange=narrow*1.33*vmax

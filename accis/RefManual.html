@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
            "http://www.w3.org/TR/REC-html40/loose.dtd">
 <html>
-<meta name="GENERATOR" content="TtH 4.09">
+<meta name="GENERATOR" content="TtH 4.12">
  <style type="text/css"> div.p { margin-top: 7pt;}</style>
  <style type="text/css"><!--
  td div.comp { margin-top: -0.6ex; margin-bottom: -1ex;}
@@ -661,6 +661,11 @@ call to puteye must be inserted after rotatezoom to ensure the eye.dat
 is updated, otherwise the adjustment will be overridden.
 
 <div class="p"><!----></div>
+IROTATEZOOM() Integer function that calls eye3d, rotatezoom, and
+puteye returning the isw value of eye3d. Use isw=irotatezoom() instead
+of call eye3d(isw) for functionality with wider routines (e.g. hidweb). 
+
+<div class="p"><!----></div>
 DRAW3ARROW(arrowdata) Draw a 3-D arrow according to settings of
 arrowdata(10): Base position world coords (3), Point position (3),
 Barb parallel, perp size as fraction of length (2). 
@@ -860,5 +865,5 @@ for operation of debugged correct code.
 T<sub><span class="small">E</span></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><span class="small">T</span></sub>H</a>,
-version 4.09.<br />On  8 Aug 2017, 08:25.</small>
+version 4.12.<br />On  6 Jan 2018, 12:02.</small>
 </html>
