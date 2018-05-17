@@ -160,7 +160,6 @@ c      Typical choices: x1st=5,xdelta=1 ; x1st=2,xdelta=2 ; x1st=0,xdelta=2.
     1    continue
          call vecn(xgmin,ygmin,0)
          call vecn(xgmax,ygmax,1)
-
       else
 c Linear
          if(xdelta.eq.0)then

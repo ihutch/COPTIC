@@ -334,7 +334,6 @@ c Unfortunately because of gs weighting, green has to be above red.
          blue(i)=int((sineon(ramp-.15,-.2)+0.7*sineon(ramp-.75,.25)+0.3
      $        *sineon(ramp-.6,.2))*(sineon(ramp-.05,.05))*65535)
       enddo
-
       call accisgradset(red,green,blue,ngcol)
       end
 c********************************************************************

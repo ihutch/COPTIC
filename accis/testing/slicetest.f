@@ -13,7 +13,8 @@
 
 
 c      call setconlog(.true.)
-      call pfset(3)
+c Don't set printing generally if you want to use local printing with 'p'
+c      call pfset(3)
 
       range=10.
       amp=1.

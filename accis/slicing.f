@@ -42,6 +42,7 @@ c Workspace size is problematic.
       character*1 pp(nwksp)
 c Contour levels
       real cl(30)
+      real colorscale
 c Local variables:
       integer icontour,iweb
       integer jsw
@@ -56,6 +57,7 @@ c Local variables:
       data iclipping/0/idflast/-9999/jsw/0/n1/0/icontour/1/iweb/1/
       data igradleg/0/
       data idfinlast/-9999/
+      data colorscale/1./
 c Tell that we are looking from the top by default.
       data ze1/1./
 
@@ -70,7 +72,9 @@ c Bit 6 (64)  Toggle ltellslice
 c Bit 7 (128) Return continuously. (Equivalent of d-control).
 c Bit 8 (256) Do no internal scaling initially. 
 c Bit 9 (512) Turn off contour labelling.
+c Bit 10 (1024) Do surface rather than web.
 
+      ihibyte=idfixin/256
       if(idfixin/512-1024*(idfixin/1024).ne.0)then
 c kluge because higher bits break something I don't understand
          iclsign=-1.
@@ -125,7 +129,8 @@ c Start of controlled plotting loop.
  21   call accisinit
 c This gradient call needs to be after accisinit else nodisplay commands
 c are broken.
-      call blueredgreenwhite()
+C      call blueredgreenwhite()
+      call brgwscaled(0.,colorscale)
 c Set the plotting arrays for fixed dimension idfix.
       idp1=mod(idfix,3)+1
       idp2=mod(idfix+1,3)+1
@@ -205,31 +210,42 @@ c Old buggy setting, only works for centered cube.
 c Rescale x and y (if necessary), but not z.
 c         if(iclipping.ne.0)
          call scale3(xmin,xmax,ymin,ymax,wz3min,wz3max)
-         if(idfixin/256 -512*(idfixin/512).ne.0)then
+         if(iweb.lt.2)then
+            if(idfixin/256 -512*(idfixin/512).ne.0)then
 c This call does no internal initial z-scale setting and scale3 ought to
 c have been called in the external program:
-            call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
-     $           zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw+8)
-         else
+               call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
+     $              zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw+8)
+            else
 c This is the standard call that normally does internal scaling:
-            call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
-     $           zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
+               call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
+     $              zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
+            endif
+            call color(7)
+c Use this scaling until explicitly reset.
+            jsw=0 + 256*6 + 256*256*7
+         else
+            isw=1
+            if(iweb.eq.3)isw=isw+16
+            call surf3d(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2)
+     $           ,zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,isw,pp)
+            call color(7)
+            call axproj(igetcorner())
          endif
       endif
-      call color(7)
-
-c Use this scaling until explicitly reset.
-      jsw=0 + 256*6 + 256*256*7
       
       write(form1,'(''Dimension '',i1,'' Plane'',i4)')idfix,n1
       if(ltellslice)call drwstr(.1,.02,form1)
-      call iwrite(idp1,iwidth,cxlab)
-      call iwrite(idp2,iwidth,cylab)
-
-      call ax3labels('axis-'//cxlab,'axis-'//cylab,utitle)
+      call termchar(ax3chars(idp1))
+      call termchar(ax3chars(idp2))
+      call ax3labels(ax3chars(idp1),ax3chars(idp2),utitle)
+!      call iwrite(idp1,iwidth,cxlab)
+!      call iwrite(idp2,iwidth,cylab)
+!      call ax3labels('axis-'//cxlab,'axis-'//cylab,utitle)
 
 c Projected contouring.
-      if(icontour.ne.0)then
+      if(mod(icontour,4).ne.0)then
+         if(iweb.eq.0)call cubed(igetcubecorner())
 c       Draw a contour plot in perspective. Need to reset color anyway.
          call axregion(-scbx3,scbx3,-scby3,scby3)
          call scalewn(xmin,xmax,ymin,ymax,.false.,.false.)
@@ -253,14 +269,16 @@ c Set contour levels using the scaling of the box.
          endif
 c Get back current eye position xe1 etc.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
-         if(icontour.eq.1)call hdprset(-3,sign(scbz3,ze1))
-         if(icontour.eq.2)call hdprset(-3,zplane)
-         if(icontour.eq.3)call hdprset(-3,-sign(scbz3,ze1))
+         if(mod(icontour,4).eq.1)call hdprset(-3,sign(scbz3,ze1))
+         if(mod(icontour,4).eq.2)call hdprset(-3,zplane)
+         if(mod(icontour,4).eq.3)call hdprset(-3,-sign(scbz3,ze1))
 c Contour with coloring, using vector axes, maybe without labelling.
          iclhere=iclsign*icl
+         icsw=17
+         if(iweb.gt.1.or.icontour.ge.4)icsw=icsw-16
          call contourl(zp(if1,if2),pp,nw,
      $        nf1+1-if1,nf2+1-if2,cl,iclhere,
-     $        xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),17)
+     $        xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),icsw)
          Erange=0.
          iasw=9
          if(igradleg.eq.1)then
@@ -276,7 +294,6 @@ c Contour with coloring, using vector axes, maybe without labelling.
          call axis()
          call ticlabtog()
          call axis2()
-         if(iweb.ne.1)call cubed(igetcubecorner())
       endif
       if(iweb.eq.1.and.icontour.eq.3)then
          call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
@@ -295,6 +312,7 @@ c we need an immediate turn off of the pfsw. This is fixed by calling
 c pfset before pltend. On entry, pltend sees pfsw as negative, so does
 c not pause. The last thing pltend does is set the pfsw from
 c the pfnextsw set by pfset to zero.
+         call pfset(0)
          call prtend(' ')
          write(*,*)'Terminating sliceweb ips=',ips,pfsw
          ips=0
@@ -302,7 +320,8 @@ c the pfnextsw set by pfset to zero.
 
 c User interface
       call ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping,ips,if1,if2
-     $     ,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice,igradleg)
+     $     ,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice,igradleg
+     $     ,colorscale)
       if(iquit.eq.0)goto 21
       call prtend(' ')
       idflast=idfix
@@ -310,7 +329,8 @@ c User interface
       end
 c******************************************************************
       subroutine ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping,ips,if1
-     $     ,if2,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice,igradleg)
+     $     ,if2,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice,igradleg
+     $     ,colorscale)
 c Encapsulated routine for controlling a 3-D plot.
 c But many things have to be passed at present. A proper API needs
 c to be designed but here's the approximate description.
@@ -322,8 +342,8 @@ c icontour and iweb determine the plotting of the contours and web.
 c idp1, idp2 are the the two other dimensions than idfix. 
 c jsw is to do with contouring. laspect preserves aspect-ratio.
 c iquit is returned as non-zero to command an end to the display.
-
       integer iuds(3)
+      include 'world3.h'
 
       logical laspect,ltellslice
 c 3d display user interface.
@@ -344,9 +364,19 @@ c      write(*,*)'isw',isw
       if(isw.eq.ichar('s')) jsw=1 + 256*6 + 256*256*7
       if(isw.eq.ichar('t')) call togi3trunc()
       if(isw.eq.ichar('g')) igradleg=mod(igradleg+1,3)
+      if(isw.eq.ichar('1')) read(*,*)ax3chars(1)
+      if(isw.eq.ichar('2')) read(*,*)ax3chars(2)
+      if(isw.eq.ichar('3')) read(*,*)ax3chars(3)
       if(isw.eq.ichar('p'))then
          call pfset(3)
          ips=3
+      endif
+      if(isw.eq.ichar('-'))then
+         colorscale=colorscale*1.1
+         call brgwscaled(0.,colorscale)
+      elseif(isw.eq.ichar('='))then
+         colorscale=colorscale/1.1
+         call brgwscaled(0.,colorscale)
       endif
 c Change fixed dimension, remove clipping, force scaling.
       if(isw.eq.65361)then
@@ -394,8 +424,8 @@ c ;
          iclipping=1
          if1=min(if1+1,nf1-1)
       endif
-      if(isw.eq.ichar('c'))icontour=mod(icontour+1,4)
-      if(isw.eq.ichar('w'))iweb=mod(iweb+1,2)
+      if(isw.eq.ichar('c'))icontour=mod(icontour+1,8)
+      if(isw.eq.ichar('w'))iweb=mod(iweb+1,4)
       if(isw.eq.ichar('h'))then
          write(*,*)' ======== Slice plotting interface:',
      $        '  arrows up/down: change slice.'
@@ -404,13 +434,16 @@ c ;
      $        ' s: rescale. p: print. Drag mouse to rotate.'
          write(*,*)' (jkl;) (m,./): control plotting extent in 2 axes.'
          write(*,*)
-     $        ' c: contour plane position. w: toggle web.'
+     $        ' c: contour plane position. w: web, solid, smooth, none'
      $        ,' a: aspect'
-     $        ,' t: truncation.'
+     $        ,' t: truncation'
          write(*,*)' u: slice-telling; g: contour gradlegend;'
+     $        ,' -= scale coloring down/up'
          write(*,*)
      $        ' d: disable interface; run continuously.',
      $        ' depress f: to interrupt running.'
+         write(*,*)' 1, 2, 3: Enter new label for axis 1,2,3'
+     $        ,' (type in terminal window)'
       endif
       call rotatezoom(isw)
 c End of user interface.
@@ -739,12 +772,11 @@ c 4. Draw planes at level 4 (front box).
 c 5. Draw line only in places in front of all 3 planes. 
 
       if(ips.ne.0)then
-c We called for a local print of plot. Terminate and switch it off.
+c We called for a local print of plot. Switch it off, and terminate
 c Prevent pltend from querying the interface.
          write(*,*)'Terminating sliceGweb. ips=',ips
 c         pfsw=-ips
-c         call pfset(0)
-c         call pltend()
+         call pfset(0)
          call prtend(' ')
          ips=0
       endif

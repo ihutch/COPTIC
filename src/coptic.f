@@ -293,12 +293,15 @@
 !------------------------------------------------------------------
 ! (Re)Initialize the fortran random number generator.
       call rluxgo(1,myid,0,0)
-      if(holepsi.eq.0.)then
+! Initialize particles  ! Only if we are not restarting.
+      if(lrestart-4*(lrestart/4).eq.0)then
+         if(holepsi.eq.0.)then
 ! Standard particle initialization
-         call pinit(subcycle)
-      else
-! Hole initialization
-         call trapinit(subcycle)
+            call pinit(subcycle)
+         else
+! Hole initialization 
+            call trapinit(subcycle)
+         endif
       endif
 !---------------------------------------------
 ! Initialize the force tracking.
@@ -334,6 +337,7 @@
 ! padvnc includes the charge deposition.
       call mditerset(psum,ndims,ifull,iuds,0,0.)
       call chargetomesh(psum,iLs,diagsum,ndiags) 
+      boltzamp=max(0.,boltzamp0*(mbzero-nf_step+2)/(mbzero+1.))
 !----------------------------------------------------------
 ! Main step iteration ##############################################
       do j=1,nsteps
@@ -410,8 +414,8 @@
 ! Slice plots
             if(lsliceplot.and.ldenplot)call sliceGweb(ifull,iuds,q,na_m
      $           ,zp,ixnp,xn,ifix,'density: n'//char(0),dum,dum)
-            if(lsliceplot.and.lphiplot.and.iuds(2).gt.3
-     $           .and.iuds(3).gt.3) call sliceGweb(ifull,iuds,u,na_m,zp,
+            if(lsliceplot.and.lphiplot.and.(iuds(2).gt.3
+     $           .or.iuds(3).gt.3)) call sliceGweb(ifull,iuds,u,na_m,zp,
      $           ixnp,xn,ifix,'potential:'//'!Af!@'//char(0),dum,dum)
 ! Phase space done by all processes, even though only one of them plots.
             if(ldistshow.and.iuds(2).eq.3.and.iuds(3).eq.3)then
@@ -422,7 +426,9 @@
 
          if(nspecies.gt.1.or.holepsi.ne.0.)then
 ! Ramp down boltzamp to zero if multiple species or initial holes.
-            boltzamp=max(0.,boltzamp0*(mbzero-j+2)/(mbzero+1.))
+! Using j breaks restarting because boltzamp ought already to be ramped 
+! down:  boltzamp=max(0.,boltzamp0*(mbzero-j+2)/(mbzero+1.)) use nf_step:
+            boltzamp=max(0.,boltzamp0*(mbzero-nf_step+2)/(mbzero+1.))
          endif
 
          if(nf_step.eq.ickst)call checkuqcij(ifull,u,q,psum,volumes,cij)
