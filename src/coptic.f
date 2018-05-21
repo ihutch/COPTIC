@@ -337,10 +337,12 @@
 ! padvnc includes the charge deposition.
       call mditerset(psum,ndims,ifull,iuds,0,0.)
       call chargetomesh(psum,iLs,diagsum,ndiags) 
-      boltzamp=max(0.,boltzamp0*(mbzero-nf_step+2)/(mbzero+1.))
 !----------------------------------------------------------
 ! Main step iteration ##############################################
       do j=1,nsteps
+
+         if(nspecies.gt.1.or.holepsi.ne.0.)
+     &        boltzamp=max(0.,boltzamp0*(mbzero-nf_step+2)/(mbzero+1.))
          nf_step=nf_step+1
          istepave=min(nf_step,iavesteps)
 ! Transfer deposits periodically or from ghost cells.
@@ -422,13 +424,6 @@
                call phasepscont(ifull,iuds,u,nf_step,lphiplot
      $              ,restartpath)
             endif
-         endif
-
-         if(nspecies.gt.1.or.holepsi.ne.0.)then
-! Ramp down boltzamp to zero if multiple species or initial holes.
-! Using j breaks restarting because boltzamp ought already to be ramped 
-! down:  boltzamp=max(0.,boltzamp0*(mbzero-j+2)/(mbzero+1.)) use nf_step:
-            boltzamp=max(0.,boltzamp0*(mbzero-nf_step+2)/(mbzero+1.))
          endif
 
          if(nf_step.eq.ickst)call checkuqcij(ifull,u,q,psum,volumes,cij)

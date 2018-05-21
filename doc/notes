@@ -14725,3 +14725,24 @@ untrapped.
 
 Implement diagexamine analysis of kink amplitude measurement and 
 fitting an exponential to the growth of the kink. 
+
+
+21 May 18
+
+Implementing the ability to run with all boundaries periodic. 
+If all domain boundaries are periodic, AND there are no objects in the 
+domain with inhomogenous BCs then potential is arbitrary with respect to
+an additive constant. It tends then to integrate up to infinity. That is
+physically expected if there is some net charge in the domain, because
+then we are dealing with a net charge over an effectively infinite 
+domain. Thus having truly zero net charge is essential. But also we 
+need to anchor the potential to some value which will usually be 
+"zero at infinity". 
+
+Running COPTIC for holes has a particular problem associated with the
+fact that if the particles are periodic, there is no way to get rid of
+a net charge even with non-periodic potential. That is a related but
+somewhat different problem. 
+
+First fix the testing in makefile to use the new file names.
+Simplify the boltzamp ramping code.

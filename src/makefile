@@ -194,14 +194,14 @@ TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
 ##########################################
 # Default Target
 tested : $(COPTIC) copticgeom.dat
-	@if [ -f T1e0v000P200L1e0z005x05.phi ] ; then mv T1e0v000P200L1e0z005x05.phi prior.phi ; echo "Created prior.phi" ; fi
+	@if [ -f T1P-200L1x5y5z5.phi ] ; then mv T1P-200L1x5y5z5.phi prior.phi ; echo "Created prior.phi" ; fi
 	./$(COPTIC)
 	@date > tested
-	@if [ -f prior.phi ] && [ -f T1e0v000P200L1e0z005x05.phi ] ; then \
+	@if [ -f prior.phi ] && [ -f T1P-200L1x5y5z5.phi ] ; then \
 if [ `ls -s prior.phi | sed -e "s/[ ].*//"` -ne \
-    `ls -s T1e0v000P200L1e0z005x05.phi | sed -e "s/[ ].*//"` ] ;then \
+    `ls -s T1P-200L1x5y5z5.phi | sed -e "s/[ ].*//"` ] ;then \
  echo "**** SIZE CHANGED. You probably ran a non-standard case just prior." ; \
-else if ! diff T1e0v000P200L1e0z005x05.phi prior.phi ; then \
+else if ! diff T1P-200L1x5y5z5.phi prior.phi ; then \
  echo "**** RESULT CHANGED" ; rm prior.phi; fi; fi;\
  else echo "File[s] lacking to compare result.";\
  echo "Probably you've just made coptic for the first time."; fi 
