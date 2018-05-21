@@ -14746,3 +14746,18 @@ somewhat different problem.
 
 First fix the testing in makefile to use the new file names.
 Simplify the boltzamp ramping code.
+
+Now set up test copticgeom.dat and run with -gp on 65x65 mesh.
+Runs fine with 98,0,4,4 but crashes after two steps with 98,4,4,4.
+Plainly the potential is breaking. But that seems to be because the
+density drops drastically, to nearly -1. It doesn't with 98,0,4,4.
+In both cases a Fixed injection count is reported. Obviously that's
+wrong for a fully periodic particle case. However it does not seem
+to explain the big density drop.
+
+Found that the problem was that .not.lnotallp sets the ninjcomp to zero
+so as to prevent reinjection, but then that caused rhoinfinity to be
+recalculated in rhoinfcalc which was erroneous. Therefore changed the
+condition for resetting rhoinf to:
+      if(ninjcomp.ne.0.or..not.lnotallp)then
+Then we get reasonable result for particles all periodic. 

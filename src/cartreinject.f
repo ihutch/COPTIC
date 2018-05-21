@@ -701,7 +701,7 @@
          volume=volume*(xmeshend(i)-xmeshstart(i))
       enddo
 
-      if(ninjcomp.ne.0.and..true.)then
+      if(ninjcomp.ne.0.or..not.lnotallp)then
 ! Fixed injection rate implies fixed rhoinf. Set it only once.
          if(rhoinf.eq.0)then
             rhoinf=numprocs*(ninjcompa(1)+pinjcompa(1))/(dtin*flux)

@@ -33,9 +33,9 @@
 ! one wants the external density to have no gradient, so this is close
 ! but not quite correct.
 !
-! If Tperp is different from T, this is interpreted as the transverse 
-! temperature of only the trapped region and the untrapped Tperp is
-! set back equal to T.
+! If Tperp is different from T, then if holepow=0 this is interpreted as
+! the transverse temperature of only the trapped region and the
+! untrapped Tperp is set back equal to T. If holepow!=0 all Tperps are set.
 !
       subroutine trapinit(sprior)
       implicit none
@@ -705,7 +705,7 @@
       real cump(-ntot:ntot),cumv(-ntot:ntot)
 
       idebug=2
-      phi=2.8
+      phi=1.
       psi=phi
       um=0.3
       eta=2.

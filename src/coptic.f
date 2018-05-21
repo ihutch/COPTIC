@@ -340,7 +340,6 @@
 !----------------------------------------------------------
 ! Main step iteration ##############################################
       do j=1,nsteps
-
          if(nspecies.gt.1.or.holepsi.ne.0.)
      &        boltzamp=max(0.,boltzamp0*(mbzero-nf_step+2)/(mbzero+1.))
          nf_step=nf_step+1
@@ -353,7 +352,7 @@
             bckgd=(1.-boltzamp)*eoverms(1)
          elseif(bdt.gt.0)then
 ! Acceleration code.
-            bdtnow=max(1.,(bdt-1.)*(maccel-j+2)/(maccel+1.)+1.)
+            bdtnow=max(1.,(bdt-1.)*(maccel-nf_step+2)/(maccel+1.)+1.)
             dt=bdtnow*dtf
             bckgd=(1.-boltzamp)*eoverms(1)
          elseif(bdt.lt.0)then
