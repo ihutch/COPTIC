@@ -14761,3 +14761,35 @@ recalculated in rhoinfcalc which was erroneous. Therefore changed the
 condition for resetting rhoinf to:
       if(ninjcomp.ne.0.or..not.lnotallp)then
 Then we get reasonable result for particles all periodic. 
+
+There are still long-lived oscillations lasting at least 500 steps, 
+that are waves with k approximately in the x direction and wavelength
+approximately the domain size. They are substantially worse when all
+periodic than when x is not periodic. That sort of makes sense in that
+there is no way for the waves to be damped with all periodic. Quiet
+start might fix it.
+
+Then running with allperiodic potential boundaries sort of works 
+provided the particles are also all periodic. However early on there
+is a clear instability in the iteration scheme at high k. Tried to 
+avoid by removing -sb.01 switch, but then crashed with corrupt gralocalregion
+nans. I think that was a mistake. Setting -sb.001 stabilizes the hf.
+(But not the long wavelength.) -sb0 runs fine. I think that is the better
+way to run.
+
+Quiet start most naturally would use the SOBL quasi-random vector
+generator. Using for position setting just needs a new version of 
+ranlenposition. But that leaves the velocities noisy and might not
+be enough. One might also be able to do the same for velocity but
+I think that would require cycling through the particles twice if we
+are to use the quasi-random (toms) code for both.
+
+Implemented a clean up and ranlen3position that gets the vector position
+using either SOBOL or ranlux. However, I recall that the problem with 
+using SOBOL is that there is no obvious way to produce independent 
+sequences of sobol numbers from the toms659 code. Therefore it is hard
+to benefit from multiple core calculations. I don't have a good solution 
+for this problem despite a net search. One alternative might be to use
+some sort of slightly randomized lattice, instead. Basically it is the
+long wavelength perturbations that we want to suppress. A lattice would
+do that. 

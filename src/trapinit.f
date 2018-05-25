@@ -182,21 +182,20 @@
 ! ----------------------------- Actual Particle Setting ----------
          do i=iicparta(ispecies)+i1-1,islotmax
             x_part(iflag,i)=0
+            r2=0.
  1          continue
             ntries=ntries+1
 ! Position choice including density gradients.
-            if(x_part(iflag,i).ne.1)r2=0.
-            do j=1,ndims
-               if(j.ne.id)then
-! Select new transverse position only the first time.
-                  if(x_part(iflag,i).ne.1)then
-                     x_part(j,i)=ranlenposition(j)
-                     r2=r2+x_part(j,i)**2
-                  endif
-               else
-                  x_part(j,i)=ranlenposition(j)
-               endif
-            enddo
+            if(x_part(iflag,i).eq.1)then  ! Retry
+! For transverse-localized hole it is essential not to move the retried
+! particle in the transverse direction. 
+               x_part(id,i)=ranlenposition(id)
+            else  ! First time get all three positions.
+               call ranlen3position(x_part(1,i),id)
+               do j=0,ndims-2 ! calculate transverse radius
+                  r2=r2+x_part(mod(id+j,ndims)+1,i)**2
+               enddo
+            endif
             x_part(iflag,i)=1
             if(.not.linregion(ibool_part,ndims,x_part(1,i)))then
 !     If we are not in the plasma region, try again if we are doing fixed
@@ -846,3 +845,68 @@
       if(.not.phi.ge.0.)write(*,*)'psi,arg,phi',psi,arg,phi
 
       end
+!********************************************************************
+      subroutine ranlen3position(x,id)
+! Return a random fractional position in all 3 coordinate directions,
+! accounting for the density scale length if present
+! or for nonuniform background if present. id is the parallel dimension.
+      include 'ndimsdecl.f'
+      include 'meshcom.f'
+      include 'creincom.f'
+      include 'plascom.f'
+      include 'partcom.f'
+      real x(idtp)
+      integer id
+      integer ATMOST,DIMEN,TAUS
+      logical FLAG(2)
+      doubleprecision qrn(ndims)
+      real expsa(ndims),expsi(ndims)
+      logical lfirst,lsobol
+      data lfirst/.true./lsobol/.false./
+      save lfirst,lsobol,expsa,expsi
+      if(lfirst)then
+         ATMOST=n_partmax
+         DIMEN=ndims
+! This needs to be different for each process, but it isn't.
+         if(lsobol)call INSOBL(FLAG,DIMEN,ATMOST,TAUS)
+         do i=1,ndims
+            g=gn(i)
+            s0=gp0(i)
+            si=min(xmeshstart(i),xmeshend(i))-s0
+            sa=max(xmeshstart(i),xmeshend(i))-s0
+            expsa(i)=exp(g*sa)
+            expsi(i)=exp(g*si)
+         enddo
+         lfirst=.false.
+      endif
+      if(lsobol)call GOSOBL(qrn)
+      do j=1,ndims
+         if(j.eq.id.or.x(iflag).ne.1)then
+! Select new transverse position only the first time.
+            g=gn(j)
+            if(lsobol)then
+               P=real(qrn(j))
+            else
+               call ranlux(P,1)
+            endif
+            if(abs(g).ne.0)then
+!         write(*,*)'Nonuniform plasma ranlenposition'
+               sp=gp0(j)+alog(P*expsa(j)+(1.-P)*expsi(j))/g
+            else
+ 1             sp=(1.-P)*xmeshstart(j)+P*xmeshend(j)
+               if(bgmax(j).gt.0.)then
+! Nonuniform initialization using a rejection scheme.
+                  call ranlux(Q,1)
+                  if(Q.gt.(1.+bgofx(sp,j))/(1.+bgmax(j)))then
+!               write(*,*)'Nonuniform pinit',Q,bgmax(j)
+                     call ranlux(P,1)
+                     goto 1
+                  endif
+               endif
+            endif
+            x(j)=sp*0.999999+.0000005
+         endif
+      enddo
+      x(iflag)=1
+      end
+!********************************************************************
