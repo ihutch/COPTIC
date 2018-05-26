@@ -1,4 +1,4 @@
-gSHELL=/bin/bash
+SHELL=/bin/bash
 AR=ar
 #########################################################################
 ifeq ("$(FORTRAN)","")
@@ -39,7 +39,7 @@ $(shell if [ "${PWD}/" != "${ACCISHOME}" ];\
      else mkdir ${ACCISPARENT} ; fi;\
    if [ -d "${ACCISHOME}" ] ; then echo>&2 -n "accis directory exists. ";\
      else if cd ${ACCISPARENT}; then\
-	git clone git@github.com:ihutch/accis.git; cd - >/dev/null; fi;fi;\
+	git clone https://github.com/ihutch/accis.git; cd - >/dev/null; fi;fi;\
      if cd ${ACCISHOME}; then make >&2; cd - >/dev/null; fi;\
    if [ -f "${ACCISX}" ] ; then echo>&2 "Made ${ACCISX}";\
      else echo>&2 "Error making ${ACCISX}"; fi;\
