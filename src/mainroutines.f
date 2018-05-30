@@ -56,11 +56,11 @@
 !********************************************************************
 
       subroutine restartnames(lrestart,partfilename,restartpath
-     $     ,phifilename,fluxfilename,nf_nsteps,nsteps)
+     $     ,phifilename,phafilename,fluxfilename,nf_nsteps,nsteps)
       implicit none
       integer lrestart,nf_nsteps,nsteps
       character*100 partfilename,phifilename,fluxfilename,restartpath
-      
+      character*100 phafilename
       include 'myidcom.f'
       integer nb,nbcat,lentrim,nameappendint,iferr
       if(lrestart.ne.0)then
@@ -75,6 +75,8 @@
          endif
          phifilename=partfilename
          nb=nbcat(phifilename,'.phi')
+         phafilename=partfilename
+         nb=nbcat(phafilename,'.pha')
          fluxfilename=partfilename
          nb=nbcat(fluxfilename,'.flx')
          nb=nameappendint(partfilename,'.',myid,
@@ -93,13 +95,13 @@
 !***********************************************************************
       subroutine restartread(lrestart,fluxfilename,partfilename,nsteps
      $     ,nf_step,nf_maxsteps,phifilename,ifull,iuds,ied,u,ierr
-     $     ,lmyidhead,myid)
+     $     ,lmyidhead,myid,phafilename,uave)
       implicit none
       integer lrestart,nsteps,nf_step,nf_maxsteps,ied,ierr,myid
       logical lmyidhead
-      character*100 partfilename,phifilename,fluxfilename
+      character*100 partfilename,phifilename,fluxfilename,phafilename
       integer ifull(*),iuds(*)
-      real u(*)
+      real u(*),uave(*)
       
       integer iferr
       integer lentrim
@@ -134,6 +136,7 @@
 !                  write(*,*)'Reading phifile',ierr,phifilename
                   ierr=0  ! to suppress commentary
                   call array3read(phifilename,ifull,iuds,ied,u,ierr)
+                  call array3read(phafilename,ifull,iuds,ied,uave,ierr)
                endif
             else
                write(*,*)'Restartread failed to read',partfilename

@@ -56,7 +56,7 @@
       real fadcomp
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
-      character*100 restartpath
+      character*100 restartpath,phafilename
       character*256 argline
 !      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
@@ -170,7 +170,7 @@
 ! total number of steps for which the flux initialization is needed.
 ! Since some must be here, we construct the names here and not later.
       call restartnames(lrestart,partfilename,restartpath,phifilename
-     $     ,fluxfilename,nf_nsteps,nsteps)
+     $     ,phafilename,fluxfilename,nf_nsteps,nsteps)
 ! Initialize the fluxdata storage and addressing before cijroutine
 ! That is necessary because ijbin addressing is used in cijroutine for
 ! subsequent access by cijdirect when calculating floating potential.
@@ -261,13 +261,6 @@
       call mditerset(qave,ndims,ifull,iuds,0,0.)
       call mditerset(u,ndims,ifull,iuds,0,0.)
       call mditerset(uave,ndims,ifull,iuds,0,0.)
-! Initialize diagsum to zero if necessary.
-      do ispecies=1,nspecies
-         do idiag=1,ndiags+1
-            call mditerset(diagsum(1,1,1,idiag,ispecies)
-     $           ,ndims,ifull,iuds,0,0.)
-         enddo
-      enddo
 ! Initialize additional potential and charge.
       call setadfield(ifull,iuds,iptch_mask,ltestplot)
 !---------------------------------------------------------------     
@@ -323,7 +316,7 @@
 ! Restart read in if we are restarting
       call restartread(lrestart,fluxfilename,partfilename,nsteps
      $        ,nf_step,nf_maxsteps,phifilename,ifull,iuds,ied,u,ierr
-     $        ,lmyidhead,myid)
+     $        ,lmyidhead,myid,phafilename,uave)
 !-----------------------------------------------
       if(lmyidhead)then
          if(colntime.ne.0)then
@@ -337,6 +330,14 @@
 ! padvnc includes the charge deposition.
       call mditerset(psum,ndims,ifull,iuds,0,0.)
       call chargetomesh(psum,iLs,diagsum,ndiags) 
+! Initialize diagsum here, not at potential initialization as before,
+! because chargetomesh does deposition which duplicates that by padvnc.
+      do ispecies=1,nspecies
+         do idiag=1,ndiags+1
+            call mditerset(diagsum(1,1,1,idiag,ispecies)
+     $           ,ndims,ifull,iuds,0,0.)
+         enddo
+      enddo
 !----------------------------------------------------------
 ! Main step iteration ##############################################
       do j=1,nsteps
@@ -415,8 +416,8 @@
 ! Slice plots
             if(lsliceplot.and.ldenplot)call sliceGweb(ifull,iuds,q,na_m
      $           ,zp,ixnp,xn,ifix,'density: n'//char(0),dum,dum)
-            if(lsliceplot.and.lphiplot.and.(iuds(2).gt.3
-     $           .or.iuds(3).gt.3)) call sliceGweb(ifull,iuds,u,na_m,zp,
+            if(lsliceplot.and.lphiplot.and.(iuds(2).gt.3.or.
+     $           iuds(3).gt.3))call sliceGweb(ifull,iuds,uave,na_m,zp,
      $           ixnp,xn,ifix,'potential:'//'!Af!@'//char(0),dum,dum)
 ! Phase space done by all processes, even though only one of them plots.
             if(ldistshow.and.iuds(2).eq.3.and.iuds(3).eq.3)then

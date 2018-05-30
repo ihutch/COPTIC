@@ -14793,3 +14793,32 @@ for this problem despite a net search. One alternative might be to use
 some sort of slightly randomized lattice, instead. Basically it is the
 long wavelength perturbations that we want to suppress. A lattice would
 do that. 
+
+30 May 2018
+
+Obtained the strange hole attenuation effect after a restart.
+It shows only in the diag file not in the live step by step display.
+For -s50 and -a40 potential is suppressed to about 0.6.
+The diag file is output at 90 and 140, with similar suppression.
+Changing to -a10, we get significant depression at diag160. ~0.7.
+which decays away by about dia190, i.e. it takes much of the 50 step
+run to disappear.
+Changing to -a1 the depression is much smaller, maybe absent
+Changing to -a20 a big depression at 270. Substantially reduced at 290.
+I'd say we have a normalization problem in the diagnostic averaging.
+
+It might just be the potential, which is drawn directly from uave.
+
+There is also a problem with the cellcount for 201, but not for later.
+Also slight problem for 160, even slighter for 270. Seems that the
+cell count is approximately one step out of the -a number too large 
+after restart. This is because chargetomesh duplicates the deposition
+of padvnc and I put it before entering the loop to set psum. So moved
+the diagsum initialization to after the chargetomesh. That fixes it.
+
+Temporarily changed the -gp plot to plot uave instead of u.
+It shows that uave is zero after a restart and gradually ramps up as
+time goes on. This is the cause of the diagnostic problem for
+potential. (But there might also be issues with normalization of other
+diagnostics.) A complete restart would presumably require reading in
+of pha file into uave. Implemented that. Seems to work.
