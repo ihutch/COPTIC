@@ -6,6 +6,10 @@ COPTIC=coptic
 ########################################################################
 # The root directory of the distribution (for now)
 COPTIC_ROOT=..
+# Defining ACCISPARENT prevents construction of accis elsewhere.
+ACCISPARENT:=$(realpath $(COPTIC_ROOT))
+export ACCISPARENT
+include ACCIS.mk
 # To get to compile with X, you might need to supplement this path.
 LIBPATH:= -L$(COPTIC_ROOT)/accis/ -L/usr/lib/mesa
 ##########################################################################
@@ -314,7 +318,6 @@ regeom :
 	@echo 'Regenerating geometry/*.cks files' >&2
 	for file in $(COPTIC_ROOT)/geometry/*.dat ; do rm $${file%.dat}.cks; make $${file%.dat}.cks; done
 
-# Use compiler (which depends on makefile) as a test of major updates
 GeometryTests :  $(COPTIC)
 	@if ./setdimens 64 64 128 NO ; then\
   if [ "$(G77)" != "mpif77" ] ; then echo "Not doing geometry tests" >&2;\
