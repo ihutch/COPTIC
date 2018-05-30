@@ -33,7 +33,7 @@ COMPILE-SWITCHES = -Wall -O2
 #########################################################################
 # Unless turned off, check that the accis library is available and make it,
 # unless we are in the ACCISHOME directory doing things explicitly.
-ifneq ("$(NOACCISCHECK)","")
+ifeq ("$(NOACCISCHECK)","")
 ACCISCHECK:=\
 $(shell if [ "${CURDIR}" != "$(ACCISHOME)" ];\
  then   echo >&2 "${CURDIR}" is not ACCISHOME: "$(ACCISHOME)" ;\
