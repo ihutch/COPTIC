@@ -48,8 +48,9 @@
       real xprior(2*ndims)
       real xn1(ndims),xn2(ndims)
       logical linmesh
-      logical lcollided,ltlyerr
-      save adfield
+      logical lcollided,ltlyerr,lbtoolarge
+      save adfield,lbtoolarge
+      data lbtoolarge/.false./
 
 ! Make this always last to use the checks.
       include 'partcom.f'
@@ -296,6 +297,10 @@
      $           ,dtpos,dtaccel,driftfields(1,ispecies)
      $           ,eoverms(ispecies))
          else
+            if(.not.lbtoolarge)then
+               if(myid.eq.0)write(*,*)'Large field drift motion',Bt,dt
+               lbtoolarge=.true.
+            endif
             do j=1,ndims            
 ! E-kick
                x_part(j+ndims,i)=x_part(j+ndims,i)+eoverms(ispecies)

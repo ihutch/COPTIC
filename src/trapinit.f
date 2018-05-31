@@ -867,6 +867,8 @@
       if(lfirst)then
          ATMOST=n_partmax
          DIMEN=ndims
+! Use quasirandom in dimension 2 if all periodic, magnetized.
+         if(.not.lnotallp.and.Bt.gt.1.)lsobol=.true.
 ! This needs to be different for each process, but it isn't.
          if(lsobol)call INSOBL(FLAG,DIMEN,ATMOST,TAUS)
          do i=1,ndims
@@ -884,7 +886,7 @@
          if(j.eq.id.or.x(iflag).ne.1)then
 ! Select new transverse position only the first time.
             g=gn(j)
-            if(lsobol)then
+            if(lsobol.and.j.eq.2.and.x(iflag).ne.1)then
                P=real(qrn(j))
             else
                call ranlux(P,1)

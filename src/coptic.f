@@ -128,6 +128,9 @@
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
      $     ,ifull,ierr)
+! Hack to prevent incompatible particles
+      if(nparta(1).ne.0 .and.(ipartperiod(1).ne.0.or.ipartperiod(2).ne.0
+     $     .or.ipartperiod(3).ne.0)) stop '-ni not allowed with pp'
 !-----------------------------------------------------------------
 ! Finalize initial parameters after switch and geometry reading.
       call initializeparams(ifull,iuds,xlimit,vlimit,xnewlim

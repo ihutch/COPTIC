@@ -596,12 +596,13 @@
  307  format(a,6f8.1)
  308  format(a,6i8)
  309  format(a,6f6.2)
+ 310  format(a,i8,a,i8)
       write(*,301)'Usage: coptic [objectfile] [-switches]'
       write(*,301)'Parameter switches.'
      $     //' Leave no gap before value. Defaults or set values [ddd'
       write(*,301)'[-of]<filename>  set name of object data file.'
      $     //'   ['//objfilename(1:30)
-      write(*,301)' -ni   set No of particles/node   ['
+      write(*,310)' -ni   set No of particles/node   ['
      $     ,(nparta(ispecies),ispecies=1,1),'     zero => unset.'
       write(*,301)' -rn   set reinjection number     [',ninjcomp
      $     ,'     fixed/step => parts/node unset.'

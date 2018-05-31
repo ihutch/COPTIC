@@ -14822,3 +14822,39 @@ time goes on. This is the cause of the diagnostic problem for
 potential. (But there might also be issues with normalization of other
 diagnostics.) A complete restart would presumably require reading in
 of pha file into uave. Implemented that. Seems to work.
+
+Now back to periodicity tests. Even with Bx1. we find that initial
+non-uniformity of density in the y-direction remains for hundreds of
+steps, indicating there is no diffusion of particles in that
+direction.  This might be fixed by spatial quiet start alone since one
+could then have a permanent smoothness of average particles at
+position y regardless of velocity noisy startup. By the way this
+explains why the eigenmode of the omegapcostheta must be antisymmetric
+in (e.g.) Wu runs since they have periodic particles and thus have the
+same permanence of average density.
+
+Anyway both particles and potential fully periodic now seems to work,
+provided -sb0.0
+
+Found an error dnum q-error using -ni particle setting. (With periodic
+particles). Might be because rhoinf is being calculated incorrectly.
+Reported as 0.496031 with 100000 in 32*31.5*50*8 volume= 0.24802.
+In other words, it is a factor of 2 too high. But no. I was running 
+two processes, so it was correct. Seems particle periodicity is 
+incompatble with -ni switch. That is perhaps sensible since the -ni
+leads to immediate reinjection when a particle leaves the domain, 
+which contradicts particle periodicity when crossing a periodic 
+boundary. 
+
+31 May 2018
+
+Found that the permanent y-ripple that happens with all particle periodicity
+for a hole can mostly be avoided by using quasi-random spacing in the
+y-direction initialization (quiet start). There is not advantage to using
+it in the other directions. And in fact doing so is worse. The remaining
+randomness in velocity has some effect of smoothing to overcome the fact
+that the quasirandom initialization is not different between different
+processes. But we might wish to worry about whether this really scales to
+large numbers of processes. Made the qr start automatic when all particles
+are periodic and Bfield is large. But the qr is only in dimension 2, so 
+it will be wrong if B points in a different direction.
