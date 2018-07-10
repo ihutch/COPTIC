@@ -14858,3 +14858,40 @@ processes. But we might wish to worry about whether this really scales to
 large numbers of processes. Made the qr start automatic when all particles
 are periodic and Bfield is large. But the qr is only in dimension 2, so 
 it will be wrong if B points in a different direction.
+
+1 June 2018
+Thinking about improving the hole initialization.
+Currently the initialization uses rejection as follows:
+
+1. Choose a random x position.
+2. Decide on the basis of a new random variate to make it one of three things
+   a. Trapped
+   b. Untrapped
+   c. Rejected (in accordance with the density x-profile)
+
+This works but is (A) inefficient since for a deep hole a lot of rejections
+take place because the peak density is greater than the background density,
+and (B) unable to be replaced by a quiet start algorithm. 
+
+If instead the x-position were chosen from a quiet qrn and a cumulative 
+position probability without rejection, both these problems would be solved.
+We could do quiet start with greater efficiency. The density profile is
+indeed known if we specify the potential profile \rho = d^2\phi/dx^2.
+So constructing (once-off) the cumulative potential probability would not
+be difficult. 
+
+Another current big inefficiency is that untrapcum is called for every
+particle initialized at a different potential. It actually synthesizes
+and entire velocity cumulative distribution by adding into the middle
+the trapped cumulative dist. This is probably where most of the cpu time of 
+initialization is spent. I could continue this, but it might be worth
+some time savings to store and interpolate, instead of recalculating each
+time. The natural thing would be to store at an array of \phi values.
+If one wished to solve the BGK problem for arbitrary phi-shape. It might
+make sense to solve also for the cump(phi) at the same time. 
+Since the solution of the hole structure gives f(W) where W=q\phi+mv^2/2,
+it seems one only really needs f(W) and the potential to draw 
+a random velocity at some potential. There seems to be a bit of trickiness
+in the non-symmetric possibility of passing particle distributions. And
+I don't see how exactly to draw an energy W without having integrated 
+the distribution at the specific phi (or interpolating it).

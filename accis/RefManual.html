@@ -32,7 +32,41 @@
 <h3 align="center">I.H.Hutchinson </h3>
 
 <h3 align="center"> </h3>
-   <a id="tth_sEc1"></a><h2>
+  
+<h1>Contents </h1><a href="#tth_sEc1"
+>1&nbsp; Apologia</a><br />
+<a href="#tth_sEc2"
+>2&nbsp; Conventions</a><br />
+<a href="#tth_sEc3"
+>3&nbsp; Automatic plotting, single call plots.</a><br />
+<a href="#tth_sEc4"
+>4&nbsp; Setup</a><br />
+<a href="#tth_sEc5"
+>5&nbsp; Data plotting</a><br />
+<a href="#tth_sEc6"
+>6&nbsp; Color</a><br />
+<a href="#tth_sEc7"
+>7&nbsp; Axes</a><br />
+<a href="#tth_sEc8"
+>8&nbsp; Text plotting</a><br />
+<a href="#tth_sEc9"
+>9&nbsp; Contouring</a><br />
+<a href="#tth_sEc10"
+>10&nbsp; Projected 3-D surface routines</a><br />
+<a href="#tth_sEc11"
+>11&nbsp; Three-Dimensional Perspective Drawing</a><br />
+<a href="#tth_sEc12"
+>12&nbsp; Plotting volumetric 3-D Data</a><br />
+<a href="#tth_sEc13"
+>13&nbsp; Primitives</a><br />
+<a href="#tth_sEc14"
+>14&nbsp; Utilities</a><br />
+<a href="#tth_sEc15"
+>15&nbsp; Linking</a><br />
+
+
+<div class="p"><!----></div>
+ <a id="tth_sEc1"></a><h2>
 1&nbsp;&nbsp;Apologia</h2>
 
 <div class="p"><!----></div>
@@ -255,6 +289,11 @@ from the arrays xa and ya at strides of ixstride and iystride. These
 allow one to plot data from rows (rather than columns) of a matrix by
 passing the leading dimension of the matrix as the stride. Passing
 strides of 1 gives sampling equivalent to the unstrided versions.
+
+<div class="p"><!----></div>
+POLYGAPLINE(xv,yv,ilength,logicalv) Draw polylines using total
+length ilength of arrays xv, and yv. The lines join all and only
+contiguous indices at which the logicalv array is true.
 
 <div class="p"><!----></div>
  <a id="tth_sEc6"></a><h2>
@@ -831,7 +870,7 @@ possibly the user.
 <div class="p"><!----></div>
 For X window systems, the X11 driver (vecx.c) requires linking against
 the Xlib library using compiler/linker arguments such as
--L/usr/X11R6/lib/-lX11.  The OpenGL driver vecglx.c requires in
+-L/usr/X11R6/lib/ -lX11.  The OpenGL driver vecglx.c requires in
 addition -lGL and -lGLU. The development versions of the X11 and
 OpenGL packages may be required to provide these. The driver can be
 selected by e.g. <tt>$&nbsp;make&nbsp;VECX=vecx</tt> or  <tt>$&nbsp;make&nbsp;VECX=vecglx</tt>. 
@@ -865,5 +904,5 @@ for operation of debugged correct code.
 T<sub><span class="small">E</span></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><span class="small">T</span></sub>H</a>,
-version 4.12.<br />On  6 Jan 2018, 12:02.</small>
+version 4.12.<br />On 16 Jun 2018, 14:16.</small>
 </html>

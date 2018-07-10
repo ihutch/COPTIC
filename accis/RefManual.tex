@@ -186,6 +186,10 @@ allow one to plot data from rows (rather than columns) of a matrix by
 passing the leading dimension of the matrix as the stride. Passing
 strides of 1 gives sampling equivalent to the unstrided versions.
 
+POLYGAPLINE(xv,yv,ilength,logicalv) Draw polylines using total
+length ilength of arrays xv, and yv. The lines join all and only
+contiguous indices at which the logicalv array is true.
+
 \section{Color}
 
 \iftth \special{html:<a href="filltest.f"><img align="right" src="filltest.png"></a>}\fi
@@ -633,7 +637,7 @@ possibly the user.
 
 For X window systems, the X11 driver (vecx.c) requires linking against
 the Xlib library using compiler/linker arguments such as
--L/usr/X11R6/lib/-lX11.  The OpenGL driver vecglx.c requires in
+-L/usr/X11R6/lib/ -lX11.  The OpenGL driver vecglx.c requires in
 addition -lGL and -lGLU. The development versions of the X11 and
 OpenGL packages may be required to provide these. The driver can be
 selected by e.g. \verb!$ make VECX=vecx! or  \verb!$ make VECX=vecglx!. 

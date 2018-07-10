@@ -7,10 +7,12 @@ SHELL=/bin/bash
 VECX=vecx
 #########################################################################
 # Include the make commands to define compiler and locations.
+# But by defining NOACCISCHECK prevent the location update.
+NOLOCATION:=true
 include ACCIS.mk
 #########################################################################
 # Cross-compiling definitions obviously need these executables.
-#F77=i686-w64-mingw32-gfortran -H -mwindows -mconsole --static
+#FORTRAN=i686-w64-mingw32-gfortran -H -mwindows -mconsole --static
 #--verbose --static
 #GCC=i686-w64-mingw32-gcc -H -mwindows -mconsole
 #AR=i686-w64-mingw32-gcc-ar

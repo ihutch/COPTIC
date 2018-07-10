@@ -31,26 +31,23 @@ LIBDEPS = $(ACCISHOME)/libaccisX.a
 COMPILE-SWITCHES = -Wall -O2
 # -fbounds-check
 #########################################################################
-# Unless turned off, check that the accis library is available and make it,
+# Always check that the accis library is available and make it,
 # unless we are in the ACCISHOME directory doing things explicitly.
-ifeq ("$(NOACCISCHECK)","")
 ACCISCHECK:=\
 $(shell if [ "${CURDIR}" != "$(ACCISHOME)" ];\
- then   echo >&2 "${CURDIR}" is not ACCISHOME: "$(ACCISHOME)" ;\
-	echo -n >&2 "Checking accis ... ";\
+ then   echo >&2 "${CURDIR}" is not the ACCISHOME: "$(ACCISHOME)" ;\
+	echo -n >&2 "Checking accis library ... ";\
  if [ -f "${ACCISX}" ] ; then echo>&2 "Library ${ACCISX} exists."; else\
    if [ -d "${ACCISPARENT}" ] ; then echo>&2 -n "parent directory exists. ";\
      else mkdir ${ACCISPARENT} ; fi;\
    if [ -d "${ACCISHOME}" ] ; then echo>&2 "accis directory exists. ";\
      else if cd ${ACCISPARENT}; then\
 	git clone https://github.com/ihutch/accis.git; cd - >/dev/null; fi;fi;\
-   if cd ${ACCISHOME}; then\
-         make ACCISHOME=$(ACCISHOME) >&2; cd - >/dev/null; fi;\
+   if cd ${ACCISHOME}; then pwd >&2; make >&2; cd - >/dev/null; fi;\
    if [ -f "${ACCISX}" ] ; then echo>&2 "Made ${ACCISX}";\
      else echo>&2 "Error making ${ACCISX}"; fi;\
  fi;fi;\
 )
-endif
 #########################################################################
 # To satisfy dependencies by building accis in the standard place, simply
 # copy this file to your make directory, insert (before the first target)

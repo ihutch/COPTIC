@@ -683,3 +683,29 @@ c boundaries.
       endif
 
       end
+C********************************************************************
+
+      subroutine polygapline(x,y,n,logic)
+! plot a polyline in multiple sections only where logic is true
+      integer n
+      real x(n),y(n)
+      logical logic(n)
+      logical drawing
+      drawing=.true.
+      id=1
+      do i=1,n
+      if(drawing)then
+         if(.not.logic(i))then
+            drawing=.false.
+            call polyline(x(id),y(id),i-id)
+         endif
+      else
+         if(logic(i))then
+            drawing=.true.
+            id=i
+         endif
+      endif
+      enddo
+      if(drawing)call polyline(x(id),y(id),i-id)
+  
+      end
