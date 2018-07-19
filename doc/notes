@@ -14895,3 +14895,88 @@ a random velocity at some potential. There seems to be a bit of trickiness
 in the non-symmetric possibility of passing particle distributions. And
 I don't see how exactly to draw an energy W without having integrated 
 the distribution at the specific phi (or interpolating it).
+
+17 Jul 18 
+Attempting to understand and rationalize Xiang's BGKint version cumdis.
+      dv=sqphi/(nt+1.)
+! Trapped part (which is antisymmetric)
+      i0=int(phi(k)*(nphi-1)/psi)
+      remi0=sqrt(abs(u0(i0)**2-psi+phi(k)))
+      cumv(0,k)=0.
+      cump(0,k)=0.
+      do i=1,nt
+         cumv(i,k)=i*dv
+         cumv(-i,k)=-i*dv
+         j0=int((phi(k)-(cumv(i,k))**2)*(nphi-1)/psi)
+         remj0=cumv(i,k)-sqrt(abs(u0(j0+1)**2-psi+phi(k)))
+         if(i0.eq.500)then
+           cump(i,k)=0
+         else
+         cump(i,k)=remi0*(f0(i0)+(f0(i0+1)-f0(i0))/2*
+     $           (sqrt(psi-phi(k))-u0(i0))/(u0(i0+1)-u0(i0)))
+         endif
+         do j=j0+2,i0
+           cump(i,k)=cump(i,k)+(f0(i0+j0+1-j)+f0(i0+j0+2-j))/2*
+     $             (sqrt(abs(u0(i0+j0+1-j)**2-psi+phi(k)))
+     $             -sqrt(abs(u0(i0+j0+2-j)**2-psi+phi(k)))) 
+         enddo         
+         cump(i,k)=cump(i,k)+remj0*(f0(j0+1)+(f0(j0)-f0(j0+1))/2*
+     $           (sqrt(abs(cumv(i,k)**2-phi(k)+psi))-u0(j0+1))/
+     $           (u0(j0)-u0(j0+1)))
+         cump(-i,k)=-cump(i,k)
+      enddo
+
+Arriving here, f0 is the velocity distribution at phi=psi, u0 is the
+velocity array on which it is defined, u0(i)=sqrt(psi-i*phistep)
+from BGKint.  
+i0 is the index (from 0, rounded down) at which a uniform phi array
+from 0 to psi i0*phistep is equal to phi(k). So it is the highest index
+that gives a positive velocity (exists) at phi(k).
+
+Given that, abs(u0(i0)**2-psi+phi(k)=psi-i0*phistep - psi+phi(k)=
+phi(k)-i0*phistep, which is the potential remainder. And remi0 is the
+sqrt of that.
+
+cumv(i) is the trapped velocity array which goes from -+ the sepx at -+nt.
+j0 is the index at which j0*phistep=minus the total energy cumv(i)^2-phi(k)
+So it is the index to which one would need to consider when calculating
+cump(i). 
+
+i0*phistep~=phi(k);             |i0*phistep-phi(k)|=remi0^2
+j0*phistep~=phi-cumv(i)^2.; 	sqrt|j0*phistep-phi(k)|+cumv(i)=remj0
+
+cump somehow needs to be the integral of f dv at position k. I am 
+struggling to understand how this is supposed to work. It certainly
+ought not to need two nested do loops. 
+Instead, one ought to do one integral consisting of summing the f(v)
+over the cumv arrays with f(v) obtained by translating the cumv into
+the phistep index. Probably one ought to do it inward from the separatix,
+since the phisteps are closer together in v there. Maybe the inner do loop
+applies only when there is more than one phistep per cumvstep. But still
+it seems inappropriate to redo the prior integral. 
+
+A simpler way to calculate cump is just to do trapezoid integration using
+a consistent interpolation to get f(cumv), and not to worry if there are
+multiple f(u) nodes within the cumv cell.
+
+BGKint returns f0 on a grid u0=sqrt(psi-i*phistep) uniform in u0^2.
+BGKint calls untrapden for each phi of the potential array
+untrapden uses f on a uniform ua grid to get the density and returns
+it in fma fpa if nin>0 on entry. But there's an inconsistency that
+those fma and fpa are not arguments but they are declared with a 
+dimension that is an argument. I don't know how that works. 
+Checking with my original free-standing version, I find this to be an
+addition relative to BGKint code. The version of untrappeden in the BGKint
+code has far fewer arguments. I think Xiang introduced this problem.
+Untrapcumtest has nin as a parameter, which might be why the compiler
+does not choke. So does trapinit. I think that explains it. 
+There are lots of confusions associated with the refinement process
+that means the used dimension of ua, fpa etc are variable. It might be
+better to fix them. However, untrappedden was used in the old trapinit
+untrapcum to get the distributions fpa fma ua.
+
+19 July 18
+Probably it is best not to suppose there is any known algorithm for 
+the spacing of f0(u0), rather to write the routine generally for getting
+f(u) (and integrating it) when f0(u0) is known and given in the form of
+arrays f0 and u0. 

@@ -294,6 +294,10 @@
          if(holepsi.eq.0.)then
 ! Standard particle initialization
             call pinit(subcycle)
+         elseif(holepsi.lt.0)then
+! Quiet initialization
+            call qinit
+!            stop   ! This is just testing for now.
          else
 ! Hole initialization 
             call trapinit(subcycle)
