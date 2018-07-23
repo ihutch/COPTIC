@@ -302,7 +302,6 @@
          else
 ! Quiet initialization. Use only with no objects.
             if(ngeomobj.gt.0)stop '!!Quiet init only with no objects!!'
-            nqblkmax=30
             call qinit
          endif
       endif

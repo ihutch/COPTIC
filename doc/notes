@@ -15004,3 +15004,19 @@ a substantially worse (and growing) noise.
 I probably want to think about a way to rationalize the potential 
 offset adjustment. However, at the moment, I think it is better to
 leave it so we see if there's a systematic evolution.
+
+Experimenting with different -pi and with ldouble, in 1-d.
+I find that large -pi can quiet the potential initial value more than
+the level of noise it gets at later time. Also, in this state, making
+ldouble true reduces the immediate rise of noise, as it should do by
+making the current initially zero. 
+
+Observed a slow downward drift of phi from -0.02 to -0.06 in 500 steps
+with all periodic particles and phi. (This with ldouble true, but it
+makes no difference.) With particle drifts turned off, this changes
+to a slower drift up. 
+
+Tried fiddling with boundary conditions but did not find a way of 
+controlling phi offset. Possibly I need an explicit phi-adjust routine.
+Is there a way of using the median height? How do you quickly find the
+median of a lot of numbers?

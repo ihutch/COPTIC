@@ -7,9 +7,9 @@
 ! reducing the total number of qblocks and the process iterated till all
 ! particles are placed.
 
-! The number of qblocks per dimension is kept less than the number of
-! cells-2 and 30, but greater than zero. It is initialized as nqbset but
-! constrained by those limits.
+! The number of qblocks per dimension is kept less than iused-2 and 30,
+! but greater than zero. It is initialized as nqbset but constrained by
+! those limits.
 
       subroutine qinit
       implicit none
@@ -32,8 +32,7 @@
       integer nqbset(ndims),nqblks(ndims),mlen
       
 
-! Till nqbset parameter made adjustable, set it algorithmically.
-! Later we'll remove the nqbset setting.
+! nqbset parameters adjusted only from 1 parameter: nqblkmax [-pi...]
       do i=1,ndims
          mlen=ixnp(i+1)-ixnp(i)
          nqbset(i)=max(1,min(nqblkmax,mlen-2))
@@ -124,7 +123,7 @@
       integer iview(3,ndims),indi(ndims)     !Iterator
       integer nqbt
       logical ldouble
-      data ldouble/.false./ ! Whether to place 2 opposite moving particles.
+      data ldouble/.true./ ! Whether to place 2 counter-velocity particles.
 
       nremain=islotmax-islot+1
       nper=1           ! Number injected per placeqbk. 1 or 2.
