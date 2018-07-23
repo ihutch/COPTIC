@@ -11,7 +11,7 @@
 ! cells-2 and 30, but greater than zero. It is initialized as nqbset but
 ! constrained by those limits.
 
-      subroutine qinit()
+      subroutine qinit
       implicit none
 ! Common data:
       include 'ndimsdecl.f'
@@ -30,12 +30,13 @@
 !      integer k
       real theta,ranlenposition,gasdev
       integer nqbset(ndims),nqblks(ndims),mlen
+      
 
 ! Till nqbset parameter made adjustable, set it algorithmically.
 ! Later we'll remove the nqbset setting.
       do i=1,ndims
          mlen=ixnp(i+1)-ixnp(i)
-         nqbset(i)=max(1,min(30,mlen-2))
+         nqbset(i)=max(1,min(nqblkmax,mlen-2))
          nqblks(i)=nqbset(i)
       enddo
 
@@ -110,8 +111,9 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine fillqblocksize(nqblks,islot,islotmax,ispecies)
 ! Fill the qblocks of current size with as many complete sets of particles 
-! as possible up to nps, leaving a remainder. Increment islot for each
-! particle added.
+! as fills no more than islotmax, leaving a remainder. 
+! Then reduce the number of blocks and iterate till the remainder is zero.
+! Increment islot for each particle added. ntries tallying not needed.
       include 'ndimsdecl.f'      
       include 'meshcom.f'
       include 'myidcom.f'
@@ -120,31 +122,28 @@
       integer iview(3,ndims),indi(ndims)     !Iterator
       integer nqbt
 
-      if(myid.eq.0)then
-!        write(*,*)'fillqblocksize',nqblks,islot,islotmax
-         write(*,*)'        i    nfills     islot       nqblks'
-      endif
       nremain=islotmax-islot+1
       nqbt=1
       do i=1,ndims
          nqbt=nqbt*nqblks(i)
       enddo
+      if(myid.eq.0)then
+         write(*,*)'qinit:  i    nfills     islot       nqblks ...'
+      endif
  2    nfills=int(nremain/nqbt)      ! assuming 1 particle per fill per qblock.
       nremain=nremain-nfills*nqbt
+      if(myid.eq.0)write(*,'(8i10)')i,nfills,islot,nqblks
       do i=1,nfills
 ! Fill using iterator
          icomplete=mditerator(ndims,iview,indi,4,nqblks)
  1       continue
 ! Place one particle in block indi.
-         call placeqblk(nqblks,indi,islot,ispecies)         
-         islot=islot+1
+           call placeqblk(nqblks,indi,islot,ispecies)         
+           islot=islot+1
          if(mditerator(ndims,iview,indi,0,nqblks).eq.0)goto 1
-         if(mod(i,max(1,nfills/30)).eq.0.and.myid.eq.0)
-     $        write(*,'(8i10)')i,nfills,islot,nqblks
       enddo
-
       if(nremain.le.0)return
-! Else reduce nqblks by 2, and redo
+! Else reduce nqblks by 2, and iterate
       nqbt=1
       do i=1,ndims
          nqblks(i)=max(1,nqblks(i)/2)
@@ -156,7 +155,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine placeqblk(nqblks,indi,islot,ispecies)
 ! Place a particle randomly in the block addressed by indi
-! This version just uniform distribution.
+! So far only uniform holes, not those with holerad nonzero.
       include 'ndimsdecl.f'      
       include 'meshcom.f'
       include 'partcom.f'
@@ -164,20 +163,94 @@
       include 'myidcom.f'
       integer nqblks(ndims),indi(ndims),islot,ispecies
       logical linmesh
+      integer nbi
+      parameter (nbi=16)
+! Hole-related parameters:
+      real phimin
+      parameter (phimin=.01)
+      integer nphi,nu,nup
+      parameter (nphi=50,nu=100,nup=2*nu+1)
+      real psi,um,xmax
+      real phiarray(0:NPHI),us(0:NPHI),xofphi(0:NPHI)
+      real den(0:NPHI),denuntrap(0:NPHI),dentrap(0:NPHI)
+      real tilden(0:NPHI)
+      real f0(-2*nphi:2*nphi),u0(-2*nphi:2*nphi),cumf(-nu:nu)
+!      real f1(-2*nphi:2*nphi),u1(-2*nphi:2*nphi),cumf1(-nu:nu)
+      real u(-nu:nu),f(-nu:nu)
+      logical lfirst
+      data lfirst/.true./
+      integer idebug
+      save
+
+      idebug=0
+      if(lfirst)then
+c Initialize u-range
+         umax=5.
+         du=umax/nu
+         do i=-nu,nu
+            u(i)=i*du
+         enddo
+         if(holerad.ne.0) stop 'Nonzero holerad in qinit Error.'
+         psi=holepsi
+         um=holeum    ! What about vdrift?
+c Hole (decay) length
+         coshlen=holelen+psi/2
+c The flattop length toplen. Negligible for large negative values      
+         toplen=-1./psi
+         xmax=1.3*findxofphi(psi/(NPHI),psi,coshlen,toplen,0.,50.,7)
+         call f0Construct(nphi,psi,um,xmax,coshlen,toplen,
+     $        phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0)
+         if(idebug.eq.1)then
+            call autoplot(u0(-2*nphi),f0(-2*nphi),4*nphi+1)
+            call axlabels('u0','f0')
+            call pltend
+         endif
+         lfirst=.false.
+      endif
 
  1    do i=1,ndims              ! Position
          call ranlux(ran,1)
          fp=(indi(i)+ran)/float(nqblks(i))
          fp=max(.000001,min(.999999,fp))
-! Here's where to adjust spatial distribution.
-         x_part(i,islot)=(1.-fp)*xmeshstart(i)+fp*xmeshend(i)
+         if(holepsi.ne.0..and.Bfield(i).ne.0)then
+! Hole density non-uniformity:
+            x_part(i,islot)=findxofran(fp,holepsi,coshlen,toplen
+     $           ,xmeshstart(i),xmeshend(i),nbi)
+            phi=phiofx(x_part(i,islot),psi,coshlen,toplen)
+         else
+            x_part(i,islot)=(1.-fp)*xmeshstart(i)+fp*xmeshend(i)
+         endif
       enddo
-
       tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
-! Shifted Gaussians.                     ! Velocities
-      x_part(4,islot)=tisq*gasdev(myid) + vds(ispecies)*vdrift(1)
-      x_part(5,islot)=tisq*gasdev(myid) + vds(ispecies)*vdrift(2)
-      x_part(6,islot)=tisq*gasdev(myid) + vds(ispecies)*vdrift(3)
+      tisq2=sqrt(2.)*tisq
+!                            ! Velocities
+      do i=1,ndims
+         if(holepsi.ne.0..and.Bfield(i).ne.0)then
+! Hole normal direction. Change this.
+            if(abs(psi).lt.phimin.or.fp.lt.phimin.or.1-fp.lt.phimin)then
+! In non-hole region. Shortcut to external distrib.
+               x_part(ndims+i,islot)=tisq*gasdev(myid)
+     $              +vds(ispecies)*vdrift(i)
+            else
+! Use cumf interpolation.
+               call GetDistribAtPhi(psi,um,nphi,f0,u0,phi,nu,u,f,cumf)
+               call ranlux(fp,1)
+               fp=fp*cumf(nu)
+               ixp=interp(cumf,nup,fp,p)
+               if(ixp.gt.0.and.ixp.lt.nup)then
+                  x_part(ndims+i,islot)=
+     $                 tisq2*((1-p+ixp)*u(-nu-1+ixp)+(p-ixp)*u(-nu+ixp))
+     $                 +vds(ispecies)*vdrift(i)
+               else
+                  write(*,*)'placeqblk interpolation error',ixp,p
+                  stop
+               endif
+            endif
+         else
+            x_part(ndims+i,islot)=tisq*gasdev(myid)
+     $           +vds(ispecies)*vdrift(i)
+         endif
+      enddo
 !      write(*,*)islot,(x_part(i+3,islot),i=1,3)
 !      write(*,*)ispecies,nspecies,vds(ispecies),vdrift(3)
 ! The previous timestep length.
@@ -187,5 +260,368 @@
 ! This test rejects particles exactly on mesh boundary:
       if(.not.linmesh)goto 1
       x_part(iflag,islot)=1
+
+      end
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Given the distribution function at phi=psi: f0 at an array over velocities
+! u0, obtain the distribution function and its integral giving cumulative
+! probability distribution at a lower potential phi over given u-array.
+! The +- limits of u**2 must be > psi.
+      subroutine GetDistribAtPhi(psi,um,nphi,f0,u0,phi,nu,u,f,cumf)
+      integer nphi,nu
+      real f0(-2*nphi:2*nphi),u0(-2*nphi:2*nphi),psi
+      real u(-nu:nu),f(-nu:nu),cumf(-nu:nu)
+      real um
+      
+      if(phi.gt.psi.or.psi.ge.min(u(-nu)**2,u(nu)**2))then
+         write(*,*)'GetDistriAtPhi error. psi   phi  u(nu)  u0max'
+         write(*,*)psi,phi,u(nu),u0(2*nphi)
+         stop
+      endif
+      sqpi=sqrt(3.1415926)
+! Fill the f and cumf arrays.
+      do i=-nu,nu
+         if(u(i)**2-phi.gt.0)then  
+! Passing particles must be done directly because their slope singularity
+! at the separatrix undermines accuracy of reverse interpolation.
+            uinf=sign(sqrt(u(i)**2-phi),u(i))
+            f(i)=exp(-(uinf-um)**2)/sqpi
+         else
+! Trapped: Interpolate f0,u0 to find f0i=f0(u0i)
+            u0i=sign(sqrt(u(i)**2+psi-phi),u(i))
+!               write(*,*)i,ipos,pos,u0i,u(i)**2,psi,phi
+            ipos=interp(u0,4*nphi+1,u0i,pos)
+            if(ipos.le.0)then
+               write(*,*)i,ipos,pos,u0i,u(i)**2,psi,phi
+               stop 'GetDistribAtPhi interpolation error'
+            endif
+            ip=ipos-2*nphi-1    ! refer to -2*nphi:2*nphi
+            f(i)=(1.-pos+ipos)*f0(ip) + (pos-ipos)*f0(ip+1)
+         endif
+         if(i.le.-nu)then
+            cumf(-nu)=0.
+         else
+            cumf(i)=cumf(i-1)+0.5*(f(i-1)+f(i))*(u(i)-u(i-1))
+         endif
+      enddo
+
+      end
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Construct the distribution f0 at u0, using BGKint.
+      subroutine f0Construct(nphi,psi,um,xmax,coshlen,tl,
+     $     phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0)
+
+      integer nphi
+      real psi,um,xmax
+      real phiarray(0:NPHI),us(0:NPHI),xofphi(0:NPHI)
+      real den(0:NPHI),denuntrap(0:NPHI),dentrap(0:NPHI)
+      real tilden(0:NPHI)
+      real f0(-2*nphi:2*nphi),u0(-2*nphi:2*nphi)
+
+      du=(4.-sqrt(psi))/nphi
+      sqpi=sqrt(3.1415926)
+c Call in BGKint such a way as to put into the negative trapped section
+c because it returns f0 u0 in reverse order.
+      call BGKint(nphi,psi,um,xmax,coshlen,tl,
+     $     phiarray,us,xofphi,den,denuntrap,dentrap,tilden
+     $     ,f0(-nphi),u0(-nphi))
+c Copy across to the positive trapped section.
+      do i=1,nphi
+c         write(*,*)i,u0(-i),f0(-i)
+         u0(i)=u0(-i)
+         f0(i)=f0(-i)
+         u0(-i)=-u0(-i)
+      enddo
+c Fill in the untrapped distribution (maybe not needed?)
+      do i=1,nphi
+         ui=sqrt(psi)+i*du
+         uinf=sqrt(abs(ui**2-psi))   ! prevent rounding to negative.
+         u0(nphi+i) = ui
+         f0(nphi+i) =exp(-(uinf-um)**2)/sqpi
+         u0(-nphi-i)=-ui
+         f0(-nphi-i)=exp(-(uinf+um)**2)/sqpi
+      enddo
+c Now f0(-2*nphi:2*nphi) is the entire distribution at phi=psi.
+
+      end
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+c**********************************************************************
+c BGKint solves the integral equation to find the trapped
+c distribution function for an electron hole. 
+c The potential shape is specified via a function phiofx(x) which can
+c be made whatever one wishes.
+c The untrapped density is given by function untrappeddensimple(phi,um)
+c Units of x are debyelengths, of potential Te/e, of time omega_p^{-1}
+c But u is v/sqrt(2), i.e. normalized to sqrt(2Te/me).
+
+      subroutine BGKint(nphi,psi,um,xmax,coshlen,tl,
+     $     phi,us,xofphi,den,denuntrap,dentrap,tilden,f,u0)
+c In:
+c nphi is the number of phi (i.e. u^2) positions.
+c psi the maximum, zero the minimum. um the maxwellian shift,
+c coshlen and t1 are parameters passed to the routine phiofx 
+c for calculating: phi, the potential (grid). us is the sqrt of phi. 
+c xofphi is the corresponding (positive) postion. 
+c Out:
+c den is total density, denuntrap is the untrapped electron density,
+c dentrap the trapped density, tilden the difference between trapped 
+c density and a flat-top. 
+c f(u0) is the distribution function, 
+c u0=sqrt(psi-i*phistep)  =speed at x=0 when total energy is -phi. 
+c But u0 runs from u0(0)=u_s to u0(nphi)=0. (i.e. reverse order)
+      integer nphi
+      real psi,um,xmax
+      real phi(0:NPHI),us(0:NPHI),xofphi(0:NPHI)
+      real den(0:NPHI),denuntrap(0:NPHI),dentrap(0:NPHI)
+      real tilden(0:NPHI)
+      real f(0:nphi),u0(0:nphi)
+
+      real pi
+      parameter (pi=3.1415926)
+      parameter (nbi=20)
+      real delx
+
+      phistep=psi/(NPHI)
+      delx=4.*xmax/nphi
+      sphistep=sqrt(phistep)
+      flatf=exp(-um**2)/sqrt(pi)
+c 
+      do i=0,NPHI
+         phi(i)=i*phistep
+      enddo
+      do i=0,NPHI
+c Find the xofphi by bisection.
+         xofphi(i)=findxofphi(phi(i),psi,coshlen,tl,0.,xmax,nbi)
+c Calculate the total density -d^2\phi/dx^2 as a function of potential,
+c at the nodes.
+         xc=xofphi(i)
+         den(i)=1.+(phiofx(xc+delx,psi,coshlen,tl)
+     $        +phiofx(xc-delx,psi,coshlen,tl)
+     $        -2.*phiofx(xc,psi,coshlen,tl))/delx**2
+         us(i)=sqrt(phi(i))
+c Get the untrapped electron density at this potential and drift.
+         denuntrap(i)=untrappeddensimple(phi(i),um)
+         dentrap(i)=den(i)-denuntrap(i)
+c Density difference c.f. flat:
+         tilden(i)=dentrap(i)-2*us(i)*flatf
+      enddo
+
+c f(u) = (1/pi) \int_0^{psi-u^2} dn/d\phi d\phi/sqrt(\psi-u^2-phi).
+c u^2=psi-i*phistep, phi=j*phistep, so sqrt -> (i-j)*psistep.
+      u0(0)=sqrt(psi)
+      f(0)=flatf
+      do i=1,NPHI
+         u0(i)=sqrt(psi-i*phistep)
+         fi=0.
+         do j=1,i
+c We calculate the dndphi based upon \tilde f's density rather than on the
+c total density, because this avoids big errors near the separatrix.
+            dndphi=(tilden(j)-tilden(j-1))/phistep
+            fi=fi+dndphi*2.*sphistep*(sqrt(i-j+1.)-sqrt(float(i-j)))
+         enddo
+         f(i)=fi/pi+flatf
+      enddo
+
+      end
+c*********************************************************************
+c Flattened sech^4 potential function.
+      real function phiofx(x,psi,coshlen,toplen)
+      real x,psi,coshlen,toplen
+      et=exp(-toplen)
+      phiofx=psi*(1.+et)
+     $     /(1.+et*cosh(x/coshlen)**4)
+      end
+c*********************************************************************
+c Derivative of phiofx
+      real function derivphiofx(x,psi,coshlen,toplen)
+      real x,psi,coshlen,toplen
+      et=exp(-toplen)
+      xo=x/coshlen
+      derivphiofx=-4.*psi/coshlen *et*(1.+et)*sinh(xo)*cosh(xo)**3
+     $     /(1+et*cosh(xo)**4)**2
+      end
+c********************************************************************
+      real function findxofphi(phiv,psi,coshlen,tl,xmin,xmax,nbi)
+c Solve by bisection phiv=phiofx(xc,psi,coshlen,tl) and return xc.
+c The intial x-range is [0,xmax]. Up to nbi bisections are allowed.
+c This version uses a function, with three extra parameters
+c psi and coshlen and tl. 
+      real phiv,psi,coshlen,tl,xmin,xmax
+      integer nbi
+      real phiofx
+      external phiofx
+      xa=xmin
+      xb=xmax
+      xc=0
+c This extra tiny value prevents rounding errors from causing outside
+c range potentials.
+      fva=phiofx(xa,psi,coshlen,tl)-phiv+1.e-7
+c         fvb=phiofx(xb,psi,coshlen,tl)-phiv
+c Allow a value beyond the xmax range so long as phiv is non-negative.
+      fvb=-phiv
+      if(fva*fvb.gt.0.)then
+         write(*,*)xa,fva,xb,fvb,phiv,phiofx(xa,psi,coshlen,tl)
+     $        ,phiofx(xb,psi,coshlen,tl)
+         stop 'Potential outside range'
+      endif
+      do j=1,nbi
+         xc=0.5*(xa+xb)
+         fvc=phiofx(xc,psi,coshlen,tl)-phiv
+         if(fvc.eq.0.)then
+            goto 1
+         elseif(sign(1.,fvc).eq.sign(1.,fva))then
+            xa=xc
+            fva=fvc
+         else
+            xb=xc
+            fvb=fvc
+         endif
+      enddo
+ 1    continue
+      findxofphi=xc
+      end
+c********************************************************************
+      real function findxofran(ranf,psi,coshlen,tl,xmin,xmax,nbi)
+c Find by bisection the x-position given the range fraction ranf s.t.
+c   ranf=(xc-xmin)/(xmax-xmin)+derivphiofx(xc...) 
+c and return xc. This expression is the cumulative probability.
+c Up to nbi bisections are allowed.
+c Shortcuts are taken if potential is less than a range of relevance.
+      real ranf,psi,coshlen,tl,xmin,xmax
+      integer nbi
+      real phimin
+      parameter (phimin=.01)
+      real phiofx
+      external phiofx
+      if(abs(psi).lt.phimin.or.ranf.lt.phimin.or.1-ranf.lt.phimin)then
+ ! Effectively linear shortcut.
+         findxofran=xmin+ranf*(xmax-xmin)
+         return
+      endif
+      xa=xmin
+      xb=xmax
+      xc=0.
+      fva=(xa-xmin+derivphiofx(xa,psi,coshlen,tl))/(xmax-xmin)-ranf
+      fvb=(xb-xmin+derivphiofx(xb,psi,coshlen,tl))/(xmax-xmin)-ranf
+c Allow a value beyond the xmax range so long as ranf is non-negative.
+      if(fva*fvb.gt.0.)then
+         write(*,*)xa,fva,xb,fvb,phiv,phiofx(xa,psi,coshlen,tl)
+     $        ,phiofx(xb,psi,coshlen,tl)
+         stop 'Potential outside range'
+      endif
+      do j=1,nbi
+         xc=0.5*(xa+xb)
+         fvc=(xc-xmin+derivphiofx(xc,psi,coshlen,tl))/(xmax-xmin)-ranf
+         if(fvc.eq.0.)then
+            goto 1
+         elseif(sign(1.,fvc).eq.sign(1.,fva))then
+            xa=xc
+            fva=fvc
+         else
+            xb=xc
+            fvb=fvc
+         endif
+      enddo
+ 1    continue
+      findxofran=xc
+      end
+c*********************************************************************
+c Untrapped density function for a shifted Maxwellian
+c  untrappedden(\phi,u_m) = {2\over \sqrt{\pi}}\int_{\sqrt{\phi}}^\infty
+c     \exp(-u^2+\phi-u_m^2)\cosh(2u_m\sqrt{u^2-\phi}) du.
+c   = {1\over\sqrt{\pi}} \int_{\sqrt{\phi}}^\infty \sum_{\pm}
+c             \exp(-[\pm\sqrt{u^2-\phi}-u_m]^2)du
+c written as f = \int g du.
+
+c This is the density relative to the background density of untrapped
+c particles having a Maxwellian background shifted by a speed um,
+c measured in units of sqrt(2T/m), at a potential energy -phi
+c measured in units of T/e.
+
+c The integration is carried out on uniform grid, initially with 
+c velocity spacing dui. The spacing is halved until relative difference
+c from the prior integral is less than df.
+c [Some sort of Gaussian integration would probably be faster but tricky
+c because of the infinite range.]
+c umswitch is currently unused.
+      real function untrappeddensimple(phi,um)
+      real phi,um
+
+      parameter (dui=.04,df=1.e-5,np=10000,umswitch=4.)
+
+c silence warnings not really needed.
+      f=0.
+      fp=0.
+      fm=0.
+      v=0.
+      gm1=0.
+      f1=0
+      g1=1.
+      g1p=1.
+      g1m=1.
+      gp=0.
+      gm=0.
+
+      um2=um**2
+      du=dui
+      nstepit=7
+
+      if(phi.lt.0)stop 'Negative phi in untrappedden call not allowed'
+c Iterate over steps sizes
+      do k=1,nstepit
+c Integrate
+         do i=0,np
+            u=sqrt(phi)+i*du
+            u2=u**2
+            if(i.eq.0)then
+               g=exp(-um2)
+               gp=g
+               gm=g
+               g1=g
+               if(g.eq.0)stop 'untrappedden error um2 overflow'
+               f=0.
+               fp=0.
+               fm=0.
+            else
+c This is simply more reliable:
+               gp=exp(-(sqrt(u2-phi)+abs(um))**2)
+               gm=exp(-(sqrt(u2-phi)-abs(um))**2)
+               g=0.5*(gp+gm)
+c This implicitly multiplies by 2:               
+               f=f+(u-v)*(g+gm1)
+               fp=fp+(u-v)*(gp+g1p)*0.5
+               fm=fm+(u-v)*(gm+g1m)*0.5
+            endif
+            if(.not.g.ge.0 .or. .not.g.lt.1.e30)then
+c Error trap
+               write(*,*)'u,um,phi,g error',u,um,phi,g
+c               stop
+               g=0.
+            endif
+            f=fp+fm
+            gm1=g
+            g1p=gp
+            g1m=gm
+            v2=u2
+            v=u
+c If new contributions are negligible, break
+            if(g.lt.g1*df)goto 1
+            if(gp.lt.g1*df.and.gm.lt.g1*df)
+     $           write(*,*)'g,gp,gm,g1',g,gp,gm,g1
+         enddo
+         write(*,*)'untrappedden exhausted number of steps np',i
+ 1       continue
+c If converged, break
+         if(abs(f1-f).lt.df)goto 2
+         f1=f
+         du=du/2.
+      enddo
+      write(*,*)'untrappedden exhausted step iterations',k,f1,f,du
+      write(*,*)'Steps, du, u, f, um',i,du,u,f,um
+      write(*,*)u,g,f
+ 2    continue
+
+      untrappeddensimple=f/sqrt(3.1415926)
 
       end

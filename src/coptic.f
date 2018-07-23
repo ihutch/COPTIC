@@ -125,7 +125,7 @@
      $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
      $     ,ifull,ierr)
 ! Hack to prevent incompatible particles
@@ -291,16 +291,20 @@
       call rluxgo(1,myid,0,0)
 ! Initialize particles  ! Only if we are not restarting.
       if(lrestart-4*(lrestart/4).eq.0)then
-         if(holepsi.eq.0.)then
-! Standard particle initialization
-            call pinit(subcycle)
-         elseif(holepsi.lt.0)then
-! Quiet initialization
+         if(nqblkmax.le.0.)then
+! Standard noisy particle initialization
+            if(holepsi.eq.0)then
+               call pinit(subcycle)
+            else
+! Old Hole initialization 
+               call trapinit(subcycle)
+            endif
+         else
+! Quiet initialization. Use only with no objects.
+            if(ngeomobj.gt.0)stop '!!Quiet init only with no objects!!'
+            nqblkmax=30
             call qinit
 !            stop   ! This is just testing for now.
-         else
-! Hole initialization 
-            call trapinit(subcycle)
          endif
       endif
 !---------------------------------------------

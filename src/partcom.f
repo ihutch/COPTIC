@@ -38,6 +38,8 @@
       integer npassthrough
 ! Rho at infinity per processor, relevant only in setup.
       real ripernode
+! Quiet start particle initialization max block number [1=>Not quiet.]
+      integer nqblkmax
 ! Factor by which we relax the rhoinf calculation. 1 immediate, 0 never.
       real crelax,caverein,chi
 ! Flags for which dimensions are periodic or absorbing for particles.
@@ -54,6 +56,8 @@
 ! Parameters of multidimensional hole initialization:
       integer hspecies
       real holepsi,holelen,holeum,holespeed,holeeta,holepow,holerad
+      real holetoplen
+      equivalence (holeeta,holetoplen)
 ! Coefficients etc of spatially-varying background
       integer bgnmax,bgn(ndims)
       parameter (bgnmax=3)
@@ -67,7 +71,7 @@
      $     ,nparta,iicparta,iocparta,ninjcompa,pinjcompa,numratioa
      $     ,dt,ldiags,rhoinf,nrein,phirein,numprocs,npassthrough
      $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp,ibool_part
-     $     ,caverein,chi,notseparable
+     $     ,caverein,chi,notseparable,nqblkmax
      $     ,holepsi,holelen,holeum,holespeed,holeeta,holepow,holerad
      $     ,hspecies,bgn,bga,bgmax
 

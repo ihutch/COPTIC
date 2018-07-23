@@ -9,7 +9,7 @@
      $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
      $     ,ifull,ierr)
       implicit none
@@ -18,7 +18,7 @@
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps
      $     ,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
-     $     ,iwstep,idistp,ndims,islp,lrestart,nptdiag
+     $     ,iwstep,idistp,ndims,islp,lrestart,nptdiag,nqblkmax
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
      $     ,lextfield,LPF(ndims),lnotallp,ldistshow
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
@@ -51,7 +51,7 @@
      $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies)
 ! Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
@@ -68,7 +68,7 @@
      $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies)
 ! The double call enables cmdline switches to override objfile settings.
 !----------------------------------------------------------------------
@@ -85,14 +85,14 @@
      $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies)
 
       implicit none
 
       integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps
      $     ,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
-     $     ,iwstep,idistp,ndims,islp,lrestart,nptdiag
+     $     ,iwstep,idistp,ndims,islp,lrestart,nptdiag,nqblkmax
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
      $     ,lextfield,LPF(ndims),lnotallp,ldistshow
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
@@ -175,6 +175,7 @@
          holepow=0.
          holerad=0.
          hspecies=0
+         nqblkmax=0  ! Default 0=>pinit. >0 qinit
 ! Boundary condition switch and value. 0=> logarithmic.
          islp=0
          slpD=0.
@@ -429,6 +430,9 @@
             read(argument(4:),*,end=240,err=240)idistp
          endif
          if(argument(1:3).eq.'-pu')nptdiag=0
+         if(argument(1:3).eq.'-pi')then
+            read(argument(4:),*,err=201,end=201)nqblkmax
+         endif
          if(argument(1:3).eq.'-fs')then
             read(argument(4:),*,end=201)lrestart
          endif
@@ -664,6 +668,8 @@
      $     ,' ABC Robin coefs. Cxyz gradients.'
       write(*,303)' -bp<i>  toggle bndry periodicity [',LPF
      $     ,'    in dimension <i>.'
+      write(*,301)' -pi<i>  set quiet part-init level[',nqblkmax
+     $     ,'     1:no quieting, >>1:quiet'
       write(*,305)' -pp<i,j,k>  partcl bcs/periodcty [',ipartperiod
      $     ,'    Use sum of:'
       write(*,*)'     0 open; 1 lower absorbing; 2 upper absorbing;'

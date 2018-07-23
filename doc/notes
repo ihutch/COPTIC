@@ -14980,3 +14980,13 @@ Probably it is best not to suppose there is any known algorithm for
 the spacing of f0(u0), rather to write the routine generally for getting
 f(u) (and integrating it) when f0(u0) is known and given in the form of
 arrays f0 and u0. 
+
+20 July 18
+Did not complete the inclusion into qinit. There is something strange
+with the new qinit that make the potential ramp up with time. 
+The actual initialization might be more or less right now, but
+I'm not confident.
+
+23 July 18
+Particles are disappearing in large numbers during iterations with qinit.
+Fixed several errors in coding. Now seems to work correctly. 

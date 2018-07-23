@@ -8,5 +8,5 @@
      $     ,objfilename,lextfield,vpars,vperps,ndims,islp,slpD,CFin
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
-     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag
+     $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies)
