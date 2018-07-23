@@ -304,7 +304,6 @@
             if(ngeomobj.gt.0)stop '!!Quiet init only with no objects!!'
             nqblkmax=30
             call qinit
-!            stop   ! This is just testing for now.
          endif
       endif
 !---------------------------------------------

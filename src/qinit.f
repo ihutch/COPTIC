@@ -114,6 +114,8 @@
 ! as fills no more than islotmax, leaving a remainder. 
 ! Then reduce the number of blocks and iterate till the remainder is zero.
 ! Increment islot for each particle added. ntries tallying not needed.
+! If ldouble, then inject 2 particles with opposite velocities but same
+! position to null out the initial current density.
       include 'ndimsdecl.f'      
       include 'meshcom.f'
       include 'myidcom.f'
@@ -121,30 +123,34 @@
 
       integer iview(3,ndims),indi(ndims)     !Iterator
       integer nqbt
+      logical ldouble
+      data ldouble/.false./ ! Whether to place 2 opposite moving particles.
 
       nremain=islotmax-islot+1
-      nqbt=1
+      nper=1           ! Number injected per placeqbk. 1 or 2.
+      if(ldouble)nper=2
+      nqbt=nper
       do i=1,ndims
          nqbt=nqbt*nqblks(i)
       enddo
       if(myid.eq.0)then
-         write(*,*)'qinit:  i    nfills     islot       nqblks ...'
+         write(*,*)'qinit:ispecies  nfills     islot       nqblks ...'
       endif
  2    nfills=int(nremain/nqbt)      ! assuming 1 particle per fill per qblock.
       nremain=nremain-nfills*nqbt
-      if(myid.eq.0)write(*,'(8i10)')i,nfills,islot,nqblks
+      if(myid.eq.0)write(*,'(8i10)')ispecies,nfills,islot,nqblks
       do i=1,nfills
 ! Fill using iterator
          icomplete=mditerator(ndims,iview,indi,4,nqblks)
  1       continue
 ! Place one particle in block indi.
-           call placeqblk(nqblks,indi,islot,ispecies)         
+           call placeqblk(nqblks,indi,islot,ispecies,ldouble)
            islot=islot+1
          if(mditerator(ndims,iview,indi,0,nqblks).eq.0)goto 1
       enddo
-      if(nremain.le.0)return
+      if(nremain.le.nper-1)return
 ! Else reduce nqblks by 2, and iterate
-      nqbt=1
+      nqbt=nper
       do i=1,ndims
          nqblks(i)=max(1,nqblks(i)/2)
          nqbt=nqbt*nqblks(i)
@@ -153,16 +159,28 @@
 
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine placeqblk(nqblks,indi,islot,ispecies)
+      subroutine placeqblk(nqblks,indi,islot,ispecies,ldouble)
 ! Place a particle randomly in the block addressed by indi
-! So far only uniform holes, not those with holerad nonzero.
+!
+! For initializing particles with a trapped hole region
+! The 1-d parallel direction is that of B if it is coordinate-aligned,
+! or else dimension 1 (x).
+!
+! Hole parameters [switch-mnemonic,defaults] are 
+! holepsi, the peak hole potential [psi,0] 
+! holeum, the drift speed of the hole relative to the distribution [v,0]
+! holelen, the parallel length of the hole [l,4*Debyelen]
+! holetoplen, the stretch parameter for the hole top [tl,-1/psi]
+! holerad, the transverse hole radius [r,0]
+! holespeed, the rest-frame hole speed [derived: =holeum+vds]
+
       include 'ndimsdecl.f'      
       include 'meshcom.f'
       include 'partcom.f'
       include 'plascom.f'
       include 'myidcom.f'
       integer nqblks(ndims),indi(ndims),islot,ispecies
-      logical linmesh
+      logical linmesh,ldouble
       integer nbi
       parameter (nbi=16)
 ! Hole-related parameters:
@@ -183,16 +201,33 @@
       save
 
       idebug=0
-      if(lfirst)then
+!----------------------------------------
+      tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
+      tisq2=sqrt(2.)*tisq
+      if(lfirst.and.holepsi.ne.0.)then    ! Hole Initialization
+         do i=1,ndims
+            if(Bfield(i).ne.0.)goto 2
+         enddo
+         i=1
+ 2       id=i
+! Calculate holespeed using vds component in projection dimension.
+! Holeum is minus f drift speed relative to hole so holeum=-vds+holespeed:
+         holespeed=holeum+vds(ispecies)*vdrift(id)
+         if(myid.eq.0.and.ispecies.eq.hspecies)
+     $        write(*,'(2a,i2,a,f7.3,a,f7.3)')' Hole particle'
+     $        ,' initialization. Trapping id',id,'. Speed',holespeed
+     $        ,' psi',holepsi
 c Initialize u-range
-         umax=5.
+         umax=4.
          du=umax/nu
          do i=-nu,nu
             u(i)=i*du
          enddo
          if(holerad.ne.0) stop 'Nonzero holerad in qinit Error.'
          psi=holepsi
-         um=holeum    ! What about vdrift?
+    ! Here holeum is in standard velocity units, but um is in tisq2 units.
+         um=holeum/tisq2
+
 c Hole (decay) length
          coshlen=holelen+psi/2
 c The flattop length toplen. Negligible for large negative values      
@@ -205,14 +240,15 @@ c The flattop length toplen. Negligible for large negative values
             call axlabels('u0','f0')
             call pltend
          endif
-         lfirst=.false.
       endif
+      lfirst=.false.
+!----------------------------------------
 
  1    do i=1,ndims              ! Position
          call ranlux(ran,1)
          fp=(indi(i)+ran)/float(nqblks(i))
          fp=max(.000001,min(.999999,fp))
-         if(holepsi.ne.0..and.Bfield(i).ne.0)then
+         if(i.eq.id)then
 ! Hole density non-uniformity:
             x_part(i,islot)=findxofran(fp,holepsi,coshlen,toplen
      $           ,xmeshstart(i),xmeshend(i),nbi)
@@ -221,12 +257,10 @@ c The flattop length toplen. Negligible for large negative values
             x_part(i,islot)=(1.-fp)*xmeshstart(i)+fp*xmeshend(i)
          endif
       enddo
-      tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
-      tisq2=sqrt(2.)*tisq
 !                            ! Velocities
       do i=1,ndims
-         if(holepsi.ne.0..and.Bfield(i).ne.0)then
-! Hole normal direction. Change this.
+         if(i.eq.id)then
+! Hole normal direction.
             if(abs(psi).lt.phimin.or.fp.lt.phimin.or.1-fp.lt.phimin)then
 ! In non-hole region. Shortcut to external distrib.
                x_part(ndims+i,islot)=tisq*gasdev(myid)
@@ -240,7 +274,7 @@ c The flattop length toplen. Negligible for large negative values
                if(ixp.gt.0.and.ixp.lt.nup)then
                   x_part(ndims+i,islot)=
      $                 tisq2*((1-p+ixp)*u(-nu-1+ixp)+(p-ixp)*u(-nu+ixp))
-     $                 +vds(ispecies)*vdrift(i)
+     $                 +holespeed
                else
                   write(*,*)'placeqblk interpolation error',ixp,p
                   stop
@@ -261,12 +295,25 @@ c The flattop length toplen. Negligible for large negative values
       if(.not.linmesh)goto 1
       x_part(iflag,islot)=1
 
+      if(ldouble)then ! Double particle initialization
+         islot=islot+1
+         do i=1,ndims
+            x_part(i,islot)=x_part(i,islot-1)
+            x_part(i+ndims,islot)=-x_part(i+ndims,islot-1)
+            x_part(i+2*ndims,islot)=x_part(i+2*ndims,islot-1)
+            x_part(iflag,islot)=1                        
+         enddo
+         x_part(idtp,islot)=0.         
+      endif
+
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Given the distribution function at phi=psi: f0 at an array over velocities
+! Given the distribution function in the hole frame, which moves 
+! relative to the external Maxwellian at speed um, at phi=psi: 
+! f0 at an array over velocities
 ! u0, obtain the distribution function and its integral giving cumulative
 ! probability distribution at a lower potential phi over given u-array.
-! The +- limits of u**2 must be > psi.
+! The +- limits of u**2 must be > psi. (Still in hole frame)
       subroutine GetDistribAtPhi(psi,um,nphi,f0,u0,phi,nu,u,f,cumf)
       integer nphi,nu
       real f0(-2*nphi:2*nphi),u0(-2*nphi:2*nphi),psi
@@ -285,7 +332,7 @@ c The flattop length toplen. Negligible for large negative values
 ! Passing particles must be done directly because their slope singularity
 ! at the separatrix undermines accuracy of reverse interpolation.
             uinf=sign(sqrt(u(i)**2-phi),u(i))
-            f(i)=exp(-(uinf-um)**2)/sqpi
+            f(i)=exp(-(uinf+um)**2)/sqpi
          else
 ! Trapped: Interpolate f0,u0 to find f0i=f0(u0i)
             u0i=sign(sqrt(u(i)**2+psi-phi),u(i))
@@ -322,7 +369,7 @@ c The flattop length toplen. Negligible for large negative values
       sqpi=sqrt(3.1415926)
 c Call in BGKint such a way as to put into the negative trapped section
 c because it returns f0 u0 in reverse order.
-      call BGKint(nphi,psi,um,xmax,coshlen,tl,
+      call BGKint(nphi,psi,-um,xmax,coshlen,tl,
      $     phiarray,us,xofphi,den,denuntrap,dentrap,tilden
      $     ,f0(-nphi),u0(-nphi))
 c Copy across to the positive trapped section.
@@ -337,9 +384,9 @@ c Fill in the untrapped distribution (maybe not needed?)
          ui=sqrt(psi)+i*du
          uinf=sqrt(abs(ui**2-psi))   ! prevent rounding to negative.
          u0(nphi+i) = ui
-         f0(nphi+i) =exp(-(uinf-um)**2)/sqpi
+         f0(nphi+i) =exp(-(uinf+um)**2)/sqpi
          u0(-nphi-i)=-ui
-         f0(-nphi-i)=exp(-(uinf+um)**2)/sqpi
+         f0(-nphi-i)=exp(-(uinf-um)**2)/sqpi
       enddo
 c Now f0(-2*nphi:2*nphi) is the entire distribution at phi=psi.
 

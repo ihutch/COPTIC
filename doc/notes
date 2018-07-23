@@ -14990,3 +14990,17 @@ I'm not confident.
 23 July 18
 Particles are disappearing in large numbers during iterations with qinit.
 Fixed several errors in coding. Now seems to work correctly. 
+A 1-d hole has greatly quieted initialization than before. 
+Also, the qinit is at least twice the speed of trapinit.
+Figured out the drifting distributions and corrected sqrt(2) and sign.
+
+Now runs with periodic particles and potential with approximately a
+constant offset of potential. Not unreasonably since \phi is now not
+defined modulo a constant. It looks as if the offset makes the mean
+potential approximately zero. Level does not significantly drift after
+500 timesteps. Trying -sb0.01 shows no improvement on the offset but
+a substantially worse (and growing) noise. 
+
+I probably want to think about a way to rationalize the potential 
+offset adjustment. However, at the moment, I think it is better to
+leave it so we see if there's a systematic evolution.
