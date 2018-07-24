@@ -431,6 +431,7 @@
          endif
          if(argument(1:3).eq.'-pu')nptdiag=0
          if(argument(1:3).eq.'-pi')then
+            nqblkmax=30        ! If no argument still use qinit
             read(argument(4:),*,err=201,end=201)nqblkmax
          endif
          if(argument(1:3).eq.'-fs')then

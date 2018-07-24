@@ -857,20 +857,11 @@
       include 'partcom.f'
       real x(idtp)
       integer id
-      integer ATMOST,DIMEN,TAUS
-      logical FLAG(2)
-      doubleprecision qrn(ndims)
       real expsa(ndims),expsi(ndims)
-      logical lfirst,lsobol
-      data lfirst/.true./lsobol/.false./
-      save lfirst,lsobol,expsa,expsi
+      logical lfirst
+      data lfirst/.true./
+      save lfirst,expsa,expsi
       if(lfirst)then
-         ATMOST=n_partmax
-         DIMEN=ndims
-! Use quasirandom in dimension 2 if all periodic, magnetized.
-         if(.not.lnotallp.and.Bt.gt.1.)lsobol=.true.
-! This needs to be different for each process, but it isn't.
-         if(lsobol)call INSOBL(FLAG,DIMEN,ATMOST,TAUS)
          do i=1,ndims
             g=gn(i)
             s0=gp0(i)
@@ -881,16 +872,11 @@
          enddo
          lfirst=.false.
       endif
-      if(lsobol)call GOSOBL(qrn)
       do j=1,ndims
          if(j.eq.id.or.x(iflag).ne.1)then
 ! Select new transverse position only the first time.
             g=gn(j)
-            if(lsobol.and.j.eq.2.and.x(iflag).ne.1)then
-               P=real(qrn(j))
-            else
-               call ranlux(P,1)
-            endif
+            call ranlux(P,1)
             if(abs(g).ne.0)then
 !         write(*,*)'Nonuniform plasma ranlenposition'
                sp=gp0(j)+alog(P*expsa(j)+(1.-P)*expsi(j))/g

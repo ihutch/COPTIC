@@ -7,9 +7,9 @@
 ! reducing the total number of qblocks and the process iterated till all
 ! particles are placed.
 
-! The number of qblocks per dimension is kept less than iused-2 and 30,
-! but greater than zero. It is initialized as nqbset but constrained by
-! those limits.
+! The number of qblocks per dimension is kept less than nqblksmax,
+! but greater than zero. And for single-cell sides it is unity.
+! It is initialized as nqbset but constrained by those limits.
 
       subroutine qinit
       implicit none
@@ -35,7 +35,12 @@
 ! nqbset parameters adjusted only from 1 parameter: nqblkmax [-pi...]
       do i=1,ndims
          mlen=ixnp(i+1)-ixnp(i)
-         nqbset(i)=max(1,min(nqblkmax,mlen-2))
+         if(mlen-2.eq.1)then   ! Single cell sides need no quieting.
+            nqbset(i)=1
+         else
+            nqbset(i)=max(1,nqblkmax)           ! Quiet short sides.
+!         nqbset(i)=max(1,min(nqblkmax,mlen-2)) ! Don't quiet short.
+         endif
          nqblks(i)=nqbset(i)
       enddo
 
@@ -110,7 +115,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine fillqblocksize(nqblks,islot,islotmax,ispecies)
 ! Fill the qblocks of current size with as many complete sets of particles 
-! as fills no more than islotmax, leaving a remainder. 
+! as can fill no more than islotmax, leaving a remainder. 
 ! Then reduce the number of blocks and iterate till the remainder is zero.
 ! Increment islot for each particle added. ntries tallying not needed.
 ! If ldouble, then inject 2 particles with opposite velocities but same
