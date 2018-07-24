@@ -15020,3 +15020,7 @@ Tried fiddling with boundary conditions but did not find a way of
 controlling phi offset. Possibly I need an explicit phi-adjust routine.
 Is there a way of using the median height? How do you quickly find the
 median of a lot of numbers?
+
+24 July 18
+Add makemedianzero code that subtracts the median from the potential 
+when potential is periodic in all dimensions and there are no objects.

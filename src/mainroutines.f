@@ -250,3 +250,104 @@ c but writing and plotting only by top process
          endif
       endif
       end
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Select the value of array arr that ranks k out of n.
+! Median is quickselect(n/2,n,arr)
+! The array is mixed up in the process.
+! From http://www.stat.cmu.edu/~ryantibs/median/
+! Apparently inspired by/copied from Numerical Recipes.
+! An implementation of Hoare's algorithm TOMS64 I think. 
+      real function quickselect(k,n,arr)
+      integer k,n
+      real arr(n)
+      integer i,ir,j,l,mid
+      real a,temp
+
+      l = 1
+      ir = n
+ 2    if (ir-l.le.1) then
+         if (ir-1.eq.1) then
+            if (arr(ir).lt.arr(l)) then
+               temp = arr(l)
+               arr(l) = arr(ir)
+               arr(ir) = temp
+            endif
+         endif
+         quickselect = arr(k)
+         return
+      else
+         mid = (l+ir)/2
+         temp = arr(mid)
+         arr(mid) = arr(l+1)
+         arr(l+1) = temp
+         if (arr(l).gt.arr(ir)) then
+            temp = arr(l)
+            arr(l) = arr(ir)
+            arr(ir) = temp
+         endif
+         if (arr(l+1).gt.arr(ir)) then
+            temp = arr(l+1)
+            arr(l+1) = arr(ir)
+            arr(ir) = temp
+         endif
+         if (arr(l).gt.arr(l+1)) then
+            temp = arr(l)
+            arr(l) = arr(l+1)
+            arr(l+1) = temp
+         endif
+         i = l+1
+         j = ir
+         a = arr(l+1)
+ 3       continue
+         i = i+1
+         if (arr(i).lt.a) goto 3
+ 4       continue
+         j = j-1
+         if (arr(j).gt.a) goto 4
+         if (j.lt.i) goto 5
+         temp = arr(i)
+         arr(i) = arr(j)
+         arr(j) = temp
+         goto 3
+ 5       arr(l+1) = arr(j)
+         arr(j) = a
+         if (j.ge.k) ir = j-1
+         if (j.le.k) l = i
+      endif
+      goto 2
+      end
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      real function getmedian(ifull,iuds,u,scratch)
+! Return the median of the ndims dimensional array u addressed linearly
+! ifull and iuds are the full and used dimensions of u.
+! Use scratch which must have size at least prod_i[iuds(i)].
+      include 'ndimsdecl.f'
+      integer ifull(ndims),iuds(ndims)
+      real u(*),scratch(*)
+      integer indi(ndims),iview(3,ndims)
+! Copy the u array into scratch which is compact using iuds.
+      ntotal=1
+      do i=1,ndims
+         ntotal=ntotal*iuds(i)
+      enddo
+      icomplete=mditerator(ndims,iview,indi,4,iuds)
+ 1    scratch(indexcontract(ndims,iuds,indi))
+     $     =u(indexcontract(ndims,ifull,indi))
+      if(mditerator(ndims,iview,indi,0,iuds).eq.0)goto 1
+      getmedian=quickselect(ntotal/2,ntotal,scratch)
+      end
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine makemedianzero(ifull,iuds,u,scratch)
+! Subtract its median from the array u.
+      include 'ndimsdecl.f'
+      integer ifull(ndims),iuds(ndims)
+      real u(*),scratch(*)
+      integer indi(ndims),iview(3,ndims)
+
+      themedian=getmedian(ifull,iuds,u,scratch)
+      icomplete=mditerator(ndims,iview,indi,4,iuds)
+ 1    ipointer=indexcontract(ndims,ifull,indi)
+      u(ipointer)=u(ipointer)-themedian
+      if(mditerator(ndims,iview,indi,0,iuds).eq.0)goto 1
+
+      end

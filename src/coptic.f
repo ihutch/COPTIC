@@ -13,7 +13,7 @@
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
 ! Running averages.
       real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
-!
+      real scratch(na_i,na_j,na_k)
       real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k),voltotal
       real cij(2*ndimsmax+1,na_i,na_j,na_k)
 ! Diagnostics (moments)
@@ -419,6 +419,8 @@
      $              ,fadcomp,ictl-2,ierr,myid,idims)
             endif
          endif
+         if(LPF(1).and.LPF(2).and.LPF(3).and.ngeomobj.eq.0) 
+     $        call makemedianzero(ifull,iuds,u,scratch) ! remove offset.
 ! ------------------------------------------------
          call calculateforces(ndims,iLs,cij,u)
          if(ipstep.eq.0.or.mod(j,ipstep).eq.0)then

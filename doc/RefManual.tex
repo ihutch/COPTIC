@@ -824,10 +824,12 @@ non-zero collisions. Single-species holes typically use \verb!-sb0!
 negative charge particles means the particles can be considered to be
 electrons and the velocity units $\sqrt{T_e/m_e}$ (assuming $T=1$).
 
-\paragraph{-pi...} Reads an integer argument from the switch, which is
-set equal to the maximum number of qblocks in each dimension, and if
-greater than zero causes the qinit code to be used for particle
-initialization. 
+\paragraph{-pi...} Use quiet particle initialization. Reads an integer
+argument from the switch, which gives the maximum number of qblocks in
+each dimension, and if greater than zero causes the qinit code (rather
+than the defaults pinit or trapinit) to be used for particle
+initialization. If no argument can be read, then the number of qblocks
+is set to a default of 30.
 
 
 

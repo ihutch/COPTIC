@@ -583,7 +583,16 @@
             endif
          endif
       enddo
-
+! Consistency checks for holes
+      if(holepsi.ne.0)then
+         do i=1,ndims
+            if(gn(i).ne.0)then ! bgn is not yet functional.
+               if(lmyidhead)
+     $        write(*,*)'Holes do not work with nonuniform background'
+               stop
+            endif
+         enddo
+      endif
       return
 !------------------------------------------------------------
 ! Help text
