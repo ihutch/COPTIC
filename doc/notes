@@ -15024,3 +15024,24 @@ median of a lot of numbers?
 24 July 18
 Add makemedianzero code that subtracts the median from the potential 
 when potential is periodic in all dimensions and there are no objects.
+
+Thinking about the avoiding step limit. nf_step and nf_nsteps are key
+parameters that are part of 3dcom.f the flux storage determination
+which has nf_maxsteps. Neither nf_step nor (probably) nf_nsteps ought
+to be allowed to exceed nf_maxsteps. A way to prevent this might be 
+to stop incrementing nf_step when it reaches nf_maxsteps. However 
+there are various places where nf_step is used for telling things other
+than where to store the flux data. Those would have to be changed.
+
+There are many occurrences, but most are associated with flux.
+In particular, cijroutine.f, fluxdata.f, objplot.f, padvnc.f, reduce.f,
+and stress.f all appear to be using strictly for flux parameter and 
+so need no changes. That leaves: partwriteread.f, mainroutines.f, coptic.f
+
+mainroutines.f only incidentally uses it as the name of an argument.
+Changed that to nstep. Same for partwriteread.f. coptic.f is more
+mixed.  nf_step gets set internally from readfluxfile. It is passed to
+restartread (but not set in it). Then the main iteration increments
+it, etc. It is from then on that it needs to be reconsidered.
+Completed what I hope will limit the flux writing length, but not the 
+diagnostic run length.

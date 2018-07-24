@@ -353,10 +353,10 @@
       if(Bt.gt..01)call nameappendexp(name,'B',Bt,1)
       end
 !************************************************************************
-      subroutine reportprogress(nf_step,nsteps,nsubc,ndropped,ierr)
+      subroutine reportprogress(nstep,nsteps,nsubc,ndropped,ierr)
 ! Output parameter development to stdout.
       implicit none
-      integer nf_step,nsteps,nsubc,ndropped,ierr
+      integer nstep,nsteps,nsubc,ndropped,ierr
       include 'ndimsdecl.f'
       include 'partcom.f'
       integer k
@@ -364,10 +364,10 @@
       external fluxdiag
 
 ! Step number print
-            if(nf_step.gt.9999.or.abs(ierr).gt.999)then
-               write(*,'(i5.5,i5,$)')nf_step,ierr
+            if(nstep.gt.9999.or.abs(ierr).gt.999)then
+               write(*,'(i5.5,i5,$)')nstep,ierr
             else
-               write(*,'(i4.4,i4,$)')nf_step,ierr
+               write(*,'(i4.4,i4,$)')nstep,ierr
             endif
 
 ! write out flux to object 1.
@@ -375,9 +375,9 @@
             if(nspecies.gt.1)then
                write(*,*)(k,nparta(k),k=1,nspecies)
             else
-               if(mod(nf_step,5).eq.0)write(*,*)
+               if(mod(nstep,5).eq.0)write(*,*)
             endif
-            if(mod(nf_step,(nsteps/25+1)*5).eq.0)then
+            if(mod(nstep,(nsteps/25+1)*5).eq.0)then
                write(*,*)'nrein   n_part  ioc_part  rhoinf     dt'
      $              ,'   passthrus'
                write(*,'(i6,i9,i9,f11.2,f9.4,i6)')
@@ -398,12 +398,12 @@
             end
 !************************************************************************
       subroutine periodicwrite(ifull,iuds,iLs,diagsum,uave,lmyidhead
-     $     ,ndiags,ndiagmax,nf_step,nsteps,idistp,vlimit
+     $     ,ndiags,ndiagmax,nstep,nsteps,idistp,vlimit
      $     ,xnewlim,cellvol,ibinit,idcount,restartpath,iavesteps)
 ! Periodic reduction, reporting, and writing of information on the 
 ! state of the simulation.
       implicit none
-      integer ndiags,ndiagmax,nf_step,nsteps,idistp,ibinit,idcount
+      integer ndiags,ndiagmax,nstep,nsteps,idistp,ibinit,idcount
       integer iavesteps
       logical lmyidhead
       real cellvol
@@ -448,17 +448,17 @@
                if(ispecies.eq.nspecies)write(*,*)
                if(ispecies.eq.1)then
                   if(nsteps.gt.9999)then
-                     write(argument,'(''.dia'',i5.5)')nf_step
+                     write(argument,'(''.dia'',i5.5)')nstep
                   else
-                     write(argument,'(''.dia'',i4.4)')nf_step
+                     write(argument,'(''.dia'',i4.4)')nstep
                   endif
                else
                   if(nsteps.gt.9999)then
                      write(argument,'(''.d'',i1.1,''a'',i5.5)')
-     $                 ispecies,nf_step
+     $                 ispecies,nstep
                   else
                      write(argument,'(''.d'',i1.1,''a'',i4.4)')
-     $                 ispecies,nf_step
+     $                 ispecies,nstep
                   endif
                endif
                diagfilename=restartpath
@@ -486,10 +486,10 @@
                call nameconstruct(diagfilename)
                if(nsteps.gt.9999)then
                   write(diagfilename(lentrim(diagfilename)+1:)
-     $                 ,'(''.pex'',i5.5)')nf_step
+     $                 ,'(''.pex'',i5.5)')nstep
                else
                   write(diagfilename(lentrim(diagfilename)+1:)
-     $                 ,'(''.pex'',i4.4)')nf_step
+     $                 ,'(''.pex'',i4.4)')nstep
                endif
                if(idistp-2*(idistp/2).ne.0)
      $              call distwrite(xlimit,vlimit,xnewlim,

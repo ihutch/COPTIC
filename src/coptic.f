@@ -77,7 +77,7 @@
       integer i,iavesteps,ibinit,iCFcount,ickst,ictl,id,idiag,idn
       integer ied,ierr,ierrsor,ifix,ifobj,ifplot,iobpl
       integer ipoint,ispecies,istat,istepave,iobpsw,j,k,maccel
-      integer mbzero,ninjcomp0(nspeciesmax),nsteps,nth,ndiags
+      integer mbzero,ninjcomp0(nspeciesmax),nstep,nsteps,nth,ndiags
 ! And Functions
       integer lentrim,nbcat,nameappendint,oicijfunc
       external lentrim,nbcat,nameappendint,oicijfunc
@@ -347,13 +347,16 @@
      $           ,ndims,ifull,iuds,0,0.)
          enddo
       enddo
+      nstep=nf_step
 !----------------------------------------------------------
 ! Main step iteration ##############################################
       do j=1,nsteps
          if(nspecies.gt.1.or.holepsi.ne.0.)
      &        boltzamp=max(0.,boltzamp0*(mbzero-nf_step+2)/(mbzero+1.))
-         nf_step=nf_step+1
-         istepave=min(nf_step,iavesteps)
+         nstep=nstep+1
+         nf_step=min(nf_maxsteps-1,nf_step+1) 
+! Don't increment nf_step beyond its allowed maximum.
+         istepave=min(nstep,iavesteps)
 ! Transfer deposits periodically or from ghost cells.
          call diagperiod(psum,ifull,iuds,iLs,1)
          call psumreduce(psum,nrein,phirein,ndims,ifull,iuds,iLs)
@@ -432,7 +435,7 @@
      $           ixnp,xn,ifix,'potential:'//'!Af!@'//char(0),dum,dum)
 ! Phase space done by all processes, even though only one of them plots.
             if(ldistshow.and.iuds(2).eq.3.and.iuds(3).eq.3)then
-               call phasepscont(ifull,iuds,u,nf_step,lphiplot
+               call phasepscont(ifull,iuds,u,nstep,lphiplot
      $              ,restartpath)
             endif
          endif
@@ -455,7 +458,7 @@
          nf_npart(nf_step)=n_part
 
 ! Report step values etc.
-         if(lmyidhead)call reportprogress(nf_step,nsteps,nsubc,ndropped
+         if(lmyidhead)call reportprogress(nstep,nsteps,nsubc,ndropped
      $        ,ierr)
 
 ! These running and box averages do not include the updates for this step.
@@ -466,7 +469,7 @@
 ! out, if we are doing diagnostics.
          if(mod(j,iavesteps).eq.0)then
             call periodicwrite(ifull,iuds,iLs
-     $        ,diagsum,uave,lmyidhead,ndiags,ndiagmax,nf_step,nsteps
+     $        ,diagsum,uave,lmyidhead,ndiags,ndiagmax,nstep,nsteps
      $        ,idistp,vlimit,xnewlim,cellvol,ibinit,idcount,restartpath
      $        ,iavesteps)
             if(bdt.lt.0.and.lmyidhead)then
@@ -477,7 +480,7 @@
      $           iuds(2).eq.3.and.iuds(3).eq.3)then
 ! If we have not already written phaseplot, but we are writing distribs
 ! and it is a 1-d calculation:
-               call phasepscont(ifull,iuds,u,nf_step,lphiplot
+               call phasepscont(ifull,iuds,u,nstep,lphiplot
      $              ,restartpath)
             endif
          endif
@@ -490,7 +493,7 @@
          if(idcount.gt.0)call partdistup(xlimit,vlimit,xnewlim,
      $        cellvol,myid,0,1)
 ! Sometimes write them out:
-         if(iwstep.gt.0.and.mod(nf_step,iwstep).eq.0)call datawrite(myid
+         if(iwstep.gt.0.and.mod(nstep,iwstep).eq.0)call datawrite(myid
      $        ,partfilename,restartpath,ifull,iuds,u,uave,qave)
 
 ! This non-standard fortran call works with gfortran and g77 to flush stdout.
@@ -509,9 +512,9 @@
      $     ,restartpath,ifull,iuds,u,uave,qave)
 !-------------------------------------------------------------------
       call mpifinalize(ierr)
-! Check some flux diagnostics and writing.
-      call finaldiags(lmyidhead,linjplot,Ti,mf_obj,nf_step,rinf
-     $     ,ifobj,ifplot,rcij,rs,cv,iobpsw)
+! Check some flux diagnostics and writing. Really nf_step.
+      if(nf_step.eq.nstep)call finaldiags(lmyidhead,linjplot,Ti,mf_obj
+     $     ,nf_step,rinf,ifobj,ifplot,rcij,rs,cv,iobpsw)
 
       end
 ! End of Main Program.

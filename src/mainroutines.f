@@ -94,10 +94,10 @@
       end
 !***********************************************************************
       subroutine restartread(lrestart,fluxfilename,partfilename,nsteps
-     $     ,nf_step,nf_maxsteps,phifilename,ifull,iuds,ied,u,ierr
+     $     ,nstep,nf_maxsteps,phifilename,ifull,iuds,ied,u,ierr
      $     ,lmyidhead,myid,phafilename,uave)
       implicit none
-      integer lrestart,nsteps,nf_step,nf_maxsteps,ied,ierr,myid
+      integer lrestart,nsteps,nstep,nf_maxsteps,ied,ierr,myid
       logical lmyidhead
       character*100 partfilename,phifilename,fluxfilename,phafilename
       integer ifull(*),iuds(*)
@@ -123,12 +123,13 @@
      $              ,' Restart file read: '
      $              ,partfilename(1:lentrim(partfilename)+1),lrestart
                call locateinit()
-               if(nsteps+nf_step.gt.nf_maxsteps)then
+               if(nsteps+nstep.gt.nf_maxsteps)then
                   if(lmyidhead)write(*,*)'Asked for',
-     $                 nsteps,' in addition to',nf_step,
-     $                 ' Total',nsteps+nf_step,
-     $                 ' too much; set to',nf_maxsteps-1
-                  nsteps=nf_maxsteps-nsteps-1
+     $                 nsteps,' in addition to',nstep,
+     $                 ' Total',nsteps+nstep,
+     $                 ' will exceed flux storage',nf_maxsteps
+!     $                 ' too much; set to',nf_maxsteps-1
+!                  nsteps=nf_maxsteps-nsteps-1
                endif
                ied=1
 ! Only read the phi-file if the flux file was present. Full restart.
@@ -151,18 +152,18 @@
 
       end
 !**********************************************************************
-      subroutine finaldiags(lmyidhead,linjplot,Ti,mf_obj,nf_step,rinf
+      subroutine finaldiags(lmyidhead,linjplot,Ti,mf_obj,nstep,rinf
      $     ,ifobj,ifplot,rcij,rs,cv,iobpsw)
       implicit none
       logical lmyidhead,linjplot
       real Ti,rinf,rcij,rs,cv(*)
-      integer mf_obj,nf_step,ifobj,ifplot,iobpsw
+      integer mf_obj,nstep,ifobj,ifplot,iobpsw
 
 ! Check some flux diagnostics and writing.
       if(lmyidhead)then 
          if(linjplot)call plotinject(Ti)
          do ifobj=1,mf_obj
-            call fluxave(nf_step/2,nf_step,ifobj,ifplot,rinf)
+            call fluxave(nstep/2,nstep,ifobj,ifplot,rinf)
          enddo
 !         write(*,*)'Calling objplot'
          if(ifplot.gt.0)then

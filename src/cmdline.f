@@ -376,8 +376,7 @@
             read(argument(3:),*,end=201)nsteps
             if(nsteps.gt.nf_maxsteps)then
                if(lmyidhead)write(*,*)'Asked for more steps',nsteps,
-     $              ' than allowed. Limit ',nf_maxsteps-1
-               nsteps=nf_maxsteps-1
+     $              ' than nf_maxsteps-1=',nf_maxsteps-1
             endif
          endif
          if(argument(1:3).eq.'-vn')then
