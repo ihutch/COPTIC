@@ -347,7 +347,7 @@ c but writing and plotting only by top process
 
       themedian=getmedian(ifull,iuds,u,scratch)
       icomplete=mditerator(ndims,iview,indi,4,iuds)
- 1    ipointer=indexcontract(ndims,ifull,indi)
+ 1    ipointer=1+indexcontract(ndims,ifull,indi)
       u(ipointer)=u(ipointer)-themedian
       if(mditerator(ndims,iview,indi,0,iuds).eq.0)goto 1
 

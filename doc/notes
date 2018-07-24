@@ -15045,3 +15045,12 @@ restartread (but not set in it). Then the main iteration increments
 it, etc. It is from then on that it needs to be reconsidered.
 Completed what I hope will limit the flux writing length, but not the 
 diagnostic run length.
+
+A quick check with nf_maxsteps set ridiculously short, shows that 
+diagnostic files continue to be written apparently correctly.
+
+Found a problem with the last x-position at first diag output.
+It is caused by makemedianzero. It was caused by not adding 1
+to the indexcontract since it is the offset. Fixed.
+
+I find that deep holes now work.
