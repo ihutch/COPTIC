@@ -210,13 +210,14 @@
 
          if(k_sor.eq.1)then
 ! Chebychev acceleration doesn't work very well at start.
-! Better not to start with such a big value of omega.
+! Better not to start with such a big value in omega.
 ! Otherwise it tends to go unstable. 
             omega=1./(1.-0.45*xjac_sor**2)
 ! One might leave the original for checking purposes:
 !            omega=1./(1.-0.5*xjac_sor**2)
          else
-            omega2=1./(1.-0.25*xjac_sor**2*omega)
+! The value 0.25 is too close to instability. So
+            omega2=1./(1.-0.247*xjac_sor**2*omega)
             omega=omega2
          endif
       enddo

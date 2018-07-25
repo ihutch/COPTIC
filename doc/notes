@@ -15062,3 +15062,11 @@ Tested in a rudimentary way 65x10x10 mesh. Looks sensible.
 Changed the identification of holetoplen to be with holepow got rid of
 the equivalence and reorganized so that one can override the defaults
 with command line.
+
+Found a bug that seems to be in sormpi. It doesn't converge when the
+case is 129 129 3 with periodic phi-boundaries. But that's the only 
+xy mesh that is unstable!!! Tried changing sormpi.f underrelax. 
+No difference. I find that a tiny tweak on the 0.25 coefficient in
+Chebychev acceleration stabilizes it. Although it was not obvious
+a 65 65 3 case also had nonconvergency issues prior to this tweak.
+So it appears that 2^n+1 square is the most likely to be unstable.
