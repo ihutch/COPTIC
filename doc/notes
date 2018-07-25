@@ -15057,3 +15057,4 @@ I find that deep holes now work.
 
 25 Jul 18
 Added holerad functionality to qinit.f (not tested active).
+Tested in a rudimentary way 65x10x10 mesh. Looks sensible.

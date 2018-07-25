@@ -227,7 +227,7 @@ c Initialize u-range
          do i=-nu,nu
             u(i)=i*du
          enddo
-         if(holerad.ne.0) stop 'Nonzero holerad in qinit Error.'
+!         if(holerad.ne.0) stop 'Nonzero holerad in qinit Error.'
          psi=holepsi
     ! Here holeum is in standard velocity units, but um is in tisq2 units.
          um=holeum/tisq2
