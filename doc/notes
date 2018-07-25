@@ -15054,3 +15054,6 @@ It is caused by makemedianzero. It was caused by not adding 1
 to the indexcontract since it is the offset. Fixed.
 
 I find that deep holes now work.
+
+25 Jul 18
+Added holerad functionality to qinit.f (not tested active).

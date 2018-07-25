@@ -247,20 +247,29 @@ c The flattop length toplen. Negligible for large negative values
       endif
       lfirst=.false.
 !----------------------------------------
-
- 1    do i=1,ndims              ! Position
+ 1    r2=0.
+      iend=ndims
+      if(holepsi.ne.0)iend=ndims-1
+      do ii=1,iend            ! Transverse or Total Position set.
+         i=mod(id+ii-1,ndims)+1
          call ranlux(ran,1)
          fp=(indi(i)+ran)/float(nqblks(i))
          fp=max(.000001,min(.999999,fp))
-         if(i.eq.id)then
-! Hole density non-uniformity:
-            x_part(i,islot)=findxofran(fp,holepsi,coshlen,toplen
-     $           ,xmeshstart(i),xmeshend(i),nbi)
-            phi=phiofx(x_part(i,islot),psi,coshlen,toplen)
-         else
-            x_part(i,islot)=(1.-fp)*xmeshstart(i)+fp*xmeshend(i)
-         endif
+         x_part(i,islot)=(1.-fp)*xmeshstart(i)+fp*xmeshend(i)
+         if(holerad.ne.0)r2=r2+x_part(i,islot)**2
       enddo
+      psiradfac=1.
+      if(holepsi.ne.0.)then
+         call ranlux(ran,1)
+         fp=(indi(id)+ran)/float(nqblks(id))
+         fp=max(.000001,min(.999999,fp))
+         if(holerad.ne.0)psiradfac=exp(-r2/holerad**2)
+! Hole density non-uniformity: transverse local value of peak potential.
+         x_part(id,islot)=findxofran(fp,psiradfac*psi,coshlen,toplen
+     $        ,xmeshstart(id),xmeshend(id),nbi)
+      endif
+      phi=psiradfac*phiofx(x_part(id,islot),psi,coshlen,toplen)
+
 !                            ! Velocities
       do i=1,ndims
          if(i.eq.id)then
@@ -270,7 +279,7 @@ c The flattop length toplen. Negligible for large negative values
                x_part(ndims+i,islot)=tisq*gasdev(myid)
      $              +vds(ispecies)*vdrift(i)
             else
-! Use cumf interpolation.
+! Use cumf interpolation. We use the central psi value, but local phi.
                call GetDistribAtPhi(psi,um,nphi,f0,u0,phi,nu,u,f,cumf)
                call ranlux(fp,1)
                fp=fp*cumf(nu)
@@ -289,8 +298,6 @@ c The flattop length toplen. Negligible for large negative values
      $           +vds(ispecies)*vdrift(i)
          endif
       enddo
-!      write(*,*)islot,(x_part(i+3,islot),i=1,3)
-!      write(*,*)ispecies,nspecies,vds(ispecies),vdrift(3)
 ! The previous timestep length.
       x_part(idtp,islot)=0.
 ! Initialize the mesh fraction data in x_part.
