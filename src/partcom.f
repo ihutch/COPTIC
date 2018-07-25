@@ -57,7 +57,6 @@
       integer hspecies
       real holepsi,holelen,holeum,holespeed,holeeta,holepow,holerad
       real holetoplen
-      equivalence (holeeta,holetoplen)
 ! Coefficients etc of spatially-varying background
       integer bgnmax,bgn(ndims)
       parameter (bgnmax=3)
@@ -73,7 +72,7 @@
      $     ,ripernode,crelax,ipartperiod,fcarea,lnotallp,ibool_part
      $     ,caverein,chi,notseparable,nqblkmax
      $     ,holepsi,holelen,holeum,holespeed,holeeta,holepow,holerad
-     $     ,hspecies,bgn,bga,bgmax
+     $     ,holetoplen,hspecies,bgn,bga,bgmax
 
 ! Orbit plotting storage for tracking the first norbits orbits.
 ! This nstepmax does NOT control the maximum number of steps.

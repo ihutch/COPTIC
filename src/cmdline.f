@@ -169,12 +169,6 @@
          ldistshow=.false.
          boltzamp=1.
          holepsi=0.
-         holelen=4.
-         holeeta=2.
-         holeum=0.
-         holepow=0.
-         holerad=0.
-         hspecies=0
          nqblkmax=0  ! Default 0=>pinit. >0 qinit
 ! Boundary condition switch and value. 0=> logarithmic.
          islp=0
@@ -451,12 +445,21 @@
          if(argument(1:1).ne.'-')
      $        read(argument(1:),'(a)',end=201)objfilename
          if(argument(1:3).eq.'-ih')then
+            ! Ensure we override prior settings.
+            holepsi=0.
+            holelen=0.
+            holeeta=2.   ! Needed default for trapinit.
+            holeum=0.
+            holepow=0.
+            holerad=0.
             hspecies=nspecies
             read(argument(4:),*,err=201,end=231)holepsi,holeum,holelen
      $           ,holeeta,holepow,holerad
-!            goto 240
-! Default hole value[s] are being used
  231        continue
+            if(holepsi.ne.0)then ! We are truly setting.
+               if(holelen.eq.0)holelen=4.+holepsi/2.
+               if(holepow.eq.0)holepow=-1/holepsi  !->toplen
+            endif
          endif
          if(argument(1:3).eq.'-ho')then
             call geomdocument()

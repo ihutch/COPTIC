@@ -31,7 +31,7 @@
       real theta,ranlenposition,gasdev
       integer nqbset(ndims),nqblks(ndims),mlen
       
-
+      holetoplen=holepow
 ! nqbset parameters adjusted only from 1 parameter: nqblkmax [-pi...]
       do i=1,ndims
          mlen=ixnp(i+1)-ixnp(i)
@@ -233,9 +233,9 @@ c Initialize u-range
          um=holeum/tisq2
 
 c Hole (decay) length
-         coshlen=holelen+psi/2
+         coshlen=holelen  ! Now set in cmdline +psi/2
 c The flattop length toplen. Negligible for large negative values      
-         toplen=-1./psi
+!         toplen=-1./psi   Now set in cmdline
          xmax=1.3*findxofphi(psi/(NPHI),psi,coshlen,toplen,0.,50.,7)
          call f0Construct(nphi,psi,um,xmax,coshlen,toplen,
      $        phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0)
