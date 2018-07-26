@@ -15082,3 +15082,6 @@ Verified that the anticipated pinit case reports that. So the initialization
 is done from the maxwellstats array and should be anisotropic. 
 Find by experiment that trapinit and pinit are giving anisotropic T,
 but qinit is not. Fixed that.
+
+Found other problems that I thought were caused by no save, but were 
+because initializations were not being done because holepsi was zero.

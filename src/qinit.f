@@ -202,50 +202,50 @@
       real tisq,tisq2,tisqperp,umax,coshlen
       integer lastspecies,id
       data lastspecies/0/
-! This save only seems to save the explicitly declared variables.
       save
 
-      idebug=0
-! Unaccountably, these values are incorrect unless outside init block.
-      tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
-      tisq2=sqrt(2.)*tisq
-      tisqperp=sqrt(Tperps(ispecies)*abs(eoverms(ispecies)))
 !----------------------------------------
-      if(ispecies.ne.lastspecies
-     $     .and.holepsi.ne.0.)then ! Hole Initialization
+      if(ispecies.ne.lastspecies)then    !Initialization
+! These values must be set even for zero hole depth.
+         idebug=0
          do i=1,ndims
             if(Bfield(i).ne.0.)goto 2
          enddo
          i=1
  2       id=i
+         tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
+         tisq2=sqrt(2.)*tisq
+         tisqperp=sqrt(Tperps(ispecies)*abs(eoverms(ispecies)))
+
+         if(holepsi.ne.0.)then ! Hole Initialization
 ! Calculate holespeed using vds component in projection dimension.
 ! Holeum is minus f drift speed relative to hole so holeum=-vds+holespeed:
-         holespeed=holeum+vds(ispecies)*vdrift(id)
-         if(myid.eq.0.and.ispecies.eq.hspecies)
-     $        write(*,'(2a,i2,a,f7.3,a,f7.3)')' Hole particle'
-     $        ,' initialization. Trapping id',id,'. Speed',holespeed
-     $        ,' psi',holepsi
+            holespeed=holeum+vds(ispecies)*vdrift(id)
+            if(myid.eq.0.and.ispecies.eq.hspecies)
+     $           write(*,'(2a,i2,a,f7.3,a,f7.3)')' Hole particle'
+     $           ,' initialization. Trapping id',id,'. Speed',holespeed
+     $           ,' psi',holepsi
 c Initialize u-range
-         umax=4.
-         du=umax/nu
-         do i=-nu,nu
-            u(i)=i*du
-         enddo
-!         if(holerad.ne.0) stop 'Nonzero holerad in qinit Error.'
-         psi=holepsi
+            umax=4.
+            du=umax/nu
+            do i=-nu,nu
+               u(i)=i*du
+            enddo
+            psi=holepsi
     ! Here holeum is in standard velocity units, but um is in tisq2 units.
-         um=holeum/tisq2
-
+            um=holeum/tisq2
 c Hole (decay) length
-         coshlen=holelen  ! Now set in cmdline +psi/2
+            coshlen=holelen     ! Now set in cmdline +psi/2
 c The flattop length holetoplen. Negligible for large negative values.     
-         xmax=1.3*findxofphi(psi/(NPHI),psi,coshlen,holetoplen,0.,50.,7)
-         call f0Construct(nphi,psi,um,xmax,coshlen,holetoplen,
-     $        phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0)
-         if(idebug.eq.1)then
-            call autoplot(u0(-2*nphi),f0(-2*nphi),4*nphi+1)
-            call axlabels('u0','f0')
-            call pltend
+            xmax=1.3*findxofphi(psi/(NPHI),psi,coshlen,holetoplen,0.,50.
+     $           ,7)
+            call f0Construct(nphi,psi,um,xmax,coshlen,holetoplen,
+     $           phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0)
+            if(idebug.eq.1)then
+               call autoplot(u0(-2*nphi),f0(-2*nphi),4*nphi+1)
+               call axlabels('u0','f0')
+               call pltend
+            endif
          endif
       endif
       lastspecies=ispecies
