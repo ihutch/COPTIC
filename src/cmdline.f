@@ -447,18 +447,18 @@
          if(argument(1:3).eq.'-ih')then
             ! Ensure we override prior settings.
             holepsi=0.
-            holelen=0.
+            holelen=999
             holeeta=2.   ! Needed default for trapinit.
             holeum=0.
-            holepow=0.
+            holepow=999
             holerad=0.
             hspecies=nspecies
             read(argument(4:),*,err=201,end=231)holepsi,holeum,holelen
      $           ,holeeta,holepow,holerad
  231        continue
             if(holepsi.ne.0)then ! We are truly setting.
-               if(holelen.eq.0)holelen=4.+holepsi/2.
-               if(holepow.eq.0)holepow=-1/holepsi  !->toplen
+               if(holelen.eq.999)holelen=4.+holepsi/2.
+               if(holepow.eq.999)holepow=-1/holepsi  !->toplen
             endif
          endif
          if(argument(1:3).eq.'-ho')then
