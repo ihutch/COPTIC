@@ -198,9 +198,11 @@
       real tilden(0:NPHI)
       real f0(-2*nphi:2*nphi),u0(-2*nphi:2*nphi),cumf(-nu:nu)
 !      real f1(-2*nphi:2*nphi),u1(-2*nphi:2*nphi),cumf1(-nu:nu)
-      real u(-nu:nu),f(-nu:nu)
-      integer lastspecies
+      real u(-nu:nu),f(-nu:nu),du
+      real tisq,tisq2,tisqperp,umax,coshlen
+      integer lastspecies,id
       data lastspecies/0/
+! This save only seems to save the explicitly declared variables.
       save
 
       idebug=0
@@ -235,10 +237,9 @@ c Initialize u-range
 
 c Hole (decay) length
          coshlen=holelen  ! Now set in cmdline +psi/2
-c The flattop length toplen. Negligible for large negative values      
-!         toplen=-1./psi   Now set in cmdline
-         xmax=1.3*findxofphi(psi/(NPHI),psi,coshlen,toplen,0.,50.,7)
-         call f0Construct(nphi,psi,um,xmax,coshlen,toplen,
+c The flattop length holetoplen. Negligible for large negative values.     
+         xmax=1.3*findxofphi(psi/(NPHI),psi,coshlen,holetoplen,0.,50.,7)
+         call f0Construct(nphi,psi,um,xmax,coshlen,holetoplen,
      $        phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0)
          if(idebug.eq.1)then
             call autoplot(u0(-2*nphi),f0(-2*nphi),4*nphi+1)
@@ -266,10 +267,10 @@ c The flattop length toplen. Negligible for large negative values
          fp=max(.000001,min(.999999,fp))
          if(holerad.ne.0)psiradfac=exp(-r2/holerad**2)
 ! Hole density non-uniformity: transverse local value of peak potential.
-         x_part(id,islot)=findxofran(fp,psiradfac*psi,coshlen,toplen
+         x_part(id,islot)=findxofran(fp,psiradfac*psi,coshlen,holetoplen
      $        ,xmeshstart(id),xmeshend(id),nbi)
       endif
-      phi=psiradfac*phiofx(x_part(id,islot),psi,coshlen,toplen)
+      phi=psiradfac*phiofx(x_part(id,islot),psi,coshlen,holetoplen)
 
 !                            ! Velocities
       do i=1,ndims
