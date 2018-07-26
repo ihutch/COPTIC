@@ -199,14 +199,14 @@
       real f0(-2*nphi:2*nphi),u0(-2*nphi:2*nphi),cumf(-nu:nu)
 !      real f1(-2*nphi:2*nphi),u1(-2*nphi:2*nphi),cumf1(-nu:nu)
       real u(-nu:nu),f(-nu:nu)
-      logical lfirst
-      data lfirst/.true./
-      integer idebug
+      integer lastspecies
+      data lastspecies/0/
       save
 
       idebug=0
 !----------------------------------------
-      if(lfirst.and.holepsi.ne.0.)then    ! Hole Initialization
+      if(ispecies.ne.lastspecies
+     $     .and.holepsi.ne.0.)then ! Hole Initialization
          tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
          tisq2=sqrt(2.)*tisq
          tisqperp=sqrt(Tperps(ispecies)*abs(eoverms(ispecies)))
@@ -246,7 +246,7 @@ c The flattop length toplen. Negligible for large negative values
             call pltend
          endif
       endif
-      lfirst=.false.
+      lastspecies=ispecies
 !----------------------------------------
  1    r2=0.
       iend=ndims
