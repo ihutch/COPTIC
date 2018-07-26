@@ -786,8 +786,8 @@
          trapden=sepf*sqphi*2.
          flattop=untrapden+trapden
 ! It gives total density greater than 1.
-         write(*,*)'Flattop: untrapden',untrapden,' trapden',trapden
-         write(*,*)'dentot',dentot,' flattop',flattop
+!         write(*,*)'Flattop: untrapden',untrapden,' trapden',trapden
+!         write(*,*)'dentot',dentot,' flattop',flattop
          gamma=0.
       endif
       holeheight=1/(1.+gamma)

@@ -782,19 +782,22 @@ is small. If either there is more than one species or \verb!holepsi!
 is non-zero (switch \verb!-ih! is set nonzero), then \verb!boltzamp!
 is ramped down to zero in the first third of the timesteps.
 
-\paragraph{-sb0} When only one species is present, the switch usage
--sb0, setting \verb!boltzamp! to zero, removes the effective Boltzmann
-response from the calculation and \emph{instead} adds a uniform
-negative background charge.  This is physically equivalent to ions
-moving in an immobile (uniform) electron background.  COPTIC then runs
-as a true single-species PIC code. Setting a non-zero but non-unity
-value of \verb!boltzamp! removes some of the Boltzmann electron
-response and adds a consistent fraction \verb!1-boltzamp! of immobile
-negative background. More relevantly, the moving particles can then be
-considered to be electrons in a uniform ion background, (but with
-reversed charge signs unless \verb!-zm-1.! is used). Appropriate
-stability limits on time-step must be observed as if the times-scales
-were electron. Thus one should consider velocities to be normalized to
+\paragraph{-sb0} When only one species is present, the role of species
+2 is taken by a uniform background and a Boltzmann responding
+fluid. The switch usage -sb0, setting \verb!boltzamp! to zero, removes
+the effective Boltzmann response from the calculation and
+\emph{instead} adds a uniform negative background charge.  This is
+physically equivalent to ions moving in an immobile (uniform) electron
+background.  COPTIC then runs as a true single-species PIC
+code. Setting a non-zero but non-unity value of \verb!boltzamp! (with
+only one species) reduces the immobile background to a fraction
+\verb!1-boltzamp! and adds a Boltzmann responding background
+$f_b\exp(e\phi/T_e)$ of sign opposite to the particle species. Most
+relevantly, the moving particles can then be considered to be
+electrons in a uniform ion background, (but with reversed charge signs
+unless \verb!-zm-1.! is used). Appropriate stability limits on
+time-step must be observed as if the times-scales were electron. Thus
+one should consider velocities to be normalized to
 $\sqrt{T_e/m_e}$. The (electron) plasma frequency in computational
 units is then $\omega_{pe}=1/\lambda_{De}$, and stability requires
 $\omega_{pe}dt = dt/\lambda_{De}<1$.
@@ -829,8 +832,16 @@ argument from the switch, which gives the maximum number of qblocks in
 each dimension, and if greater than zero causes the qinit code (rather
 than the defaults pinit or trapinit) to be used for particle
 initialization. If no argument can be read, then the number of qblocks
-is set to a default of 30.
-
+is set to a default of 30. When this parameter \verb!nqblkmax! is
+greater than zero, so the qinit code is used, the meaning of the
+parameters in the \textbf{-ih} switch is changed. \verb!holeeta! is
+not used; and \verb!holepow! instead sets the parameter \verb!holetoplen!
+which is used for the stretched ${\rm sech}^4$ shaped hole. By default 
+\verb!holelen! is set equal to $4+\psi/2$ and \verb!holetoplen! to
+$-1/\psi$ which permit deep holes $\psi\gg1$ to be initialized.
+[This change means that using {\bf -ih} without {\bf -pi} one must now
+give enough arguments to {\bf -ih} to specify a nonzero
+\verb!holepow!. Eventually this ought to be rationalized.]
 
 
 \subsubsection*{Neutrals, Collisions, Magnetic Field}
