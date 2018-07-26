@@ -206,9 +206,10 @@
 
       idebug=0
 !----------------------------------------
-      tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
-      tisq2=sqrt(2.)*tisq
       if(lfirst.and.holepsi.ne.0.)then    ! Hole Initialization
+         tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
+         tisq2=sqrt(2.)*tisq
+         tisqperp=sqrt(Tperps(ispecies)*abs(eoverms(ispecies)))
          do i=1,ndims
             if(Bfield(i).ne.0.)goto 2
          enddo
@@ -294,7 +295,7 @@ c The flattop length toplen. Negligible for large negative values
                endif
             endif
          else
-            x_part(ndims+i,islot)=tisq*gasdev(myid)
+            x_part(ndims+i,islot)=tisqperp*gasdev(myid)
      $           +vds(ispecies)*vdrift(i)
          endif
       enddo

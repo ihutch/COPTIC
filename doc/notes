@@ -15070,3 +15070,15 @@ No difference. I find that a tiny tweak on the 0.25 coefficient in
 Chebychev acceleration stabilizes it. Although it was not obvious
 a 65 65 3 case also had nonconvergency issues prior to this tweak.
 So it appears that 2^n+1 square is the most likely to be unstable.
+
+26 Jul 18
+Further work on bugs.
+Looking into reproducing the prior oblique instability. It does not 
+easily reproduce. Only if using trapinit.f.
+
+I find that in pinit.f the only place Tperp is used is in maxwellstats.
+maxwellstats is used for notseparable=2. That is the case for collisionless.
+Verified that the anticipated pinit case reports that. So the initialization
+is done from the maxwellstats array and should be anisotropic. 
+Find by experiment that trapinit and pinit are giving anisotropic T,
+but qinit is not. Fixed that.
