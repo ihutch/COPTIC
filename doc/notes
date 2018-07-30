@@ -15085,3 +15085,57 @@ but qinit is not. Fixed that.
 
 Found other problems that I thought were caused by no save, but were 
 because initializations were not being done because holepsi was zero.
+
+There are differences between pinit and the two that basically agree now
+trapinit and qinit in giving oblique instabilities. Not pursuing pinit
+issues at this stage because for the long term we won't use it for these
+sorts of applications.
+
+30 Jul 18
+Further investigation of the single-wavelength instability observed with
+fully periodic (particles and potential) domains.
+
+Since there's a suspicion that this instability might be caused by the
+finite grid effects, and COPTIC does not use momentum conserving field
+interpolation, one wonders if the instability would be suppressed if it
+did. It seems as if it would be fairly easy to implement momentum
+conserving field interpolation in a uniform periodic mesh, but probably
+rather difficult otherwise.
+
+The issue is that E normal to a face would have to be interpolated to
+the grid by taking E_j=(\phi_{j-1}-\phi_{j+1})/2dx and then at positions
+between j-1 and (f) j one uses
+f*E_{j}+(1-f)*E_{j-1}= f*\phi_{j-1}-f*\phi_{j+1}+(1-f)\phi_{j-2}-(1-f)\phi_{j}
+  =(1-f)*\phi_{j-2}+f*\phi_{j-1}- (1-f)*\phi_{j}-f\phi_{j+1}
+
+So it is four-point interpolation. Whereas the standard interpolation is
+3 point:  (1-f)E_{j-1}+f*E_j = (1-f)(\phi_{j-1}-\phi_j)+f(\phi_j-\phi_{j+1})/dx
+provided f>1/2. And since the domain ends at f=1/2 we can put the guard
+just 1/2 a mesh point away from the domain end.
+
+But if (j-1) is a lower guard point, the 4-point interpolation reaches
+an additional mesh point past the guard: to j-2, even when f>1/2. So
+unless the domain is terminated a full mesh point before the guard cell
+interpolation cannot be restricted just to the guard.
+
+A uniform mesh periodic boundary can be implemented in a way that reaches
+beyond the guard cell straightforwardly by wrapping further into the
+periodic region.
+
+[It is only particle pushing that is affected.  Solution of Poisson's
+equation is not affected, so the mpi splitting of the domain and block
+boundaries are not affected either.]
+
+Routine getfield already has a shortcut that is used for locally uniform
+differences. I think that is all that has to be adjusted for the different
+interpolation. So the changes needed appear to be rather localized in the
+code.
+
+Did more tests and found that the instability disappears if the mesh
+count is bigger than the length, so that the mesh spacing is smaller
+than the debye length. Hence not pursuing the above.
+
+Fiddled with the calculation of the Jacobi convergence radius to do 
+a better calculation of it. It does not much improve the convergence
+and we still need a fudge factor, which I've made .245 instead of .25
+to guarantee stability.

@@ -80,6 +80,7 @@
       data ldebugs/.false./
 ! This saves data between calls so we can use separate initialization
       save
+
 !-------------------------------------------------------------------
       if(ndims.gt.ndimsbbdy)then
          write(*,*)'Too many dimensions in sormpi call',
@@ -120,6 +121,13 @@
          enddo
          xyimb=ndims*maxlen/sumlen - 1.
          xjac_sor=1.- (5./max(10.,sumlen/ndims)**2)*(1.-0.3*xyimb)
+! More accurate calculation of the Jacobi radius is probably better.
+         if(.true.)then
+            call getxjac(ndims,ifull,iuds,cij,xjac)
+!            write(*,'(a,f10.6,a,f10.6)')
+!     $           'Old xjac',xjac_sor,' New xjac',xjac
+            xjac_sor=xjac
+         endif
          mi_sor=int(2.*sumlen+20)
          eps_sor=1.e-5
       endif
@@ -217,7 +225,7 @@
 !            omega=1./(1.-0.5*xjac_sor**2)
          else
 ! The value 0.25 is too close to instability. So
-            omega2=1./(1.-0.247*xjac_sor**2*omega)
+            omega2=1./(1.-0.245*xjac_sor**2*omega)
             omega=omega2
          endif
       enddo
@@ -282,4 +290,37 @@
       delta=sign(convgd(1),delta)
       end
 !**********************************************************************
+      subroutine  getxjac(ndims,ifull,iuds,cij,xjac)
+! Get the Jacobi convergence radius assuming uniform (anisotropic) mesh
+! M squared = [sum_i(1/dx_i^2)]/[sum_i(1/(dx_i^2*N_i^2))]
+! basing the 1/dx_i^2 on the cij for each direction. 
+      integer ndims,ifull(ndims),iuds(ndims)
+      real cij(*)
+!      real cij(7,160,129,3)
+      parameter (ndimsmax=3)
+      real ctyp(ndimsmax)
 
+      if(ndims.gt.ndimsmax) stop 'getxjac error ndims exceeds ndimsmax'
+
+      istep=2*ndims+1
+      ipointer=0
+      iref=2
+! Point to cij position 1,iref,iref,iref
+      do i=1,ndims
+         ipointer=ipointer+(iref-1)*istep
+         istep=istep*ifull(i)
+      enddo
+! Characterize the mesh spacings in different dimensions by
+! ctyp is 1/Dx^2 in each direction
+      dxsum=0.
+      dxNsum=0.
+!      write(*,*)(cij(ipointer+i),i=1,2*ndims)
+      do i=1,ndims
+         ctyp(i)=cij(ipointer+2*i)
+!         write(*,*)'i, ipointer, ctyp, iuds',i,ipointer,ctyp(i),iuds(i)
+         dxsum=dxsum+ctyp(i)
+         dxNsum=dxNsum+ctyp(i)/iuds(i)**2         
+      enddo
+! Jacobi radius is 1- (\pi^2/2) dxNsum/dxsum 
+      xjac=1.-3.1415926**2/2. *dxNsum/dxsum
+      end

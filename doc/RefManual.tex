@@ -800,7 +800,9 @@ time-step must be observed as if the times-scales were electron. Thus
 one should consider velocities to be normalized to
 $\sqrt{T_e/m_e}$. The (electron) plasma frequency in computational
 units is then $\omega_{pe}=1/\lambda_{De}$, and stability requires
-$\omega_{pe}dt = dt/\lambda_{De}<1$.
+$\omega_{pe}dt = dt/\lambda_{De}<1$. It also generally requires the
+grid size to be somewhat smaller than the Debye length. Roughly 
+$dx=0.8\lambda_{De}$ seems ok.
 
 \paragraph{-ih[...]} Set parameters of a phase-space hole in particle
 initialization for the current species. Only one species can be
@@ -943,7 +945,7 @@ the switch has no effect, and the MPI cartesian topology is decided
 automatically, as it is normally by default.
 
 \paragraph{-ofFilename} Set the name [including path] of the object
-file. Default ccpicgeom.dat
+file. Default copticgeom.dat
 
 \paragraph{-fs....}  Attempt to restart the code from a saved
 state. The integer switch indicates 0: no restart; bit-1 set [1]: read
@@ -1512,15 +1514,16 @@ that is thoroughly commented for documentation. It solves the scheme
 ${\cal L}u+f(u) = q({\bf x})$, where ${\cal L}$ is a second order
 elliptical differential operator represented by the coefficients in
 \verb!cij!. It accepts external routines: function
-\verb!faddu(u,fprime,index)!, which evaluates the additional function
-$f(u)$ (possibly dependent upon its position in the array indicated by
-\verb!index!) and also returns the derivative of $df/du$ in
-\verb!fprime!. In COPTIC, \verb!faddu! is the exponential function to
-represent the electron Boltzmann distribution. The additional access
-to the array index is necessary to compensate for point charges by
-adding their effective density \verb!rhoci!, and to allow for
-spatially varying $T_e$. Such information is obtained
-through inclusion of arrays in common \verb!ptchcom!.
+\verb!faddu(u,fprime,index)! [or more generally
+\verb!fadcomp(u,fprime,index)!], which evaluates the additional
+function $f(u)$ (possibly dependent upon its position in the array
+indicated by \verb!index!) and also returns the derivative of $df/du$
+in \verb!fprime!. In COPTIC, \verb!faddu! is the exponential function
+to represent the electron Boltzmann distribution. The additional
+access to the array index is necessary to compensate for point charges
+by adding their effective density \verb!rhoci!, and to allow for
+spatially varying $T_e$. Such information is obtained through
+inclusion of arrays in common \verb!ptchcom!.
 
 After each full iteration, boundary conditions are applied by calling
 the parallelized boundary setting routine \verb!bdyshare!. If it
@@ -1544,7 +1547,7 @@ accordingly.  The MPI code for this parallelism is contained in file
 \verb!mpibbdy.f! and called implicitly through the routine
 \verb!bbdy!. If there is incompatibility between the default block
 structure and the number of compute nodes available (which is often
-the case) the \verb!MPI_DIMS_CREATE! funtion is used to define the
+the case) the \verb!MPI_DIMS_CREATE! function is used to define the
 cartesian communicator topology. In normal usage, the MPI parallel
 features of this solver should be invisible except for some
 informational messages.  
@@ -1573,14 +1576,14 @@ performing various flux and diagnostic accumulations.
 \paragraph{The advancing scheme} without magnetic field, is a simple
 leap-frog combination of kick equal to $-\nabla\phi\;dt$ and drift
 ${\bf v} dt$. With non-zero magnetic field, the Cyclotronic mover is
-used. The instantaneous magnetic acceleration is ${\bf v}\times{\bf
-  B}$ but the gyro motion is explicitly represented by a rotation at
-cyclotron frequency $\Omega$ equal to $B$. If $B$ is sufficiently
-large that the angle of rotation in a step is greater than
-\verb!thetamax! (generally 1), then instead ions are treated by a
-drift approximation. The ion motion then consists purely of two
-terms: (1) parallel (to $B$) acceleration and drift (2) perpendicular
-drift equal to the perpendicular component of the specified drift
+used. The instantaneous magnetic acceleration is
+${\bf v}\times{\bf B}$ but the gyro motion is explicitly represented
+by a rotation at cyclotron frequency $\Omega$ equal to $B$. If $B$ is
+sufficiently large that the angle of rotation in a step is greater
+than \verb!thetamax! (generally 1), then instead ions are treated by a
+drift approximation. The ion motion then consists purely of two terms:
+(1) parallel (to $B$) acceleration and drift (2) perpendicular drift
+equal to the perpendicular component of the specified background drift
 velocity plus the explicit $-\nabla\phi\times B$ drift.
 
 The
@@ -1853,23 +1856,25 @@ helpful to understand its progress. The library is distributed in the
 directory \verb!accis!. The graphics drivers require the code to be
 linked with the X11 library \verb!libX11! and for the OpenGL driver
 with the OpenGL libraries \verb!libGL! and \verb!libGLU!. The default
-is to use OpenGL if available. In many modern linux distributions, the
-required libraries for linking are not found unless the
-\emph{development} package of OpenGL is installed. For example, in
-UBUNTU the package \verb!libgl1-mesa-dev!  is required. If the GL
-libraries are not found, it may still be possible to link using the
-X11 libraries. However, often those libraries are also unavailable
-unless development packages are installed such as
-\verb!libx11-dev!. (There is also a MSWindows driver, but no support is
-provided for running COPTIC under MSWindows and the make file assumes
-the system to be Linux.) A final option is to link with a driver that
-gives (for a long time obsolete) 4014 output. This driver uses no additional
-libraries, and so allows COPTIC to compile on systems without
-them. Linking to optimal available drivers is attempted automatically
-when COPTIC is built using the command \verb!$ make!.  Drivers can
-also be specified by \verb!$ make VECX=vecglx!, \verb!$ make VECX=vecx!, or
-\verb!$ make VECX=vec4014!. Don't call COPTIC with graphics switches
-if it is made with \verb!vec4014!.
+is no longer to use OpenGL if available because of the many annoying
+incompatibilities between X servers and OpenGL. In many modern linux
+distributions, the required libraries for linking are not found unless
+the \emph{development} package is installed. For example, in UBUNTU
+the package \verb!libgl1-mesa-dev!  is required for OpenGL. The
+default link using just the X11 libraries may also require development
+packages to be installed such as \verb!libx11-dev!. (There is also a
+MSWindows driver, but no support is provided for running COPTIC under
+MSWindows and the make file assumes the system to be Linux.) A final
+option is to link with a driver that gives (for a long time obsolete)
+4014 output. This driver uses no additional libraries, and so allows
+COPTIC to compile on systems without them. Linking to optimal
+available drivers is attempted automatically when COPTIC is built
+using the command
+\verb!$ make!.  Drivers can also be specified by
+\verb!$make VECX=vecglx!, \verb!$ make VECX=vecx!, or
+\verb!$makeVECX=vec4014!. 
+Don't call COPTIC with graphics switches if it is made
+with \verb!vec4014!.
 
 
 
