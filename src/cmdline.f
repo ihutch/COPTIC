@@ -424,6 +424,15 @@
          endif
          if(argument(1:3).eq.'-pu')nptdiag=0
          if(argument(1:3).eq.'-pi')then
+            if(holepsi.ne.0)then
+               if(holelen.eq.4 .and. holepow.eq.0)then
+                  if(lmyidhead)write(*,*)
+     $                'Setting quieting after setting hole restores'
+     $                ,' holelen and holepow defaults.' 
+                  holelen=4.+holepsi/2.
+                  holepow=-1/holepsi
+               endif
+            endif
             nqblkmax=30        ! If no argument still use qinit
             read(argument(4:),*,err=201,end=201)nqblkmax
          endif
@@ -456,9 +465,14 @@
             read(argument(4:),*,err=201,end=231)holepsi,holeum,holelen
      $           ,holeeta,holepow,holerad
  231        continue
-            if(holepsi.ne.0)then ! We are truly setting.
-               if(holelen.eq.999)holelen=4.+holepsi/2.
-               if(holepow.eq.999)holepow=-1/holepsi  !->toplen
+            if(holepsi.ne.0)then ! We are setting 
+               if(nqblkmax.gt.0)then ! qinit
+                  if(holelen.eq.999)holelen=4.+holepsi/2.
+                  if(holepow.eq.999)holepow=-1/holepsi !->toplen
+               else               ! trapinit
+                  if(holelen.eq.999)holelen=4.
+                  if(holepow.eq.999)holepow=0.
+               endif
             endif
          endif
          if(argument(1:3).eq.'-ho')then
