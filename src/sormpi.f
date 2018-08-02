@@ -101,7 +101,11 @@
          if(mod(ictlh,2).eq.0)then
             lperiod(nd)=.false.
          else
-!            write(*,*)'Dimension',nd,'  periodic.'
+            if(mod(iuds(nd),2).ne.0.and.iuds(nd).ne.3)then
+               write(*,'(2a,2i5,a)')'SORMPI DIMENSION ERROR. Cannot use'
+     $              ,' odd mesh length',nd,iuds(nd),' with periodic BCs'
+               stop
+            endif
             lperiod(nd)=.true.
          endif
          ictlh=ictlh/2
@@ -126,10 +130,11 @@
             call getxjac(ndims,ifull,iuds,cij,xjac)
 !            write(*,'(a,f10.6,a,f10.6)')
 !     $           'Old xjac',xjac_sor,' New xjac',xjac
+!            xjac_sor=0.5*(xjac_sor+xjac)  ! Fudge.
             xjac_sor=xjac
          endif
          mi_sor=int(2.*sumlen+20)
-         eps_sor=1.e-5
+         eps_sor=.1e-5
       endif
 ! Second bit of ictlh indicates if there's additional term.
       ictlh=ictlh/2
@@ -137,7 +142,7 @@
          laddu=.true.
       else
 ! Plain Poisson convergence with electrons is often slower.
-         mi_sor=mi_sor*2
+         mi_sor=mi_sor*3
          laddu=.false.
       endif
 !      write(*,*)'laddu=',laddu
@@ -212,8 +217,8 @@
 ! Test convergence
          call testifconverged(eps_sor,delta,umin,umax,
      $        lconverged,icommcart)
-!         if(myid.eq.0) write(*,'(i5,f10.6,2f8.4,l3,2f8.4)')k_sor,delta
-!     $        ,umin,umax,lconverged ,relax,omega
+!         if(myid.eq.0) write(*,'(i5,f11.7,2f8.4,l3,2f8.4)')k_sor,delta
+!     $        ,umin,umax,lconverged ,omega,xjac
          if(lconverged.and.k_sor.ge.2)goto 11
 
          if(k_sor.eq.1)then
@@ -225,7 +230,7 @@
 !            omega=1./(1.-0.5*xjac_sor**2)
          else
 ! The value 0.25 is too close to instability. So
-            omega2=1./(1.-0.245*xjac_sor**2*omega)
+            omega2=1./(1.-0.25*xjac_sor**2*omega)
             omega=omega2
          endif
       enddo
@@ -305,6 +310,12 @@
       istep=2*ndims+1
       ipointer=0
       iref=2
+      mindim=1000
+      do i=1,ndims
+         mindim=min(iuds(i),mindim)
+      enddo
+      do iref=2,max(2,mindim-1)   
+! Calculate an average quotient for uneven meshes. A kludge.
 ! Point to cij position 1,iref,iref,iref
       do i=1,ndims
          ipointer=ipointer+(iref-1)*istep
@@ -320,6 +331,7 @@
 !         write(*,*)'i, ipointer, ctyp, iuds',i,ipointer,ctyp(i),iuds(i)
          dxsum=dxsum+ctyp(i)
          dxNsum=dxNsum+ctyp(i)/iuds(i)**2         
+      enddo
       enddo
 ! Jacobi radius is 1- (\pi^2/2) dxNsum/dxsum 
       xjac=1.-3.1415926**2/2. *dxNsum/dxsum

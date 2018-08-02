@@ -15139,3 +15139,182 @@ Fiddled with the calculation of the Jacobi convergence radius to do
 a better calculation of it. It does not much improve the convergence
 and we still need a fudge factor, which I've made .245 instead of .25
 to guarantee stability.
+
+2 Aug 18
+
+Looking for the single-wavelength instability cause. Found that it
+is present even in runs that previously were stable. Hence it has
+been introduced by some change this year. Using psi.2/B.35x64 as the
+test case.
+
+Checkout and rerun with
+commit 57b70b1964d206949e2011c865b77016aaa9c1c0
+Author: Ian Hutchinson <ihutch@mit.edu>
+Date:   Wed Feb 21 22:15:14 2018 -0500
+
+    Improvements to slicing in accis for putting color bar on contours
+
+No instability.
+
+Checkout and run   B.35x64scr2
+commit 1a7253ea997ae6660a08c1502727b5b549c1c0c7
+Author: Ian Hutchinson <ihutch@mit.edu>
+Date:   Tue May 29 19:04:11 2018 -0700
+
+    Correct NOACCISCHECK
+
+No instability.
+
+Checkout and run    B.35x64scr3
+commit f70463672a5609138a2c4ab4c220ad4ef99e6ef5
+Author: Ian Hutchinson <ihutch@mit.edu>
+Date:   Tue Jul 10 10:19:48 2018 -0700
+
+    Accis alterations (can't remember what)
+
+No instability
+
+Checkout and run    B.35x64scr4
+commit 007c5f9f089269f6bde37731b4532b882fb7f4b4
+Author: Ian Hutchinson <ihutch@mit.edu>
+Date:   Tue Jul 24 09:28:04 2018 -0400
+
+    Remove all SOBOL calls from trapinit.f (ranlen3)
+    Allow quieting in short mesh dimensions >1.
+    Allow default 20 with -pi call.
+
+No instability
+
+Checkout and run    B.35x64scr5
+commit 654f9644210f4cac15bc7c95c5764abefe45e338
+Author: Ian Hutchinson <ihutch@mit.edu>
+Date:   Wed Jul 25 13:11:38 2018 -0400
+
+    Fixed the Chebychev acceleration in sormpi to avoid instability with
+    a square mesh 129 129 when periodic, arising from poor SOR convergence.
+
+Crazy big potential (and maybe instability later).
+This was after the cmdline defaults were changed which broke the trapinit.
+So I need to disentangle that.
+git diff cf6d2da4fdc22 a0a030bdf0b7af
+Shows differences in various files partcom.f cmdline.f mainroutines.f
+qinit.f.
+git diff a0a030bdf0b7af  654f96442 has only sormpi changes.
+So probably the best way to disentangle is to checkout sormpi.f
+from 654f96442 into cf6d2da4f.
+
+So git checkout
+commit cf6d2da4fdc22b5036cd88389f95da21a56d4b1f
+Author: Ian Hutchinson <ihutch@mit.edu>
+Date:   Tue Jul 24 15:19:36 2018 -0400
+
+    Change the behavior when asked to run for more steps than there are
+    flux storage locations. Now it runs for the steps asked, but stops
+    incrementing nf_step the location of the flux storage for this step.
+    Thus all the exceeding steps' flux data are written over each other in
+    the last place. But it ought to be able to run this long.
+
+git checkout -p 654f96442 src/sormpi.f make and run scr6
+slurm-12203002.out
+This has strong suspicion of long-wavelength instability at late
+times (2000). This has .247 for its chebychev iteration factor.
+
+So run the same executable in psi.2/B.35x128scr
+I notice that once the -sb is zeroed (at step 660) convergence is
+often incomplete, and it explodes around 800.
+This executable has the problem (in spades).
+
+The strong evidence so far is that the single-wavelength instability
+is caused by sormpi adjustments.
+
+These started to be made after commit a0a030bdf0 so if I patch the
+sormpi.f file back to that and use the current master I ought to
+get stable results for old runs. So we try:
+
+git checkout master
+git checkout -p a0a030bdf0 src/sormpi.f
+a
+make
+run in psi.2/B.35x128scr2
+
+This proves that the single-wavelength instability was made much
+worse by changes to sormpi in this commit on 25th July:
+commit 654f9644210f4cac15bc7c95c5764abefe45e338
+Author: Ian Hutchinson <ihutch@mit.edu>
+Date:   Wed Jul 25 13:11:38 2018 -0400
+    Fixed the Chebychev acceleration in sormpi to avoid instability with
+    a square mesh 129 129 when periodic, arising from poor SOR convergence.
+
+However, the 129x129 case appears to be on the hairy edge of instability
+even with the old sormpi. One can see non-convergences getting quite
+frequent, and this seems to induce jittering. By step 1500 it is really
+present, and continues at a moderate level till 2000.
+
+In summary, we must not allow nonconvergence of the potential solver
+because that seems to make the PIC scheme long-wavelength unstable. 
+
+Evidently there needs to be a different solution to stabilizing the
+problems with all-periodic mesh 129x129. Maybe there's actually a
+bug in the boundary setting or some other problem. It ought to be
+easier to diagnose because it shows up immediately. But even so,
+I'm not confident that I will have addressed all problems since
+the old case is so close to long-wavelength instability.
+
+Working now on hutchX1.
+
+Using the same test case on hutchX1 quiet start non-periodic.
+with -sb0 with the current master
+(broken sormpi) we get instability right from the start.
+
+First patch sormpi back to the old settings
+git checkout -p a0a030bdf0 src/sormpi.f
+Then we find that the potential is converging, and we do not get
+such obvious early instability. However as time goes on we begin
+to see some bouncing up and down. It's hard to tell if this is 
+instability or just lost of quietness initially but eventually one
+can tell it is episodically unstable at times when nonconvergence
+is occurring. 
+
+Got the hacked sormpi so that I can get the alternative xjac calculation
+Increase the max iterations from 2 to 3*default.
+Decrease the eps_sor to 0.1e-5 from 1e-5.
+Use the new xjac calculation because experiments show that it converges
+quicker. (But not quickly enough not to need more max iterations). 
+This ought to be enough to suppress instability caused by sormpi
+inaccuracy. (But I still haven't figured out the periodic instability).
+This suppresses single-wavelength instability so that the prior case
+that was obviously unstable at step 2000 (-dt0.5) before is now not 
+(at least not obviously). 
+
+I realize there is a potential problem with boundary setting and odd number
+of mesh nodes per side. We are doing red-black SOR half iterations. But
+it's not clear that will work correctly with odd numbers. Certainly it
+breaks the red/black symmetry. That might mean the boundary connections
+are not correct. Actually they can't be correct, because the red at one
+end corresponds to the black at the other. That might explain why changing
+one of the 129 to 128 stabilized things.
+
+Added a test to sormpi to stop if a periodic boundary is asked for an
+odd length mesh (other than 3). Turned it off to do some verification.
+Very clear. We get short wavelength instability if two dimensions are
+both odd, but not if just one is odd. Still it seems we ought to ensure
+that neither are odd.
+
+Conclusions On Stability Issues
+_______________________________
+
+The single-wavelength instability arose from de-optimizing the sor 
+convergence as a hack to prevent observed *short wavelength instability*.
+The short-wavelength instability which occurred only for all periodic
+potential BCs was caused by using *odd dimensions*. That defeats the 
+red-black SOR scheme because the periodic boundaries are setting a
+red ghost cell from a black periodic position. The resulting error is 
+enough to cause instability when two dimensions are odd. It is now 
+avoided within sormpi by a test for odd periodic boundaries which throws
+a fatal error. 
+
+The single-wavelength instability is (at least greatly) suppressed by 
+better convergence of the potential solution. That is achieved by
+using a more optimized Jacobi radius, allowing more iterations, and 
+reducing the size of the convergence parameter (to 1e-6 from 1e-5).
+Hopefully this will suppress the instability fully in low noise cases.
