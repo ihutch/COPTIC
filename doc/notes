@@ -15330,3 +15330,8 @@ by -id4,4,1. The problems occurred for no limits. So ran a case
 without limits which does 16 8 1. It runs ok, so that was not the
 problem. I think it was that an old executable was being accessed
 anyway that problem has gone away. I declare problems fixed for now.
+
+Doing 128^3 tests I see a need for sormpi tolerance relaxation, so 
+implement increasing of eps_sor by factor 1.5 after each
+new 2 nonconvergences. 
+

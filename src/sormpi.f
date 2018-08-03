@@ -65,7 +65,8 @@
       logical lconverged
       logical laddu
       logical ldebugs
-
+      integer idebug
+      integer noncnvg,ncvgmax
 ! bbdydecl declares most things for bbdy, using parameter ndimsbbdy.
       include 'bbdydecl.f'
 ! iLs has been removed from bbdydecl.f
@@ -77,7 +78,9 @@
       integer ones(ndimsbbdy)
 
       real delta,umin,umax
-      data ldebugs/.false./
+      data ldebugs/.false./idebug/0/noncnvg/0/ncnvgmax/2/
+      data eps_sor/.1e-5/
+
 ! This saves data between calls so we can use separate initialization
       save
 
@@ -134,7 +137,6 @@
             xjac_sor=xjac
          endif
          mi_sor=int(2.*sumlen+20)
-         eps_sor=.1e-5
       endif
 ! Second bit of ictlh indicates if there's additional term.
       ictlh=ictlh/2
@@ -142,7 +144,7 @@
          laddu=.true.
       else
 ! Plain Poisson convergence with electrons is often slower.
-         mi_sor=mi_sor*3
+         mi_sor=mi_sor*2
          laddu=.false.
       endif
 !      write(*,*)'laddu=',laddu
@@ -217,8 +219,9 @@
 ! Test convergence
          call testifconverged(eps_sor,delta,umin,umax,
      $        lconverged,icommcart)
-!         if(myid.eq.0) write(*,'(i5,f11.7,2f8.4,l3,2f8.4)')k_sor,delta
-!     $        ,umin,umax,lconverged ,omega,xjac
+         if(myid.eq.0.and.idebug.gt.0)
+     $        write(*,'(i5,f11.7,2f8.4,l3,2f8.4,f11.7)')k_sor,delta
+     $        ,umin,umax,lconverged,omega,xjac,eps_sor
          if(lconverged.and.k_sor.ge.2)goto 11
 
          if(k_sor.eq.1)then
@@ -238,6 +241,13 @@
 ! We finished the loop, implies we did not converge.
       k_sor=-mi_sor
       ierr=-1
+! If we get ncvgmax nonconvergences, relax the tolerance.
+      noncnvg=noncnvg+1
+      if(noncnvg.ge.ncvgmax)then
+         eps_sor=min(1.e-5,1.5*eps_sor)
+         if(idebug.gt.0)write(*,*)'New eps_sor=',eps_sor
+         noncnvg=0
+      endif
 !      write(*,*)'Finished sorrelax loop unconverged',k_sor,delta
 !-------------------------------------------------------------------
  11   continue
