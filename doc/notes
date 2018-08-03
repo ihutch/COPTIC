@@ -15300,6 +15300,8 @@ Very clear. We get short wavelength instability if two dimensions are
 both odd, but not if just one is odd. Still it seems we ought to ensure
 that neither are odd.
 
+Re run.4nodes the (non-periodic) case psi.2/B.35x128. It is now stable.
+
 Conclusions On Stability Issues
 _______________________________
 
@@ -15318,3 +15320,13 @@ better convergence of the potential solution. That is achieved by
 using a more optimized Jacobi radius, allowing more iterations, and 
 reducing the size of the convergence parameter (to 1e-6 from 1e-5).
 Hopefully this will suppress the instability fully in low noise cases.
+
+3 Aug 18
+Succeeded in running a fully periodic hole with 32 processes.
+Had some problems with stability with more processors initially
+which is why that run was done. Now did a run.4nodes and the
+results are fine. That was with the block configuration limited
+by -id4,4,1. The problems occurred for no limits. So ran a case
+without limits which does 16 8 1. It runs ok, so that was not the
+problem. I think it was that an old executable was being accessed
+anyway that problem has gone away. I declare problems fixed for now.

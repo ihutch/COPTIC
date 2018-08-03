@@ -464,7 +464,9 @@ and 11 spaces between $+1$ and $+5$. The total mesh node-count of each
 dimension (32 here) cannot exceed the storage allocated by parameters
 \verb!na_i,j,k! in \verb!griddecl.f!. The maximum sequence length that
 can be used is specified by parameter \verb!nspec_mesh! in
-\verb!meshcom.f!.
+\verb!meshcom.f!. When using periodic potential boundary conditions, 
+the mesh count must be even (otherwise the red-black Poisson solver
+iteration is inconsistent).
 
 Any dimension which is not referred to by a mesh line in the object
 file acquires the default specification which is equivalent to
@@ -941,7 +943,10 @@ cartesian block array of $2\times2\times8$ (in the dimensions $xyz$).
 The total number of blocks (32 in this case) must be equal to the
 number of MPI processes on which coptic is running. If it is not, then
 the switch has no effect, and the MPI cartesian topology is decided
-automatically, as it is normally by default.
+automatically, as it is normally by default. When running with a large
+number of nodes to give high particle per cell count, it is helpful to
+limit the number of blocks into which dimensions are split so as not
+to obtain excessive interprocess communication demands. 
 
 \paragraph{-ofFilename} Set the name [including path] of the object
 file. Default copticgeom.dat
@@ -1579,22 +1584,22 @@ used. The instantaneous magnetic acceleration is
 ${\bf v}\times{\bf B}$ but the gyro motion is explicitly represented
 by a rotation at cyclotron frequency $\Omega$ equal to $B$. If $B$ is
 sufficiently large that the angle of rotation in a step is greater
-than \verb!thetamax! (generally 1), then instead ions are treated by a
-drift approximation. The ion motion then consists purely of two terms:
-(1) parallel (to $B$) acceleration and drift (2) perpendicular drift
-equal to the perpendicular component of the specified background drift
-velocity plus the explicit $-\nabla\phi\times B$ drift.
+than \verb!thetamax! (generally 1, so normalized $B*dt>1$), then
+instead particles are treated by a drift approximation. Their motion
+then consists purely of two terms: (1) parallel (to $B$) acceleration
+and drift (2) perpendicular drift equal to the perpendicular component
+of the specified background drift velocity plus the explicit
+$-\nabla\phi\times B$ drift.
 
-The
-acceleration (kick) step is taken to have a duration equal to the mean
-of the prior and current step durations. The drift is taken to have a
-duration equal to the current step. Thus one should interpret the
-current time step as the time between successive kicks. Each kick
-involves a momentum change equal to the force at the point where the
-kick occurs, multiplied by the duration between the mid-times of the
-steps prior-to and subsequent-to the kick. The velocity after the kick
-at the beginning of the current time-step then applies for the full
-time-step. 
+The acceleration (kick) step is taken to have a duration equal to the
+mean of the prior and current step durations. The drift-step is taken
+to have a duration equal to the current step. Thus one should
+interpret the current time step as the time between successive
+kicks. Each kick involves a momentum change equal to the force at the
+point where the kick occurs, multiplied by the duration between the
+mid-times of the steps prior-to and subsequent-to the kick. The
+velocity after the kick at the beginning of the current time-step then
+applies for the full time-step.
 
 \paragraph{Collisions,} when present, change the behavior as follows. A
 random number is drawn which is converted to the time duration to the

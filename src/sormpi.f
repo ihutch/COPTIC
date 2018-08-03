@@ -307,18 +307,24 @@
 
       if(ndims.gt.ndimsmax) stop 'getxjac error ndims exceeds ndimsmax'
 
-      istep=2*ndims+1
-      ipointer=0
+
       iref=2
       mindim=1000
       do i=1,ndims
          mindim=min(iuds(i),mindim)
       enddo
       do iref=2,max(2,mindim-1)   
+         istep=2*ndims+1
+         ipointer=0
 ! Calculate an average quotient for uneven meshes. A kludge.
 ! Point to cij position 1,iref,iref,iref
       do i=1,ndims
          ipointer=ipointer+(iref-1)*istep
+         if(.not.ipointer.le.(2*ndims+1)*ifull(1)*ifull(2)*ifull(3))
+     $        then
+            write(*,*)'getxjac error',i,iref,istep,ipointer,mindim
+            write(*,*)ifull
+         endif
          istep=istep*ifull(i)
       enddo
 ! Characterize the mesh spacings in different dimensions by
