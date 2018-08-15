@@ -11,7 +11,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,ifull,ierr)
+     $     ,wavespec,ifull,ierr)
       implicit none
       integer ifull,ierr
       include 'myidcom.f'
@@ -27,6 +27,7 @@
       real holepsi,holelen,holeum,holeeta,holepow,holerad
       integer hspecies
 
+      real wavespec(2*ndims+1)
       real Bfield(ndims),Bt,CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
@@ -52,7 +53,8 @@
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
-     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies)
+     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
+     $     ,wavespec)
 ! Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -69,7 +71,8 @@
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
-     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies)
+     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
+     $     ,wavespec)
 ! The double call enables cmdline switches to override objfile settings.
 !----------------------------------------------------------------------
       end
@@ -86,7 +89,8 @@
      $     ,iCFcount,LPF,ipartperiod,lnotallp,Tneutral,Enfrac,colpow
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
-     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies)
+     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
+     $     ,wavespec)
 
       implicit none
 
@@ -99,6 +103,7 @@
      $     ,dropaccel,vneutral,debyelen,extfield,slpD ,Tneutral,Enfrac
      $     ,colpow,boltzamp
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad
+      real wavespec(2*ndims+1)
       real Bfield(ndims),Bt,CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
@@ -436,6 +441,9 @@
             nqblkmax=30        ! If no argument still use qinit
             read(argument(4:),*,err=201,end=201)nqblkmax
          endif
+         if(argument(1:3).eq.'-pw')then ! Wavedisplace initialization
+            read(argument(4:),*,end=201,err=201)wavespec
+         endif
          if(argument(1:3).eq.'-fs')then
             read(argument(4:),*,end=201)lrestart
          endif
@@ -627,6 +635,7 @@
  308  format(a,6i8)
  309  format(a,6f6.2)
  310  format(a,i8,a,i8)
+ 311  format(a,7f6.2)
       write(*,301)'Usage: coptic [objectfile] [-switches]'
       write(*,301)'Parameter switches.'
      $     //' Leave no gap before value. Defaults or set values [ddd'
@@ -696,6 +705,7 @@
      $     ,'    in dimension <i>.'
       write(*,301)' -pi<i>  set quiet part-init level[',nqblkmax
      $     ,'     1:no quieting, >>1:quiet'
+      write(*,311)' -pw[..] apply initial wave 1,n,xi[',wavespec
       write(*,305)' -pp<i,j,k>  partcl bcs/periodcty [',ipartperiod
      $     ,'    Use sum of:'
       write(*,*)'     0 open; 1 lower absorbing; 2 upper absorbing;'

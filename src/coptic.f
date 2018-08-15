@@ -99,7 +99,6 @@
       data lrestart/0/cv/0.,0.,0./
       data ipstep/1/idistp/0/idcount/0/icijcount/0/
       data wavespec/nwspec*0/  ! Default no wave
-!      data wavespec/1,0,.1,0,1,0,0/  ! k_y, x-displacement
 ! End of declarations      ###################################
 !-------------------------------------------------------------
 ! Replace Block Data programs with this 
@@ -133,7 +132,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,ifull,ierr)
+     $     ,wavespec,ifull,ierr)
 ! Hack to prevent incompatible particles
       if(nparta(1).ne.0 .and.(ipartperiod(1).ne.0.or.ipartperiod(2).ne.0
      $     .or.ipartperiod(3).ne.0)) stop '-ni not allowed with pp'
@@ -308,8 +307,7 @@
          else
 ! Quiet initialization. Use only with no objects.
             if(ngeomobj.gt.0)stop '!!Quiet init only with no objects!!'
-            call qinit
-            call wavedisplace(wavespec) ! Apply initial wave displacement
+            call qinit(wavespec)
          endif
       endif
 !---------------------------------------------
@@ -433,12 +431,13 @@
      $        call makemedianzero(ifull,iuds,u,scratch) ! remove offset.
 ! ------------------------------------------------
          call calculateforces(ndims,iLs,cij,u)
+! ------------------------------------------------
          if(ipstep.eq.0.or.mod(j,ipstep).eq.0)then
 ! Slice plots
             if(lsliceplot.and.ldenplot)call sliceGweb(ifull,iuds,q,na_m
      $           ,zp,ixnp,xn,ifix,'density: n'//char(0),dum,dum)
             if(lsliceplot.and.lphiplot.and.(iuds(2).gt.3.or.
-     $           iuds(3).gt.3))call sliceGweb(ifull,iuds,uave,na_m,zp,
+     $           iuds(3).gt.3))call sliceGweb(ifull,iuds,u,na_m,zp,
      $           ixnp,xn,ifix,'potential:'//'!Af!@'//char(0),dum,dum)
 ! Phase space done by all processes, even though only one of them plots.
             if(ldistshow.and.iuds(2).eq.3.and.iuds(3).eq.3)then

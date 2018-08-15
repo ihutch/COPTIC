@@ -15414,3 +15414,23 @@ testifconverged. That's because the number of nodes advanced is actually
 half of nodecount, because of red/black operations. If I subtract the
 corrected adelta from delta, I get far lower residue. Lower than 10^{-6}
 and the convergence is then fixed. Works also with 2 cpus.
+
+15 Aug 18
+
+Got wavedisplace going, using a compressive displacement to give obvious
+effects in a uniform plasma. There are some puzzles about the -gp -gd
+plots that first seem to show a flat density/potential and only the 
+second time show the wave. I can't understand why, since wavedisplace
+is called immediately after qinit. The weird thing is that with a hole
+as well as the wave, the first plots show the hole but not the wave.
+These are before any step has been reported. After the reporting of the
+first step, the wave is immediately present. Maybe the problem is that
+I have not reset the x_part mesh numbers as well as their positions. 
+Yes. That was the problem. Fixed using partlocate.
+Then generated a kinked hole that looks fine.
+
+Now we need the input interface. Done
+Demonstrated and oscillating kinked hole on my laptop. Period
+180 steps of -dt.5 for psi=1, Ny=4 in 128x128 domain.
+
+

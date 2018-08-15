@@ -11,7 +11,7 @@
 ! but greater than zero. And for single-cell sides it is unity.
 ! It is initialized as nqbset but constrained by those limits.
 
-      subroutine qinit
+      subroutine qinit(wavespec)
       implicit none
 ! Common data:
       include 'ndimsdecl.f'
@@ -19,6 +19,7 @@
       include 'plascom.f'
       include 'myidcom.f'
       include 'meshcom.f'
+      real wavespec(2*ndims+1)
       external ranlenposition,gasdev
 ! Factor by which we leave additional space for increased number of 
 ! particles if not fixed:
@@ -111,6 +112,8 @@
       enddo
 ! Allow the last species to fill the array by setting ghost init slot:
       iicparta(ispecies)=n_partmax+1
+ ! Apply initial wave displacement
+      if(.not.lnotallp)call wavedisplace(wavespec)
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine fillqblocksize(nqblks,islot,islotmax,ispecies)
@@ -139,10 +142,12 @@
       enddo
       if(myid.eq.0)then
          write(*,*)'qinit:ispecies  nfills     islot       nqblks ...'
+     $        ,'             distributing'
       endif
  2    nfills=int(nremain/nqbt)      ! assuming 1 particle per fill per qblock.
+      if(myid.eq.0.and.nremain/float(islotmax).gt.0.01)
+     $     write(*,'(8i10)')ispecies,nfills,islot,nqblks,nfills*nqbt
       nremain=nremain-nfills*nqbt
-      if(myid.eq.0)write(*,'(8i10)')ispecies,nfills,islot,nqblks
       do i=1,nfills
 ! Fill using iterator
          icomplete=mditerator(ndims,iview,indi,4,nqblks)
@@ -689,10 +694,10 @@ c If converged, break
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Introduce a plane-wave displacement into the initialized particles
 ! Only for use with a uniform domain in which particle displacement
-! can be consistently treated as periodic: dx= dispvec exp(i kvec.x)
+! can be consistently treated as periodic: xi= dispvec exp(i n.x/L)
 ! API: Is by the input array wavespec(nwspec) of which the elements
 !      1    Whether anything is to be done (zero means no).
-!      2:1+ndims          Magnitude and direction of kvec 
+!      2:1+ndims          Mode numbers in 3 coordinate directions.
 !      2+ndims:1+2*ndims  Magnitude and direction of dispvec
 ! Call only after qinit to enforce meaningful logic.
       subroutine wavedisplace(wavespec)
@@ -702,15 +707,22 @@ c If converged, break
       integer nwspec
       parameter (nwspec=2*ndims+1)
       real wavespec(nwspec)
+      real kw(ndims)
+
+!      write(*,*)'Applying initial wave',wavespec
 
       if(wavespec(1).eq.0)return
-
+      do id=1,ndims    ! Ensure precise periodicity
+         kw(id)=nint(wavespec(1+id))*2.*3.1415926
+     $        /(xmeshend(id)-xmeshstart(id))
+!         write(*,*)wavespec(1+id),xmeshend(id),xmeshstart(id),kw(id)
+      enddo
       do js=1,nspecies
          do i=iicparta(js),iocparta(js)
             if(x_part(iflag,i).ne.0)then
                phase=0.                ! calculate phase
                do id=1,ndims
-                  phase=phase+wavespec(1+id)*x_part(id,i)
+                  phase=phase+kw(id)*x_part(id,i)
                enddo
                cosphase=cos(phase)
                do id=1,ndims           ! Displace particles
@@ -724,6 +736,8 @@ c If converged, break
      $                    -xmeshstart(id)+xmeshend(id)
                   endif
                enddo
+! Initialize the mesh fraction data in x_part.
+               call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
             endif
          enddo
       enddo
