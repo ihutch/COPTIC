@@ -15335,3 +15335,82 @@ Doing 128^3 tests I see a need for sormpi tolerance relaxation, so
 implement increasing of eps_sor by factor 1.5 after each
 new 2 nonconvergences. 
 
+Currently the high-B mover driftparticle moves the particle by a 
+timestep times v_parallel plus v_perp= ExB_drift plus v_driftperp,
+and sets the total velocity to be v_parallel+v_perp, thus zeroing
+the gyromotion (mu). Prior to this drift, the kick is applied to the
+whole velocity, although only the increment in v_parallel matters,
+since the perp will be reset. I wonder if instead one could retain
+finite mu and rotate the particle by its gyroangle increment. 
+That rotation is the cyclotronic motion. Why would it not work provided
+that we decline to change the particle's mu (perpendicular energy in the
+drift frame)?
+
+14 Aug 18
+
+While further diagnosing poor convergence when the domain is smaller
+than the mesh count I find a peculiarity of running COPTIC as an
+electron pushing code. It is that the cij coefficients are in units of
+Debyelengths whereas the q (charge density) is not, it is in whatever
+the computational units happen to be. Therefore if you are solving
+Poisson's equation to find potential for a certain particle
+distribution, the potential obtained depends upon the Debyelength (and
+is actually inversely proportional to its square). This does not make
+any difference if no -l flag or -l1 is given, because debyelength is
+by default 1. But it appears to be a confusion of units in
+non-quasineutral cases. The cij are set equal to debyelength^2 times
+the finite difference coefficients for \nabla^2; so the sormpi solves
+(d^/dx^2+...)\phi = q, where x, y, and z, are measured in units of
+debyelength. In fact, the only important place where debyelen enters
+the calculation is in setting cij (plus some ancient orbitinj stuff).
+
+This seems a bit inconsistent. However, Poisson's equation is certainly
+-\lambda_D^2 \nabla^2(e\phi/Te) = (ni/ninf)-(ne/ninf) (for Z=1). So if
+density is normalized to ninfinity, it makes sense. The reason for 
+changing \phi with debyelen (for the same rhoinf) is that the effective
+charge on each superparticle is \propto 1/debyelen^2. 
+
+I think this confusion probably does not need fixing, but it probably
+does need explaining in the RefManual. So wrote an introductory section.
+
+Returning to the convergence problem, I find that 128,128 on a 128x128
+domain converges spectacularly well. By contrast anything else 
+e.g. 128x126 fails to converge with deltas +.0000198 permanently.
+This very strange result makes one suspect rounding errors in the 
+SOR calculation. But I can't find them by experimenting with different
+operator orders etc. I also don't seem to be able to avoid them by
+bumping the relaxation parameter in different directions, although that
+does change the endpoint value of delta. These are with all periodic
+potential. Problem is there but not so bad with fixed x potential. 
+Removing makemedian zero does nothing. 
+
+I think I see what is happening. There is a gradual upward creep of the
+whole solution as evidenced by umax and umin in the iterations. That's
+why the delta is always the same. It's really converged, but drifting
+upward (irrelevantly) at a rate fast enough to fool the convergence.
+That is presumably because of there being a slight imbalance in the
+total charge. One might have to fix that by a better method. Needs to 
+be thought about. The rounding error might be in the background, or
+in rhoinf. 
+
+I think I can confirm this by just changing -ri value by a miniscule amount
+which causes the convergence to go bad. Seems as though there's a 
+coincidence whereby the background cancellation is near perfect for
+certain combinations of -ri and domain size. 128x128 -ri1 happens to
+be one. A -ri change of 1e-5 is insufficient to break it but 2e-5 is enough.
+There are 1.6M particles. 
+
+Broadly speaking, a periodic solution cannot pay attention to any component
+that changes the average potential. It ought to subtract it off. I've
+tried to fix the problem outside of sormpi by makemedianzero. But that has
+not solved the problem of convergence within sormpi. 
+
+Constructed an additional parameter in sorrelaxgen adelta that is the sum
+of all the deltas. Implemented mpi_reduce sum, so giving the total sum
+of deltas over the entire grid. Divide it by the number of mesh nodes, to
+give a (weighted) average increment. Adding it to the debug output, I see
+that it is, within a percent or two, half of the delta returned by 
+testifconverged. That's because the number of nodes advanced is actually
+half of nodecount, because of red/black operations. If I subtract the
+corrected adelta from delta, I get far lower residue. Lower than 10^{-6}
+and the convergence is then fixed. Works also with 2 cpus.

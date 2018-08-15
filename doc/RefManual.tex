@@ -4,6 +4,10 @@
 \usepackage{verbatim}
 \usepackage{graphicx}
 
+\def\v{{\bf v}}
+\def\E{{\bf E}}
+\def\B{{\bf B}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \def\sentence#1{\par\noindent\textbf{#1}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,6 +42,122 @@
 
 \tableofcontents
 
+\section{Equations Solved and Code Units}
+
+COPTIC is an electrostatic particle in cell (PIC) code. It moves
+charged particles in electric fields (and fixed magnetic fields); then
+it calculates the electric potential on a mesh via Poisson's equation
+from the new particle charge distribution and optionally other
+continuum charge densities. Many steps consisting of these cyclic
+updates are usually taken.
+
+\subsection{Poisson's Equation}
+
+In (SI) dimensional units Poisson's equation for the potential $\phi$ is
+\begin{equation}
+  \label{eq:PoissonDim}
+  \nabla^2 \phi = -\rho/\epsilon_0 = -(n_iq_i+n_eq_e)/\epsilon_0.
+\end{equation}
+where $n_e$ and $n_i$ are the electron and ion species densities, and
+$q_e$, $q_i$ their charges ($q_e=-e$). COPTIC possesses fixed reference
+plasma temperature $T_r$ and density $n_\infty$, which together
+define a Debye length $\lambda_D$
+\begin{equation}
+  \label{eq:Debyelen}
+  \lambda_D^2= {\epsilon_0T_r\over n_\infty e^2}
+\end{equation}
+In terms of these reference values, Poisson's equation can be written
+\begin{equation}
+  \label{eq:Poisson2}
+  \lambda_D^2\nabla^2\hat\phi=
+  \lambda_D^2\nabla^2\left(e\phi\over T_r\right) =-\left({n_iq_i\over n_\infty e}
+    +{n_eq_e\over n_\infty e}\right)=-(\hat n_i\hat q_i+\hat n_e\hat q_e),
+\end{equation}
+where hats denote quantities normalized in a natural fashion. The
+normalization of spatial units is left undefined here because under
+some circumstances the Debye length might not be a natural choice of
+reference length.
+
+In addition to particles, it is convenient sometimes to use additional
+components in Poisson's equation represented as continua (fluids)
+governed by simpler equations. The most signficant type is an
+electron-like component that is governed by a thermal Boltzmann factor so that
+$n_c=n_{c\infty}\exp(-q_c\phi/T_r)$. In simulating ion phenomena,
+electrons generally equilibrate very much more quickly and can be
+represented in these terms, allowing much longer time-steps to be
+followed for the ion particle species. When that is done, the
+$\hat n_e\hat q_e$ term in eq.\ (\ref{eq:Poisson2}) is replaced by
+\begin{equation}
+  \label{eq:Boltzmann}
+  \hat n_e\hat q_e \longrightarrow \exp(\hat\phi).
+\end{equation}
+
+\subsection{Equation of Motion}
+
+The (non-relativistic) equation of motion of a particle is 
+\begin{equation}
+  \label{eq:EqofM}
+  m {d\v\over dt} = q (-\nabla \phi +\v\wedge\B) 
+\end{equation}
+which can be written in terms of reference velocity
+$v_r=\sqrt{T_r/m}$ and frequency $\omega_r=v_r/\lambda_D$ and
+parameters normalized by these as
+\begin{equation}
+  \label{eq:EofMNorm}
+    {d\hat{\v}\over d\hat{t}}=
+    \lambda_D{m\over T_r}{d\v\over dt}
+=\hat q(-\lambda_D\nabla\hat\phi
++\hat\v\wedge\left(e\B\over m\omega_r\right)) 
+=\hat q(-\lambda_D\nabla\hat\phi
++\hat\v\wedge\hat\Omega) ,
+\end{equation}
+where $\hat t=\omega_r t$ and $\hat\Omega$ is the cyclotron frequency
+normalized to $\omega_r$ (retaining its vector nature).
+
+Depending on whether ions or electrons are the reference species, the
+reference velocity, $v_r$, is either the cold ion sound speed or the
+electron thermal speed, and the reference frequency is either the ion
+or electron plasma frequency. One can then regard $\hat\Omega$ to be
+the ratio of the Debye length to the thermal Larmor radius.
+Again the potential gradient length
+normalization is left open. This is consistent provided that every
+time a gradient operator is called for, the Debye length multiplier
+(measured in whatever length units are currently in use) is properly
+applied. 
+
+\subsection{Units of input specifications}
+
+The equations solved by COPTIC are essentially (\ref{eq:Poisson2}) and
+(\ref{eq:EofMNorm}). In specifying the domain and parameters of a
+calculation, the values to be provided in input file or command line
+arguments are the \emph{normalized} values for potential, velocity,
+time, temperature (relative to the $T_r$ reference), charge-to-mass
+ratio (important for multispecies runs), and magnetic field. However,
+the units of length are essentially a free choice. That choice is
+defined by specifying the Debye length. By default the Debye length is
+unity, which means that by default the units of length are Debye
+lengths. However, it is equally possible to make the units of length,
+say, meters, or the radius $r$ of an object, and that is done by
+specifying to the code that the Debye length is $\lambda_D$ meters, or
+$\lambda_D/r$ $r-$units. If the Debye length is specified as zero, then
+the plasma is enforced to be quasi-neutral throughout. That is a
+perfectly sensible option.
+
+In addition to physics, there are numerous quantitative inputs that
+relate to the code operation, for example the number of steps, or the
+number of particles. Since plasma particle density is normalized to
+unity, it it hardly makes sense input the value of e.g.\ plasma electron
+density. Instead, what the density input specifications refer to is
+the simulation super-particles. Specifying that density gives the
+number of super-particles per cubic computational length unit
+(e.g. Debye length, meters, or radius). If that super-particle density
+and distribution is fixed and the value of the Debye length is varied,
+then it is obvious from the previous equations that the solution value
+of $\phi$ will change proportional to $\lambda_D^{-2}$. One should
+interpret that as implying that as the scaling of the effective charge
+of the super-particles. 
+
+
 
 \section{Object Data and Geometry Input File}\label{infile}
 
@@ -47,7 +167,8 @@ which is referred to as the object file.  The purpose of this section
 is to explain the format and meaning of the object file. Some
 parameters are set either in the object file or by command line
 arguments. A command line argument always overrides the object file.
-
+But it is convenient practice also to put most of the arguments, to be
+explained later, into the object file itself.
 
 \paragraph{The default name} of the input file is \verb!copticgeom.dat!, but it
 may be set to any other name by a non-switch commandline argument
@@ -721,7 +842,7 @@ If restarting, this is the number of \emph{additional} steps.
 
 \subsubsection*{Plasma Parameters}
 
-\paragraph{-t....}  Set the (ion) temperature, $T_i$ ($/T_e$). Default 1.
+\paragraph{-t....}  Set the (ion) temperature, $T_i$ ($/T_r$). Default 1.
 
 \paragraph{-tp....} Set perpendicular (to B) temperature. Default
 $T_i$. [A subsequent -t switch will override this setting.]
@@ -802,14 +923,20 @@ time-step must be observed as if the times-scales were electron. Thus
 one should consider velocities to be normalized to
 $\sqrt{T_e/m_e}$. The (electron) plasma frequency in computational
 units is then $\omega_{pe}=1/\lambda_{De}$, and stability requires
-$\omega_{pe}dt = dt/\lambda_{De}<1$. It also generally requires the
-grid size to be somewhat smaller than the Debye length. [Not sorted out]
+$\omega_{pe}dt = dt/\lambda_{De}<1$. Typically the mesh spacing is
+then taken to be $\lambda_{De}$ which makes the finite-mesh effects
+extremely small (in COPTIC's case a very weak $\gamma \sim -10^{-5}$
+damping as contrasted with standard field interpretation's very weak
+instability). COPTIC can tolerate substantially larger mesh spacing
+without ill effects, but much smaller spacing leads to stronger
+damping.
 
 \paragraph{-ih[...]} Set parameters of a phase-space hole in particle
 initialization for the current species. Only one species can be
 initialized as a hole; so this switch overrules and disables hole
 settings for any previous species. Up to six parameters are set by
-succeeding values separated by commas (no spaces). The parameters and
+succeeding values separated by commas (no spaces) but see next entry
+{\bf -pi} for variations. The parameters and
 their defaults are \verb!holepsi! [0.1] the hole (peak) potential,
 \verb!holeum! [0.]\ the speed of the hole relative to the mean of the
 untrapped Maxwellian distribution, \verb!holelen! [4.]\ the length of
@@ -867,7 +994,7 @@ using this collision setting.
 
 
 \paragraph{-Bx.. -By.. -Bz..} Set the respective components of the
-magnetic field. 
+magnetic field (strictly $\hat\Omega$). 
 
 \subsubsection*{Diagnostics and Averaging}
 
@@ -940,13 +1067,14 @@ periodic position within the mesh, rather than reinjected. See
 \paragraph{-id....} Set the number of MPI blocks in each
 dimension. For example, \verb!-id2,2,8! would prescribe an MPI
 cartesian block array of $2\times2\times8$ (in the dimensions $xyz$).
-The total number of blocks (32 in this case) must be equal to the
-number of MPI processes on which coptic is running. If it is not, then
-the switch has no effect, and the MPI cartesian topology is decided
-automatically, as it is normally by default. When running with a large
-number of nodes to give high particle per cell count, it is helpful to
-limit the number of blocks into which dimensions are split so as not
-to obtain excessive interprocess communication demands. 
+The total number of blocks (32 in this case) must be less than or
+equal to the number of MPI processes on which coptic is running. If it
+is not, then the switch has no effect, and the MPI cartesian topology
+is decided automatically, as it is normally by default. When running
+with a large number of nodes to give high particle per cell count, it
+is helpful to limit the number of blocks into which dimensions are
+split so as not to obtain excessive interprocess communication
+demands.
 
 \paragraph{-ofFilename} Set the name [including path] of the object
 file. Default copticgeom.dat

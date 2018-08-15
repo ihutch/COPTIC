@@ -302,7 +302,7 @@
                lbtoolarge=.true.
             endif
             do j=1,ndims            
-! E-kick
+! E-kick. Why do we do this? And why not in driftparticle?
                x_part(j+ndims,i)=x_part(j+ndims,i)+eoverms(ispecies)
      $              *Efield(j)*dtaccel
             enddo

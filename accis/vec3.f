@@ -60,19 +60,24 @@ c***********************************************************************
       subroutine w2scl3
       include 'plotcom.h'
       include 'world3.h'
+      integer nerr,nemax
+      data nerr/0/nemax/5/
       if(wx3max.eq.wx3min)then
          wx3max=wx3min+1.
-         write(*,*)'W2SCL3: wxmin=wxmax error.',wx3max
+         if(nerr.le.nemax)write(*,*)'W2SCL3: wxmin=wxmax error.',wx3max
+         nerr=nerr+1
       endif
       w3nx=scbx3*2./(wx3max-wx3min)
       if(wy3max.eq.wy3min)then
          wy3max=wy3min+1.
-         write(*,*)'W2SCL3: wymin=wymax error.',wy3max
+         if(nerr.le.nemax)write(*,*)'W2SCL3: wymin=wymax error.',wy3max
+         nerr=nerr+1
       endif
       w3ny=scby3*2./(wy3max-wy3min)
       if(wz3max.eq.wz3min)then
          wz3max=wz3min+1.
-         write(*,*)'W2SCL3: wzmin=wzmax error.',wx3max
+         if(nerr.le.nemax)write(*,*)'W2SCL3: wzmin=wzmax error.',wx3max
+         nerr=nerr+1
       endif
       w3nz=scbz3*2./(wz3max-wz3min)
       end

@@ -70,6 +70,10 @@
       real CFin(3+ndimsmax,2*ndimsmax)
 ! Center of objplot final plot.
       real cv(ndimsmax)
+! Particle initialization wave displacement specification
+      integer nwspec
+      parameter (nwspec=2*ndims+1)
+      real wavespec(nwspec)
 ! Various local parameters
       real bckgd,bdt,bdtnow,boltzamp0,cellvol,dtf
       real dum,dum2,dum3,dum4,dum5
@@ -94,6 +98,8 @@
       data lphiplot,ldenplot/.false.,.false./
       data lrestart/0/cv/0.,0.,0./
       data ipstep/1/idistp/0/idcount/0/icijcount/0/
+      data wavespec/nwspec*0/  ! Default no wave
+!      data wavespec/1,0,.1,0,1,0,0/  ! k_y, x-displacement
 ! End of declarations      ###################################
 !-------------------------------------------------------------
 ! Replace Block Data programs with this 
@@ -303,6 +309,7 @@
 ! Quiet initialization. Use only with no objects.
             if(ngeomobj.gt.0)stop '!!Quiet init only with no objects!!'
             call qinit
+            call wavedisplace(wavespec) ! Apply initial wave displacement
          endif
       endif
 !---------------------------------------------

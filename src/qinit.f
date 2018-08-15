@@ -686,3 +686,47 @@ c If converged, break
       untrappeddensimple=f/sqrt(3.1415926)
 
       end
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Introduce a plane-wave displacement into the initialized particles
+! Only for use with a uniform domain in which particle displacement
+! can be consistently treated as periodic: dx= dispvec exp(i kvec.x)
+! API: Is by the input array wavespec(nwspec) of which the elements
+!      1    Whether anything is to be done (zero means no).
+!      2:1+ndims          Magnitude and direction of kvec 
+!      2+ndims:1+2*ndims  Magnitude and direction of dispvec
+! Call only after qinit to enforce meaningful logic.
+      subroutine wavedisplace(wavespec)
+      include 'ndimsdecl.f'
+      include 'meshcom.f'
+      include 'partcom.f'
+      integer nwspec
+      parameter (nwspec=2*ndims+1)
+      real wavespec(nwspec)
+
+      if(wavespec(1).eq.0)return
+
+      do js=1,nspecies
+         do i=iicparta(js),iocparta(js)
+            if(x_part(iflag,i).ne.0)then
+               phase=0.                ! calculate phase
+               do id=1,ndims
+                  phase=phase+wavespec(1+id)*x_part(id,i)
+               enddo
+               cosphase=cos(phase)
+               do id=1,ndims           ! Displace particles
+                  x_part(id,i)=x_part(id,i)
+     $                 +wavespec(1+ndims+id)*cosphase
+                  if(x_part(id,i).gt.xmeshend(id))then ! apply periodicity
+                     x_part(id,i)=x_part(id,i)
+     $                    +xmeshstart(id)-xmeshend(id)
+                  elseif(x_part(id,i).lt.xmeshstart(id))then
+                     x_part(id,i)=x_part(id,i)
+     $                    -xmeshstart(id)+xmeshend(id)
+                  endif
+               enddo
+            endif
+         enddo
+      enddo
+      
+
+      end

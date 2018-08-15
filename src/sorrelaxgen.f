@@ -4,7 +4,7 @@
      $     intcij,
      $     cij,u,q,myorig,
      $     laddu,faddu,oaddu,
-     $     relax,rdelta,umin,umax)
+     $     relax,rdelta,umin,umax,adelta)
 ! General number of dimensions ndims call.
 ! iLs is dimensions structure, cij is really (2*ndims+1,iuds(1),...)
 ! intcij is a copy of cij, but referred to as an integer. 
@@ -28,7 +28,8 @@
 ! relax is the relaxation fraction IN
 ! rdelta is the maximum change in this step OUT
 ! umin, umax are the minimum and maximum values of u OUT
-      real relax,rdelta,umin,umax
+! adelta is the average delta. 
+      real relax,rdelta,umin,umax,adelta
 
       parameter (imds=3,imds2=2*imds)
 ! Offset to adjacent points in stencil.
@@ -54,6 +55,8 @@
          lfirst=.false.
       endif
 
+      ndelta=0
+      adelta=0.
       addu=0.
       daddu=0.
 ! Cell step.
@@ -183,9 +186,11 @@
 ! Aug 09 This prevents excessive nonlinear steps.
          if(abs(delta).gt.3.*dscl)then
             delta=sign(3.*dscl,delta)
-!            write(*,*)addu,daddu,u(ipoint+1),csum,dnum,dden,delta
+!            write(*,*)'dscl',addu,daddu,u(ipoint+1),csum,dnum,dden,delta
          endif
          if(abs(delta).gt.abs(rdelta))rdelta=delta
+         adelta=adelta+delta
+         ndelta=ndelta+1
          uij=u(ipoint+1)+delta
          u(ipoint+1)=uij
 ! Inverted tests to catch nans.
@@ -205,7 +210,7 @@
       endif
 
  201  continue
-
+      adelta=adelta
 
       end
 !************************************************************************

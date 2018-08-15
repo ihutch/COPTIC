@@ -805,10 +805,10 @@
       call MPI_COMM_SIZE( MPI_COMM_WORLD, nprcsses, ierr )
       end
 !********************************************************************
-      subroutine mpiconvgreduce(convgd,icommcart,ierr)
+      subroutine mpiconvgreduce(convgd,adelta,icommcart,ierr)
       implicit none
       include 'mpif.h'
-      real convgd(3),convgr(3)
+      real convgd(3),convgr(3),adelta
       integer i,ierr,icommcart
       
 ! doing it in place:
@@ -826,6 +826,8 @@
       do i=1,3
          convgd(i)=convgr(i)
       enddo
+      call MPI_ALLREDUCE(MPI_IN_PLACE,adelta,1,MPI_REAL,MPI_SUM,
+     $     icommcart,ierr)
       end
 !*********************************************************************
       subroutine mpibarrier(ierr)

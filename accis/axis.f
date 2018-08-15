@@ -79,6 +79,8 @@ c laxlog              :  log axis (true).
       real xgnlog,ygnlog
 c      real xgnlin,ygnlin
       integer nxfac,indx,iticnum
+      logical lerror
+      data lerror/.false./
 c Statement functions for scaling.
       xgnlog(gw)=xgmin+dx*log10(gw/ain)
       ygnlog(gw)=ygmin+dy*log10(gw/ain)
@@ -91,13 +93,15 @@ c
       axsin=ygmax-ygmin
       dl=sqrt(axcos*axcos+axsin*axsin)
       if(dl.eq.0) then 
-        call txtmode
-        write(*,*) ' GAXIS error. Axis ends coincide. '
-        write(*,*)' ygmin=',ygmin,' ygmax',ygmax,' wymin',wymin,
-     $       ' wymax',wymax
-        write(*,*)' xgmin=',xgmin,' xgmax',xgmax,' wxmin',wxmin,
-     $       ' wxmax',wxmax
-        stop ' '
+         if(.not.lerror)then
+            write(*,*) ' GAXIS error. Axis ends coincide. '
+            write(*,*)' ygmin=',ygmin,' ygmax',ygmax,' wymin',wymin,
+     $           ' wymax',wymax
+            write(*,*)' xgmin=',xgmin,' xgmax',xgmax,' wxmin',wxmin,
+     $           ' wxmax',wxmax
+            lerror=.true.
+         endif
+         return
       endif
       axcos=axcos/dl
       axsin=axsin/dl

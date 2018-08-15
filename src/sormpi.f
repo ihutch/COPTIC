@@ -122,7 +122,9 @@
 ! fixed boundary, 3-D, but is supposed to be general dimensional.
          maxlen=0
          sumlen=0
+         nodetotal=1
          do k=1,ndims
+            nodetotal=nodetotal*(iuds(k)-2)
             sumlen=sumlen+iuds(k)
             if(iuds(k).gt.maxlen)maxlen=iuds(k)
          enddo
@@ -210,18 +212,18 @@
      $        cij(1+(2*ndims+1)*(myorig-1)),
      $        cij(1+(2*ndims+1)*(myorig-1)),u(myorig),q(myorig),myorig,
      $        laddu,faddu,oaddu,
-     $        relax,delta,umin,umax)
+     $        relax,delta,umin,umax,adelta)
 
 !          call checkdelta(delta,deltaold)
          if(ldebugs.and.k_sor.le.2) write(*,
      $        '(''sorrelaxgen returned'',i4,4f13.5)')
      $        k_sor,delta,oaddu ,umin,umax
 ! Test convergence
-         call testifconverged(eps_sor,delta,umin,umax,
+         call testifconverged(eps_sor,delta,adelta,nodetotal,umin,umax,
      $        lconverged,icommcart)
-         if(myid.eq.0.and.idebug.gt.0)
-     $        write(*,'(i5,f11.7,2f8.4,l3,2f8.4,f11.7)')k_sor,delta
-     $        ,umin,umax,lconverged,omega,xjac,eps_sor
+         if(myid.eq.0.and.idebug.gt.1)
+     $        write(*,'(i5,2f11.7,2f8.4,l3,2f8.4,f11.7)')k_sor,delta
+     $        ,adelta,umin,umax,lconverged,omega,xjac_sor,eps_sor
          if(lconverged.and.k_sor.ge.2)goto 11
 
          if(k_sor.eq.1)then
@@ -245,7 +247,7 @@
       noncnvg=noncnvg+1
       if(noncnvg.ge.ncvgmax)then
          eps_sor=min(1.e-5,1.5*eps_sor)
-         if(idebug.gt.0)write(*,*)'New eps_sor=',eps_sor
+         if(myid.eq.0.and.idebug.gt.0)write(*,*)'New eps_sor=',eps_sor
          noncnvg=0
       endif
 !      write(*,*)'Finished sorrelax loop unconverged',k_sor,delta
@@ -281,11 +283,11 @@
 ! at the same time. If not then a process will hang waiting for message.
 ! So we have to universalize the convergence test. All blocks must be
 ! converged, but the total spread depends on multiple blocks.
-      subroutine testifconverged(eps,delta,umin,umax,lconverged,
-     $     icommcart)
+      subroutine testifconverged(eps,delta,adelta,nodetotal,umin,umax
+     $     ,lconverged,icommcart)
       implicit none
-      real eps,delta,umin,umax
-      integer ierr,icommcart
+      real eps,delta,umin,umax,adelta
+      integer ierr,icommcart,nodetotal
       logical lconverged
       real convgd(3)
       real cscale
@@ -295,14 +297,20 @@
       convgd(2)=-umin
       convgd(3)=umax
 ! Here we need to allreduce the data, selecting the maximum values,
-      call mpiconvgreduce(convgd,icommcart,ierr)
+      call mpiconvgreduce(convgd,adelta,icommcart,ierr)
 !........
-      if(convgd(1).le.eps*max(convgd(2)+convgd(3),cscale)) then
+      delta=sign(convgd(1),delta)
+      adelta=2*adelta/nodetotal
+! adelta is now the average delta of all mesh nodes and
+! delta the signed maximum. Subtract them to neglect average drift.
+      delta=delta-adelta
+      if(abs(delta).le.eps*max(convgd(2)+convgd(3),cscale)) then
          lconverged=.true.
       else
          lconverged=.false.
       endif
-      delta=sign(convgd(1),delta)
+      umin=-convgd(2)
+      umax=convgd(3)
       end
 !**********************************************************************
       subroutine  getxjac(ndims,ifull,iuds,cij,xjac)

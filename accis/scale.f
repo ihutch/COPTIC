@@ -24,7 +24,9 @@ c   If min and max are both zero, leave as before.
       subroutine scalewn(wxmi,wxma,wymi,wyma,lx,ly)
       real wxmi,wxma,wymi,wyma
       logical lx,ly
+      integer nerr,nemax
       include 'plotcom.h'
+      data nerr/0/nemax/5/
       lxlog=lx
       lylog=ly
       if(wxmi.lt.0 .or. wxma.lt.0)lxlog=.false.
@@ -33,8 +35,10 @@ c   If min and max are both zero, leave as before.
          wxmin=wxmi
          wxmax=wxma
          if(wxmin.eq.wxmax)then
-            write(*,*)' SCALEWN warning: wxmin/max coincide;fixing.'
+            if(nerr.le.nemax)write(*,*)
+     $           ' SCALEWN warning: wxmin/max coincide;fixing.'
             wxmax=wxmax+1.
+            nerr=nerr+1
          endif
          if(.not.lxlog)w2nx=(naxmax-naxmin)/(wxmax-wxmin)
          if(lxlog)w2nx=(naxmax-naxmin)/(log10(wxmax)-log10(wxmin))
@@ -43,8 +47,10 @@ c   If min and max are both zero, leave as before.
          wymin=wymi
          wymax=wyma
          if(wymin.eq.wymax)then
-            write(*,*)' SCALEWN warning: wymin/max coincide;fixing.'
+            if(nerr.le.nemax)write(*,*)
+     $           ' SCALEWN warning: wymin/max coincide;fixing.'
             wymax=wymax+1.
+            nerr=nerr+1
          endif
          if(.not.lylog)w2ny=(naymax-naymin)/(wymax-wymin)
          if(lylog)w2ny=(naymax-naymin)/(log10(wymax)-log10(wymin))

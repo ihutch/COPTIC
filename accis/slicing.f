@@ -218,6 +218,7 @@ c have been called in the external program:
      $              zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw+8)
             else
 c This is the standard call that normally does internal scaling:
+!               write(*,*)'nf1,if1,nf2,if2',nf1,if1,nf2,if2
                call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
      $              zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
             endif
@@ -244,7 +245,7 @@ c Use this scaling until explicitly reset.
 !      call ax3labels('axis-'//cxlab,'axis-'//cylab,utitle)
 
 c Projected contouring.
-      if(mod(icontour,4).ne.0)then
+      if(mod(icontour,4).ne.0.and.nf1.gt.if1.and.nf2.gt.if2)then
          if(iweb.eq.0)call cubed(igetcubecorner())
 c       Draw a contour plot in perspective. Need to reset color anyway.
          call axregion(-scbx3,scbx3,-scby3,scby3)
@@ -398,11 +399,11 @@ c /
       elseif(isw.eq.46)then
 c .
          iclipping=1
-         nf2=max(nf2-1,if2+1)
+         nf2=max(nf2-1,if2)
       elseif(isw.eq.44)then
 c ,
          iclipping=1
-         if2=min(if2+1,nf2-1)
+         if2=min(if2+1,nf2)
       elseif(isw.eq.ichar('m'))then
 c m
          iclipping=1
@@ -410,19 +411,21 @@ c m
       elseif(isw.eq.ichar('l'))then
 c l
          iclipping=1
-         nf1=max(nf1-1,if1+1)
+         nf1=max(nf1-1,if1)
       elseif(isw.eq.ichar('u'))then
          ltellslice=.not.ltellslice
       elseif(isw.eq.59)then
 c ;
          iclipping=1
          nf1=min(nf1+1,iuds(idp1))
+c j
       elseif(isw.eq.ichar('j'))then
          iclipping=1
          if1=max(if1-1,1)
+c k
       elseif(isw.eq.ichar('k'))then
          iclipping=1
-         if1=min(if1+1,nf1-1)
+         if1=min(if1+1,nf1)
       endif
       if(isw.eq.ichar('c'))icontour=mod(icontour+1,8)
       if(isw.eq.ichar('w'))iweb=mod(iweb+1,4)
