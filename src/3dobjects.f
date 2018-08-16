@@ -483,6 +483,7 @@
 ! End of type choices
 !------------------------------------------------
 ! If this is a null boundary condition clear the relevant bit.
+      if(ngeomobj.gt.0)then
       if(obj_geom(oabc,ngeomobj).eq.0.
      $     .and. obj_geom(oabc+1,ngeomobj).eq.0.
      $     .and. obj_geom(oabc+2,ngeomobj).eq.0.)
@@ -508,6 +509,7 @@
  110     continue
          write(*,*)'   Gradients:'
      $        ,(obj_geom(k,ngeomobj),k=ocgrad,oagrad+2)
+      endif
       endif
  820  format(i2,a,$)
  821  format(f5.0,15f7.3)

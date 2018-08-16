@@ -332,8 +332,8 @@ c but writing and plotting only by top process
          ntotal=ntotal*iuds(i)
       enddo
       icomplete=mditerator(ndims,iview,indi,4,iuds)
- 1    scratch(indexcontract(ndims,iuds,indi))
-     $     =u(indexcontract(ndims,ifull,indi))
+ 1    ipointer=1+indexcontract(ndims,ifull,indi)
+      scratch(ipointer)=u(ipointer)
       if(mditerator(ndims,iview,indi,0,iuds).eq.0)goto 1
       getmedian=quickselect(ntotal/2,ntotal,scratch)
       end

@@ -51,6 +51,7 @@
       include 'ptaccom.f'
 ! Debugging
       include 'dbgcom.f'
+      integer idebug
       external bdyshare,bdyset,cijroutine,cijedge,psumtoq
      $     ,quasineutral,fadcomp,qvary
       real fadcomp
@@ -93,6 +94,7 @@
       data ifull/na_i,na_j,na_k/
 ! Data for plotting etc.
       data iobpl/0/
+      data idebug/0/
       data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot/
      $     .false.,.false.,.false.,.true.,.false./
       data lphiplot,ldenplot/.false.,.false./
@@ -410,6 +412,7 @@
      $        ,boltzamp)         
 
 ! Solve for the new potential:-------------------
+         if(idebug.gt.0)write(*,*)'Calling sormpi',iuds
          if(debyelen.eq.0)then
             call mditerarg(quasineutral,ndims,ifull,ium2,
      $        0,q(2,2,2),u(2,2,2),volumes(2,2,2),uc(2,2,2),dum5)
@@ -427,6 +430,7 @@
      $              ,fadcomp,ictl-2,ierr,myid,idims)
             endif
          endif
+         if(idebug.gt.0)write(*,*)'Returned from sormpi'
          if(LPF(1).and.LPF(2).and.LPF(3).and.ngeomobj.eq.0) 
      $        call makemedianzero(ifull,iuds,u,scratch) ! remove offset.
 ! ------------------------------------------------
@@ -448,6 +452,7 @@
 
          if(nf_step.eq.ickst)call checkuqcij(ifull,u,q,psum,volumes,cij)
 ! Particle advance:------------------------------
+         if(idebug.gt.0)write(*,*)'Calling padvnc',ispecies
          do ispecies=1,nspecies
             call padvnc(iLs,cij,u,ndiags,psum,diagsum,ispecies,ndiagmax)
          enddo

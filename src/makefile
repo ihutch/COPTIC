@@ -134,7 +134,6 @@ else
   NGW=-Wno-globals
   NOBOUNDS=$(COMPILE-SWITCHES) -fno-bounds-check
 endif
-NOGLOBALS:=$(COMPILE-SWITCHES) $(NGW)
 ##########################################################################
 FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate.o padvnc.o chargetomesh.o slicesect.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o cmdline.o fsects.o bdyshare.o toms659.o ranlux.o intersects.o trapinit.o mainroutines.o phasespace.o qinit.o
 MPIOBJECTS=reduce.o mpibbdy.o
@@ -144,6 +143,7 @@ ifeq ("$(findstring mpi,"$(G77)")","")
    ifeq ("$(findstring ftn,"$(G77)")","")
 # Assume Non-MPI compiler (e.g. gfortran) is used
        MPIOBJECTS=dummyreduce.o nonmpibbdy.o
+       NGW=-Wno-unused-dummy-argument
    endif
 endif
 SPECIALOBJECTS=bdyroutine.o faddu.o getfield.o interpolations.o 
@@ -156,6 +156,7 @@ HEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f partcom.f rancom.f creincom.f ptac
 # Nothing in root directory now depends on  examdecl.f
 SOLHEADERS=bbdydecl.f meshcom.f objcom.f 3dcom.f $(COPTIC_ROOT)/accis/world3.h 
 TARGETS=mpibbdytest mditeratetest sormpitest fieldtest
+NOGLOBALS:=$(COMPILE-SWITCHES) $(NGW)
 ##########################################################################
 # If this rule does not seem to recognize the file you are trying to make,
 # then run 'make' to completion first. It is something to do with the

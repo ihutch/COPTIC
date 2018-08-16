@@ -221,7 +221,7 @@
 ! Test convergence
          call testifconverged(eps_sor,delta,adelta,nodetotal,umin,umax,
      $        lconverged,icommcart)
-         if(myid.eq.0.and.idebug.gt.1)
+         if(myid.eq.0.and.idebug.gt.1.or.idebug.gt.2)
      $        write(*,'(i5,2f11.7,2f8.4,l3,2f8.4,f11.7)')k_sor,delta
      $        ,adelta,umin,umax,lconverged,omega,xjac_sor,eps_sor
          if(lconverged.and.k_sor.ge.2)goto 11
@@ -293,22 +293,21 @@
       real cscale
 ! This determines a minimum convergence scale for uniform cases.
       parameter (cscale=0.01)
-      convgd(1)=abs(delta)
+
+! Get the global average delta, and subtract drift.
+      call mpiallreducesuminplace(adelta,1,icommcart,ierr)
+      adelta=2*adelta/nodetotal
+      convgd(1)=abs(delta-adelta)
       convgd(2)=-umin
       convgd(3)=umax
-! Here we need to allreduce the data, selecting the maximum values,
-      call mpiconvgreduce(convgd,adelta,icommcart,ierr)
-!........
-      delta=sign(convgd(1),delta)
-      adelta=2*adelta/nodetotal
-! adelta is now the average delta of all mesh nodes and
-! delta the signed maximum. Subtract them to neglect average drift.
-      delta=delta-adelta
-      if(abs(delta).le.eps*max(convgd(2)+convgd(3),cscale)) then
+! Here we allreduce the data, selecting the maximum values,
+      call mpiallreducemaxinplace(convgd,3,icommcart,ierr)
+      if(convgd(1).le.eps*max(convgd(2)+convgd(3),cscale)) then
          lconverged=.true.
       else
          lconverged=.false.
       endif
+      delta=sign(convgd(1),delta)
       umin=-convgd(2)
       umax=convgd(3)
       end

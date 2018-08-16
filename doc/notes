@@ -15433,4 +15433,35 @@ Now we need the input interface. Done
 Demonstrated and oscillating kinked hole on my laptop. Period
 180 steps of -dt.5 for psi=1, Ny=4 in 128x128 domain.
 
+16 Aug 18
 
+Discovered a problem that only happens with mpi (-n 2 or greater) that if
+you run 128x128 iuds and ifull, the process hangs after one step. But if
+you have 129x129 ifull it doesn't. Run with bounds checking. Got an error
+in 3dobjects.f  
+Index '0' of dimension 2 of array 'obj_geom' below lower bound of 1
+That's because ngeomobj is 0. Fixed that.
+Then got 
+At line 335 of file mainroutines.f
+Index '0' of dimension 1 of array 'scratch' below lower bound of 1
+That was an error in offset indexing in the new makemedian zero. Fixed.
+Then it seems the hang is gone, but returns after 3 steps without 
+any bounds check errors. Not present without mpi. Changing the number
+of particles changes the hang. It only happens with -ri exactly 1.
+Doesn't happen without shear wave. But it is not a linmesh error in
+wavedisplace. It never returns from sormpi. Problem seems to be that
+one process thinks the interation is converged but the other doesn't.
+Must be something I did in the communications of the testifconverged.
+I think there is some inconsistency in the sign hack.
+
+Got to fix the drift convergence problem more consistently. The issue
+is that convgd(1) is the maximum absolute change over the whole mesh,
+whereas adelta is the average signed delta. You can't be sure the local
+delta (which is not reduced) has the effective sign of convgd(1). So 
+the subtraction might be inconsistent from node to node. That's a no no.
+Maybe the thing to do is to keep track of two deltas, plus and minus.
+Another thought is to subtract adelta from delta before reducing it.
+But that requires us to have the adelta for the whole mesh before we
+do the cnvgd reduce, or do two reduces. Actually I alread do two since
+one is max and the other sum. So I reorganize the mpi stuff to be 
+lower level mpireducesuminplace etc.

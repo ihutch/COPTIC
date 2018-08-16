@@ -804,12 +804,30 @@
       call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
       call MPI_COMM_SIZE( MPI_COMM_WORLD, nprcsses, ierr )
       end
+!*******************************************************************
+      subroutine mpiallreducesuminplace(avalue,nvalue,icommcart,ierr)
+      implicit none
+      real avalue(*)
+      integer nvalue,icommcart,ierr
+      include 'mpif.h'
+      call MPI_ALLREDUCE(MPI_IN_PLACE,avalue,nvalue,MPI_REAL,MPI_SUM,
+     $     icommcart,ierr)
+      end
+!*******************************************************************
+      subroutine mpiallreducemaxinplace(avalue,nvalue,icommcart,ierr)
+      implicit none
+      real avalue(*)
+      integer nvalue,icommcart,ierr
+      include 'mpif.h'
+      call MPI_ALLREDUCE(MPI_IN_PLACE,avalue,nvalue,MPI_REAL,MPI_MAX,
+     $     icommcart,ierr)
+      end
 !********************************************************************
       subroutine mpiconvgreduce(convgd,adelta,icommcart,ierr)
       implicit none
       include 'mpif.h'
-      real convgd(3),convgr(3),adelta
-      integer i,ierr,icommcart
+      real convgd(3),adelta(1)
+      integer ierr,icommcart
       
 ! doing it in place:
 !      write(*,*)'convgd,icommcart',convgd,icommcart
@@ -817,17 +835,19 @@
 ! This is the MPI-2 version that is most convenient.
 !      call MPI_ALLREDUCE(MPI_IN_PLACE,convgd,3,MPI_REAL,MPI_MAX,
 !     $     icommcart,ierr)
+      call mpiallreducemaxinplace(convgd,3,icommcart,ierr)
 ! Since we use implicit none, if you try to use this version, then
 ! one ought to get an error if MPI_IN_PLACE is not in the headers.
 ! This should protect against MPI-1 problems.
 ! This is the version that one must use when MPI_IN_PLACE is absent.
-      call MPI_ALLREDUCE(convgd,convgr,3,MPI_REAL,MPI_MAX,
-     $     icommcart,ierr)
-      do i=1,3
-         convgd(i)=convgr(i)
-      enddo
-      call MPI_ALLREDUCE(MPI_IN_PLACE,adelta,1,MPI_REAL,MPI_SUM,
-     $     icommcart,ierr)
+!      call MPI_ALLREDUCE(convgd,convgr,3,MPI_REAL,MPI_MAX,
+!     $     icommcart,ierr)
+!      do i=1,3
+!         convgd(i)=convgr(i)
+!      enddo
+!      call MPI_ALLREDUCE(MPI_IN_PLACE,adelta,1,MPI_REAL,MPI_SUM,
+!     $     icommcart,ierr)
+      call mpiallreducesuminplace(adelta,1,icommcart,ierr)
       end
 !*********************************************************************
       subroutine mpibarrier(ierr)

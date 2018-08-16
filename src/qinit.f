@@ -708,6 +708,7 @@ c If converged, break
       parameter (nwspec=2*ndims+1)
       real wavespec(nwspec)
       real kw(ndims)
+      logical linmesh
 
 !      write(*,*)'Applying initial wave',wavespec
 
@@ -738,6 +739,10 @@ c If converged, break
                enddo
 ! Initialize the mesh fraction data in x_part.
                call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
+               if(.not.linmesh)then
+                  write(*,*)'wavedisplace linmesh ERROR',ixp,xfrac
+     $                 ,iregion,linmesh
+               endif
             endif
          enddo
       enddo

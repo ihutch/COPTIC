@@ -72,13 +72,21 @@
       ierr=0
       end
 !********************************************************************
-      subroutine mpiconvgreduce(convgd,icommcart,ierr)
-      implicit none
-      real convgd(3)
-      integer ierr,icommcart
-      ierr=0
-      end
-!********************************************************************
       subroutine mpibarrier(ierr)
       ierr=0
       end
+!*******************************************************************
+      subroutine mpiallreducesuminplace(avalue,nvalue,icommcart,ierr)
+      implicit none
+      real avalue(*)
+      integer nvalue,icommcart,ierr
+      ierr=0
+      end
+!*******************************************************************
+      subroutine mpiallreducemaxinplace(avalue,nvalue,icommcart,ierr)
+      implicit none
+      real avalue(*)
+      integer nvalue,icommcart,ierr
+      ierr=0
+      end
+!********************************************************************
