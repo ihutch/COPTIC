@@ -503,7 +503,7 @@ c Flattened sech^4 potential function.
          phiofx=0.
       else
          phiofx=psi*(1.+et)
-     $        /(1.+et*cosh(x/coshlen)**4)
+     $        /(1.+et*cosh(xo)**4)
       endif
       end
 c*********************************************************************
@@ -713,6 +713,7 @@ c If converged, break
 !      2+ndims:1+2*ndims  Magnitude and direction of dispvec
 ! Call only after qinit to enforce meaningful logic.
       subroutine wavedisplace(wavespec)
+      implicit none
       include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'partcom.f'
@@ -721,14 +722,15 @@ c If converged, break
       real wavespec(nwspec)
       real kw(ndims)
       logical linmesh
+      real cosphase,phase,xfrac(ndims)
+      integer i,id,iregion,ixp(ndims),js
 
-!      write(*,*)'Applying initial wave',wavespec
-
+      write(*,*)'Applying initial wave',wavespec
       if(wavespec(1).eq.0)return
       do id=1,ndims    ! Ensure precise periodicity
          kw(id)=nint(wavespec(1+id))*2.*3.1415926
      $        /(xmeshend(id)-xmeshstart(id))
-!         write(*,*)wavespec(1+id),xmeshend(id),xmeshstart(id),kw(id)
+         write(*,*)wavespec(1+id),xmeshend(id),xmeshstart(id),kw(id)
       enddo
       do js=1,nspecies
          do i=iicparta(js),iocparta(js)
@@ -738,18 +740,12 @@ c If converged, break
                   phase=phase+kw(id)*x_part(id,i)
                enddo
                cosphase=cos(phase)
+               if(.not.abs(cosphase).le.1)write(*,*)'cosphase',cosphase
                do id=1,ndims           ! Displace particles
                   x_part(id,i)=x_part(id,i)
      $                 +wavespec(1+ndims+id)*cosphase
-                  if(x_part(id,i).gt.xmeshend(id))then ! apply periodicity
-                     x_part(id,i)=x_part(id,i)
-     $                    +xmeshstart(id)-xmeshend(id)
-                  elseif(x_part(id,i).lt.xmeshstart(id))then
-                     x_part(id,i)=x_part(id,i)
-     $                    -xmeshstart(id)+xmeshend(id)
-                  endif
                enddo
-! Initialize the mesh fraction data in x_part.
+! Initialize the mesh fraction data in x_part. This also checks periodicity.
                call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
                if(.not.linmesh)then
                   write(*,*)'wavedisplace linmesh ERROR',ixp,xfrac

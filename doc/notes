@@ -15479,4 +15479,7 @@ problem is not new. Get 3e3d37 before. Still the same. This is a new
 bug. It transpires the density is crazy if x dimension is larger than
 around +-100. But only with qinit. Seems it can't cope with a length
 that is greater than 102!! Found a problem with derivphiofx producing
-a nan when the cosh argument is too large. Fix.
+a nan when the cosh argument is too large. Fix. 
+
+Fix another bug which arose in wavedisplace when partlocate was added
+because some arguments were arrays that weren't declared as such.
