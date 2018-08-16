@@ -15465,3 +15465,18 @@ But that requires us to have the adelta for the whole mesh before we
 do the cnvgd reduce, or do two reduces. Actually I alread do two since
 one is max and the other sum. So I reorganize the mpi stuff to be 
 lower level mpireducesuminplace etc.
+
+However, on 256x128 we get getpotential errors and 128x128. So we are
+not fixed yet.  This is not an mpi error. sormpi did not
+converge. It's broken even in serial coptic made with gfortran.
+Something has broken sor solution. There are no differences in sorrelaxgen
+The differences in sormpi all appear to be in testifconverged. 
+This is all irrelevant. The problem arises not from increasing the number
+of mesh nodes but from increasing the x-domain size. That's a different
+problem. Get a8b08456: has the same problem. Get 7db88fec: same problem.
+That was after the Jacobi convergence radius changes. Seems as if this
+problem is not new. Get 3e3d37 before. Still the same. This is a new
+bug. It transpires the density is crazy if x dimension is larger than
+around +-100. But only with qinit. Seems it can't cope with a length
+that is greater than 102!! Found a problem with derivphiofx producing
+a nan when the cosh argument is too large. Fix.

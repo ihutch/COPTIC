@@ -311,7 +311,10 @@ c The flattop length holetoplen. Negligible for large negative values.
 ! Initialize the mesh fraction data in x_part.
       call partlocate(x_part(1,islot),ixp,xfrac,iregion,linmesh)
 ! This test rejects particles exactly on mesh boundary:
-      if(.not.linmesh)goto 1
+      if(.not.linmesh)then
+         write(*,*)'Particle',islot,' outside mesh',x_part(1,islot)
+         goto 1
+      endif
       x_part(iflag,islot)=1
 
       if(ldouble)then ! Double particle initialization
@@ -495,8 +498,13 @@ c Flattened sech^4 potential function.
       real function phiofx(x,psi,coshlen,toplen)
       real x,psi,coshlen,toplen
       et=exp(-toplen)
-      phiofx=psi*(1.+et)
-     $     /(1.+et*cosh(x/coshlen)**4)
+      xo=x/coshlen
+      if(.not.abs(xo).le.10.)then
+         phiofx=0.
+      else
+         phiofx=psi*(1.+et)
+     $        /(1.+et*cosh(x/coshlen)**4)
+      endif
       end
 c*********************************************************************
 c Derivative of phiofx
@@ -504,8 +512,12 @@ c Derivative of phiofx
       real x,psi,coshlen,toplen
       et=exp(-toplen)
       xo=x/coshlen
-      derivphiofx=-4.*psi/coshlen *et*(1.+et)*sinh(xo)*cosh(xo)**3
-     $     /(1+et*cosh(xo)**4)**2
+      if(.not.abs(xo).le.10.)then
+         derivphiofx=0.
+      else
+         derivphiofx=-4.*psi/coshlen *et*(1.+et)*sinh(xo)*cosh(xo)**3
+     $        /(1+et*cosh(xo)**4)**2
+      endif
       end
 c********************************************************************
       real function findxofphi(phiv,psi,coshlen,tl,xmin,xmax,nbi)
