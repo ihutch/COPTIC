@@ -110,7 +110,7 @@
      $        ixnp,xn,ifix,'potential:'//'!Af!@',dum,dum)
       else
          ifix(3)=iuds(3)/2
-         write(*,*),ifull,iuds,na_m,ixnp,ifix
+         write(*,*)ifull,iuds,na_m,ixnp,ifix
          call sliceGcont(ifull,iuds,u,na_m,zp,
      $        ixnp,xn,ifix,'potential:'//'!Af!@',dum,dum)
       endif

@@ -325,17 +325,15 @@ c but writing and plotting only by top process
       include 'ndimsdecl.f'
       integer ifull(ndims),iuds(ndims)
       real u(*),scratch(*)
-      integer indi(ndims),iview(3,ndims)
+      integer indi(ndims),iview(3,ndims),iscratch
 ! Copy the u array into scratch which is compact using iuds.
-      ntotal=1
-      do i=1,ndims
-         ntotal=ntotal*iuds(i)
-      enddo
+      iscratch=0
       icomplete=mditerator(ndims,iview,indi,4,iuds)
  1    ipointer=1+indexcontract(ndims,ifull,indi)
-      scratch(ipointer)=u(ipointer)
+      iscratch=iscratch+1
+      scratch(iscratch)=u(ipointer)
       if(mditerator(ndims,iview,indi,0,iuds).eq.0)goto 1
-      getmedian=quickselect(ntotal/2,ntotal,scratch)
+      getmedian=quickselect(iscratch/2,iscratch,scratch)
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine makemedianzero(ifull,iuds,u,scratch)
@@ -346,9 +344,53 @@ c but writing and plotting only by top process
       integer indi(ndims),iview(3,ndims)
 
       themedian=getmedian(ifull,iuds,u,scratch)
+      if(.false.)write(*,*)'themedian=',themedian
       icomplete=mditerator(ndims,iview,indi,4,iuds)
  1    ipointer=1+indexcontract(ndims,ifull,indi)
       u(ipointer)=u(ipointer)-themedian
       if(mditerator(ndims,iview,indi,0,iuds).eq.0)goto 1
 
       end
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
+      subroutine bckgdset(bckgd,bdt,bdtnow,dtf,maccel,boltzamp
+     $     ,ispecies,pinjcomp0,ninjcomp0,voltotal,nf_step)
+! Set the background subtraction in units of ninfinity.
+      implicit none
+      real bckgd,bdt,bdtnow,dtf,boltzamp,voltotal
+      real pinjcomp0(nspecies),ninjcomp0(nspecies)
+      integer maccel,ispecies,nf_step
+      include 'ndimsdecl.f'
+      include 'plascom.f'
+      include 'partcom.f'
+      real dum
+
+      if(bdt.eq.0)then
+         bckgd=(1.-boltzamp)*eoverms(1)
+      elseif(bdt.gt.0)then
+! Acceleration code.
+         bdtnow=max(1.,(bdt-1.)*(maccel-nf_step+2)/(maccel+1.)+1.)
+         dt=bdtnow*dtf
+         bckgd=(1.-boltzamp)*eoverms(1)
+      elseif(bdt.lt.0)then
+! Density growth code. Negative -da switch instead says enhance the density
+! of external plasma by increasing the injection rate bdt*t.
+         rhoinf=0.
+         call rhoinfcalc(dt)
+! Subtract specified weight uniform background (for single-species running).
+! Adjusted for prior step.
+         if(nf_step.gt.1)then
+            bckgd=numprocs*(1+bdt*dt)*(n_part)*(1.-boltzamp)
+     $           *eoverms(1)/(voltotal*rhoinf)
+            bdtnow=1.+abs(bdt)*nf_step*dt
+            do ispecies=1,nspecies
+               dum=bdtnow*(ninjcomp0(ispecies)+pinjcomp0(ispecies))
+               ninjcompa(ispecies)=int(dum)
+               pinjcompa(ispecies)=dum-ninjcompa(ispecies)
+            enddo
+         else
+            bckgd=(1.-boltzamp)*eoverms(1)
+         endif
+      endif
+
+      end
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

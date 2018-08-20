@@ -79,7 +79,7 @@
 
       real delta,umin,umax
       data ldebugs/.false./idebug/0/noncnvg/0/ncnvgmax/2/
-      data eps_sor/.1e-5/
+      data eps_sor/1.e-6/ncvgmax/5/
 
 ! This saves data between calls so we can use separate initialization
       save
@@ -223,7 +223,7 @@
      $        lconverged,icommcart)
          if(myid.eq.0.and.idebug.gt.1.or.idebug.gt.2)
      $        write(*,'(i5,2f11.7,2f8.4,l3,2f8.4,f11.7)')k_sor,delta
-     $        ,adelta,umin,umax,lconverged,omega,xjac_sor,eps_sor
+     $        ,adelta,umin,umax,lconverged,relax,xjac_sor,eps_sor
          if(lconverged.and.k_sor.ge.2)goto 11
 
          if(k_sor.eq.1)then
@@ -234,7 +234,6 @@
 ! One might leave the original for checking purposes:
 !            omega=1./(1.-0.5*xjac_sor**2)
          else
-! The value 0.25 is too close to instability. So
             omega2=1./(1.-0.25*xjac_sor**2*omega)
             omega=omega2
          endif

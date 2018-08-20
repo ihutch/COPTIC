@@ -15483,3 +15483,7 @@ a nan when the cosh argument is too large. Fix.
 
 Fix another bug which arose in wavedisplace when partlocate was added
 because some arguments were arrays that weren't declared as such.
+
+20 Aug 2018
+Found and fixed an error in getmedian that meant it did not work 
+correctly if iuds!=ifull.

@@ -368,36 +368,14 @@
          call diagperiod(psum,ifull,iuds,iLs,1)
          call psumreduce(psum,nrein,phirein,ndims,ifull,iuds,iLs)
 !------------- 
-         if(bdt.eq.0)then
-            bckgd=(1.-boltzamp)*eoverms(1)
-         elseif(bdt.gt.0)then
-! Acceleration code.
-            bdtnow=max(1.,(bdt-1.)*(maccel-nf_step+2)/(maccel+1.)+1.)
-            dt=bdtnow*dtf
-            bckgd=(1.-boltzamp)*eoverms(1)
-         elseif(bdt.lt.0)then
-! Density growth code. Negative -da switch instead says enhance the density
-! of external plasma by increasing the injection rate bdt*t.
-            rhoinf=0.
-            call rhoinfcalc(dt)
-! Subtract specified weight uniform background (for single-species running).
-! Adjusted for prior step.
-            if(nf_step.gt.1)then
-               bckgd=numprocs*(1+bdt*dt)*(n_part)*(1.-boltzamp)
-     $              *eoverms(1)/(voltotal*rhoinf)
-               bdtnow=1.+abs(bdt)*nf_step*dt
-               do ispecies=1,nspecies
-                  dum=bdtnow*(ninjcomp0(ispecies)+pinjcomp0(ispecies))
-                  ninjcompa(ispecies)=int(dum)
-                  pinjcompa(ispecies)=dum-ninjcompa(ispecies)
-               enddo
-            else
-               bckgd=(1.-boltzamp)*eoverms(1)
-            endif
-         endif
+! Set background if needed.
+         call bckgdset(bckgd,bdt,bdtnow,dtf,maccel,boltzamp
+     $     ,ispecies,pinjcomp0,ninjcomp0,voltotal,nf_step)
+
 ! Calculate rhoinfinity, needed in psumtoq. Dependent on reinjection type.
 ! Does nothing if ninjcomp and rhoinf!=0
          call rhoinfcalc(dt)
+!         if(j.eq.1)rhoinf=rhoinf*0.9999999
 !-------------
 ! If more than one species, no background subtraction.
          if(nspecies.gt.1)bckgd=0.
@@ -412,7 +390,7 @@
      $        ,boltzamp)         
 
 ! Solve for the new potential:-------------------
-         if(idebug.gt.0)write(*,*)'Calling sormpi',iuds
+         if(idebug.gt.0)write(*,*)'Calling sormpi',iuds,bckgd
          if(debyelen.eq.0)then
             call mditerarg(quasineutral,ndims,ifull,ium2,
      $        0,q(2,2,2),u(2,2,2),volumes(2,2,2),uc(2,2,2),dum5)
@@ -431,7 +409,7 @@
             endif
          endif
          if(idebug.gt.0)write(*,*)'Returned from sormpi'
-         if(LPF(1).and.LPF(2).and.LPF(3).and.ngeomobj.eq.0) 
+         if(LPF(1).and.LPF(2).and.LPF(3).and.ngeomobj.eq.0)
      $        call makemedianzero(ifull,iuds,u,scratch) ! remove offset.
 ! ------------------------------------------------
          call calculateforces(ndims,iLs,cij,u)

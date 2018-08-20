@@ -725,7 +725,7 @@ c If converged, break
       real cosphase,phase,xfrac(ndims)
       integer i,id,iregion,ixp(ndims),js
 
-      write(*,*)'Applying initial wave',wavespec
+!      write(*,*)'Applying initial wave',wavespec
       if(wavespec(1).eq.0)return
       do id=1,ndims    ! Ensure precise periodicity
          kw(id)=nint(wavespec(1+id))*2.*3.1415926

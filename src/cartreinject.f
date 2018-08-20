@@ -703,9 +703,13 @@
 
       if(ninjcomp.ne.0.or..not.lnotallp)then
 ! Fixed injection rate implies fixed rhoinf. Set it only once.
+! .not.lnotallp is the all periodic particles case. 
          if(rhoinf.eq.0)then
+!            if(.true.)then
             rhoinf=numprocs*(ninjcompa(1)+pinjcompa(1))/(dtin*flux)
             chi=0.
+!            write(*,*)'Direct periodic',numprocs,n_part
+!     $           ,numprocs*n_part/volume
 !            write(*,*)'*************flux,rhoinf=',flux,rhoinf
          else
 !            write(*,*)'rhoinf=',rhoinf,ninjcomp
