@@ -497,7 +497,7 @@ c*********************************************************************
 c Flattened sech^4 potential function.
       real function phiofx(x,psi,coshlen,toplen)
       real x,psi,coshlen,toplen
-      et=exp(-toplen)
+      et=exp(min(-toplen,10.))
       xo=x/coshlen
       if(.not.abs(xo).le.10.)then
          phiofx=0.
@@ -510,7 +510,7 @@ c*********************************************************************
 c Derivative of phiofx
       real function derivphiofx(x,psi,coshlen,toplen)
       real x,psi,coshlen,toplen
-      et=exp(-toplen)
+      et=exp(min(-toplen,10.))
       xo=x/coshlen
       if(.not.abs(xo).le.10.)then
          derivphiofx=0.

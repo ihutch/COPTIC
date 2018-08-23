@@ -15511,3 +15511,8 @@ logical LNPF that defeats use of fftw and is set true by any face with
 nonperiodic potential boundary condition. Implemented -bn switch to set
 it regardless (and hence defeat fftw use). coptic main checks for any
 dimension that has more than one meshstep, and if so also sets LNPF true.
+
+Found a bug that getpotential goes wrong if a hole depth of -ih.02 is set
+but not -ih.04. It happens with either phi-solver. It is an overflow of the
+exp function in the phiofx routines. Fixed by limiting the argument
+magnitude.
