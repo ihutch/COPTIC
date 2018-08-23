@@ -55,8 +55,10 @@ endif
 export LIBPATH	
 ##########################################################################
 # Test whether X libraries are found. Null => yes.
- TESTGL:=$(shell $(COMPILER)  $(LIBPATH) -lGLU -lGL -o /dev/null none.o 2>&1 | grep GL)
- TESTX11:=$(shell $(COMPILER) $(LIBPATH) -lX11 -o /dev/null 2>&1 none.o | grep X)
+ TESTGL:=$(shell $(COMPILER)  $(LIBPATH) -lGLU -lGL -o /dev/null 2>&1 | grep GL)
+ TESTX11:=$(shell $(COMPILER) $(LIBPATH) -lX11 -o /dev/null 2>&1 | grep X)
+# Test if fast fourier transform libraries are available. 
+ TESTFFTW:=$(shell $(COMPILER) $(LIBPATH) -lfftw3 -o /dev/null 2>&1 | grep fftw)
 ########################################################################
 # Decide accis driver choice. Alternatives are vec4014 vecx or vecglx. 
 # Automatic choice can be overriden by commandline option e.g. 
@@ -98,6 +100,11 @@ else
    endif
  endif
 endif
+FFTWSOLVE=fftdummy.o
+ifeq ("$(TESTFFTW)","")
+	LIBRARIES:=$(LIBRARIES) -lfftw3
+	FFTWSOLVE:=fftsolve.o
+endif
 ACCISLIB=${COPTIC_ROOT}/accis/lib$(ACCISDRV).a
 # For submakes:
 export VECX
@@ -135,7 +142,7 @@ else
   NOBOUNDS=$(COMPILE-SWITCHES) -fno-bounds-check
 endif
 ##########################################################################
-FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate.o padvnc.o chargetomesh.o slicesect.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o cmdline.o fsects.o bdyshare.o toms659.o ranlux.o intersects.o trapinit.o mainroutines.o phasespace.o qinit.o
+FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate.o padvnc.o chargetomesh.o slicesect.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o cmdline.o fsects.o bdyshare.o toms659.o ranlux.o intersects.o trapinit.o mainroutines.o phasespace.o qinit.o $(FFTWSOLVE)
 MPIOBJECTS=reduce.o mpibbdy.o
 DUMMYMPIOBJECTS=nonmpibbdy.o dummyreduce.o
 export DUMMYMPIOBJECTS

@@ -14,6 +14,7 @@
 ! Running averages.
       real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
       real scratch(na_i,na_j,na_k)
+      double complex cscratch(na_i,na_j)
       real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k),voltotal
       real cij(2*ndimsmax+1,na_i,na_j,na_k)
 ! Diagnostics (moments)
@@ -61,7 +62,7 @@
       character*256 argline
 !      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
-      logical lmyidhead,lphiplot,ldenplot
+      logical lmyidhead,lphiplot,ldenplot,lfftsucceeded
       integer ipstep,iwstep,idistp,idcount,icijcount,lrestart
 ! Diagnostics etc
       real zp(na_m,na_m)
@@ -98,6 +99,7 @@
       data ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot/
      $     .false.,.false.,.false.,.true.,.false./
       data lphiplot,ldenplot/.false.,.false./
+      data lfftsucceeded/.false./
       data lrestart/0/cv/0.,0.,0./
       data ipstep/1/idistp/0/idcount/0/icijcount/0/
       data wavespec/nwspec*0/  ! Default no wave
@@ -390,7 +392,7 @@
      $        ,boltzamp)         
 
 ! Solve for the new potential:-------------------
-         if(idebug.gt.0)write(*,*)'Calling sormpi',iuds,bckgd
+         if(idebug.gt.0)write(*,*)'Calling solver',iuds,bckgd,boltzamp
          if(debyelen.eq.0)then
             call mditerarg(quasineutral,ndims,ifull,ium2,
      $        0,q(2,2,2),u(2,2,2),volumes(2,2,2),uc(2,2,2),dum5)
@@ -403,9 +405,25 @@
      $              ,fadcomp,ictl,ierr,myid,idims)
 !               write(*,*)'StepMon u:',u(iuds(1)/4,iuds(2)/4,iuds(3)/4)
             else
-! Turn off use of fadcomp by ictl-2
-               call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
+               if(.not.lnotallp.and.iuds(3).eq.3.and..true.)then
+! Assume we want to use the FFT poisson solver for 2-D, all periodic.
+                  call fftphisolve2d(ifull,iuds,u(1,1,2),q(1,1,2)
+     $                 ,cscratch,xmeshend(1)-xmeshstart(1),xmeshend(2)
+     $                 -xmeshstart(2),ierr)
+                  if(ierr.ne.0)then
+                     lfftsucceeded=.false.
+                     write(*,*)'FAILED ATTEMPT to use FFTW Solver'
+                  else
+                     if(.not.lfftsucceeded.and.lmyidhead)
+     $                    write(*,*)'Successfully using FFTW Solver'
+                     lfftsucceeded=.true.
+                  endif
+               endif
+               if(.not.lfftsucceeded)then
+! SORMPI vanilla solve. Turn off use of fadcomp by ictl-2
+                  call sormpi(ndims,ifull,iuds,cij,u,q,bdyshare,bdyset
      $              ,fadcomp,ictl-2,ierr,myid,idims)
+               endif
             endif
          endif
          if(idebug.gt.0)write(*,*)'Returned from sormpi'
