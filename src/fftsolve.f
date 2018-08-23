@@ -68,8 +68,9 @@
 ! Copy to/from complex scratch and solve poisson's equation.
 ! On input the charge is in q(2:iuds(1)-1,2:iuds(2)-1) guard cells not used
 ! On output the potential is in u(1:iuds(1),1:iuds(1)) including guards.
+! That is why the arguments in the call must be q(1,1,2) u(1,1,1)
       integer ifull(2),iuds(2)
-      real u(ifull(1),ifull(2)),q(ifull(1),ifull(2))
+      real u(ifull(1),ifull(2),3),q(ifull(1),ifull(2))
       real xL,yL
       double complex cscratch(iuds(1)-2,iuds(2)-2)
       integer M,N
@@ -84,7 +85,9 @@
       call fftsolve(M,N,cscratch,xL,yL) ! Solve only on true cells.
       do j=1,N+2
          do i=1,M+2   ! Fill back u including periodic guard cells.
-            u(i,j)=real(cscratch(mod(i-2+M,M)+1,mod(j-2+N,N)+1),4)
+            u(i,j,2)=real(cscratch(mod(i-2+M,M)+1,mod(j-2+N,N)+1),4)
+            u(i,j,1)=u(i,j,2)  ! Also need z-guards.
+            u(i,j,3)=u(i,j,2)
          enddo
       enddo
       ierr=0

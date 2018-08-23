@@ -407,7 +407,7 @@
             else
                if(.not.lnotallp.and.iuds(3).eq.3.and..true.)then
 ! Assume we want to use the FFT poisson solver for 2-D, all periodic.
-                  call fftphisolve2d(ifull,iuds,u(1,1,2),q(1,1,2)
+                  call fftphisolve2d(ifull,iuds,u(1,1,1),q(1,1,2)
      $                 ,cscratch,xmeshend(1)-xmeshstart(1),xmeshend(2)
      $                 -xmeshstart(2),ierr)
                   if(ierr.ne.0)then

@@ -15487,3 +15487,18 @@ because some arguments were arrays that weren't declared as such.
 20 Aug 2018
 Found and fixed an error in getmedian that meant it did not work 
 correctly if iuds!=ifull.
+
+23 Aug 2018
+
+After fruitless fiddling with sormpi, it appears that making it converge
+well enough with large domains to avoid a very slow-growing long wavelength
+instability is impossible. We appear to be in the bit noise level without
+really solving the problems. 
+
+Hence implemented a new solver for 2D allperiodic cases fftsolve. 
+It requires libfftw3 to be installed. But works amazingly fast, even
+with just one process. It ought to check that the meshes are uniform
+but that is not yet implemented. It appears to be working correctly.
+Now we wait and see if it fixes the instabilities. Rather surprisingly 
+it works even with the guard cells of dimension 3 not set correctly.
+That must be fixed.
