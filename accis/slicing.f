@@ -38,7 +38,7 @@ c Needed for perspective plot
 c For testing only
       include 'plotcom.h'
 c Workspace size is problematic.
-      parameter (nwksp=100000)
+      parameter (nwksp=1000000)
       character*1 pp(nwksp)
 c Contour levels
       real cl(30)
@@ -146,8 +146,13 @@ c Plot the full used array.
          iff=1
          if(nf2*nf1.gt.nwksp)then
             write(*,101)nwksp,nf1,nf2
- 101        format('sliceGweb error: need bigger nwksp',i6,
+ 101        format('sliceGweb error: needs bigger nwksp',i6,
      $           ' compiled smaller than',i4,' x',i4)
+            write(*,'(a)')'In your accis directory execute the command'
+            call iwrite(nf2*nf1,iwidth,form1)
+            write(*,*)'sed -i -e "s/nwksp=1000000','[0-9]*/nwksp='
+     $           ,form1(1:iwidth),'/" slicing.f'
+            write(*,'(a)')'(or larger) and recompile your application.'
             return
          endif
       endif
@@ -485,7 +490,7 @@ c The plotted quantity title is
 c Needed for perspective plot
       include 'world3.h'
 c Workspace size is problematic.
-      parameter (nwksp=40000)
+      parameter (nwksp=1000000)
       character*1 pp(nwksp)
 c Contour levels
       real cl(30)

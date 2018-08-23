@@ -4,6 +4,7 @@
 !  LPF whether the condition is periodic in this dimension.
 !  LCF whether for a non-periodic face, the coefficient C of the BC varies 
 !      with position. If so, then 
+!  LNPF whether there are any non-periodic faces
 !  CxyzF are the coefficients such that 
 !  C = C0F + Sum_id CxyzF(id,idn)*xn(ixnp(id)+indi(id)+1)
 !  AF BF are the other coefficients AF phi + BF dphi/dn + C =0
@@ -13,8 +14,8 @@
 !  AmBF ApBF are internal and ought not to be altered.
 
 ! Requires ndimsdecl.f
-      logical LF,LCF(2*ndims),LPF(ndims)
+      logical LF,LNPF,LCF(2*ndims),LPF(ndims)
       real AF(2*ndims),BF(2*ndims)
       real C0F(2*ndims),CxyzF(ndims,2*ndims)
       real ApBF(2*ndims),AmBF(2*ndims)
-      common /FaceBC/LF,LCF,LPF,AF,BF,C0F,CxyzF,ApBF,AmBF
+      common /FaceBC/LF,LNPF,LCF,LPF,AF,BF,C0F,CxyzF,ApBF,AmBF

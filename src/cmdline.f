@@ -11,7 +11,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,wavespec,ifull,ierr)
+     $     ,wavespec,LNPF,ifull,ierr)
       implicit none
       integer ifull,ierr
       include 'myidcom.f'
@@ -20,7 +20,7 @@
      $     ,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
      $     ,iwstep,idistp,ndims,islp,lrestart,nptdiag,nqblkmax
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
-     $     ,lextfield,LPF(ndims),lnotallp,ldistshow
+     $     ,lextfield,LPF(ndims),lnotallp,ldistshow,LNPF
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,vneutral,debyelen,extfield,slpD ,Tneutral,Enfrac
      $     ,colpow,boltzamp
@@ -54,7 +54,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,wavespec)
+     $     ,wavespec,LNPF)
 ! Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -72,7 +72,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,wavespec)
+     $     ,wavespec,LNPF)
 ! The double call enables cmdline switches to override objfile settings.
 !----------------------------------------------------------------------
       end
@@ -90,7 +90,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,wavespec)
+     $     ,wavespec,LNPF)
 
       implicit none
 
@@ -98,7 +98,7 @@
      $     ,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
      $     ,iwstep,idistp,ndims,islp,lrestart,nptdiag,nqblkmax
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
-     $     ,lextfield,LPF(ndims),lnotallp,ldistshow
+     $     ,lextfield,LPF(ndims),lnotallp,ldistshow,LNPF
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,vneutral,debyelen,extfield,slpD ,Tneutral,Enfrac
      $     ,colpow,boltzamp
@@ -190,6 +190,7 @@
 ! Default zero field
             Bfield(id)=0.
          enddo
+         LNPF=.false.
          gtt=0.
          gnt=0.
          do i=1,iargc()
@@ -328,6 +329,7 @@
                stop
             endif
          endif
+         if(argument(1:3).eq.'-bn')LNPF=.true.
          if(argument(1:3).eq.'-pp')then
             read(argument(4:),*,err=201,end=201)ipartperiod
          endif
@@ -592,7 +594,7 @@
             enddo
          enddo
       endif
-! Set and check particle periodicity logical.
+! Set and check particle and potential periodicity logicals.
       lnotallp=.false.
       do i=1,ndims
          if(ipartperiod(i).ne.4)then
@@ -606,6 +608,8 @@
                stop
             endif
          endif
+! Potential face non-periodic face existence logical.
+         LNPF=LNPF.or..not.LPF(i) 
       enddo
 ! Consistency checks for holes
       if(holepsi.ne.0)then
@@ -636,6 +640,7 @@
  309  format(a,6f6.2)
  310  format(a,i8,a,i8)
  311  format(a,7f6.2)
+ 312  format(a,L3,a)
       write(*,301)'Usage: coptic [objectfile] [-switches]'
       write(*,301)'Parameter switches.'
      $     //' Leave no gap before value. Defaults or set values [ddd'
@@ -703,6 +708,8 @@
      $     ,' ABC Robin coefs. Cxyz gradients.'
       write(*,303)' -bp<i>  toggle bndry periodicity [',LPF
      $     ,'    in dimension <i>.'
+      write(*,312)' -bn     defeat bndry nonperiodcty[',LNPF
+     $     ,'       When true, use no fftw solver'
       write(*,301)' -pi<i>  set quiet part-init level[',nqblkmax
      $     ,'     1:no quieting, >>1:quiet'
       write(*,311)' -pw[..] apply initial wave 1,n,xi[',wavespec

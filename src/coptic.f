@@ -14,7 +14,7 @@
 ! Running averages.
       real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
       real scratch(na_i,na_j,na_k)
-      double complex cscratch(na_i,na_j)
+      double complex cscratch(na_i-2,na_j-2,na_k-2)
       real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k),voltotal
       real cij(2*ndimsmax+1,na_i,na_j,na_k)
 ! Diagnostics (moments)
@@ -136,7 +136,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,wavespec,ifull,ierr)
+     $     ,wavespec,LNPF,ifull,ierr)
 ! Hack to prevent incompatible particles
       if(nparta(1).ne.0 .and.(ipartperiod(1).ne.0.or.ipartperiod(2).ne.0
      $     .or.ipartperiod(3).ne.0)) stop '-ni not allowed with pp'
@@ -158,21 +158,19 @@
       voltotal=1.
       do i=1,ndims
          voltotal=voltotal*(xmeshend(i)-xmeshstart(i))
+! If any dimension has more than one mesh step defeat fftw use.
+         if(imeshstep(i,3).ne.0)LNPF=.true.
       enddo
-!      write(*,*)'voltotal=',voltotal
 ! Initialize reinjection geometry if needed for particular case.
       call geominit(myid)
 !-----------------------------------------------------------------
 ! Initialize the face phi boundary conditions if we are using them.
-!      if(iCFcount.ne.0)then
 ! Actually, always, sinc CFcount is unreliable in defaults.
-      if(.true.)then
-         do idn=1,2*ndims
-            call bdyfaceinit(idn,CFin(1,idn))
-         enddo
+      do idn=1,2*ndims
+         call bdyfaceinit(idn,CFin(1,idn))
+      enddo
 ! Now print out the result of the initialization.
-         if(lmyidhead)call bdyfaceinit(-2,CFin(1,1))
-      endif
+      if(lmyidhead)call bdyfaceinit(-2,CFin(1,1))
 !---------------------------------------------------------------
       call ninjcalc(dt)
 !----------------------------------------------------------------
@@ -358,7 +356,7 @@
       enddo
       nstep=nf_step
 !----------------------------------------------------------
-! Main step iteration ##############################################
+! #### Main step iteration ##########################################
       do j=1,nsteps
          if(nspecies.gt.1.or.holepsi.ne.0.)
      &        boltzamp=max(0.,boltzamp0*(mbzero-nf_step+2)/(mbzero+1.))
@@ -391,7 +389,7 @@
      $        mditerarg(qvary,ndims,ifull,ium2,0,q(2,2,2),bckgd
      $        ,boltzamp)         
 
-! Solve for the new potential:-------------------
+! -------------- Solve for the new potential:-------------------
          if(idebug.gt.0)write(*,*)'Calling solver',iuds,bckgd,boltzamp
          if(debyelen.eq.0)then
             call mditerarg(quasineutral,ndims,ifull,ium2,
@@ -405,11 +403,16 @@
      $              ,fadcomp,ictl,ierr,myid,idims)
 !               write(*,*)'StepMon u:',u(iuds(1)/4,iuds(2)/4,iuds(3)/4)
             else
-               if(.not.lnotallp.and.iuds(3).eq.3.and..true.)then
-! Assume we want to use the FFT poisson solver for 2-D, all periodic.
-                  call fftphisolve2d(ifull,iuds,u(1,1,1),q(1,1,2)
-     $                 ,cscratch,xmeshend(1)-xmeshstart(1),xmeshend(2)
-     $                 -xmeshstart(2),ierr)
+               if(.not.LNPF)then
+! Assume we want to use the FFT poisson solver when all periodic uniform.
+!                  call fftphisolve2d(ifull,iuds,u(1,1,1),q(1,1,2)
+!     $                 ,cscratch,xmeshend(1)-xmeshstart(1),xmeshend(2)
+!     $                 -xmeshstart(2),ierr)
+                  call fftphisolve3d(ifull,iuds,u,q,cscratch
+     $                 ,xmeshend(1)-xmeshstart(1)
+     $                 ,xmeshend(2)-xmeshstart(2)
+     $                 ,xmeshend(3)-xmeshstart(3)
+     $                 ,ierr)
                   if(ierr.ne.0)then
                      lfftsucceeded=.false.
                      write(*,*)'FAILED ATTEMPT to use FFTW Solver'
@@ -447,7 +450,7 @@
          endif
 
          if(nf_step.eq.ickst)call checkuqcij(ifull,u,q,psum,volumes,cij)
-! Particle advance:------------------------------
+!----------- Particle advance:------------------------------
          if(idebug.gt.0)write(*,*)'Calling padvnc',ispecies
          do ispecies=1,nspecies
             call padvnc(iLs,cij,u,ndiags,psum,diagsum,ispecies,ndiagmax)
@@ -508,7 +511,7 @@
 ! Comment it out if it causes problems.
          if(lmyidhead)call flush(6)
       enddo
-! End of Main Step Iteration #########################################
+! #### End of Main Step Iteration ####################################
 !----------------------------------------------------------
       if(norbits.ne.0)call cijplot(ifull,iuds,cij,rs,iobpl)
       if(lorbitplot.and.norbits.ne.0)call orbitplot(ifull,iuds,u,phip,rc

@@ -618,6 +618,13 @@ gs -c /SF 2.5 def -f plot0001.ps
 
 which causes the animation duration to be multiplied by 2.5
 
+RECTROUND(x1,y1,x2,y2,rx,ry,nr,xv,yv) Construct a rounded-corner
+rectangle in the arrays xv, yv, length (4*nr+1). The vertices of the
+rectangle are x1,y1 and x2,y2. The radius of curvature of the rounded
+corners are rx, ry. nr is the number of points devoted to the curved
+corner polylines.
+
+
 \section{Linking}
 
 The routines are normally compiled and gathered into a library

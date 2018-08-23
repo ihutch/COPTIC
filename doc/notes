@@ -15502,3 +15502,12 @@ but that is not yet implemented. It appears to be working correctly.
 Now we wait and see if it fixes the instabilities. Rather surprisingly 
 it works even with the guard cells of dimension 3 not set correctly.
 That must be fixed.
+
+24 Aug 2018
+
+Fixed the guard cell problem, but also switched to 3D version because
+it was no slower and could be made more general.  Also implemented new
+logical LNPF that defeats use of fftw and is set true by any face with
+nonperiodic potential boundary condition. Implemented -bn switch to set
+it regardless (and hence defeat fftw use). coptic main checks for any
+dimension that has more than one meshstep, and if so also sets LNPF true.
