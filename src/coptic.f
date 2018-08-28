@@ -418,7 +418,7 @@
                      write(*,*)'FAILED ATTEMPT to use FFTW Solver'
                   else
                      if(.not.lfftsucceeded.and.lmyidhead)
-     $                    write(*,*)'Successfully using FFTW Solver'
+     $                    write(*,*)'Using FFTW Solver'
                      lfftsucceeded=.true.
                   endif
                endif

@@ -15516,3 +15516,25 @@ Found a bug that getpotential goes wrong if a hole depth of -ih.02 is set
 but not -ih.04. It happens with either phi-solver. It is an overflow of the
 exp function in the phiofx routines. Fixed by limiting the argument
 magnitude.
+
+25 Aug 2018
+
+Found that with the fft solver the initial hole constructed by qinit
+experiences a sizeable oscillation in the first few steps that throws
+off visible waves propagating outward. Prior to its implementation
+it does not.
+
+Compare with the sormpi solver by using the -bn switch. With -bn
+switch the oscillation does not occur. Thus the oscillation appearance
+is caused by the new fft solver. I suspect this is an issue of
+interpolation. The fft solution may not be setting the finite-difference
+expression of Poisson equivalently, (or the E-field correctly). If so
+then it can probably be fixed, but needs some clear thinking.
+Certainly halving the x-range with the same mesh number reduces the
+initial oscillation. So that's consistent with there being an interpolation
+difference.
+
+28 Aug
+It was necessary to divide the charge fft by 4sin^2(k/2) rather than k^2
+to correctly solve the finite difference equation. But also there was a
+bug in the indexing that took some time to track down.
