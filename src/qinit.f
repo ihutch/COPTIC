@@ -730,7 +730,7 @@ c If converged, break
       do id=1,ndims    ! Ensure precise periodicity
          kw(id)=nint(wavespec(1+id))*2.*3.1415926
      $        /(xmeshend(id)-xmeshstart(id))
-         write(*,*)wavespec(1+id),xmeshend(id),xmeshstart(id),kw(id)
+!         write(*,*)wavespec(1+id),xmeshend(id),xmeshstart(id),kw(id)
       enddo
       do js=1,nspecies
          do i=iicparta(js),iocparta(js)

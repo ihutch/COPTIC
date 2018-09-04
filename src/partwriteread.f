@@ -363,39 +363,43 @@
       real fluxdiag
       external fluxdiag
 
+      if(ierr.eq.0)then
+         write(*,'('' '',i5.5,$)')nstep
+      else
 ! Step number print
-            if(nstep.gt.9999.or.abs(ierr).gt.999)then
-               write(*,'(i5.5,i5,$)')nstep,ierr
-            else
-               write(*,'(i4.4,i4,$)')nstep,ierr
-            endif
-
+         if(nstep.gt.9999.or.abs(ierr).gt.999)then
+            write(*,'(i5.5,i5,$)')nstep,ierr
+         else
+            write(*,'(i4.4,i4,$)')nstep,ierr
+         endif
+         
 ! write out flux to object 1.
-            write(*,'(f6.3,''| '',$)')fluxdiag()
-            if(nspecies.gt.1)then
-               write(*,*)(k,nparta(k),k=1,nspecies)
-            else
-               if(mod(nstep,5).eq.0)write(*,*)
-            endif
-            if(mod(nstep,(nsteps/25+1)*5).eq.0)then
-               write(*,*)'nrein   n_part  ioc_part  rhoinf     dt'
-     $              ,'   passthrus'
-               write(*,'(i6,i9,i9,f11.2,f9.4,i6)')
-     $              nrein,n_part,ioc_part,rhoinf,dt,npassthrough
-               npassthrough=0
-               if(nsubc.ne.0)write(*,'(''Subcycled:'',i5,$)')nsubc
-               if(ndropped.ne.0)then
+         write(*,'(f6.3,''| '',$)')fluxdiag()
+         if(nspecies.gt.1)then
+            write(*,*)(k,nparta(k),k=1,nspecies)
+         else
+            if(mod(nstep,5).eq.0)write(*,*)
+         endif
+         if(mod(nstep,(nsteps/25+1)*5).eq.0)then
+            write(*,*)'nrein   n_part  ioc_part  rhoinf     dt'
+     $           ,'   passthrus'
+            write(*,'(i6,i9,i9,f11.2,f9.4,i6)')
+     $           nrein,n_part,ioc_part,rhoinf,dt,npassthrough
+            npassthrough=0
+            if(nsubc.ne.0)write(*,'(''Subcycled:'',i5,$)')nsubc
+            if(ndropped.ne.0)then
 ! Report dropped ions because of excessive acceleration.
-                  write(*,'(a,i5,a,f8.3)'
-     $             )' dropped-ion period-total:',ndropped
-     $                 ,'  per step average:'
-     $                 ,float(ndropped/((nsteps/25+1)*5))
-                  ndropped=0
-               else
-                  write(*,*)
-               endif
+               write(*,'(a,i5,a,f8.3)'
+     $              )' dropped-ion period-total:',ndropped
+     $              ,'  per step average:'
+     $              ,float(ndropped/((nsteps/25+1)*5))
+               ndropped=0
+            else
+               write(*,*)
             endif
-            end
+         endif
+      endif
+      end
 !************************************************************************
       subroutine periodicwrite(ifull,iuds,iLs,diagsum,uave,lmyidhead
      $     ,ndiags,ndiagmax,nstep,nsteps,idistp,vlimit
@@ -441,11 +445,16 @@
             call mditeradd(diagsum(1,1,1,ndiags+1,ispecies),ndims
      $           ,ifull,iuds,ipin,uave)
             if(lmyidhead)then
-! If I'm the head, write it.
-               if(ispecies.eq.1)write(*,'(a,i3,a,$)')'Diags',ndiags
-     $              ,' species'
-               write(*,'(a,i1,$)')' ',ispecies
-               if(ispecies.eq.nspecies)write(*,*)
+! If I'm the head, write it, but use shorthand mostly.
+               if(iavesteps.lt.10)then
+                  write(*,'(a,$)')'D'
+                  if(mod(nstep,10).eq.0)write(*,*)
+               else
+                  if(ispecies.eq.1)write(*,'(a,i3,a,$)')'Diags',ndiags
+     $                 ,' species'
+                  write(*,'(a,i1,$)')' ',ispecies
+                  if(ispecies.eq.nspecies)write(*,*)
+               endif
                if(ispecies.eq.1)then
                   if(nsteps.gt.9999)then
                      write(argument,'(''.dia'',i5.5)')nstep
