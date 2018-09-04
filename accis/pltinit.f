@@ -236,16 +236,23 @@ c For the intel fortran compiler. Add dummy progname at start.
       subroutine cmdlineargs(argc,argv)
       integer argc
       character*(*) argv
-      character*(512) arg,cmtemp
+      parameter (icharlen=512)
+      character*(icharlen) arg,cmtemp
       cmtemp='progname'
       argc=iargc()+1
       do i=1,argc-1
          call getarg(i,arg)
-         argv=cmtemp(1:istrnonspace(cmtemp)+1)//arg
-         cmtemp=argv
+         j=istrnonspace(cmtemp)
+         k=lentrim(arg)
+         if(j+k.lt.icharlen)then
+            argv=cmtemp(1:j+1)//arg
+            cmtemp=argv
+         else
+            goto 1
+         endif
       enddo
 c Terminate for return to C.
-      call termchar(argv)
+ 1    call termchar(argv)
 c      write(*,*)"ifcargs got:",argv," argc=",argc
       end
 
