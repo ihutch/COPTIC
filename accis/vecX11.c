@@ -116,7 +116,8 @@ void getcmdargs_()
   extern void cmdlineargs_();
   int i,j;
 
-  cmdlineargs_(&iargc,argv,charlen);
+  cmdlineargs_(&iargc,argv,charlen); 
+ /* &charlen was wrong. It seems that length is passed by value */
   accis_argc=iargc;
   /* Parse the returned command line string into standard C argv*/
   accis_argv[0]=argv+strspn(argv," ");
@@ -168,7 +169,7 @@ int accis_errorhandler(Display *display, XErrorEvent *theEvent) {
 void accis_set_focus(){
   if(accis_old_handler==0)
     accis_old_handler=XSetErrorHandler(accis_errorhandler) ;
-    XSetInputFocus(accis_display, accis_window, RevertToParent,CurrentTime);
+  XSetInputFocus(accis_display, accis_window, RevertToParent,CurrentTime);
 }
 /* ********************************************************************** */
 /* Main setup subroutine */ 

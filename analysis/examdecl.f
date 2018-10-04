@@ -1,7 +1,7 @@
 ! Storage array spatial count size included in
-! Mesh spacing description structure
+! Mesh spacing description structure including griddecl.f
       include '../src/ndimsdecl.f'
-      include '../src/meshcom.f'
+      include '../src/meshcom.f'   
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
       real zp(na_m,na_m2,ndims)
       integer ifull(ndims),iuds(ndims)

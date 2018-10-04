@@ -404,11 +404,15 @@ c /
       elseif(isw.eq.46)then
 c .
          iclipping=1
-         nf2=max(nf2-1,if2)
+         nf2=max(nf2-1,1)
+         if2=min(nf2,if2)
+         if(nf2.eq.if2)call linevecdoc(idfix,n1,2,nf2)
       elseif(isw.eq.44)then
 c ,
          iclipping=1
-         if2=min(if2+1,nf2)
+         if2=min(if2+1,iuds(idp2))
+         nf2=max(if2,nf2)
+         if(nf2.eq.if2)call linevecdoc(idfix,n1,2,nf2)
       elseif(isw.eq.ichar('m'))then
 c m
          iclipping=1
@@ -416,7 +420,9 @@ c m
       elseif(isw.eq.ichar('l'))then
 c l
          iclipping=1
-         nf1=max(nf1-1,if1)
+         nf1=max(nf1-1,1)
+         if1=min(nf1,if1)
+         if(nf1.eq.if1)call linevecdoc(idfix,n1,1,nf1)
       elseif(isw.eq.ichar('u'))then
          ltellslice=.not.ltellslice
       elseif(isw.eq.59)then
@@ -430,7 +436,9 @@ c j
 c k
       elseif(isw.eq.ichar('k'))then
          iclipping=1
-         if1=min(if1+1,nf1)
+         if1=min(if1+1,iuds(idp1))
+         nf1=max(if1,nf1)
+         if(nf1.eq.if1)call linevecdoc(idfix,n1,1,nf1)
       endif
       if(isw.eq.ichar('c'))icontour=mod(icontour+1,8)
       if(isw.eq.ichar('w'))iweb=mod(iweb+1,4)
@@ -1272,6 +1280,14 @@ c      write(*,'(10f8.3)')vx,vy,vz
          xn(i+ixnp(3))=vz(i)
       enddo
       ixnp(4)=ixnp(3)+Nz
+      end
+c******************************************************************
+      subroutine linevecdoc(idfix,n1,iskip,nf)
+      integer ivec(3)
+      ivec(idfix)=n1
+      ivec(mod(idfix+iskip-1,3)+1)=nf
+      ivec(mod(idfix+mod(iskip,2),3)+1)=0
+      write(*,*)'linevec',ivec
       end
 c******************************************************************
 c Some gradients.

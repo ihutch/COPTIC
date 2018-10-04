@@ -24,13 +24,14 @@
       logical lvtk,ldebug,nopause
       character*70 xtitle,ytitle,label
       integer iuphi(ndims),iurs(ndims),isrs(ndims)
-      integer iunp,i1d,isingle,i1,iwr,istd
+      integer iunp,i1d,isingle,i1,iwr,istd,linevec(3)
       data iunp/0/i1d/0/iwr/0/zminmax/0.,0./icontour/0/istd/1/
       data ierr/0/ldebug/.false./nopause/.false./
       data mname(1)/'Cellcount'/mname(2)/'v!d1!d'/mname(3)/'v!d2!d'/
       data mname(4)/'v!d3!d'/mname(5)/'T!d1!d'/mname(6)/'T!d2!d'/
       data mname(7)/'T!d3!d'/mname(ndiagmax)/'Potential'/
       data mname(ndiagmax+1)/'Density'/fluxfilename/' '/
+      data linevec/-1,-1,-1/
       isingle=0
       lvtk=.false.
       xleg=.75
@@ -42,7 +43,8 @@
 ! Loop over a maximum of nfiles files: 
       do ifile=1,nfiles
          call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
-     $        ,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause)
+     $        ,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause
+     $        ,linevec)
 ! diagexamargs returns here when it reads a diagnostic file.
          if(iworking.lt.0)then
 ! finished all the arguments:
@@ -76,9 +78,11 @@
                if(ifile.eq.1.and.ldebug)write(*,'(a,f8.4,$)'
      $              )'Read volumes ',diagsum(2,2,2,ndiags+1)
             else
+               if(ldebug)then
                write(*,*)'Storedgeom failed; returned',istat,iuds,ifull
                write(*,*
      $              )'***** No volume-corrected density is available.'
+               endif
             endif
          endif
 !-------------------------------------
@@ -115,6 +119,11 @@
             xamp(ifile)=xmax(ifile)-xmin(ifile)
             if(ldebug)write(*,*)'xmean.max.min',xmean(ifile),xmax(ifile)
      $           ,xmin(ifile)
+         elseif(linevec(1).ne.-1)then
+! Save a lineout of the chosen diagnostic along specified dimension.
+            k=ndiags
+            if(isingle.gt.0)k=isingle
+            call linewrite(diagsum(1,1,1,k),linevec)
          else
 ! Default case. Plot the diagnostics.
             if(istat.eq.1.and.isingle.eq.0)then
@@ -173,13 +182,15 @@
 ! Operational subroutines:
 !*************************************************************
       subroutine diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle
-     $     ,lvtk,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause)
+     $     ,lvtk,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause
+     $     ,linevec)
 ! Read command line arguments, until a diag name is found.
 ! If we reach the end of them, return iworking=-1, otherwise return
 ! iworking= the argument we are working on.
       integer iunp,isingle,i1d
       integer mcell,icontour
       real zminmax(2)
+      integer linevec(3)
       character*70 xtitle,ytitle
       logical lvtk,ldebug,nopause
       include 'examdecl.f'
@@ -215,10 +226,13 @@
                   read(argument(3:),'(a)',err=201)phifilename
                endif
             endif
-            if(argument(1:3).eq.'-ly')
-     $           read(argument(4:),'(a)',err=201)ytitle
-            if(argument(1:3).eq.'-lx')
-     $           read(argument(4:),'(a)',err=201)xtitle
+            if(argument(1:3).eq.'-ly')then
+               read(argument(4:),'(a)',err=201)ytitle
+            elseif(argument(1:3).eq.'-lx')then
+               read(argument(4:),'(a)',err=201)xtitle
+            elseif(argument(1:2).eq.'-l')then
+               read(argument(3:),*,err=201,end=201)linevec
+            endif
             if(argument(1:2).eq.'-u')iunp=1
             if(argument(1:3).eq.'-dt')then
                read(argument(4:),*,err=201)dt
@@ -269,9 +283,10 @@
       write(*,*)'=====Error reading command line argument',argument
  203  continue
  301  format(a,i5)
- 302  format(a,2f8.3)
+ 302  format(a,4f8.3)
+ 303  format(a,4i5)
       write(*,301)'Usage: diagexamine [switches] <diagfile>'
-      write(*,*)' Plot diagnostics from file'
+      write(*,*)' Plot or Output diagnostics from file'
       write(*,*)' If additional parameter file is set,'
      $     ,' do arrow plot of velocity on it.'
       write(*,301)' -p<name>   set name of additional parameter file.'
@@ -288,6 +303,7 @@
       write(*,301)' -m<f>  set minimum non-zero cell count    [',mcell
       write(*,302)' -z<min><max> set range of values plotted  [',zminmax
       write(*,302)' -dt  set time-step for multiple steps     [',dt
+      write(*,303)' -l<x,y,z> set linevec (+ve=choice,0=direc)[',linevec
       write(*,*)' if zmin>zmax, print zmin and zmax of first diag'
       write(*,*)'-g<i>   print ps-graphics files to unit i [3,-3]'
       write(*,*)'-r   run without pausing'
@@ -1052,4 +1068,35 @@ c$$$         = 20 input error returned by lower level routine
          work(i)=xamp(i)
       enddo
       call boxcarave(ifile,nb,work,xamp)
+      end
+!********************************************************************
+      subroutine linewrite(diagsum,linevec)
+      include 'examdecl.f'
+      integer linevec(ndims)
+      real diagsum(na_i,na_j,na_k)
+      integer index(3),idir
+      character*15 lwstring
+
+      lwstring=diagfilename(istrstr(diagfilename
+     $     ,'dia'):lentrim(diagfilename))//'.dat'
+!      write(*,*)'Diagfilename=',diagfilename,lwstring
+      open(15,file=lwstring,status='unknown',err=101)
+      idir=0
+      do i=1,3
+         index(i)=linevec(i)
+         if(linevec(i).eq.0)idir=i
+      enddo
+      if(idir.eq.0)stop 'linewrite error no zero linevec component'
+      
+      write(15,*)'Lineout at',linevec,' total values:'
+      write(15,*)iuds(idir)
+      do i=1,iuds(idir)
+         index(idir)=i
+         write(15,*)xn(ixnp(idir)+i),diagsum(index(1),index(2),index(3))
+      enddo
+      close(15)
+      write(*,'(a,3i4,2a)')'Wrote lineout',linevec,' to:  ',lwstring
+      return
+ 101  write(*,*)'Error opening file ',lwstring,'for output'
+
       end

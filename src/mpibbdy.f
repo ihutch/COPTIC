@@ -425,8 +425,8 @@
 ! Unused process.
  998  continue
       mycartid=-1
-      write(*,'(a,i5,a,3i4)')' Process',myid
-     $     ,' not in cartesian communicator',(idims(i),i=1,ndims)
+!      write(*,'(a,i5,a,3i4)')' Process',myid
+!     $     ,' not in cartesian communicator',(idims(i),i=1,ndims)
       if(myid.eq.0)stop
       return
 ! Exception stop:

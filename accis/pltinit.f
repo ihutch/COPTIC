@@ -232,12 +232,17 @@ c********************************************************************
 c**************************************************************************
 c Return the argc and argv of the call as integer and single string.
 c This can then be used subsequently in C routines.
+c Although long command lines can exceed the length allowed and hence
+c be truncated, that does not matter since the C routines only parse
+c the command line for X11 options etc. So long as these are near 
+c the beginning, all will be found, and if not, who cares?
 c For the intel fortran compiler. Add dummy progname at start.
       subroutine cmdlineargs(argc,argv)
       integer argc
       character*(*) argv
       parameter (icharlen=512)
       character*(icharlen) arg,cmtemp
+!      write(*,*)len(argv)   ! Ensure the character length is being passed.
       cmtemp='progname'
       argc=iargc()+1
       do i=1,argc-1

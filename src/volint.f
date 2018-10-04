@@ -248,7 +248,6 @@
       if(lstrict)then
          close(iunit,status='delete')
       else
-         write(*,*)'Object mismatch ignored.'
          close(iunit)
       endif
       return
