@@ -358,6 +358,9 @@ hdprset(0,0.). All the arguments but the last are those of CONTOURL.
 CONTOUR(za,xa,ya,ix,iy,zclv,icl) Simple contour over mesh xa,ya of entire
 arrays, needing no extra work space. No line labelling.
 
+AUTOCONTOUR(za,iLdim,nx,ny) Simple wrapper for CONTOUR without x,y 
+or cl arrays, allowing used part of za(iLdim,ny) not to be the entire array.
+
 AUTOCOLCONT(za,iLdim,ixm,iym) Color contour za on rectangular mesh.
 
 ARROWPLOT(E1,E2,Erange,Li,imax,jmax,x,y,iasw) Plot arrows to represent

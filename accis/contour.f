@@ -1,4 +1,43 @@
-
+c Automatic routine for doing raw contour-ing.
+      subroutine autocontour(zin,Lz,nx,ny)
+      real zin(Lz,ny)
+      parameter(nxmax=500,nymax=500,nlmax=10)
+      real x(nxmax,nymax),y(nxmax,nymax),z(nxmax,nymax),cl(nlmax)
+      real x1(nxmax*nymax),y1(nxmax*nymax),z1(nxmax*nymax)
+      equivalence (x1,x),(y1,y),(z1,z)
+      character*10 string
+      if(nx.gt.nxmax.or.ny.gt.nymax)then
+         write(*,*)nx,ny,' autocontour nx,ny too large c.f.',nxmax,nymax
+         return
+      endif
+      zmin=1.e20
+      zmax=-1.e20
+      do i=1,nx
+         do j=1,ny
+            index=i+(j-1)*nx
+            x1(index)=(i-1.)/(nx-1.)
+            y1(index)=(j-1.)/(ny-1.)
+            z1(index)=zin(i,j)
+            zmax=max(zmax,zin(i,j))
+            zmin=min(zmin,zin(i,j))
+         enddo
+      enddo
+c Initialize the plot.
+      call pltinit(x1(1),x1(nx),y1(1),y1(1+(ny-1)*nx))
+      call axis()
+      call axis2()
+c      write(*,*)nx,ny,zmin,zmax
+      nl=nlmax
+      do i=1,nl
+         cl(i)=zmin+i*(zmax-zmin)/(nl+1.)
+         call color(i)
+         call contour(z,x,y,nx,ny,cl(i),1)
+         call fwrite(cl(i),iwidth,3,string)
+         call jdrwstr(.1,.1+i*.03,string,-1.)
+      enddo
+      call color(15)
+!      call contour(z,x,y,nx,ny,cl,nl)
+      end
 c_______________________________________________________________________
 
       subroutine CONTOUR(z,x,y,nx,ny,cl,nl)
@@ -11,22 +50,29 @@ c  whose number is           nl
 
 c  External routines called 
 c  Polyline       to draw line segment(s).
-c  pltinit
-c  axis
 
-        integer nx,ny
-      real xp(5),yp(5),z(nx,ny),x(nx,ny),y(nx,ny),cl(nl)
-      real zc(5),zd1,zd2
+      integer nx,ny
+      real z(nx,ny),x(nx,ny),y(nx,ny),cl(nl)
+      real xp(5),yp(5),zc(5),zd1,zd2
       integer i,j,i1,i2,j1,k,kl,kk,kb,kp,k0
       integer ic(5),jc(5)
+      logical ldebug
 
 c Indices for the unit cell.
       data ic/0,0,1,1,0/
       data jc/0,1,1,0,0/
+      data ldebug/.false./
 
-c Initialize the plot.
-      call pltinit(x(1,1),x(nx,1),y(1,1),y(1,ny))
-      call axis()
+      if(ldebug)then
+      write(*,*)'x'
+      write(*,'(10f7.3)')((x(i,j),j=1,min(ny,10)),i=1,nx)
+      write(*,*)'y'
+      write(*,'(10f7.3)')((y(i,j),j=1,min(ny,10)),i=1,nx)
+      write(*,*)'z'
+      write(*,'(10f7.3)')((z(i,j),j=1,min(ny,10)),i=1,nx)
+      write(*,*)nx,ny
+      endif
+
       zd1=nint((x(nx,1)-x(1,1))/10.)
       zd2=nint((y(1,ny)-y(1,1))/10.)
 

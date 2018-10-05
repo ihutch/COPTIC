@@ -38,7 +38,7 @@
       ipp=0
       iworking=0
       iyp=0
-      dt=1.
+      dt=0.
 
 ! Loop over a maximum of nfiles files: 
       do ifile=1,nfiles
@@ -55,6 +55,10 @@
 !-------------------------------------
 ! Attempt to read dt from the copticgeom.dat file.
          call findargvalue('-dt',dt,istat,ldebug)
+         if(dt.eq.0)then
+            write(*,'(a)')'Timestep dt value undeterminable; set to 1'
+            dt=1.
+         endif
 !-------------------------------------
          i1=1
          ied=ndiagmax
@@ -123,7 +127,7 @@
 ! Save a lineout of the chosen diagnostic along specified dimension.
             k=ndiags
             if(isingle.gt.0)k=isingle
-            call linewrite(diagsum(1,1,1,k),linevec)
+            call linewrite(diagsum(1,1,1,k),linevec,dt)
          else
 ! Default case. Plot the diagnostics.
             if(istat.eq.1.and.isingle.eq.0)then
@@ -1070,17 +1074,21 @@ c$$$         = 20 input error returned by lower level routine
       call boxcarave(ifile,nb,work,xamp)
       end
 !********************************************************************
-      subroutine linewrite(diagsum,linevec)
+      subroutine linewrite(diagsum,linevec,dt)
       include 'examdecl.f'
       integer linevec(ndims)
-      real diagsum(na_i,na_j,na_k)
-      integer index(3),idir
-      character*15 lwstring
+      real diagsum(na_i,na_j,na_k),dt
+      integer index(3),idir,istepno
+      character*15 lwstring,stepnostring
 
       lwstring=diagfilename(istrstr(diagfilename
      $     ,'dia'):lentrim(diagfilename))//'.dat'
 !      write(*,*)'Diagfilename=',diagfilename,lwstring
+      
       open(15,file=lwstring,status='unknown',err=101)
+      stepnostring=lwstring(4:istrstr(lwstring,'.dat')-1)
+      read(stepnostring,*)istepno
+      write(15,*)'istepno,t=',istepno,dt*istepno
       idir=0
       do i=1,3
          index(i)=linevec(i)
