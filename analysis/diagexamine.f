@@ -10,7 +10,7 @@
       real zminmax(2)
       character*20 mname(ndiagmax+1)
       integer nfiles
-      parameter (nfiles=1000,nmodes=11)
+      parameter (nfiles=2000,nmodes=11)
       real xmean(nfiles),xvar(nfiles),xmax(nfiles),xmin(nfiles)
       real xms(nfiles),xmcent(nfiles)
       real xampsmooth(nfiles),time(nfiles),xamp(nfiles),work(nfiles)
