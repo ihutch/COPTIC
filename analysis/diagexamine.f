@@ -9,7 +9,7 @@
       real z1d(na_m),u1d(na_m),dene1d(na_m),deni1d(na_m)
       real zminmax(2)
       character*20 mname(ndiagmax+1)
-      integer nfiles
+      integer nfiles,nmodes
       parameter (nfiles=2000,nmodes=11)
       real xmean(nfiles),xvar(nfiles),xmax(nfiles),xmin(nfiles)
       real xms(nfiles),xmcent(nfiles)
@@ -17,7 +17,8 @@
       real xcentroids(na_m,nfiles),xwork(na_m),xmodes(nmodes,nfiles)
       real xmodenums(nmodes)
       data xmodenums/0,1,2,3,4,5,6,7,8,9,10/
-      complex cfft(na_m)
+      complex cfft(na_m),phimodes(nfiles,na_m,nmodes)
+      real rphimodes(nfiles,na_m,nmodes),iphimodes(nfiles,na_m,nmodes)
       real dt
 
       integer mcell,icontour
@@ -31,7 +32,7 @@
       data mname(4)/'v!d3!d'/mname(5)/'T!d1!d'/mname(6)/'T!d2!d'/
       data mname(7)/'T!d3!d'/mname(ndiagmax)/'Potential'/
       data mname(ndiagmax+1)/'Density'/fluxfilename/' '/
-      data linevec/-1,-1,-1/
+      data linevec/-1,0,-1/    ! Default line along y.
       isingle=0
       lvtk=.false.
       xleg=.75
@@ -46,119 +47,94 @@
      $        ,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause
      $        ,linevec)
 ! diagexamargs returns here when it reads a diagnostic file.
-         if(iworking.lt.0)then
-! finished all the arguments:
-            if(iyp.gt.0)goto 101
-            call exit(0)
-         endif
-         if(zminmax(1).gt.zminmax(2))istd=0
+         if(iworking.ge.0)then
+            if(zminmax(1).gt.zminmax(2))istd=0
 !-------------------------------------
-! Attempt to read dt from the copticgeom.dat file.
-         call findargvalue('-dt',dt,istat,ldebug)
-         if(dt.eq.0)then
-            write(*,'(a)')'Timestep dt value undeterminable; set to 1'
-            dt=1.
-         endif
+! The first data file only, get dt and volumes data.
+            if(ifile.le.1) call getrundata(dt,istd,ndiags,ldebug)
 !-------------------------------------
-         i1=1
-         ied=ndiagmax
+            i1=1
+            ied=ndiagmax
 ! Create label
-         label=diagfilename(istrstr(diagfilename,'dia')+3
-     $        :lentrim(diagfilename))
-         read(label,*)istep
-         time(ifile)=dt*istep
+            label=diagfilename(istrstr(diagfilename,'dia')+3
+     $           :lentrim(diagfilename))
+            read(label,*)istep
+            time(ifile)=dt*istep
 ! Read the file whose name we have found in the arguments.
-         call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
-         if(ierr.eq.1)stop 'Error reading diag file'
-         ndiags=ied
-!-------------------------------------
-! Attempt to read the volumes data.
-         istat=1
-         call stored3geometry(diagsum(1,1,1,ndiags+1),iuds,ifull,istat
-     $        ,.false.)
-         if(istd.gt.0)then
-! Only alert about volumes if we are doing more than getting min/max.
-            if(istat.eq.1)then
-               if(ifile.eq.1.and.ldebug)write(*,'(a,f8.4,$)'
-     $              )'Read volumes ',diagsum(2,2,2,ndiags+1)
-            else
-               if(ldebug)then
-               write(*,*)'Storedgeom failed; returned',istat,iuds,ifull
-               write(*,*
-     $              )'***** No volume-corrected density is available.'
-               endif
-            endif
-         endif
+            call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
+            if(ierr.eq.1)stop 'Error reading diag file'
+            ndiags=ied
 !-------------------------------------
 ! Maybe Get up to two additional quantities \phi and n for separate plotting
-         call readextra(iuphi)
-!-------------------------------------
-         if(iunp.ne.0) call unnormplot(diagsum,i1,ndiags)
-!-------------------------------------
+            call readextra(iuphi)
+            if(iunp.ne.0) call unnormplot(diagsum,i1,ndiags)
 ! Normalize the diagnostics.
-         call donormalize(ndiags,diagsum,mcell,isrs,iurs)
-         if(ldebug.and.istd.gt.0.and.ifile.eq.1)write(*,'(a,4f8.4)'
-     $        )' rs,debyelen,vd,Ti',rs,debyelen,vd,Ti
-!------------------------------------
+            call donormalize(ndiags,diagsum,mcell,isrs,iurs)
+            if(ldebug.and.istd.gt.0.and.ifile.eq.1)write(*,'(a,4f8.4)'
+     $           )' rs,debyelen,vd,Ti',rs,debyelen,vd,Ti
 ! Maybe write vtk files and stop.
-         if(lvtk)call diavtkwrite(iurs,isrs,diagsum,ndiags,istat)
+            if(lvtk)call diavtkwrite(iurs,isrs,diagsum,ndiags,istat)
 !-------------------------------------------------------------
-! Process and plot in various optional ways:
-         if(i1d.ne.0)then
+! Process and plot this file in various optional ways:
+            if(i1d.ne.0)then
 ! Calculate average profiles in direction i1d.
-            call lineout(i1d,ipp,iwr,xtitle,ytitle,xleg,diagsum)
-         elseif(lentrim(phifilename).gt.1)then
+               call lineout(i1d,ipp,iwr,xtitle,ytitle,xleg,diagsum)
+            elseif(lentrim(phifilename).gt.1)then
 ! Arrow plotting of velocity:
-            fluxfilename=ytitle
-            ifix=2+4
-            write(*,*)'Arrow plotting of ',phifilename
-            call sliceGweb(ifull,iuds,u,na_m,zp,
-     $           ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
-     $           ,diagsum(1,1,1,2),vp)
-         elseif(iyp.gt.0)then
+               fluxfilename=ytitle
+               ifix=2+4
+               write(*,*)'Arrow plotting of ',phifilename
+               call sliceGweb(ifull,iuds,u,na_m,zp, ixnp,xn,ifix
+     $              ,fluxfilename(1:lentrim(fluxfilename)+2) ,diagsum(1
+     $              ,1,1,2),vp)
+            elseif(iyp.eq.1)then
 ! Hole position analysis.
-            call hole2position(diagsum,xcentroids(1,ifile),ndiags)
-            call getstats(xcentroids(1,ifile),iuds(2),xmean(ifile)
-     $           ,xvar(ifile),xmax(ifile),xmin(ifile))
-            xamp(ifile)=xmax(ifile)-xmin(ifile)
-            if(ldebug)write(*,*)'xmean.max.min',xmean(ifile),xmax(ifile)
-     $           ,xmin(ifile)
-         elseif(linevec(1).ne.-1)then
+               call hole2position(diagsum,xcentroids(1,ifile),ndiags)
+               call getstats(xcentroids(1,ifile),iuds(2),xmean(ifile)
+     $              ,xvar(ifile),xmax(ifile),xmin(ifile))
+               xamp(ifile)=xmax(ifile)-xmin(ifile)
+               if(ldebug)write(*,*)'xmean.max.min',xmean(ifile)
+     $              ,xmax(ifile),xmin(ifile)
+            elseif(linevec(1).ne.-1)then
 ! Save a lineout of the chosen diagnostic along specified dimension.
-            k=ndiags
-            if(isingle.gt.0)k=isingle
-            call linewrite(diagsum(1,1,1,k),linevec,dt)
-         else
-! Default case. Plot the diagnostics.
-            if(istat.eq.1.and.isingle.eq.0)then
-! Plot the density if volumes found successfully.
-               k=ndiagmax+1
-               zp(1,1,1)=99
-               ifix=2
-               fluxfilename=mname(k)
-               write(*,*)k,mname(k)
-     $              ,fluxfilename(1:lentrim(fluxfilename))
-               call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
-     $              ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
-     $              ,dum,dum)
+               k=ndiags
+               if(isingle.gt.0)k=isingle
+               call linewrite(diagsum(1,1,1,k),linevec,dt)
+            elseif(iyp.eq.2)then
+               k=ndiags
+               if(isingle.gt.0)k=isingle
+               call fftdata(diagsum(1,1,1,k),phimodes,nfiles,ifile
+     $              ,nmodes,linevec)
+!               write(*,*)'Returned from fftdata',nfiles,ifile,nmodes
+            else
+!----------------------------------------------------------------
+! Default case. Default examination of all diagnostics.
+               if(istat.eq.1.and.isingle.eq.0)then
+! First plot the density if volumes found successfully.
+                  k=ndiagmax+1
+                  zp(1,1,1)=99
+                  ifix=2
+                  fluxfilename=mname(k)
+                  write(*,*)k,mname(k)
+     $                 ,fluxfilename(1:lentrim(fluxfilename))
+                  call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
+     $                 ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)
+     $                 +2) ,dum,dum)
+               endif
+               call examineall(diagsum,zminmax,mname,i1,isingle,istd
+     $              ,ndiags,icontour,label)
             endif
 !----------------------------------------------------------------
-! Default examination of all diagnostics.
-            call examineall(diagsum,zminmax,mname,i1,isingle,istd
-     $           ,ndiags,icontour,label)
+         else   ! iworking.lt.0
+! Finished all the arguments: Either do final processing or quit
+            if(iyp.gt.0)goto 101
+            call exit(0)      
          endif
-!----------------------------------------------------------------
-! Arrow plotting of velocity:
-!      fluxfilename=mname(1)
-!      ifix=2+4
-!      if(isingle.eq.0)call sliceGweb(ifull,iuds,diagsum(1,1,1,1),na_m,zp
-!     $     ,ixnp,xn,ifix,fluxfilename(1:lentrim(fluxfilename)+2)
-!     $     ,diagsum(1,1,1,2),vp)
       enddo
 !---------  End of loop over filenames ----------------------------
- 101  if(iyp.gt.0)then
+ 101  ifile=ifile-1             ! Final processing
+      if(iyp.eq.1)then
 ! Fitting of xpos vs y kink amplitudes as fn of time.
-         ifile=ifile-1
 ! Fourier transform the xcentroids and sum low order 10 modes into xms.
          call getmodes(iuds(2),ifile,xcentroids,nmodes,xmodes,10,xms
      $        ,xmcent)
@@ -177,6 +153,21 @@
      $        ,'Mode amplitude')
 ! Get the mode centroid, averaged over the fit time.
          call modefortime(time,xmcent,ifile,it0,imax,.not.nopause)
+      elseif(iyp.eq.2)then
+! Fourier analysis in y-direction and finding perturbations.
+         write(*,*)'fftdata:',ifile,iuds(2),nmodes
+!         write(*,'(10f8.3)')((1.e4*phimodes(j,iuds(2)/2,i),i=1,5),j=1,5)
+!         write(*,'(10f6.1)')(time(i),i=1,ifile)
+         label=mname(k)(1:lentrim(mname(k)))
+         rphimodes=real(phimodes)
+         iphimodes=imag(phimodes)
+         if(k.eq.ndiags)label='!Af!@ '
+         call webinteract3(time,xn(ixnp(1)+1),rphimodes,nfiles,ifile
+     $        ,na_m,iuds(1),nmodes,'time','x',label(1:lentrim(label)+1)
+     $        //'r')
+         call webinteract3(time,xn(ixnp(1)+1),iphimodes,nfiles
+     $        ,ifile,na_m,iuds(1),nmodes,'time','x'
+     $        ,label(1:lentrim(label)+1)//'i')
       endif
 
       end
@@ -260,7 +251,8 @@
      $           read(argument(3:),*,err=201)i1d
             if(argument(1:2).eq.'-m')
      $           read(argument(3:),*,err=201)mcell
-            if(argument(1:3).eq.'-yp')iyp=1
+            if(argument(1:3).eq.'-yp')read(argument(4:),*,err=201,end
+     $           =201)iyp
             if(argument(1:2).eq.'-z')then
                 read(argument(3:),*,err=201)zminmax
 ! Turn on trucation if the z-range is set
@@ -290,7 +282,7 @@
  302  format(a,4f8.3)
  303  format(a,4i5)
       write(*,301)'Usage: diagexamine [switches] <diagfile>'
-      write(*,*)' Plot or Output diagnostics from file'
+      write(*,*)' Plot, Analyse, or Output diagnostics from file'
       write(*,*)' If additional parameter file is set,'
      $     ,' do arrow plot of velocity on it.'
       write(*,301)' -p<name>   set name of additional parameter file.'
@@ -298,7 +290,8 @@
       write(*,301)' -ly  set label of parameter. -lx label of xaxis'
       write(*,301)' -d   set single diagnostic to be examined [',isingle
       write(*,301)' -a   set dimension number for ave profile [',i1d
-      write(*,301)' -yp  get posn of hole as fn of y          [',iyp
+      write(*,301)' -yp  if=1 get posn of hole as fn of y     [',iyp
+      write(*,301)'      if=2 fourier analyse in y direction   '
       write(*,301)' -o   write out the profiles               [',iwr
       write(*,301)' -f   plot potential profile (if -p given) [',ipp
       write(*,301)' -u   plot un-normalized diagnostics       [',iunp
@@ -322,7 +315,9 @@
  202  continue
       if(lentrim(diagfilename).lt.5)goto 203
       end
-!*****************************************************************
+!********************************************************************
+! End of diagexamargs
+!********************************************************************
       subroutine minmax3(ifull,iuds,u,umin,umax)
 ! Find the minimum and maximum of a 3d array. Allocated dimensions ifull,
 ! used dimensions iuds.
@@ -341,7 +336,6 @@
       enddo
       end
 !*****************************************************************
-!********************************************************************
       subroutine minmaxN(ndims,ifull,iuds,u,umin,umax)
 ! Find the minimum and maximum of a ndims array. Allocated dimensions ifull,
 ! used dimensions iuds. Using the general mditerator. 
@@ -1041,6 +1035,31 @@ c$$$         = 20 input error returned by lower level routine
       isw=irotatezoom()
       if(isw.ne.ichar('q').and.isw.ne.0)goto 51
       end
+!*********************************************************************
+      subroutine webinteract3(x,y,data,nxmax,nx,nymax,ny,nz,
+     $     lx,ly,lz)
+! Plot interactively data in the x,y plane for different z-levels
+! controlled by u and d responses.
+      character*(*) lx,ly,lz
+      integer nxmax,ifile
+      real x(nx),y(ny)
+      real data(nxmax,nymax,nz)
+      character*20 string
+      im=1
+      string=lz
+      lenstr=lentrim(string)
+      write(*,*)'Webinteract3. u: raise-z, d: lower-z, q: quit'
+ 51   call accisinit()
+      isw=1
+      call hidweb(x,y,data(1,1,im),nxmax,nx,ny,isw)
+      call ax3labels(lx,ly,lz)
+      call iwrite(im-1,iwidth,string(lenstr+1:))
+      call jdrwstr(.1,.1,string,1.)
+      isw=irotatezoom()
+      if(isw.eq.ichar('u'))im=min(im+1,nz)
+      if(isw.eq.ichar('d'))im=max(im-1,1)
+      if(isw.ne.ichar('q').and.isw.ne.0)goto 51
+      end
 !***********************************************************************
       subroutine modefortime(time,xmcent,ifile,it0,imax,lplot)
 ! Find the dominant mode averaged over ilow to ihigh.
@@ -1074,10 +1093,10 @@ c$$$         = 20 input error returned by lower level routine
       call boxcarave(ifile,nb,work,xamp)
       end
 !********************************************************************
-      subroutine linewrite(diagsum,linevec,dt)
+      subroutine linewrite(diagsumN,linevec,dt)
       include 'examdecl.f'
       integer linevec(ndims)
-      real diagsum(na_i,na_j,na_k),dt
+      real diagsumN(na_i,na_j,na_k),dt
       integer index(3),idir,istepno
       character*15 lwstring,stepnostring
 
@@ -1100,11 +1119,87 @@ c$$$         = 20 input error returned by lower level routine
       write(15,*)iuds(idir)
       do i=1,iuds(idir)
          index(idir)=i
-         write(15,*)xn(ixnp(idir)+i),diagsum(index(1),index(2),index(3))
+        write(15,*)xn(ixnp(idir)+i),diagsumN(index(1),index(2),index(3))
       enddo
       close(15)
       write(*,'(a,3i4,2a)')'Wrote lineout',linevec,' to:  ',lwstring
       return
  101  write(*,*)'Error opening file ',lwstring,'for output'
+      end
+!*********************************************************************
+      subroutine getrundata(dt,istd,ndiags,ldebug)
+      implicit none
+      include 'examdecl.f'
+      real diagsum(na_i,na_j,na_k,ndiagmax+1)      
+      logical ldebug
+      real dt
+      integer istat,istd,ndiags
+! Attempt to read dt from the copticgeom.dat file.
+            call findargvalue('-dt',dt,istat,ldebug)
+            if(dt.eq.0)then
+               write(*,'(a)')'Timestep dt value undetermined; set to 1'
+               dt=1.
+            endif
+!-------------------------------------
+! Attempt to read the volumes data.
+            istat=1
+            call stored3geometry(diagsum(1,1,1,ndiags+1),iuds,ifull
+     $           ,istat,.false.)
+            if(istd.gt.0)then
+! Only alert about volumes if we are doing more than getting min/max.
+               if(istat.eq.1)then
+                  if(ldebug)write(*,'(a,f8.4,$)'
+     $                 )'Read volumes ',diagsum(2,2,2,ndiags+1)
+               else
+                  if(ldebug)then
+                     write(*,*)'Storedgeom failed; returned',istat,iuds
+     $                    ,ifull
+                     write(*,*)
+     $               '***** No volume-corrected density is available.'
+                  endif
+               endif
+            endif
+      end
+!*********************************************************************
+      subroutine fftdata(diagsumN,phimodes,nfiles,ifile,nmodes,linevec)
+! For this ifile iterate over transverse positions to find fourier modes
+! of the diagnostic passed.
+! On entry: diagsumN is the data, ifile file index, linevec indicates
+!           the line along which to fft, and zero for the variable coordinate.
+! On exit: phimodes contains the fourier modes.
+      include 'examdecl.f'
+      integer nfiles,nmodes
+      real diagsumN(na_i,na_j,na_k)
+      complex phimodes(nfiles,na_m,nmodes),phit(na_m)
+      integer ifile,linevec(ndims)
+      integer index(ndims)
+      real phireal(na_m)
 
+! Set up index.
+      idir=0
+      do i=1,ndims
+         index(i)=linevec(i)
+         if(linevec(i).eq.0)idir=i
+      enddo
+      if(idir.eq.0)stop 'fftdata error no zero linevec component'
+! Do the transforming
+      ix=mod(idir+1,ndims)+1         ! Transverse directions
+      iz=mod(idir,ndims)+1
+      index(iz)=2               ! Assume 2-d data z-variation absent.
+      do k=1,iuds(ix)           ! over transverse
+         index(ix)=k
+         do i=1,iuds(idir)      ! over line
+            index(idir)=i
+            phireal(i)=diagsumN(index(1),index(2),index(3))
+!            write(*,*)'index',index
+         enddo
+         call realtocomplexfft(iuds(ix),phireal,phit)
+         do im=1,nmodes
+            phimodes(ifile,k,im)=phit(im)
+!            write(*,*)'Mode',im,iuds(idir)
+!            write(*,'(i4,2f8.4,$)')k,phit(im)
+         enddo
+      enddo
+! Now phimodes contains the complex amplitude of modes as a function
+! of time (file) and the transverse position. 
       end
