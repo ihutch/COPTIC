@@ -15538,3 +15538,19 @@ difference.
 It was necessary to divide the charge fft by 4sin^2(k/2) rather than k^2
 to correctly solve the finite difference equation. But also there was a
 bug in the indexing that took some time to track down.
+
+7 Dec
+Had a problem with the enhanced diagexamine, that first showed up on 
+engaging, but could be made to show up on laptop. It gives errors of the
+type "relocation truncated to fit". This turns out to be because of large
+static arrays. Actually one cannot convince oneself that the program 
+does not fit fine in 2G of memory from a simple count of the space required.
+But apparently there is loads of overhead. By default all static allocated
+memory and code must do so. But if you add -mcmodel=medium to the 
+compiler flags. That allows the storage to exceed the 2G (not code). And 
+that seems to stop it. It is said that this is an inefficient thing to
+do because longer mov assembly code is involved. But hey. Problems
+can also be made to occur with coptic code itself for 1024x1024x3 dimensions.
+It is detected only at link time, but presumably needs to be compiled for.
+However, just adding the compile flag in the analysis directory seems 
+to be sufficient. 

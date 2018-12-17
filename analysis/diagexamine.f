@@ -6,19 +6,20 @@
 ! Extra work array for arrowplotting in sliceGweb.
       real vp(na_m,na_m2,3,3)
 ! 1-d plotting arrays.
-      real z1d(na_m),u1d(na_m),dene1d(na_m),deni1d(na_m)
+!      real z1d(na_m),u1d(na_m),dene1d(na_m),deni1d(na_m)
       real zminmax(2)
       character*20 mname(ndiagmax+1)
       integer nfiles,nmodes
       parameter (nfiles=2000,nmodes=11)
       real xmean(nfiles),xvar(nfiles),xmax(nfiles),xmin(nfiles)
       real xms(nfiles),xmcent(nfiles)
-      real xampsmooth(nfiles),time(nfiles),xamp(nfiles),work(nfiles)
-      real xcentroids(na_m,nfiles),xwork(na_m),xmodes(nmodes,nfiles)
+      real time(nfiles),xamp(nfiles),work(nfiles)
+      real xcentroids(na_m,nfiles),xmodes(nmodes,nfiles)
       real xmodenums(nmodes)
       data xmodenums/0,1,2,3,4,5,6,7,8,9,10/
-      complex cfft(na_m),phimodes(nfiles,na_m,nmodes)
+      complex phimodes(nfiles,na_m,nmodes)
       real rphimodes(nfiles,na_m,nmodes),iphimodes(nfiles,na_m,nmodes)
+      real theta(nfiles,nmodes)
       real dt
 
       integer mcell,icontour
@@ -40,6 +41,7 @@
       iworking=0
       iyp=0
       dt=0.
+      k=0
 
 ! Loop over a maximum of nfiles files: 
       do ifile=1,nfiles
@@ -112,7 +114,6 @@
                if(istat.eq.1.and.isingle.eq.0)then
 ! First plot the density if volumes found successfully.
                   k=ndiagmax+1
-                  zp(1,1,1)=99
                   ifix=2
                   fluxfilename=mname(k)
                   write(*,*)k,mname(k)
@@ -162,12 +163,27 @@
          rphimodes=real(phimodes)
          iphimodes=imag(phimodes)
          if(k.eq.ndiags)label='!Af!@ '
-         call webinteract3(time,xn(ixnp(1)+1),rphimodes,nfiles,ifile
-     $        ,na_m,iuds(1),nmodes,'time','x',label(1:lentrim(label)+1)
-     $        //'r')
-         call webinteract3(time,xn(ixnp(1)+1),iphimodes,nfiles
-     $        ,ifile,na_m,iuds(1),nmodes,'time','x'
-     $        ,label(1:lentrim(label)+1)//'i')
+         iclipped=10
+         ix1=max((iuds(1))/2+1-iclipped,1)
+         ix2=min((iuds(1))/2+iclipped,iuds(1))
+         call webinteract3(time,xn(ixnp(1)+ix1),rphimodes(1,ix1,1)
+     $        ,nfiles,ifile,na_m,ix2-ix1+1,nmodes,'time','x'
+     $        ,label(1:lentrim(label)+1) //'r')
+         call webinteract3(time,xn(ixnp(1)+ix1),iphimodes(1,ix1,1)
+     $        ,nfiles,ifile,na_m,ix2-ix1+1,nmodes,'time','x'
+     $        ,label(1:lentrim(label)+1) //'i')
+         call projectphi(nfiles,na_m,nmodes,ifile,ix1,ix2
+     $     ,phimodes,rphimodes,theta)
+         call webinteract3(time,xn(ixnp(1)+ix1),rphimodes(1,ix1,1)
+     $        ,nfiles,ifile,na_m,ix2-ix1+1,nmodes,'time','x'
+     $        ,label(1:lentrim(label)+1) //'p')
+
+         call autoplot(time,theta(1,2),ifile)
+         call axlabels('time','theta for m=1,2')
+         call color(1)
+         call polyline(time,theta(1,3),ifile)
+         call pltend()
+
       endif
 
       end
@@ -202,7 +218,7 @@
       denfilename=' '
       ytitle=' '
       xtitle=' '
-      mcell=5.
+      mcell=5
       ipfs=3
 
 !      write(*,*)'diagexamargs',iworking,iargc()
@@ -801,6 +817,7 @@
  1    continue
       xamin=1.e20
       xamax=0.
+      imin=0
 ! Find the first peak
       do i=it0,ifile-1
          if(xamp(i).lt.xamin)then
@@ -998,6 +1015,7 @@ c$$$         = 20 input error returned by lower level routine
          if(.true.)then
 ! Find the maximum mode (mode of modes!)
             xcmax=0.
+            kmax=0
             do k=1,nml
                if(xmodes(k,i).gt.xcmax)then
                   xcmax=xmodes(k,i)
@@ -1041,7 +1059,7 @@ c$$$         = 20 input error returned by lower level routine
 ! Plot interactively data in the x,y plane for different z-levels
 ! controlled by u and d responses.
       character*(*) lx,ly,lz
-      integer nxmax,ifile
+      integer nxmax
       real x(nx),y(ny)
       real data(nxmax,nymax,nz)
       character*20 string
@@ -1170,6 +1188,8 @@ c$$$         = 20 input error returned by lower level routine
       include 'examdecl.f'
       integer nfiles,nmodes
       real diagsumN(na_i,na_j,na_k)
+! na_m was too big in some cases, so using na_m. 
+! The fix for that is to use -mcmodel=medium compile flag.
       complex phimodes(nfiles,na_m,nmodes),phit(na_m)
       integer ifile,linevec(ndims)
       integer index(ndims)
@@ -1183,17 +1203,17 @@ c$$$         = 20 input error returned by lower level routine
       enddo
       if(idir.eq.0)stop 'fftdata error no zero linevec component'
 ! Do the transforming
-      ix=mod(idir+1,ndims)+1         ! Transverse directions
+      iy=mod(idir+1,ndims)+1         ! Transverse directions
       iz=mod(idir,ndims)+1
       index(iz)=2               ! Assume 2-d data z-variation absent.
-      do k=1,iuds(ix)           ! over transverse
-         index(ix)=k
+      do k=1,iuds(iy)           ! over transverse
+         index(iy)=k
          do i=1,iuds(idir)      ! over line
             index(idir)=i
             phireal(i)=diagsumN(index(1),index(2),index(3))
 !            write(*,*)'index',index
          enddo
-         call realtocomplexfft(iuds(ix),phireal,phit)
+         call realtocomplexfft(iuds(iy),phireal,phit)
          do im=1,nmodes
             phimodes(ifile,k,im)=phit(im)
 !            write(*,*)'Mode',im,iuds(idir)
@@ -1202,4 +1222,39 @@ c$$$         = 20 input error returned by lower level routine
       enddo
 ! Now phimodes contains the complex amplitude of modes as a function
 ! of time (file) and the transverse position. 
+      end
+!***********************************************************************
+      subroutine projectphi(nfiles,na_m,nmodes,ifile,ix1,ix2
+     $     ,phimodes,rphimodes,theta)
+! How to combine real and imaginary parts: choose a phase angle theta(t) such
+! that for each time we maximize the mode amplitude squared averaged over
+! all relevant x. theta must be the same for all x (but not t).
+      complex phimodes(nfiles,na_m,nmodes)
+      real rphimodes(nfiles,na_m,nmodes)
+      real theta(nfiles,nmodes)
+
+!      write(*,*)nfiles,na_m,nmodes,ifile,ix1,ix2
+      do i=1,ifile
+         do m=1,nmodes
+            theta(i,m)=0.
+            Srr=0.
+            Sri=0.
+            Sii=0.
+            do ix=ix1,ix2
+               pr=real(phimodes(i,ix,m))
+               pi=imag(phimodes(i,ix,m))
+               Srr=Srr+pr**2
+               Sri=Sri+pr*pi
+               Sii=Sii+pi**2
+            enddo
+            theta(i,m)=0.5*atan2(Sri,Srr-Sii)
+            ct=cos(theta(i,m))
+            st=sin(theta(i,m))
+            do ix=ix1,ix2
+               rphimodes(i,m,ix)=ct*real(phimodes(i,ix,m))
+     $              +st*imag(phimodes(i,ix,m))
+            enddo
+         enddo
+      enddo
+
       end

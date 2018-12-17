@@ -27,8 +27,8 @@ GFINAL=gcc-4.1 -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) -static-libgcc -l
 #OPTIMIZE=-O3 -funroll-loops -finline-functions
 OPTIMIZE=
 COMPILE-SWITCHES=-I.
-ifeq ("$(G77)","mpif77 -f77=g77")	
-  COMPILE-SWITCHES = -Wall $(OPTIMIZE) -I.
+ifeq ("$(G77)","mpif77")	
+  COMPILE-SWITCHES = -Wall $(OPTIMIZE) -I. -mcmodel=medium
   OPTIMIZE=-O3
 endif	
 #COMPILE-SWITCHES = -Wall   $(OPTIMIZE) -I. -g -fbounds-check

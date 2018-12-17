@@ -6,6 +6,8 @@
 # If four arguments are provided, then don't actually set change griddecl
 # just report the change we need.
 
+
+
 ARG1=$1
 ARG2=$2
 ARG3=$3
@@ -58,6 +60,10 @@ c Declarations of grid array parameters.
       parameter (na_i=$ARG1,na_j=$ARG2,na_k=$ARG3,na_m=$MAX,na_m2=$NEXT)
 "
 BLAH
+RESULT=$(($ARG1*$ARG2*$ARG3))
+if [ $RESULT -gt 1000000 ]; then 
+    echo "**** $RESULT may be too large. Consider -mcmodel=medium compile flag" 
+fi
 
 if diff griddeclnew.f griddecl.f ; 
 then 
