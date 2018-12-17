@@ -103,6 +103,7 @@
                if(isingle.gt.0)k=isingle
                call linewrite(diagsum(1,1,1,k),linevec,dt)
             elseif(iyp.eq.2)then
+! Fourier modes in the y direction
                k=ndiags
                if(isingle.gt.0)k=isingle
                call fftdata(diagsum(1,1,1,k),phimodes,nfiles,ifile
@@ -172,6 +173,7 @@
          call webinteract3(time,xn(ixnp(1)+ix1),iphimodes(1,ix1,1)
      $        ,nfiles,ifile,na_m,ix2-ix1+1,nmodes,'time','x'
      $        ,label(1:lentrim(label)+1) //'i')
+
          call projectphi(nfiles,na_m,nmodes,ifile,ix1,ix2
      $     ,phimodes,rphimodes,theta)
          call webinteract3(time,xn(ixnp(1)+ix1),rphimodes(1,ix1,1)
@@ -973,10 +975,6 @@ c$$$            SUM C(K*INC+1)*EXP(-I*J*K*2*PI/N)
 c$$$            K=0
 c Actually by experiment, forward transform is divided by N, backward not.
 c$$$         where I=SQRT(-1).
-c$$$
-c$$$         At other indices, the output value of C does not differ
-c$$$         from input.
-c$$$ 
 c$$$ IER     =  0 successful exit
 c$$$         =  1 input parameter LENC   not big enough
 c$$$         =  2 input parameter LENSAV not big enough
@@ -1199,21 +1197,21 @@ c$$$         = 20 input error returned by lower level routine
       idir=0
       do i=1,ndims
          index(i)=linevec(i)
-         if(linevec(i).eq.0)idir=i
+         if(linevec(i).eq.0)idir=i ! The direction in which to FFT
       enddo
       if(idir.eq.0)stop 'fftdata error no zero linevec component'
 ! Do the transforming
-      iy=mod(idir+1,ndims)+1         ! Transverse directions
-      iz=mod(idir,ndims)+1
-      index(iz)=2               ! Assume 2-d data z-variation absent.
-      do k=1,iuds(iy)           ! over transverse
-         index(iy)=k
+      idx=mod(idir+1,ndims)+1       ! Transverse directions
+      idz=mod(idir,ndims)+1
+      index(idz)=2               ! Assume 2-d data z-variation absent.
+      do k=1,iuds(idx)           ! over transverse
+         index(idx)=k
          do i=1,iuds(idir)      ! over line
             index(idir)=i
             phireal(i)=diagsumN(index(1),index(2),index(3))
 !            write(*,*)'index',index
          enddo
-         call realtocomplexfft(iuds(iy),phireal,phit)
+         call realtocomplexfft(iuds(idir),phireal,phit)
          do im=1,nmodes
             phimodes(ifile,k,im)=phit(im)
 !            write(*,*)'Mode',im,iuds(idir)
