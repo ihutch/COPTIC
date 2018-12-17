@@ -180,10 +180,13 @@
      $        ,nfiles,ifile,na_m,ix2-ix1+1,nmodes,'time','x'
      $        ,label(1:lentrim(label)+1) //'p')
 
-         call autoplot(time,theta(1,2),ifile)
-         call axlabels('time','theta for m=1,2')
-         call color(1)
-         call polyline(time,theta(1,3),ifile)
+         call pltinit(0.,time(ifile),-1.6,1.6)
+         call axis
+         call axlabels('time','theta for m=1-4')
+         do m=1,4
+            call color(m) 
+            call polyline(time,theta(1,m),ifile)
+         enddo
          call pltend()
 
       endif
@@ -1249,7 +1252,7 @@ c$$$         = 20 input error returned by lower level routine
             ct=cos(theta(i,m))
             st=sin(theta(i,m))
             do ix=ix1,ix2
-               rphimodes(i,m,ix)=ct*real(phimodes(i,ix,m))
+               rphimodes(i,ix,m)=ct*real(phimodes(i,ix,m))
      $              +st*imag(phimodes(i,ix,m))
             enddo
          enddo
