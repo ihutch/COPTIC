@@ -482,6 +482,10 @@ CONTOUR(za,xa,ya,ix,iy,zclv,icl) Simple contour over mesh xa,ya of entire
 arrays, needing no extra work space. No line labelling.
 
 <div class="p"><!----></div>
+AUTOCONTOUR(za,iLdim,nx,ny) Simple wrapper for CONTOUR without x,y 
+or cl arrays, allowing used part of za(iLdim,ny) not to be the entire array.
+
+<div class="p"><!----></div>
 AUTOCOLCONT(za,iLdim,ixm,iym) Color contour za on rectangular mesh.
 
 <div class="p"><!----></div>
@@ -706,7 +710,8 @@ the contour plot arrows representing the projection of the vector
 field svec(ifullv,3), which has the same indexing and positions as u,
 and three vector components. The work array vp(nw,nw,2) must be
 provided.  The last two arguments may be dummy in the call if
-abs(ifix) &lt; 4.
+abs(ifix) &lt; 4. More complicated ifix switches are in its higher bits.
+Consult slicing.f for details.
 
 <div class="p"><!----></div>
 <a href="slicetest.f"><img align="right"
@@ -726,6 +731,15 @@ must then be provided.
 IXNPCREATE(Nx,Ny,Nz,xposv,yposv,zposv,ixnpv,xnv) Is a utility that
 creates the vectors ixnpv,xnv, needed for slicegweb and slicegcont
 from three coordinate arrays: xposv,yposv,zposv, of lengths Nx,Ny,Nz.
+
+<div class="p"><!----></div>
+IXNPCONSTRUCT(ndims,imax,iuds,xyzmesha,ixnpv,xnv) Is a general
+dimensioned form of the same thing but uses an array
+xyzmesha(imax,ndims) instead of separate position vectors.
+
+<div class="p"><!----></div>
+SETAX3CHARS(ca,cb,cc) Set the default labels for 3 axes of 3-D data
+from character variables.
 
 <div class="p"><!----></div>
  <a id="tth_sEc13"></a><h2>
@@ -772,7 +786,7 @@ PUTEYE(x,y,z) Set the position of view.
 FITRANGE(min,max,itics,ipow,fac10,delta,first,xlast) Fit a maximum of
 itics ticks to range (min, max). Decide a scaling factor 10<sup><span class="roman">ipow</span></sup>=fac10 and a sensible (scaled) delta between tics. First (xlast)
 is integer multiple of delta lying closest to min (max) outside the
-range (min,max). So fac10*(first+i*delta) are the tick values.
+range (min,max). So (first+i*delta) are the tick values.
 
 <div class="p"><!----></div>
 MINMAX(xv,isize,min,max) Find min and max of vector of size isize.
@@ -877,5 +891,5 @@ for operation of debugged correct code.
 T<sub><span class="small">E</span></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><span class="small">T</span></sub>H</a>,
-version 4.13.<br />On 15 Aug 2018, 16:57.</small>
+version 4.13.<br />On 17 Dec 2018, 15:59.</small>
 </html>

@@ -8,15 +8,15 @@
  
       character*10 chartemp
       character*100 name
-      character*100 string
+!      character*100 string
       logical ldoc
-      real extra(nptdiagmax,ndimsmax),diff(nptdiagmax,ndimsmax)
+      real extra(nptdiagmax,ndimsmax)
 ! Spatial limits bottom-top, dimensions
       real xlimit(2,ndimsmax),xnewlim(2,ndimsmax)
       real elimit(2)
       real Bdirs(ndimsmax+1)
 ! Velocity limits
-      real vlimit(2,ndimsmax),wicell,wjcell,wkcell
+      real vlimit(2,ndimsmax)
       
       integer nx,nv
       parameter (nx=50,nv=50)
@@ -26,7 +26,7 @@
       integer iuin(ndimsmax)
       integer ivtk
       integer ndfirst,ndlast
-      character*200 ivarnames(2*ndimsmax)
+!      character*200 ivarnames(2*ndimsmax)
 
       nfmax=nfilemax
 
@@ -227,7 +227,7 @@
       real hist(nx,nv)
 !      character*1 axnames(3)
 !      data axnames/'x','y','z'/ 
-      save x1,x2,xdiff,v1,v3,vdiff
+      save x1,x2,xdiff,v1,vdiff
 
       if(nhist.eq.0)then
 ! Initialize

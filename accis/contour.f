@@ -1,11 +1,12 @@
 c Automatic routine for doing raw contour-ing.
       subroutine autocontour(zin,Lz,nx,ny)
       real zin(Lz,ny)
-      parameter(nxmax=500,nymax=500,nlmax=10)
+      parameter(nxmax=2000,nymax=2000,nlmax=16)
       real x(nxmax,nymax),y(nxmax,nymax),z(nxmax,nymax),cl(nlmax)
       real x1(nxmax*nymax),y1(nxmax*nymax),z1(nxmax*nymax)
       equivalence (x1,x),(y1,y),(z1,z)
       character*10 string
+      character*5 pstring
       if(nx.gt.nxmax.or.ny.gt.nymax)then
          write(*,*)nx,ny,' autocontour nx,ny too large c.f.',nxmax,nymax
          return
@@ -26,17 +27,28 @@ c Initialize the plot.
       call pltinit(x1(1),x1(nx),y1(1),y1(1+(ny-1)*nx))
       call axis()
       call axis2()
-c      write(*,*)nx,ny,zmin,zmax
       nl=nlmax
+      call fitrange(zmin,zmax,nlmax-1,ipow,fac10,delta,first,xlast)
       do i=1,nl
-         cl(i)=zmin+i*(zmax-zmin)/(nl+1.)
+         cl(i)=first+i*delta
+         if(cl(i).gt.xlast-.9999*delta) goto 1
+         cl(i)=cl(i)
          call color(i)
          call contour(z,x,y,nx,ny,cl(i),1)
-         call fwrite(cl(i),iwidth,3,string)
+         if(ipow.lt.-1.or.ipow.gt.1)then
+            call fwrite(cl(i)/fac10,iwidth,2,string)
+            if(i.eq.1)then
+               call iwrite(ipow,iwidth,pstring)
+               call jdrwstr(.1,.13,
+     $              '!AX!@10!u'//pstring(1:iwidth)//'!u',1.2)
+            endif
+         else
+            call fwrite(cl(i),iwidth,2,string)
+         endif
          call jdrwstr(.1,.1+i*.03,string,-1.)
       enddo
+ 1    continue
       call color(15)
-!      call contour(z,x,y,nx,ny,cl,nl)
       end
 c_______________________________________________________________________
 

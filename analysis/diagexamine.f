@@ -17,11 +17,15 @@
       real xcentroids(na_m,nfiles),xmodes(nmodes,nfiles)
       real xmodenums(nmodes)
       data xmodenums/0,1,2,3,4,5,6,7,8,9,10/
+      integer ifullphi(3),iudsphi(3)
       complex phimodes(nfiles,na_m,nmodes)
       real rphimodes(nfiles,na_m,nmodes),iphimodes(nfiles,na_m,nmodes)
       real theta(nfiles,nmodes)
       real dt
 
+      parameter (nxns=na_m+nfiles+nmodes+1)
+      integer ixnps(4)   ! Local ixnp for 3-D plotting.
+      real xns(nxns)
       integer mcell,icontour
       logical lvtk,ldebug,nopause
       character*70 xtitle,ytitle,label
@@ -34,6 +38,7 @@
       data mname(7)/'T!d3!d'/mname(ndiagmax)/'Potential'/
       data mname(ndiagmax+1)/'Density'/fluxfilename/' '/
       data linevec/-1,0,-1/    ! Default line along y.
+      data ifullphi/nfiles,na_m,nmodes/
       isingle=0
       lvtk=.false.
       xleg=.75
@@ -167,18 +172,28 @@
          iclipped=10
          ix1=max((iuds(1))/2+1-iclipped,1)
          ix2=min((iuds(1))/2+iclipped,iuds(1))
+
+! Slicing call
+         iudsphi(1)=ifile
+         iudsphi(2)=ix2-ix1+1
+         iudsphi(3)=nmodes
+         call ixnpcreate(iudsphi(1),iudsphi(2),iudsphi(3)
+     $        ,time,xn(ixnp(1)+ix1),xmodenums,ixnps,xns)
+         call setax3chars('time','x','mode')
+
+         if(.false.)then
          call webinteract3(time,xn(ixnp(1)+ix1),rphimodes(1,ix1,1)
      $        ,nfiles,ifile,na_m,ix2-ix1+1,nmodes,'time','x'
      $        ,label(1:lentrim(label)+1) //'r')
          call webinteract3(time,xn(ixnp(1)+ix1),iphimodes(1,ix1,1)
      $        ,nfiles,ifile,na_m,ix2-ix1+1,nmodes,'time','x'
      $        ,label(1:lentrim(label)+1) //'i')
+         endif
 
          call projectphi(nfiles,na_m,nmodes,ifile,ix1,ix2
      $     ,phimodes,rphimodes,theta)
-         call webinteract3(time,xn(ixnp(1)+ix1),rphimodes(1,ix1,1)
-     $        ,nfiles,ifile,na_m,ix2-ix1+1,nmodes,'time','x'
-     $        ,label(1:lentrim(label)+1) //'p')
+         call sliceGweb(ifullphi,iudsphi,rphimodes(1,ix1,1),na_m,zp,
+     $              ixnps,xns,3+64,'Amplitude' ,dum,dum)   
 
          call pltinit(0.,time(ifile),-1.6,1.6)
          call axis

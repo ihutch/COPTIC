@@ -515,6 +515,10 @@ int eye3d_(value)
   extern void accis_butup();
   extern void accis_moved();
   XEvent event;
+  int bytesbuffer=4, charcount;
+  char cbuff;
+  KeySym thekeysym;
+  XComposeStatus statinout;
 
   if(accis_nodisplay){ *value=0; return 0; }
   if(accis_eye3d == 1){ *value=0; return 0; }
@@ -527,7 +531,10 @@ int eye3d_(value)
     if(XPending(accis_display)){
       XPeekEvent(accis_display,&event);
       if(event.type==KeyPress){ /* Halt continuous running on keypress */
-	*value=(int)XLookupKeysym(&(event.xkey),0);
+	/**value=(int)XLookupKeysym(&(event.xkey),0);*/
+	charcount= XLookupString(&(event.xkey),&cbuff,bytesbuffer
+				 ,&thekeysym,&statinout);
+	*value=(int)thekeysym;
 	accis_eye3d=9999;
       }else{ /* Discard other events */
 	XNextEvent(accis_display,&event);
@@ -550,7 +557,10 @@ int eye3d_(value)
   }while(event.type != ButtonPress && event.type != KeyPress);
   /* Recognize KeyPress as sign to exit.*/
   if(event.type == KeyPress) {
-    *value=(int)XLookupKeysym(&(event.xkey),0);
+    /* old approach: *value=(int)XLookupKeysym(&(event.xkey),0);*/
+    charcount= XLookupString(&(event.xkey),&cbuff,bytesbuffer
+			     ,&thekeysym,&statinout);
+    *value=(int)thekeysym;
     if(XPending(accis_display)) XPeekEvent(accis_display,&event);
     /*    printf("Got value: %d, Event.type: %d, Pending? %d\n"
 	   ,*value,event.type,XPending(accis_display));

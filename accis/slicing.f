@@ -239,15 +239,16 @@ c Use this scaling until explicitly reset.
             call axproj(igetcorner())
          endif
       endif
-      
-      write(form1,'(''Dimension '',i1,'' Plane'',i4)')idfix,n1
-      if(ltellslice)call drwstr(.1,.02,form1)
+
+      if(ltellslice)then
+         call drwstr(.1,.02
+     $        ,ax3chars(idfix)(1:lentrim(ax3chars(idfix))))
+         call fwrite(xn(ixnp(idfix)+n1),iwidth,2,form1)
+         call drcstr(' '//form1(1:iwidth+1))
+      endif
       call termchar(ax3chars(idp1))
       call termchar(ax3chars(idp2))
       call ax3labels(ax3chars(idp1),ax3chars(idp2),utitle)
-!      call iwrite(idp1,iwidth,cxlab)
-!      call iwrite(idp2,iwidth,cylab)
-!      call ax3labels('axis-'//cxlab,'axis-'//cylab,utitle)
 
 c Projected contouring.
       if(mod(icontour,4).ne.0.and.nf1.gt.if1.and.nf2.gt.if2)then
@@ -439,6 +440,10 @@ c k
          if1=min(if1+1,iuds(idp1))
          nf1=max(if1,nf1)
          if(nf1.eq.if1)call linevecdoc(idfix,n1,1,nf1)
+c      elseif(isw.eq.ichar('['))then
+c         iclipping=1
+      else
+c         write(*,*)char(isw)
       endif
       if(isw.eq.ichar('c'))icontour=mod(icontour+1,8)
       if(isw.eq.ichar('w'))iweb=mod(iweb+1,4)
@@ -1299,3 +1304,34 @@ c green yellow white
 c      call accisgradinit(-32000,0,-65000,97000,150000,65500)
 c red orange white
 c      call accisgradinit(0,-32000,-65000,150000,97000,65500)
+c*****************************************************************
+      subroutine ixnpconstruct(ndims,imax,iuds,xyzmesh,ixnp,xn)
+! Construct the mesh position vector from given arguments.
+c Input ndims, imax, iuds, xyzmesh. Output:
+c The node positions are given by vectors laminated into xn, whose
+c starts for dimensions id are at ixnp(id)+1. 
+c So the vector of positions for dimension id is 
+c   ixnp(id)+1 to ixnp(id)+iuds(id) [and ixnp(id+1)-ixnp(id)>=iuds(id)]
+      integer ndims,iuds(ndims)
+      real xyzmesh(imax,ndims)
+      integer ixnp(ndims+1)
+      real xn(*)
+      ic=0
+      do i=1,ndims
+         ixnp(i)=ic
+         do j=1,iuds(i)
+            ic=ic+1
+            xn(ic)=xyzmesh(j,i)
+         enddo
+      enddo
+      ixnp(ndims+1)=ic+1
+      end
+c******************************************************************
+      subroutine setax3chars(a,b,c)
+      character*(*) a,b,c
+      include 'world3.h'
+      ax3chars(1)=a
+      ax3chars(2)=b
+      ax3chars(3)=c
+      end
+      

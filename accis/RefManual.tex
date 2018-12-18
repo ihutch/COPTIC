@@ -541,7 +541,8 @@ the contour plot arrows representing the projection of the vector
 field svec(ifullv,3), which has the same indexing and positions as u,
 and three vector components. The work array vp(nw,nw,2) must be
 provided.  The last two arguments may be dummy in the call if
-abs(ifix)$<$4.
+abs(ifix)$<$4. More complicated ifix switches are in its higher bits.
+Consult slicing.f for details.
 
 \iftth \special{html:<a href="slicetest.f"><img align="right"
 src="sgcont.jpg" width="300"></a>}\fi
@@ -558,6 +559,13 @@ must then be provided.
 IXNPCREATE(Nx,Ny,Nz,xposv,yposv,zposv,ixnpv,xnv) Is a utility that
 creates the vectors ixnpv,xnv, needed for slicegweb and slicegcont
 from three coordinate arrays: xposv,yposv,zposv, of lengths Nx,Ny,Nz.
+
+IXNPCONSTRUCT(ndims,imax,iuds,xyzmesha,ixnpv,xnv) Is a general
+dimensioned form of the same thing but uses an array
+xyzmesha(imax,ndims) instead of separate position vectors.
+
+SETAX3CHARS(ca,cb,cc) Set the default labels for 3 axes of 3-D data
+from character variables.
 
 \section{Primitives}
 
@@ -590,7 +598,7 @@ FITRANGE(min,max,itics,ipow,fac10,delta,first,xlast) Fit a maximum of
 itics ticks to range (min, max). Decide a scaling factor 10$^{\rm
 ipow}$=fac10 and a sensible (scaled) delta between tics. First (xlast)
 is integer multiple of delta lying closest to min (max) outside the
-range (min,max). So fac10*(first+i*delta) are the tick values.
+range (min,max). So (first+i*delta) are the tick values.
 
 MINMAX(xv,isize,min,max) Find min and max of vector of size isize.
 
