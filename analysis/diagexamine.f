@@ -8,6 +8,7 @@
 ! 1-d plotting arrays.
 !      real z1d(na_m),u1d(na_m),dene1d(na_m),deni1d(na_m)
       real zminmax(2)
+!      real sliceclip(4)
       character*20 mname(ndiagmax+1)
       integer nfiles,nmodes
       parameter (nfiles=2000,nmodes=11)
@@ -169,7 +170,7 @@
          rphimodes=real(phimodes)
          iphimodes=imag(phimodes)
          if(k.eq.ndiags)label='!Af!@ '
-         iclipped=10
+         iclipped=nint(10/(xn(2)-xn(1))) ! Go 10 Debye lengths.
          ix1=max((iuds(1))/2+1-iclipped,1)
          ix2=min((iuds(1))/2+iclipped,iuds(1))
 
@@ -182,10 +183,10 @@
          call setax3chars('time','x','mode')
 
          if(.false.)then
-         call webinteract3(time,xn(ixnp(1)+ix1),rphimodes(1,ix1,1)
+            call webinteract3(time,xn(ixnp(1)+ix1),rphimodes(1,ix1,1)
      $        ,nfiles,ifile,na_m,ix2-ix1+1,nmodes,'time','x'
      $        ,label(1:lentrim(label)+1) //'r')
-         call webinteract3(time,xn(ixnp(1)+ix1),iphimodes(1,ix1,1)
+            call webinteract3(time,xn(ixnp(1)+ix1),iphimodes(1,ix1,1)
      $        ,nfiles,ifile,na_m,ix2-ix1+1,nmodes,'time','x'
      $        ,label(1:lentrim(label)+1) //'i')
          endif
@@ -193,7 +194,14 @@
          call projectphi(nfiles,na_m,nmodes,ifile,ix1,ix2
      $     ,phimodes,rphimodes,theta)
          call sliceGweb(ifullphi,iudsphi,rphimodes(1,ix1,1),na_m,zp,
-     $              ixnps,xns,3+64,'Amplitude' ,dum,dum)   
+     $              ixnps,xns,3+64,'Amplitude',dum,dum)   
+
+         dx=xn(2)-xn(1)
+         call normphimodes(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
+     $        rphimodes,iphimodes)
+
+         call sliceGweb(ifullphi,iudsphi,iphimodes(1,ix1,1),na_m,zp,
+     $              ixnps,xns,3+64,'Normalized',dum,dum)   
 
          call pltinit(0.,time(ifile),-1.6,1.6)
          call axis
@@ -1272,5 +1280,23 @@ c$$$         = 20 input error returned by lower level routine
             enddo
          enddo
       enddo
+      end
+!***********************************************************************
+      subroutine normphimodes(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
+     $        rphimodes,iphimodes)
+! Normalize rphimodes into iphimodes by dividing by the x-derivative of
+! mode zero.
+      real rphimodes(nfiles,na_m,nmodes),iphimodes(nfiles,na_m,nmodes)
+      real dipmax
+      dipmax=30.
 
+      do ix=ix1,ix2
+         do j=1,ifile
+            dphix=(rphimodes(j,ix+1,1)-rphimodes(j,ix-1,1))/(2.*dx)
+            do m=1,nmodes
+               iphimodes(j,ix,m)=rphimodes(j,ix,m)
+     $              *min(dipmax,max(1./dphix,-dipmax))
+            enddo
+         enddo
+      enddo
       end
