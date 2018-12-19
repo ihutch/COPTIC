@@ -181,28 +181,25 @@
          call ixnpcreate(iudsphi(1),iudsphi(2),iudsphi(3)
      $        ,time,xn(ixnp(1)+ix1),xmodenums,ixnps,xns)
          call setax3chars('time','x','mode')
-
-         if(.false.)then
-            call webinteract3(time,xn(ixnp(1)+ix1),rphimodes(1,ix1,1)
-     $        ,nfiles,ifile,na_m,ix2-ix1+1,nmodes,'time','x'
-     $        ,label(1:lentrim(label)+1) //'r')
-            call webinteract3(time,xn(ixnp(1)+ix1),iphimodes(1,ix1,1)
-     $        ,nfiles,ifile,na_m,ix2-ix1+1,nmodes,'time','x'
-     $        ,label(1:lentrim(label)+1) //'i')
-         endif
-
+! Project at the maximum complex argument (phase angle).
          call projectphi(nfiles,na_m,nmodes,ifile,ix1,ix2
      $     ,phimodes,rphimodes,theta)
+         dx=xn(2)-xn(1)
+! Install a shiftmode template in the leading part of the array.
+         call leadmode(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
+     $        rphimodes,iphimodes)
+! Plot modes
          call sliceGweb(ifullphi,iudsphi,rphimodes(1,ix1,1),na_m,zp,
      $              ixnps,xns,3+64,'Amplitude',dum,dum)   
 
-         dx=xn(2)-xn(1)
+
          call normphimodes(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
      $        rphimodes,iphimodes)
-
          call sliceGweb(ifullphi,iudsphi,iphimodes(1,ix1,1),na_m,zp,
      $              ixnps,xns,3+64,'Normalized',dum,dum)   
 
+! Plot phase angle.
+         if(.false.)then
          call pltinit(0.,time(ifile),-1.6,1.6)
          call axis
          call axlabels('time','theta for m=1-4')
@@ -211,6 +208,7 @@
             call polyline(time,theta(1,m),ifile)
          enddo
          call pltend()
+         endif
 
       endif
 
@@ -1288,7 +1286,7 @@ c$$$         = 20 input error returned by lower level routine
 ! mode zero.
       real rphimodes(nfiles,na_m,nmodes),iphimodes(nfiles,na_m,nmodes)
       real dipmax
-      dipmax=30.
+      dipmax=200.
 
       do ix=ix1,ix2
          do j=1,ifile
@@ -1299,4 +1297,33 @@ c$$$         = 20 input error returned by lower level routine
             enddo
          enddo
       enddo
+      end
+!**********************************************************************
+      subroutine leadmode(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
+     $        rphimodes,iphimodes)
+! Substitute a shiftmode shape for the first nlead times of the modes
+! to give a template for comparisons.
+      real rphimodes(nfiles,na_m,nmodes)
+      real iphimodes(*)   ! Just using for storage here.
+      parameter (rfrac=0.5)
+      
+      nlead=min(10,nfiles/2)
+      nx=ix2-ix1+1
+      do ix=ix1,ix2
+         iphimodes(ix)=0.
+         do n=1,nlead
+            dphix=(rphimodes(n,ix+1,1)-rphimodes(n,ix-1,1))/(2.*dx)
+            iphimodes(ix)=iphimodes(ix)+dphix
+         enddo
+      enddo
+      call minmax(iphimodes(ix1),nx,pmin,pmax)
+      do m=1,nmodes
+         call minmax2(rphimodes(1,ix1,m),nfiles,ifile,nx,rmin,rmax)
+         do n=1,nlead
+            do ix=ix1,ix2
+               rphimodes(n,ix,m)=iphimodes(ix)*rfrac*rmax/pmax
+            enddo
+         enddo
+      enddo
+
       end
