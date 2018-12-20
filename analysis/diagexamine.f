@@ -192,14 +192,14 @@
          call sliceGweb(ifullphi,iudsphi,rphimodes(1,ix1,1),na_m,zp,
      $              ixnps,xns,3+64,'Amplitude',dum,dum)   
 
-
+         if(.false.)then
+! Plot modes normalized to shift mode. Obsolete
          call normphimodes(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
      $        rphimodes,iphimodes)
          call sliceGweb(ifullphi,iudsphi,iphimodes(1,ix1,1),na_m,zp,
      $              ixnps,xns,3+64,'Normalized',dum,dum)   
 
 ! Plot phase angle.
-         if(.false.)then
          call pltinit(0.,time(ifile),-1.6,1.6)
          call axis
          call axlabels('time','theta for m=1-4')
