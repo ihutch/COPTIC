@@ -198,9 +198,11 @@
      $        rphimodes,iphimodes)
          call sliceGweb(ifullphi,iudsphi,iphimodes(1,ix1,1),na_m,zp,
      $              ixnps,xns,3+64,'Normalized',dum,dum)   
+         endif
 
 ! Plot phase angle.
-         call pltinit(0.,time(ifile),-1.6,1.6)
+         call minmax2(theta,nfiles,ifile,4,tmin,tmax)
+         call pltinit(0.,time(ifile),tmin,tmax)
          call axis
          call axlabels('time','theta for m=1-4')
          do m=1,4
@@ -208,7 +210,7 @@
             call polyline(time,theta(1,m),ifile)
          enddo
          call pltend()
-         endif
+
 
       endif
 
@@ -1254,6 +1256,8 @@ c$$$         = 20 input error returned by lower level routine
       complex phimodes(nfiles,na_m,nmodes)
       real rphimodes(nfiles,na_m,nmodes)
       real theta(nfiles,nmodes)
+      parameter (nmodesmax=40,pi=3.1415926)
+      real thetaprevious(nmodesmax)
 
 !      write(*,*)nfiles,na_m,nmodes,ifile,ix1,ix2
       do i=1,ifile
@@ -1264,18 +1268,29 @@ c$$$         = 20 input error returned by lower level routine
             Sii=0.
             do ix=ix1,ix2
                pr=real(phimodes(i,ix,m))
-               pi=imag(phimodes(i,ix,m))
+               pg=imag(phimodes(i,ix,m))
                Srr=Srr+pr**2
-               Sri=Sri+pr*pi
-               Sii=Sii+pi**2
+               Sri=Sri+pr*pg
+               Sii=Sii+pg**2
             enddo
             theta(i,m)=0.5*atan2(Sri,Srr-Sii)
+! Correct the angle to prevent jumps.
+            dtheta=theta(i,m)-thetaprevious(m)
+            if(i.ne.1.and.abs(dtheta).gt.1.)then
+! This appears to be a jump. Choose the opposite angle.
+               if(dtheta.gt.1.)theta(i,m)=theta(i,m)-pi
+               if(dtheta.lt.-1.)theta(i,m)=theta(i,m)+pi
+            endif
+! Prevent angle from becoming too great by 2*pi corrections.
+            if(theta(i,m).gt.pi*3./2.)theta(i,m)=theta(i,m)-2.*pi
+            if(theta(i,m).lt.-pi*3./2.)theta(i,m)=theta(i,m)+2.*pi
             ct=cos(theta(i,m))
             st=sin(theta(i,m))
             do ix=ix1,ix2
                rphimodes(i,ix,m)=ct*real(phimodes(i,ix,m))
      $              +st*imag(phimodes(i,ix,m))
             enddo
+            thetaprevious(m)=theta(i,m)
          enddo
       enddo
       end
