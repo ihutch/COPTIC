@@ -181,16 +181,26 @@
          call ixnpcreate(iudsphi(1),iudsphi(2),iudsphi(3)
      $        ,time,xn(ixnp(1)+ix1),xmodenums,ixnps,xns)
          call setax3chars('time','x','mode')
+
 ! Project at the maximum complex argument (phase angle).
-         call projectphi(nfiles,na_m,nmodes,ifile,ix1,ix2
+         call projectphi2(nfiles,na_m,nmodes,ifile,ix1,ix2
      $     ,phimodes,rphimodes,theta)
          dx=xn(2)-xn(1)
+! Choose to plot either real (for traveling) or projected modes
+         if(abs(theta(ifile,2)).gt.6.or.abs(theta(ifile,3)).gt.6
+     $        .or.abs(theta(ifile,4)).gt.6)then ! Traveling modes
+            rphimodes=real(phimodes)
 ! Install a shiftmode template in the leading part of the array.
-         call leadmode(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
-     $        rphimodes,iphimodes)
-! Plot modes
-         call sliceGweb(ifullphi,iudsphi,rphimodes(1,ix1,1),na_m,zp,
-     $              ixnps,xns,3+64,'Amplitude',dum,dum)   
+            call leadmode(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
+     $           rphimodes,xcentroids)
+            call sliceGweb(ifullphi,iudsphi,rphimodes(1,ix1,1),na_m,zp,
+     $              ixnps,xns,3+64,'Real  ',dum,dum)   
+         else     ! Standing modes do projected amplitudes
+            call leadmode(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
+     $           rphimodes,xcentroids)
+            call sliceGweb(ifullphi,iudsphi,rphimodes(1,ix1,1),na_m,zp,
+     $              ixnps,xns,3+64,'Amplitude  ',dum,dum)   
+         endif
 
          if(.false.)then
 ! Plot modes normalized to shift mode. Obsolete
@@ -1273,17 +1283,21 @@ c$$$         = 20 input error returned by lower level routine
                Sri=Sri+pr*pg
                Sii=Sii+pg**2
             enddo
-            theta(i,m)=0.5*atan2(Sri,Srr-Sii)
+            thetathis=0.5*atan2(Sri,Srr-Sii)
+            if(i.eq.1)then
+               theta(i,m)=thetathis
+            else
 ! Correct the angle to prevent jumps.
-            dtheta=theta(i,m)-thetaprevious(m)
-            if(i.ne.1.and.abs(dtheta).gt.1.)then
-! This appears to be a jump. Choose the opposite angle.
-               if(dtheta.gt.1.)theta(i,m)=theta(i,m)-pi
-               if(dtheta.lt.-1.)theta(i,m)=theta(i,m)+pi
+               dtheta=thetathis-
+     $           (thetaprevious(m)-pi*nint(thetaprevious(m)/pi))
+! If this appears to be a jump. Choose the opposite increment angle.
+               if(dtheta.gt.pi*.9)dtheta=dtheta-pi
+               if(dtheta.lt.-pi*.9)dtheta=dtheta+pi
+               theta(i,m)=thetaprevious(m)+dtheta
             endif
 ! Prevent angle from becoming too great by 2*pi corrections.
-            if(theta(i,m).gt.pi*3./2.)theta(i,m)=theta(i,m)-2.*pi
-            if(theta(i,m).lt.-pi*3./2.)theta(i,m)=theta(i,m)+2.*pi
+!            if(theta(i,m).gt.pi*3./2.)theta(i,m)=theta(i,m)-2.*pi
+!            if(theta(i,m).lt.-pi*3./2.)theta(i,m)=theta(i,m)+2.*pi
             ct=cos(theta(i,m))
             st=sin(theta(i,m))
             do ix=ix1,ix2
@@ -1291,6 +1305,43 @@ c$$$         = 20 input error returned by lower level routine
      $              +st*imag(phimodes(i,ix,m))
             enddo
             thetaprevious(m)=theta(i,m)
+         enddo
+      enddo
+      end
+!***********************************************************************
+      subroutine projectphi2(nfiles,na_m,nmodes,ifile,ix1,ix2
+     $     ,phimodes,rphimodes,theta)
+! Combine real and imaginary parts: choose a phase angle theta such
+! that averaged over time we maximize the mode amplitude squared averaged
+! over all relevant x. theta must be the same for all x AND t.
+      complex phimodes(nfiles,na_m,nmodes)
+      real rphimodes(nfiles,na_m,nmodes)
+      real theta(nfiles,nmodes)
+
+!      write(*,*)nfiles,na_m,nmodes,ifile,ix1,ix2
+      thetathis=0.
+      do m=1,nmodes
+         Srr=0.
+         Sri=0.
+         Sii=0.
+         do i=1,ifile
+            if(i.gt.1)theta(i-1,m)=thetathis
+            do ix=ix1,ix2
+               pr=real(phimodes(i,ix,m))
+               pg=imag(phimodes(i,ix,m))
+               Srr=Srr+pr**2
+               Sri=Sri+pr*pg
+               Sii=Sii+pg**2
+            enddo
+         enddo
+         thetathis=0.5*atan2(Sri,Srr-Sii)
+         ct=cos(thetathis)
+         st=sin(thetathis)
+         do i=1,ifile
+            do ix=ix1,ix2
+               rphimodes(i,ix,m)=ct*real(phimodes(i,ix,m))
+     $              +st*imag(phimodes(i,ix,m))
+            enddo
          enddo
       enddo
       end
@@ -1315,28 +1366,28 @@ c$$$         = 20 input error returned by lower level routine
       end
 !**********************************************************************
       subroutine leadmode(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
-     $        rphimodes,iphimodes)
+     $        rphimodes,xcentroids)
 ! Substitute a shiftmode shape for the first nlead times of the modes
 ! to give a template for comparisons.
       real rphimodes(nfiles,na_m,nmodes)
-      real iphimodes(*)   ! Just using for storage here.
+      real xcentroids(*)   ! Just using for storage here.
       parameter (rfrac=0.5)
       
       nlead=min(10,nfiles/2)
       nx=ix2-ix1+1
       do ix=ix1,ix2
-         iphimodes(ix)=0.
+         xcentroids(ix)=0.
          do n=1,nlead
             dphix=(rphimodes(n,ix+1,1)-rphimodes(n,ix-1,1))/(2.*dx)
-            iphimodes(ix)=iphimodes(ix)+dphix
+            xcentroids(ix)=xcentroids(ix)+dphix
          enddo
       enddo
-      call minmax(iphimodes(ix1),nx,pmin,pmax)
+      call minmax(xcentroids(ix1),nx,pmin,pmax)
       do m=1,nmodes
          call minmax2(rphimodes(1,ix1,m),nfiles,ifile,nx,rmin,rmax)
          do n=1,nlead
             do ix=ix1,ix2
-               rphimodes(n,ix,m)=iphimodes(ix)*rfrac*rmax/pmax
+               rphimodes(n,ix,m)=xcentroids(ix)*rfrac*rmax/pmax
             enddo
          enddo
       enddo
