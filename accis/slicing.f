@@ -69,10 +69,11 @@ c Bit 2 (4)  toggle (on) plotting of svec arrows.
 c Bit 3 (8)  reinitialize.
 c Bits 4,5 (16xicontour)  set the initial icontour number 0...3
 c Bit 6 (64)  Toggle ltellslice 
-c Bit 7 (128) Return continuously. (Equivalent of d-control).
-c Bit 8 (256) Do no internal scaling initially. 
+c Bit 7 (128)  Use the first 4 values of vp on input for clipping.
+c Bit 8 (256) Do no internal scaling initially.
 c Bit 9 (512) Turn off contour labelling.
-c Bit 10 (1024) Do surface rather than web.
+
+c Bit 10 (1024) Do surface rather than web.     Not implemented.
 
       ihibyte=idfixin/256
       if(idfixin/512-1024*(idfixin/1024).ne.0)then
@@ -115,12 +116,27 @@ c Initialize
 c Bits 4,5 set icontour
          icontour=(idfixf-4*(idfixf/4))
          idfixf=idfixf/4
+c Bit 6 toggle ltellslice
          if(idfixf-2*(idfixf/2).ne.0)ltellslice=.not.ltellslice
          n1=(iuds(idfix)+1)/2
+         idfixf=idfixf/2
+c Bit 7 clipping
+         if(idfixf-2*(idfixf/2).ne.0)then
+            iclipping=1
+c Set the plotting arrays for fixed dimension idfix.
+            idp1=mod(idfix,3)+1
+            idp2=mod(idfix+1,3)+1
+            if1=max(nint(vp(1,1,1)),1)
+            nf1=max(min(nint(vp(2,1,1)),iuds(idp1)),if1)
+            if2=max(nint(vp(3,1,1)),1)
+            nf2=max(min(nint(vp(4,1,1)),iuds(idp2)),if2)
+         else
+            iclipping=0
+         endif
+c ----------------------------------------------------------
 c     Plot the surface. With scaling 1. Web color 6, axis color 7.
          jsw=1 + 256*6 + 256*256*7
          iweb=1
-         iclipping=0
          write(*,*)' ======== Slice plotting interface. Hit h for help.'
          idfinlast=idfixin
          idflast=idfix
@@ -131,12 +147,12 @@ c This gradient call needs to be after accisinit else nodisplay commands
 c are broken.
 C      call blueredgreenwhite()
       call brgwscaled(0.,colorscale)
-c Set the plotting arrays for fixed dimension idfix.
-      idp1=mod(idfix,3)+1
-      idp2=mod(idfix+1,3)+1
-      idpa(1)=idp1
-      idpa(2)=idp2
       if(iclipping.eq.0)then
+c Update the plotting arrays for fixed dimension idfix.
+         idp1=mod(idfix,3)+1
+         idp2=mod(idfix+1,3)+1
+         idpa(1)=idp1
+         idpa(2)=idp2
 c Plot the full used array.
          nf1=iuds(idp1)
          nf2=iuds(idp2)
@@ -210,6 +226,7 @@ c Old buggy setting, only works for centered cube.
                yc=.25
             endif
             zc=.2
+!            write(*,*)'xdp1,2',xdp1,xdp2,xc,yc,zc
             call setcube(xc,yc,zc,.5,.4)
          endif
 c Rescale x and y (if necessary), but not z.
@@ -367,6 +384,9 @@ c      write(*,*)'isw',isw
       if(isw.eq.65362 .and. n1.lt.iuds(idfix)) n1=n1+1
       if(isw.eq.ichar('q')) iquit=1
       if(isw.eq.ichar('a')) laspect=.not.laspect
+      if(isw.eq.ichar('x')) laspect=.false.
+      if(isw.eq.ichar('z')) laspect=.false.
+      if(isw.eq.ichar('v')) laspect=.false.
       if(isw.eq.ichar('d')) call noeye3d(0)
       if(isw.eq.ichar('s')) jsw=1 + 256*6 + 256*256*7
       if(isw.eq.ichar('t')) call togi3trunc()
@@ -754,7 +774,7 @@ c Poor man's top lighting:
 c Contour without labels, with coloring, using vector axes
 c            write(*,*)it1,ib1,it2,ib2,ifix
             if(it1-ib1.gt.0 .and. it2-ib2.gt.0)then
-c               iclhere=iclsign*icl   ! wrong here iclsign not set.
+c               iclhere=iclsign*icl   ! maybe wrong here iclsign not set.
                iclhere=icl
 c               write(*,*)iclsign,icl,iclhere
                call contourl(zp(ib1,ib2,ifix),
@@ -1053,10 +1073,13 @@ c Magnify the unit cube
 c Shrink the unit cube
          call getcube(cbx,cby,cbz,xcbc,ycbc)
          call setcube(cbx/1.05,cby/1.05,cbz/1.05,xcbc,ycbc)
+      elseif(isw.eq.ichar('v'))then
+! Set view to top for 2-d plot of slice
+         call trn32(xe,ye,ze,0.,-0.001,10.,1)
       elseif(isw.eq.ichar('h'))then
 c Help text
          write(*,*)' i/o: move eye in/out. r/e: rotate.'
-     $        ,' z/x: zoom/shrink.'
+     $        ,' z/x: zoom/shrink. v: top-view'
       endif
       if(irotating.gt.0)then
 c Get back current eye position xe1 etc.

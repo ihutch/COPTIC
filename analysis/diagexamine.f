@@ -186,21 +186,10 @@
          call projectphi2(nfiles,na_m,nmodes,ifile,ix1,ix2
      $     ,phimodes,rphimodes,theta)
          dx=xn(2)-xn(1)
-! Choose to plot either real (for traveling) or projected modes
-         if(abs(theta(ifile,2)).gt.6.or.abs(theta(ifile,3)).gt.6
-     $        .or.abs(theta(ifile,4)).gt.6)then ! Traveling modes
-            rphimodes=real(phimodes)
-! Install a shiftmode template in the leading part of the array.
-            call leadmode(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
+         call leadmode(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
      $           rphimodes,xcentroids)
-            call sliceGweb(ifullphi,iudsphi,rphimodes(1,ix1,1),na_m,zp,
-     $              ixnps,xns,3+64,'Real  ',dum,dum)   
-         else     ! Standing modes do projected amplitudes
-            call leadmode(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
-     $           rphimodes,xcentroids)
-            call sliceGweb(ifullphi,iudsphi,rphimodes(1,ix1,1),na_m,zp,
+         call sliceGweb(ifullphi,iudsphi,rphimodes(1,ix1,1),na_m,zp,
      $              ixnps,xns,3+64,'Amplitude  ',dum,dum)   
-         endif
 
          if(.false.)then
 ! Plot modes normalized to shift mode. Obsolete
@@ -208,8 +197,6 @@
      $        rphimodes,iphimodes)
          call sliceGweb(ifullphi,iudsphi,iphimodes(1,ix1,1),na_m,zp,
      $              ixnps,xns,3+64,'Normalized',dum,dum)   
-         endif
-
 ! Plot phase angle.
          call minmax2(theta,nfiles,ifile,4,tmin,tmax)
          call pltinit(0.,time(ifile),tmin,tmax)
@@ -220,6 +207,7 @@
             call polyline(time,theta(1,m),ifile)
          enddo
          call pltend()
+         endif
 
 
       endif
