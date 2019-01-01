@@ -1075,7 +1075,13 @@ c Shrink the unit cube
          call setcube(cbx/1.05,cby/1.05,cbz/1.05,xcbc,ycbc)
       elseif(isw.eq.ichar('v'))then
 ! Set view to top for 2-d plot of slice
-         call trn32(xe,ye,ze,0.,-0.001,10.,1)
+c Get back current eye position xe1 etc.
+         call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
+         if(abs(xe1).lt.abs(ye1))then
+            call trn32(xe,ye,ze,0.,sign(0.001,ye1),10.,1)
+         else
+            call trn32(xe,ye,ze,sign(0.001,xe1),0.,10.,1)
+         endif
       elseif(isw.eq.ichar('h'))then
 c Help text
          write(*,*)' i/o: move eye in/out. r/e: rotate.'
