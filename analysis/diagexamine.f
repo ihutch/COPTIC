@@ -48,14 +48,24 @@
       iyp=0
       dt=0.
       k=0
+      iyperr=99
 
 ! Loop over a maximum of nfiles files: 
       do ifile=1,nfiles
          call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
      $        ,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause
      $        ,linevec)
-! diagexamargs returns here when it reads a diagnostic file.
+! diagexamargs returns here when it reads a diagnostic file name.
          if(iworking.ge.0)then
+            if(iyp.eq.2.and.iyperr.eq.99)call unsavemodes(nfiles,maxfile
+     $           ,na_m,iuds(1),nmd,phimodes,time,xn,iyperr)
+            if(iyperr.eq.0)then
+! iyperr=0 tells unsaving success, =1 failure, =99 not called
+               if(nmd.ne.nmodes)stop 'nmd not equal to nmodes'
+               goto 100         ! skip succeeding file processing.
+            else
+               maxfile=ifile
+            endif
             if(zminmax(1).gt.zminmax(2))istd=0
 !-------------------------------------
 ! The first data file only, get dt and volumes data.
@@ -63,10 +73,10 @@
 !-------------------------------------
             i1=1
             ied=ndiagmax
-! Create label
+! Create label and read istep
             label=diagfilename(istrstr(diagfilename,'dia')+3
      $           :lentrim(diagfilename))
-            read(label,*)istep
+            read(label,*)istep 
             time(ifile)=dt*istep
 ! Read the file whose name we have found in the arguments.
             call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
@@ -108,8 +118,8 @@
                k=ndiags
                if(isingle.gt.0)k=isingle
                call linewrite(diagsum(1,1,1,k),linevec,dt)
-            elseif(iyp.eq.2)then
-! Fourier modes in the y direction
+            elseif(iyp.eq.2.and.iyperr.ne.0)then
+! Store Fourier modes in the y direction
                k=ndiags
                if(isingle.gt.0)k=isingle
                call fftdata(diagsum(1,1,1,k),phimodes,nfiles,ifile
@@ -138,34 +148,34 @@
             if(iyp.gt.0)goto 101
             call exit(0)      
          endif
+ 100     continue
       enddo
 !---------  End of loop over filenames ----------------------------
- 101  ifile=ifile-1             ! Final processing
+ 101  continue
+! Final processing      
       if(iyp.eq.1)then
 ! Fitting of xpos vs y kink amplitudes as fn of time.
 ! Fourier transform the xcentroids and sum low order 10 modes into xms.
-         call getmodes(iuds(2),ifile,xcentroids,nmodes,xmodes,10,xms
+         call getmodes(iuds(2),maxfile,xcentroids,nmodes,xmodes,10,xms
      $        ,xmcent)
 ! Plot the hole position and excursion.         
-         if(ldebug)call plotexcursion(ifile,time,xmean,xmax,xmin,dt)
+         if(ldebug)call plotexcursion(maxfile,time,xmean,xmax,xmin,dt)
 ! Show the wiggles and modes
          call webinteract(xn(ixnp(2)+1),time,xcentroids,na_m,iuds(2)
-     $        ,ifile,'y','time','x!dh!d      ')
-         call webinteract(xmodenums,time,xmodes,nmodes,nmodes,ifile,
+     $        ,maxfile,'y','time','x!dh!d      ')
+         call webinteract(xmodenums,time,xmodes,nmodes,nmodes,maxfile,
      $        'mode','time','Amplitude    ')
 ! Fit and plot the exponential growth.
-         call fitexp(time,xamp,ifile,work,it0,imax,A,tau,ldebug,nopause
-     $        ,'p-p amplitude')
+         call fitexp(time,xamp,maxfile,work,it0,imax,A,tau,ldebug
+     $        ,nopause,'p-p amplitude')
 ! Fit to modesum gives nearly the same answer but might be quieter.
-         call fitexp(time,xms,ifile,work,it0,imax,A,tau,ldebug,nopause
+         call fitexp(time,xms,maxfile,work,it0,imax,A,tau,ldebug,nopause
      $        ,'Mode amplitude')
 ! Get the mode centroid, averaged over the fit time.
-         call modefortime(time,xmcent,ifile,it0,imax,.not.nopause)
+         call modefortime(time,xmcent,maxfile,it0,imax,.not.nopause)
       elseif(iyp.eq.2)then
 ! Fourier analysis in y-direction and finding perturbations.
-         write(*,*)'fftdata:',ifile,iuds(2),nmodes
-!         write(*,'(10f8.3)')((1.e4*phimodes(j,iuds(2)/2,i),i=1,5),j=1,5)
-!         write(*,'(10f6.1)')(time(i),i=1,ifile)
+         write(*,*)'fftdata:',maxfile,iuds(1),nmodes
          label=mname(k)(1:lentrim(mname(k)))
          rphimodes=real(phimodes)
          iphimodes=imag(phimodes)
@@ -173,41 +183,49 @@
          iclipped=nint(10/(xn(2)-xn(1))) ! Go 10 Debye lengths.
          ix1=max((iuds(1))/2+1-iclipped,1)
          ix2=min((iuds(1))/2+iclipped,iuds(1))
+! If we created a new phimodes array, save it.
+         if(iyperr.eq.1)call savemodes(nfiles,maxfile,ifull(1),iuds(1)
+     $        ,nmodes,phimodes,time,xn)
+
 
 ! Slicing call
-         iudsphi(1)=ifile
+         iudsphi(1)=maxfile
          iudsphi(2)=ix2-ix1+1
          iudsphi(3)=nmodes
          call ixnpcreate(iudsphi(1),iudsphi(2),iudsphi(3)
      $        ,time,xn(ixnp(1)+ix1),xmodenums,ixnps,xns)
          call setax3chars('time','x','mode')
-
+         
 ! Project at the maximum complex argument (phase angle).
-         call projectphi2(nfiles,na_m,nmodes,ifile,ix1,ix2
+         call projectphi2(nfiles,na_m,nmodes,maxfile,ix1,ix2
      $     ,phimodes,rphimodes,theta)
          dx=xn(2)-xn(1)
-         call leadmode(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
+         call leadmode(nfiles,na_m,nmodes,maxfile,ix1,ix2,dx,
      $           rphimodes,xcentroids)
+! Testing verification of correct recall.
+!         do i=1,4
+!            write(*,'(6g12.2)')(phimodes(i,j,2),j=1,3)
+!         enddo
          call sliceGweb(ifullphi,iudsphi,rphimodes(1,ix1,1),na_m,zp,
      $              ixnps,xns,3+64,'Amplitude  ',dum,dum)   
 
-         if(.false.)then
-! Plot modes normalized to shift mode. Obsolete
-         call normphimodes(nfiles,na_m,nmodes,ifile,ix1,ix2,dx,
-     $        rphimodes,iphimodes)
-         call sliceGweb(ifullphi,iudsphi,iphimodes(1,ix1,1),na_m,zp,
-     $              ixnps,xns,3+64,'Normalized',dum,dum)   
-! Plot phase angle.
-         call minmax2(theta,nfiles,ifile,4,tmin,tmax)
-         call pltinit(0.,time(ifile),tmin,tmax)
-         call axis
-         call axlabels('time','theta for m=1-4')
-         do m=1,4
-            call color(m) 
-            call polyline(time,theta(1,m),ifile)
-         enddo
-         call pltend()
-         endif
+c$$$         if(.false.)then
+c$$$! Plot modes normalized to shift mode. Obsolete
+c$$$         call normphimodes(nfiles,na_m,nmodes,maxfile,ix1,ix2,dx,
+c$$$     $        rphimodes,iphimodes)
+c$$$         call sliceGweb(ifullphi,iudsphi,iphimodes(1,ix1,1),na_m,zp,
+c$$$     $              ixnps,xns,3+64,'Normalized',dum,dum)   
+c$$$! Plot phase angle.
+c$$$         call minmax2(theta,nfiles,maxfile,4,tmin,tmax)
+c$$$         call pltinit(0.,time(maxfile),tmin,tmax)
+c$$$         call axis
+c$$$         call axlabels('time','theta for m=1-4')
+c$$$         do m=1,4
+c$$$            call color(m) 
+c$$$            call polyline(time,theta(1,m),maxfile)
+c$$$         enddo
+c$$$         call pltend()
+c$$$         endif
 
 
       endif
@@ -333,7 +351,8 @@
       write(*,301)' -d   set single diagnostic to be examined [',isingle
       write(*,301)' -a   set dimension number for ave profile [',i1d
       write(*,301)' -yp  if=1 get posn of hole as fn of y     [',iyp
-      write(*,301)'      if=2 fourier analyse in y direction   '
+      write(*,301)'      if=2 fourier analyse in y direction '//
+     $     '(tries to read savedmodes.dat)'
       write(*,301)' -o   write out the profiles               [',iwr
       write(*,301)' -f   plot potential profile (if -p given) [',ipp
       write(*,301)' -u   plot un-normalized diagnostics       [',iunp
@@ -1379,5 +1398,48 @@ c$$$         = 20 input error returned by lower level routine
             enddo
          enddo
       enddo
-
+      end
+c********************************************************************
+      subroutine savemodes(nff,nuf,nfx,nux,nmodes,phimodes,time,xn)
+! write to file the phimodes we have found
+      integer nff,nuf,nfx,nux,nmodes
+      complex phimodes(nff,nfx,nmodes)
+      real time(nff),xn(nfx)
+      character*30 string
+      string='1 saved complex phimodes'
+      open(8,file='savedmodes.dat',status='new',form='unformatted')
+      write(8)string
+      write(8)nuf,nux,nmodes
+!      write(*,*)nuf,nux,nmodes,nff,nfx
+      write(8)(((phimodes(i,j,m),i=1,nuf),j=1,nux),m=1,nmodes)
+      write(8)(time(i),i=1,nuf)
+      write(8)(xn(j),j=1,nux)
+      close(8)
+!      write(*,*)'Wrote phimode(10,5,2)',phimodes(10,5,2)
+      end
+c********************************************************************
+      subroutine unsavemodes(nff,nuf,nfx,nux,nmodes,phimodes,time,xn
+     $     ,ierr)
+! read from file the phimodes saved.
+! on exit ierr =0 if success, =1 if saved data unavailable.
+      integer nff,nuf,nfx,nux,nmodes,ierr
+      complex phimodes(nff,nfx,nmodes)
+      real time(nff),xn(nfx)
+      character*30 string
+      ierr=0
+      open(9,file='savedmodes.dat',status='old',form='unformatted'
+     $     ,err=101)
+      read(9)string
+      write(*,*)'Reading back version ',string
+      read(9)nuf,nux,nmodes
+!      write(*,*)nuf,nux,nmodes,nff,nfx
+      read(9)(((phimodes(i,j,m),i=1,nuf),j=1,nux),m=1,nmodes)
+      read(9)(time(i),i=1,nuf)
+      read(9)(xn(j),j=1,nux)
+      close(9)
+!      write(*,*)'Read phimode(10,5,2)',phimodes(10,5,2)
+      return
+ 101  continue
+      write(*,*)'No file savedmodes.dat. Creating modes'
+      ierr=1
       end
