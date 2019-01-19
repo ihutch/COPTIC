@@ -3,8 +3,8 @@
 !      end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
       subroutine fftsolve3d(M,N,O,inout,xL,yL,zL)
-! Solve the poisson equation by fourier transforms for a periodic 2D domain
-! of lengths xL, yL. The matrix is complex*8 inout(M,N) entirely filled.
+! Solve the poisson equation by fourier transforms for a periodic 3D domain
+! of lengths xL, yL, zL. The matrix is complex*8 inout(M,N,O) entirely filled.
 ! \nabla^2\phi = -rho/epsilon0
 ! On input it contains rho/epsilon0. On output it contains \phi.
       include 'fftw3.f'

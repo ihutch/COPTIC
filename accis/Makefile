@@ -236,14 +236,17 @@ interface.f90 : convert
 	@for file in $(root_files); do rm $${file}.f90; done 
 
 # Synchronization of versions.
-sync : syncsource synccoptic syncsceptic
+sync : gitcommit syncsource synccoptic syncsceptic
+
+gitcommit :
+	if [ -n "`git status | grep nothing`" ] ; then \
+ git push; else echo "GIT COMMIT CHANGES FIRST"; git status ; exit 1 ; fi
 
 syncsilas : lib$(ACCISDRV).a RefManual.html
 	rsync -u -e ssh  --copy-links -v *.h *.f *.c RefManual.* *.png Makefile silas:~/accis/
 	date > syncsilas
 
 syncsource : lib$(ACCISDRV).a RefManual.html
-	@echo '!!!Do not forget to git push (in accis) before syncsource!!!'
 	cd ~/src/accis/ ; git fetch origin; git reset --hard origin/master
 	date > syncsource
 

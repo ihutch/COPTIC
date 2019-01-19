@@ -37,7 +37,9 @@ c 2.General call. x,y not used since last arg zero.
        iconsw=0
 c Test of coloring inside contours:
 c       iconsw=0+65536*200
-       call contourl(z,ppath,nx,nx,ny,cl,snl,x,y,iconsw)
+c       call contourl(z,ppath,nx,nx,ny,cl,snl,x,y,iconsw)
+       cl(1)=nl
+       call contourl(z,ppath,nx,nx,ny,cl,0,x,y,iconsw)
 c How to draw suitably scaled axes if desired:
        call scalewn(x(1,1),x(nx,1),y(1,1),y(1,ny),.false.,.false.)
        call axis

@@ -263,9 +263,8 @@ c Use this scaling until explicitly reset.
          call fwrite(xn(ixnp(idfix)+n1),iwidth,2,form1)
          call drcstr(' '//form1(1:iwidth+1))
       endif
-      call termchar(ax3chars(idp1))
-      call termchar(ax3chars(idp2))
-      call ax3labels(ax3chars(idp1),ax3chars(idp2),utitle)
+      call ax3labels(ax3chars(idp1)(1:lentrim(ax3chars(idp1)))
+     $     ,ax3chars(idp2)(1:lentrim(ax3chars(idp1))),utitle)
 
 c Projected contouring.
       if(mod(icontour,4).ne.0.and.nf1.gt.if1.and.nf2.gt.if2)then

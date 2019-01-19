@@ -46,7 +46,7 @@ all: $(TARGETS)
 dummyreduce.o : ${COPTIC_ROOT}/${SRC}/dummyreduce.f
 	$(G77) -c ${COPTIC_ROOT}/${SRC}/dummyreduce.f
 
-% : %.f  makefile examdecl.f $(ACCISLIB) dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(HEADERS) libvtkwrite.a libfftpack5.1.a
+% : %.f  makefile modesaving.f examdecl.f $(ACCISLIB) dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(HEADERS) libvtkwrite.a libfftpack5.1.a
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(LIBRARIES)
 
 # Don't recompile accis every time the makefile is changed.

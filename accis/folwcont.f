@@ -120,16 +120,8 @@ c Decide labels. Start assuming the label is every contour.
          cyc=1
  201     continue
          if(abs(xlast-x1st)/(cyc*xtic).gt.10)then
-c If there would be more than 10 labels. Too many. Find the unit ixtic
-            al10=alog10(xtic)
-            ixtic=nint(10.**(al10-nint(al10-.5)))
-c               write(*,*)xtic,xfac,al10,al10-nint(al10-.5),ixtic
-            if(ixtic.eq.4)then
-c If ixtic.eq.4, then increase xtic unit to 5.
-               xtic=1.25*xtic
-               goto 201
-            endif
-c Otherwise, increase the number of contours per label cycle.
+c If there would be more than 10 labels. Too many.
+c Increase the number of contours per label cycle.
             if(cyc.eq.4)then
                cyc=5
             else
@@ -138,7 +130,6 @@ c Otherwise, increase the number of contours per label cycle.
             goto 201
          endif
          in=int((xlast-x1st)/xtic)
-c            write(*,*)xfac,x1st,xtic,cyc
       else
          in=abs(nc)
          cyc=1+in/8
@@ -260,7 +251,8 @@ c Contour drawing
             cdel=xtic
          endif
          ic=ici
-         if((mod(i,cyc).eq.0).and.labels)then
+         if(labels.and.(mod(nint(cv/xtic),cyc).eq.0))then
+c         if((mod(i,cyc).eq.0).and.labels)then
             ipoint=max(point,1-min(ifix(log10(cdel)+1.e-4),2))
             if(ipoint.gt.8)then
                write(str2,'(g13.6)')cv
