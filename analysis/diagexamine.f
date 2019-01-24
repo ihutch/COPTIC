@@ -69,20 +69,20 @@
             endif
             if(zminmax(1).gt.zminmax(2))istd=0
 !-------------------------------------
-! The first data file only, get dt and volumes data.
-            if(ifile.le.1) call getrundata(dt,istd,ndiags,ldebug)
-!-------------------------------------
             i1=1
             ied=ndiagmax
 ! Create label and read istep
             label=diagfilename(istrstr(diagfilename,'dia')+3
      $           :lentrim(diagfilename))
             read(label,*)istep 
-            time(ifile)=dt*istep
 ! Read the file whose name we have found in the arguments.
             call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
             if(ierr.eq.1)stop 'Error reading diag file'
             ndiags=ied
+!-------------------------------------
+! The first data file only, get dt and volumes data.
+            if(ifile.le.1) call getrundata(dt,istd,ndiags,ldebug)
+            time(ifile)=dt*istep
 !-------------------------------------
 ! Maybe Get up to two additional quantities \phi and n for separate plotting
             call readextra(iuphi)
