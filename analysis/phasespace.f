@@ -10,7 +10,7 @@
       character*100 name
 !      character*100 string
       logical ldoc
-      real extra(nptdiagmax,ndimsmax)
+!      real extra(nptdiagmax,ndimsmax)
 ! Spatial limits bottom-top, dimensions
       real xlimit(2,ndimsmax),xnewlim(2,ndimsmax)
       real elimit(2)
@@ -252,8 +252,8 @@
                v=x_part(id+ndims,j)
                if(x.lt.xlimit(1,id).or.x.gt.xlimit(2,id))goto 12
                if(v.lt.vlimit(1,id).or.v.gt.vlimit(2,id))goto 12
-               ix=nx*(x-x1)/xdiff+1
-               iv=nv*(v-v1)/vdiff+1
+               ix=int(nx*(x-x1)/xdiff+1)
+               iv=int(nv*(v-v1)/vdiff+1)
                if(id.eq.iaxis)then
 ! Here for a particle lying within the limits.
                   nhist=nhist+1
@@ -284,6 +284,8 @@
 ! Dummies
       integer iregion
       real cij
+      data de/0./  ! silence warning
+      iused=0
 
       iLs(1)=1
       do i =1,ndims
@@ -312,7 +314,7 @@
             potential=getpotential(u,cij,iLs,x_part(2*ndims+1,j),iregion
      $           ,0)
             energy=eoverms(ispecies)*potential+v2
-            ie=1+(energy-elimit(1))/de
+            ie=int(1+(energy-elimit(1))/de)
             if(.not.(ie.gt.0.and.ie.le.ne))goto 12
             ehist(ie)=ehist(ie)+1.
             nhist=nhist+1

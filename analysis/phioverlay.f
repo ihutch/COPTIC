@@ -48,7 +48,7 @@
       do k=1,nc
          cl(k)=(first+k*delta)
       enddo
-      nc=abs(2.*phimax)/abs(delta)
+      nc=int(abs(2.*phimax)/abs(delta))
 !         write(*,*)' Phimax', phimax,' fac10',fac10
 !         write(*,*)' Contours',nc,(cl(k),k=1,nc)
       iconsw=1+64
@@ -129,7 +129,7 @@
       call pltend()
 
       call exit(0)
- 101  write(*,*)'Error writing output'
+      write(*,*)'Error writing output'
       end
 
 !*************************************************************

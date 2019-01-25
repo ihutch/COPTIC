@@ -11,7 +11,7 @@
       real plotdata(ntr,6),stepdata(ntr)
 !      real traceave(ntr)
       real traceave(ntr)
-      character*100 filename,argument,fmt
+      character*100 filename,argument
       integer iplot,iprint,ifmask,idimf,iomask,ivprn,ivtk,istep,irw
       real avefield(ndims),avepress(ndims),avepart(ndims)
       real avetotal(ndims),avecoln(ndims),avesq(ndims)
@@ -32,7 +32,7 @@
       data ifmask/1023/iomask/0/
       data idimf/3/irw/0/
       data rp/0./cv/ndims*0./
-      data ifluxget/nfget*0./
+      data ifluxget/nfget*0/
       external getfluxdenave,getfluxden,getposcoord
 
       if_species=1
@@ -233,8 +233,8 @@
                endif
             enddo
          endif
-         n1=fn1*nf_step
-         n2=fn2*nf_step
+         n1=int(fn1*nf_step)
+         n2=int(fn2*nf_step)
 !         if(mf_quant(k).ge.iplot)then
 !            write(*,*)'Plotting',k,mf_quant(k),iplot
          ipltp=sign(abs(iplot)+if_quant(k,if_species),iplot)

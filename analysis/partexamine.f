@@ -137,7 +137,7 @@
 ! Calculate the binned data.
          nfvaccum=0
          do i=1,nptdiag
-            nfvaccum=nfvaccum+px(i,1)
+            nfvaccum=nfvaccum+int(px(i,1))
          enddo
 !         write(*,*)'nfvaccum,cellvol',nfvaccum,cellvol
 ! Don't call bincalc if we read data back.         

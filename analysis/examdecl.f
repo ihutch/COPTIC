@@ -3,7 +3,8 @@
       include '../src/ndimsdecl.f'
       include '../src/meshcom.f'   
       real u(na_i,na_j,na_k),q(na_i,na_j,na_k)
-      real zp(na_m,na_m2,ndims)
+!      real zp(na_m,na_m2,ndims)
+      real zp(na_m,na_m,ndims)   ! To avoid segfaults with big arrays.
       integer ifull(ndims),iuds(ndims)
 ! Object data
       include '../src/objcom.f'

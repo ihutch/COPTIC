@@ -520,7 +520,7 @@
          if(line(1:3).eq.'2 1')then
             read(line,*)pvalues
 !            write(*,'(a,16f4.0)')'Polyline',pvalues
-            nl(il)=pvalues(16)
+            nl(il)=int(pvalues(16))
             if(nl(il).gt.np)then
                write(*,*)'Polyline ',il,' too long:',nl(il)
                nl(il)=np
@@ -532,7 +532,7 @@
          elseif(line(1:3).eq.'2 2')then
             read(line,*)pvalues
 !            write(*,'(a,16f4.0)')'Rectangle',pvalues
-            nl(il)=pvalues(16)
+            nl(il)=int(pvalues(16))
             if(nl(il).ne.5)then
                write(*,*)'Error. Rectangle has not 5 points',nl(il)
                stop

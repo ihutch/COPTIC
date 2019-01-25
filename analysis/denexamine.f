@@ -149,7 +149,7 @@
       write(*,*)'=====Error reading command line argument'
  203  continue
  301  format(a,i5)
- 302  format(a,f8.3)
+! 302  format(a,f8.3)
       write(*,301)'Usage: denexamine [switches] <denfile>'
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [ccpicgeom.dat'
