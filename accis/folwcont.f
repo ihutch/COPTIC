@@ -235,7 +235,7 @@ c                  write(*,*)c1st,clast,ngradcol
          labels=.true.
          if(ncin.lt.-988)labels=.false.
 c    stored current size earlier
-         call charsize(.01,.01)
+         call charsize(max(0.01,0.7*cw),max(0.01,0.7*ch))
 c Decide on the format of the label based on the contour range.
          point=2-min(ifix(log10(cv)),2)
       endif
@@ -255,7 +255,7 @@ c Contour drawing
 c         if((mod(i,cyc).eq.0).and.labels)then
             ipoint=max(point,1-min(ifix(log10(cdel)+1.e-4),2))
             if(ipoint.gt.8)then
-               write(str2,'(g13.6)')cv
+               write(str2,'(g12.5)')cv
 c this circumlocution to work around an f2c/powerc bug. 
                 str1=str2
                width=12

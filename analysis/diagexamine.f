@@ -27,7 +27,7 @@
 
       parameter (nxns=na_m+nfiles+nmodes+1)
       integer ixnps(4)   ! Local ixnp for 3-D plotting.
-      real xns(nxns)
+      real xns(nxns),xclip
       integer mcell,icontour
       logical lvtk,ldebug,nopause
       character*70 xtitle,ytitle,label
@@ -41,6 +41,7 @@
       data mname(ndiagmax+1)/'Density'/fluxfilename/' '/
       data linevec/-1,0,-1/    ! Default line along y.
       data ifullphi/nfiles,na_m,nmodes/
+      data xclip/10./          ! Mode plot range +-xclip
       isingle=0
       lvtk=.false.
       xleg=.75
@@ -55,7 +56,7 @@
       do ifile=1,nfiles
          call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
      $        ,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause
-     $        ,linevec)
+     $        ,linevec,xclip)
 ! diagexamargs returns here when it reads a diagnostic file name.
          if(iworking.ge.0)then
             if(iyp.eq.2.and.iyperr.eq.99)call unsavemodes(nfiles,maxfile
@@ -181,7 +182,7 @@
          rphimodes=real(phimodes)
          iphimodes=imag(phimodes)
          if(k.eq.ndiags)label='!Af!@ '
-         iclipped=nint(10/(xn(2)-xn(1))) ! Go 10 Debye lengths.
+         iclipped=nint(xclip/(xn(2)-xn(1))) ! Go xclip Debye lengths.
          ix1=max((iuds(1))/2+1-iclipped,1)
          ix2=min((iuds(1))/2+iclipped,iuds(1))
 ! If we created a new phimodes array, save it.
@@ -239,13 +240,13 @@ c$$$         endif
 !*************************************************************
       subroutine diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle
      $     ,lvtk,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause
-     $     ,linevec)
+     $     ,linevec,xclip)
 ! Read command line arguments, until a diag name is found.
 ! If we reach the end of them, return iworking=-1, otherwise return
 ! iworking= the argument we are working on.
       integer iunp,isingle,i1d
       integer mcell,icontour
-      real zminmax(2)
+      real zminmax(2),xclip
       integer linevec(3)
       character*70 xtitle,ytitle
       logical lvtk,ldebug,nopause
@@ -312,6 +313,8 @@ c$$$         endif
      $           read(argument(3:),*,err=201)mcell
             if(argument(1:3).eq.'-yp')read(argument(4:),*,err=201,end
      $           =201)iyp
+            if(argument(1:3).eq.'-xp')read(argument(4:),*,err=201,end
+     $           =201)xclip
             if(argument(1:2).eq.'-z')then
                 read(argument(3:),*,err=201)zminmax
 ! Turn on trucation if the z-range is set
@@ -352,6 +355,7 @@ c$$$         endif
       write(*,301)' -yp  if=1 get posn of hole as fn of y     [',iyp
       write(*,301)'      if=2 fourier analyse in y direction '//
      $     '(tries to read savedmodes.dat)'
+      write(*,302)' -xp<f> set x-range of mode plots          [',xclip
       write(*,301)' -o   write out the profiles               [',iwr
       write(*,301)' -f   plot potential profile (if -p given) [',ipp
       write(*,301)' -u   plot un-normalized diagnostics       [',iunp
