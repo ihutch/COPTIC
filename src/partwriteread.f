@@ -456,13 +456,13 @@
                   if(ispecies.eq.nspecies)write(*,*)
                endif
                if(ispecies.eq.1)then
-                  if(nsteps.gt.9999)then
+                  if(nsteps.gt.9999.or.nstep.gt.9999)then
                      write(argument,'(''.dia'',i5.5)')nstep
                   else
                      write(argument,'(''.dia'',i4.4)')nstep
                   endif
                else
-                  if(nsteps.gt.9999)then
+                  if(nsteps.gt.9999.or.nstep.gt.9999)then
                      write(argument,'(''.d'',i1.1,''a'',i5.5)')
      $                 ispecies,nstep
                   else
