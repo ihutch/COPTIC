@@ -14,7 +14,8 @@ c The dimensions of square working array, zp, (nw) must be larger
 c than the greatest of iuds. 
 c If zp(1,1)=0 on entry, give control help.
       integer nw
-      real zp(nw,nw)
+!      real zp(nw,nw)
+      real zp(nw*nw)
 c The node positions are given by vectors laminated into xn, whose
 c starts for dimensions id are at ixnp(id)+1. 
 c So the vector of positions for dimension id is 
@@ -171,19 +172,27 @@ c Plot the full used array.
             write(*,'(a)')'(or larger) and recompile your application.'
             return
          endif
+!         if(nf1.gt.nw.or.nf2.gt.nw)then
+!            write(*,102)nw,nf1,nf2
+! 102        format('sliceGweb WARN: may need bigger zp dimension than'
+!     $           ,i6,'^2 for',2i6)
+!         endif
       endif
       xdp1=xn(ixnp(idp1)+nf1)-xn(ixnp(idp1)+if1)
       xdp2=xn(ixnp(idp2)+nf2)-xn(ixnp(idp2)+if2)
 c      write(*,*)'nf2,if2,xdp2',nf2,if2,xdp2
-c Only works for 3-D in present implementation.
+c Only works for 3-D in present implementation. Copy to work array.
       do j=if2,nf2
          do i=if1,nf1
             if(idfix.eq.1)then
-               zp(i,j)=u(n1,i,j)
+!               zp(i,j)=u(n1,i,j)   ! zp is 2-D
+               zp((j-if2)*(nf1-if1+1)+(i-if1+1))=u(n1,i,j) ! zp 1-D
             elseif(idfix.eq.2)then
-               zp(i,j)=u(j,n1,i)
+!               zp(i,j)=u(j,n1,i)
+               zp((j-if2)*(nf1-if1+1)+(i-if1+1))=u(j,n1,i) ! zp 1-D
             elseif(idfix.eq.3)then
-               zp(i,j)=u(i,j,n1)
+!               zp(i,j)=u(i,j,n1)
+               zp((j-if2)*(nf1-if1+1)+(i-if1+1))=u(i,j,n1) ! zp 1-D
             endif
          enddo
       enddo
@@ -237,12 +246,14 @@ c         if(iclipping.ne.0)
 c This call does no internal initial z-scale setting and scale3 ought to
 c have been called in the external program:
                call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
-     $              zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw+8)
+!     $              zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw+8)
+     $             zp,nf1+1-if1,nf1+1-if1,nf2+1-if2,jsw+8)  ! zp 1-D
             else
 c This is the standard call that normally does internal scaling:
 !               write(*,*)'nf1,if1,nf2,if2',nf1,if1,nf2,if2
                call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
-     $              zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
+!     $              zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
+     $             zp,nf1+1-if1,nf1+1-if1,nf2+1-if2,jsw)  ! zp 1-D
             endif
             call color(7)
 c Use this scaling until explicitly reset.
@@ -251,7 +262,8 @@ c Use this scaling until explicitly reset.
             isw=1
             if(iweb.eq.3)isw=isw+16
             call surf3d(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2)
-     $           ,zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,isw,pp)
+!     $           ,zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,isw,pp)
+     $           ,zp,nf1+1-if1,nf1+1-if1,nf2+1-if2,isw,pp)  ! zp 1-D
             call color(7)
             call axproj(igetcorner())
          endif
@@ -264,7 +276,7 @@ c Use this scaling until explicitly reset.
          call drcstr(' '//form1(1:iwidth+1))
       endif
       call ax3labels(ax3chars(idp1)(1:lentrim(ax3chars(idp1)))
-     $     ,ax3chars(idp2)(1:lentrim(ax3chars(idp1))),utitle)
+     $     ,ax3chars(idp2)(1:lentrim(ax3chars(idp2))),utitle)
 
 c Projected contouring.
       if(mod(icontour,4).ne.0.and.nf1.gt.if1.and.nf2.gt.if2)then
@@ -299,7 +311,8 @@ c Contour with coloring, using vector axes, maybe without labelling.
          iclhere=iclsign*icl
          icsw=17
          if(iweb.gt.1.or.icontour.ge.4)icsw=icsw-16
-         call contourl(zp(if1,if2),pp,nw,
+         call contourl(zp,pp,nf1+1-if1,
+!         call contourl(zp(if1,if2),pp,nw,
      $        nf1+1-if1,nf2+1-if2,cl,iclhere,
      $        xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),icsw)
          Erange=0.
@@ -320,9 +333,8 @@ c Contour with coloring, using vector axes, maybe without labelling.
       endif
       if(iweb.eq.1.and.icontour.eq.3)then
          call hidweb(xn(ixnp(idp1)+if1),xn(ixnp(idp2)+if2),
-     $        zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
-c This was necessary when hidweb used to change jsw.
-c         jsw=0 + 256*6 + 256*256*7
+!     $        zp(if1,if2),nw,nf1+1-if1,nf2+1-if2,jsw)
+     $        zp,nf1+1-if1,nf1+1-if1,nf2+1-if2,jsw)  ! zp 1-D
       endif
 
       if(ips.ne.0)then

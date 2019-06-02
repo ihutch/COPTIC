@@ -31,7 +31,7 @@ ifeq ("$(G77)","mpif77")
   COMPILE-SWITCHES = -Wall $(OPTIMIZE) -I. -mcmodel=medium
   OPTIMIZE=-O3
 endif	
-#COMPILE-SWITCHES = -Wall   $(OPTIMIZE) -I. -g -fbounds-check
+COMPILE-SWITCHES := $(COMPILE-SWITCHES) -g -fbounds-check
 ##COMPILE-SWITCHES = -Wall -Wno-unused $(OPTIMIZE) -g -I.
 NOBOUNDS= $(COMPILE-SWITCHES) -fno-bounds-check
 NOGLOBALS= $(COMPILE-SWITCHES) -Wno-globals
@@ -56,6 +56,9 @@ ${COPTIC_ROOT}/accis/%.o : ${COPTIC_ROOT}/accis/%.f $(HEADERS)
 # Just putting the specials first ensures that the compile works.
 %.o : %.f makefile $(HEADERS)
 	$(G77)  -c $(COMPILE-SWITCHES) $(PROFILING) $*.f
+
+%.o : %.f90 makefile 
+	gfortran -c $(COMPILE-SWITCHES) $(PROFILING) $*.f90
 
 %.o : %.c makefile
 	cc -c $(PROFILING) $*.c -I.

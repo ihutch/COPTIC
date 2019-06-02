@@ -280,10 +280,13 @@ clean : cleantest
 	rm -f noscreen*
 
 help :
+	@echo
 	@echo Targets: mproper clean cleantest tests interface.f90 sync
+	@echo
+	@echo 'Additional makefile definitions. Include as $$ make <def> ...'
 	@echo Compiler: FORTRAN=gfortran
 	@echo Drivers: VECX=vecx        X11 driver
 	@echo '         VECX=vecglx	OpenGL driver'
 	@echo '         VECX=vec4014	Tektronix 4014 driver'
 	@echo '         VECX=noscreen	No Screen driver. ps output only.'
-
+	@echo LocalVersion:  ACCISPARENT=../

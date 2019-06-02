@@ -56,13 +56,15 @@
       do ifile=1,nfiles
          call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
      $        ,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause
-     $        ,linevec,xclip)
+     $        ,linevec,xclip,nfiles)
 ! diagexamargs returns here when it reads a diagnostic file name.
          if(iworking.ge.0)then
             if(iyp.eq.2.and.iyperr.eq.99)call unsavemodes(nfiles,maxfile
      $           ,na_m,iuds(1),nmodes,nmd,phimodes,time,xn,iyperr)
             if(iyperr.eq.0)then
 ! iyperr=0 tells unsaving success, =1 failure, =99 not called
+               k=isingle
+               if(maxfile.gt.nfiles)stop 'maxfile>nfiles'
                if(nmd.ne.nmodes)stop 'nmd not equal to nmodes'
                goto 100         ! skip succeeding file processing.
             else
@@ -240,7 +242,7 @@ c$$$         endif
 !*************************************************************
       subroutine diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle
      $     ,lvtk,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause
-     $     ,linevec,xclip)
+     $     ,linevec,xclip,nfiles)
 ! Read command line arguments, until a diag name is found.
 ! If we reach the end of them, return iworking=-1, otherwise return
 ! iworking= the argument we are working on.
@@ -268,6 +270,11 @@ c$$$         endif
 !      write(*,*)'diagexamargs',iworking,iargc()
 ! Deal with arguments
       if(iargc().eq.0) goto 201
+      if(iargc().gt.nfiles+2)then
+         write(*,*)'Too many arguments, reduce number of files'
+         write(*,*)'or recompile with nfiles exceeding',iargc()
+         stop
+      endif
       do i=iworking+1,iargc()
          iworking=i
          call getarg(i,argument)
