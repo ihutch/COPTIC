@@ -140,12 +140,17 @@
          ierr=ierr+16
       endif
       goto 103
- 102  write(*,*)'=========== No dtprec data in partfile.========='
+ 102  write(*,*)'=========== Partread Failed reading x_part ========='
+      write(*,*)'nspecies,idtp,iocparta'
+     $     ,nspecies,idtp,iocparta(nspecies),i,j
       ierr=2
- 104  write(*,*)'=========== No Bfield etc. in partfile.========='
+      return
+ 104  write(*,*)'=========== Partread Failed reading Bt etc. ========='
       ierr=ierr+4
- 105  write(*,*)'=========== No caverein  . in partfile.========='
+      return
+ 105  write(*,*)'=========== Partread Failed reading caverein ========='
       ierr=ierr+8
+      return
  103  close(23)
 !      write(*,*)'Finished reading back particle data from '
 !     $     ,name(1:lentrim(name))

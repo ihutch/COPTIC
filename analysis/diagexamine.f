@@ -210,8 +210,9 @@
 !         do i=1,4
 !            write(*,'(6g12.2)')(phimodes(i,j,2),j=1,3)
 !         enddo
+! +512 turns off contour labelling ought to fix as switch.
          call sliceGweb(ifullphi,iudsphi,rphimodes(1,ix1,1),na_m,zp,
-     $              ixnps,xns,3+64,'Amplitude  ',dum,dum)   
+     $              ixnps,xns,3+64+512,'Amplitude  ',dum,dum)   
 
 c$$$         if(.false.)then
 c$$$! Plot modes normalized to shift mode. Obsolete
@@ -1010,9 +1011,9 @@ c$$$         endif
          cfft(j)=rarray(j)
       enddo
       call CFFT1I (n, WSAVE, LENSAV, IER)
-      call CFFT1F (n,INC,cfft,LENC,WSAVE,LENSAV,WORK,LENWRK,IER)
+      call CFFT1F (n,INC,cfft,nmax,WSAVE,LENSAV,WORK,LENWRK,IER)
 c B is a straight sum, F is sum divided by N.
-c      call CFFT1B (n,INC,cfft,LENC,WSAVE,LENSAV,WORK,LENWRK,IER)
+c      call CFFT1B (n,INC,cfft,nmax,WSAVE,LENSAV,WORK,LENWRK,IER)
       if(ier.ne.0)then
          write(*,*)'CFFT1F error',ier
       endif

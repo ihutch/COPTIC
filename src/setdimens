@@ -2,12 +2,35 @@
 # Script for setting the coptic allocated mesh dimensions from either
 # Three arguments on the command line or 
 # The values set in copticgeom.dat or a filename argument, or 
-# The defaults 32 32 32
+# The defaults 32 32 32 or if revert is the one argument revert to old.
 # If four arguments are provided, then don't actually set change griddecl
 # just report the change we need.
 
 
-
+if [ $# -eq 1 ] ; then 
+# if the argument is "revert" revert to the previous griddecl.dat      
+    if [ "$1" == "revert" ]; then
+	DIFF=`diff griddeclold.f griddecl.f 2>&1`
+	if [ "$DIFF" != "" ] ; then
+	    if [ -f griddeclold.f ] ; then
+		cp griddecl.f griddeclprior.f
+		cp griddeclold.f griddecl.f
+		mv griddeclprior.f griddeclold.f
+		shift; ARG1=;
+		echo Swapped files griddeclold.f griddecl.f;
+	    else
+		echo No old file to revert to. Doing nothing.; exit;
+	    fi
+	    
+	    cat griddecl.f
+	    make coptic
+	    make analysis
+	else
+	    echo No differences between griddeclold.f and griddecl.f
+	fi
+	exit;
+    fi
+fi
 ARG1=$1
 ARG2=$2
 ARG3=$3
@@ -24,25 +47,24 @@ if [ $# -eq 0 ] ; then
     echo Specify the array dimensions in the i,j,k directions.
     echo The file griddecl.f is created appropriately.
     echo Then COPTIC is recompiled.
+    echo The command $0 revert causes reversion to previous grid
     exit
  fi
 else
- if [ $# -eq 1 ] ; then 
-# use the one argument as a geometry file.
-  if [ -f "$1" ] ; then
+ if [ -f "$1" ] ; then
     echo Trying to set dimensions from $1
     ARG1=`sed -n -e "/^91/p"  $1 | sed  -e "s/,0,.*//" | sed -e "s/^.*,//" `
     ARG2=`sed -n -e "/^92/p"  $1 | sed  -e "s/,0,.*//" | sed -e "s/^.*,//" `
     ARG3=`sed -n -e "/^93/p"  $1 | sed  -e "s/,0,.*//" | sed -e "s/^.*,//" `
     echo Dimensions derived: $ARG1 $ARG2 $ARG3
-  else 
+ else
     echo $# arguments
     echo "Usage $0 [filename |  na_i na_j na_k ]"
     echo Specify the array dimensions in the i,j,k directions.
     echo The file griddecl.f is created appropriately.
     echo Then COPTIC is recompiled.
+    echo The command $0 revert causes reversion to previous grid
     exit
-  fi
  fi
 fi
 if [ "$ARG1" == "" ] ; then ARG1=32; echo Default i=$ARG1 ; fi
@@ -54,6 +76,12 @@ else MAX=$ARG2; NEXT=$ARG1; fi
 if [ $ARG3 -gt $MAX ] ; then NEXT=$MAX; MAX=$ARG3 ; 
 else if [ $ARG3 -gt $NEXT ] ; then NEXT=$ARG3 ; fi
 fi
+
+# Now we must enter the coptic/src directory and do the setup/make.
+if [ "" == "$COPTICSRC" ] ; then COPTICSRC=~/src/coptic/src; fi
+if [ -d $COPTICSRC ] ; then 
+    cd $COPTICSRC; else  cd . ;
+fi
 echo >griddeclnew.f <<BLAH    "
 c Declarations of grid array parameters.
       integer na_m,na_m2,na_i,na_j,na_k
@@ -64,20 +92,21 @@ RESULT=$(($ARG1*$ARG2*$ARG3))
 if [ $RESULT -gt 1000000 ]; then 
     echo "**** $RESULT may be too large. Consider -mcmodel=medium compile flag" 
 fi
-
 if diff griddeclnew.f griddecl.f ; 
 then 
  if [ "$4" == "" ] ; then
-   echo No grid changes ; cat griddecl.f; rm griddeclnew.f; exit 0; 
+   echo No grid changes ; cat griddecl.f; rm griddeclnew.f; cd -; exit 0; 
  fi
 else 
  if [ "$4" == "" ] ; then
+  cp griddecl.f griddeclold.f
   mv griddeclnew.f griddecl.f
   echo "Remaking coptic with new grid $1 $2 $3"
   cat griddecl.f
   make coptic
   make analysis
+  cd -
  else
-  exit 2
+  cd -; exit 2
  fi
 fi

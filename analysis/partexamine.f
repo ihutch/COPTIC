@@ -6,6 +6,7 @@
       parameter (nfilemax=999)
       include '../src/partcom.f'
       include '../src/ptaccom.f'
+      include '../src/myidcom.f'
  
       character*10 chartemp
       character*20 theformat
@@ -35,6 +36,7 @@
       zp(1,1,1)=0.
 
 ! Defaults
+      nprocs=1
       ndfirst=1
       ndlast=3
       do id=1,ndimsmax
@@ -100,6 +102,7 @@
          endif
          Bt=0.
          call partread(name,ierr)
+         if(ierr.ne.0)write(*,*)'partread returns error:',ierr
          if(ierr-4*(ierr/4).ne.0)goto 11
          if(ispecies.gt.nspecies)then
             ispecies=nspecies

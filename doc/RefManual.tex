@@ -1313,7 +1313,12 @@ not in common, using length parameters defined in file \verb!griddecl.f!.
 The potential and charge are \verb!u, q!. The volumes of the cells
 whose centers are at the nodes are calculated once using routines from
 \verb!volint.f! and stored in \verb!volumes!. The allocation sizes can
-convenently be adjusted using the script \verb!setdimens!
+convenently be adjusted using the script \verb!setdimens!. Running
+it in the directory where the \verb!copticgeom.dat! file of interest
+resides will detect the required dimensions, rewrite the grid
+declarations in the directory \verb!~/src/coptic/src/! (or, if it is
+set, the environment variable \verb!COPTICSRC!) and remake
+coptic and its analysis programs with the corresponding grids. 
 
 The stencil information is calculated by \verb!cijroutine! and stored
 in \verb!cij!. Its first index references the stencil coefficients in

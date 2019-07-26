@@ -5,19 +5,13 @@
       integer iudsphi(3),ifullphi(3),ixnps(4)
       integer ml1(1),mloc(2),it(npmax)
       real xns(nxmax)
-      real time(ntmax),xn(nxmax),omega(ntmax)
+      real time(ntmax),xn(nxmax),omega(ntmax),z(ntmax)
       parameter (nex=1)
       real zp(ntmax,ntmax),yp(ntmax,nmodes),yp2(ntmax,nmodes-nex)
-      real ap(ntmax,nmodes),rap(ntmax,nmodes)
-      complex cap(ntmax,nmodes)
+      real ap(ntmax,nmodes)
+      complex cap(ntmax,nmodes),A,B
       real xmodenums(nmodes)
       character*20 string
-
-
-      INTEGER NMAX, INC, LENSAV, LENWRK, IER
-      PARAMETER (NMAX=2000,INC=1,LENSAV=(2*NMAX+30),LENWRK=2*NMAX)
-      REAL       WSAVE(LENSAV), WORK(LENWRK)
-
 
       data xmodenums/0,1,2,3,4,5,6,7,8,9,10/
       data ifullphi/ntmax,nxmax,nmodes/
@@ -26,7 +20,7 @@
      $     ,iyperr)
 
 ! Use this for rounded over nonlinear cases:
-      nt=.9*nt
+      nt=.8*nt
 
       if(iyperr.ne.0) Stop 'No savedmodes.dat file'
 
@@ -74,10 +68,12 @@
       call polyline(time,yp(1,mode+nex-1),nt)
       call iwrite(mode+nex-2,iwidth,string)
       call legendline(.1,.75,0,'mode '//string)
-      call dashset(5)
-      call polyline(time,yp(1,mode+nex+1),nt)
-      call iwrite(mode+nex,iwidth,string)
-      call legendline(.1,.85,0,'mode '//string)
+      if(mode+nex+1.le.nmodes)then
+         call dashset(5)
+         call polyline(time,yp(1,mode+nex+1),nt)
+         call iwrite(mode+nex,iwidth,string)
+         call legendline(.1,.85,0,'mode '//string)
+      endif
       it(1)=mloc(1)
       istep=nint(12./(time(2)-time(1)))
       istep=1
@@ -111,6 +107,7 @@
      $        /(time(it(i-1))-time(it(3)))
          write(*,*)'period=',period,' gamma=',gamma,1./gamma
       endif
+      call dashset(0)
       call pltend
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       if(.false.)then   
@@ -125,60 +122,29 @@
 !      call pltend
       endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if(.true.)then  ! Not debugged properly
-! Use fft to find frequency of different modes
-      do nm=1,nmodes
-         call CFFT1I (nt, WSAVE, LENSAV, IER)
-         call CFFT1F (nt,INC,cap(:,nm),nt,WSAVE,LENSAV,WORK,LENWRK,IER)
-      enddo
-c B is a straight sum, F is sum divided by N.
-c      call CFFT1B (nt,INC,cap,nt,WSAVE,LENSAV,WORK,LENWRK,IER)
-      if(ier.ne.0)write(*,*)'CFFT1F error',ier
 
-!      do nm=1,nmodes
-!         call realtocomplexfft(nt,ap(:,nm),cap(:,nm))
-!      enddo
-!      write(*,'(11f7.3)')((real(cap(i,j)),j=1,11),i=1,nt)
-      rap=abs(cap)
-! Now rap is abs(FT) of the time dependent modes. 
-! Figure out the frequency range/array. 
-      dt=time(2)-time(1)                          !=T/N
-      domega=2.*3.1415926/(time(nt)-time(1))      !=2\pi/T
-      ntop=nt/6
-      do i=1,ntop
-         omega(i)=i*domega
+      call fitexponential(nt,cap(:,mode+nex),A,B,ierr)
+      write(*,*)'mode',mode
+      write(*,*)'Fitted mode A,B=',A,B
+      do j=1,nt
+         z(j)=imag(A*exp(complex(0.,1.)*B*(j-1)))
       enddo
- 
-      do nm=mode+nex,mode+nex
-      write(string,'(a,f3.0)')'mode=',xmodenums(nm)
-         call dashset(0)
-         call autoplot(time,ap(1,nm),nt)
-         call axlabels('time','amplitude')
-         call boxtitle(string)
-         call pltend
-      ioff=1
-      ml1=maxloc(rap(1:ntop,nm))
-      write(*,*)'i=',ml1(1),' omega=',omega(ml1(1)),
-     $     ' period=',2*3.14159/omega(ml1(1))
-      call autoinit(omega(ioff),rap(ioff,nm),ntop)
-      call axis
-      call axlabels('omega','abs(mode)')
-      call boxtitle(string)
-      call dashset(0)
-!      call smoothline(omega(ioff),rap(ioff,nm),ntop-ioff,3)
-!      call color(2)
-      call polyline(omega(ioff),rap(ioff,nm),ntop-ioff)
-      call polymark(omega(ml1(1)),rap(ml1(1),nm),1,1)
+! In view of the fact that omega*t=B*(j-1), and t=dt*(j-1), B=omega*dt.
+      dt=(time(nt)-time(1))/nt
+      write(*,*)'omega=',real(B)/dt,'  gamma=',-imag(B)/dt
+      write(*,*)'dt=',dt,'period=',2.*3.14159*dt/real(B),
+     $     '  growth time=',-dt/imag(B)
+      call color(15)
+      call yautoplot(z,nt)
+      call axlabels('index','real(z)')
+      call color(6)
+      call ypolyline(real(cap(:,mode+nex)),nt)
+      call color(5)
+      call ypolyline(imag(cap(:,mode+nex)),nt)
+!      call color(8)
+!      call ypolyline(ap(:,mode+nex),nt)
+      call color(15)
       call pltend
-      call autoplot(omega,imag(cap(ml1(1),nm)/cap(:,nm)),ntop)
-      call polymark(omega,imag(cap(ml1(1),nm)/cap(:,nm)),ntop,1)
-      call color(2)
-      call polyline(omega,real(cap(ml1(1),nm)/cap(:,nm)),ntop)
-      call pltend
-
-      enddo
-
-      endif
 
 
       end

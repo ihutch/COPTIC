@@ -1,6 +1,6 @@
 c*******************************************************************
 c General slicing routine with web projection.
-      subroutine sliceGweb(ifull,iuds,u,nw,zp,ixnp,xn,idfixin,utitle
+      subroutine sliceGweb(ifull,iuds,u,nw,zp,ixnp,xn,idfixp,utitle
      $     ,svec,vp)
 c Plot web-projected and/or projected contour representations 
 c of quantity u on slices with fixed values of dimension idfix.
@@ -23,7 +23,7 @@ c   ixnp(id)+1 to ixnp(id)+iuds(id) [and ixnp(id+1)-ixnp(id)>=iuds(id)]
       integer ixnp(ndims+1)
       real xn(*)
 c The fixed dimension which is chosen to start (extended usage below) is:
-      integer idfixin
+      integer idfixp
 c The plotted quantity title is
       character*(*) utitle
 c If abs(idfix) has bit 2 set (by adding 4), toggle plotting of svec, an
@@ -76,13 +76,15 @@ c Bit 9 (512) Turn off contour labelling.
 
 c Bit 10 (1024) Do surface rather than web.     Not implemented.
 
-      ihibyte=idfixin/256
-      if(idfixin/512-1024*(idfixin/1024).ne.0)then
+      ihibyte=idfixp/256
+      if(idfixp/512-1024*(idfixp/1024).ne.0)then
 c kluge because higher bits break something I don't understand
          iclsign=-1.
-         idfixin=idfixin-512
+c         write(*,*)'idfixin512',idfixin
+         idfixin=idfixp-512
       else
          iclsign=1.
+         idfixin=idfixp
       endif
 
       idfixf=abs(idfixin)/4
@@ -309,6 +311,7 @@ c Get back current eye position xe1 etc.
          if(mod(icontour,4).eq.3)call hdprset(-3,-sign(scbz3,ze1))
 c Contour with coloring, using vector axes, maybe without labelling.
          iclhere=iclsign*icl
+c         iclhere=icl
          icsw=17
          if(iweb.gt.1.or.icontour.ge.4)icsw=icsw-16
          call contourl(zp,pp,nf1+1-if1,

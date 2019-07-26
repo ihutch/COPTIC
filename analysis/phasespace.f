@@ -5,6 +5,7 @@
       parameter (nfilemax=999)
       include '../src/partcom.f'
       include '../src/ptaccom.f'
+      include '../src/myidcom.f'
  
       character*10 chartemp
       character*100 name
@@ -19,9 +20,10 @@
       real vlimit(2,ndimsmax)
       
       integer nx,nv
-      parameter (nx=50,nv=50)
-      real hist(nx,nv),cworka(nx,nv),zclv(nx),ehist(nv),ev(nv)
-      real eh(0:nv)
+      parameter (nx=50,nv=50,ne=400)
+      real hist(nx,nv),cworka(nx,ne),zclv(nx)
+      real ehist(ne),ev(ne),ehistscaled(ne)
+      real eh(0:ne)
 
       integer iuin(ndimsmax)
       integer ivtk
@@ -31,6 +33,7 @@
       nfmax=nfilemax
 
 ! Defaults
+      nprocs=1
       ndfirst=1
       ndlast=3
       do id=1,ndimsmax
@@ -45,8 +48,14 @@
       call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc,ivtk
      $     ,ispecies,ndfirst,ndlast)
 
-      elimit(2)=0.5*(vlimit(2,1))**2
+!      elimit(2)=0.5*(vlimit(2,1))**2
+      elimit(2)=1.
       elimit(1)=-1.
+! Make box join at e=0. Decide how many boxes e<0
+      ne0=int(ne*(-elimit(1))/(elimit(2)-elimit(1)))
+      de=-elimit(1)/ne0
+      elimit(2)=ne*de+elimit(1)
+
       do id=1,ndimsmax
 ! Needed? initialization removed from partacinit.
          xmeshstart(id)=min(-5.,xlimit(1,id))
@@ -94,6 +103,7 @@
          endif
          Bt=0.
          call partread(name,ierr)
+         if(ierr.ne.0)write(*,*)'Partread returns error',ierr
          if(ispecies.gt.nspecies)then
             ispecies=nspecies
             write(*,*)'nspecies=',nspecies,'  Reset ispecies',ispecies
@@ -129,8 +139,8 @@
          call fhistinc(xlimit,vlimit,iaxis,ispecies,nhist,hist,nx
      $        ,nv)
 ! Increment the total energy histogram. Use all axes if iexis=0
-         iexis=0
-         call ehistinc(xlimit,elimit,ispecies,nehist,ehist,nv,u,ifull
+         iexis=1
+         call ehistinc(xlimit,elimit,ispecies,nehist,ehist,ne,u,ifull
      $        ,iused,iexis)
       enddo
  11   continue
@@ -139,17 +149,42 @@
 ! Plot the energy histogram.
       write(*,*)'nhist,emin,emax=',nehist,elimit(1),elimit(2)
       write(*,'(10f8.0)')ehist
-      do i=1,nv
-         ev(i)=(i-0.5)*(elimit(2)-elimit(1))/nv +elimit(1)
-         eh(i)=(i-0.)*(elimit(2)-elimit(1))/nv +elimit(1)
-      enddo
       eh(0)=elimit(1)
-      call autoplot(ev,ehist,nv)
+      do i=1,ne
+         ev(i)=(i-0.5)*(elimit(2)-elimit(1))/ne +elimit(1)
+         eh(i)=(i-0.)*(elimit(2)-elimit(1))/ne +elimit(1)
+         ehistscaled(i)=ehist(i)
+     $        /abs( sqrt(abs(eh(i))) - sqrt(abs(eh(i-1))) )
+      enddo
+      call pfset(3)
+      call autoplot(ev,ehist,ne)
+      call axis()
+!      call axis2()
+      call polybox(eh,ehist,ne)
+      call axlabels('Total Energy: W','Occurences: Distribution')
+      call color(3)
+      call axptset(0.,1.)
+      call ticrev
+      call altxaxis(.05,.05)
+      call axptset(0.,0.)
+      call ticrev
+      call winset(.true.)
+      call polybox(20.*eh,ehist,ne)
+      call legendline(.5,.95,258,'Energy/20')
+      call pltend()
+
+! The scaled version that's supposed to give f(v)
+      call autoplot(ev,ehistscaled,ne)
       call axis()
       call axis2()
-      call polybox(eh,ehist,nv)
-      call axlabels('Total Energy','Occurences: Distribution')
+      call polybox(eh,ehistscaled,ne)
+      call axlabels('Total Energy','ehistscaled')
+      call winset(.true.)
+      call color(3)
+      call polybox(20.*eh,ehistscaled,ne)
+      call legendline(.6,.9,0,'Energy x20')
       call pltend()
+      call pfset(0)
 
 ! Color Contour of Phase space Histogram.
       call minmax2(hist,nx,nx,nv,hmin,hmax)
@@ -175,7 +210,6 @@
       call axis
       call pltend()
 
-
       end
 !*************************************************************
       subroutine plotlocalphasepoints(xlimit,vlimit,iaxis,ispecies
@@ -188,6 +222,8 @@
       character*1 axnames(3)
       data axnames/'x','y','z'/ 
 
+      iwarned=0
+      id=999
 ! Initialize the plot
       if(nfvaccum.eq.0)then
 !         call pfset(3)
@@ -197,13 +233,22 @@
          call axlabels(axnames(iaxis),'v!d'//axnames(iaxis)//'!d')
          call color(ibrickred())
       endif
+      write(*,*)'x,vlimits',xlimit,vlimit
       do j=iicparta(ispecies),iocparta(ispecies)
 ! Only for filled slots
          if(x_part(iflag,j).ne.0)then
             do id=1,ndims
                x=x_part(id,j)
                v=x_part(id+ndims,j)
-               if(x.lt.xlimit(1,id).or.x.gt.xlimit(2,id))goto 12
+               if(x.lt.xlimit(1,id).or.x.gt.xlimit(2,id))then
+                  if(iwarned.eq.0.and.id.ne.iaxis)then
+                     iwarned=1
+            write(*,*)'**** WARNING: Only partial transverse domain:'
+     $                    ,id,x_part(id,j)
+
+                  endif
+                  goto 12                  
+               endif
                if(v.lt.vlimit(1,id).or.v.gt.vlimit(2,id))goto 12
             enddo
             nfvaccum=nfvaccum+1
@@ -213,7 +258,7 @@
          endif
  12      continue
       enddo
-      write(*,*)'Accumulated',nfvaccum,' particles'
+      write(*,*)'Plotted',nfvaccum,' particles'
       end
 !*************************************************************
 !*************************************************************
@@ -299,6 +344,7 @@
          enddo
          de=(elimit(2)-elimit(1))/ne
       endif
+      write(*,*)'iexis=',iexis
       do j=iicparta(ispecies),iocparta(ispecies)
 ! Only for filled slots
          if(x_part(iflag,j).ne.0)then
@@ -309,11 +355,13 @@
 ! Here for a particle lying within the space limits so far
 ! Sum the kinetic energy for all directions if iexis=0.
                if(iexis.eq.0.or.iexis.eq.id)v2=v2+x_part(id+ndims,j)**2
+!               write(*,'(i8,i2,2f8.4,$)')j,id,x_part(id+ndims,j),v2
             enddo
+!            write(*,*)
 ! This is a wanted particle. Add its energy to histogram.
             potential=getpotential(u,cij,iLs,x_part(2*ndims+1,j),iregion
      $           ,0)
-            energy=eoverms(ispecies)*potential+v2
+            energy=eoverms(ispecies)*potential+v2/2.
             ie=int(1+(energy-elimit(1))/de)
             if(.not.(ie.gt.0.and.ie.le.ne))goto 12
             ehist(ie)=ehist(ie)+1.
