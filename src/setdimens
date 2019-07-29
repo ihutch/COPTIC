@@ -6,6 +6,9 @@
 # If four arguments are provided, then don't actually set change griddecl
 # just report the change we need.
 
+ARG1=$1
+ARG2=$2
+ARG3=$3
 
 if [ $# -eq 1 ] ; then 
 # if the argument is "revert" revert to the previous griddecl.dat      
@@ -31,9 +34,6 @@ if [ $# -eq 1 ] ; then
 	exit;
     fi
 fi
-ARG1=$1
-ARG2=$2
-ARG3=$3
 if [ $# -eq 0 ] ; then 
  if [ -f "copticgeom.dat" ] ; then
     echo Trying to set dimensions from copticgeom.dat
@@ -50,7 +50,7 @@ if [ $# -eq 0 ] ; then
     echo The command $0 revert causes reversion to previous grid
     exit
  fi
-else
+else if [ $# -eq 1 ]; then
  if [ -f "$1" ] ; then
     echo Trying to set dimensions from $1
     ARG1=`sed -n -e "/^91/p"  $1 | sed  -e "s/,0,.*//" | sed -e "s/^.*,//" `
@@ -66,7 +66,10 @@ else
     echo The command $0 revert causes reversion to previous grid
     exit
  fi
+fi 
 fi
+
+# More than 1 argument, or set dimensions from file.
 if [ "$ARG1" == "" ] ; then ARG1=32; echo Default i=$ARG1 ; fi
 if [ "$ARG2" == "" ] ; then ARG2=32; echo Default j=$ARG2 ; fi
 if [ "$ARG3" == "" ] ; then ARG3=32; echo Default k=$ARG3 ; fi
@@ -92,8 +95,7 @@ RESULT=$(($ARG1*$ARG2*$ARG3))
 if [ $RESULT -gt 1000000 ]; then 
     echo "**** $RESULT may be too large. Consider -mcmodel=medium compile flag" 
 fi
-if diff griddeclnew.f griddecl.f ; 
-then 
+if diff griddeclnew.f griddecl.f ; then 
  if [ "$4" == "" ] ; then
    echo No grid changes ; cat griddecl.f; rm griddeclnew.f; cd -; exit 0; 
  fi
