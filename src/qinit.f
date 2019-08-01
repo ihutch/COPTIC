@@ -33,17 +33,6 @@
       integer nqbset(ndims),nqblks(ndims),mlen
       
       holetoplen=holepow
-! nqbset parameters adjusted only from 1 parameter: nqblkmax [-pi...]
-      do i=1,ndims
-         mlen=ixnp(i+1)-ixnp(i)
-         if(mlen-2.eq.1)then   ! Single cell sides need no quieting.
-            nqbset(i)=1
-         else
-            nqbset(i)=max(1,nqblkmax)           ! Quiet short sides.
-!         nqbset(i)=max(1,min(nqblkmax,mlen-2)) ! Don't quiet short.
-         endif
-         nqblks(i)=nqbset(i)
-      enddo
 
 ! No special orbits.
       norbits=0
@@ -52,6 +41,17 @@
 ! Point to the bottom of the particle stack for start of species 1.
       iicparta(1)=1
       do ispecies=1,nspecies
+! nqbset parameters adjusted only from 1 parameter: nqblkmax [-pi...]
+         do i=1,ndims
+            mlen=ixnp(i+1)-ixnp(i)
+            if(mlen-2.eq.1)then ! Single cell sides need no quieting.
+               nqbset(i)=1
+            else
+               nqbset(i)=max(1,nqblkmax) ! Quiet short sides.
+!         nqbset(i)=max(1,min(nqblkmax,mlen-2)) ! Don't quiet short.
+            endif
+            nqblks(i)=nqbset(i)
+         enddo
 ! Conveniently here initialize distribution numbers.
          if(ninjcompa(ispecies).gt.0)then
             slotsurplus=1.1  ! This is safer at 1.3 than 1.1
@@ -271,10 +271,15 @@ c The flattop length holetoplen. Negligible for large negative values.
          call ranlux(ran,1)
          fp=(indi(id)+ran)/float(nqblks(id))
          fp=max(.000001,min(.999999,fp))
+         if(ispecies.eq.nspecies)then  ! Only put the hole in the final.
          if(holerad.ne.0)psiradfac=exp(-r2/holerad**2)
 ! Hole density non-uniformity: transverse local value of peak potential.
          x_part(id,islot)=findxofran(fp,psiradfac*psi,coshlen,holetoplen
      $        ,xmeshstart(id),xmeshend(id),nbi)
+         else
+            psiradfac=0.
+            x_part(id,islot)=(1.-fp)*xmeshstart(id)+fp*xmeshend(id)
+         endif
       endif
       phi=psiradfac*phiofx(x_part(id,islot),psi,coshlen,holetoplen)
 

@@ -24,6 +24,7 @@ c The bins are uniform from psvmin to psvmax and xmeshstart to end.
       include 'ndimsdecl.f'
       include 'meshcom.f'
       include 'partcom.f'
+      include 'plascom.f'
       integer ispecies,id
       integer i,ierr,ixbin,ivbin
       real v,x
@@ -32,8 +33,8 @@ c The bins are uniform from psvmin to psvmax and xmeshstart to end.
 c Ensure the limits etc of the phase space array are set.
       psxmin=xmeshstart(id)
       psxmax=xmeshend(id)
-      psvmax=3.
-      psvmin=-3.
+      psvmax=3.*sqrt(abs(eoverms(ispecies)))
+      psvmin=-3.*sqrt(abs(eoverms(ispecies)))
 c The centers of the bins in phase space (redundancy negligible).
       do i=1,npsx
          psx(i)=psxmin+(i-0.5)*(psxmax-psxmin)/npsx
@@ -113,7 +114,7 @@ c***********************************************************************
       call axlabels('x','v')
 c If unset, set psfmax for less than full range. But better set earlier.
       call minmax2(psfxv,npsx,npsx,npsv,pmin,pmax)
-      if(pmax.gt.psfmax*1.1)call psfmaxset(2.)
+      if(pmax.gt.psfmax*1.1)call psfmaxset(1.5)
 c Set extrema of coloring range from psfmax.
       zclv(1)=0.
       zclv(2)=psfmax

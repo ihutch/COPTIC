@@ -138,7 +138,8 @@
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
      $     ,wavespec,LNPF,ifull,ierr)
 ! Hack to prevent incompatible particles
-      if(nparta(1).ne.0 .and.(ipartperiod(1).ne.0.or.ipartperiod(2).ne.0
+      if(nparta(1).ne.0 .and.
+     $     (ipartperiod(1).ne.0.or.ipartperiod(2).ne.0
      $     .or.ipartperiod(3).ne.0)) stop '-ni not allowed with pp'
 !-----------------------------------------------------------------
 ! Finalize initial parameters after switch and geometry reading.
@@ -439,9 +440,15 @@
 ! Slice plots
             if(lsliceplot.and.ldenplot)call sliceGweb(ifull,iuds,q,na_m
      $           ,zp,ixnp,xn,ifix,'density: n'//char(0),dum,dum)
-            if(lsliceplot.and.lphiplot.and.(iuds(2).gt.3.or.
-     $           iuds(3).gt.3))call sliceGweb(ifull,iuds,u,na_m,zp,
+            if(lsliceplot.and.lphiplot)then
+               if((iuds(2).gt.3.or.iuds(3).gt.3))then
+                  call sliceGweb(ifull,iuds,u,na_m,zp,
      $           ixnp,xn,ifix,'potential:'//'!Af!@'//char(0),dum,dum)
+               elseif(.not.ldistshow)then
+                  write(*,*)'1-d does not plot potential; using -gn -gp'
+                  ldistshow=.true.
+               endif
+            endif
 ! Phase space done by all processes, even though only one of them plots.
             if(ldistshow.and.iuds(2).eq.3.and.iuds(3).eq.3)then
                call phasepscont(ifull,iuds,u,nstep,lphiplot

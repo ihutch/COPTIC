@@ -213,20 +213,22 @@
       logical lplot
       real u(ifull(1),ifull(2),ifull(3))
       character*(*) restartpath
-      integer id
-      real vrange,phirange
+      integer id,thespecies
+      real vrange,phirange,umin,umax
       real wx2nx,wy2ny
-      parameter (id=1,vrange=3.,phirange=.5)
+      parameter (id=1,vrange=3.)
       character*100 phasefilename
       character*10 string
       integer lentrim
       external lentrim
+      data phirange/0.5/thespecies/1/
 ! Only if this is a one-dimensional problem (for now)
       if(iuds(2).ge.4 .and. iuds(3).ge.4) return
-c psaccum must be asked for by all processes.
-      call psaccum(1,1)
-c      write(string,'(i5)')nstep
-      write(string,'(f10.2)')nstep*dt
+c psaccum must be asked for by all processes
+c      call psaccum(nspecies,1)
+      thespecies=mod(thespecies,2)+1
+      call psaccum(thespecies,1)
+      write(string,'(f10.3)')nstep*dt
 c but writing and plotting only by top process
       if(myid.eq.nprocs-1)then
          phasefilename=restartpath
@@ -237,13 +239,18 @@ c but writing and plotting only by top process
      $        ixnp(2)-ixnp(1),xn(ixnp(1)+1),u(1,2,2),nstep*dt)
 
          if(lplot)then
+         call minmax(u(1,2,2),iuds(1),umin,umax)
+         phirange=max(phirange,umax*.95)
          call multiframe(2,1,0)
          call pltinit(xmeshstart(id),xmeshend(id),-phirange,phirange)
          call axis()
+         call axis2
          call axlabels(' ','  !Af!@')
          call polyline(xn(ixnp(1)+1),u(1,2,2),ixnp(2)-ixnp(1))
          call jdrwstr(wx2nx(xmeshend(id)),wy2ny(.9*phirange),string,-1.)
          call phaseplot
+         write(string,'(''sp='',i1)')thespecies
+         call jdrwstr(wx2nx(xmeshend(id)),wy2ny(0.),string,-1.)
          call color(15)
          call multiframe(0,0,0)
          call accisflush()
