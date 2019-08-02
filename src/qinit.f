@@ -145,7 +145,9 @@
 ! So it might help to generalize this to allow ldouble with vds!=0.
          if(vds(ispecies).ne.0.or.holeum.ne.0.)then
             ldouble=.false.
-            write(*,*)'Finite drift. No double particle placement.'
+            if(myid.eq.0)then
+               write(*,*)'Finite drift. No double particle placement.'
+            endif
          endif
       endif
       nremain=islotmax-islot+1

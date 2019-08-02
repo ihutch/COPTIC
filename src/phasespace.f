@@ -131,7 +131,6 @@ c***********************************************************************
 
       call pltinit(psxmin,psxmax,psvmin,psvmax)
       call blueredgreenwhite()
-      call axis()
       call axlabels('x','v')
 c If unset, set psfmax for less than full range. But better set earlier.
       call minmax2(psfxv,npsx,npsx,npsv,pmin,pmax)
@@ -144,6 +143,8 @@ c Set extrema of coloring range from psfmax.
 c Using triangular gradients +64 gives too large ps output.
       call contourl(psfxv,cworka,npsx,npsx,npsv,zclv,icl,psx,psv,icsw) 
       call gradlegend(zclv(1),zclv(2),.3,1.15,.7,1.15,.05,.true.)
+      call axis()
+      call axis2
 c If needed, do pltend externally.
       end
 c**********************************************************************

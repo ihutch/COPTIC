@@ -210,6 +210,7 @@
       include 'partcom.f'
       include 'myidcom.f'
       include 'phasecom.f'
+      include 'plascom.f'
       integer ifull(ndims),iuds(ndims),nstep
       logical lplot,ldensac
       real u(ifull(1),ifull(2),ifull(3))
@@ -273,6 +274,8 @@ c but writing and plotting only by top process
                call legendline(1.04,0.3,258,'!Bn!@')
                call phaseplot
                call color(15)
+               call vecw(xmeshstart(id),vds(1),0)
+               call vecw(xmeshend(id),vds(1),1)
             else
                call axis2
                call phaseplot
