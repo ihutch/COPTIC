@@ -126,13 +126,28 @@
       include 'ndimsdecl.f'      
       include 'meshcom.f'
       include 'myidcom.f'
+      include 'plascom.f'
+      include 'partcom.f'
       integer nqblks(ndims),islot,islotmax,ispecies
 
       integer iview(3,ndims),indi(ndims)     !Iterator
-      integer nqbt
-      logical ldouble
-      data ldouble/.true./ ! Whether to place 2 counter-velocity particles.
+      integer nqbt,iworkspecies
+      logical ldouble ! Whether to place 2 counter-velocity particles.
+      data ldouble/.true./iworkspecies/0/
 
+      if(iworkspecies.ne.ispecies)then 
+         ldouble=.true. ! Try to do double setting for each species.
+         iworkspecies=ispecies
+! Double particle initialization is possible only if the distribution
+! has reflectional symmetry, which requires vdrift and vhole to be equal.
+! At the moment we disallow double if any drift is non-zero.
+! Double helps by forcing the electron drift to exactly zero.
+! So it might help to generalize this to allow ldouble with vds!=0.
+         if(vds(ispecies).ne.0.or.holeum.ne.0.)then
+            ldouble=.false.
+            write(*,*)'Finite drift. No double particle placement.'
+         endif
+      endif
       nremain=islotmax-islot+1
       nper=1           ! Number injected per placeqbk. 1 or 2.
       if(ldouble)nper=2
@@ -287,7 +302,7 @@ c The flattop length holetoplen. Negligible for large negative values.
       do i=1,ndims
          if(i.eq.id)then
 ! Hole normal direction.
-            if(abs(psi).lt.phimin.or.fp.lt.phimin.or.1-fp.lt.phimin)then
+            if(abs(phi).lt.phimin.or.fp.lt.phimin.or.1-fp.lt.phimin)then
 ! In non-hole region. Shortcut to external distrib.
                x_part(ndims+i,islot)=tisq*gasdev(myid)
      $              +vds(ispecies)*vdrift(i)
@@ -326,6 +341,10 @@ c The flattop length holetoplen. Negligible for large negative values.
          islot=islot+1
          do i=1,ndims
             x_part(i,islot)=x_part(i,islot-1)
+! Reverse velocity accounting for drift possible only when there
+! is no drift of the hole relative to the background.
+!            x_part(i+ndims,islot)=
+!     $           2.*vds(ispecies)*vdrift(i)-x_part(i+ndims,islot-1)
             x_part(i+ndims,islot)=-x_part(i+ndims,islot-1)
             x_part(i+2*ndims,islot)=x_part(i+2*ndims,islot-1)
             x_part(iflag,islot)=1                        

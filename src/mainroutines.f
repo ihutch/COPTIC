@@ -209,24 +209,27 @@
       include 'meshcom.f'
       include 'partcom.f'
       include 'myidcom.f'
+      include 'phasecom.f'
       integer ifull(ndims),iuds(ndims),nstep
-      logical lplot
+      logical lplot,ldensac
       real u(ifull(1),ifull(2),ifull(3))
       character*(*) restartpath
       integer id,thespecies
-      real vrange,phirange,umin,umax
+      real vrange,phirange,umin,umax,psnmax
       real wx2nx,wy2ny
       parameter (id=1,vrange=3.)
       character*100 phasefilename
       character*10 string
+      character*12 nlabel(2)
       integer lentrim
       external lentrim
       data phirange/0.5/thespecies/1/
+      data nlabel/' !Bn!di!d!@',' !Bn!de!d!@'/
 ! Only if this is a one-dimensional problem (for now)
       if(iuds(2).ge.4 .and. iuds(3).ge.4) return
+      ldensac=.true.
 c psaccum must be asked for by all processes
-c      call psaccum(nspecies,1)
-      thespecies=mod(thespecies,2)+1
+      thespecies=mod(thespecies,nspecies)+1
       call psaccum(thespecies,1)
       write(string,'(f10.3)')nstep*dt
 c but writing and plotting only by top process
@@ -241,16 +244,41 @@ c but writing and plotting only by top process
          if(lplot)then
          call minmax(u(1,2,2),iuds(1),umin,umax)
          phirange=max(phirange,umax*.95)
-         call multiframe(2,1,0)
+         call pfset(3)
+         call multiframe(2,1,1)
          call pltinit(xmeshstart(id),xmeshend(id),-phirange,phirange)
          call axis()
-         call axis2
+!         call axis2
          call axlabels(' ','  !Af!@')
          call polyline(xn(ixnp(1)+1),u(1,2,2),ixnp(2)-ixnp(1))
          call jdrwstr(wx2nx(xmeshend(id)),wy2ny(.9*phirange),string,-1.)
+         if(ldensac)then
+! Plot density in the same frame
+            psnmax=nparta(thespecies)/npsx
+            call scalewn(xmeshstart(id),xmeshend(id),
+     $           0.8,1.35,.false.,.false.)
+            call axptset(1.,1.)
+            call ticrev
+            call axis
+            call ticrev
+            call axptset(0.,0.)
+            do thespecies=1,nspecies
+               call psnaccum(thespecies,id)
+               call color(thespecies+4)
+               psn=psn/psnmax
+               call polyline(psx,psn,npsx)
+               call legendline(0.8,0.05+0.08*thespecies,
+     $              0,nlabel(thespecies))
+            enddo
+            call color(15)
+            call legendline(1.04,0.3,258,'!Bn!@')
+         else
+            call axis2
+         endif
          call phaseplot
          write(string,'(''sp='',i1)')thespecies
-         call jdrwstr(wx2nx(xmeshend(id)),wy2ny(0.),string,-1.)
+         if(.not.ldensac)
+     $        call jdrwstr(wx2nx(xmeshend(id)),wy2ny(0.),string,-1.)
          call color(15)
          call multiframe(0,0,0)
          call accisflush()

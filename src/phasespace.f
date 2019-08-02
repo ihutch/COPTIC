@@ -33,8 +33,8 @@ c The bins are uniform from psvmin to psvmax and xmeshstart to end.
 c Ensure the limits etc of the phase space array are set.
       psxmin=xmeshstart(id)
       psxmax=xmeshend(id)
-      psvmax=3.*sqrt(abs(eoverms(ispecies)))
-      psvmin=-3.*sqrt(abs(eoverms(ispecies)))
+      psvmax=3.*sqrt(abs(eoverms(ispecies))*Ts(ispecies))
+      psvmin=-psvmax
 c The centers of the bins in phase space (redundancy negligible).
       do i=1,npsx
          psx(i)=psxmin+(i-0.5)*(psxmax-psxmin)/npsx
@@ -57,6 +57,27 @@ c Not for velocity beyond the vrange
       enddo
 c All reduce to sum the distributions from all processes.
       call mpiallreducesum(psfxv,npsx*npsv,ierr)
+      end
+c***********************************************************************
+      subroutine psnaccum(ispecies,id)
+      implicit none
+c Accumulate the densities of ispecies into phasespace x-bins psn
+      include 'phasecom.f'
+      include 'ndimsdecl.f'
+      include 'meshcom.f'
+      include 'partcom.f'
+      include 'plascom.f'
+      integer ispecies,id
+      integer i,ixbin,ierr
+      real x
+      psn=0.   ! zero density array. Then check that psx params set:
+      if(psxmin.ne.xmeshstart(id))Stop 'psnaccum called before psaccum'
+      do i=iicparta(ispecies),iocparta(ispecies)
+         x=x_part(id,i)
+         ixbin=int(.99999*(x-psxmin)/(psxmax-psxmin)*float(npsx)+1)
+         psn(ixbin)=psn(ixbin)+1.
+      enddo
+      call mpiallreducesum(psn,npsx,ierr)
       end
 c***********************************************************************
       subroutine phasewrite(phasefilename,nu,x,u,t)
