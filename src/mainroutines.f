@@ -240,50 +240,55 @@ c but writing and plotting only by top process
      $        ,'(''.pps'',i5.5)')nstep
          call phasewrite(phasefilename,
      $        ixnp(2)-ixnp(1),xn(ixnp(1)+1),u(1,2,2),nstep*dt)
-
          if(lplot)then
-         call minmax(u(1,2,2),iuds(1),umin,umax)
-         phirange=max(phirange,umax*.95)
-         call pfset(3)
-         call multiframe(2,1,1)
-         call pltinit(xmeshstart(id),xmeshend(id),-phirange,phirange)
-         call axis()
-!         call axis2
-         call axlabels(' ','  !Af!@')
-         call polyline(xn(ixnp(1)+1),u(1,2,2),ixnp(2)-ixnp(1))
-         call jdrwstr(wx2nx(xmeshend(id)),wy2ny(.9*phirange),string,-1.)
-         if(ldensac)then
+            call minmax(u(1,2,2),iuds(1),umin,umax)
+            phirange=max(phirange,umax*.95)
+            call pfset(3)
+            call multiframe(2,1,1)
+            call pltinit(xmeshstart(id),xmeshend(id),-phirange,phirange)
+            call axis()
+            call axlabels(' ','  !Af!@')
+            call polyline(xn(ixnp(1)+1),u(1,2,2),ixnp(2)-ixnp(1))
+            call jdrwstr(wx2nx(xmeshend(id)),wy2ny(.9*phirange),
+     $           string,-1.)
+            if(ldensac)then
 ! Plot density in the same frame
-            psnmax=nparta(thespecies)/npsx
-            call scalewn(xmeshstart(id),xmeshend(id),
-     $           0.8,1.35,.false.,.false.)
-            call axptset(1.,1.)
-            call ticrev
-            call axis
-            call ticrev
-            call axptset(0.,0.)
-            do thespecies=1,nspecies
-               call psnaccum(thespecies,id)
-               call color(thespecies+4)
-               psn=psn/psnmax
-               call polyline(psx,psn,npsx)
-               call legendline(0.8,0.05+0.08*thespecies,
-     $              0,nlabel(thespecies))
-            enddo
-            call color(15)
-            call legendline(1.04,0.3,258,'!Bn!@')
-         else
-            call axis2
+               psnmax=numprocs*nparta(thespecies)/npsx
+               call scalewn(xmeshstart(id),xmeshend(id),
+     $              0.8,1.35,.false.,.false.)
+               call axptset(1.,1.)
+               call ticrev
+               call axis
+               call ticrev
+               call axptset(0.,0.)
+               do thespecies=1,nspecies
+                  call psnaccum(thespecies,id)
+                  call color(thespecies+4)
+                  psn=psn/psnmax
+                  call polyline(psx,psn,npsx)
+                  call legendline(0.8,0.05+0.08*thespecies,
+     $                 0,nlabel(thespecies))
+               enddo
+               call color(15)
+               call legendline(1.04,0.3,258,'!Bn!@')
+               call phaseplot
+               call color(15)
+            else
+               call axis2
+               call phaseplot
+               call color(15)
+               write(string,'(''sp='',i1)')thespecies
+               call jdrwstr(wx2nx(xmeshend(id)),wy2ny(0.),string,-1.)
+            endif
+            call multiframe(0,0,0)
+            call accisflush()
+            call prtend(' ')
          endif
-         call phaseplot
-         write(string,'(''sp='',i1)')thespecies
-         if(.not.ldensac)
-     $        call jdrwstr(wx2nx(xmeshend(id)),wy2ny(0.),string,-1.)
-         call color(15)
-         call multiframe(0,0,0)
-         call accisflush()
-         call prtend(' ')
-         endif
+      elseif(lplot.and.ldensac)then
+! Non-plotting nodes must still do psnaccum. If it's called at all. 
+         do thespecies=1,nspecies
+            call psnaccum(thespecies,id)
+         enddo
       endif
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
