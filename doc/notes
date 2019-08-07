@@ -15586,6 +15586,25 @@ Changed all ipartperiod.eq.4 to ipartperiod.eq.4.or.ipartperiod.eq.5
 So now 4 or 5 ought to work the same. A 2D hole test shows no problems
 changing 4 to 5.
 
-Now we can implement a reset of velocity in the particle relocation code
-when ipartperiod is 5 (in principle). This is within padvnc.f. Before doing
-that git commit.
+Now we can implement a reset of velocity in the particle relocation
+code when ipartperiod is 5 (in principle). This is within padvnc.f
+partlocate. Before doing that git commit.
+
+Selecting velocity perp to face is done by
+      call ranlux(ra,1)
+      ra=ra*ncrein
+      ir=int(ra)
+      fr=ra-ir
+      xr(mdims+idrein)=hreins(ir,index,ispecies)*(1-fr)+hreins(ir+1
+     $     ,index,ispecies)*fr
+where index runs from 1 to 6, and idrein=(index+1)/2 and index is 
+documented as +-x,+-y,+-z. This refers to position end/start since
+      sg=-(2*mod(index,2)-1)*0.999999
+1 gives sg- 2 gives sg+, and position is start for sg+ end for sg-,
+1 is end, 2 is start of mesh, (requiring v- and v+ respectively).
+
+We need to initialize hrein. It seems to be done already (when
+ipartperiod is printed). So don't bother with additional tests.
+Need to pass reinspecies from padvnc to partlocate via creincom.f
+Seems to be working.
+

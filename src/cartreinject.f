@@ -239,7 +239,8 @@
       if(.not.gintreins(6,ispec).gt.1.)write(*,*)'gintrein problem!'
       enddo
       if(myid.eq.0)then
-      write(*,'(a,3i2,a)')'ipartperiod',ipartperiod,'  greins,gintrein:'
+      write(*,'(a,3i2,a)')'Injection initialization ipartperiod'
+     $        ,ipartperiod,'  greins,gintrein:'
       write(*,*)'greins is the total flux across each of 6 faces'
       write(*,'(6f10.5)')greins
       write(*,'(7f10.5)')gintrein

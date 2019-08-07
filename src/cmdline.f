@@ -715,8 +715,8 @@
       write(*,311)' -pw[..] apply initial wave 1,n,xi[',wavespec
       write(*,305)' -pp<i,j,k>  partcl bcs/periodcty [',ipartperiod
      $     ,'    Use sum of:'
-      write(*,*)'     0 open; 1 lower absorbing; 2 upper absorbing;'
-     $     ,' 3 both absorb; 4 periodic'
+      write(*,*)'     0 open; 1 lower, 2 upper, 3 both absorbing;'
+     $     ,' 4 periodic, 5 v-reset'
       write(*,*)'     +Domain end between nodes (upper byte)',
      $     ' 64:lower, 128:upper, 192:both.'
       write(*,305)' -id<i,j,k> Set MPI block dims    [',idims

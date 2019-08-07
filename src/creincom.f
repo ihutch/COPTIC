@@ -19,6 +19,8 @@
       integer idreins(nspeciesmax)
 ! Whether reinjection is initialized or not
       logical lreininit
+! The working species (for partlocate)
+      integer reinspecies
       real hrein(0:ncrein,6),grein(6),prein(0:ncrein,3)
       real gintrein(0:6)
       integer idrein
@@ -26,3 +28,4 @@
       equivalence (gintrein,gintreins),(idrein,idreins)
 
       common /crein/hreins,greins,preins,gintreins,idreins,lreininit
+     $     ,reinspecies

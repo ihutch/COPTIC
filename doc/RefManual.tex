@@ -661,13 +661,27 @@ to leave the mesh, but none are reinjected there.
 lower refers to the first value of a mesh specification, and upper the
 last.
 \item[3] both faces absorb.
-\item[4] periodic; particles leaving through one face reappear immediately in the
-corresponding position adjacent to the opposite face. They have the same
-properties (e.g. velocity) they left with.
+\item[4] periodic; particles leaving through one face reappear
+  immediately in the corresponding position adjacent to the opposite
+  face. They have the same properties (e.g. velocity) they left with.
+\item[5] periodic with velocity reset; particles are relocated in
+  accordance with periodic boundary (4), but when that happens the
+  velocity perpendicular to the face is (alone) randomly reset to
+  represent an influx of the background (0) reinjection distribution.
+  This prescription is supposed to partially absorb propagating
+  disturbances as if the boundary were open, but without introducing
+  total charge changes.
 \end{description}
 
 Use of boundary-setting lines like these in the object file
 \emph{is over-ridden} by any values set by command-line switches.
+
+[The value of each dimension's setting can also have added to it the
+values 64, 128, or 192, which set bits that indicate the domain end is
+between nodes for lower, upper, or both faces. But these settings are
+relevant only for non-periodic potential boundary conditions which are
+practically never used with periodic particles.]
+
 
 
 

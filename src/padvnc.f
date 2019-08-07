@@ -24,6 +24,7 @@
       external linregion
       logical linregion
       include 'plascom.f'
+      include 'creincom.f'
 ! Collision settings.
       include 'colncom.f'
       include 'facebcom.f'
@@ -56,6 +57,7 @@
       include 'partcom.f'
 
 !-------------------------------------------------------------
+      reinspecies=ispecies
       ndeposits=0
       tisq=sqrt(Ts(ispecies))
       lcollided=.false.
@@ -687,6 +689,7 @@
 ! meshcom provides ixnp, xn, the mesh spacings. (+ndims)
       include 'ndimsdecl.f'
       include 'meshcom.f'
+      include 'creincom.f'
       real xi(3*ndims)
       integer ixp(ndims)
       real xfrac(ndims)
@@ -736,10 +739,28 @@
 ! end on it. The length is between end mid-cell positions.
                xgridlen=(xn(ixnp(id+1))+xn(ixnp(id+1)-1)
      $              -(xn(ixnp(id)+1)+xn(ixnp(id)+2)))*0.499999
-               if(xm.le.fist)then
+               if(xm.le.fist)then ! relocate near xmeshend
                   xi(id)=xi(id)+xgridlen
-               elseif(xm.ge.fisz)then
+                  if(ipartperiod(id).eq.5)then
+                     index=2*id-1 ! index odd for velocity reset
+                     call ranlux(ra,1)
+                     ra=ra*ncrein
+                     ir=int(ra)
+                     fr=ra-ir
+                     xi(ndims+id)=hreins(ir,index,reinspecies)
+     $                    *(1-fr)+hreins(ir+1,index,reinspecies)*fr
+                  endif
+               elseif(xm.ge.fisz)then ! relocate near xmeshstart
                   xi(id)=xi(id)-xgridlen
+                  if(ipartperiod(id).eq.5)then
+                     index=2*id ! index even for velocity reset
+                     call ranlux(ra,1)
+                     ra=ra*ncrein
+                     ir=int(ra)
+                     fr=ra-ir
+                     xi(ndims+id)=hreins(ir,index,reinspecies)
+     $                    *(1-fr)+hreins(ir+1,index,reinspecies)*fr
+                  endif
                endif
                ix=interp(xn(ioff+1),isz,xi(id),xm)
                if(.not.(xm.gt.fist.and.xm.lt.fisz))then
