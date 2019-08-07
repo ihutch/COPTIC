@@ -43,7 +43,7 @@
          iuds(id)=imeshstep(id,iblk)
 !         write(*,'(a,i3,10f8.3)')
 !     $        ' Meshspec',id,(xmeshpos(id,kk),kk=1,iblk)
-         if(ipartperiod(id).eq.4)then
+         if(ipartperiod(id).eq.4.or.ipartperiod(id).eq.5)then
 ! Half-cell-position mesh ends (but id+1 mesh is not yet set).
             xmeshstart(id)=(xn(ixnp(id)+1)+xn(ixnp(id)+2))*.5
             xmeshend(id)=(xn(ixnp(id)+iuds(id))

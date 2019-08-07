@@ -723,7 +723,7 @@
 ! --------------------------------------------------------------
 ! Interp costs here were 18% of particle intensive runs.
 !         ix=interp(xn(ioff+1),isz,xi(id),xm)
-         if(ipartperiod(id).eq.4)then
+         if(ipartperiod(id).eq.4.or.ipartperiod(id).eq.5)then
 ! In periodic directions, we do not allow particles to be closer to the
 ! mesh boundary than half a cell, so as to use periodicity consistent
 ! with the potential periodicity. chargetomesh does additional sums 

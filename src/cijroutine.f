@@ -507,11 +507,11 @@
 !      goto 102
       do id=1,ndims
          if(ipartperiod(id)/64-(ipartperiod(id)/128)*2.ne.1
-     $        .and.ipartperiod(id).ne.4)then
+     $        .and.ipartperiod(id).ne.4.and.ipartperiod(id).ne.5)then
             if(indi(id).eq.0)goto 102
          endif
          if(ipartperiod(id)/128-(ipartperiod(id)/256)*2.ne.1
-     $        .and.ipartperiod(id).ne.4)then
+     $        .and.ipartperiod(id).ne.4.and.ipartperiod(id).ne.5)then
             if(indi(id).eq.iused(id)-1)goto 102
          endif
       enddo

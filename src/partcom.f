@@ -44,11 +44,14 @@
       real crelax,caverein,chi
 ! Flags for which dimensions are periodic or absorbing for particles.
 ! 0 open, 1 lower absorbs, 2 upper absorbs, 3 both absorb, 4 periodic
+! 5 periodic with v-reset.
       integer ipartperiod(ndims)
 ! Effective face area for purposes of reinjection. Small if periodic.
       real fcarea(ndims)
 ! Whether not all directions of particles are periodic
       logical lnotallp
+! Whether velocity is reset to the external distrib on periodic exchange
+!      logical lvperiod(ndims)
 ! Ibool defining region of particles.
       integer ibtotal_part
       parameter (ibtotal_part=100)

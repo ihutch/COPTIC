@@ -220,7 +220,8 @@
       do i=1,ndims
          fcarea(i)=1.
 ! Set area tiny for period directions
-         if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
+         if(lnotallp.and.(ipartperiod(i).eq.4.or.ipartperiod(i).eq.5)
+     $        )fcarea(i)=1.e-6
          do j=1,ndims-1
             id=mod(i+j-1,ndims)+1
             fcarea(i)=fcarea(i)*abs(xmeshend(id)-xmeshstart(id))
@@ -689,7 +690,8 @@
 ! In reality this calculation is needed only once.
       do i=1,ndims
          fcarea(i)=1.
-         if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
+         if(lnotallp.and.(ipartperiod(i).eq.4.or.ipartperiod(i).eq.5)
+     $        )fcarea(i)=1.e-6
          do j=1,ndims-1
             id=mod(i+j-1,ndims)+1
             fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
@@ -768,7 +770,8 @@
                fcarea(i)=1.
 ! We don't correct area here, because we now count every relocation as
 ! a reinjection.
-               if(lnotallp.and.ipartperiod(i).eq.4)fcarea(i)=1.e-6
+               if(lnotallp.and.(ipartperiod(i).eq.4.
+     $              or.ipartperiod(i).eq.5))fcarea(i)=1.e-6
                do j=1,ndims-1
                   id=mod(i+j-1,ndims)+1
                   fcarea(i)=fcarea(i)*(xmeshend(id)-xmeshstart(id))
@@ -934,7 +937,8 @@
       ctot=0.
       do i=1,ndims
 !         if(myid.eq.0)write(*,*)ipartperiod(i),cdistflux(i)
-         if(ipartperiod(i).eq.3.or.ipartperiod(i).eq.4)
+         if(ipartperiod(i).eq.3.or.
+     $        ipartperiod(i).eq.4.or.ipartperiod(i).eq.5)
      $        cdistfluxs(i,ispecies)=0.
 ! Normalize the cdistflux and cdistcum to face area.
          cdistfluxs(i,ispecies)=cdistfluxs(i,ispecies)*fcarea(i)
