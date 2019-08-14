@@ -15608,3 +15608,10 @@ ipartperiod is printed). So don't bother with additional tests.
 Need to pass reinspecies from padvnc to partlocate via creincom.f
 Seems to be working.
 
+8 Aug 19
+Got this working although with large core count it gave a slight upward
+potential curve at the boundary. Not yet understood. However, it failed
+to get rid of the streaks. There is not much difference obvious between 
+psi.8/B20x512y238 and psi.8/B20x512y238vreset. They both have substantial
+growth of instability by 6000 steps, with clear streaks. Hence there's not
+so much incentive to thoroughly debug the ipartperiod 5 code.

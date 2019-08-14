@@ -523,26 +523,32 @@ c*********************************************************************
 c Flattened sech^4 potential function.
       real function phiofx(x,psi,coshlen,toplen)
       real x,psi,coshlen,toplen
+c Factor by which to flatten f at separatrix; gfac=0.6 is flat.
+      gfac=0.
       et=exp(min(-toplen,10.))
       xo=x/coshlen
       if(.not.abs(xo).le.10.)then
          phiofx=0.
       else
-         phiofx=psi*(1.+et)
-     $        /(1.+et*cosh(xo)**4)
+         phishape=(1.+et)/(1.+et*cosh(xo)**4)
+         phiofx=psi*phishape*(1.+(phishape-1.)*gfac)
       endif
       end
 c*********************************************************************
 c Derivative of phiofx
       real function derivphiofx(x,psi,coshlen,toplen)
       real x,psi,coshlen,toplen
+      gfac=0.
       et=exp(min(-toplen,10.))
       xo=x/coshlen
       if(.not.abs(xo).le.10.)then
          derivphiofx=0.
       else
-         derivphiofx=-4.*psi/coshlen *et*(1.+et)*sinh(xo)*cosh(xo)**3
-     $        /(1+et*cosh(xo)**4)**2
+         coshxo=cosh(xo)
+         phishape=(1.+et)/(1.+et*coshxo**4)
+         derivphiofshape=-4./coshlen *et*(1.+et)*sinh(xo)*coshxo**3
+     $        /(1+et*coshxo**4)**2
+         derivphiofx=psi*derivphiofshape*(1.+(2.*phishape-1.)*gfac)
       endif
       end
 c********************************************************************
@@ -588,8 +594,9 @@ c Allow a value beyond the xmax range so long as phiv is non-negative.
 c********************************************************************
       real function findxofran(ranf,psi,coshlen,tl,xmin,xmax,nbi)
 c Find by bisection the x-position given the range fraction ranf s.t.
-c   ranf=(xc-xmin)/(xmax-xmin)+derivphiofx(xc...) 
-c and return xc. This expression is the cumulative probability.
+c   ranf=(xc-xmin+derivphiofx(xc...))/(xmax-xmin) 
+c and return xc. This expression is the cumulative probability because
+c P\propto \int n_e dx = \int d/dx(\phi')+1 dx=\phi'+x+ const.
 c Up to nbi bisections are allowed.
 c Shortcuts are taken if potential is less than a range of relevance.
       real ranf,psi,coshlen,tl,xmin,xmax

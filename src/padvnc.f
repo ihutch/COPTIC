@@ -749,6 +749,7 @@
                      fr=ra-ir
                      xi(ndims+id)=hreins(ir,index,reinspecies)
      $                    *(1-fr)+hreins(ir+1,index,reinspecies)*fr
+!                     write(*,*)'Relocate x=',xi(id),' vx=',xi(ndims+id)
                   endif
                elseif(xm.ge.fisz)then ! relocate near xmeshstart
                   xi(id)=xi(id)-xgridlen
