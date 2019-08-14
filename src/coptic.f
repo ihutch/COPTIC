@@ -136,7 +136,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,wavespec,LNPF,ifull,ierr)
+     $     ,holegfac,wavespec,LNPF,ifull,ierr)
 ! Hack to prevent incompatible particles
       if(nparta(1).ne.0 .and.
      $     (ipartperiod(1).ne.0.or.ipartperiod(2).ne.0

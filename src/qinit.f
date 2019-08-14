@@ -523,8 +523,10 @@ c*********************************************************************
 c Flattened sech^4 potential function.
       real function phiofx(x,psi,coshlen,toplen)
       real x,psi,coshlen,toplen
+      include 'ndimsdecl.f'
+      include 'partcom.f'
 c Factor by which to flatten f at separatrix; gfac=0.6 is flat.
-      gfac=0.
+      gfac=holegfac
       et=exp(min(-toplen,10.))
       xo=x/coshlen
       if(.not.abs(xo).le.10.)then
@@ -538,7 +540,9 @@ c*********************************************************************
 c Derivative of phiofx
       real function derivphiofx(x,psi,coshlen,toplen)
       real x,psi,coshlen,toplen
-      gfac=0.
+      include 'ndimsdecl.f'
+      include 'partcom.f'
+      gfac=holegfac
       et=exp(min(-toplen,10.))
       xo=x/coshlen
       if(.not.abs(xo).le.10.)then

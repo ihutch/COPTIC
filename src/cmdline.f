@@ -11,7 +11,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,wavespec,LNPF,ifull,ierr)
+     $     ,holegfac,wavespec,LNPF,ifull,ierr)
       implicit none
       integer ifull,ierr
       include 'myidcom.f'
@@ -24,7 +24,7 @@
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,vneutral,debyelen,extfield,slpD ,Tneutral,Enfrac
      $     ,colpow,boltzamp
-      real holepsi,holelen,holeum,holeeta,holepow,holerad
+      real holepsi,holelen,holeum,holeeta,holepow,holerad,holegfac
       integer hspecies
 
       real wavespec(2*ndims+1)
@@ -54,7 +54,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,wavespec,LNPF)
+     $     ,holegfac,wavespec,LNPF)
 ! Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -72,7 +72,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,wavespec,LNPF)
+     $     ,holegfac,wavespec,LNPF)
 ! The double call enables cmdline switches to override objfile settings.
 !----------------------------------------------------------------------
       end
@@ -90,7 +90,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,wavespec,LNPF)
+     $     ,holegfac,wavespec,LNPF)
 
       implicit none
 
@@ -102,7 +102,7 @@
       real rcij,thetain,ripernode,crelax,colntime,dt,bdt,subcycle
      $     ,dropaccel,vneutral,debyelen,extfield,slpD ,Tneutral,Enfrac
      $     ,colpow,boltzamp
-     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad
+     $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,holegfac
       real wavespec(2*ndims+1)
       real Bfield(ndims),Bt,CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
@@ -471,14 +471,23 @@
             holeum=0.
             holepow=999
             holerad=0.
+            holegfac=0.
             hspecies=nspecies
             read(argument(4:),*,err=201,end=231)holepsi,holeum,holelen
-     $           ,holeeta,holepow,holerad
+     $           ,holeeta,holepow,holerad,holegfac
  231        continue
             if(holepsi.ne.0)then ! We are setting 
                if(nqblkmax.gt.0)then ! qinit
-                  if(holelen.eq.999)holelen=4.+holepsi/2.
-                  if(holepow.eq.999)holepow=-1/holepsi !->toplen
+                  if(holegfac.eq.0)then
+                     if(holelen.eq.999)holelen=4.+holepsi/2.
+                     if(holepow.eq.999)holepow=-1/holepsi !->toplen
+                  else  ! Flattened distribution
+                     if(holelen.eq.999)holelen=4.+holepsi/10.
+                     if(holepow.eq.999)holepow=
+     $                    max(holepsi-1./holepsi,-10.)
+                     if(lmyidhead)write(*,*)'Hole flattening gfac='
+     $                    ,holegfac,' Normal value 0.6'
+                  endif
                else               ! trapinit
                   if(holelen.eq.999)holelen=4.
                   if(holepow.eq.999)holepow=0.
@@ -637,7 +646,7 @@
  306  format(a,6f7.3)
  307  format(a,6f8.1)
  308  format(a,6i8)
- 309  format(a,6f6.2)
+ 309  format(a,7f6.2)
  310  format(a,i8,a,i8)
  311  format(a,7f6.2)
  312  format(a,L3,a)
@@ -648,7 +657,7 @@
      $     //'   ['//objfilename(1:30)
       write(*,310)' -ni   set No of particles/node   ['
      $     ,(nparta(ispecies),ispecies=1,1),'     zero => unset.'
-      write(*,301)' -rn   set reinjection number     [',ninjcomp
+      write(*,301)' -rn   set Reinjection number     [',ninjcomp
      $     ,'     fixed/step => parts/node unset.'
       write(*,304)' -ri   set rhoinfinity/node       [',ripernode
      $     ,'  => reinjection number.'
@@ -666,66 +675,66 @@
       write(*,301)' -s    set No of steps.           [',nsteps
       write(*,302)' -t    set (Ion) Temperature.     [',(Ts(ispecies)
      $     ,ispecies=1,nspecies)
-      write(*,302)' -tp   set perp. Temperature.     ['
+      write(*,302)' -tp   set Perp. Temperature.     ['
      $     ,(Tperps(ispecies),ispecies=1,nspecies)
       write(*,306)' -tge  set Elec Temp Center&Grad  [',gp0,gt
       write(*,306)' -ng   set Density gradient       [',gn
       write(*,302)' -l    set Debye Length.          [',debyelen
-      write(*,302)' -v    set drift speed.           [',(vds(ispecies)
+      write(*,302)' -v    set Drift speed.           [',(vds(ispecies)
      $     ,ispecies=1,nspecies)
       write(*,306)' -vx -vy -vz set velocity cosines [',((vdrifts(id
      $     ,ispecies),id=1,3),ispecies=1,min(2,nspecies))
-      write(*,302)' -ct   set collision time.        [',colntime
-      write(*,302)' -vn   set neutral drift velocity [',vneutral
+      write(*,302)' -ct   set Collision time.        [',colntime
+      write(*,302)' -vn   set Neutral drift velocity [',vneutral
       write(*,302)' -Ef   set Ext v-drive fraction   [',Enfrac
       write(*,302)' -cp   set v-power coln freq      [',colpow
-      write(*,308)' -sp   add a particle species     [',nspecies
+      write(*,308)' -sp   add a Particle species     [',nspecies
       write(*,302)' -sb   Boltzmann fraction         [',boltzamp
       write(*,307)' -zm   set Z/mass ratio           ['
      $     ,(eoverms(ispecies),ispecies=1,nspecies)
-      write(*,308)' -nr   set species number ratio   ['
+      write(*,308)' -nr   set Species Number ratio   ['
      $     ,(numratioa(ispecies),ispecies=1,nspecies)
-      write(*,302)' -Bx -By -Bz set mag field compts [',Bfield
-      write(*,301)' -w    set write-step period.     [',iwstep
+      write(*,302)' -Bx -By -Bz set Mag Field compts [',Bfield
+      write(*,301)' -w    set Write-step period.     [',iwstep
      $     ,'     If <1, only myid writes final.'
-      write(*,301)' -a    set averaging steps.       [',iavesteps
+      write(*,301)' -a    set Averaging steps.       [',iavesteps
      $     ,'     Also period of diagnostic writes.'
-      write(*,301)' -pd   set distribution diags     [',idistp
+      write(*,301)' -pd   set Distribution Diags     [',idistp
      $     ,'     Bits:1 write, 2 plot.'
-      write(*,301)' -pu   set uniform p-distrib bins [',nptdiag
+      write(*,301)' -pu   set Uniform p-distrib bins [',nptdiag
      $     ,'     nptdiag value. 0=>nsbins'
       write(*,301)' -md   set No of diag-moments(7). [',ndiags
-      write(*,301)' -bc   set boundary condition type[',islp
+      write(*,301)' -bc   set Boundary condition type[',islp
      $     ,'     E.g. 8201=1(1)+4(8)+13(8192)'
       write(*,301)
      $     '         Bits:1 Mach/Log[=0]  2-7:Face1-6=0  8-13:u''''=k2u'
 !      write(*,301)' -xs<3reals>, -xe<3reals>  Set mesh start/end.'
-      write(*,*)'-bf   set face bndry conditions  [ off'
+      write(*,*)'-bf   set Face Bndry conditions  [ off'
      $     ,' Values:  idn,Ain,Bin,C0in[,Cx,Cy,Cz]'
       if(iCFcount.gt.0)write(*,'(10x,l3,i2,6f8.4)')(LPF(1+mod(idn-1,3))
      $     ,idn,(CFin(id,idn),id=1,6),idn=1,6)
       write(*,*)'        idn face-number (7=>all).'
      $     ,' ABC Robin coefs. Cxyz gradients.'
-      write(*,303)' -bp<i>  toggle bndry periodicity [',LPF
+      write(*,303)' -bp<i>  toggle bndry Periodicity [',LPF
      $     ,'    in dimension <i>.'
-      write(*,312)' -bn     defeat bndry nonperiodcty[',LNPF
+      write(*,312)' -bn     defeat bndry nonPeriodcty[',LNPF
      $     ,'       When true, use no fftw solver'
-      write(*,301)' -pi<i>  set quiet part-init level[',nqblkmax
+      write(*,301)' -pi<i>  set Quiet part-init level[',nqblkmax
      $     ,'     1:no quieting, >>1:quiet'
-      write(*,311)' -pw[..] apply initial wave 1,n,xi[',wavespec
-      write(*,305)' -pp<i,j,k>  partcl bcs/periodcty [',ipartperiod
+      write(*,311)' -pw[..] apply initial Wave 1,n,xi[',wavespec
+      write(*,305)' -pp<i,j,k>  Partcl bcs/periodcty [',ipartperiod
      $     ,'    Use sum of:'
       write(*,*)'     0 open; 1 lower, 2 upper, 3 both absorbing;'
      $     ,' 4 periodic, 5 v-reset'
       write(*,*)'     +Domain end between nodes (upper byte)',
      $     ' 64:lower, 128:upper, 192:both.'
-      write(*,305)' -id<i,j,k> Set MPI block dims    [',idims
-      write(*,309)' -ih<P>[..] Set hole psi[u,l,h,p,r[',holepsi,holeum
-     $     ,holelen,holeeta,holepow,holerad
-      write(*,301)' -fs<i>  set restart switch:      [',lrestart
+      write(*,305)' -id<i,j,k> set MPI block dims    [',idims
+      write(*,309)' -ih<P>[..] Hole Psi[u,l,h,p,r,g  [',holepsi,holeum
+     $     ,holelen,holeeta,holepow,holerad,holegfac
+      write(*,301)' -fs<i>  set Restart switch:      [',lrestart
      $     ,' bit1:partls+potl, bit2:flux, bit3:name'
 
-      write(*,'(a,a)') ' -fn[path]  set particle reading/writing path: '
+      write(*,'(a,a)') ' -fn[path]  set particle reading/writing Path: '
      $     ,restartpath(1:lentrim(restartpath))
       write(*,301)' -ea --  end argument parsing. Skip succeeding.'
       goto 401
