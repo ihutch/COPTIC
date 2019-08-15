@@ -45,14 +45,18 @@ c The centers of the bins in phase space (redundancy negligible).
 
 c Accumulate
       do i=iicparta(ispecies),iocparta(ispecies)
-         x=x_part(id,i)
-         v=x_part(id+ndims,i)
-         ixbin=int(.99999*(x-psxmin)/(psxmax-psxmin)*float(npsx)+1)
-         ivbin=int(.99999*(v-psvmin)/(psvmax-psvmin)*float(npsv)+1)
-         if(ivbin.gt.0 .and. ivbin.le.npsv
-     $        .and.x_part(iflag,i).ne.0)then
-c Not for velocity beyond the vrange
-            psfxv(ixbin,ivbin)=psfxv(ixbin,ivbin)+1.
+         if(x_part(iflag,i).ne.0)then
+            v=x_part(id+ndims,i)
+            x=x_part(id,i)-0.5*x_part(idtp,i)*v
+            ixbin=int(.99999*(x-psxmin)/(psxmax-psxmin)*float(npsx)+1)
+            ivbin=int(.99999*(v-psvmin)/(psvmax-psvmin)*float(npsv)+1)
+c Wrap periodically the x-position bins in case of exit.
+            if(ixbin.lt.1)ixbin=npsx+ixbin
+            if(ixbin.gt.npsx)ixbin=ixbin-npsx
+            if(ivbin.gt.0 .and. ivbin.le.npsv)then
+c Not for velocity beyond the vrange or x beyond x-range.
+               psfxv(ixbin,ivbin)=psfxv(ixbin,ivbin)+1.
+            endif
          endif
       enddo
 c All reduce to sum the distributions from all processes.

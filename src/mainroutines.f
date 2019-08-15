@@ -244,7 +244,6 @@ c but writing and plotting only by top process
          if(lplot)then
             call minmax(u(1,2,2),iuds(1),umin,umax)
             phirange=max(phirange,umax*.95)
-            call pfset(3)
             call multiframe(2,1,1)
             call pltinit(xmeshstart(id),xmeshend(id),-phirange,phirange)
             call axis()
@@ -267,11 +266,12 @@ c but writing and plotting only by top process
                   call color(thespecies+4)
                   psn=psn/psnmax
                   call polyline(psx,psn,npsx)
-                  call legendline(0.8,0.05+0.08*thespecies,
-     $                 0,nlabel(thespecies))
+                  if(nspecies.gt.1)call legendline(0.8,0.05+0.08
+     $                 *thespecies,0,nlabel(thespecies))
                enddo
-               call color(15)
+!               call color(15)
                call legendline(1.04,0.3,258,'!Bn!@')
+               call color(15)
                call phaseplot
                call color(15)
                call vecw(xmeshstart(id),vds(1),0)

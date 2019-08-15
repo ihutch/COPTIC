@@ -1,4 +1,5 @@
       program phasespace
+! Analysis. Not to be confused with routines in src/phasespace.f.
 ! Read particle data and construct phase space plots.
       include 'examdecl.f' 
 ! (Examdecl itself includes meshcom.f plascom.f, objcom.f)
@@ -28,6 +29,8 @@
       integer iuin(ndimsmax)
       integer ivtk
       integer ndfirst,ndlast
+      integer iepeak(1)
+      integer iaxis
 !      character*200 ivarnames(2*ndimsmax)
 
       nfmax=nfilemax
@@ -36,31 +39,26 @@
       nprocs=1
       ndfirst=1
       ndlast=3
+      iaxis=0
       do id=1,ndimsmax
-         xlimit(1,id)=-5.
-         xlimit(2,id)=5.
+         xlimit(1,id)=-500.
+         xlimit(2,id)=500.
          xnewlim(1,id)=0.
          xnewlim(2,id)=0.
-         vlimit(1,id)=-4.
-         vlimit(2,id)=4.
+         vlimit(1,id)=-3.5
+         vlimit(2,id)=3.5
       enddo
 
       call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc,ivtk
      $     ,ispecies,ndfirst,ndlast)
 
 !      elimit(2)=0.5*(vlimit(2,1))**2
-      elimit(2)=1.
+      elimit(2)=2.
       elimit(1)=-1.
 ! Make box join at e=0. Decide how many boxes e<0
       ne0=int(ne*(-elimit(1))/(elimit(2)-elimit(1)))
       de=-elimit(1)/ne0
       elimit(2)=ne*de+elimit(1)
-
-      do id=1,ndimsmax
-! Needed? initialization removed from partacinit.
-         xmeshstart(id)=min(-5.,xlimit(1,id))
-         xmeshend(id)=max(5.,xlimit(2,id))
-      enddo
 
 ! Now the base filename is in partfilename.
 ! Do the file naming calculations.
@@ -91,6 +89,17 @@
       call array3read(phifilename,ifull,iuds,ied,u,ierr)
       if(ierr.eq.0.and.abs(phip).gt.1.)elimit(1)=phip
 
+! Don't allow xlimits beyond mesh ends less one cell
+      do id=1,ndimsmax
+!         write(*,*)'xlimit',xlimit(1,id),xlimit(2,id)
+!         write(*,*)'id,xn',id,xn(ixnp(id)+1),xn(ixnp(id+1))
+         xlimit(1,id)=max(xlimit(1,id),
+     $        (xn(ixnp(id)+1)+xn(ixnp(id)+2))/2)
+         xlimit(2,id)=min(xlimit(2,id),
+     $        (xn(ixnp(id+1))+xn(ixnp(id+1)-1))/2)
+!         write(*,*)'xlimit',xlimit(1,id),xlimit(2,id)
+      enddo
+
 ! Possible multiple particles files.
       nfvaccum=0
       nhist=0
@@ -103,7 +112,6 @@
          endif
          Bt=0.
          call partread(name,ierr)
-         if(ierr.ne.0)write(*,*)'Partread returns error',ierr
          if(ispecies.gt.nspecies)then
             ispecies=nspecies
             write(*,*)'nspecies=',nspecies,'  Reset ispecies',ispecies
@@ -128,10 +136,20 @@
          endif
          if(cellvol.eq.-1)write(*,*)'Bfield (projection)',Bfield
 ! Now act on the particle data we have read in:
+         if(iaxis.eq.0)then
 ! Choose active axis based on b-settings
-         do k=1,ndims
-            if(Bfield(k).ne.0)iaxis=k
-         enddo
+            do k=1,ndims
+               if(Bfield(k).ne.0)iaxis=k
+            enddo
+! When first determined, shave ends off iaxis direction, if needed:
+            fr=1./nx
+            if(xlimit(1,iaxis).eq.
+     $           (xn(ixnp(iaxis)+1)+xn(ixnp(iaxis)+2))/2)
+     $        xlimit(1,iaxis)=(1-fr)*xlimit(1,iaxis)+fr*xlimit(2,iaxis)
+            if(xlimit(2,iaxis).eq.
+     $           (xn(ixnp(iaxis+1))+xn(ixnp(iaxis+1)-1))/2)
+     $        xlimit(2,iaxis)=fr*xlimit(1,iaxis)+(1-fr)*xlimit(2,iaxis)
+         endif
 ! As we go, plot dots in phase-space
          call plotlocalphasepoints(xlimit,vlimit,iaxis,ispecies
      $        ,nfvaccum)
@@ -146,15 +164,50 @@
  11   continue
       call pltend()
 
+      xl=xlimit(2,iaxis)-xlimit(1,iaxis)
+      tup=sqrt(4.*3.1415926/xl) ! sqrt trapped to untrapped weight ratio.
+! Find the maximum of the energy occurrence histogram epeak.
+      iepeak=maxloc(ehist)
+      i=iepeak(1)
+! The histogram is assigned as ie=int(1+(energy-elimit(1))/de)
+! Which makes box 1 contain 0 to de, etc: on average 0.5de.
+! Therefore this is the center energy of the peak box:
+!      epeak=(i-0.5)*(elimit(2)-elimit(1))/ne +elimit(1)
+! Centroid of 3 peak boxes (not weighted appropriately)
+!      epeak=elimit(1)+
+!     $     (ehist(i-1)*(i-1.5)+ehist(i)*(i-0.5)+ehist(i+1)*(i+0.5))
+!     $     /(ehist(i-1)+ehist(i)+ehist(i+1))*(elimit(2)-elimit(1))/ne
+! Centroid of 3 peak boxes weighted by trap/untrap ratio.
+      epeak=elimit(1)+
+     $     (ehist(i-1)*(i-1.5)/tup+ehist(i)*(i-0.5)
+     $              +ehist(i+1)*(i+0.5)*tup)
+     $     /(ehist(i-1)/tup+ehist(i)+ehist(i+1)*tup)
+     $     *(elimit(2)-elimit(1))/ne
 ! Plot the energy histogram.
-      write(*,*)'nhist,emin,emax=',nehist,elimit(1),elimit(2)
-      write(*,'(10f8.0)')ehist
+      write(*,'(a,i8,3f8.4)')'nhist,emin,emax,epeak='
+     $     ,nehist,elimit(1),elimit(2),epeak
+!      write(*,'(10f8.0)')ehist
       eh(0)=elimit(1)
       do i=1,ne
-         ev(i)=(i-0.5)*(elimit(2)-elimit(1))/ne +elimit(1)
-         eh(i)=(i-0.)*(elimit(2)-elimit(1))/ne +elimit(1)
-         ehistscaled(i)=ehist(i)
-     $        /abs( sqrt(abs(eh(i))) - sqrt(abs(eh(i-1))) )
+         ev(i)=(i-0.5)*(elimit(2)-elimit(1))/ne +elimit(1)-epeak
+         eh(i)=(i-0.)*(elimit(2)-elimit(1))/ne +elimit(1)-epeak
+! The scaling to give f needs to divide the occurrences by the v-width
+! The v-values are (propto) sqrt(|e|) and we use the box edges.
+!         ehistscaled(i)=ehist(i)
+!     $        /(sign(sqrt(abs(eh(i  ))),eh(i  ))
+!     $        - sign(sqrt(abs(eh(i-1))),eh(i-1)) )
+! Improved scaling
+         if(eh(i).le.0.)then  ! Trapped particle phasespace.
+            ehistscaled(i)=ehist(i)/(4.*3.1415926
+     $           *(sqrt(-2.*eh(i-1))-sqrt(-2.*eh(i))))
+         elseif(eh(i-1).ge.0)then ! Untrapped phasespace.
+            ehistscaled(i)=ehist(i)
+     $           /(xl*(sqrt(2.*eh(i))-sqrt(2.*eh(i-1))))
+         else ! Mixed trap/untrap
+            tp=4.*3.1415926*sqrt(-2.*eh(i-1))
+            up=xl*sqrt(2.*eh(i))
+            ehistscaled(i)=ehist(i)/(tp+up)
+         endif
       enddo
       call pfset(3)
       call autoplot(ev,ehist,ne)
@@ -168,21 +221,26 @@
       call altxaxis(.05,.05)
       call axptset(0.,0.)
       call ticrev
+      call legendline(.45,1.02,258,'Energy')
       call winset(.true.)
       call polybox(20.*eh,ehist,ne)
-      call legendline(.5,.95,258,'Energy/20')
       call pltend()
 
 ! The scaled version that's supposed to give f(v)
       call autoplot(ev,ehistscaled,ne)
       call axis()
-      call axis2()
+!      call axis2()
       call polybox(eh,ehistscaled,ne)
       call axlabels('Total Energy','ehistscaled')
-      call winset(.true.)
       call color(3)
+      call axptset(0.,1.)
+      call ticrev
+      call altxaxis(.05,.05)
+      call axptset(0.,0.)
+      call ticrev
+      call legendline(.45,1.02,258,'Energy')
+      call winset(.true.)
       call polybox(20.*eh,ehistscaled,ne)
-      call legendline(.6,.9,0,'Energy x20')
       call pltend()
       call pfset(0)
 
@@ -233,7 +291,8 @@
          call axlabels(axnames(iaxis),'v!d'//axnames(iaxis)//'!d')
          call color(ibrickred())
       endif
-      write(*,*)'x,vlimits',xlimit,vlimit
+      write(*,*)'x,vlimits'
+      write(*,'(6f8.3)')xlimit,vlimit
       do j=iicparta(ispecies),iocparta(ispecies)
 ! Only for filled slots
          if(x_part(iflag,j).ne.0)then
@@ -282,7 +341,7 @@
          v1=vlimit(1,iaxis)
          v2=vlimit(2,iaxis)
          vdiff=v2*1.00001-v1
-         write(*,*)'x1,x2,xdiff,v1,v2,vdiff',x1,x2,xdiff,v1,v2,vdiff
+!         write(*,*)'x1,x2,xdiff,v1,v2,vdiff',x1,x2,xdiff,v1,v2,vdiff
          do j=1,nv
             do i=1,nx
                hist(i,j)=0.
@@ -293,18 +352,20 @@
 ! Only for filled slots
          if(x_part(iflag,j).ne.0)then
             do id=1,ndims
-               x=x_part(id,j)
+!               x=x_part(id,j)
+!Leapfrog correct:
+               x=x_part(id,j)-x_part(id+ndims,j)*0.5*x_part(idtp,j) 
                v=x_part(id+ndims,j)
                if(x.lt.xlimit(1,id).or.x.gt.xlimit(2,id))goto 12
                if(v.lt.vlimit(1,id).or.v.gt.vlimit(2,id))goto 12
-               ix=int(nx*(x-x1)/xdiff+1)
-               iv=int(nv*(v-v1)/vdiff+1)
-               if(id.eq.iaxis)then
-! Here for a particle lying within the limits.
-                  nhist=nhist+1
-                  hist(ix,iv)=hist(ix,iv)+1.
-               endif
             enddo
+! Here for a particle lying within the limits.
+            x=x_part(iaxis,j)-x_part(iaxis+ndims,j)*0.5*x_part(idtp,j)
+            v=x_part(iaxis+ndims,j)
+            ix=int(nx*(x-x1)/xdiff+1)
+            iv=int(nv*(v-v1)/vdiff+1)
+            nhist=nhist+1
+            hist(ix,iv)=hist(ix,iv)+1.
          endif
  12      continue
       enddo
@@ -321,6 +382,7 @@
       include '../src/ndimsdecl.f'
       include '../src/partcom.f'
       include '../src/plascom.f'
+      include '../src/meshcom.f'
       real u(*)
       integer ifull(ndims),iexis
       real xlimit(2,ndims),elimit(2)
@@ -344,20 +406,26 @@
          enddo
          de=(elimit(2)-elimit(1))/ne
       endif
-      write(*,*)'iexis=',iexis
+!      write(*,*)'ehist axis',iexis,' dt=',dt
       do j=iicparta(ispecies),iocparta(ispecies)
 ! Only for filled slots
          if(x_part(iflag,j).ne.0)then
             v2=0.
             do id=1,ndims
-               x=x_part(id,j)
+! Leapfrog corrected position for getpotential
+               x=x_part(id,j)-x_part(id+ndims,j)*0.5*x_part(idtp,j)
                if(x.lt.xlimit(1,id).or.x.gt.xlimit(2,id))goto 12
 ! Here for a particle lying within the space limits so far
+! Locate the mesh full fractional postion of x. From potential at pt.
+               ix=interp(xn(ixnp(id)+1),ixnp(id+1)-ixnp(id),x,xm)
+               if(xm.lt.1.or.xm.gt.ixnp(id+1)-ixnp(id))then
+                  write(*,*)'Skipping mesh error',j,xm,x,xmeshstart(id)
+                  goto 12
+               endif
+               x_part(2*ndims+id,j)=xm  ! For getpotential
 ! Sum the kinetic energy for all directions if iexis=0.
                if(iexis.eq.0.or.iexis.eq.id)v2=v2+x_part(id+ndims,j)**2
-!               write(*,'(i8,i2,2f8.4,$)')j,id,x_part(id+ndims,j),v2
-            enddo
-!            write(*,*)
+            enddo            
 ! This is a wanted particle. Add its energy to histogram.
             potential=getpotential(u,cij,iLs,x_part(2*ndims+1,j),iregion
      $           ,0)
@@ -471,7 +539,7 @@
  301  format(a,i5,a)
  302  format(a,4f8.3)
  303  format(a,5i5)
-      write(*,301)'Usage: partexamine [switches] <partfile> (no ext)'
+      write(*,301)'Usage: phasespace [switches] <partfile> (no ext)'
       write(*,302)' -x -y -z<fff,fff>  set position range. [',
      $     xlimit(1,1),xlimit(2,1)
       write(*,302)' -u -v -w<fff,fff>  set velocity range. ['

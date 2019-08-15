@@ -440,16 +440,16 @@
 ! Slice plots
             if(lsliceplot.and.ldenplot)call sliceGweb(ifull,iuds,q,na_m
      $           ,zp,ixnp,xn,ifix,'density: n'//char(0),dum,dum)
-            if((iuds(2).gt.3.or.iuds(3).gt.3))then
-               if(lsliceplot.and.lphiplot)then
+            if(lsliceplot.and.lphiplot)then
+               if((iuds(2).gt.3.or.iuds(3).gt.3))then
                   call sliceGweb(ifull,iuds,u,na_m,zp,ixnp,
      $                 xn,ifix,'potential:'//'!Af!@'//char(0),dum,dum)
-               endif
-            else
-               if(.not.ldistshow)then
-                  if(myid.eq.0)write(*,*
-     $                 )'1-d does not plot potential; using -gn -gp'
-                  ldistshow=.true.
+               else
+                  if(.not.ldistshow)then
+                     if(myid.eq.0)write(*,*
+     $                    )'1-d does not plot potential; using -gn -gp'
+                     ldistshow=.true.
+                  endif
                endif
             endif
 ! Phase space done by all processes, even though only one of them plots.

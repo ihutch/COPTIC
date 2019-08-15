@@ -96,7 +96,7 @@
       read(23)charout
       if(charout(1:2).eq.'MV')then
 ! Multispecies versions:
-         if(myid.eq.0)write(*,*)'Partread MV version detected'
+!         if(myid.eq.0)write(*,*)'Partread MV version detected'
          read(23)debyelen,rs,phip,dt,ldiags
          if(.not.ichar(charout(3:3)).ge.2)read(23)ranstate
          read(23)nspecies,rhoinf,nrein,phirein,numprocs

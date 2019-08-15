@@ -739,7 +739,7 @@
       write(*,301)' -ea --  end argument parsing. Skip succeeding.'
       goto 401
  402  continue
-      write(*,301)'Debugging switches for testing'
+      write(*,301)'Debugging switches for testing and sequential plots'
       write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
       write(*,*)'-gn   Plot collisional reinjection distribution.'
@@ -770,9 +770,9 @@
      $ ,'  -gn -gp outputs a pps file and displays every step.'
      $ ,'  -gn -gp5 outputs a pps file and displays every 5 steps.'
      $ ,'  -gn -gp -gx outputs a pps file and a ps file each step'
-     $ ,'         but does not display.'
+     $     //' but does not display.'
      $ ,'  -gn -gp2 -gx3 outputs pps and ps files'
-     $ ,'         and displays every 2 steps.'
+     $     //' and displays every 2 steps.'
  401  write(*,301)' -h -?   Print usage.'
       write(*,301)' -hg     Print debugging/plotting switch usage.'
       write(*,301)' -ho     Print geomobj file format description'

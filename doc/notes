@@ -15615,3 +15615,46 @@ to get rid of the streaks. There is not much difference obvious between
 psi.8/B20x512y238 and psi.8/B20x512y238vreset. They both have substantial
 growth of instability by 6000 steps, with clear streaks. Hence there's not
 so much incentive to thoroughly debug the ipartperiod 5 code.
+
+14 Aug 19
+Upgrading phasespace.f analysis tool. Added code to find the maxlog of the
+energy occurrence histogram and to subtract it from the energy range.
+This has the effect of centering the peak at zero energy, which for a 
+hole is what you want. The scaled version of the distribution (which 
+must be divided by the v-width of the bins still has a hole at zero
+even when fixed; so I don't understand it. The problem is that the 
+x-range is too restricted, and cuts off the wings of the hole. Increasing
+the range helps a lot. However, I recall now that there's an issue with
+the scaling in that obviously if you have a very long x-domain then
+the untrapped histogram is going to be out of proportion to the 
+trapped. There must be a trapped/untrapped ratio that depends on the
+ratio of hole length to domain length. I don't have any compensation
+for that.
+
+The phase-space area is dzdv \to d\tau dW, where tau is the time during
+the orbit (see JPP2019). Therefore the total phase space area attributable
+to an energy W is T(W)dW, where T(W) is the period of the trapped orbit, 
+or the transit time of an untrapped orbit. For a sech4 hole the trapped
+orbit period is 2\pi/sqrt(-W/2) (at sepx) and the integral over a W
+interval is T(W)dW = 2\pi\sqrt(2) 2[sqrt(-W_2)-sqrt(-W_1)]. For untrapped
+particles, to lowest order the transit time is T=L/v = L/sqrt(2W) and so
+T(W)dW=L[sqrt(2W_2)-sqrt(2W_1)]. Thus the ratio of trapped to untrapped
+phase space is 4\pi/L. This seems to give an unequivocal way of
+normalizing. [Although the bounce period is sqrt(2) different for deeply
+trapped particles.]
+
+Discovered a source of distortion in the phasespace plots, arising from 
+finite dt. The velocity and position values are staggered. Therefore we
+need to subtract half-dt times the velocity from the position. Fixed.
+Probably one ought to do the same correction to the energy histogramming.
+Tried using partlocate to set the upper mesh position but did not work.
+So put the mesh position calculation right into phasespace.
+
+Also changed default domain to be the whole of the mesh, and because
+of the Leapfrog correction, shaved off the ends of mesh along iaxis.
+
+Actually the phasespace.f in src/ needs the same leapfrog correction.
+Done, wrapping position as if periodic.
+
+Realized that I should be using idtp from each particle for this correction
+instead of dt. Adjusted.

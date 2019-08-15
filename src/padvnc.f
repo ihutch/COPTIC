@@ -981,8 +981,8 @@
       if(abs(theta).eq.0.)then
 ! B-field-less Kick - Move -----------------------------
          do j=1,ndims
-            xr(j+ndims)=xr(j+ndims)+eom*Efield(j)*dtaccel
-            xr(j)=xr(j)+xr(j+ndims)*dtpos
+            xr(j+ndims)=xr(j+ndims)+eom*Efield(j)*dtaccel !Kick
+            xr(j)=xr(j)+xr(j+ndims)*dtpos                 !Drift
          enddo          
          return
       endif
