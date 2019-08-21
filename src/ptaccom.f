@@ -21,7 +21,7 @@
 ! If nsbins.eq.nptdiag, then uniform binning will be used for the summed
 ! bins. Behavior for nsbins>nptdiag is uncertain. Avoid that.
       integer nsbins
-      parameter (nsbins=32)
+      parameter (nsbins=64)
       integer ibinmap(nptdiagmax,ndimsmax)
       real vsbin(nsbins,ndimsmax),csbin(nsbins,ndimsmax)
       real fsv(nsbins,ndimsmax)

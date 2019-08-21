@@ -15658,3 +15658,15 @@ Done, wrapping position as if periodic.
 
 Realized that I should be using idtp from each particle for this correction
 instead of dt. Adjusted.
+
+That just about does it for now.
+
+20 Aug 19
+Found while trying to verify the initial distribution that there is a
+bug in partexamine so that the negative x end of a limited extent box
+has seemingly ~twice the distribution level it should.
+21 Aug 19
+Actually it is only twice the distribution if the total length restriction
+cuts off one combined bin's worth of distance. When the restriction is 
+less, the amplification is less. And if there's no restriction, no
+amplification. Found the error in subaccum bin limit codes. Corrected.

@@ -182,9 +182,6 @@
          endif
  12      continue
       enddo
-!      write(*,*)'Accumulated',nfvaccum,' in',xlimit,' of',iocpart
-!     $        ,' total'
-!      if(limadj.eq.1)write(*,'(a,6f10.5)')' xnewlim=',xnewlim
 
              
       end
@@ -450,8 +447,8 @@
 ! Only for filled slots
          if(x_part(iflag,j).ne.0)then
             do id=1,ndims
-! Calculate the spatial sub-bin pointer.
-               isind(id)=1+int(isuds(id)*
+! Calculate the spatial sub-bin pointer, corrected 21 Aug 19.
+               isind(id)=nint(0.5+isuds(id)*
      $              (x_part(id,j)-xnewlim(1,id))*xsf(id))
 ! If we are outside the range skip this particle.
                if(isind(id).gt.isuds(id).or.isind(id).le.0)goto 1

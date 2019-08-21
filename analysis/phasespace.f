@@ -21,7 +21,7 @@
       real vlimit(2,ndimsmax)
       
       integer nx,nv
-      parameter (nx=50,nv=50,ne=400)
+      parameter (nx=70,nv=70,ne=400)
       real hist(nx,nv),cworka(nx,ne),zclv(nx)
       real ehist(ne),ev(ne),ehistscaled(ne)
       real eh(0:ne)
@@ -91,12 +91,11 @@
 
 ! Don't allow xlimits beyond mesh ends less one cell
       do id=1,ndimsmax
-!         write(*,*)'xlimit',xlimit(1,id),xlimit(2,id)
-!         write(*,*)'id,xn',id,xn(ixnp(id)+1),xn(ixnp(id+1))
-         xlimit(1,id)=max(xlimit(1,id),
-     $        (xn(ixnp(id)+1)+xn(ixnp(id)+2))/2)
-         xlimit(2,id)=min(xlimit(2,id),
-     $        (xn(ixnp(id+1))+xn(ixnp(id+1)-1))/2)
+! Set meshstart/end for periodic particles
+         xmeshstart(id)=(xn(ixnp(id)+1)+xn(ixnp(id)+2))/2
+         xmeshend(id)=(xn(ixnp(id+1))+xn(ixnp(id+1)-1))/2
+         xlimit(1,id)=max(xlimit(1,id),xmeshstart(id))
+         xlimit(2,id)=min(xlimit(2,id),xmeshend(id))
 !         write(*,*)'xlimit',xlimit(1,id),xlimit(2,id)
       enddo
 
@@ -165,7 +164,11 @@
       call pltend()
 
       xl=xlimit(2,iaxis)-xlimit(1,iaxis)
-      tup=sqrt(4.*3.1415926/xl) ! sqrt trapped to untrapped weight ratio.
+      wp=6.
+      xl=(xl-wp)/sqrt(2.)  !HACK!!!!
+! My analytic estimate omits this sqrt(2) but for reasons not yet known
+! a continuous connection across the velocity separatrix requires it.
+      tup=sqrt(2.*3.1415926/xl) ! sqrt trapped to untrapped weight ratio.
 ! Find the maximum of the energy occurrence histogram epeak.
       iepeak=maxloc(ehist)
       i=iepeak(1)
@@ -183,10 +186,11 @@
      $              +ehist(i+1)*(i+0.5)*tup)
      $     /(ehist(i-1)/tup+ehist(i)+ehist(i+1)*tup)
      $     *(elimit(2)-elimit(1))/ne
+!      epeak=0.
 ! Plot the energy histogram.
       write(*,'(a,i8,3f8.4)')'nhist,emin,emax,epeak='
      $     ,nehist,elimit(1),elimit(2),epeak
-!      write(*,'(10f8.0)')ehist
+      write(*,'(a,10f8.4)')'xl,wp=',xl,wp
       eh(0)=elimit(1)
       do i=1,ne
          ev(i)=(i-0.5)*(elimit(2)-elimit(1))/ne +elimit(1)-epeak
@@ -198,15 +202,15 @@
 !     $        - sign(sqrt(abs(eh(i-1))),eh(i-1)) )
 ! Improved scaling
          if(eh(i).le.0.)then  ! Trapped particle phasespace.
-            ehistscaled(i)=ehist(i)/(4.*3.1415926
-     $           *(sqrt(-2.*eh(i-1))-sqrt(-2.*eh(i))))
+            ehistscaled(i)=ehist(i)/(4.*sqrt(2.)*3.1415926
+     $           *(sqrt(-eh(i-1))-sqrt(-eh(i))))
          elseif(eh(i-1).ge.0)then ! Untrapped phasespace.
-            ehistscaled(i)=ehist(i)
-     $           /(xl*(sqrt(2.*eh(i))-sqrt(2.*eh(i-1))))
+            ehistscaled(i)=ehist(i)*sqrt(2.)
+     $           /(4.*xl*(sqrt(eh(i))-sqrt(eh(i-1))))
          else ! Mixed trap/untrap
-            tp=4.*3.1415926*sqrt(-2.*eh(i-1))
-            up=xl*sqrt(2.*eh(i))
-            ehistscaled(i)=ehist(i)/(tp+up)
+            tp=sqrt(2.)*3.1415926*sqrt(-eh(i-1))
+            up=xl*sqrt(eh(i)/2.)
+            ehistscaled(i)=ehist(i)/(4.*(tp+up))
          endif
       enddo
       call pfset(3)
@@ -261,11 +265,17 @@
       call axis
       call pltend()
 ! Second example to illustrate autocolcont.
+      if(.false.)then
       call pltinit(1.,float(nx),1.,float(nv))
       call autocolcont(hist,nx,nx,nv)
       call scalewn(xlimit(1,iaxis),xlimit(2,iaxis),vlimit(1,iaxis)
      $     ,vlimit(2,iaxis),.false.,.false.)
       call axis
+      call pltend()
+      endif
+! Plot using the coptic code, needs xmeshstart/end set correctly.
+      nstep=0
+      call phasepscont(ifull,iuds,u,nstep,.true.,'')
       call pltend()
 
       end
@@ -360,6 +370,7 @@
                if(v.lt.vlimit(1,id).or.v.gt.vlimit(2,id))goto 12
             enddo
 ! Here for a particle lying within the limits.
+!            x=x_part(iaxis,j)
             x=x_part(iaxis,j)-x_part(iaxis+ndims,j)*0.5*x_part(idtp,j)
             v=x_part(iaxis+ndims,j)
             ix=int(nx*(x-x1)/xdiff+1)
