@@ -15670,3 +15670,13 @@ Actually it is only twice the distribution if the total length restriction
 cuts off one combined bin's worth of distance. When the restriction is 
 less, the amplification is less. And if there's no restriction, no
 amplification. Found the error in subaccum bin limit codes. Corrected.
+
+Now I still have the phasespace area puzzle that is a sqrt(2) factor off
+
+27 Aug 19
+Replaced the sqrt(2) hack with better justified trapped particle period
+including finite W corrections, and also correction to untrapped effective
+box length allowing for hole influence. 
+
+Also made phasespace work with multiply-specified files on the command line
+(as well as extension-free specification which reads all.)

@@ -90,6 +90,8 @@
       include 'rancom.f'
       include 'myidcom.f'
       character*(100) charout
+      logical warned
+      data warned/.false./
 
       ierr=0
       open(23,file=name,status='old',form='unformatted',err=101)
@@ -133,11 +135,12 @@
       endif
       if(numprocs.gt.nprocs)then
 ! Adjust values for reduced restart processes.
-         if(myid.eq.0)write(*,*)'Partread numprocs'
+         if(myid.eq.0.and..not.warned)write(*,*)'Partread numprocs'
      $        ,' bigger than nprocs.',numprocs,nprocs,' Adjusted.'
          rhoinf=rhoinf*nprocs/numprocs
          numprocs=nprocs
          ierr=ierr+16
+         warned=.true.
       endif
       goto 103
  102  write(*,*)'=========== Partread Failed reading x_part ========='

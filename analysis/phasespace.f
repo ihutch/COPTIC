@@ -33,6 +33,7 @@
       integer iaxis
 !      character*200 ivarnames(2*ndimsmax)
 
+! Maximum number of files to read for specification without extension.
       nfmax=nfilemax
 
 ! Defaults
@@ -49,126 +50,128 @@
          vlimit(2,id)=3.5
       enddo
 
-      call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc,ivtk
-     $     ,ispecies,ndfirst,ndlast)
-
-!      elimit(2)=0.5*(vlimit(2,1))**2
-      elimit(2)=2.
+      elimit(2)=1.5
       elimit(1)=-1.
 ! Make box join at e=0. Decide how many boxes e<0
       ne0=int(ne*(-elimit(1))/(elimit(2)-elimit(1)))
       de=-elimit(1)/ne0
       elimit(2)=ne*de+elimit(1)
 
-! Now the base filename is in partfilename.
-! Do the file naming calculations.
-      ip=lentrim(partfilename)-3
-      if(partfilename(ip:ip).eq.'.')then
-! If filename has a 3-character extension or is a numbered pex
-! file, assume it is complete and that we are reading just one
-! file. Should do this only the first time.
-         nfmax=0
-         name=partfilename
-         write(*,*)'Reading single file ',name(1:lentrim(name))
-         if(partfilename(ip:ip+3).eq.'.pex')then
-            write(*,*)'Using stored distribution file'
-            nfmax=-1
-         endif
-         phifilename=partfilename(1:ip)//'phi'
-      elseif(partfilename(ip-4:ip-1).eq.'.pex')then
-         nfmax=-1
-         name=partfilename
-         write(*,*)'Reading numbered pex file ',name(1:lentrim(name))
-         phifilename=partfilename(1:ip-4)//'phi'
-      else
-         phifilename=partfilename(1:lentrim(partfilename))//'.phi'
-      endif
-
-! Read in potential
-      ied=1
-      call array3read(phifilename,ifull,iuds,ied,u,ierr)
-      if(ierr.eq.0.and.abs(phip).gt.1.)elimit(1)=phip
-
-! Don't allow xlimits beyond mesh ends less one cell
-      do id=1,ndimsmax
-! Set meshstart/end for periodic particles
-         xmeshstart(id)=(xn(ixnp(id)+1)+xn(ixnp(id)+2))/2
-         xmeshend(id)=(xn(ixnp(id+1))+xn(ixnp(id+1)-1))/2
-         xlimit(1,id)=max(xlimit(1,id),xmeshstart(id))
-         xlimit(2,id)=min(xlimit(2,id),xmeshend(id))
-!         write(*,*)'xlimit',xlimit(1,id),xlimit(2,id)
-      enddo
-
-! Possible multiple particles files.
       nfvaccum=0
       nhist=0
       nehist=0
-      do i=0,nfmax
-         if(nfmax.ne.0)then
-            write(chartemp,'(''.'',i3.3)')i
-            name=partfilename(1:lentrim(partfilename))//chartemp
+      iworking=0
+! Iterate over possibly multiple file definitions.
+      do ifile=1,nfilemax
+         call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc,ivtk
+     $        ,ispecies,ndfirst,ndlast,iworking)
+         if(iworking.eq.-1)goto 11 ! Exhausted arguments/files
+         if(ifile.eq.1)then
+! On first return, base filename is in partfilename.
+! Do the file naming calculations.
+            ip=lentrim(partfilename)-3
+            if(partfilename(ip:ip).eq.'.')then
+! If filename has a 3-character extension, we are reading one file at a time. 
+               nfmax=0
+               name=partfilename
+               if(partfilename(ip:ip+3).eq.'.pex')then
+                  write(*,*)'Using stored distribution file'
+                  nfmax=-1
+               endif
+               phifilename=partfilename(1:ip)//'phi'
+            elseif(partfilename(ip-4:ip-1).eq.'.pex')then
+               nfmax=-1
+               name=partfilename
+               write(*,*)'Reading numbered pex file '
+     $              ,name(1:lentrim(name))
+               phifilename=partfilename(1:ip-4)//'phi'
+            else ! Extensionless filename
+               phifilename=partfilename(1:lentrim(partfilename))//'.phi'
+            endif            
+! Read in potential
+            ied=1
+            call array3read(phifilename,ifull,iuds,ied,u,ierr)
+            if(ierr.eq.0.and.abs(phip).gt.1.)elimit(1)=phip
+            
+! Don't allow xlimits beyond mesh ends less one cell
+            do id=1,ndimsmax
+! Set meshstart/end for periodic particles
+               xmeshstart(id)=(xn(ixnp(id)+1)+xn(ixnp(id)+2))/2
+               xmeshend(id)=(xn(ixnp(id+1))+xn(ixnp(id+1)-1))/2
+               xlimit(1,id)=max(xlimit(1,id),xmeshstart(id))
+               xlimit(2,id)=min(xlimit(2,id),xmeshend(id))
+!         write(*,*)'xlimit',xlimit(1,id),xlimit(2,id)
+            enddo
+         endif     ! End of first ifile initialization
+
+! Multiple particles files, only if we haven't read one with extension
+         do i=0,nfmax
+            if(nfmax.ne.0)then
+               write(chartemp,'(''.'',i3.3)')i
+               name=partfilename(1:lentrim(partfilename))//chartemp
+            else
+               name=partfilename
+            endif
             write(*,*)'Reading file ',name(1:lentrim(name))
-         endif
-         Bt=0.
-         call partread(name,ierr)
-         if(ispecies.gt.nspecies)then
-            ispecies=nspecies
-            write(*,*)'nspecies=',nspecies,'  Reset ispecies',ispecies
-         endif
-         if(ldoc)then
-            write(*,*)'debyelen,Ti,vd,rs,phip=',debyelen,Ti,vd,rs,phip
-            write(*,*)'iregion_part,n_part,dt,ldiags,rhoinf,nrein,',
-     $           'phirein,numprocs='
-            write(*,*)iregion_part,n_part,dt,ldiags,rhoinf,nrein,phirein
-     $           ,numprocs
-            write(*,*)'eoverm,Bt,Bfield,vpar,vperp=',eoverm,Bt,Bfield
-     $           ,vpar,vperp
-            write(*,*)'nspecies',nspecies
-!            stop
-         endif
-         if(ierr-4*(ierr/4).ne.0)goto 11
-         if(Bdirs(4).gt.0. .or. Bt.eq.0)then
+            Bt=0.
+            call partread(name,ierr)
+            if(ispecies.gt.nspecies)then
+               ispecies=nspecies
+               write(*,*)'nspecies=',nspecies,'  Reset ispecies'
+     $              ,ispecies
+            endif
+            if(ldoc)then
+               write(*,*)'debyelen,Ti,vd,rs,phip=',debyelen,Ti,vd,rs
+     $              ,phip
+               write(*,*)'iregion_part,n_part,dt,ldiags,rhoinf,nrein,',
+     $              'phirein,numprocs='
+               write(*,*)iregion_part,n_part,dt,ldiags,rhoinf,nrein
+     $              ,phirein,numprocs
+               write(*,*)'eoverm,Bt,Bfield,vpar,vperp=',eoverm,Bt,Bfield
+     $              ,vpar,vperp
+               write(*,*)'nspecies',nspecies
+            endif
+            if(ierr-4*(ierr/4).ne.0)goto 11
+            if(Bdirs(4).gt.0. .or. Bt.eq.0)then
 ! All directions were set by commandline. Or none were read from file.
-            do k=1,ndims
-               Bfield(k)=Bdirs(k)
-            enddo
-         endif
-         if(cellvol.eq.-1)write(*,*)'Bfield (projection)',Bfield
+               do k=1,ndims
+                  Bfield(k)=Bdirs(k)
+               enddo
+            endif
+            if(cellvol.eq.-1)write(*,*)'Bfield (projection)',Bfield
 ! Now act on the particle data we have read in:
-         if(iaxis.eq.0)then
+            if(iaxis.eq.0)then
 ! Choose active axis based on b-settings
-            do k=1,ndims
-               if(Bfield(k).ne.0)iaxis=k
-            enddo
+               do k=1,ndims
+                  if(Bfield(k).ne.0)iaxis=k
+               enddo
 ! When first determined, shave ends off iaxis direction, if needed:
-            fr=1./nx
-            if(xlimit(1,iaxis).eq.
-     $           (xn(ixnp(iaxis)+1)+xn(ixnp(iaxis)+2))/2)
-     $        xlimit(1,iaxis)=(1-fr)*xlimit(1,iaxis)+fr*xlimit(2,iaxis)
-            if(xlimit(2,iaxis).eq.
-     $           (xn(ixnp(iaxis+1))+xn(ixnp(iaxis+1)-1))/2)
-     $        xlimit(2,iaxis)=fr*xlimit(1,iaxis)+(1-fr)*xlimit(2,iaxis)
-         endif
+               fr=1./nx
+               if(xlimit(1,iaxis).eq. (xn(ixnp(iaxis)+1)+xn(ixnp(iaxis)
+     $              +2))/2) xlimit(1,iaxis)=(1-fr)*xlimit(1,iaxis)+fr
+     $              *xlimit(2,iaxis)
+               if(xlimit(2,iaxis).eq. (xn(ixnp(iaxis+1))+xn(ixnp(iaxis
+     $              +1)-1))/2) xlimit(2,iaxis)=fr*xlimit(1,iaxis)+(1-fr)
+     $              *xlimit(2,iaxis)
+            endif
 ! As we go, plot dots in phase-space
-         call plotlocalphasepoints(xlimit,vlimit,iaxis,ispecies
-     $        ,nfvaccum)
+            call plotlocalphasepoints(xlimit,vlimit,iaxis,ispecies
+     $           ,nfvaccum)
 ! Increment the phase-space histogram
-         call fhistinc(xlimit,vlimit,iaxis,ispecies,nhist,hist,nx
-     $        ,nv)
+            call fhistinc(xlimit,vlimit,iaxis,ispecies,nhist,hist,nx
+     $           ,nv)
 ! Increment the total energy histogram. Use all axes if iexis=0
-         iexis=1
-         call ehistinc(xlimit,elimit,ispecies,nehist,ehist,ne,u,ifull
-     $        ,iused,iexis)
-      enddo
+            iexis=1
+            call ehistinc(xlimit,elimit,ispecies,nehist,ehist,ne,u,ifull
+     $           ,iused,iexis,potentialmax)
+         enddo                  ! of multiple file reading
+      enddo  ! of argument reading
  11   continue
       call pltend()
 
       xl=xlimit(2,iaxis)-xlimit(1,iaxis)
-      wp=6.
-      xl=(xl-wp)/sqrt(2.)  !HACK!!!!
-! My analytic estimate omits this sqrt(2) but for reasons not yet known
-! a continuous connection across the velocity separatrix requires it.
-      tup=sqrt(2.*3.1415926/xl) ! sqrt trapped to untrapped weight ratio.
+      wp=8.   ! Estimate of hole length to be subtracted from box length
+      xl=(xl-wp)    ! Untrapped length
 ! Find the maximum of the energy occurrence histogram epeak.
       iepeak=maxloc(ehist)
       i=iepeak(1)
@@ -181,38 +184,40 @@
 !     $     (ehist(i-1)*(i-1.5)+ehist(i)*(i-0.5)+ehist(i+1)*(i+0.5))
 !     $     /(ehist(i-1)+ehist(i)+ehist(i+1))*(elimit(2)-elimit(1))/ne
 ! Centroid of 3 peak boxes weighted by trap/untrap ratio.
+      tup=sqrt(2.*3.1415926/xl) ! sqrt trapped to untrapped weight ratio.
       epeak=elimit(1)+
      $     (ehist(i-1)*(i-1.5)/tup+ehist(i)*(i-0.5)
      $              +ehist(i+1)*(i+0.5)*tup)
      $     /(ehist(i-1)/tup+ehist(i)+ehist(i+1)*tup)
      $     *(elimit(2)-elimit(1))/ne
-!      epeak=0.
-! Plot the energy histogram.
-      write(*,'(a,i8,3f8.4)')'nhist,emin,emax,epeak='
+!      epeak=epeak-.002 ! hack adjustment
+      epeak=0.         ! no adjustment
+      write(*,'(a,i8,3f8.4)')'nehist,emin,emax,epeak='
      $     ,nehist,elimit(1),elimit(2),epeak
       write(*,'(a,10f8.4)')'xl,wp=',xl,wp
       eh(0)=elimit(1)
+      twoqum1=sqrt(sqrt(2.))-1
+      G1=twoqum1*sqrt(-eh(0)/potentialmax)
+      sf1=4.*sqrt(2.)*3.141593*sqrt(-eh(0))*(1.+4.*G1/3.+G1**2/2.)
       do i=1,ne
          ev(i)=(i-0.5)*(elimit(2)-elimit(1))/ne +elimit(1)-epeak
          eh(i)=(i-0.)*(elimit(2)-elimit(1))/ne +elimit(1)-epeak
-! The scaling to give f needs to divide the occurrences by the v-width
-! The v-values are (propto) sqrt(|e|) and we use the box edges.
-!         ehistscaled(i)=ehist(i)
-!     $        /(sign(sqrt(abs(eh(i  ))),eh(i  ))
-!     $        - sign(sqrt(abs(eh(i-1))),eh(i-1)) )
-! Improved scaling
+! The scaling to give f(W) needs to divide the occurrences by the 
+! phasespace attributable to the dW.
          if(eh(i).le.0.)then  ! Trapped particle phasespace.
-            ehistscaled(i)=ehist(i)/(4.*sqrt(2.)*3.1415926
-     $           *(sqrt(-eh(i-1))-sqrt(-eh(i))))
+            G1=twoqum1*sqrt(-eh(i)/potentialmax) 
+!            G1=0  ! To turn off the T_b correction for finite W
+            sf2=4.*sqrt(2.)*3.141593*sqrt(-eh(i))*(1.+4.*G1/3.+G1**2/2.)
+            ehistscaled(i)=ehist(i)/(sf1-sf2)
+            sf1=sf2
          elseif(eh(i-1).ge.0)then ! Untrapped phasespace.
             ehistscaled(i)=ehist(i)*sqrt(2.)
      $           /(4.*xl*(sqrt(eh(i))-sqrt(eh(i-1))))
          else ! Mixed trap/untrap
-            tp=sqrt(2.)*3.1415926*sqrt(-eh(i-1))
-            up=xl*sqrt(eh(i)/2.)
-            ehistscaled(i)=ehist(i)/(4.*(tp+up))
+            ehistscaled(i)=ehist(i)/(sf1+2.*sqrt(2.)*xl*sqrt(eh(i)))
          endif
       enddo
+! Plot the energy histogram.
       call pfset(3)
       call autoplot(ev,ehist,ne)
       call axis()
@@ -225,7 +230,7 @@
       call altxaxis(.05,.05)
       call axptset(0.,0.)
       call ticrev
-      call legendline(.45,1.02,258,'Energy')
+      call legendline(.45,1.02,258,'W')
       call winset(.true.)
       call polybox(20.*eh,ehist,ne)
       call pltend()
@@ -235,7 +240,7 @@
       call axis()
 !      call axis2()
       call polybox(eh,ehistscaled,ne)
-      call axlabels('Total Energy','ehistscaled')
+      call axlabels('W','f(v)=dN/d|W|!u1/2!u')
       call color(3)
       call axptset(0.,1.)
       call ticrev
@@ -301,8 +306,8 @@
          call axlabels(axnames(iaxis),'v!d'//axnames(iaxis)//'!d')
          call color(ibrickred())
       endif
-      write(*,*)'x,vlimits'
-      write(*,'(6f8.3)')xlimit,vlimit
+!      write(*,*)'x,vlimits'
+!      write(*,'(6f8.3)')xlimit,vlimit
       do j=iicparta(ispecies),iocparta(ispecies)
 ! Only for filled slots
          if(x_part(iflag,j).ne.0)then
@@ -327,7 +332,7 @@
          endif
  12      continue
       enddo
-      write(*,*)'Plotted',nfvaccum,' particles'
+!      write(*,*)'Plotted',nfvaccum,' particles'
       end
 !*************************************************************
 !*************************************************************
@@ -384,7 +389,7 @@
       end
 !*************************************************************
       subroutine ehistinc(xlimit,elimit,ispecies
-     $     ,nhist,ehist,ne,u,ifull,iused,iexis)
+     $     ,nhist,ehist,ne,u,ifull,iused,iexis,potentialmax)
 ! Increment the histogram of total energy distribution using current
 ! particle data. 
 ! iexis if non-zero restricts the kinetic energy to that axis. 
@@ -409,6 +414,8 @@
       do i =1,ndims
          iLs(i+1)=iLs(i)*ifull(i)
       enddo
+      ntrap=0
+      nuntrap=0
 
       if(nhist.eq.0)then
 ! Initialize
@@ -418,6 +425,7 @@
          de=(elimit(2)-elimit(1))/ne
       endif
 !      write(*,*)'ehist axis',iexis,' dt=',dt
+      potentialmax=0.
       do j=iicparta(ispecies),iocparta(ispecies)
 ! Only for filled slots
          if(x_part(iflag,j).ne.0)then
@@ -440,19 +448,27 @@
 ! This is a wanted particle. Add its energy to histogram.
             potential=getpotential(u,cij,iLs,x_part(2*ndims+1,j),iregion
      $           ,0)
+            if(potential.gt.potentialmax)potentialmax=potential
             energy=eoverms(ispecies)*potential+v2/2.
             ie=int(1+(energy-elimit(1))/de)
             if(.not.(ie.gt.0.and.ie.le.ne))goto 12
             ehist(ie)=ehist(ie)+1.
             nhist=nhist+1
+            if(energy.lt.0)then
+               ntrap=ntrap+1
+            else
+               nuntrap=nuntrap+1
+            endif
          endif
  12      continue
       enddo
+!      write(*,*)'ntrap/untrap=',ntrap,nuntrap,float(ntrap)/nuntrap
       end
 
 !*************************************************************
       subroutine partexamargs(xlimit,vlimit
-     $           ,iuin,cellvol,Bdirs,ldoc,ivtk,ispecies,ndfirst,ndlast)
+     $           ,iuin,cellvol,Bdirs,ldoc,ivtk,ispecies,ndfirst,ndlast
+     $           ,iworking)
       include 'examdecl.f'
       include '../src/ptaccom.f'
       real xlimit(2,3),vlimit(2,3),Bdirs(4)
@@ -484,9 +500,11 @@
 
 ! Deal with arguments
       if(iargc().eq.0) goto 201
-      do i=1,iargc()
+      istart=iworking+1
+      do i=istart,iargc()
          call getarg(i,argument)
-         if(argument(1:1).eq.'-')then
+         iworking=iworking+1
+         if(argument(1:1).eq.'-')then  ! Non-file switches
             if(argument(1:2).eq.'-x')then
                read(argument(3:),*,err=201) xlimit(1,1),xlimit(2,1)
             elseif(argument(1:2).eq.'-y')then
@@ -538,10 +556,11 @@
          else
             read(argument(1:),'(a)',err=201)partfilename
 !            write(*,*)partfilename
+            return  ! Return when read a filename.
          endif
-         
       enddo
-      goto 202
+      iworking=-1 ! Exhausted all arguments
+      return
 !------------------------------------------------------------
 ! Help text
  201  continue
@@ -568,10 +587,5 @@
       write(*,301)' -vtk    Output distribution function vtk files.'
       write(*,301)' -h -?   Print usage.'
       call exit(0)
- 202  continue
-      if(lentrim(partfilename).lt.5)then
-         write(*,*)'Short filename, length<5 not allowed'
-         goto 203
-      endif
       end
 !************************************************************************
