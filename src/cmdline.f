@@ -479,10 +479,17 @@
             if(holepsi.ne.0)then ! We are setting 
                if(nqblkmax.gt.0)then ! qinit
                   if(holegfac.eq.0)then
-                     if(holelen.eq.999)holelen=4.+holepsi/2.
-                     if(holepow.eq.999)holepow=-1/holepsi !->toplen
+                     if(holepsi.gt..6)then
+                        if(holelen.eq.999)holelen=4.+holepsi/2.
+                        if(holepow.eq.999)holepow=-1/holepsi !->toplen
+                        if(lmyidhead)write(*,*)
+     $                       'Deep Non-Debye Hole: wing scale',holelen
+                     else
+                        if(holelen.eq.999)holelen=4.   ! Exact Debye.
+                        if(holepow.eq.999)holepow=-10. !->toplen
+                     endif
                   else  ! Flattened distribution
-                     if(holelen.eq.999)holelen=4.+holepsi/10.
+                     if(holelen.eq.999)holelen=4. !+holepsi/10. Exact.
                      if(holepow.eq.999)holepow=
      $                    max(holepsi-1./holepsi,-10.)
                      if(lmyidhead)write(*,*)'Hole flattening gfac='

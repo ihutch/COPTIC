@@ -111,6 +111,26 @@ c         write(*,*)'len=',len(cmdformat)
       pfsw=pfnextsw
       end
 c*********************************************************************
+      subroutine pltsvg
+c Alternative to pltend that converts an epsplot to svg
+      character*150 string
+      include 'plotcom.h'
+      string='(''FILE='',a8,'';epstopdf ${FILE}.ps; if pdf2svg '//
+     $     '${FILE}.pdf ${FILE}.svg; then rm ${FILE}.ps ${FILE}.pdf'//
+     $     ';fi;'')'
+      if(abs(pfsw).eq.3)then
+         call prtend(string)
+      else
+         write(*,*)'Warning: pltsvg works only on eps output files'
+      endif
+      if(pfsw.ge.0)call txtmode
+      call truncf(0.,0.,0.,0.)
+      if(nrows.ne.0) then
+         call ticset(0.,0.,0.,0.,0,0,0,0)
+         nframe=0
+      endif
+      end
+c*********************************************************************
       subroutine color(li)
 c Set line color. li=15 resets. Plotting translates to dashed etc.
       integer li

@@ -753,16 +753,12 @@ c into some other graphical format. cmdformat is a format string
 c that accepts one ascii string, which is the filename. 
 c E.g. '(''ps2pngcrop '',a)'
       character*(*) cmdformat
-
-      character*120 command
-
+      character*180 command
       integer sblen,iunit
       character*80 sbuf,plname
-      common /wbuf/sblen,sbuf,plname
-      
+      common /wbuf/sblen,sbuf,plname      
 c      if(lentrim(cmdformat).lt.2)return
       write(command,cmdformat)plname(1:lentrim(plname))
       i=system(command)
-      write(*,*)i,command
-
+c      write(*,*)i,command
       end

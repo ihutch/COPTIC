@@ -684,7 +684,6 @@ c boundaries.
 
       end
 C********************************************************************
-
       subroutine polygapline(x,y,n,logic)
 ! plot a polyline in multiple sections only where logic is true
       integer n
@@ -706,6 +705,100 @@ C********************************************************************
          endif
       endif
       enddo
-      if(drawing)call polyline(x(id),y(id),i-id)
-  
+      if(drawing)call polyline(x(id),y(id),i-id)  
+      end
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine polycolorline(x,y,npts,ipcolor)
+c Version to color a polyline as you go to encode other information.
+c ipcolor must run from 1-240 for gradcolor.
+      integer npts
+      real x(npts),y(npts)
+      integer ipcolor(npts)
+      include 'plotcom.h'
+c Dashed line code
+      real nx,ny
+      real vlen,dx,dy,cx,cy,plen,flen,dlen
+      real wx2nx, wy2ny
+      integer cud
+
+c dashlen is the arc length in normalized units of the the ith line
+c segment. dashdist is the starting fractional part of the ith arc.
+c Segments alternate pen down, pen up.
+      logical ldash
+      real dashlen,dashdist
+      integer MASKNO,dashmask,jmask
+      parameter (MASKNO=4)
+      dimension dashmask(MASKNO),dashlen(MASKNO)
+      common/dashline/ldash,dashlen,dashdist,dashmask,jmask
+
+      if(npts.le.0) return
+      call vecw(x(1),y(1),0)
+      do 3 i=2,npts
+         call gradcolor(ipcolor(i-1))
+         if(.not.ldash) then
+            call vecw(x(i),y(i),1)
+         else
+c We shall bypass vecw and go straight to normal.
+            nx=wx2nx(x(i))
+            ny=wy2ny(y(i))
+c Lengths of total vector:
+            cx=nx
+            cy=ny
+            dx=nx- crsrx
+            dy=ny- crsry
+            vlen=sqrt(DX*DX+DY*DY)
+c Partial length remaining:
+            plen=vlen
+            if(vlen.eq.0)return
+c Distance to end of segment
+    1       dlen=(dashlen(jmask)-dashdist)
+            if(plen.gt.dlen)then
+c Vector longer than this segment. Draw segment and iterate.
+               dashdist=0
+               plen=plen-dlen
+               flen=dlen/vlen
+               nx= crsrx+dx*flen
+               ny= crsry+dy*flen
+               cud=dashmask(jmask)
+c              call optvecn(nx,ny,cud)
+               call vecn(nx,ny,cud)
+               jmask=mod(jmask,MASKNO)+1
+               goto 1
+            else
+c Vector ends before segment. Draw to end of vector and quit.
+               dashdist=plen+dashdist
+               nx=cx
+               ny=cy
+               cud=dashmask(jmask)
+c              call optvecn(nx,ny,cud)
+               call vecn(nx,ny,cud)
+            endif
+         endif
+    3 continue
+
+      end
+C********************************************************************
+      subroutine polycolorgapline(x,y,n,ipcolor,logic)
+! plot a polycolorline in multiple sections only where logic is true
+      integer n
+      real x(n),y(n)
+      integer ipcolor(n)
+      logical logic(n)
+      logical drawing
+      drawing=.true.
+      id=1
+      do i=1,n
+      if(drawing)then
+         if(.not.logic(i))then
+            drawing=.false.
+            call polycolorline(x(id),y(id),i-id,ipcolor(id))
+         endif
+      else
+         if(logic(i))then
+            drawing=.true.
+            id=i
+         endif
+      endif
+      enddo
+      if(drawing)call polycolorline(x(id),y(id),i-id,ipcolor(id))  
       end

@@ -435,8 +435,38 @@ int accisgradinit_(r1,g1,b1,r2,g2,b2)
   a_grad_inited=2;
   return 0;
 }
+/******************************************************************/
+static int ilimit(b,i,t)
+     int b,i,t;
+{
+  int j;
+  j=(i<b ? 0 : i);
+  j=(t<j ? t : j);
+  return j;
+}
+/*****************Set the color gradient from arrays**************************/
+int accisgradset_(red,green,blue,npixel)
+   int *red,*green,*blue,*npixel;
+{  unsigned long i,j;
+  if(*npixel!=a_gradPixno) 
+    fprintf(stderr,"accisgradset ERROR: Incorrect array length:%d\n",*npixel);
+     /* RGB are specified in the range 0 to 65535 */
+  for (i=0;i<a_gradPixno;i++){
+     a_gradred[i]=ilimit(0,*(red+i),65535);
+    a_gradgreen[i]=ilimit(0,*(green+i),65535);
+    a_gradblue[i]=ilimit(0,*(blue+i),65535);
+    a_gradPix[i]=
+      a_gradred[i]/256+256*(a_gradgreen[i]/256 +256*(a_gradblue[i]/256));
+    /*    printf("red,green,blue: %d, %d, %d\n",
+	   a_gradred[i],a_gradgreen[i],a_gradblue[i]);
+	   printf("a_gradPix[%d]=%6x\n",i,a_gradPix[i]);  */
+  }
+  a_grad_inited=1;
+  return 0;
+}
 /************** Setup Default Gradient Grey-scale **********************/
-int accisgraddef_()
+void accisgraddef_(red,green,blue,npixel)
+     int *red,*green,*blue,*npixel;
 {
   unsigned long i,j;
      /* RGB are specified in the range 0 to 65535 */
@@ -454,11 +484,6 @@ int accisgraddef_()
   }
   a_grad_inited=1;
   return 0;
-}
-/**********************************************************************/
-int accisgradset_(red,green,blue,npixel)
-     int *red,*green,*blue,*npixel;
-{;/* dummy needs to be fixed */
 }
 
 /**********************************************************************/

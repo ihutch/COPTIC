@@ -973,11 +973,11 @@ electrons and the velocity units $\sqrt{T_e/m_e}$ (assuming $T=1$).
 
 A non-zero seventh numerical value of the \verb!-ih! switch sets
 \verb!holegfac! which is sometimes used to flatten the particle
-distribution function at the separatrix. Its normal value is 0.6.
-A typical usage is \verb!-ih.8,0,999,2.,999,0,.6!. The values 999 tell
-the initialization to use preset values for \verb!holelen! and
-\verb!holetoplen! (the same parameter as \verb!holepow! when using
-quiet start \verb!-pi!).  
+distribution function at the separatrix. A flat value is approximately
+0.6.  A typical usage is \verb!-ih.8,0,999,2.,999,0,.6!. The values
+999 tell the initialization to use preset values for \verb!holelen!
+and \verb!holetoplen! (the same parameter as \verb!holepow! when using
+quiet start \verb!-pi!).
 
 
 \paragraph{-pi...} Quiet particle initialization, if used, ought to be
@@ -986,18 +986,21 @@ argument from the switch, which gives the maximum number of qblocks in
 each dimension, and if greater than zero causes the qinit code (rather
 than the defaults pinit or trapinit) to be used for particle
 initialization. If no argument can be read, then the number of qblocks
-is set to a default of 30. When this parameter \verb!nqblkmax! is
-greater than zero, so the qinit code is used, the meaning of the
-parameters in the \textbf{-ih} switch is changed. \verb!holeeta! is
-not used; and \verb!holepow! instead sets the parameter \verb!holetoplen!
-which is used for the stretched ${\rm sech}^4$ shaped hole. By default
-if \verb!holegfac=0!,
+is set to a default of 30. 
+
+When this parameter \verb!nqblkmax! is greater than zero, so the qinit
+code is used, the meaning of the parameters in the \textbf{-ih} switch
+is changed. \verb!holeeta! is not used; and \verb!holepow! instead
+sets the parameter \verb!holetoplen!  which is used for the stretched
+${\rm sech}^4$ shaped hole. By default if \verb!holegfac=0!,
 \verb!holelen! is set equal to $4+\psi/2$ and \verb!holetoplen! to
-$-1/\psi$, while if \verb!holegfac!$\not=0$ then $4+\psi/10$ and
-$\psi-1/\psi$ are used. These permit deep holes $\psi\gg1$ to be initialized.
-[This change means that using {\bf -ih} without {\bf -pi} one must now
-give enough arguments to {\bf -ih} to specify a nonzero
-\verb!holepow!. Eventually this ought to be rationalized.]
+$-1/\psi$ for \verb!holepsi>0.6! and to $4$ and $-10$ (no distortion)
+otherwise. Thus holes shallower than $\psi=0.6$ have default holelen
+and holetoplen. If \verb!holegfac!$\not=0$ then $4+\psi/10$ and
+$\psi-1/\psi$ are used. These permit deep holes $\psi\gg1$ to be
+initialized.  [This change means that using {\bf -ih} without {\bf
+  -pi} one must now give enough arguments to {\bf -ih} to specify a
+nonzero \verb!holepow!. Eventually this ought to be rationalized.]
 
 
 \subsubsection*{Neutrals, Collisions, Magnetic Field}

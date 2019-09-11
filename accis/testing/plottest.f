@@ -5,7 +5,7 @@ c Various working variables.
       integer length
       parameter (length=100)
       real x(length),y(length),err(length),ym(length)
-      integer i,irows,icolumns,itype
+      integer i,irows,icolumns,itype,ipcolor(length)
 
 c Make test arrays.
       do 2 i=1,length
@@ -13,6 +13,7 @@ c Make test arrays.
 	 y(i)=1.*(1.4+sin(0.2*x(i)))
 	 err(i)=0.4*sin(x(i)*sin(x(i)))
 	 ym(i)=y(i)-0.5*err(i)
+         ipcolor(i)=1+int((i-1.)/(length-1.)*240)
     2 continue
 
 c Plot 1. Simplest one-call plot.
@@ -109,7 +110,17 @@ c	read(*,*)irows,icolumns,itype
 	      call autoplot(x,ym,length)
 	   endif
    10	continue
+        call multiframe(0,0,0)
 	call pltend
+
+c Plot 7 Drawing a line whose color (gradient) encodes other array info
+c blue-red-green gradient:
+        call blueredgreenwhite
+        call autoinit(x,y,length)
+        call axis
+        call polycolorline(x,y,length,ipcolor)
+        call pltend
+        call color(15)
 
       end
 
