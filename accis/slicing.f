@@ -48,8 +48,7 @@ c Local variables:
       integer icontour,iweb
       integer jsw
       integer iclipping,idflast,idfinlast,igradleg
-      integer idpa(2)
-      character*(10) cxlab,cylab
+      integer idpa(2),idp1,idp2
       character*(30) form1
       save nf1,nf2,nff,if1,if2,iff,idfix
       logical laspect,larrow,ltellslice
@@ -61,6 +60,7 @@ c Local variables:
       data colorscale/1./
 c Tell that we are looking from the top by default.
       data ze1/1./
+      save idp1,idp2
 
 c Need to get more systematic with idfixin. 
 c Sign negative  toggle (off) aspect ratio maintenance.
@@ -79,11 +79,11 @@ c Bit 10 (1024) Do surface rather than web.     Not implemented.
       ihibyte=idfixp/256
       if(idfixp/512-1024*(idfixp/1024).ne.0)then
 c kluge because higher bits break something I don't understand
-         iclsign=-1.
+         iclsign=-1
 c         write(*,*)'idfixin512',idfixin
          idfixin=idfixp-512
       else
-         iclsign=1.
+         iclsign=1
          idfixin=idfixp
       endif
 

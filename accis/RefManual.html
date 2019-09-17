@@ -262,6 +262,15 @@ length ilength of arrays xv, and yv. The lines join all and only
 contiguous indices at which the logicalv array is true.
 
 <div class="p"><!----></div>
+POLYCOLORLINE(xv,yv,ilength,ipcolorv) Draw a polyline whose color
+varies as a function of index in accordance with the integer vector
+ipcolorv, whose significant range should be 1-240.
+
+<div class="p"><!----></div>
+POLYCOLORGAPLINE(xv,yv,ilength,ipcolorv,logicalv) A combination of the
+two previous functionalities; color code a gap line.
+
+<div class="p"><!----></div>
  <a id="tth_sEc6"></a><h2>
 6&nbsp;&nbsp;Color</h2>
 
@@ -315,10 +324,10 @@ units. Width of color bar is colwith times axis-box
 width. lpara=.true. says use parallel labels.
 
 <div class="p"><!----></div>
-acgradcolor(icol) set gradient color 0-239.
+ACGRADCOLOR(icol) set gradient color 0-239.
 
 <div class="p"><!----></div>
-getrgbcolor(icol,ired,igreen,iblue) get the gradient color RGB
+GETRGBCOLOR(icol,ired,igreen,iblue) get the gradient color RGB
 settings for input number icol 0-239.
 
 <div class="p"><!----></div>
@@ -387,7 +396,7 @@ TICNUMSET(itics) Set the number of tics of axis (approximately).
 
 <div class="p"><!----></div>
 Special text is accessed via "!" followed by one of 
-the following:
+the following embedded in the string passed to routines:
 
 <pre>
 @&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;normal&nbsp;font&nbsp;0.
@@ -891,5 +900,5 @@ for operation of debugged correct code.
 T<sub><span class="small">E</span></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><span class="small">T</span></sub>H</a>,
-version 4.13.<br />On 17 Dec 2018, 15:59.</small>
+version 4.13.<br />On  9 Sep 2019, 11:54.</small>
 </html>

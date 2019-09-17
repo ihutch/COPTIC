@@ -13,4 +13,7 @@ c     xc, yc, the position of points in path arrays.
 c Typical usage might be to declare the new acpathdoc to have a common
 c block into which xc,yc are entered to provide the contour as a polyline
 c do i=1,imax; xpath(i)=xc(i); ypath(i)=yc(i);  enddo 
+      x=xc(imax)  !Silence warnings.
+      x=yc(1)
+      x=cv
       end

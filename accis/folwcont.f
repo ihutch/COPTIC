@@ -91,7 +91,7 @@ c Maximum length of a single contour. Increase if necessary.
       common/cont1stlast/c1st,clast
 
       nc=ncin
-      if(nc.lt.-988)nc=0.
+      if(nc.lt.-988)nc=0
 c      write(*,*)'Inside contourl'
 c save charsize
       cw=chrswdth
@@ -142,6 +142,8 @@ c Increase the number of contours per label cycle.
          endif
       endif
 c At this point we need cyc, x1st, xtic, xlast
+      cdiflog=0  ! Silence warnings
+      c1stlog=0
       if(lclog)then
          if(nc.eq.0)then
 c Do logarithmic contour coloring fitting

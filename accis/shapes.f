@@ -9,7 +9,7 @@
 !         : -2,-1,2,1,0,0,1                 plain rectangle
 ! Dimensions of output arrays xp,yp must be at least 4*nround+1
       subroutine rectround(x1,y1,x2,y2,rx,ry,nround,xp,yp)
-      real x1,y1,x2,y2,r
+      real x1,y1,x2,y2,rx,ry
       integer nround
       real xp(4*nround+1),yp(4*nround+1)
 ! The drawing path starts at the top of the left corner arc and proceeds

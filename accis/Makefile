@@ -154,7 +154,7 @@ vecwin.o : vecwin.c
 # for gnu compilers the interpretation of backslashes as escapes.
 # drwstr needs the NOBACKSLASH switch (and can't be in :: rule above). 
 $(noback_object_files) : drwstr.f fontdata.f vecnp.f $(headers) $(MAKEFILE)
-	$(FORTRAN) -c $(NOBACKSLASH) $(WSWITCHES) $*.f
+	$(FORTRAN) -c $(NOBACKSLASH) $(COMPILE-SWITCHES) $(WSWITCHES) $*.f
 
 # Specific test programs of one sort and another should be put here 
 # only if they need special switches.
@@ -163,18 +163,18 @@ testing/plottest90 : testing/plottest90.f90 interface.f90
 
 #pattern rule, compile using the external definitions of commons
 %.o : %.f ;
-	$(FORTRAN) -c $(WSWITCHES) $*.f
+	$(FORTRAN) -c $(COMPILE-SWITCHES) $(WSWITCHES) $*.f
 
 # For fortran 90 executables.
 % : %.f90 lib$(ACCISDRV).a $(VECX)
-	$(G90) $(WSWITCHES) -o $* $*.f90 -l$(ACCISDRV)  $(libraries)
+	$(G90) $(COMPILE-SWITCHES) $(WSWITCHES) -o $* $*.f90 -l$(ACCISDRV)  $(libraries)
 
 # The main f77 executable pattern.
 % : %.f lib$(ACCISDRV).a $(VECX)
-	$(FORTRAN) $(WSWITCHES) -o $* $*.f -l$(ACCISDRV)  $(libraries)
+	$(FORTRAN) $(COMPILE-SWITCHES) $(WSWITCHES) -o $* $*.f -l$(ACCISDRV)  $(libraries)
 
 %.4014 : %.f libaccis.a
-	$(FORTRAN) $(WSWITCHES) -o $*.4014 $*.f -L. -laccis
+	$(FORTRAN) $(COMPILE-SWITCHES) $(WSWITCHES) -o $*.4014 $*.f -L. -laccis
 
 vecx libaccisX.a : libaccis.a vecx.o
 	cp libaccis.a libaccisX.a

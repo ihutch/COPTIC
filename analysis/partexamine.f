@@ -102,7 +102,8 @@
          endif
          Bt=0.
          call partread(name,ierr)
-         if(ierr.ne.0)write(*,*)'partread returns error:',ierr
+         if(ierr.ne.0.and.i.eq.0)
+     $        write(*,*)'partread returns error:',ierr
          if(ierr-4*(ierr/4).ne.0)goto 11
          if(ispecies.gt.nspecies)then
             ispecies=nspecies
@@ -128,7 +129,7 @@
          if(cellvol.eq.-1)write(*,*)'Bfield (projection)',Bfield
 ! The cellvol==-1 call will set ivproj=1 in ptaccom.
          call partdistup(xlimit,vlimit,xnewlim,cellvol,0,isuds,ispecies)
-         write(*,*)'partdistup completed',i
+         write(*,*)   ! 'partdistup completed',i
 
       enddo
  11   continue

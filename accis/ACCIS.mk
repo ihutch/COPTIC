@@ -29,7 +29,7 @@ LIBPATH= -L$(ACCISHOME) -L.
 LIBRARIES = -laccisX -lX11
 LIBDEPS = $(ACCISHOME)/libaccisX.a
 COMPILE-SWITCHES = -Wall -O2
-# -fbounds-check
+# -g -fbounds-check
 #########################################################################
 # Always check that the accis library is available and make it,
 # unless we are in the ACCISHOME directory doing things explicitly.

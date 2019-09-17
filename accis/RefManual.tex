@@ -190,6 +190,13 @@ POLYGAPLINE(xv,yv,ilength,logicalv) Draw polylines using total
 length ilength of arrays xv, and yv. The lines join all and only
 contiguous indices at which the logicalv array is true.
 
+POLYCOLORLINE(xv,yv,ilength,ipcolorv) Draw a polyline whose color
+varies as a function of index in accordance with the integer vector
+ipcolorv, whose significant range should be 1-240.
+
+POLYCOLORGAPLINE(xv,yv,ilength,ipcolorv,logicalv) A combination of the
+two previous functionalities; color code a gap line.
+
 \section{Color}
 
 \iftth \special{html:<a href="filltest.f"><img align="right" src="filltest.png"></a>}\fi
@@ -231,9 +238,9 @@ the color gradient. Position of axis is (x1,y1) to (x1,y2) in axis-box
 units. Width of color bar is colwith times axis-box
 width. lpara=.true. says use parallel labels.
 
-acgradcolor(icol) set gradient color 0-239.
+ACGRADCOLOR(icol) set gradient color 0-239.
 
-getrgbcolor(icol,ired,igreen,iblue) get the gradient color RGB
+GETRGBCOLOR(icol,ired,igreen,iblue) get the gradient color RGB
 settings for input number icol 0-239.
 
 \section{Axes}
@@ -282,7 +289,7 @@ TICNUMSET(itics) Set the number of tics of axis (approximately).
 \iftth \special{html:<img align="right" src="fontshow.png">} \fi
 
 Special text is accessed via ``!'' followed by one of 
-the following:
+the following embedded in the string passed to routines:
 \begin{verbatim}
 @        to normal font 0.
 A        to font 1 (math)
