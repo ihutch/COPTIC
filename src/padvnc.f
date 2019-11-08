@@ -707,32 +707,10 @@
 ! Offset to start of dimension-id-position array.
          ioff=ixnp(id)
 ! xn is the position array for each dimension arranged linearly.
-! Find the index of xprime in the array xn:
          isz=ixnp(id+1)-ioff         
-! An inverse lookup table for non-uniform. --------------------
-         ipi=int((xi(id)-xmeshstart(id))/(xmeshend(id)-xmeshstart(id))
-     $        *(ipilen-1.00001)+1)
-         if(ipi.lt.1)then
-! Outside mesh
-            ix=0
-            xm=0
-! was ipilen, but that seemed to be an error, gave index overrun below.
-         elseif(ipi.gt.ipilen-1)then
-            ix=0
-            xm=isz+1
-         else 
-! Find the position index
-            ix=iposindex(ipi,id)
-            if(iposindex(ipi+1,id).eq.ix)then
-               xm=(xi(id)-xn(ioff+ix))/(xn(ioff+ix+1)-xn(ioff+ix))+ix
-            else
-! Default call returns ix and xm
-! Interp costs here were 18% of particle intensive runs.
-               ix=interp(xn(ioff+1),isz,xi(id),xm)
-            endif
-         endif
 ! --------------------------------------------------------------
-         if(ipartperiod(id).eq.4)then ! Pure periodic particles.
+         if(ipartperiod(id).eq.4)then 
+! Pure periodic particles. -----------------------------------
             if(xi(id).le.xmeshstart(id))then ! relocate near xmeshend
 ! Move the particle by one grid length, to the periodic position. Use
 ! tiny bit less so that if it starts exactly on boundary, it does not
@@ -744,7 +722,7 @@
             endif
             ix=interp(xn(ioff+1),isz,xi(id),xm)
             if(.not.(xi(id).gt.xmeshstart(id).and.
-     $           xi(id).lt.xmeshend(id)))then
+     $           xi(id).lt.xmeshend(id)).or.ix.eq.0)then
 ! It's conceivable that a particle might move more than one period,
 ! in which case correction won't work. Don't repeat. Instead, just
 ! give up and call it lost but announce the problem. 
@@ -757,20 +735,18 @@
 ! If every dimension is periodic, increment nrein. (Otherwise not)
                if(.not.lnotallp)nrein=nrein+1
             endif
-         elseif(ipartperiod(id).eq.5)then  ! Periodic vreset particles
-            if(ldebug)write(*,'(2i5,$)')ipi,iposindex(ipi,id)
+         elseif(ipartperiod(id).eq.5)then 
+! Periodic vreset particles -----------------------------
             if(ldebug)write(*,'(i4,2f10.4,$)')ix,xm,xi(id)
             index=0
             if(xi(id).le.xmeshstart(id))then ! relocate near xmeshend
-               ivs=-1
                index=2*id-1     ! index odd for velocity reset
                xbdy=xmeshend(id)
             elseif(xi(id).ge.xmeshend(id))then ! relocate near xmeshstart
-               ivs=1
                index=2*id       ! index even for velocity reset
                xbdy=xmeshstart(id)
             endif
-            if(index.ne.0)then !choose new velocity and relocate
+            if(index.ne.0)then  !choose new velocity and relocate
                call ranlux(ra,1)
                ra=ra*ncrein
                ir=int(ra)
@@ -778,19 +754,18 @@
                vold=xi(ndims+id)
                xi(ndims+id)=hreins(ir,index,reinspecies)
      $              *(1-fr)+hreins(ir+1,index,reinspecies)*fr
-               if(ldebug)write(*,'(a,3f10.4)')' Moved to',xi(id)
 ! Relocate to lie in the periodic domain, with rounding correction.
                xt=xi(id)-xmeshstart(id)
                xmod=(xmeshend(id)-xmeshstart(id))*.999998
                xi(id)=xmeshstart(id)+modulo(xt,xmod)+1e-6*xmod
 ! Correct distance inside mesh for vold, vnew difference.
                xi(id)=xbdy+(xi(id)-xbdy)*xi(ndims+id)/vold
-               ix=interp(xn(ioff+1),isz,xi(id),xm)
             endif
+            ix=interp(xn(ioff+1),isz,xi(id),xm)
 ! The following trap ought not to be necessary if the rounding correction
 ! works, but it might still be needed.
             if(.not.(xi(id).gt.xmeshstart(id).and.
-     $           xi(id).lt.xmeshend(id)))then
+     $           xi(id).lt.xmeshend(id)).or.ix.eq.0)then
                write(*,*)'Particle outside meshlen'
                write(*,*)'id, ix, xi(1  ... 3)    xbdy,xt,xmod,vold,xi'
                write(*,'(2i2,10f9.4)')id,ix
@@ -801,9 +776,35 @@
                if(.not.lnotallp)nrein=nrein+1
             endif
          else
+! Non-periodic Default --------------------
+! Find the index of xprime in the array xn:
+            ipi=int((xi(id)-xmeshstart(id))/(xmeshend(id)
+     $           -xmeshstart(id))*(ipilen-1.00001)+1)
+            if(ipi.lt.1)then
+! Outside mesh
+               ix=0
+               xm=0
+! was ipilen, but that seemed to be an error, gave index overrun below.
+            elseif(ipi.gt.ipilen-1)then
+               ix=0
+               xm=isz+1
+            else 
+! Find the position index
+               ix=iposindex(ipi,id)
+               if(iposindex(ipi+1,id).eq.ix)then
+                  xm=(xi(id)-xn(ioff+ix))/(xn(ioff+ix+1)-xn(ioff+ix))+ix
+               else
+! Default call returns ix and xm
+! Interp costs here were 18% of particle intensive runs.
+                  ix=interp(xn(ioff+1),isz,xi(id),xm)
+               endif
+            endif
 ! Set linmesh. New sensible version using xmesh
             if(.not.(ix.ne.0.and.xi(id).gt.xmeshstart(id).and.
-     $              xi(id).lt.xmeshend(id)))linmesh=.false.
+     $           xi(id).lt.xmeshend(id)))then
+               linmesh=.false.
+               goto 2
+            endif
          endif
 ! --------------------------------------------------------------
          xfrac(id)=xm-ix
@@ -814,7 +815,6 @@
       enddo
  2    continue
       iregion=insideall(ndims,xi(1))
-      return
       end
 !********************************************************************
       subroutine postcollide(xi,tisq,iregion)
