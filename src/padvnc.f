@@ -122,12 +122,12 @@
 ! Check the fraction data is not stupid and complain if it is.
 ! Ought not to be necessary, but this is a safety check. 
 ! Remove after the reimplementation.
-         if(x_part(ndimsx2+1,i).eq.0. .and.
-     $        x_part(ndimsx2+2,i).eq.0. .and.
-     $        x_part(ndimsx2+3,i).eq.0.) then
-            write(*,*)'Zero fractions',i,iocparta(ispecies)
-     $           ,x_part(iflag,i),nrein,ninjcompa(ispecies)
-         endif
+!         if(x_part(ndimsx2+1,i).eq.0. .and.
+!     $        x_part(ndimsx2+2,i).eq.0. .and.
+!     $        x_part(ndimsx2+3,i).eq.0.) then
+!            write(*,*)'Zero fractions',i,iocparta(ispecies)
+!     $           ,x_part(iflag,i),nrein,ninjcompa(ispecies)
+!         endif
 !---------------------------------
 ! adfield must always be zero arriving here regardless of irptch. 
 ! But we don't set it always because that would be expensive. 
@@ -319,6 +319,7 @@
             call postcollide(x_part(1,i),tisq,iregion)
             lcollided=.false.
          endif
+! Find where we've ended.
          call partlocate(x_part(1,i),ixp,xfrac,inewregion,linmesh)
 !---------------------------------
 ! If we crossed an object boundary, do tallying.
@@ -413,6 +414,9 @@
             endif
          endif
          call ranlux(ra,1)
+! Indicate that this reinjected particle still needs to be moved a
+! distance corresponding to a random fraction of the timestep. 
+! That will happen on restart of the rest of the advance.
          dtpos=(dtpos+dtremain)*ra
          x_part(idtp,i)=0.
          dtremain=0.
@@ -695,6 +699,8 @@
       real xfrac(ndims)
       parameter (ndimsx2=ndims*2)
       include 'partcom.f'
+      logical ldebug
+      parameter (ldebug=.false.)
 
       linmesh=.true.
       do id=1,ndims
@@ -702,8 +708,7 @@
          ioff=ixnp(id)
 ! xn is the position array for each dimension arranged linearly.
 ! Find the index of xprime in the array xn:
-         isz=ixnp(id+1)-ioff
-         
+         isz=ixnp(id+1)-ioff         
 ! An inverse lookup table for non-uniform. --------------------
          ipi=int((xi(id)-xmeshstart(id))/(xmeshend(id)-xmeshstart(id))
      $        *(ipilen-1.00001)+1)
@@ -715,82 +720,92 @@
          elseif(ipi.gt.ipilen-1)then
             ix=0
             xm=isz+1
-         else
+         else 
+! Find the position index
             ix=iposindex(ipi,id)
             if(iposindex(ipi+1,id).eq.ix)then
                xm=(xi(id)-xn(ioff+ix))/(xn(ioff+ix+1)-xn(ioff+ix))+ix
             else
+! Default call returns ix and xm
+! Interp costs here were 18% of particle intensive runs.
                ix=interp(xn(ioff+1),isz,xi(id),xm)
             endif
          endif
 ! --------------------------------------------------------------
-! Interp costs here were 18% of particle intensive runs.
-!         ix=interp(xn(ioff+1),isz,xi(id),xm)
-         if(ipartperiod(id).eq.4.or.ipartperiod(id).eq.5)then
-! In periodic directions, we do not allow particles to be closer to the
-! mesh boundary than half a cell, so as to use periodicity consistent
-! with the potential periodicity. chargetomesh does additional sums 
-! to communicate the extra particle weight periodically.
-            fisz=float(isz)-0.5
-            fist=float(1)+0.5
-            if(.not.(ix.ne.0.and.xm.gt.fist.and.xm.lt.fisz))then
+         if(ipartperiod(id).eq.4)then ! Pure periodic particles.
+            if(xi(id).le.xmeshstart(id))then ! relocate near xmeshend
 ! Move the particle by one grid length, to the periodic position. Use
 ! tiny bit less so that if it starts exactly on boundary, it does not
-! end on it. The length is between end mid-cell positions.
-               xgridlen=(xn(ixnp(id+1))+xn(ixnp(id+1)-1)
-     $              -(xn(ixnp(id)+1)+xn(ixnp(id)+2)))*0.499999
-               if(xm.le.fist)then ! relocate near xmeshend
-                  xi(id)=xi(id)+xgridlen
-                  if(ipartperiod(id).eq.5)then
-                     index=2*id-1 ! index odd for velocity reset
-                     call ranlux(ra,1)
-                     ra=ra*ncrein
-                     ir=int(ra)
-                     fr=ra-ir
-                     xi(ndims+id)=hreins(ir,index,reinspecies)
-     $                    *(1-fr)+hreins(ir+1,index,reinspecies)*fr
-!                     write(*,*)'Relocate x=',xi(id),' vx=',xi(ndims+id)
-                  endif
-               elseif(xm.ge.fisz)then ! relocate near xmeshstart
-                  xi(id)=xi(id)-xgridlen
-                  if(ipartperiod(id).eq.5)then
-                     index=2*id ! index even for velocity reset
-                     call ranlux(ra,1)
-                     ra=ra*ncrein
-                     ir=int(ra)
-                     fr=ra-ir
-                     xi(ndims+id)=hreins(ir,index,reinspecies)
-     $                    *(1-fr)+hreins(ir+1,index,reinspecies)*fr
-                  endif
-               endif
-               ix=interp(xn(ioff+1),isz,xi(id),xm)
-               if(.not.(xm.gt.fist.and.xm.lt.fisz))then
+! end on it. The length is between end mid-cell positions. That has
+! been accounted for in xmesh variables.
+               xi(id)=xi(id)+(xmeshend(id)-xmeshstart(id))*.999999
+            elseif(xi(id).ge.xmeshend(id))then ! relocate near xmeshstart
+               xi(id)=xi(id)-(xmeshend(id)-xmeshstart(id))*.999999
+            endif
+            ix=interp(xn(ioff+1),isz,xi(id),xm)
+            if(.not.(xi(id).gt.xmeshstart(id).and.
+     $           xi(id).lt.xmeshend(id)))then
 ! It's conceivable that a particle might move more than one period,
 ! in which case correction won't work. Don't repeat. Instead, just
 ! give up and call it lost but announce the problem. 
-                  write(*,'(a,2i2,3f10.4)')
-     $                 ' Particle crosses >meshlength',id,ix
-     $                 ,(xi(k),k=1,ndims)
-                  linmesh=.false.
-                  goto 2
-               else
+               write(*,'(a,2i2,3f10.4)')
+     $              ' Particle crosses >meshlength',id,ix
+     $              ,(xi(k),k=1,ndims)
+               linmesh=.false.
+               goto 2
+            else
 ! If every dimension is periodic, increment nrein. (Otherwise not)
-                  if(.not.lnotallp)nrein=nrein+1
-               endif
+               if(.not.lnotallp)nrein=nrein+1
+            endif
+         elseif(ipartperiod(id).eq.5)then  ! Periodic vreset particles
+            if(ldebug)write(*,'(2i5,$)')ipi,iposindex(ipi,id)
+            if(ldebug)write(*,'(i4,2f10.4,$)')ix,xm,xi(id)
+            index=0
+            if(xi(id).le.xmeshstart(id))then ! relocate near xmeshend
+               ivs=-1
+               index=2*id-1     ! index odd for velocity reset
+               xbdy=xmeshend(id)
+            elseif(xi(id).ge.xmeshend(id))then ! relocate near xmeshstart
+               ivs=1
+               index=2*id       ! index even for velocity reset
+               xbdy=xmeshstart(id)
+            endif
+            if(index.ne.0)then !choose new velocity and relocate
+               call ranlux(ra,1)
+               ra=ra*ncrein
+               ir=int(ra)
+               fr=ra-ir
+               vold=xi(ndims+id)
+               xi(ndims+id)=hreins(ir,index,reinspecies)
+     $              *(1-fr)+hreins(ir+1,index,reinspecies)*fr
+               if(ldebug)write(*,'(a,3f10.4)')' Moved to',xi(id)
+! Relocate to lie in the periodic domain, with rounding correction.
+               xt=xi(id)-xmeshstart(id)
+               xmod=(xmeshend(id)-xmeshstart(id))*.999998
+               xi(id)=xmeshstart(id)+modulo(xt,xmod)+1e-6*xmod
+! Correct distance inside mesh for vold, vnew difference.
+               xi(id)=xbdy+(xi(id)-xbdy)*xi(ndims+id)/vold
+               ix=interp(xn(ioff+1),isz,xi(id),xm)
+            endif
+! The following trap ought not to be necessary if the rounding correction
+! works, but it might still be needed.
+            if(.not.(xi(id).gt.xmeshstart(id).and.
+     $           xi(id).lt.xmeshend(id)))then
+               write(*,*)'Particle outside meshlen'
+               write(*,*)'id, ix, xi(1  ... 3)    xbdy,xt,xmod,vold,xi'
+               write(*,'(2i2,10f9.4)')id,ix
+     $              ,(xi(k),k=1,ndims),xbdy,xt,xmod,vold,xi(ndims+id)
+               linmesh=.false.
+               goto 2
+            else
+               if(.not.lnotallp)nrein=nrein+1
             endif
          else
-            fist=1.
-            if(ipartperiod(id)/64-(ipartperiod(id)/128)*2.eq.1)
-     $           fist=fist+0.5
-            fisz=float(isz)
-            if(ipartperiod(id)/128-(ipartperiod(id)/256)*2.eq.1)
-     $           fisz=fisz-0.5
-! This rather complete test is necessary and costs perhaps 3% extra time.
-! Because we must not allow exactly on boundaries.
-            if(.not.(ix.ne.0.and.xm.gt.fist.and.xm.lt.fisz))then
-               linmesh=.false.
-            endif
+! Set linmesh. New sensible version using xmesh
+            if(.not.(ix.ne.0.and.xi(id).gt.xmeshstart(id).and.
+     $              xi(id).lt.xmeshend(id)))linmesh=.false.
          endif
+! --------------------------------------------------------------
          xfrac(id)=xm-ix
          xi(ndimsx2+id)=xm
          ixp(id)=ix

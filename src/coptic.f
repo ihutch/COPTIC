@@ -14,7 +14,7 @@
 ! Running averages.
       real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
       real scratch(na_i,na_j,na_k)
-      double complex cscratch(na_i-2,na_j-2,na_k-2)
+      double complex cscratch(na_i,na_j,na_k)
       real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k),voltotal
       real cij(2*ndimsmax+1,na_i,na_j,na_k)
 ! Diagnostics (moments)

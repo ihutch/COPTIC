@@ -15680,3 +15680,88 @@ box length allowing for hole influence.
 
 Also made phasespace work with multiply-specified files on the command line
 (as well as extension-free specification which reads all.)
+
+4 Nov 19
+
+Begin work on ffttrid a version that uses fft only in the tranverse directions 
+and uses tridiagonal in the first (parallel) direction. This is to enable
+non-periodic BCs in the parallel direction. Which is intended to test what
+happens if we use outward propagating boundary conditions instead of 
+periodic. Also, it is hoped that this will enable use of shorter parallel
+domains without compromising the stability criterion by k-parallel limitations.
+
+First we are going to have to use cscratch differently. So increase its 
+allocated dimensions in coptic.f to ifull, with the objective of providing
+additional surface 2-D space for scratch storage. There's a headache to 
+do with the test subroutine in that it is not consistent with this change.
+
+Worked to sort things out and got the ffttrid to give the same result as
+the 3D FFT version when using a correctly aligned sine wave and a BC
+corresponding to zero at the domain ends (i=1/2, i=M+1/2). Their maximum
+fractional error for mesh length 100 is 2e-6. And their maximum values
+are 0.149439E-02 cf 1/k**2 0.149002E-02 which is pretty good, but not
+brilliant. They are as good as each other.
+
+6 Nov 2019
+
+I need to diagnose the causes of the potential peak occurring at the
+boundary when the particles have v reset on periodic exchange. I
+suspect that it is not a bug but a physical effect of the reset. It
+means that if an electron is trapped in a local potential peak, then
+each time it crosses the periodic boundary, its velocity is reset and
+it has a finite chance of being given energy sufficient to escape
+trapping. If it does, then it escapes out of the local region (without
+encountering the boundary again). A passing particle entering the well
+also has a finite chance of becoming trapped.  However, if it does,
+then it immediately returns to the boundary and has a chance of being
+untrapped. I think that this balance of effects is such that there is
+a bias that tends to deplete trapped particles but not passing
+particles in the boundary vicinity.
+
+A hand calculation indicates that the above suspicion does not work.
+A positive potential ought to enhance total electron density by a
+Boltzmann factor even in this vresetting case and cancel itself.
+Therefore we must look for some other explanation. 
+
+Set up test case in scratchvreset. It shows the problem quickly
+(in 1d). Fiddled around in that with diagnostics in partlocate.
+Noticed that the positions of relocated particles for moderate
+length domains (-50 to 50) can be substantially beyond the xmesh
+boundaries... by more than one cell when there are large numbers
+of mesh counts. j
+
+It strikes me that when a particle is relocated significantly inside
+the mesh but with a different velocity, there's an inconsistency in the
+way that the boundary crossing has been handled. The velocity ought 
+to have changed at exactly the crossing, but then it would not have gone
+the same distance into the opposite domain. Maybe that's an effect?
+
+7 Nov 2019
+
+It seems clear that the current vreset process will produce a
+non-Maxwellian distribution close to the boundary because a flux
+source velocity distribution is being used but being applied in a way
+that is distributed in space over approximately one space-step,
+inconsistently. We know that a flux distribution reinjected a distance
+that is a random fraction of the timestep*velocity inside the domain
+gives a correct Maxwellian distribution. But the velocity being used
+in the current code is the old velocity not the new velocity. We
+presumably could use the new velocity if we wished, but that would
+locate the particle in a different position. We would then be using a
+full scale reinjection (in the normal direction on a specified face at
+least). It still does not seem sensible to use the whole reinjection
+routine for this, because we don't need all the tangential position
+and velocity mechanisms.  But if we use partlocate, it needs to know
+what dt(pos) is. Alternatively we could multiply the distance into the
+domain by the ratio vnew/vold, which might be easier to implement. 
+
+Working on this. Clean up the linmesh test to a more rational implementation.
+Remove the fist fisz variables and tests. Separating ipartperiod 4 and 5.
+Not yet completed start at removal of the domain length shift tiny
+adjustment removal. 
+
+8 Nov 2019
+
+Worked extensively on partlocate 5 code. Found that correcting the position
+for the velocity difference using vnew/vold gets rid of the potential blip
+at the boundary. So it seems the diagnosis above of the problem was correct.
