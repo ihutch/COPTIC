@@ -15765,3 +15765,5 @@ adjustment removal.
 Worked extensively on partlocate 5 code. Found that correcting the position
 for the velocity difference using vnew/vold gets rid of the potential blip
 at the boundary. So it seems the diagnosis above of the problem was correct.
+Cleaned up the partlocate code and reverified. Seems now to be all in order
+and with the vreset working. 

@@ -737,7 +737,6 @@
             endif
          elseif(ipartperiod(id).eq.5)then 
 ! Periodic vreset particles -----------------------------
-            if(ldebug)write(*,'(i4,2f10.4,$)')ix,xm,xi(id)
             index=0
             if(xi(id).le.xmeshstart(id))then ! relocate near xmeshend
                index=2*id-1     ! index odd for velocity reset
@@ -758,12 +757,12 @@
                xt=xi(id)-xmeshstart(id)
                xmod=(xmeshend(id)-xmeshstart(id))*.999998
                xi(id)=xmeshstart(id)+modulo(xt,xmod)+1e-6*xmod
-! Correct distance inside mesh for vold, vnew difference.
+! Correct distance inside mesh for vold vs vnew difference.
                xi(id)=xbdy+(xi(id)-xbdy)*xi(ndims+id)/vold
             endif
             ix=interp(xn(ioff+1),isz,xi(id),xm)
 ! The following trap ought not to be necessary if the rounding correction
-! works, but it might still be needed.
+! works, but it might still be needed during debugging.
             if(.not.(xi(id).gt.xmeshstart(id).and.
      $           xi(id).lt.xmeshend(id)).or.ix.eq.0)then
                write(*,*)'Particle outside meshlen'
