@@ -738,12 +738,14 @@
          elseif(ipartperiod(id).eq.5)then 
 ! Periodic vreset particles -----------------------------
             index=0
-            if(xi(id).le.xmeshstart(id))then ! relocate near xmeshend
+            if(xi(id).lt.xmeshstart(id))then ! relocate near xmeshend
                index=2*id-1     ! index odd for velocity reset
                xbdy=xmeshend(id)
             elseif(xi(id).ge.xmeshend(id))then ! relocate near xmeshstart
                index=2*id       ! index even for velocity reset
                xbdy=xmeshstart(id)
+            elseif(xi(id).eq.xmeshstart(id))then
+               xi(id)=xi(id)+1.e-6*(xmeshend(id)-xmeshstart(id))
             endif
             if(index.ne.0)then  !choose new velocity and relocate
                call ranlux(ra,1)
@@ -758,7 +760,10 @@
                xmod=(xmeshend(id)-xmeshstart(id))*.999998
                xi(id)=xmeshstart(id)+modulo(xt,xmod)+1e-6*xmod
 ! Correct distance inside mesh for vold vs vnew difference.
-               xi(id)=xbdy+(xi(id)-xbdy)*xi(ndims+id)/vold
+               vfac=xi(ndims+id)/vold
+               if(vfac.gt.0.001.and.vfac.lt.10.)then
+                  xi(id)=xbdy+(xi(id)-xbdy)*vfac
+               endif
             endif
             ix=interp(xn(ioff+1),isz,xi(id),xm)
 ! The following trap ought not to be necessary if the rounding correction

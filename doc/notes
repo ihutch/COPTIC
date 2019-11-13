@@ -15767,3 +15767,29 @@ for the velocity difference using vnew/vold gets rid of the potential blip
 at the boundary. So it seems the diagnosis above of the problem was correct.
 Cleaned up the partlocate code and reverified. Seems now to be all in order
 and with the vreset working. 
+
+11 Nov 2019
+
+Now getting back to ffttrid version implementation into full coptic
+code (not just a ffttest version). Changed the makefile to put into
+libcoptic ffttrid.o by default instead of fftsolve.f (but keep fftsolve.f
+around for now as the old version). 
+
+Try some 1d tests with ffttrid version 5,4,4. These don't seem to be 
+solving for phi consistently with the fftsolve version. Hole height
+rises and falls. This has BC potential=0. Perhaps the guard potential
+values need to be set differently? Set guards doesn't fix. 
+
+There are also some particle outside meshlen errors. Got myself into a
+mess with trying to fix this. Might have to backtrack to older version 
+of padvnc.f. Did so and then did smaller correction to get rid of outside
+meshlen errors.
+
+We have made little progress beyond getting rid of outside meshlen errors.
+the ffttrid version is still not behaving as expected. Ahh! Seems to be
+because I did not copy back the guard cells of u. Reprogramming seems to
+fix the hole growth/decay. Without the guard cells set correctly the
+periodic boundary values of acceleration are incorrect. When set things
+work.
+
+

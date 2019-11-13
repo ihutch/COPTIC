@@ -103,7 +103,8 @@ endif
 FFTWSOLVE=fftdummy.o
 ifeq ("$(TESTFFTW)","")
 	LIBRARIES:=$(LIBRARIES) -lfftw3
-	FFTWSOLVE:=fftsolve.o
+#	FFTWSOLVE:=fftsolve.o
+	FFTWSOLVE:=ffttrid.o
 endif
 ACCISLIB=${COPTIC_ROOT}/accis/lib$(ACCISDRV).a
 # For submakes:

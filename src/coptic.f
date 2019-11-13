@@ -14,7 +14,7 @@
 ! Running averages.
       real qave(na_i,na_j,na_k),uave(na_i,na_j,na_k)
       real scratch(na_i,na_j,na_k)
-      double complex cscratch(na_i,na_j,na_k)
+      double complex cscratch(na_i+4,na_j,na_k)
       real psum(na_i,na_j,na_k),volumes(na_i,na_j,na_k),voltotal
       real cij(2*ndimsmax+1,na_i,na_j,na_k)
 ! Diagnostics (moments)
@@ -409,11 +409,20 @@
 !                  call fftphisolve2d(ifull,iuds,u(1,1,1),q(1,1,2)
 !     $                 ,cscratch,xmeshend(1)-xmeshstart(1),xmeshend(2)
 !     $                 -xmeshstart(2),ierr)
-                  call fftphisolve3d(ifull,iuds,u,q,cscratch
-     $                 ,xmeshend(1)-xmeshstart(1)
-     $                 ,xmeshend(2)-xmeshstart(2)
-     $                 ,xmeshend(3)-xmeshstart(3)
-     $                 ,ierr)
+!                  if(.false..and.ipartperiod(1).eq.5)then
+                  if(ipartperiod(1).eq.5)then
+                     call ffttrid(ifull,iuds,u,q,cscratch
+     $                    ,xmeshend(1)-xmeshstart(1)
+     $                    ,xmeshend(2)-xmeshstart(2)
+     $                    ,xmeshend(3)-xmeshstart(3)
+     $                    ,ierr)
+                  else
+                     call fftphisolve3d(ifull,iuds,u,q,cscratch
+     $                    ,xmeshend(1)-xmeshstart(1)
+     $                    ,xmeshend(2)-xmeshstart(2)
+     $                    ,xmeshend(3)-xmeshstart(3)
+     $                    ,ierr)
+                  endif
                   if(ierr.ne.0)then
                      lfftsucceeded=.false.
                      write(*,*)'FAILED ATTEMPT to use FFTW Solver'
