@@ -768,12 +768,13 @@
             ix=interp(xn(ioff+1),isz,xi(id),xm)
 ! The following trap ought not to be necessary if the rounding correction
 ! works, but it might still be needed during debugging.
-            if(.not.(xi(id).gt.xmeshstart(id).and.
-     $           xi(id).lt.xmeshend(id)).or.ix.eq.0)then
+            if(.not.(xi(id).ge.xmeshstart(id).and.
+     $           xi(id).le.xmeshend(id)).or.ix.eq.0)then
                write(*,*)'Particle outside meshlen'
                write(*,*)'id, ix, xi(1  ... 3)    xbdy,xt,xmod,vold,xi'
-               write(*,'(2i2,10f9.4)')id,ix
+               write(*,'(2i3,10f9.4)')id,ix
      $              ,(xi(k),k=1,ndims),xbdy,xt,xmod,vold,xi(ndims+id)
+     $              ,xm-ix
                linmesh=.false.
                goto 2
             else

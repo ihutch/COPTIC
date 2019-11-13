@@ -409,7 +409,6 @@
 !                  call fftphisolve2d(ifull,iuds,u(1,1,1),q(1,1,2)
 !     $                 ,cscratch,xmeshend(1)-xmeshstart(1),xmeshend(2)
 !     $                 -xmeshstart(2),ierr)
-!                  if(.false..and.ipartperiod(1).eq.5)then
                   if(ipartperiod(1).eq.5)then
                      call ffttrid(ifull,iuds,u,q,cscratch
      $                    ,xmeshend(1)-xmeshstart(1)
@@ -447,18 +446,22 @@
 ! ------------------------------------------------
          if(ipstep.eq.0.or.mod(j,ipstep).eq.0)then
 ! Slice plots
+!            write(*,*)'lsliceplot,ldenplot,ldistshow,lphiplot'
+!     $           ,lsliceplot,ldenplot,ldistshow,lphiplot
             if(lsliceplot.and.ldenplot)call sliceGweb(ifull,iuds,q,na_m
      $           ,zp,ixnp,xn,ifix,'density: n'//char(0),dum,dum)
-            if(lsliceplot.and.lphiplot)then
-               if((iuds(2).gt.3.or.iuds(3).gt.3))then
-                  call sliceGweb(ifull,iuds,u,na_m,zp,ixnp,
-     $                 xn,ifix,'potential:'//'!Af!@'//char(0),dum,dum)
-               else
-                  if(.not.ldistshow)then
+            if((iuds(2).eq.3.and.iuds(3).eq.3))then
+               if(.not.ldistshow)then
+                  if(lphiplot)then
                      if(myid.eq.0)write(*,*
-     $                    )'1-d does not plot potential; using -gn -gp'
+     $                 )'1-d does not plot potential; use both -gn -gp'
                      ldistshow=.true.
                   endif
+               endif
+            else
+               if(lsliceplot.and.lphiplot)then
+                  call sliceGweb(ifull,iuds,u,na_m,zp,ixnp,
+     $                 xn,ifix,'potential:'//'!Af!@'//char(0),dum,dum)
                endif
             endif
 ! Phase space done by all processes, even though only one of them plots.

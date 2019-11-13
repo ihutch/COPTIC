@@ -191,8 +191,9 @@
       integer*8 planforward,planbackward
       real k2
       integer idebug,ifirst
-      logical lreuse
+      logical lreuse,loutward
       data idebug/0/ifirst/0/lreuse/.true./
+      data loutward/.true./ ! Outward propagating or zero BC
       save
 
       M=iuds(1)-2
@@ -208,7 +209,7 @@
          ifirst=ifirst+1
       endif
 ! Initialize to zero the additional storage planes
-      if(ifirst.eq.0)cscratch(0:N,0:O,M+2:M+5)=0.
+      if(ifirst.eq.0)cscratch(0:N+1,0:O+1,M+2:M+5)=0.
 
 ! For each x, 2D-FFT q giving a 3D array in which x
 ! is still position (not k).
@@ -239,12 +240,12 @@
             k2=((sky*N/yL)**2+(skz*O/zL)**2)
             di=-2*ci-k2
             G=0.
-            if(k2.gt.0)G=dt/(dx*sqrt(k2))
+            if(k2.gt.0)G=min(5.,dt/(dx*sqrt(k2)))
             H=(1.-G)/(1.+G)
             do i=1,M
 ! Create the initial RHS for this ky,kz, which is single-complex 
 ! Forward Fourier transform of -q
-!               B(i)= cmplx(cscratch(j,k,i)/scale)
+!               B(i)= cmplx(cscratch(j,k,i)/scale) !Now done earlier
                B(i)= cmplx(cscratch(j,k,i))
 ! Create the diagonals and subdiagonals
                C(i)= ci
@@ -252,18 +253,21 @@
                E(i)= ci
             enddo
 ! Fix the Boundary corners. Non propagating version:
-            if(.true.)then
-            D(1)=di-ci; D(M)=di-ci ! Make Zero at half mesh domain end
-            else
+            if(loutward)then
+               stable=1.0 ! Stabilizing hack.
 ! Outward propagating boundary conditions:
-            D(1)=(-2.-H)*ci-k2
-            D(M)=(-2.-H)*ci-k2
+               D(1)=stable*((-2.-H)*ci-k2)
+               D(M)=stable*((-2.-H)*ci-k2)
+            else
+               D(1)=di-ci; D(M)=di-ci ! Make Zero at half mesh domain end
             endif
-            if(.false.)then
+!            write(*,*)j,k,B(M)
+!     $           ,cmplx(H*cscratch(j,k,M+5)+cscratch(j,k,M+4))*ci
+            if(loutward)then
 ! Now we need to fix B at corners by adding FT-u terms from prior timestep
 ! Requires the extra cscratch storage.
-            B(M)=B(M)-cmplx(H*cscratch(M+5,j,k)+cscratch(M+4,j,k))*ci
-            B(1)=B(1)-cmplx(H*cscratch(M+2,j,k)+cscratch(M+3,j,k))*ci
+               B(M)=B(M)-cmplx(H*cscratch(j,k,M+5)+cscratch(j,k,M+4))*ci
+               B(1)=B(1)-cmplx(H*cscratch(j,k,M+2)+cscratch(j,k,M+3))*ci
             endif
 ! Install in the temporary Guard FT u-values equal to -q at edge
             cscratch(j,k,0)=cscratch(j,k,1)
@@ -273,14 +277,14 @@
             if(INFO.ne.0) stop 'CGTSL Zero diagonal trap'
 ! Install solution into in-mesh cscratch
             cscratch(j,k,1:M)= B(1:M)
-            if(.false.)then
+            if(loutward)then
 ! Turn the temporary guard values into the guard FT u-values
 ! consistent with the poisson equation at mesh edge.
-            cscratch(j,k,0)=cscratch(j,k,0)/ci
-     $           +(2.+k2/ci)*cscratch(j,k,1)-cscratch(j,k,2)
-            cscratch(j,k,M+1)=cscratch(j,k,M+1)/ci
-     $           +(2.+k2/ci)*cscratch(j,k,M)-cscratch(j,k,M-1)
-            else
+               cscratch(j,k,0)=cscratch(j,k,0)/ci
+     $              +(2.+k2/ci)*cscratch(j,k,1)-cscratch(j,k,2)
+               cscratch(j,k,M+1)=cscratch(j,k,M+1)/ci
+     $              +(2.+k2/ci)*cscratch(j,k,M)-cscratch(j,k,M-1)
+            else ! Set guard to give zero potential at bdy.
                cscratch(j,k,0)=2.*cscratch(j,k,1)-cscratch(j,k,2)
                cscratch(j,k,M+1)=2.*cscratch(j,k,M)-cscratch(j,k,M-1)
             endif

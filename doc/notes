@@ -15786,10 +15786,23 @@ of padvnc.f. Did so and then did smaller correction to get rid of outside
 meshlen errors.
 
 We have made little progress beyond getting rid of outside meshlen errors.
-the ffttrid version is still not behaving as expected. Ahh! Seems to be
-because I did not copy back the guard cells of u. Reprogramming seems to
-fix the hole growth/decay. Without the guard cells set correctly the
-periodic boundary values of acceleration are incorrect. When set things
-work.
+the ffttrid version is still not behaving as expected. 
 
+Ahh! Seems to be because I did not copy back the guard cells of
+u. Reprogramming seems to fix the hole growth/decay. Without the guard
+cells set correctly the periodic boundary values of acceleration are
+incorrect. When set things work.
 
+13 Nov 2019
+
+Went through debugging process that seemed eventually to get a working
+outward propagation scheme going. There are long-scale oscillations
+with the unmodified scheme on a 100x100 grid which eventually
+overwhelm the hole. They occur with without vreset, but at a lower
+level than with vreset. They can be stabilized by a hack of enhancing
+the D(1) an D(M) by about a factor 1.1. Seems to indicate that the 
+original scheme is only marginally stable. It is the long-scale
+(low k^2) modes that are problematic, which corresponds to large 
+G=C dt/dx = (1/k) dt/dx. On a 100 width grid, k minimum is 2pi/yL=0.06.
+Which makes G=0.5/0.06=10. Then (1-G)/(1+G)=-9/11. A different way to 
+stabilize (which also works) is to limit G=min(5,dt/dx/k). 

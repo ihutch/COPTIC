@@ -761,6 +761,7 @@ c If converged, break
       logical linmesh
       real cosphase,phase,xfrac(ndims)
       integer i,id,iregion,ixp(ndims),js
+      integer savedipartperiod
 
 !      write(*,*)'Applying initial wave',wavespec
       if(wavespec(1).eq.0)return
@@ -769,6 +770,9 @@ c If converged, break
      $        /(xmeshend(id)-xmeshstart(id))
 !         write(*,*)wavespec(1+id),xmeshend(id),xmeshstart(id),kw(id)
       enddo
+! Cope with vreset particles.
+      savedipartperiod=ipartperiod(1)
+      ipartperiod(1)=4
       do js=1,nspecies
          do i=iicparta(js),iocparta(js)
             if(x_part(iflag,i).ne.0)then
@@ -791,6 +795,6 @@ c If converged, break
             endif
          enddo
       enddo
-      
+      ipartperiod(1)=savedipartperiod
 
       end
