@@ -256,10 +256,10 @@ streamunset :
 # We make one of these the first thing in objects to force the header
 # dependence to be reported, not just ignored by make on pattern rule.
 interpolations.o : interpolations.f makefile $(HEADERS)
-	$(G77) -c $(NOBOUNDS) $(NGW) $(PROFILING) $*.f
+	$(G77) -c $(NGW) $(PROFILING) $(NOBOUNDS) $*.f
 
 getfield.o : getfield.f makefile $(HEADERS)
-	$(G77) -c $(NOBOUNDS) $(NGW) $(PROFILING) $*.f
+	$(G77) -c $(NGW) $(PROFILING) $(NOBOUNDS) $*.f
 
 reduce.o : reduce.f makefile $(HEADERS)
 	$(G77) -c $(NOGLOBALS) $(PROFILING) $*.f
@@ -410,3 +410,4 @@ help :
 	@echo Targets: clean mproper ftnchek tree coptic.prof vecx analysis serial
 	@echo Tests:   GeometryTests testing testanal regeom
 	@echo Setup:   streamset streamunset
+	@echo Profiling etc do:    make PROFILING='<switches>'

@@ -254,7 +254,7 @@
             enddo
 ! Fix the Boundary corners. Non propagating version:
             if(loutward)then
-               stable=1.0 ! Stabilizing hack.
+               stable=1.1 ! Stabilizing hack.
 ! Outward propagating boundary conditions:
                D(1)=stable*((-2.-H)*ci-k2)
                D(M)=stable*((-2.-H)*ci-k2)
@@ -290,13 +290,13 @@
             endif
 ! Save the 0,1,M,M+1 planes of the fourier transformed solution
 ! (guard and edge) for use in the next timestep.
-            cscratch(M+2,j,k)=
+            cscratch(j,k,M+2)=
      $           cscratch(mod(j-2+N,N)+1,mod(k-2+O,O)+1,0)
-            cscratch(M+3,j,k)=
+            cscratch(j,k,M+3)=
      $           cscratch(mod(j-2+N,N)+1,mod(k-2+O,O)+1,1)
-            cscratch(M+4,j,k)=
+            cscratch(j,k,M+4)=
      $           cscratch(mod(j-2+N,N)+1,mod(k-2+O,O)+1,M)
-            cscratch(M+5,j,k)=
+            cscratch(j,k,M+5)=
      $           cscratch(mod(j-2+N,N)+1,mod(k-2+O,O)+1,M+1)
          enddo
       enddo
