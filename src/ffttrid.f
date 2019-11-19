@@ -193,9 +193,10 @@
       integer idebug,ifirst
       logical lreuse,loutward
       data idebug/0/ifirst/0/lreuse/.true./
-      data loutward/.true./ ! Outward propagating or zero BC
+      data loutward/.true./ ! Outward propagating else log slope
       save
 
+      loutward=.false.
       M=iuds(1)-2
       N=iuds(2)-2
       O=iuds(3)-2
@@ -229,6 +230,11 @@
 ! solve in the x-direction by tridiagonal elimination. 
       dx=xL/M
       ci=(1/dx)**2
+      ri=0. ! Make edge potential zero.
+      ri=.5 ! Make Guard potential zero.
+      ri=1. ! this is stable
+      ri=3. ! this has some long fluctuations.
+      ri=10.! This has long wavelength near-instability.
       do k=1,O
          kz=k-1
          if(kz.gt.O/2)kz=kz-O
@@ -240,12 +246,17 @@
             k2=((sky*N/yL)**2+(skz*O/zL)**2)
             di=-2*ci-k2
             G=0.
-            if(k2.gt.0)G=min(5.,dt/(dx*sqrt(k2)))
+            if(k2.gt.0)then 
+               G=min(5.,dt/(dx*sqrt(k2)))
+               r=ri
+            else
+               r=0.5  ! set guard k2=0 potential component zero.
+!               r=ri
+            endif
             H=(1.-G)/(1.+G)
             do i=1,M
 ! Create the initial RHS for this ky,kz, which is single-complex 
 ! Forward Fourier transform of -q
-!               B(i)= cmplx(cscratch(j,k,i)/scale) !Now done earlier
                B(i)= cmplx(cscratch(j,k,i))
 ! Create the diagonals and subdiagonals
                C(i)= ci
@@ -258,16 +269,18 @@
 ! Outward propagating boundary conditions:
                D(1)=stable*((-2.-H)*ci-k2)
                D(M)=stable*((-2.-H)*ci-k2)
-            else
-               D(1)=di-ci; D(M)=di-ci ! Make Zero at half mesh domain end
-            endif
-!            write(*,*)j,k,B(M)
-!     $           ,cmplx(H*cscratch(j,k,M+5)+cscratch(j,k,M+4))*ci
-            if(loutward)then
-! Now we need to fix B at corners by adding FT-u terms from prior timestep
+! Now we need to fix B at ends by adding FT-u terms from prior timestep
 ! Requires the extra cscratch storage.
-               B(M)=B(M)-cmplx(H*cscratch(j,k,M+5)+cscratch(j,k,M+4))*ci
-               B(1)=B(1)-cmplx(H*cscratch(j,k,M+2)+cscratch(j,k,M+3))*ci
+               B(M)=B(M)+cmplx(H*cscratch(j,k,M+5)+cscratch(j,k,M+4))*ci
+               B(1)=B(1)+cmplx(H*cscratch(j,k,M+2)+cscratch(j,k,M+3))*ci
+            else
+! phi + r dphi/dx=0 requires (pN+pG)/2=-r(pG-pN)/dx (r is positive).
+! i.e. pG=(2r/dx-1)/(2r/dx+1)pN. So the resulting last row equation is
+! pNm-2pN+(2r/dx-1)/(2r/dx+1)pN=B*dx^2 i.e. with k2 correction: 
+               D(M)=(-2.-k2/ci+(2.*r/dx-1)/(2.*r/dx+1))*ci
+               D(1)=(-2.-k2/ci+(2.*r/dx-1)/(2.*r/dx+1))*ci
+! Old way to make zero at half mesh point: 
+!               D(1)=di-ci; D(M)=di-ci ! Make Zero at half mesh domain end
             endif
 ! Install in the temporary Guard FT u-values equal to -q at edge
             cscratch(j,k,0)=cscratch(j,k,1)
@@ -284,9 +297,12 @@
      $              +(2.+k2/ci)*cscratch(j,k,1)-cscratch(j,k,2)
                cscratch(j,k,M+1)=cscratch(j,k,M+1)/ci
      $              +(2.+k2/ci)*cscratch(j,k,M)-cscratch(j,k,M-1)
-            else ! Set guard to give zero potential at bdy.
-               cscratch(j,k,0)=2.*cscratch(j,k,1)-cscratch(j,k,2)
-               cscratch(j,k,M+1)=2.*cscratch(j,k,M)-cscratch(j,k,M-1)
+            else ! Set guard consistently
+               cscratch(j,k,M+1)=(2.*r/dx-1)/(2.*r/dx+1)*cscratch(j,k,M)
+               cscratch(j,k,0)=(2.*r/dx-1)/(2.*r/dx+1)*cscratch(j,k,1)
+! Old extrapolation of constant slope          
+!               cscratch(j,k,0)=2.*cscratch(j,k,1)-cscratch(j,k,2)
+!               cscratch(j,k,M+1)=2.*cscratch(j,k,M)-cscratch(j,k,M-1)
             endif
 ! Save the 0,1,M,M+1 planes of the fourier transformed solution
 ! (guard and edge) for use in the next timestep.
@@ -306,10 +322,10 @@
       do i=0,M+1
          call dfftw_execute_dft(planbackward, cscratch(1,1,i) ,
      $        cscratch(1,1,i))
-         do k=1,O+2 
-            do j=1,N+2         ! Copy cscratch to u with guard cells.
-               u(i+1,j,k)=
-     $              real(cscratch(mod(j-2+N,N)+1,mod(k-2+O,O)+1,i),4)
+         do k=0,O+1             ! Copy cscratch to u with periodic guard cells.
+            do j=0,N+1  
+               u(i+1,j+1,k+1)=
+     $              real(cscratch(mod(j-1+N,N)+1,mod(k-1+O,O)+1,i),4)
             enddo
          enddo
       enddo

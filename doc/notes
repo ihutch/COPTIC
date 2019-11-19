@@ -15806,3 +15806,9 @@ original scheme is only marginally stable. It is the long-scale
 G=C dt/dx = (1/k) dt/dx. On a 100 width grid, k minimum is 2pi/yL=0.06.
 Which makes G=0.5/0.06=10. Then (1-G)/(1+G)=-9/11. A different way to 
 stabilize (which also works) is to limit G=min(5,dt/dx/k). 
+
+14 Nov 2019
+
+Found other programming errors. When corrected, a growing long mode occurs
+almost linear in x but sinusoidal in y, occurs. It appears to be driven
+by the domain corners. It arises from the B-adjustment.
