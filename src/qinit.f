@@ -112,8 +112,9 @@
       enddo
 ! Allow the last species to fill the array by setting ghost init slot:
       iicparta(ispecies)=n_partmax+1
- ! Apply initial wave displacement
-      if(.not.lnotallp)call wavedisplace(wavespec)
+! Apply initial wave displacement, now regardless of actual periodicity
+!      if(.not.lnotallp)call wavedisplace(wavespec)
+      call wavedisplace(wavespec)
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine fillqblocksize(nqblks,islot,islotmax,ispecies)
@@ -786,7 +787,8 @@ c If converged, break
                   x_part(id,i)=x_part(id,i)
      $                 +wavespec(1+ndims+id)*cosphase
                enddo
-! Initialize the mesh fraction data in x_part. This also checks periodicity.
+! Initialize the mesh fraction data in x_part.
+! This also relocates periodically into the mesh because ipartperiod=4.
                call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
                if(.not.linmesh)then
                   write(*,*)'wavedisplace linmesh ERROR',ixp,xfrac

@@ -175,6 +175,7 @@
       subroutine ffttrid(ifull,iuds,u,q,cscratch,xL,yL,zL)
 ! Solve the poisson equation by fourier transforms for periodic 2D directions
 ! y, z, but by tridiagonal elimination and back substitution in x direction.
+! In x-direction domain is full; in y,z, it is short 1/2 mesh.
 ! Lengths are xL, yL, zL. Work matrix complex*8 cscratch(M+2,N+2,O+2).
 ! \nabla^2\phi = -rho/epsilon0; 
 ! q is rho/epsilon0 on entry, u is phi on exit with guard values.
@@ -193,7 +194,7 @@
       integer idebug,ifirst
       logical lreuse,loutward
       data idebug/0/ifirst/0/lreuse/.true./
-      data loutward/.true./ ! Outward propagating else log slope
+      data loutward/.true./ ! Outward propagating else log slope match
       save
 
       loutward=.false.
@@ -231,10 +232,8 @@
       dx=xL/M
       ci=(1/dx)**2
       ri=0. ! Make edge potential zero.
-      ri=.5 ! Make Guard potential zero.
-      ri=1. ! this is stable
-      ri=3. ! this has some long fluctuations.
-      ri=10.! This has long wavelength near-instability.
+      ri=1. ! Logarithmic slope =-1/dx
+      ri=5. ! Use as upper limit of log slope inverse.
       do k=1,O
          kz=k-1
          if(kz.gt.O/2)kz=kz-O
@@ -248,10 +247,9 @@
             G=0.
             if(k2.gt.0)then 
                G=min(5.,dt/(dx*sqrt(k2)))
-               r=ri
+               r=min(1/(dx*sqrt(k2)),ri)
             else
-               r=0.5  ! set guard k2=0 potential component zero.
-!               r=ri
+               r=ri ! set k2=0 ratio
             endif
             H=(1.-G)/(1.+G)
             do i=1,M
@@ -274,13 +272,18 @@
                B(M)=B(M)+cmplx(H*cscratch(j,k,M+5)+cscratch(j,k,M+4))*ci
                B(1)=B(1)+cmplx(H*cscratch(j,k,M+2)+cscratch(j,k,M+3))*ci
             else
+! Setting no B modification is consistent if the D value is adjusted
+! but otherwise is assuming effectively phiG=0.  
+
 ! phi + r dphi/dx=0 requires (pN+pG)/2=-r(pG-pN)/dx (r is positive).
 ! i.e. pG=(2r/dx-1)/(2r/dx+1)pN. So the resulting last row equation is
 ! pNm-2pN+(2r/dx-1)/(2r/dx+1)pN=B*dx^2 i.e. with k2 correction: 
-               D(M)=(-2.-k2/ci+(2.*r/dx-1)/(2.*r/dx+1))*ci
-               D(1)=(-2.-k2/ci+(2.*r/dx-1)/(2.*r/dx+1))*ci
-! Old way to make zero at half mesh point: 
-!               D(1)=di-ci; D(M)=di-ci ! Make Zero at half mesh domain end
+!               D(M)=(-2.-k2/ci+(2.*r/dx-1)/(2.*r/dx+1))*ci
+!               D(1)=(-2.-k2/ci+(2.*r/dx-1)/(2.*r/dx+1))*ci
+! Alternative with uncentered value. pG=pN*r/(1+r), so last row is
+! PNm-2pN+pN*r/(1+r) with k2 correction
+               D(M)=(-2.-k2/ci+r/(1.+r))*ci
+               D(M)=(-2.-k2/ci+r/(1.+r))*ci
             endif
 ! Install in the temporary Guard FT u-values equal to -q at edge
             cscratch(j,k,0)=cscratch(j,k,1)
@@ -297,12 +300,11 @@
      $              +(2.+k2/ci)*cscratch(j,k,1)-cscratch(j,k,2)
                cscratch(j,k,M+1)=cscratch(j,k,M+1)/ci
      $              +(2.+k2/ci)*cscratch(j,k,M)-cscratch(j,k,M-1)
-            else ! Set guard consistently
-               cscratch(j,k,M+1)=(2.*r/dx-1)/(2.*r/dx+1)*cscratch(j,k,M)
-               cscratch(j,k,0)=(2.*r/dx-1)/(2.*r/dx+1)*cscratch(j,k,1)
-! Old extrapolation of constant slope          
-!               cscratch(j,k,0)=2.*cscratch(j,k,1)-cscratch(j,k,2)
-!               cscratch(j,k,M+1)=2.*cscratch(j,k,M)-cscratch(j,k,M-1)
+            else 
+! Set guard r=-phi/phi'dx= -phiG/(phiG-phiM) [uncentered]
+! So phiG*(r+1)=phiM*r, i.e. 
+               cscratch(j,k,M+1)=cscratch(j,k,M)*r/(1.+r)
+               cscratch(j,k,0)=cscratch(j,k,1)*r/(1.+r)
             endif
 ! Save the 0,1,M,M+1 planes of the fourier transformed solution
 ! (guard and edge) for use in the next timestep.

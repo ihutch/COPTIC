@@ -15812,3 +15812,42 @@ stabilize (which also works) is to limit G=min(5,dt/dx/k).
 Found other programming errors. When corrected, a growing long mode occurs
 almost linear in x but sinusoidal in y, occurs. It appears to be driven
 by the domain corners. It arises from the B-adjustment.
+
+19 Nov 2019
+
+Implementing a more systematic ffttrid using for non-periodic x boundaries.
+When particles and potential are not periodic in x, we currently call the
+SOR solver. But the idea is that instead we call ffttrid solver. 
+We currently decide to call fft solvers only if LNPF is false, indicating
+there are no non-periodic faces. That will have to change. LNPF is set true
+either by the -bn switch, or by any non-periodic potential face LPF(i).
+It would currently make sense to limit that to non-x cases. Doing that 
+to make the fft called, but it is broken, because not using ffttrid.
+Change to test LPF(1) to decide whether to call ffttrid or 3D periodic. 
+ffttrid call still corrupts, but I think that's because of incompatibilities
+with the full-mesh boundary. With fully periodic, it works.
+
+The problem with ffttrid presents as a field corruption in getfield. 
+Boxinterp zero weight error. This seems to be happening when an interpolation
+is sought with xff(1)=100. Particle is at 50.5 exactly on the upper
+x boundary. Inregion is T. That should not be the case. Found that a
+modification to the linmesh test had broken it. Fixed.
+
+I now seem to have a completely non-periodic-in-x version with phi=0 at 
+boundary working with ffttrid. It does have some potential stripes in the
+transverse direction, which I suppose are signs of total density fluctuation
+along a field line. But they are barely detectable cf the overall noise level.
+Actually one can see them in the averaged diagnostic with -a20 but not in
+the step by step potential solve.
+
+The shear wave initialization is overruled by this non-periodic setting.
+A nuisance. Fixed that using the mechanisms in wavedisplace. Seems fine.
+
+Now we have a version that is open wrt particles and specifies a logarithmic
+derivative match to external k2 decay, limited to a maximum inverse value.
+That last point is to restrict the very long transverse length cases not to
+acquire large fluctuations from the boundary condition and the total 
+charge variation. Current upper limit on -phi/phi'dx is 5. That's sort of
+like setting the potential to zero 5dx outside the grid. It is clear that
+we must not let r go to infinity because that would amount to setting
+phi' to zero, which is impossible (at both ends) if the charge is nonzero.

@@ -361,10 +361,11 @@
       if(Bt.gt..01)call nameappendexp(name,'B',Bt,1)
       end
 !************************************************************************
-      subroutine reportprogress(nstep,nsteps,nsubc,ndropped,ierr)
+      subroutine reportprogress(nstep,nsteps,nsubc,ndropped,ierr
+     $     ,iavesteps)
 ! Output parameter development to stdout.
       implicit none
-      integer nstep,nsteps,nsubc,ndropped,ierr
+      integer nstep,nsteps,nsubc,ndropped,ierr,iavesteps
       include 'ndimsdecl.f'
       include 'partcom.f'
       integer k
@@ -373,6 +374,7 @@
 
       if(ierr.eq.0)then
          write(*,'('' '',i5.5,$)')nstep
+!         if(mod(nstep,10).eq.0)write(*,*)
       else
 ! Step number print
          if(nstep.gt.9999.or.abs(ierr).gt.999)then
@@ -382,7 +384,11 @@
          endif
          
 ! write out flux to object 1.
-         write(*,'(f6.3,''| '',$)')fluxdiag()
+         if(mod(nstep,iavesteps).eq.0)then
+            write(*,'(f6.3,''|'',$)')fluxdiag()
+         else
+            write(*,'(f6.3,''| '',$)')fluxdiag()
+         endif
          if(nspecies.gt.1)then
             write(*,*)(k,nparta(k),k=1,nspecies)
          else

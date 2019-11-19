@@ -404,19 +404,17 @@
      $              ,fadcomp,ictl,ierr,myid,idims)
 !               write(*,*)'StepMon u:',u(iuds(1)/4,iuds(2)/4,iuds(3)/4)
             else
-               if(.not.LNPF)then
+               if(.not.LNPF)then ! All but x periodic. 
 ! Assume we want to use the FFT poisson solver when all periodic uniform.
-!                  call fftphisolve2d(ifull,iuds,u(1,1,1),q(1,1,2)
-!     $                 ,cscratch,xmeshend(1)-xmeshstart(1),xmeshend(2)
-!     $                 -xmeshstart(2),ierr)
-                  if(ipartperiod(1).eq.5)then
-                     call ffttrid(ifull,iuds,u,q,cscratch
+                  if(LPF(1))then ! x also periodic
+                     call fftphisolve3d(ifull,iuds,u,q,cscratch
      $                    ,xmeshend(1)-xmeshstart(1)
      $                    ,xmeshend(2)-xmeshstart(2)
      $                    ,xmeshend(3)-xmeshstart(3)
      $                    ,ierr)
                   else
-                     call fftphisolve3d(ifull,iuds,u,q,cscratch
+!                     write(*,*)'Tridiagonal FFT solver'
+                     call ffttrid(ifull,iuds,u,q,cscratch
      $                    ,xmeshend(1)-xmeshstart(1)
      $                    ,xmeshend(2)-xmeshstart(2)
      $                    ,xmeshend(3)-xmeshstart(3)
@@ -491,7 +489,7 @@
 
 ! Report step values etc.
          if(lmyidhead)call reportprogress(nstep,nsteps,nsubc,ndropped
-     $        ,ierr)
+     $        ,ierr,iavesteps)
 
 ! These running and box averages do not include the updates for this step.
 ! Accumulate running q and u averages (replaced 3d routines):

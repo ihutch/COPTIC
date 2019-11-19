@@ -625,7 +625,7 @@
             endif
          endif
 ! Potential face non-periodic face existence logical.
-         LNPF=LNPF.or..not.LPF(i) 
+         if(i.ne.1)LNPF=LNPF.or..not.LPF(i) 
       enddo
 ! Consistency checks for holes
       if(holepsi.ne.0)then

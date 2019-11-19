@@ -149,7 +149,6 @@
          do idf=1,ndims
 ! Test for need to get field:
             if(.not.(LPF(idf).and.ixnp(idf+1)-ixnp(idf).eq.3))then
-!            if(.true.)then   
                call getfield(cij(ic1),u,iLs
      $              ,xn(ixnp(idf)+1),idf,x_part(ndimsx2+1,i)
      $              ,IAND(iregion,ifield_mask),Efield(idf))
@@ -735,7 +734,7 @@
 ! If every dimension is periodic, increment nrein. (Otherwise not)
                if(.not.lnotallp)nrein=nrein+1
             endif
-         elseif(ipartperiod(id).eq.5)then 
+         elseif(ipartperiod(id).eq.50)then 
 ! Periodic vreset particles -----------------------------
             index=0
             if(xi(id).lt.xmeshstart(id))then ! relocate near xmeshend
@@ -804,9 +803,12 @@
                   ix=interp(xn(ioff+1),isz,xi(id),xm)
                endif
             endif
-! Set linmesh. New sensible version using xmesh
-            if(.not.(ix.ne.0.and.xi(id).gt.xmeshstart(id).and.
-     $           xi(id).lt.xmeshend(id)))then
+!            if(xm.eq.1.or.xm.eq.ixnp(id+1)-ixnp(id))
+!     $           write(*,*)xm,' ON BOUNDARY'
+! Set linmesh. Test using xmesh does not work well enough.
+!            if(.not.(ix.ne.0.and.xi(id).gt.xmeshstart(id).and.
+!     $           xi(id).lt.xmeshend(id)))then
+            if(xm.le.1.or.xm.ge.ixnp(id+1)-ixnp(id))then
                linmesh=.false.
                goto 2
             endif

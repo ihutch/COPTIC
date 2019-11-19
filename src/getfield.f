@@ -292,7 +292,7 @@
 ! Field is minus the potential gradient.
          ierr=0
          field=-box2interpnew(f,d,iw,weights,ierr)
-         if(ierr.ne.0)write(*,*)xff,f
+         if(ierr.ne.0)write(*,*)'xff=',xff,' f=',f
          if(.not.abs(field).lt.1.e20)then
             write(*,*)'box2interpnew field corruption in getfield'
             write(*,*)field,'  f=',f,'  d=',d,'  iw=',iw,'  weights='
