@@ -15850,4 +15850,14 @@ acquire large fluctuations from the boundary condition and the total
 charge variation. Current upper limit on -phi/phi'dx is 5. That's sort of
 like setting the potential to zero 5dx outside the grid. It is clear that
 we must not let r go to infinity because that would amount to setting
-phi' to zero, which is impossible (at both ends) if the charge is nonzero.
+phi' to zero, which is impossible (at both ends) if the charge is nonzero
+(and k2 is effectively zero). 
+
+Now ipartperiod=5 is obsolete and I'll remove it. Done. 
+
+I probably ought to rewrite ffttrid so that any one of the dimensions can
+be taken as the non-periodic one. But that's significant drudgery. Also 
+ought to use the phi boundary conditions to set ri. 
+
+Did the general non-periodic dimension drudgery. Not too bad. 
+Set the maximum ri to be BF/AF of inp. Ok.

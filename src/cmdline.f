@@ -613,7 +613,7 @@
 ! Set and check particle and potential periodicity logicals.
       lnotallp=.false.
       do i=1,ndims
-         if(ipartperiod(i).ne.4.and.ipartperiod(i).ne.5)then
+         if(ipartperiod(i).ne.4)then
             lnotallp=.true.
          else
             if(crelax.ne.0. .and. bdt.ge.0.)then

@@ -116,7 +116,7 @@
       data indi/ndims*0/
 
       do id=1,ndims
-         if(ipartperiod(id).eq.4.or.ipartperiod(id).eq.5)then
+         if(ipartperiod(id).eq.4)then
 ! Set view to entire array (Offsets indi [0:iaux(id)-1]).
             icomplete=mditerator(ndims,iview,indi,4,iaux)
 ! Use the general iterator to sum periodically.
@@ -154,7 +154,7 @@
       data indi/ndims*0/
 
       do id=1,ndims
-         if(ipartperiod(id).eq.4.or.ipartperiod(id).eq.5)then
+         if(ipartperiod(id).eq.4)then
 !            write(*,*)'Diagperiod',id
 ! Set view to entire array (Offsets indi [0:iaux(id)-1]).
             icomplete=mditerator(ndims,iview,indi,4,iaux)

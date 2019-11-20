@@ -183,6 +183,7 @@
       include 'griddecl.f'  ! Maybe use to allocate complex diagonals.
       include 'ndimsdecl.f'
       include 'partcom.f'   ! for dt
+      include 'facebcom.f'
 !      parameter (na_m=1000)  ! Instead doing this for now.
       integer ifull(3),iuds(3)
       real u(ifull(1),ifull(2),ifull(3)),q(ifull(1),ifull(2),ifull(3))
@@ -198,9 +199,23 @@
       save
 
       loutward=.false.
-      M=iuds(1)-2
-      N=iuds(2)-2
-      O=iuds(3)-2
+! determine the non-periodic dimension inp
+      inp=0
+      do id=1,3
+         if(ipartperiod(id).ne.4)then
+            if(inp.eq.0)then
+               inp=id
+            else
+               stop 'ffttrid more than one non-periodic dimension'
+            endif
+         endif
+      enddo
+      if(inp.eq.0)stop 'ffttrid no nonperiodic dimensions'
+      
+! In the following code M, in direction inp, is the non-periodic count. 
+      M=iuds(mod(inp-1,3)+1)-2
+      N=iuds(mod(inp-0,3)+1)-2
+      O=iuds(mod(inp+1,3)+1)-2
 ! Create plans
 ! The FFTW_UNALIGNED flag makes it safe to use other arrays with same plan.
       if(.not.lreuse.or.ifirst.eq.0)then
@@ -218,7 +233,15 @@
       do i=1,M
          do k=1,O 
             do j=1,N   ! Copy reordered q without the guard cells to scratch.
-               cscratch(j,k,i)=-q(i+1,j+1,k+1)
+               if(inp.eq.1)then
+                  cscratch(j,k,i)=-q(i+1,j+1,k+1)
+               elseif(inp.eq.2)then
+                  cscratch(j,k,i)=-q(k+1,i+1,j+1)
+               elseif(inp.eq.3)then
+                  cscratch(j,k,i)=-q(j+1,k+1,i+1)
+               else
+                  stop 'invalid inp in ffttrid'
+               endif
             enddo
          enddo
          call dfftw_execute_dft(planforward, cscratch(1,1,i) ,
@@ -232,8 +255,8 @@
       dx=xL/M
       ci=(1/dx)**2
       ri=0. ! Make edge potential zero.
-      ri=1. ! Logarithmic slope =-1/dx
-      ri=5. ! Use as upper limit of log slope inverse.
+      ri=5. ! Default upper limit of log slope inverse.
+      if(AF(inp).ne.0)ri=BF(inp)/AF(inp) ! Use prescribed Robin coeffs.
       do k=1,O
          kz=k-1
          if(kz.gt.O/2)kz=kz-O
@@ -326,8 +349,16 @@
      $        cscratch(1,1,i))
          do k=0,O+1             ! Copy cscratch to u with periodic guard cells.
             do j=0,N+1  
-               u(i+1,j+1,k+1)=
+               if(inp.eq.1)then
+                  u(i+1,j+1,k+1)=
      $              real(cscratch(mod(j-1+N,N)+1,mod(k-1+O,O)+1,i),4)
+               elseif(inp.eq.2)then
+                  u(k+1,i+1,j+1)=
+     $              real(cscratch(mod(j-1+N,N)+1,mod(k-1+O,O)+1,i),4)
+               elseif(inp.eq.3)then
+                  u(j+1,k+1,i+1)=
+     $              real(cscratch(mod(j-1+N,N)+1,mod(k-1+O,O)+1,i),4)
+               endif
             enddo
          enddo
       enddo
