@@ -760,10 +760,13 @@
             endif
 !            if(xm.eq.1.or.xm.eq.ixnp(id+1)-ixnp(id))
 !     $           write(*,*)xm,' ON BOUNDARY'
-! Set linmesh. Test using xmesh does not work well enough.
+! Set linmesh. Test using just xmesh does not work well enough.
 !            if(.not.(ix.ne.0.and.xi(id).gt.xmeshstart(id).and.
 !     $           xi(id).lt.xmeshend(id)))then
-            if(xm.le.1.or.xm.ge.ixnp(id+1)-ixnp(id))then
+            if(.not.(ix.ne.0.and.xi(id).gt.xmeshstart(id).and.
+     $           xi(id).lt.xmeshend(id).and.xm.gt.1
+     $           .and.xm.lt.ixnp(id+1)-ixnp(id) ))then            
+!            if(xm.le.1.or.xm.ge.ixnp(id+1)-ixnp(id))then
                linmesh=.false.
                goto 2
             endif
