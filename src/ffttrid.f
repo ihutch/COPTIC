@@ -256,7 +256,7 @@
       ci=(1/dx)**2
       ri=0. ! Make edge potential zero.
       ri=5. ! Default upper limit of log slope inverse.
-      if(AF(inp).ne.0)ri=BF(inp)/AF(inp) ! Use prescribed Robin coeffs.
+      if(BF(inp).ne.0)ri=AF(inp)/BF(inp) ! Use prescribed Robin coeffs.
       do k=1,O
          kz=k-1
          if(kz.gt.O/2)kz=kz-O
@@ -295,16 +295,8 @@
                B(M)=B(M)+cmplx(H*cscratch(j,k,M+5)+cscratch(j,k,M+4))*ci
                B(1)=B(1)+cmplx(H*cscratch(j,k,M+2)+cscratch(j,k,M+3))*ci
             else
-! Setting no B modification is consistent if the D value is adjusted
-! but otherwise is assuming effectively phiG=0.  
-
-! phi + r dphi/dx=0 requires (pN+pG)/2=-r(pG-pN)/dx (r is positive).
-! i.e. pG=(2r/dx-1)/(2r/dx+1)pN. So the resulting last row equation is
-! pNm-2pN+(2r/dx-1)/(2r/dx+1)pN=B*dx^2 i.e. with k2 correction: 
-!               D(M)=(-2.-k2/ci+(2.*r/dx-1)/(2.*r/dx+1))*ci
-!               D(1)=(-2.-k2/ci+(2.*r/dx-1)/(2.*r/dx+1))*ci
-! Alternative with uncentered value. pG=pN*r/(1+r), so last row is
-! PNm-2pN+pN*r/(1+r) with k2 correction
+! Logarithmic upstream derivative value p + rdx.dp/dx = 0 becomes
+! pG=pN*r/(1+r), so last row is PNm-2pN+pN*r/(1+r) with k2 correction
                D(M)=(-2.-k2/ci+r/(1.+r))*ci
                D(M)=(-2.-k2/ci+r/(1.+r))*ci
             endif
