@@ -1398,8 +1398,8 @@ c$$$         = 20 input error returned by lower level routine
          do n=1,nlead
 !            dphix=(rphimodes(n,ix+1,1)-rphimodes(n,ix-1,1))/(2.*dx)
 ! Prevent underflow of index.
-            dphix=(rphimodes(n,ix+1,1)-rphimodes(n,max(ix-1,0),1))
-     $           /((ix+1.-max(ix-1,0))*dx)
+            dphix=(rphimodes(n,ix+1,1)-rphimodes(n,max(ix-1,1),1))
+     $           /((ix+1.-max(ix-1,1))*dx)
             xcentroids(ix)=xcentroids(ix)+dphix
          enddo
       enddo
