@@ -1,6 +1,6 @@
 !**********************************************************************
       subroutine datawrite(myid,partfilename,restartpath,ifull
-     $     ,iuds,u,uave,qave)
+     $     ,iuds,u,uave,qave,nstep)
 ! Write data in u,uave,qave to files in path restartpath, with 
 ! names constructed from the parameters and suitable extensions.
       integer myid,ifull(*),iuds(*)
@@ -29,7 +29,7 @@
          localfilename=restartpath
          call namewrite(localfilename,ifull,iuds,1,u,'.phi')
          localfilename=restartpath
-         call writefluxfile(localfilename)
+         call writefluxfile(localfilename,nstep)
       endif
 
       end

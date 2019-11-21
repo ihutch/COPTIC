@@ -413,7 +413,6 @@
      $                    ,xmeshend(3)-xmeshstart(3)
      $                    ,ierr)
                   else
-!                     write(*,*)'Tridiagonal FFT solver'
                      call ffttrid(ifull,iuds,u,q,cscratch
      $                    ,xmeshend(1)-xmeshstart(1)
      $                    ,xmeshend(2)-xmeshstart(2)
@@ -524,7 +523,7 @@
      $        cellvol,myid,0,1)
 ! Sometimes write them out:
          if(iwstep.gt.0.and.mod(nstep,iwstep).eq.0)call datawrite(myid
-     $        ,partfilename,restartpath,ifull,iuds,u,uave,qave)
+     $        ,partfilename,restartpath,ifull,iuds,u,uave,qave,nstep)
 
 ! This non-standard fortran call works with gfortran and g77 to flush stdout.
 ! Pathscale demands an argument number. So give it explicitly.
@@ -539,7 +538,7 @@
 !-------------------------------------------------------------------
 ! Everyone writes what they have to.
       if(iwstep.gt.0 .or. myid.eq.0)call datawrite(myid,partfilename
-     $     ,restartpath,ifull,iuds,u,uave,qave)
+     $     ,restartpath,ifull,iuds,u,uave,qave,nstep)
 !-------------------------------------------------------------------
       call mpifinalize(ierr)
 ! Check some flux diagnostics and writing. Really nf_step.

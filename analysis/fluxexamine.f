@@ -144,7 +144,7 @@
 
 ! Test if species requested compatible.
       if(if_species.lt.1.or.if_species.gt.nf_species)then
-         if(ierr.gt.0)write(*,*)'Error reading file:',filename,ierr
+         write(*,*)'Error reading file:',filename,ierr
          write(*,*)'if_species incompatible',if_species,nf_species
          stop
       else

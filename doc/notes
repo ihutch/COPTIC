@@ -15861,3 +15861,22 @@ ought to use the phi boundary conditions to set ri.
 
 Did the general non-periodic dimension drudgery. Not too bad. 
 Set the maximum ri to be BF/AF of inp. Ok.
+
+21 Nov 2019
+
+I discover there's a problem with nf_step and nf_maxsteps and
+restarting.  The step at which we are restarting is determined from
+reading the flux file, where it is stored. However, it is stored as a
+value that is limited by nf_maxsteps. Therefore, once we have done
+10000=nf_maxsteps-1 it never gets incremented again, so succeeding
+restarts all think they are starting at 10000 (and write over prior
+diagnostic files).  We need a different way of deciding where/whether
+to write flux step data from that determining the step number. nstep
+determines the step number. If it is set correctly (not from limited
+nf_step), I think that will fix it. Trouble is, nstep is not in
+common. That's probably why I used nf_step. So now make writefluxfile
+add the nstep value on the end of the file, using an additional
+argument, and readfluxfile return the nstep value in the ierr
+argument.  restartread already has nstep as an argument (passing
+nf_step and setting nstep=nf_step before any adjustment to
+nf_step). Seems to work.

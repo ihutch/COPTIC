@@ -87,7 +87,11 @@
             call readfluxfile(fluxfilename,iferr)
 ! The total number of steps for fluxdatainit is the sum of what we
 ! just read out of fluxfile and the new nsteps:
-            nf_nsteps=nf_nsteps+nsteps
+            if(iferr.gt.10)then ! New version returns nsteps in iferr
+               nf_nsteps=iferr+nsteps
+            else
+               nf_nsteps=nf_nsteps+nsteps
+            endif
          endif
       endif
 
@@ -112,6 +116,7 @@
          if(lrestart/2-2*(lrestart/4).ne.0)then
             iferr=0
             call readfluxfile(fluxfilename,iferr)
+            if(iferr.gt.10)nstep=iferr
          else
             iferr=1
          endif
@@ -128,8 +133,6 @@
      $                 nsteps,' in addition to',nstep,
      $                 ' Total',nsteps+nstep,
      $                 ' will exceed flux storage',nf_maxsteps
-!     $                 ' too much; set to',nf_maxsteps-1
-!                  nsteps=nf_maxsteps-nsteps-1
                endif
                ied=1
 ! Only read the phi-file if the flux file was present. Full restart.

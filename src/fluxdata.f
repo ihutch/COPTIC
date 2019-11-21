@@ -1073,10 +1073,9 @@
          call pltend()
          call multiframe(0,0,0)
       endif
-
       end
 !*******************************************************************
-      subroutine writefluxfile(name)
+      subroutine writefluxfile(name,nstep)
 ! Initialize the name before entry. Very Important!
 ! File name:
       character*(*) name
@@ -1102,7 +1101,7 @@
       call nbcat(name,'.flx')
 !      write(*,*)name
       write(charout,51)debyelen,Ti,vd,rs,phip
- 51   format('debyelen,Ti,vd,rs,phip:',5f10.4,' Version: 5')
+ 51   format('debyelen,Ti,vd,rs,phip:',5f10.4,' Version: 6')
 
 !      write(*,*)'mf_obj=',mf_obj,nf_step,mf_quant(1)
 
@@ -1145,6 +1144,7 @@
 ! Species information 
       write(22)nf_species
       write(22)((if_quant(j,k),kf_quant(j,k),j=1,mf_obj),k=1,nf_species)
+      write(22)nstep
       close(22)
 !      write(*,*)'Wrote flux data to ',name(1:lentrim(name))
       do k=1,nf_step
@@ -1165,7 +1165,7 @@
 !*****************************************************************
       subroutine readfluxfile(name,ierr)
 ! On entry ierr .ne.0 indicates write informational messages.
-! On exit  ierr .ne.0 indicates error.
+! On exit  ierr .lt.0 indicates error, else ierr=nstep read.
       character*(*) name
       include 'ndimsdecl.f'
 ! Point charge info:
@@ -1259,6 +1259,10 @@
      $        'Flux reading: nf_species=',nf_species,
      $        ' Quantity start',(if_quant(1,k),k=1,nf_species),
      $        ' Quantity count',(kf_quant(1,k),k=1,nf_species)
+      endif
+      if(iversion.ge.6)then
+         read(23)ierr
+!         write(*,*)'Read nstep from flux file',ierr,' into ierr'
       endif
       goto 103
  102  write(*,*)'Failed to read back forces. Old format? Version='
