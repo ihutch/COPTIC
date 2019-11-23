@@ -12,7 +12,7 @@
 !      real sliceclip(4)
       character*20 mname(ndiagmax+1)
       integer nfiles,nmodes
-      parameter (nfiles=2000,nmodes=11)
+      parameter (nfiles=2003,nmodes=11)
       real xmean(nfiles),xvar(nfiles),xmax(nfiles),xmin(nfiles)
       real xms(nfiles),xmcent(nfiles)
       real time(nfiles),xamp(nfiles),work(nfiles)
@@ -274,6 +274,7 @@ c$$$         endif
       if(iargc().gt.nfiles+2)then
          write(*,*)'Too many arguments, reduce number of files'
          write(*,*)'or recompile with nfiles exceeding',iargc()
+     $        ,' (currently',nfiles,')'
          stop
       endif
       do i=iworking+1,iargc()
