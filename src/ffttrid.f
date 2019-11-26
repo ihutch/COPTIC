@@ -105,28 +105,38 @@
 ! This testing routine shows there's no real speed advantage in a 2d call
 ! relative to a 3d call with dimension 1 in the final. 
       subroutine ffttest
+!      include 'griddecl.f'  ! Maybe use to allocate complex diagonals.
+      include 'ndimsdecl.f'
+      include 'partcom.f'   ! for dt
+      include 'facebcom.f'
       integer M,N,O,MP2,NP2,OP2
-      parameter (M=200,N=300,O=1)      ! Mesh counts
+! Don't use this for testing because it is too cumbersome
+!      parameter (M=na_i-2,N=na_j-2,O=na_k-2)      ! Mesh counts
+      parameter (M=126,N=126,O=4)      ! Alternative Mesh counts
       parameter (MP2=M+2,NP2=N+2,OP2=O+2)
-      double complex inout(M,N)  ! Charge density
-      double complex inout3(M,N,O)  ! Charge density
-      double complex cscratch(N,O,M) ! Reordered!      
+      double complex cscratch(N+2,O+2,M+4) ! Reordered!      
       real uinout(MP2,NP2,OP2), qin(MP2,NP2,OP2)
-      equivalence (inout,inout3), (inout3,cscratch)
       real worka(M,N),workb(M,N),workc(M,N)
       real xL,yL,zL   ! Lengths of domain
+      real starts(3),ends(3)
       real xn,yn,zn   ! Wavelength numbers
       integer n2cycles,n3cycles
-      integer ifull(3),iused(3)
+      integer ifull(3),iused(3)     
+!      integer ixnpv(4)
+!      real xnv(MP2+NP2+OP2)
       data ifull/MP2,NP2,OP2/iused/MP2,NP2,OP2/
-      data xL/1/yL/1/zL/1/xn/4/yn/1/zn/0/
+      data xL/1/yL/1/zL/1/xn/3/yn/2/zn/0/
+      data starts/0,0,0/ends/1,1,1/
       data n2cycles/0/n3cycles/1000/
+
+      ipartperiod=4
+      ipartperiod(1)=0
+      AF=1.
+      BF=0.
 
       n3cycles=1
       sk=2.*3.1415926*sqrt((xn/xL)**2+(yn/yL)**2)
 
-
-! Now the same using 3d routines
       do ic=1,n3cycles ! Time for 1000 500x300 calls 10.6s. The same.
          ! With the corrected sinc expression 12.5s.
       do j=1,N
@@ -135,25 +145,29 @@
      $                *cos(2*3.1415926*yn*(j-1/2.)/N)
          enddo
       enddo
-! 3D version
-! Older test direct call. 
-!         inout=-worka
-!         call fftsolve3d(M,N,O,inout3,xL,yL,zL)
-!         workb=real(inout,4)
-! Test full external call.
+! 3D transform version for all periodic.
       qin=0.
-      qin(2:M+1,2:N+1,2)=worka
-      call fftphisolve3d(ifull,iused,uinout,qin,cscratch, xL,yL,zL,ier)
+      do k=2,O+1
+         qin(2:M+1,2:N+1,k)=worka
+      enddo
+      call fftphisolve3d(ifull,iused,uinout,qin,cscratch,xL,yL,zL,ier)
       workb=uinout(2:M+1,2:N+1,2)
-! 2D transform version
-      call ffttrid(ifull,iused,uinout,qin,inout,xL,yL,zL)
-      workc=uinout(2:M+1,2:N+1,2)
       call minmax2(workb,M,M,N,zmin,zmax)
-      call minmax2(workc,M,M,N,cmin,cmax)
       write(*,'(a,g12.6,a,g12.6)')'3D FFT phimax ',zmax
      $     ,' should nearly equal 1/k**2 ',1/sk**2
+      call slicesimple(ifull,iused,uinout,starts,ends,MP2,qin)
+! 2D transform version for a non-periodic direction..
+      qin=0.
+      do k=2,O+1
+         qin(2:M+1,2:N+1,k)=worka
+      enddo
+!      call slicesimple(ifull,iused,qin,starts,ends,MP2,uinout)
+      call ffttrid(ifull,iused,uinout,qin,cscratch,xL,yL,zL)
+      workc=uinout(2:M+1,2:N+1,2)
+      call minmax2(workc,M,M,N,cmin,cmax)
+!      write(*,*)'cmin,cmax',cmin,cmax
       write(*,'(a,g12.6,a,g12.6)')'2D-Tri phimax ',cmax
-     $     ,' should nearly equal 1/k**2 ',1/sk**2
+     $     ,' should be not as equal to 1/k**2 ',1/sk**2
       enddo
       call minmax2(workb-workc,M,M,N,dmin,dmax)
       write(*,'(a,g14.6,f10.6)')'max difference and frac',dmax,dmax/zmax
@@ -164,10 +178,12 @@
       call autocolcont(workc,M,M,N)
       call autocolcont(workb-workc,M,M,N)
       call pltend
+      call multiframe(0,0,0)
+      
+      call slicesimple(ifull,iused,uinout,starts,ends,MP2,qin)
+
       endif
 
-
-!      write(*,*)'If the plots and the above are the same we are good.'
 
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -180,14 +196,14 @@
 ! \nabla^2\phi = -rho/epsilon0; 
 ! q is rho/epsilon0 on entry, u is phi on exit with guard values.
       include 'fftw3.f'
-      include 'griddecl.f'  ! Maybe use to allocate complex diagonals.
+!      include 'griddecl.f'  ! Maybe use to allocate complex diagonals.
+      parameter (na_m=1000)  ! Instead doing this for testing etc.
       include 'ndimsdecl.f'
       include 'partcom.f'   ! for dt
       include 'facebcom.f'
-!      parameter (na_m=1000)  ! Instead doing this for now.
       integer ifull(3),iuds(3)
       real u(ifull(1),ifull(2),ifull(3)),q(ifull(1),ifull(2),ifull(3))
-      double complex cscratch(0:iuds(2)-1,0:iuds(3)-1,0:iuds(1)+3) ! Reordered!
+      double complex cscratch(iuds(2)-2,iuds(3)-2,0:iuds(1)+2) ! Reordered!
       integer M,N,O
       complex C(na_m),D(na_m),E(na_m),B(na_m)  ! cgtsl diagonals
       integer*8 planforward,planbackward
@@ -216,6 +232,9 @@
       M=iuds(mod(inp-1,3)+1)-2
       N=iuds(mod(inp-0,3)+1)-2
       O=iuds(mod(inp+1,3)+1)-2
+!      write(*,*)'iuds',iuds
+!      write(*,*)'inp,M,N,O=',inp,M,N,O
+!      write(*,*)'xL,yL,zL',xL,yL,zL
 ! Create plans
 ! The FFTW_UNALIGNED flag makes it safe to use other arrays with same plan.
       if(.not.lreuse.or.ifirst.eq.0)then
@@ -244,8 +263,10 @@
                endif
             enddo
          enddo
+!         write(*,'(i4,4f10.4)')i,cscratch(2,1,i),cscratch(2,2,i)
          call dfftw_execute_dft(planforward, cscratch(1,1,i) ,
      $        cscratch(1,1,i))
+!         write(*,'(i4,4f10.4)')i,cscratch(2,1,i),cscratch(2,2,i)
       enddo
 
       scale=N*O
@@ -256,7 +277,7 @@
       ci=(1/dx)**2
       ri=0. ! Make edge potential zero.
       ri=5. ! Default upper limit of log slope inverse.
-      if(BF(inp).ne.0)ri=AF(inp)/BF(inp) ! Use prescribed Robin coeffs.
+      if(AF(inp).ne.0)ri=BF(inp)/AF(inp) ! Use prescribed Robin coeffs.
       do k=1,O
          kz=k-1
          if(kz.gt.O/2)kz=kz-O
@@ -288,12 +309,12 @@
             if(loutward)then
                stable=1.1 ! Stabilizing hack.
 ! Outward propagating boundary conditions:
-               D(1)=stable*((-2.-H)*ci-k2)
-               D(M)=stable*((-2.-H)*ci-k2)
+!               D(1)=stable*((-2.-H)*ci-k2)
+!               D(M)=stable*((-2.-H)*ci-k2)
 ! Now we need to fix B at ends by adding FT-u terms from prior timestep
-! Requires the extra cscratch storage.
-               B(M)=B(M)+cmplx(H*cscratch(j,k,M+5)+cscratch(j,k,M+4))*ci
-               B(1)=B(1)+cmplx(H*cscratch(j,k,M+2)+cscratch(j,k,M+3))*ci
+! Requires the extra cscratch storage, which is broken.
+!               B(M)=B(M)+cmplx(H*cscratch(j,k,M+5)+cscratch(j,k,M+4))*ci
+!               B(1)=B(1)+cmplx(H*cscratch(j,k,M+2)+cscratch(j,k,M+3))*ci
             else
 ! Logarithmic upstream derivative value p + rdx.dp/dx = 0 becomes
 ! pG=pN*r/(1+r), so last row is PNm-2pN+pN*r/(1+r) with k2 correction
@@ -301,8 +322,9 @@
                D(M)=(-2.-k2/ci+r/(1.+r))*ci
             endif
 ! Install in the temporary Guard FT u-values equal to -q at edge
-            cscratch(j,k,0)=cscratch(j,k,1)
-            cscratch(j,k,M+1)=cscratch(j,k,M)
+! Broken
+!            cscratch(j,k,0)=cscratch(j,k,1)
+!            cscratch(j,k,M+1)=cscratch(j,k,M)
 ! Call linpack complex tridiagonal solver cgtsl
             call CGTSL(M,C,D,E,B,INFO)
             if(INFO.ne.0) stop 'CGTSL Zero diagonal trap'
@@ -311,35 +333,39 @@
             if(loutward)then
 ! Turn the temporary guard values into the guard FT u-values
 ! consistent with the poisson equation at mesh edge.
-               cscratch(j,k,0)=cscratch(j,k,0)/ci
-     $              +(2.+k2/ci)*cscratch(j,k,1)-cscratch(j,k,2)
-               cscratch(j,k,M+1)=cscratch(j,k,M+1)/ci
-     $              +(2.+k2/ci)*cscratch(j,k,M)-cscratch(j,k,M-1)
+! Broken
+!               cscratch(j,k,0)=cscratch(j,k,0)/ci
+!     $              +(2.+k2/ci)*cscratch(j,k,1)-cscratch(j,k,2)
+!               cscratch(j,k,M+1)=cscratch(j,k,M+1)/ci
+!     $              +(2.+k2/ci)*cscratch(j,k,M)-cscratch(j,k,M-1)
             else 
 ! Set guard r=-phi/phi'dx= -phiG/(phiG-phiM) [uncentered]
 ! So phiG*(r+1)=phiM*r, i.e. 
                cscratch(j,k,M+1)=cscratch(j,k,M)*r/(1.+r)
                cscratch(j,k,0)=cscratch(j,k,1)*r/(1.+r)
+! Need to get the corners from somewhere. At moment left zero.
             endif
 ! Save the 0,1,M,M+1 planes of the fourier transformed solution
 ! (guard and edge) for use in the next timestep.
+            if(.false.)then
             cscratch(j,k,M+2)=
-     $           cscratch(mod(j-2+N,N)+1,mod(k-2+O,O)+1,0)
+     $           cscratch(mod(j-2+N,N)+1,mod(k-2+O,O)+1,1)
             cscratch(j,k,M+3)=
      $           cscratch(mod(j-2+N,N)+1,mod(k-2+O,O)+1,1)
             cscratch(j,k,M+4)=
      $           cscratch(mod(j-2+N,N)+1,mod(k-2+O,O)+1,M)
             cscratch(j,k,M+5)=
      $           cscratch(mod(j-2+N,N)+1,mod(k-2+O,O)+1,M+1)
+            endif
          enddo
       enddo
 
 ! Then do a 2D backward transform at each x-position to arrive at a
 ! 3D spatial array when copied into u.
-      do i=0,M+1
+      do i=0,M+1 ! The nonperiodic guards.
          call dfftw_execute_dft(planbackward, cscratch(1,1,i) ,
      $        cscratch(1,1,i))
-         do k=0,O+1             ! Copy cscratch to u with periodic guard cells.
+         do k=0,O+1      ! Copy cscratch to u with periodic guard cells.
             do j=0,N+1  
                if(inp.eq.1)then
                   u(i+1,j+1,k+1)=
@@ -354,6 +380,7 @@
             enddo
          enddo
       enddo
+! Set the nonperiodic guards.
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       SUBROUTINE CGTSL (N, C, D, E, B, INFO)

@@ -705,6 +705,12 @@ with explicitly passed individual arguments.
 src="sgweb.jpg" width="400"></a>
 
 <div class="p"><!----></div>
+SLICESIMPLE(ifullv,iudsv,u,startsv,endsv,nw,zp) Simple interface to
+SLICEGWEB slice plotting, assuming that the array values are on a
+uniform 3D mesh of index 1 to iudsv(3) starting and ending at startsv(3)
+endsv(3), with workspace of nw*nw provided in zp.
+
+<div class="p"><!----></div>
 SLICEGWEB(ifullv,iudsv,u,nw,zp,ixnpv,xnv,ifix,cutitle,svec,vp) Plot
 as 3-D webs slices through 3-D array u. ifullv(3) and iudsv(3) are the
 full and used dimensions of u. zp(nw,nw) is a work array; nw should be
@@ -900,5 +906,5 @@ for operation of debugged correct code.
 T<sub><span class="small">E</span></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><span class="small">T</span></sub>H</a>,
-version 4.13.<br />On  9 Sep 2019, 11:54.</small>
+version 4.13.<br />On 26 Nov 2019, 11:37.</small>
 </html>

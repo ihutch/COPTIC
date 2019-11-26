@@ -142,6 +142,7 @@ else
   NGW=-Wno-globals
   NOBOUNDS=$(COMPILE-SWITCHES) -fno-bounds-check
 endif
+PROFILE= -mcmodel=medium $(PROFILING)
 ##########################################################################
 FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate.o padvnc.o chargetomesh.o slicesect.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o cmdline.o fsects.o bdyshare.o toms659.o ranlux.o intersects.o trapinit.o mainroutines.o phasespace.o qinit.o $(FFTWSOLVE)
 MPIOBJECTS=reduce.o mpibbdy.o
@@ -173,16 +174,16 @@ NOGLOBALS:=$(COMPILE-SWITCHES) $(NGW)
 # prerequisites exist.
 
 % : %.f  makefile libcoptic.a $(ACCISLIB)
-	$(G77) -o $* $(NOGLOBALS) $(PROFILING) $*.f libcoptic.a $(LIBRARIES)
+	$(G77) -o $* $(NOGLOBALS) $(PROFILE) $*.f libcoptic.a $(LIBRARIES)
 
 %.o : %.f makefile $(HEADERS)
-	$(G77) -c $(NOGLOBALS) $(PROFILING) $*.f
+	$(G77) -c $(NOGLOBALS) $(PROFILE) $*.f
 
 %.o : %.f90  makefile $(HEADERS)
-	$(G77) -c $(NOGLOBALS) $(PROFILING) $*.f90
+	$(G77) -c $(NOGLOBALS) $(PROFILE) $*.f90
 
 %.o : %.c makefile
-	cc -c $(PROFILING) $*.c
+	cc -c $(PROFILE) $*.c
 
 # The testing target pattern used for files in geometry/
 # Ensure we are using a standard allocated array size.
@@ -256,28 +257,28 @@ streamunset :
 # We make one of these the first thing in objects to force the header
 # dependence to be reported, not just ignored by make on pattern rule.
 interpolations.o : interpolations.f makefile $(HEADERS)
-	$(G77) -c $(NGW) $(PROFILING) $(NOBOUNDS) $*.f
+	$(G77) -c $(NGW) $(PROFILE) $(NOBOUNDS) $*.f
 
 getfield.o : getfield.f makefile $(HEADERS)
-	$(G77) -c $(NGW) $(PROFILING) $(NOBOUNDS) $*.f
+	$(G77) -c $(NGW) $(PROFILE) $(NOBOUNDS) $*.f
 
 reduce.o : reduce.f makefile $(HEADERS)
-	$(G77) -c $(NOGLOBALS) $(PROFILING) $*.f
+	$(G77) -c $(NOGLOBALS) $(PROFILE) $*.f
 
 bdyroutine.o : bdyroutine.f makefile $(HEADERS)
-	$(G77) -c $(NOGLOBALS) $(PROFILING) $*.f
+	$(G77) -c $(NOGLOBALS) $(PROFILE) $*.f
 
 #####################################################
 # Main program explicit to avoid make bugs:
 $(COPTIC) : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a
 	@echo $(G77) > compiler
 	@echo "      rjscheme="\'$(REINJECT)\'" " > REINJECT.f
-	$(G77) -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f libcoptic.a $(LIBRARIES)
+	$(G77) -o $(COPTIC) $(COMPILE-SWITCHES) $(PROFILE) $(COPTIC).f libcoptic.a $(LIBRARIES)
 
 # Sorserial links nonmpibbdy.o explicitly, so that none of those routines
 # are linked from the main libcopsol that need mpi.
 sorserial : libcopsol.a sortest.f makefile $(ACCISLIB) $(SOLOBJECTS) nonmpibbdy.o
-	$(G77) -o sorserial $(COMPILE-SWITCHES) $(PROFILING) sortest.f nonmpibbdy.o libcopsol.a $(LIBRARIES)
+	$(G77) -o sorserial $(COMPILE-SWITCHES) $(PROFILE) sortest.f nonmpibbdy.o libcopsol.a $(LIBRARIES)
 
 $(ACCISLIB) : $(COPTIC_ROOT)/accis/*.f $(COPTIC_ROOT)/accis/*.c $(COPTIC_ROOT)/accis/*.h
 #	@echo "TESTGL=$(TESTGL). TESTX11=$(TESTX11)."
@@ -287,7 +288,7 @@ $(ACCISLIB) : $(COPTIC_ROOT)/accis/*.f $(COPTIC_ROOT)/accis/*.c $(COPTIC_ROOT)/a
 	@if [ -f $(COPTIC_ROOT)/accis/$(VECX) ] ; then echo ; else echo "Failed making accis with $(VECX). Might need to specify a different driver."; fi
 
 phasespace.o : phasespace.f makefile $(HEADERS) phasecom.f
-	$(G77) -c $(NOGLOBALS) $(PROFILING) phasespace.f
+	$(G77) -c $(NOGLOBALS) $(PROFILE) phasespace.f
 
 vecx :
 	make clean
@@ -297,7 +298,7 @@ analysis : $(DUMMYMPIOBJECTS)
 	make -C $(COPTIC_ROOT)/analysis
 
 serial : $(COPTIC) $(DUMMYMPIOBJECTS)
-	$(G77) -o $(COPTIC).serial $(DUMMYMPIOBJECTS) $(COMPILE-SWITCHES) $(PROFILING) $(COPTIC).f libcoptic.a $(LIBRARIES)
+	$(G77) -o $(COPTIC).serial $(DUMMYMPIOBJECTS) $(COMPILE-SWITCHES) $(PROFILE) $(COPTIC).f libcoptic.a $(LIBRARIES)
 ######################################################
 testing : $(COPTIC).f makefile $(ACCISLIB) $(OBJECTS) $(UTILITIES) libcoptic.a 
 	make -C $(COPTIC_ROOT)/testing

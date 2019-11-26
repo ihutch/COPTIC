@@ -6,6 +6,7 @@
       real u(Li,Li,Li),zp(Li,Li,3)
       real gradu(Li,Li,Li,3),vp(Li,Li,3,3)
       real xn(3*Li)
+      real starts(3),ends(3)
       integer ixnp(4)
       integer ifixpt(3)
       data ifixpt/3*0/
@@ -26,8 +27,11 @@ c      call pfset(3)
          do i=1,iuds(id)
             xn(i+ixnp(id))=range*(-1.+2.*(i-1.)/(iuds(id)-1.))
          enddo
+         starts(id)=xn(1+ixnp(id))
+         ends(id)=xn(iuds(id)+ixnp(id))
          ixnp(id+1)=ixnp(id)+iuds(id)
       enddo
+
 
 c This meaningless call corrects an apparent gfortran bug 
       write(*,'(a,$)')' '
@@ -46,6 +50,8 @@ c               write(*,*)x,y,z,u(i,j,k)
             enddo
          enddo
       enddo
+
+      call slicesimple(ifull,iuds,u,starts,ends,Li,zp)
 
 c Calculate the gradient of u as a vector field to do arrow plotting.
       do k=1,iuds(3)

@@ -15880,3 +15880,30 @@ argument, and readfluxfile return the nstep value in the ierr
 argument.  restartread already has nstep as an argument (passing
 nf_step and setting nstep=nf_step before any adjustment to
 nf_step). Seems to work.
+
+25 Nov 2019
+
+Trying to run 3D cases with ffttrid. It is broken when there are more
+than 3 points in the z-direction. Also when I swap y/z for 2D cases.
+3D fftphisolve seems ok. There's a bug. So attempting to get the 
+ffttest code going on ffttrid. Not yet achieved.
+
+26 Nov 2019
+
+Working more on ffttrid. Adjusted ffttest. Realized the BF/AF alteration
+was a mistake. 
+I think I understand my mistake. I gave chscratch dimensions iuds 
+(strictly 0:iuds-1) then populated 1:iuds-2, omitting the guard cells.
+But then I told dfft that its dimensions are iuds-2. Then it considers
+it to be a full matrix, but it isn't, and indexes it wrong
+when the second dimension is >1. I did that because I wanted to use
+some of the cscratch for saving the guard cells. But I don't think it
+works. Began to fix this, and yes my diagnosis is right the indexing
+was broken. 
+
+Basically fixed except the corner nonperiodic points are left zero. 
+Now runs 3D with nonperiodic direction x. Does not run with other 
+nonperiodic direction because of cmdline test. Remove that and it
+does run with any one direction non-periodic and detected through 
+ipartperiod. However, at the moment the hole is with x being the
+trapping direction. 
