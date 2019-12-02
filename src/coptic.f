@@ -435,7 +435,7 @@
                endif
             endif
          endif
-         if(idebug.gt.0)write(*,*)'Returned from sormpi'
+         if(idebug.gt.0)write(*,*)'Returned from solver'
          if(LPF(1).and.LPF(2).and.LPF(3).and.ngeomobj.eq.0)
      $        call makemedianzero(ifull,iuds,u,scratch) ! remove offset.
 ! ------------------------------------------------

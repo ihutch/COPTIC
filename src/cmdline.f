@@ -54,11 +54,11 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,holegfac,wavespec,LNPF)
+     $     ,holegfac,wavespec,LNPF,ierr)
 ! Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
-      if(ierr.ne.0)stop 'Error in readgeom call'
+      if(ierr.ne.0.and.lmyidhead)write(*,*) 'Error in readgeom call'
 ! Second time: deal with any other command line parameters.
       call copticcmdline
      $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
@@ -72,7 +72,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,holegfac,wavespec,LNPF)
+     $     ,holegfac,wavespec,LNPF,ierr)
 ! The double call enables cmdline switches to override objfile settings.
 !----------------------------------------------------------------------
       end
@@ -90,7 +90,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,holegfac,wavespec,LNPF)
+     $     ,holegfac,wavespec,LNPF,ierr)
 
       implicit none
 
@@ -116,6 +116,7 @@
       real vpars(*)
       real vperps(ndims,*),vdrifts(ndims,*)
       integer nspecies,nspeciesmax,hspecies
+      integer ierr
 
 ! Local variables:
       integer lentrim,iargc,ipfset
@@ -523,7 +524,7 @@
       enddo
 ! End of command line parameter parsing.
 !-------------------------------------------------------
-
+      if(ierr.ne.0)goto 203
  202  continue
       do ispecies=1,nspecies
          if(vdrifts(1,ispecies).ne.0. .or. vdrifts(2,ispecies).ne.0)then
