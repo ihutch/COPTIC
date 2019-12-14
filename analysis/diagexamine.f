@@ -51,12 +51,13 @@
       dt=0.
       k=0
       iyperr=99
+      ifix=2
 
 ! Loop over a maximum of nfiles files: 
       do ifile=1,nfiles
          call diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle,lvtk
      $        ,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause
-     $        ,linevec,xclip,nfiles)
+     $        ,linevec,xclip,nfiles,ifix)
 ! diagexamargs returns here when it reads a diagnostic file name.
          if(iworking.ge.0)then
             if(iyp.eq.2.and.iyperr.eq.99)call unsavemodes(nfiles,maxfile
@@ -89,7 +90,7 @@
 !-------------------------------------
 ! Maybe Get up to two additional quantities \phi and n for separate plotting
             call readextra(iuphi)
-            if(iunp.ne.0) call unnormplot(diagsum,i1,ndiags)
+            if(iunp.ne.0) call unnormplot(diagsum,i1,ndiags,ifix)
 ! Normalize the diagnostics.
             call donormalize(ndiags,diagsum,mcell,isrs,iurs)
             if(ldebug.and.istd.gt.0.and.ifile.eq.1)write(*,'(a,4f8.4)'
@@ -104,9 +105,8 @@
             elseif(lentrim(phifilename).gt.1)then
 ! Arrow plotting of velocity:
                fluxfilename=ytitle
-               ifix=2+4
                write(*,*)'Arrow plotting of ',phifilename
-               call sliceGweb(ifull,iuds,u,na_m,zp, ixnp,xn,ifix
+               call sliceGweb(ifull,iuds,u,na_m,zp, ixnp,xn,ifix+4
      $              ,fluxfilename(1:lentrim(fluxfilename)+2) ,diagsum(1
      $              ,1,1,2),vp)
             elseif(iyp.eq.1)then
@@ -135,7 +135,6 @@
                if(istat.eq.1.and.isingle.eq.0)then
 ! First plot the density if volumes found successfully.
                   k=ndiagmax+1
-                  ifix=2
                   fluxfilename=mname(k)
                   write(*,*)k,mname(k)
      $                 ,fluxfilename(1:lentrim(fluxfilename))
@@ -144,7 +143,7 @@
      $                 +2) ,dum,dum)
                endif
                call examineall(diagsum,zminmax,mname,i1,isingle,istd
-     $              ,ndiags,icontour,label)
+     $              ,ndiags,icontour,label,ifix)
             endif
 !----------------------------------------------------------------
          else   ! iworking.lt.0
@@ -243,7 +242,7 @@ c$$$         endif
 !*************************************************************
       subroutine diagexamargs(iunp,isingle,i1d,iwr,ipp,xtitle,ytitle
      $     ,lvtk,mcell,zminmax,icontour,iworking,iyp,dt,ldebug,nopause
-     $     ,linevec,xclip,nfiles)
+     $     ,linevec,xclip,nfiles,ifix)
 ! Read command line arguments, until a diag name is found.
 ! If we reach the end of them, return iworking=-1, otherwise return
 ! iworking= the argument we are working on.
@@ -320,6 +319,8 @@ c$$$         endif
      $           read(argument(3:),*,err=201)i1d
             if(argument(1:2).eq.'-m')
      $           read(argument(3:),*,err=201)mcell
+            if(argument(1:2).eq.'-n')
+     $           read(argument(3:),*,err=201)ifix
             if(argument(1:3).eq.'-yp')read(argument(4:),*,err=201,end
      $           =201)iyp
             if(argument(1:3).eq.'-xp')read(argument(4:),*,err=201,end
@@ -361,6 +362,7 @@ c$$$         endif
       write(*,301)' -ly  set label of parameter. -lx label of xaxis'
       write(*,301)' -d   set single diagnostic to be examined [',isingle
       write(*,301)' -a   set dimension number for ave profile [',i1d
+      write(*,301)' -n   set dimension number of slice normal [',ifix
       write(*,301)' -yp  if=1 get posn of hole as fn of y     [',iyp
       write(*,301)'      if=2 fourier analyse in y direction '//
      $     '(tries to read savedmodes.dat)'
@@ -446,7 +448,7 @@ c$$$         endif
       end
 !**************************************************************
       subroutine examineall(diagsum,zminmax,mname,i1,isingle,istd
-     $     ,ndiags,icontour,label)
+     $     ,ndiags,icontour,label,ifix)
 ! Default examination of all diagnostics.
       implicit none
       include 'examdecl.f'
@@ -454,7 +456,7 @@ c$$$         endif
       real diagsum(na_i,na_j,na_k,ndiagmax+1)      
 ! Volumes are stored in ndiagmax+1
       real zminmax(2)
-      integer i1,isingle,istd,ndiags,icontour
+      integer i1,isingle,istd,ndiags,icontour,ifix
       character*20 mname(ndiagmax+1)
       character*70 label
       integer lentrim
@@ -462,10 +464,9 @@ c$$$         endif
 
 ! Local variables
       real dum
-      integer k,ifix
+      integer k
       do k=i1,ndiags
          zp(1,1,1)=99
-         ifix=3
 !            write(fluxfilename,'(''diagnorm('',i1,'')'')')k
          fluxfilename=mname(k)(1:lentrim(mname(k)))
      $        //'('//label(1:lentrim(label))//')'
@@ -663,7 +664,7 @@ c$$$         endif
       endif
       end
 !*****************************************************************
-      subroutine unnormplot(diagsum,i1,ndiags)
+      subroutine unnormplot(diagsum,i1,ndiags,ifix)
 ! Unnormalized diagnostic plotting.
       implicit none
       include 'examdecl.f'
@@ -675,7 +676,6 @@ c$$$         endif
       do k=i1,ndiags
 ! Suppress help.
          zp(1,1,1)=99
-         ifix=2
          write(fluxfilename,'(''diagsum('',i1,'')'',a1)')k,char(0)
          call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
      $        ixnp,xn,ifix,fluxfilename,dum,dum)
