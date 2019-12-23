@@ -293,6 +293,9 @@ c The flattop length holetoplen. Negligible for large negative values.
             io=mod(id-j-1+ndims,ndims)+1  ! The orthogonal direction.
             rhoic=-j*x_part(ndims+io,islot)/(Bt*eoverms(ispecies)) 
             r2=r2+(x_part(i,islot)-rhoic)**2 ! Subtract the rho-component
+! Diagnostic to verify orthogonality of rhoci and v:
+!            write(*,'(i8,3i2,3f10.4)')islot,id,i,io,x_part(ndims+i
+!     $           ,islot),rhoic,x_part(ndims+i,islot)*rhoic
          endif
       enddo
       psiradfac=1.
