@@ -274,15 +274,26 @@ c The flattop length holetoplen. Negligible for large negative values.
       lastspecies=ispecies
 !----------------------------------------
  1    r2=0.
+! Transverse v-direction setting.
+      do i=mod(id,ndims)+1,mod(id+1,ndims)+1
+            x_part(ndims+i,islot)=tisqperp*gasdev(myid)
+     $           +vds(ispecies)*vdrift(i)
+      enddo
+! Transverse or Total Position setting.
       iend=ndims
       if(holepsi.ne.0)iend=ndims-1
-      do ii=1,iend            ! Transverse or Total Position set.
+      do ii=1,iend            
          i=mod(id+ii-1,ndims)+1
          call ranlux(ran,1)
          fp=(indi(i)+ran)/float(nqblks(i))
          fp=max(.000001,min(.999999,fp))
          x_part(i,islot)=(1.-fp)*xmeshstart(i)+fp*xmeshend(i)
-         if(holerad.ne.0)r2=r2+x_part(i,islot)**2
+         if(holerad.ne.0)then ! Transverse gyrocenter radius^2
+            j=1-2*(ii-1) ! 1 or -1
+            io=mod(id-j-1+ndims,ndims)+1  ! The orthogonal direction.
+            rhoic=-j*x_part(ndims+io,islot)/(Bt*eoverms(ispecies)) 
+            r2=r2+(x_part(i,islot)-rhoic)**2 ! Subtract the rho-component
+         endif
       enddo
       psiradfac=1.
       if(holepsi.ne.0.)then
@@ -290,10 +301,10 @@ c The flattop length holetoplen. Negligible for large negative values.
          fp=(indi(id)+ran)/float(nqblks(id))
          fp=max(.000001,min(.999999,fp))
          if(ispecies.eq.nspecies)then  ! Only put the hole in the final.
-         if(holerad.ne.0)psiradfac=exp(-r2/holerad**2)
+            if(holerad.ne.0)psiradfac=exp(-r2/holerad**2)
 ! Hole density non-uniformity: transverse local value of peak potential.
-         x_part(id,islot)=findxofran(fp,psiradfac*psi,coshlen,holetoplen
-     $        ,xmeshstart(id),xmeshend(id),nbi)
+            x_part(id,islot)=findxofran(fp,psiradfac*psi,coshlen
+     $           ,holetoplen,xmeshstart(id),xmeshend(id),nbi)
          else
             psiradfac=0.
             x_part(id,islot)=(1.-fp)*xmeshstart(id)+fp*xmeshend(id)
@@ -302,33 +313,27 @@ c The flattop length holetoplen. Negligible for large negative values.
       phi=psiradfac*phiofx(x_part(id,islot),psi,coshlen,holetoplen)
 
 !                            ! Velocities
-      do i=1,ndims
-         if(i.eq.id)then
-! Hole normal direction.
-            if(abs(phi).lt.phimin.or.fp.lt.phimin.or.1-fp.lt.phimin)then
+      i=id
+! Hole normal v-direction.
+      if(abs(phi).lt.phimin.or.fp.lt.phimin.or.1-fp.lt.phimin)then
 ! In non-hole region. Shortcut to external distrib.
-               x_part(ndims+i,islot)=tisq*gasdev(myid)
-     $              +vds(ispecies)*vdrift(i)
-            else
+         x_part(ndims+i,islot)=tisq*gasdev(myid)
+     $        +vds(ispecies)*vdrift(i)
+      else
 ! Use cumf interpolation. We use the central psi value, but local phi.
-               call GetDistribAtPhi(psi,um,nphi,f0,u0,phi,nu,u,f,cumf)
-               call ranlux(fp,1)
-               fp=fp*cumf(nu)
-               ixp=interp(cumf,nup,fp,p)
-               if(ixp.gt.0.and.ixp.lt.nup)then
-                  x_part(ndims+i,islot)=
-     $                 tisq2*((1-p+ixp)*u(-nu-1+ixp)+(p-ixp)*u(-nu+ixp))
-     $                 +holespeed
-               else
-                  write(*,*)'placeqblk interpolation error',ixp,p
-                  stop
-               endif
-            endif
+         call GetDistribAtPhi(psi,um,nphi,f0,u0,phi,nu,u,f,cumf)
+         call ranlux(fp,1)
+         fp=fp*cumf(nu)
+         ixp=interp(cumf,nup,fp,p)
+         if(ixp.gt.0.and.ixp.lt.nup)then
+            x_part(ndims+i,islot)=
+     $           tisq2*((1-p+ixp)*u(-nu-1+ixp)+(p-ixp)*u(-nu+ixp))
+     $           +holespeed
          else
-            x_part(ndims+i,islot)=tisqperp*gasdev(myid)
-     $           +vds(ispecies)*vdrift(i)
+            write(*,*)'placeqblk interpolation error',ixp,p
+            stop
          endif
-      enddo
+      endif
 ! The previous timestep length.
       x_part(idtp,islot)=0.
 ! Initialize the mesh fraction data in x_part.

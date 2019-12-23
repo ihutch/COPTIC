@@ -586,8 +586,9 @@ dimension (32 here) cannot exceed the storage allocated by parameters
 \verb!na_i,j,k! in \verb!griddecl.f!. The maximum sequence length that
 can be used is specified by parameter \verb!nspec_mesh! in
 \verb!meshcom.f!. When using periodic potential boundary conditions, 
-the mesh count must be even (otherwise the red-black Poisson solver
-iteration is inconsistent).
+the mesh count must either be even (otherwise the red-black Poisson solver
+iteration is inconsistent) or else 3, which amounts to specifying
+uniform potential in that dimension.
 
 Any dimension which is not referred to by a mesh line in the object
 file acquires the default specification which is equivalent to
@@ -995,6 +996,14 @@ initialized.  [This change means that using {\bf -ih} without {\bf
   -pi} one must now give enough arguments to {\bf -ih} to specify a
 nonzero \verb!holepow!. Eventually this ought to be rationalized.]
 
+Finite radius holes are initialized as follows. For any transverse
+position (chosen uniformly) the peak potential $\psi$, at parallel
+position zero, is multiplied by a transverse shape factor currently
+$\exp(-(r/\verb!holerad!)^2)$, and the parallel position and velocity
+is chosen as if the hole was one dimensional except with that scaled
+$\psi$. This algorithm does not normally give a fully self-consistent
+3D hole. Consequently initial transient perturbations associated with
+this fact are generated.
 
 \subsubsection*{Neutrals, Collisions, Magnetic Field}
 
@@ -1187,7 +1196,12 @@ for purposes of code development.
 \subsection{Dimension}
 
 Is set by including file \verb!ndimsdecl.f! which defines the
-parameters \verb!ndims!, \verb!ndimsmax!, and \verb!nspeciesmax!.
+parameters \verb!ndims!, \verb!ndimsmax!, and \verb!nspeciesmax!.  In
+practice the code is permanently 3D, but various parts of it are
+written for a general number of dimensions which use those
+parameters. Running with reduced dimensionality can be achieved by
+specifying a mesh length of 3 (to include the guard cells) and
+periodic boundary conditions in the reduced dimension(s).
 
 
 \subsection{Particles}
@@ -1557,10 +1571,12 @@ COPTIC is capable of massively parallel calculation using the MPI
 libraries for inter-process communication. Each particle is assigned
 to a specific processor. So increasing the total number of particles
 can be done with hardly any execution time degradation simply by
-adding processors. The field-solve work is shared by the processors in
-parallel and the resulting field for the whole mesh is communicated to
-all processors. The code will run perfectly satisfactorily, however,
-on a single processor.
+adding processors. For general meshes, the field-solve work is shared
+by the processors in parallel and the resulting field for the whole
+mesh is communicated to all processors. The code will run perfectly
+satisfactorily, however, on a single processor. For uniform periodic
+meshes the solve is performed on the single master node by FFT, because
+it is usually so fast as not to need parallelization.
 
 \subsection{Overview of main program}
 
@@ -1584,21 +1600,21 @@ command line argument that sets a parameter \emph{overrides} any
 values set by the object file.
 
 \paragraph{Initializations} are performed as follows.
-\sentence{The mesh is constructed} \verb!meshconstruct!, and if
+\sentence{The mesh is constructed} by \verb!meshconstruct!, and if
 necessary for this type of reinjection its geometry is initialized
 by \verb!geominit!.
 
 \sentence{Injection is initialized} if we have specified a certain
 rho-infinity per node, \verb!ninjcalc!.
 
-\sentence{Flux data collection is initialized} \verb!fluxdatainit!.
+\sentence{Flux data collection is initialized} by \verb!fluxdatainit!.
 
 \sentence{Stencil data is calculated} by iterating over the mesh the
 \verb!cijroutine!. If warnings of object-mesh clashes are received,
 then the mesh is shifted slightly and things are reinitialized.
 
 \sentence{Stored volume information} is sought and read using
-\verb!stored3geometry!. If appropriate information is not retrieved, then
+\verb!stored3geometry!. If consistent information is not retrieved, then
 
 \sentence{Volumes are calculated}
 
@@ -1628,7 +1644,7 @@ number.
 \sentence{Force tracking is initialized.}
 
 \sentence{Optionally, a restart} is attempted from saved disk data
-files. If successful, this resets the particles and random number
+files. If successful, this resets the particles, potential, and random number
 generator to where they stood at the end of the saved run.
 
 \sentence{Charge is deposited on the mesh} by an initial \verb!chargetomesh! call.
@@ -1640,16 +1656,17 @@ number of steps, as follows.
 %\item \verb!chargetomesh! generates the final \verb!psum! by deposition of ions.
 \item \verb!psum! is reduced from all nodes. \verb!rhoinfinity! is calculated.
 \item \verb!psumtoq! converts psums to charge density, then zeroes \verb!psum!.
-\item The solver  (\verb!sormpi!) is called, or
-  quasi-neutrality invoked, to determine potential.
+\item The solver (\verb!sormpi! or FFT solvers in uniform periodic
+  cases) is called, or quasi-neutrality invoked, to determine
+  potential.
 \item Force contributions are accumulated by \verb!calculateforces!.
 \item Optionally, plotting is done. Optionally checking is done.
 \item The particles are advanced by \verb!padvnc!. Charge deposition
 is integrated into this routine.
-\item Fluxes are reduced.
+\item Fluxes are reduced back to the master node.
 \item Optionally, the stencils are updated by \verb!cijdirect!
 \item Running averages are calculated and optionally diagnostic data
-  is written. 
+  reduced to head node and written. 
 \item On occasion, particle distribution data is written. 
 \end{itemize}
 
@@ -1710,6 +1727,20 @@ the case) the \verb!MPI_DIMS_CREATE! function is used to define the
 cartesian communicator topology. In normal usage, the MPI parallel
 features of this solver should be invisible except for some
 informational messages.  
+
+When being used for a uniform periodic rectangular domain without
+embedded objects, a direct solve using fast Fourier transform is used
+instead. If all dimensions are periodic, \verb!fftphosolve3d! is used.
+If all but the $x$ direction are periodic, then \verb!ffttrid! is
+used, which uses Fourier transforms in the $y$ and $z$ directions but
+solves in the $x$ direction (for each transverse Fourier mode) by
+tridiagonal elimination, allowing general (non-periodic) boundary
+conditions in that direction. In addition to being highly efficient,
+these direct solves are important when investigating questions of
+slow-growing stability because the tiny residuals remaining from
+iterative solvers such as \verb!sormpi! give rise to tiny phase shifts
+that cause marginal numerical instability on domains unconstrained by
+boundaries.
 
 \subsection{Field Interpolation}
 
