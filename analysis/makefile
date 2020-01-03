@@ -8,7 +8,7 @@ ACCISLIB=${COPTIC_ROOT}/accis/libaccisX.a
 ifeq ("$(LIBPATH)","")
    LIBPATH:=-L/usr/X11R6/lib/ -L/usr/lib/mesa
 endif
-LIBRARIES = $(LIBPATH) -L${COPTIC_ROOT}/accis/ -laccisX -lX11 $(GLULIBS) -L. -lvtkwrite -lfftpack5.1 -lfftw3f
+LIBRARIES = $(LIBPATH) -L${COPTIC_ROOT}/accis/ -laccisX -lX11 $(GLULIBS) -L. -lvtkwrite -lfftpack5.1 -lfftw3f -lanalcoptic
 #Default accis driver choice
 #Alternatives are vecx or vecglx, can be overriden by commandline option
 VECX=vecglx
@@ -39,17 +39,16 @@ HEADERS=${COPTIC_ROOT}/${SRC}/ptaccom.f
 ##########################################################################
 TARGETS=partexamine denexamine phiexamine diagexamine fluxexamine philineread phioverlay phasespace phasereadplot
 
-
 all: $(TARGETS)
 
 # We presume that all these routines are serial not parallel.
 dummyreduce.o : ${COPTIC_ROOT}/${SRC}/dummyreduce.f
 	$(G77) -c ${COPTIC_ROOT}/${SRC}/dummyreduce.f
 
-% : %.f  makefile modesaving.f examdecl.f $(ACCISLIB) dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(HEADERS) libvtkwrite.a libfftpack5.1.a
+% : %.f  makefile modesaving.f examdecl.f $(ACCISLIB) dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(HEADERS) libvtkwrite.a libfftpack5.1.a libanalcoptic.a
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(LIBRARIES)
 
-% : %.f90  makefile modesaving.f examdecl.f $(ACCISLIB) dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(HEADERS) libvtkwrite.a libfftpack5.1.a
+% : %.f90  makefile modesaving.f examdecl.f $(ACCISLIB) dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(HEADERS) libvtkwrite.a libfftpack5.1.a libanalcoptic.a
 	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f90 dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(LIBRARIES)
 
 # Don't recompile accis every time the makefile is changed.
@@ -76,6 +75,9 @@ libfftpack5.1.a : fftpack5.1.f
 	$(G77) -c -w fftpack5.1.f
 	ar cr libfftpack5.1.a fftpack5.1.o
 	rm -f fftpack5.1.o
+
+libanalcoptic.a : modesaving.o diststat.o
+	@ar -rs libanalcoptic.a modesaving.o diststat.o
 
 modeplot : modeplot.f fitexponential.o modesaving.f examdecl.f $(ACCISLIB)
 	$(G77)  -o modeplot $(COMPILE-SWITCHES) $(PROFILING) modeplot.f dummyreduce.o fitexponential.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(LIBRARIES)
