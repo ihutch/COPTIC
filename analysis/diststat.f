@@ -3,10 +3,10 @@
 !      end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Obtain the statistical properties: total, centroid, and variance,
-! of a scalar quantity treated as a (signed) weight over a multidimensional
-! mesh specified in ixnp,xn.
-      subroutine diststat(ndims,ifull,iused,quantity,
-     $     ixnp,xn,tot,cent,var)
+! of a scalar quantity treated as a (signed) weight, but nonzero only
+! when ge qmin, over a multidimensional mesh specified in ixnp,xn.
+      subroutine diststat(ndims,ifull,iused,quantity,qmin
+     $     ,ixnp,xn,tot,cent,var)
       integer ndims,ifull(ndims),iused(ndims),ixnp(*)
       real quantity(*),xn(*)
       real tot,cent(ndims),var(ndims)
@@ -22,11 +22,13 @@
 
 ! Iterate over the whole array
       icomplete=mditer(ndims,ifull,iused,index)
- 1    tot=tot+quantity(index)
-      do id=1,ndims ! iused(id) becomes the indi during mditer.
-         cent(id)=cent(id)+xn(1+ixnp(id)+iused(id))*quantity(index)
-         var(id)=var(id)+xn(1+ixnp(id)+iused(id))**2*quantity(index)
-      enddo
+ 1    if(quantity(index).ge.qmin)then
+         tot=tot+quantity(index)
+         do id=1,ndims      ! iused(id) becomes the indi during mditer.
+            cent(id)=cent(id)+xn(1+ixnp(id)+iused(id))*quantity(index)
+            var(id)=var(id)+xn(1+ixnp(id)+iused(id))**2*quantity(index)
+         enddo
+      endif
 !      write(*,'(i6,3i4,3f8.3)')index,iused,xn(1+ixfirst+iused)
       if(mditer(ndims,ifull,iused,index).eq.0)goto 1
 
@@ -76,8 +78,8 @@
       write(*,*)ifull,iused
       write(*,'(10f8.3)')xn
       
-      call diststat(ndims,ifull,iused,quantity,
-     $     ixnp,xn,tot,cent,var)
+      call diststat(ndims,ifull,iused,quantity,0.
+     $     ,ixnp,xn,tot,cent,var)
 
       write(*,'(a,f8.2,a,3f8.4,a,3f8.4)')'tot=',tot,' cent=',cent
      $     ,' sqrtvar=',sqrt(var)

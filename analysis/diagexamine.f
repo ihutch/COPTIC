@@ -33,6 +33,8 @@
       character*70 xtitle,ytitle,label
       integer iuphi(ndims),iurs(ndims),isrs(ndims)
       integer iunp,i1d,isingle,i1,iwr,istd,linevec(3)
+      real tot,cent(ndims),var(ndims)
+      integer iused(ndims)
       data iunp/0/i1d/0/iwr/0/zminmax/0.,0./icontour/0/istd/1/
       data ierr/0/ldebug/.false./nopause/.false./
       data mname(1)/'Cellcount'/mname(2)/'v!d1!d'/mname(3)/'v!d2!d'/
@@ -63,10 +65,11 @@
             if(iyp.eq.2.and.iyperr.eq.99)call unsavemodes(nfiles,maxfile
      $           ,na_m,iuds(1),nmodes,nmd,phimodes,time,xn,iyperr)
             if(iyperr.eq.0)then
-! iyperr=0 tells unsaving success, =1 failure, =99 not called
-               k=isingle
+! iyperr=0 tells unsaving success. Consistency check, then skip processing 
+! iyperr=1 failure, =99 not called
                if(maxfile.gt.nfiles)stop 'maxfile>nfiles'
                if(nmd.ne.nmodes)stop 'nmd not equal to nmodes'
+               k=isingle
                goto 100         ! skip succeeding file processing.
             else
                maxfile=ifile
@@ -119,16 +122,42 @@
      $              ,xmax(ifile),xmin(ifile)
             elseif(linevec(1).ne.-1)then
 ! Save a lineout of the chosen diagnostic along specified dimension.
-               k=ndiags
-               if(isingle.gt.0)k=isingle
+               k=ndiags ! Default diagnostic
+               if(isingle.gt.0)k=isingle ! Or specified
                call linewrite(diagsum(1,1,1,k),linevec,dt)
             elseif(iyp.eq.2.and.iyperr.ne.0)then
-! Store Fourier modes in the y direction
+! Store Fourier modes in the y direction -------
                k=ndiags
                if(isingle.gt.0)k=isingle
                call fftdata(diagsum(1,1,1,k),phimodes,nfiles,ifile
      $              ,nmodes,linevec)
-!               write(*,*)'Returned from fftdata',nfiles,ifile,nmodes
+            elseif(iyp.eq.3)then
+! Get distribution stats.------------------------
+               k=ndiags
+               if(isingle.gt.0)k=isingle
+               qmin=zminmax(1)
+! Limit the xrange using xclip (default 10)
+               iused=iuds
+               imax=interp(xn,ixnp(2),xclip,xmax) ! Round down
+               if(imax.eq.0)imax=ixnp(2)
+               imin=interp(xn,ixnp(2),-xclip,xmin)+1 ! Round up
+               iused(1)=imax-imin+1
+               ixnps=ixnp-(ixnp(2)-imax-ixnp(1)+imin-1)
+               ixnps(1)=0
+               xns(1:imax-imin+1)=xn(imin:imax)
+               xns(ixnps(2)+1:ixnps(ndims+1))
+     $              =xn(ixnp(2)+1:ixnp(ndims+1))
+               if(.false.)then
+                  write(*,*)'imax=',imax,' imin=',imin
+                  write(*,'(8i6)')ixnp,ixnps
+                  write(*,'(6i6,f8.4)')ifull,iused,qmin
+!               write(*,'(10f8.3)')xn(1:ixnp(ndims+1))
+                  write(*,'(10f8.3)')xns(1:ixnps(ndims+1))
+               endif
+               call diststat(ndims,ifull,iused,diagsum(imin,1,1,k),qmin
+     $              ,ixnps,xns,tot,cent,var)
+               write(*,'(a,f8.2,a,3f8.4,a,3f8.3)')'tot=',tot,' cent='
+     $              ,cent,' sqrtvar=',sqrt(var)
             else
 !----------------------------------------------------------------
 ! Default case. Default examination of all diagnostics.
@@ -212,26 +241,6 @@
 ! +512 turns off contour labelling ought to fix as switch.
          call sliceGweb(ifullphi,iudsphi,rphimodes(1,ix1,1),na_m,zp,
      $              ixnps,xns,3+64+512,'Amplitude  ',dum,dum)   
-
-c$$$         if(.false.)then
-c$$$! Plot modes normalized to shift mode. Obsolete
-c$$$         call normphimodes(nfiles,na_m,nmodes,maxfile,ix1,ix2,dx,
-c$$$     $        rphimodes,iphimodes)
-c$$$         call sliceGweb(ifullphi,iudsphi,iphimodes(1,ix1,1),na_m,zp,
-c$$$     $              ixnps,xns,3+64,'Normalized',dum,dum)   
-c$$$! Plot phase angle.
-c$$$         call minmax2(theta,nfiles,maxfile,4,tmin,tmax)
-c$$$         call pltinit(0.,time(maxfile),tmin,tmax)
-c$$$         call axis
-c$$$         call axlabels('time','theta for m=1-4')
-c$$$         do m=1,4
-c$$$            call color(m) 
-c$$$            call polyline(time,theta(1,m),maxfile)
-c$$$         enddo
-c$$$         call pltend()
-c$$$         endif
-
-
       endif
 
       end
@@ -366,6 +375,8 @@ c$$$         endif
       write(*,301)' -yp  if=1 get posn of hole as fn of y     [',iyp
       write(*,301)'      if=2 fourier analyse in y direction '//
      $     '(tries to read savedmodes.dat)'
+      write(*,301)'      if=3 get and write spatial distribution '//
+     $     '(>zmin) statistics'
       write(*,302)' -xp<f> set x-range of mode plots          [',xclip
       write(*,301)' -o   write out the profiles               [',iwr
       write(*,301)' -f   plot potential profile (if -p given) [',ipp
