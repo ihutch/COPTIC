@@ -83,5 +83,9 @@
 
       write(*,'(a,f8.2,a,3f8.4,a,3f8.4)')'tot=',tot,' cent=',cent
      $     ,' sqrtvar=',sqrt(var)
-
       end
+! Notes:
+! The hole implemented in coptic is \propto \exp[-(r/holerad)^2), which 
+! has SD=sqrt(var)=holerad/sqrt(2), because \exp[-(r/s)^2/2] has SD=s.
+! The SD of \sech^4(x/4) is 2.2714 from analytic expressions of the 
+! integrals obtained from Wolfram.        

@@ -156,8 +156,12 @@
                endif
                call diststat(ndims,ifull,iused,diagsum(imin,1,1,k),qmin
      $              ,ixnps,xns,tot,cent,var)
-               write(*,'(a,f8.2,a,3f8.4,a,3f8.3)')'tot=',tot,' cent='
-     $              ,cent,' sqrtvar=',sqrt(var)
+               if(ifile.eq.1)write(*,*)'Time      Tot      Centroids'//
+     $              '                    SDs'
+               write(*,'(f8.2,f10.2,3f9.4,3f9.3)')time(ifile),tot,cent
+     $              ,sqrt(var)
+!               write(*,'(a,f8.2,a,3f8.4,a,3f8.3)')'tot=',tot,' cent='
+!     $              ,cent,' sqrtvar=',sqrt(var)
             else
 !----------------------------------------------------------------
 ! Default case. Default examination of all diagnostics.
@@ -385,9 +389,10 @@
      $     ,icontour
       write(*,301)' -m<f>  set minimum non-zero cell count    [',mcell
       write(*,302)' -z<min><max> set range of values plotted  [',zminmax
+      write(*,*)'   if zmin>zmax, print zmin and zmax of first diag'
+      write(*,*)'   use zmin as the lower quantity cutoff for distrib'
       write(*,302)' -dt  set time-step for multiple steps     [',dt
       write(*,303)' -l<x,y,z> set linevec (+ve=choice,0=direc)[',linevec
-      write(*,*)' if zmin>zmax, print zmin and zmax of first diag'
       write(*,*)'-g<i>   print ps-graphics files to unit i [3,-3]'
       write(*,*)'-r   run without pausing'
       write(*,*)'-i   toggle debugging information'
