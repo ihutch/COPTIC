@@ -222,13 +222,13 @@
       real f0(-2*nphi:2*nphi),u0(-2*nphi:2*nphi),cumf(-nu:nu)
 !      real f1(-2*nphi:2*nphi),u1(-2*nphi:2*nphi),cumf1(-nu:nu)
       real u(-nu:nu),f(-nu:nu),du
-      real tisq,tisq2,tisqperp,umax,coshlen
+      real tisq,tisq2,tisqperp,umax,coshlen,kp2
       integer lastspecies,id
       data lastspecies/0/
       save
 
 !----------------------------------------
-      if(ispecies.ne.lastspecies)then    !Initialization
+      if(ispecies.ne.lastspecies)then !Initialization of non-hole species
 ! These values must be set even for zero hole depth.
          idebug=0
          do i=1,ndims
@@ -299,15 +299,20 @@ c The flattop length holetoplen. Negligible for large negative values.
          endif
       enddo
       psiradfac=1.
+      kp2=0.
       if(holepsi.ne.0.)then
          call ranlux(ran,1)
          fp=(indi(id)+ran)/float(nqblks(id))
          fp=max(.000001,min(.999999,fp))
          if(ispecies.eq.nspecies)then  ! Only put the hole in the final.
-            if(holerad.ne.0)psiradfac=exp(-r2/holerad**2)
+            if(holerad.ne.0)then
+               psiradfac=exp(-r2/holerad**2)
+               kp2=1./holerad**2 ! ROUGH HACK FIX ME!
+!               kp2=0. ! Kill transverse field corrections.
+            endif
 ! Hole density non-uniformity: transverse local value of peak potential.
             x_part(id,islot)=findxofran(fp,psiradfac*psi,coshlen
-     $           ,holetoplen,xmeshstart(id),xmeshend(id),nbi)
+     $           ,holetoplen,xmeshstart(id),xmeshend(id),nbi,kp2)
          else
             psiradfac=0.
             x_part(id,islot)=(1.-fp)*xmeshstart(id)+fp*xmeshend(id)
@@ -565,6 +570,40 @@ c Derivative of phiofx
       endif
       end
 c********************************************************************
+c Integral of phiofx, assumed symmetric, using trapezoidal interpolation.
+c It use external phiofx function
+      real function intphiofx(x,psi,coshlen,toplen)
+      real x,psi,coshlen,toplen
+      integer nx
+      parameter (nx=200)
+      real phiint(nx),cl,tl,xmax
+      external phiofx
+      data cl/0/tl/0/xmax/0/
+      save phiint,cl,tl,xmax
+      if(coshlen.ne.cl.or.toplen.ne.tl)then ! (Re)Initialize
+         cl=coshlen
+         tl=toplen
+         xmax=tl+3.5*cl  ! Choose xmax range.
+         phiint(1)=0.
+         phiprev=1.
+         phiint(1)=0.
+         dx=xmax/(nx-1.)
+         do i=2,nx      ! Precalculate \int_0^|x| phi normalized (shape).
+            xi=(i-1.)*dx
+            phishape=phiofx(xi,1.,coshlen,toplen)
+            phiint(i)=phiint(i-1)+(phishape+phiprev)*0.5*dx
+            phiprev=phishape
+!            write(*,*)i,phiint(i),phishape
+         enddo
+       endif
+      fx=(nx-1.)*abs(x)/xmax
+      ix=min(int(fx)+1,nx-1)
+      fx=fx-ix+1
+      intphiofx=sign(((1-fx)*phiint(ix)+fx*phiint(ix+1))*psi,x)
+!      write(*,*)ix,x,fx,intphiofx,phiint(ix),phiint(ix+1)
+! Integral is from 0 to x: and antisymmetric.
+      end
+c********************************************************************
       real function findxofphi(phiv,psi,coshlen,tl,xmin,xmax,nbi)
 c Solve by bisection phiv=phiofx(xc,psi,coshlen,tl) and return xc.
 c The intial x-range is [0,xmax]. Up to nbi bisections are allowed.
@@ -605,19 +644,21 @@ c Allow a value beyond the xmax range so long as phiv is non-negative.
       findxofphi=xc
       end
 c********************************************************************
-      real function findxofran(ranf,psi,coshlen,tl,xmin,xmax,nbi)
+      real function findxofran(ranf,psi,coshlen,tl,xmin,xmax,nbi
+     $     ,kp2)
 c Find by bisection the x-position given the range fraction ranf s.t.
 c   ranf=(xc-xmin+derivphiofx(xc...))/(xmax-xmin) 
 c and return xc. This expression is the cumulative probability because
 c P\propto \int n_e dx = \int d/dx(\phi')+1 dx=\phi'+x+ const.
 c Up to nbi bisections are allowed.
 c Shortcuts are taken if potential is less than a range of relevance.
-      real ranf,psi,coshlen,tl,xmin,xmax
+c Version 2 with additional parameter kp2 for 3-D holes.
+      real ranf,psi,coshlen,tl,xmin,xmax,kp2
       integer nbi
       real phimin
       parameter (phimin=.01)
-      real phiofx
-      external phiofx
+      real derivphiofx,intphiofx
+      external derivphiofx,intphiofx
       if(abs(psi).lt.phimin.or.ranf.lt.phimin.or.1-ranf.lt.phimin)then
  ! Effectively linear shortcut.
          findxofran=xmin+ranf*(xmax-xmin)
@@ -626,8 +667,15 @@ c Shortcuts are taken if potential is less than a range of relevance.
       xa=xmin
       xb=xmax
       xc=0.
-      fva=(xa-xmin+derivphiofx(xa,psi,coshlen,tl))/(xmax-xmin)-ranf
-      fvb=(xb-xmin+derivphiofx(xb,psi,coshlen,tl))/(xmax-xmin)-ranf
+      if(kp2.eq.0)then
+         fva=(xa-xmin+derivphiofx(xa,psi,coshlen,tl))/(xmax-xmin)-ranf
+         fvb=(xb-xmin+derivphiofx(xb,psi,coshlen,tl))/(xmax-xmin)-ranf
+      else
+         fva=(xa-xmin+derivphiofx(xa,psi,coshlen,tl)
+     $        -kp2*intphiofx(xa,psi,coshlen,tl))/(xmax-xmin)-ranf
+         fvb=(xb-xmin+derivphiofx(xb,psi,coshlen,tl)
+     $        -kp2*intphiofx(xb,psi,coshlen,tl))/(xmax-xmin)-ranf
+      endif
 c Allow a value beyond the xmax range so long as ranf is non-negative.
       if(fva*fvb.gt.0.)then
          write(*,*)xa,fva,xb,fvb,phiv,phiofx(xa,psi,coshlen,tl)
@@ -636,7 +684,12 @@ c Allow a value beyond the xmax range so long as ranf is non-negative.
       endif
       do j=1,nbi
          xc=0.5*(xa+xb)
-         fvc=(xc-xmin+derivphiofx(xc,psi,coshlen,tl))/(xmax-xmin)-ranf
+         if(kp2.eq.0)then
+           fvc=(xc-xmin+derivphiofx(xc,psi,coshlen,tl))/(xmax-xmin)-ranf
+         else
+            fvc=(xc-xmin+derivphiofx(xc,psi,coshlen,tl)
+     $           -kp2*intphiofx(xc,psi,coshlen,tl))/(xmax-xmin)-ranf
+         endif
          if(fvc.eq.0.)then
             goto 1
          elseif(sign(1.,fvc).eq.sign(1.,fva))then
@@ -806,5 +859,45 @@ c If converged, break
          enddo
       enddo
       ipartperiod(1)=savedipartperiod
-
       end
+c*********************************************************************
+      subroutine testintphiofx
+      integer nx
+      parameter (nx=100)
+      real phiint(nx),xp(nx),intphiofx,kp2,dint(nx)
+      external intphiofx
+      coshlen=4.
+      toplen=1.
+      kp2=0.
+      psi=1.
+      xmin=-5.*coshlen
+      xmax=5.*coshlen
+      dx=(xmax-xmin)/(nx-1.)
+      dint(1)=0.
+      prev=0.
+      do i=1,nx
+         xp(i)=xmin+(i-1)*dx
+         phiint(i)=intphiofx(xp(i),psi,coshlen,toplen)
+! Direct integration for verification:
+         if(i.gt.1)then
+            phi=phiofx(xp(i),psi,coshlen,toplen)
+            dint(i)=dint(i-1)+(prev+phi)*0.5*dx
+            prev=phi
+         endif
+      enddo
+      offset=0.5*(dint(1)+dint(nx))
+      dint=dint - offset
+      call autoplot(xp,phiint,nx)
+      call axlabels('x','!AJf!@dx')
+      call color(4)
+      call dashset(1)
+      call polyline(xp,dint,nx)
+      call dashset(0)
+      call color(15)
+      call pltend
+      end
+c*********************************************************************
+c Optional main test.
+c      call testintphiofx
+C      end
+c*********************************************************************

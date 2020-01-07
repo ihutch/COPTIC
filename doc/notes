@@ -15907,3 +15907,17 @@ nonperiodic direction because of cmdline test. Remove that and it
 does run with any one direction non-periodic and detected through 
 ipartperiod. However, at the moment the hole is with x being the
 trapping direction. 
+
+7 Jan 2020
+
+Trying to develop a more self-consistent initialization of a hole with
+limited holerad. Supposing a separable form of solution is possible
+(following Chen and Parks) one can in principle adjust the particle
+placement and BGK solution to allow for transverse k^2. Began to
+implement starting with findxofran. Got a version that can accommodate
+the k^2 in the parallel placement. But then realized that uniform
+perpendicular placement can't really be correct for this separable
+form. So without a substantial reconsideration of transverse placement
+there probably is no way of getting a really self-consistent
+solution. For a pure drift case, a separable initial state has
+x-integrated density that is non-uniform in the transverse direction. 
