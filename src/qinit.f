@@ -240,7 +240,7 @@
          tisq2=sqrt(2.)*tisq
          tisqperp=sqrt(Tperps(ispecies)*abs(eoverms(ispecies)))
 
-         if(holepsi.ne.0.)then ! Hole Initialization
+         if(holepsi.ne.0..and.ispecies.eq.hspecies)then ! Hole Initialization
 ! Calculate holespeed using vds component in projection dimension.
 ! Holeum is minus f drift speed relative to hole so holeum=-vds+holespeed:
             holespeed=holeum+vds(ispecies)*vdrift(id)
@@ -259,12 +259,16 @@ c Initialize u-range
             um=holeum/tisq2
 c Hole (decay) length
             coshlen=holelen     ! Now set in cmdline +psi/2
+c Transverse k^2 
+            kp2=0.
+            if(holerad.ne.0)kp2=4./holerad**2
 c The flattop length holetoplen. Negligible for large negative values.     
             xmax=1.3*findxofphi(psi/(NPHI),psi,coshlen,holetoplen,0.,50.
      $           ,7)
             call f0Construct(nphi,psi,um,xmax,coshlen,holetoplen,
-     $           phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0)
-            if(idebug.eq.1)then
+     $           phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0
+     $           ,kp2)
+            if(idebug.eq.1.and.myid.eq.0)then
                call autoplot(u0(-2*nphi),f0(-2*nphi),4*nphi+1)
                call axlabels('u0','f0')
                call pltend
@@ -299,17 +303,12 @@ c The flattop length holetoplen. Negligible for large negative values.
          endif
       enddo
       psiradfac=1.
-      kp2=0.
       if(holepsi.ne.0.)then
          call ranlux(ran,1)
          fp=(indi(id)+ran)/float(nqblks(id))
          fp=max(.000001,min(.999999,fp))
-         if(ispecies.eq.nspecies)then  ! Only put the hole in the final.
-            if(holerad.ne.0)then
-               psiradfac=exp(-r2/holerad**2)
-               kp2=1./holerad**2 ! ROUGH HACK FIX ME!
-!               kp2=0. ! Kill transverse field corrections.
-            endif
+         if(ispecies.eq.hspecies)then  ! Hole only in hspecies
+            if(holerad.ne.0)psiradfac=exp(-r2/holerad**2)
 ! Hole density non-uniformity: transverse local value of peak potential.
             x_part(id,islot)=findxofran(fp,psiradfac*psi,coshlen
      $           ,holetoplen,xmeshstart(id),xmeshend(id),nbi,kp2)
@@ -418,10 +417,10 @@ c The flattop length holetoplen. Negligible for large negative values.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Construct the distribution f0 at u0, using BGKint.
       subroutine f0Construct(nphi,psi,um,xmax,coshlen,tl,
-     $     phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0)
+     $     phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0,kp2)
 
       integer nphi
-      real psi,um,xmax
+      real psi,um,xmax,kp2
       real phiarray(0:NPHI),us(0:NPHI),xofphi(0:NPHI)
       real den(0:NPHI),denuntrap(0:NPHI),dentrap(0:NPHI)
       real tilden(0:NPHI)
@@ -429,11 +428,11 @@ c The flattop length holetoplen. Negligible for large negative values.
 
       du=(4.-sqrt(psi))/nphi
       sqpi=sqrt(3.1415926)
-c Call in BGKint such a way as to put into the negative trapped section
+c Call BGKint in such a way as to put into the negative trapped section
 c because it returns f0 u0 in reverse order.
       call BGKint(nphi,psi,-um,xmax,coshlen,tl,
      $     phiarray,us,xofphi,den,denuntrap,dentrap,tilden
-     $     ,f0(-nphi),u0(-nphi))
+     $     ,f0(-nphi),u0(-nphi),kp2)
 c Copy across to the positive trapped section.
       do i=1,nphi
 c         write(*,*)i,u0(-i),f0(-i)
@@ -465,7 +464,7 @@ c Units of x are debyelengths, of potential Te/e, of time omega_p^{-1}
 c But u is v/sqrt(2), i.e. normalized to sqrt(2Te/me).
 
       subroutine BGKint(nphi,psi,um,xmax,coshlen,tl,
-     $     phi,us,xofphi,den,denuntrap,dentrap,tilden,f,u0)
+     $     phi,us,xofphi,den,denuntrap,dentrap,tilden,f,u0,kp2)
 c In:
 c nphi is the number of phi (i.e. u^2) positions.
 c psi the maximum, zero the minimum. um the maxwellian shift,
@@ -480,7 +479,7 @@ c f(u0) is the distribution function,
 c u0=sqrt(psi-i*phistep)  =speed at x=0 when total energy is -phi. 
 c But u0 runs from u0(0)=u_s to u0(nphi)=0. (i.e. reverse order)
       integer nphi
-      real psi,um,xmax
+      real psi,um,xmax,kp2
       real phi(0:NPHI),us(0:NPHI),xofphi(0:NPHI)
       real den(0:NPHI),denuntrap(0:NPHI),dentrap(0:NPHI)
       real tilden(0:NPHI)
@@ -508,6 +507,7 @@ c at the nodes.
          den(i)=1.+(phiofx(xc+delx,psi,coshlen,tl)
      $        +phiofx(xc-delx,psi,coshlen,tl)
      $        -2.*phiofx(xc,psi,coshlen,tl))/delx**2
+     $        -kp2*phi(i)  ! Transverse k term set from holerad.
          us(i)=sqrt(phi(i))
 c Get the untrapped electron density at this potential and drift.
          denuntrap(i)=untrappeddensimple(phi(i),um)
@@ -606,7 +606,7 @@ c It use external phiofx function
 c********************************************************************
       real function findxofphi(phiv,psi,coshlen,tl,xmin,xmax,nbi)
 c Solve by bisection phiv=phiofx(xc,psi,coshlen,tl) and return xc.
-c The intial x-range is [0,xmax]. Up to nbi bisections are allowed.
+c The intial x-range is [xmin,xmax]. Up to nbi bisections are allowed.
 c This version uses a function, with three extra parameters
 c psi and coshlen and tl. 
       real phiv,psi,coshlen,tl,xmin,xmax
