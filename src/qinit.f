@@ -672,9 +672,17 @@ c Version 2 with additional parameter kp2 for 3-D holes.
          fvb=(xb-xmin+derivphiofx(xb,psi,coshlen,tl))/(xmax-xmin)-ranf
       else
          fva=(xa-xmin+derivphiofx(xa,psi,coshlen,tl)
-     $        -kp2*intphiofx(xa,psi,coshlen,tl))/(xmax-xmin)-ranf
+     $        -kp2*(intphiofx(xa,psi,coshlen,tl)
+     $           -intphiofx(xmin,psi,coshlen,tl)))
+     $        /(xmax-xmin-kp2*(intphiofx(xmax,psi,coshlen,tl)
+     $           -intphiofx(xmin,psi,coshlen,tl)))
+     $        -ranf
          fvb=(xb-xmin+derivphiofx(xb,psi,coshlen,tl)
-     $        -kp2*intphiofx(xb,psi,coshlen,tl))/(xmax-xmin)-ranf
+     $        -kp2*(intphiofx(xb,psi,coshlen,tl)
+     $           -intphiofx(xmin,psi,coshlen,tl)))
+     $        /(xmax-xmin-kp2*(intphiofx(xmax,psi,coshlen,tl)
+     $           -intphiofx(xmin,psi,coshlen,tl)))
+     $        -ranf
       endif
 c Allow a value beyond the xmax range so long as ranf is non-negative.
       if(fva*fvb.gt.0.)then
@@ -688,7 +696,11 @@ c Allow a value beyond the xmax range so long as ranf is non-negative.
            fvc=(xc-xmin+derivphiofx(xc,psi,coshlen,tl))/(xmax-xmin)-ranf
          else
             fvc=(xc-xmin+derivphiofx(xc,psi,coshlen,tl)
-     $           -kp2*intphiofx(xc,psi,coshlen,tl))/(xmax-xmin)-ranf
+     $           -kp2*(intphiofx(xc,psi,coshlen,tl)
+     $           -intphiofx(xmin,psi,coshlen,tl)))
+     $           /(xmax-xmin-kp2*(intphiofx(xmax,psi,coshlen,tl)
+     $           -intphiofx(xmin,psi,coshlen,tl)))
+     $           -ranf
          endif
          if(fvc.eq.0.)then
             goto 1
