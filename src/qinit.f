@@ -222,7 +222,7 @@
       real f0(-2*nphi:2*nphi),u0(-2*nphi:2*nphi),cumf(-nu:nu)
 !      real f1(-2*nphi:2*nphi),u1(-2*nphi:2*nphi),cumf1(-nu:nu)
       real u(-nu:nu),f(-nu:nu),du
-      real tisq,tisq2,tisqperp,umax,coshlen,kp2
+      real tisq,tisq2,tisqperp,umax,coshlen,kp2,kp2find
       integer lastspecies,id
       data lastspecies/0/
       save
@@ -262,6 +262,7 @@ c Hole (decay) length
 c Transverse k^2 
             kp2=0.
             if(holerad.ne.0)kp2=4./holerad**2
+            kp2find=kp2  ! Central value. Maybe to be changed later.
 c The flattop length holetoplen. Negligible for large negative values.     
             xmax=1.3*findxofphi(psi/(NPHI),psi,coshlen,holetoplen,0.,50.
      $           ,7)
@@ -308,10 +309,13 @@ c The flattop length holetoplen. Negligible for large negative values.
          fp=(indi(id)+ran)/float(nqblks(id))
          fp=max(.000001,min(.999999,fp))
          if(ispecies.eq.hspecies)then  ! Hole only in hspecies
-            if(holerad.ne.0)psiradfac=exp(-r2/holerad**2)
+            if(holerad.ne.0)then
+               psiradfac=exp(-r2/holerad**2)
+               kp2find=(4./holerad**2)*(1-r2/holerad**2)
+            endif
 ! Hole density non-uniformity: transverse local value of peak potential.
             x_part(id,islot)=findxofran(fp,psiradfac*psi,coshlen
-     $           ,holetoplen,xmeshstart(id),xmeshend(id),nbi,kp2)
+     $           ,holetoplen,xmeshstart(id),xmeshend(id),nbi,kp2find)
          else
             psiradfac=0.
             x_part(id,islot)=(1.-fp)*xmeshstart(id)+fp*xmeshend(id)
@@ -501,13 +505,13 @@ c
       do i=0,NPHI
 c Find the xofphi by bisection.
          xofphi(i)=findxofphi(phi(i),psi,coshlen,tl,0.,xmax,nbi)
-c Calculate the total density -d^2\phi/dx^2 as a function of potential,
+c Calculate the total density d^2\phi/dx^2 as a function of potential,
 c at the nodes.
          xc=xofphi(i)
          den(i)=1.+(phiofx(xc+delx,psi,coshlen,tl)
      $        +phiofx(xc-delx,psi,coshlen,tl)
      $        -2.*phiofx(xc,psi,coshlen,tl))/delx**2
-     $        -kp2*phi(i)  ! Transverse k term set from holerad.
+     $        -2.*kp2*phi(i)  ! Transverse k term set from holerad.
          us(i)=sqrt(phi(i))
 c Get the untrapped electron density at this potential and drift.
          denuntrap(i)=untrappeddensimple(phi(i),um)
