@@ -15957,3 +15957,8 @@ gyrocenter position as currently done). That seems to have the best
 chance of giving consistent initial charge distribution. But then to 
 choose the particle transverse velocity adding the drift (possibly at gyro
 center) to the transverse velocity. 
+
+Having implemented the ExB drift (as well as rationalized the code a lot)
+I find that the highest initial peak is obtained without a gyroradius
+correction to the potential position. But the ExB drift does not seem
+to do much, whether positive or negative, to the oscillation. 

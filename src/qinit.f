@@ -223,6 +223,7 @@
 !      real f1(-2*nphi:2*nphi),u1(-2*nphi:2*nphi),cumf1(-nu:nu)
       real u(-nu:nu),f(-nu:nu),du
       real tisq,tisq2,tisqperp,umax,coshlen,kp2,kp2find
+      real rhov(ndims)
       integer lastspecies,id
       data lastspecies/0/
       save
@@ -280,30 +281,37 @@ c The flattop length holetoplen. Negligible for large negative values.
 !----------------------------------------
  1    r2=0.
 ! Gyro velocity setting and gyroradius (drift added later)
-      do i=mod(id,ndims)+1,mod(id+1,ndims)+1
-            x_part(ndims+i,islot)=tisqperp*gasdev(myid)
-     $           +vds(ispecies)*vdrift(i)
+      rhov(id)=0.
+      i1=mod(id,ndims)+1   ! Transverse directions.
+      i2=mod(id+1,ndims)+1
+      do i=i1,i2
+            vp=tisqperp*gasdev(myid) 
+            x_part(ndims+i,islot)=vp
       enddo
-! Position setting, set all dims (reset x_id later if necessary)
+! v=x^qB/m => v^qB/m=-x(qB/m)^2; so gyro-vector rhov=-v^Bt/(eoverm*Bt^2)
+      rhov(i1)=-x_part(ndims+i2,islot)/(eoverms(ispecies)*Bt) 
+      rhov(i2)= x_part(ndims+i1,islot)/(eoverms(ispecies)*Bt)
+
+! Position setting, all dims (reset x_id later if necessary)
       do i=1,ndims
          call ranlux(ran,1)
          fp=(indi(i)+ran)/float(nqblks(i))
          fp=max(.000001,min(.999999,fp))
          x_part(i,islot)=(1.-fp)*xmeshstart(i)+fp*xmeshend(i)
          if(i.ne.id)then
-            r2=r2+x_part(i,islot)**2
+            r2=r2+x_part(i,islot)**2  ! Perpendicular particle radius^2
+! Alternative gyrocenter radius^2: makes peak lower.
+!            r2=r2+(x_part(i,islot)-rhov(i))**2
          else
-            fpid=fp
+            fpid=fp   ! Save the random position for parallel
          endif
       enddo
       psiradfac=1.
-      kp2find=0.
       if(holepsi.ne.0)then     ! Reset normal position
+         kp2find=0.
          if(holerad.ne.0)then  ! Account for transverse variation
             psiradfac=exp(-r2/holerad**2)
             kp2find=(4./holerad**2)*(1-r2/holerad**2)
-         else
-            kp2find=0.
          endif
 ! Hole parallel nonuniformity at transverse local value of peak potential.
          x_part(id,islot)=findxofran(fpid,psiradfac*psi,coshlen
@@ -330,8 +338,21 @@ c The flattop length holetoplen. Negligible for large negative values.
             write(*,*)'placeqblk interpolation error',ixp,p
             stop
          endif
+! Add transverse ExB velocity
+         if(holerad.ne.0)then
+            Etot=(2./holerad**2)*sqrt(r2)*phi ! Gradient of Gaussian
+            E1=Etot*x_part(i1,islot)/sqrt(r2) ! Project transverse
+            E2=Etot*x_part(i2,islot)/sqrt(r2)
+            x_part(ndims+i1,islot)=x_part(ndims+i1,islot)+E2/Bt            
+            x_part(ndims+i2,islot)=x_part(ndims+i2,islot)-E1/Bt            
+         endif
+
       endif
-! Transverse velocity for ExB drift correction
+! Add background drift.
+      do i=mod(id,ndims)+1,mod(id+1,ndims)+1
+            x_part(ndims+i,islot)=x_part(ndims+i,islot)            
+     $           +vds(ispecies)*vdrift(i)
+      enddo
 
 
 ! The previous timestep length.
