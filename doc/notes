@@ -15962,3 +15962,14 @@ Having implemented the ExB drift (as well as rationalized the code a lot)
 I find that the highest initial peak is obtained without a gyroradius
 correction to the potential position. But the ExB drift does not seem
 to do much, whether positive or negative, to the oscillation. 
+
+Playing around with trying to understand the effects, I try lowered Tperp
+to see if that helps. However, I run into the fact that cartreinject does
+not work correctly for unequal T and Tperp. The transverse injection velocity 
+(parallel to the x-face) is given by Ts, not Tperps as it should. This 
+distribution is set by
+  call cumprob(fvdrein,xw,xc,
+     $           ncrein,preins(0,id,ispec),gdummy,myid)
+which puts the distribution selection array into preins, based on the 
+function fvdrein. fvdrein ignores Tperps and uses Ts universally. 
+Fixed that.

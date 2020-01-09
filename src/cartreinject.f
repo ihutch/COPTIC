@@ -451,11 +451,24 @@
       include 'plascom.f'
       include 'creincom.f'
       include 'colncom.f'
-      real vdia
+      real vdia,Tid
       integer id2,id3
       integer ispec
       common /species/ispec
 
+      if(Ts(ispec).eq.Tperps(ispec))then
+         Tid=Ts(ispec)
+      else  ! Anisotropic temperature. Deal with it.
+         if(Bfield(idrein).eq.0)then
+            Tid=Tperps(ispec)
+         elseif(Bfield(idrein).eq.1.)then
+            Tid=Ts(ispec)
+         else
+            write(*,'(a,2f8.4,a,3f7.4)')'Unequal Temprs',Ts(ispec)
+     $           ,Tperps(ispec),' not allowed with oblique B',Bfield
+            stop
+         endif
+      endif
       ud=vds(ispec)-vneutral
       if(ispec.ne.1)ud=0.
       vdia=0.
@@ -464,12 +477,12 @@
 ! Gradient is always perpendicular to B.
          id2=mod(abs(idrein),3)+1
          id3=mod(abs(idrein)+1,3)+1
-! v_dia = -(T_i \nabla n \times B / qnB^2)
-         vdia=- (gn(id2)*Bfield(id3)-gn(id3)*Bfield(id2))*Ts(ispec)/Bt
+! v_dia = -(T_i \nabla n \times B / qnB^2) 
+        vdia=- (gn(id2)*Bfield(id3)-gn(id3)*Bfield(id2))*Tid/Bt
 ! The approximation is to represent the perpendicular distribution by
 ! a Maxwellian shifted by the diamagnetic drift.
       endif
-      vn=sqrt(2.*Ts(ispec)*abs(eoverms(ispec)))
+      vn=sqrt(2.*Tid*abs(eoverms(ispec)))
       if(vdrifts(3,ispec).eq.1.)then
 ! Z-drift cases. (equiv old)
          if(abs(idrein).eq.3)then
