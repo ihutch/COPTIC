@@ -15921,3 +15921,39 @@ form. So without a substantial reconsideration of transverse placement
 there probably is no way of getting a really self-consistent
 solution. For a pure drift case, a separable initial state has
 x-integrated density that is non-uniform in the transverse direction. 
+
+8 Jan 2020 
+
+Yesterday I changed my view of the way to approach the extra term in
+the BGK solution. It is not necessary to regard k^2 as a uniform
+constant.  Instead take it to represent a different value depending on
+the radial position r2 since it represents the perpendicular electric
+field divergence -k^2\phi=(1/r)d/dr(rd\phi/dr). For the Gaussian
+shape, then k^2=4/holerad^2*(1-r2/holerad^2) which changes sign of
+course at r2=holerad^2. Implementing this gave a result with very
+little oscillation when B is large enough for drift motion to apply, 
+although there remains an oscillation for lower B. In hindsight the
+assumption that k^2 is a constant is completely spurious, since we
+are prescribing the shape of the potential in both directions, and 
+should be free to prescribe whatever we like for these separable shapes
+provided we couple them to account for the total divergence. 
+
+The oscillation produced by finite larmor radius is a separate
+problem.  It appears to be an inconsistency in the transverse motion,
+and quite possibly in the transverse velocity. One idea is that it
+arises because of just choosing the v_perp from a Maxwellian. Because 
+that ignores the ExB drift from the perpendicular localization. It
+is perfectly possible to add that drift to the random perpendicular 
+velocity, which would be more consistent. Even more consistent perhaps
+would be to add the ExB drift corresponding to the gyrocenter position?
+
+Start by moving the transverse velocity setting _after_ the parallel
+position setting. This allows us to know E. The problem is that previously
+I had moved it before transverse position setting so that the gyrocenter
+rhoic could be used in the calculation of r2. These two ideas need to be
+rationalized. I think that it is probably better to calculate the 
+psiradfac based on the actual particle position (rather than on the 
+gyrocenter position as currently done). That seems to have the best
+chance of giving consistent initial charge distribution. But then to 
+choose the particle transverse velocity adding the drift (possibly at gyro
+center) to the transverse velocity. 
