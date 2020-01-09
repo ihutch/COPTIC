@@ -241,7 +241,6 @@
          tisq2=sqrt(2.)*tisq
          tisqperp=sqrt(Tperps(ispecies)*abs(eoverms(ispecies)))
 
-         write(*,*)'tisqperp',tisqperp
          if(holepsi.ne.0..and.ispecies.eq.hspecies)then ! Hole Initialization
 ! Calculate holespeed using vds component in projection dimension.
 ! Holeum is minus f drift speed relative to hole so holeum=-vds+holespeed:
