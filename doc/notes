@@ -15972,4 +15972,18 @@ distribution is set by
      $           ncrein,preins(0,id,ispec),gdummy,myid)
 which puts the distribution selection array into preins, based on the 
 function fvdrein. fvdrein ignores Tperps and uses Ts universally. 
-Fixed that.
+Fixed that. 
+
+Then it appears that the initial drift velocity is incorrect in that
+v2 has antisymmetric variation along the 2-axis and v3 along 3-axis.
+That's not right, it should be v2 along 3-axis etc. Turning off the 
+ExB correction makes no difference. It is localized to the hole region
+and is compressive (moving inward), but present even for the first step
+diagnostics. 
+
+13 Jan 2020
+
+Pursuing the drift problem I try to implement a diagsum file write 
+prior to the first step. However, I get a strange result with the 
+velocity exactly zero for all cells. I fail so far to figure out why.
+Ahh! I realize it must be the double velocity setting!!!

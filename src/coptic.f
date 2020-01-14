@@ -347,6 +347,12 @@
 ! padvnc includes the charge deposition.
       call mditerset(psum,ndims,ifull,iuds,0,0.)
       call chargetomesh(psum,iLs,diagsum,ndiags) 
+!      write(*,*)'diagsum22221',diagsum(2,2,2,2,1)
+! This writes out the initializing diagnostics. For debugging purposes
+      if(iavesteps.eq.1)call periodicwrite(ifull,iuds,iLs
+     $     ,diagsum,uave,lmyidhead,ndiags,ndiagmax,0,nsteps
+     $     ,idistp,vlimit,xnewlim,cellvol,ibinit,idcount,restartpath
+     $     ,iavesteps)
 ! Initialize diagsum here, not at potential initialization as before,
 ! because chargetomesh does deposition which duplicates that by padvnc.
       do ispecies=1,nspecies

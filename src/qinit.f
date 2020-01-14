@@ -144,7 +144,7 @@
 ! At the moment we disallow double if any drift is non-zero.
 ! Double helps by forcing the electron drift to exactly zero.
 ! So it might help to generalize this to allow ldouble with vds!=0.
-         if(vds(ispecies).ne.0.or.holeum.ne.0.)then
+         if(vds(ispecies).ne.0.or.holeum.ne.0..or.holerad.ne.0.)then
             ldouble=.false.
             if(myid.eq.0)then
                write(*,*)'Finite drift. No double particle placement.'

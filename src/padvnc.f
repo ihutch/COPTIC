@@ -10,7 +10,6 @@
       integer ndiags,ispecies
       real cij(*),u(*),psum(*)
       real diagsum(*)
-!      real diagsum(64,64,128,8,2)
 
       include 'ndimsdecl.f'
 ! Array structure vector: (1,nx,nx*ny,nx*ny*nz)
