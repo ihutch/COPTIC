@@ -773,6 +773,7 @@
       include 'griddecl.f'
       include 'ptchcom.f'
       include '3dcom.f'
+      include 'partcom.f'
       integer ipb(32),ifb(32)
 ! Calculate the bits of the field mask and iptch_mask.
       ifd=ifield_mask

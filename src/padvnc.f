@@ -1011,7 +1011,13 @@
          stheta=sin(-theta)
          ctheta=cos(theta)
 ! Anything other than theta gives velocity strangeness at edge.
-         call rotate3(xr(4),stheta,ctheta,Bfield)
+         if(.true.)then
+            sthacc=sin(-thacc)
+            cthacc=cos(thacc)
+            call rotate3(xr(4),sthacc,cthacc,Bfield)
+         else
+            call rotate3(xr(4),stheta,ctheta,Bfield)
+         endif
          call rotate3(xg,stheta,ctheta,Bfield)
 ! Move xc along the B-direction.
          call translate3(xc,xr(4),dtpos,Bfield,xc)

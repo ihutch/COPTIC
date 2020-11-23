@@ -18,6 +18,14 @@ c    Axis labels.   */
       chrssin=stemp
       return
       end
+c*********************************************************************
+      subroutine axinnerlabels(xaxlab, yaxlab)
+c    Axis labels.   */
+      character*(*) xaxlab,yaxlab
+      include 'plotcom.h'
+      call legendline(0.5,0.08,258,xaxlab)
+      call legendline(0.03,0.5,258,yaxlab)
+      end
 c***********************************************************************
       subroutine axident3old()
       include 'world3.h'

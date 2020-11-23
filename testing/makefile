@@ -6,7 +6,8 @@ SRC=src
 #########################################################################
 #########################################################################
 ACCISLIB=${COPTIC_ROOT}/accis/libaccisX.a
-LIBRARIES = -L/usr/X11R6/lib/ -L/usr/lib/mesa -L${COPTIC_ROOT}/accis/ -laccisX -lXt -lX11 $(GLULIBS) -L.
+LIBRARIES = -L/usr/X11R6/lib/ -L/usr/lib/mesa -L${COPTIC_ROOT}/accis/ -laccisX -lXt -lX11
+# $(GLULIBS) -L.
 #Default accis driver choice
 #Alternatives are vecx or vecglx, can be overriden by commandline option
 VECX=vecglx

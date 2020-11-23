@@ -234,7 +234,7 @@ c      integer ipixel,red,green,blue;
       integer a_gradblue(a_gradPixno)
       common /a_grad/a_gradPix,a_gradred,a_gradgreen,a_gradblue
      $     ,a_grad_inited
-      do i=0,a_gradPixno-1,1
+      do i=1,a_gradPixno,1
          j=(i*r2+(a_gradPixno-1-i)*r1)/(a_gradPixno-1)
          if(j.lt.0)then
             j=0 

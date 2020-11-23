@@ -95,6 +95,10 @@
 
       end
 !********************************************************************
+      subroutine xchargetomesh()
+! Add an additional fixed charge to the mesh
+      end
+!********************************************************************
       subroutine psumperiod(psum,ifull,iaux,iLs)
 ! If there are periodic particles in any dimension, do the periodic
 ! exchange sum.

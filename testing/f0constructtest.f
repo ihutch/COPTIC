@@ -1,6 +1,6 @@
       integer nphi,nu
       parameter (nphi=100,nu=100)
-      real psi,um,xmax
+      real psi,um,xmax,kp2
       real phiarray(0:NPHI),us(0:NPHI),xofphi(0:NPHI)
       real den(0:NPHI),denuntrap(0:NPHI),dentrap(0:NPHI)
       real tilden(0:NPHI)
@@ -9,19 +9,23 @@
       integer nptsmax
       parameter (nptsmax=500)
       real xp(nptsmax),yp(nptsmax)
+      external findxofphi
 
 c    1: plot distribution tests. 2: run 1M calls for timing.
       idebug=1
 
       psi=1.
       um=0.0
+      kp2=0.
 c Hole (decay) length (from runBGKint)
       coshlen=4.+psi/2
 c The flattop length toplen. Negligible for large negative values      
       tl=-1./psi
-      xmax=1.3*findxofphi(psi/(NPHI),psi,coshlen,tl,0.,50.,7)
+c      write(*,*)'Calling findxofphi'
+c      xmax=1.3*findxofphi(psi/(NPHI),psi,coshlen,tl,0.,50.,7)
+      xmax=12.
       call f0Construct(nphi,psi,um,xmax,coshlen,tl,
-     $     phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0)
+     $     phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0,kp2)
 
 c Initialize u-range
       umax=3.
@@ -29,7 +33,7 @@ c Initialize u-range
       do i=-nu,nu
          u(i)=i*du
       enddo
-
+      write(*,*)'Starting Accis Calls'
 
       if(idebug.eq.1)then
          call autoplot(xofphi,phiarray,nphi+1)

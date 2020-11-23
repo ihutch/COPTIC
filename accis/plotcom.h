@@ -46,3 +46,6 @@ c  Screen Parameters
       integer scrxpix,scrypix,ncolor,vmode
       real yoverx
       common/screenp/scrxpix,scrypix,ncolor,vmode,yoverx
+c Warnings
+      integer iwarn
+      common/warnings/iwarn

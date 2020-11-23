@@ -1,4 +1,4 @@
-/* Xlib driver for accis plotting */
+/* XLIB192 driver for accis plotting */
 /* Fortran callable routines */
 /* This version based on Xlib only, no Xt, derived from glX version. */
 int accis_driver_(){return 4;}
@@ -262,7 +262,7 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
   return 0;
 }
 /************************************************************************/
-int accisinit()
+void accisinit()
 {
   FORT_INT xp, yp, vm, nc;
   svga_(&xp,&yp,&vm,&nc);
@@ -501,7 +501,7 @@ XEvent *event;
 /* ******************************************************************** */
 /* Externally callable routine to set noeye3d return value.
    Set to 9999 to disable. */ 
-int noeye3d_(value)
+void noeye3d_(value)
      int *value;
 {
   if(*value>1000)accis_eye3d=9999;
@@ -563,7 +563,7 @@ int eye3d_(value)
     *value=(int)thekeysym;
     if(XPending(accis_display)) XPeekEvent(accis_display,&event);
     /*    printf("Got value: %d, Event.type: %d, Pending? %d\n"
-	   ,*value,event.type,XPending(accis_display));
+	   ,*value,event.type,XPending(accis_display));*/
   /* Get all the queued contiguous KeyPress events so we don't over-
      run the rotation when the key is lifted. The problem here is when
      any KeyPress events are buried in other event types. There seem to

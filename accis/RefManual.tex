@@ -90,6 +90,9 @@ a call to POLYLINE.
 LAUTOINIT(xv,yv,ilength,lnx,lny) Set up possibly logarithmic scaling
 and axes, without drawing.
 
+AUTO3INIT(xv,yv,zv,ilength) Set up scaling for autoplot in 3D. Call poly3line
+subsequently to draw.
+
 SCALEWN(xmin,xmax,ymin,ymax,lnx,lny) Set world scaling explicitly, possibly log.
 
 FITSCALE(xmin,xmax,ymin,ymax,lnx,lny) same but fitting nice ranges.
@@ -617,6 +620,11 @@ MINMAX(xv,isize,min,max) Find min and max of vector of size isize.
 
 MINMAX2(xa,iL1,ix,iy,min,max) Find min and max of 2-d array of
 leading dimension iL1, over indices (ix,iy).
+
+STEPLOG(i,pmax,n,nsteps,stepa) Return the ith of n steps of p up to a
+ceiling of pmax in logarithmic spacing of nsteps specified in stepa
+e.g. nsteps=3, stepa=(1,2,5) or 4, (1,2,4,6)
+
 
 FWRITE(x,iwdth,ipoint,cstring) Format write the float x into cstring
 with specified ipoint decimal places. Total width returned as iwdth.

@@ -220,7 +220,7 @@ else if ! diff T1P-200L1x5y5z5.phi prior.phi ; then \
  else echo "File[s] lacking to compare result.";\
  echo "Probably you've just made coptic for the first time."; fi 
 	@if [ "$(G77)" = "gfortran" ] ; then echo "Compiled serial coptic. make mproper; make for MPI version if MPI available." ; fi
-	@make GeometryTests >/dev/null
+	@make --no-print-directory NOACCISCHECK=true GeometryTests
 
 # For now we are using a big hammer to ensure libcoptic is clean.
 libcoptic.a : makefile $(OBJECTS) $(UTILITIES)
@@ -319,10 +319,11 @@ testanal :
 
 geometry : $(COPTIC_ROOT)/geometry/*.cks
 	@echo 'Geometry Tests completed or up to date' >&2
-	rm -f T1*
-	date >>GeometryTests
-	cat GeometryTests
-	cd $(COPTIC_ROOT)/src/; ./coptic; cd -
+	@rm -f T1*
+	@if [ -z "`tail -n1 GeometryTests | grep EST`" ] ; then echo "****** Differences were found. Check file GeometryTests ********"; else echo "All OK"; fi
+	@date >>GeometryTests
+#	tail GeometryTests
+#	cd $(COPTIC_ROOT)/src/; ./coptic; cd -
 
 regeom :
 	@echo 'Regenerating geometry/*.cks files' >&2
@@ -333,7 +334,7 @@ GeometryTests :  $(COPTIC)
   if [ "$(G77)" != "mpif77" ] ; then echo "Not doing geometry tests" >&2;\
   else\
    if $(G77) --version 2>&1 | grep "GNU Fortran" ; then\
-    echo 'Starting background tests. Recompile only when completed.' >&2;\
+    echo '****Starting background tests. Recompile only when completed.' >&2;\
     sleep 1; make geometry &\
    fi; \
   fi; \
@@ -408,7 +409,9 @@ coptic.prof : makefile $(OBJECTS)
 	$(G77) -v -pg -o $(COPTIC).prof $(COPTIC).o $(OBJECTS) $(LIBRARIES)
 
 help :
+	@echo
 	@echo Targets: clean mproper ftnchek tree coptic.prof vecx analysis serial
 	@echo Tests:   GeometryTests testing testanal regeom
 	@echo Setup:   streamset streamunset
 	@echo Profiling etc do:    make PROFILING='<switches>'
+	@echo

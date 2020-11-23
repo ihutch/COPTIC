@@ -291,3 +291,9 @@ c Return the length of the string to the last non-space character.
  2    istrnonspace=i
       end
 
+c**************************************************************************
+      subroutine setiwarn(i)
+      include 'plotcom.h'
+      integer i
+      iwarn=i
+      end

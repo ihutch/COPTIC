@@ -156,3 +156,45 @@ c Change xt1st the last thing, since it might be xmin, itself.
 c      write(*,*)'xtic,sfac,xt1st,xtlast',xtic,sfac,xt1st,xtlast,ntics
       return
       end
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      real function steplog(i,pmax,n,nsteps,step)
+! Return the ith of n steps of p up to a ceiling of pmax 
+! in logarithmic spacing of nsteps specified in step 
+! e.g. 3, (1,2,5) or 4, (1,2,4,6)
+      integer i,n,nsteps
+! Work zero based for convenience
+      real pmax,step(0:nsteps-1)
+      real pmset,nset
+      data pmset/0./nset/0/nstepset/0/
+      save
+
+! A version that saves setup might be a bad idea
+!      if(pmax.ne.pmset.or.n.ne.nset.or.nsteps.ne.nstepset)then
+! Initialize
+         pmset=pmax
+         nset=n
+         nstepset=nstepset
+         pmaxln=alog10(pmax)
+         nfmax=nint(pmaxln-0.499999)         ! Power of 10
+         pmaxsc=pmax/10.**nfmax              ! pmax scaled to 1-9.9999
+         do k=nsteps-1,0,-1
+            if(pmaxsc.ge.step(k))goto 1
+         enddo
+         write(*,*)'stepln ERROR',pmax,pmaxsc,i
+ 1       kpmax=k
+! Now kpmax is the first step index below pmax zero-based
+! Find the lowest kvalue kmin and its power of ten:
+         nbuf=20*nsteps
+         kpmin=mod(nbuf+kpmax-(n-1),nsteps)
+!        How many times do we go through zero going from 1 to n
+         nfmin=nfmax-(kpmin+(n-1))/nsteps
+!        write(*,*)pmax,nfmax,kpmax,nfmin,kpmin
+!      endif
+
+! The actual calculation.
+      nf=nfmin+(kpmin+(i-1))/nsteps
+      kp=mod(i-1+kpmin,nsteps)      
+!      write(*,'(2i3,$)')nf,kp
+      steplog=step(kp)*10.**nf
+      end 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1

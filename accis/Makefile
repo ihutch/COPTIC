@@ -1,14 +1,9 @@
-########################################################################
+#######################################################################
 # Makefile for accis routines.
 # The shell assumed in this Makefile
 SHELL=/bin/bash
-# By the following definition we make vecx the default.
-# Comment out if you want instead to search in order vecglx, vecx, vec4014
-VECX=vecx
 #########################################################################
 # Include the make commands to define compiler and locations.
-# But by defining NOACCISCHECK prevent the location update.
-NOLOCATION:=true
 include ACCIS.mk
 #########################################################################
 # Cross-compiling definitions obviously need these executables.
@@ -21,7 +16,7 @@ include ACCIS.mk
 LIBPATH:=-L. $(LIBPATH)
 ifeq ("$(FORTRAN)","ftn")
 LIBPATH:=-dynamic $(LIBPATH)
-endif	
+endif
 G90=gfortran
 #######################################################################
 ifeq ("$(NOBACKSLASH)","")
@@ -37,34 +32,31 @@ fi fi fi\
 )
 endif
 ##########################################################################
-# Test whether X libraries are found. Null => yes.
- TESTGL:=$(shell $(FORTRAN)  $(LIBPATH) -lGLU -lGL -o /dev/null none.o 2>&1 | grep GL)
- TESTX11:=$(shell $(FORTRAN) $(LIBPATH) -lX11 -o /dev/null 2>&1 none.o | grep X)
-##########################################################################
 ifneq ("$(VECX)","")
 # VECX explicitly set. Use the tests to convey the choice.
  ifeq ("$(TESTX11)","")
-# If vecx is available, then rule out vecglx if not set.
-  ifneq ("$(VECX)","vecglx")
-   TESTGL=NO
-  endif
+# If vecx is available, then if vecglx not the explicit set rule it out.
+   ifneq ("$(VECX)","vecglx")
+    TESTGL=NO
+   endif
  endif
-# And if vecx is not set, rule it out.
+# And if the explicit setting is not vecx, rule it out.
  ifneq ("$(VECX)","vecx")
-  TESTX11=NO
+   TESTX11=NO
  endif
 endif
 ##########################################################################
-# VECX choice. Preference order vecglx, vecx, vec4014.
-ifeq ("$(TESTGL)","")
-  VECX=vecglx
+# VECX choice. Preference order vecx, vecglx, vec4014.
+# Normally if vecx fails then vecglx will also fail. 
+ifeq ("$(TESTX11)","")
+  VECX=vecx
   ACCISDRV=accisX
-  libraries=-lX11 -lGL -lGLU $(LIBPATH)
+  libraries= $(LIBPATH) -lX11
 else
-  ifeq ("$(TESTX11)","")
-    VECX=vecx
+  ifeq ("$(TESTGL)","")
+    VECX=vecglx
     ACCISDRV=accisX
-    libraries=-lX11 $(LIBPATH)
+    libraries=$(LIBPATH) -lX11 -lGL -lGLU 
   else
     VECX=vec4014
     ACCISDRV=accis
@@ -225,7 +217,6 @@ convert : convert.f95
 # There are problems with Metcalf's automatic converter and parameters that
 # define dimensions. Parameters are not included. So the interfaces that it
 # generates are broken. I've hacked the code to include them.
-
 interface.f90 : convert
 	@echo "! Interfaces to accis routines generated from fortran code">interface.f90
 	@echo making interface.f90, using convert code.
@@ -239,8 +230,9 @@ interface.f90 : convert
 sync : gitcommit syncsource synccoptic syncsceptic
 
 gitcommit :
-	if [ -n "`git status | grep nothing`" ] ; then \
- git push; else echo "GIT COMMIT CHANGES FIRST"; git status ; exit 1 ; fi
+	@if [ -n "`git status | grep nothing`" ] ; then \
+ git push; else echo "GIT COMMIT CHANGES FIRST. NOTHING DONE. git status:";\
+ git status ; exit 1 ; fi
 
 syncsilas : lib$(ACCISDRV).a RefManual.html
 	rsync -u -e ssh  --copy-links -v *.h *.f *.c RefManual.* *.png Makefile silas:~/accis/
@@ -285,8 +277,11 @@ help :
 	@echo
 	@echo 'Additional makefile definitions. Include as $$ make <def> ...'
 	@echo Compiler: FORTRAN=gfortran
-	@echo Drivers: VECX=vecx        X11 driver
-	@echo '         VECX=vecglx	OpenGL driver'
-	@echo '         VECX=vec4014	Tektronix 4014 driver'
-	@echo '         VECX=noscreen	No Screen driver. ps output only.'
-	@echo LocalVersion:  ACCISPARENT=../
+	@echo 'Drivers, Chosen: VECX=vecx'
+	@echo 'Possible choices:'
+	@echo '         VECX=vecx       plain X11 driver'
+	@echo '         VECX=vecglx     OpenGL driver'
+	@echo '         VECX=vec4014    Tektronix 4014 driver'
+	@echo '         VECX=noscreen   No Screen driver. ps output only.'
+	@echo To specify this local version use:  ACCISPARENT=../
+	@tail -n 13 ACCIS.mk

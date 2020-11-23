@@ -1399,7 +1399,7 @@ c The used dimensions of each are
       utitle=''
 !      write(*,*)ifull,iuds,nw,ixnpv
       call sliceGweb(ifull,iuds,u,nw,zp,ixnpv,xnv,idfixp,utitle)
-!     $     ,svec,vp)
+!     ,svec,vp)
 
       end
 c*********************************************************************

@@ -265,8 +265,7 @@ c Transverse k^2
             if(holerad.ne.0)kp2=4./holerad**2
             kp2find=kp2  ! Central value. Maybe to be changed later.
 c The flattop length holetoplen. Negligible for large negative values.     
-            xmax=1.3*findxofphi(psi/(NPHI),psi,coshlen,holetoplen,0.,50.
-     $           ,7)
+            xmax=12.
             call f0Construct(nphi,psi,um,xmax,coshlen,holetoplen,
      $           phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0
      $           ,kp2)
@@ -295,7 +294,7 @@ c The flattop length holetoplen. Negligible for large negative values.
 ! Position setting, all dims (reset x_id later if necessary)
       do i=1,ndims
          call ranlux(ran,1)
-         fp=(indi(i)+ran)/float(nqblks(i))
+         fp=(indi(i)+ran)/float(nqblks(i)) ! The fraction of total mesh
          fp=max(.000001,min(.999999,fp))
          x_part(i,islot)=(1.-fp)*xmeshstart(i)+fp*xmeshend(i)
          if(i.ne.id)then
@@ -664,6 +663,9 @@ c Find by bisection the x-position given the range fraction ranf s.t.
 c   ranf=(xc-xmin+derivphiofx(xc...))/(xmax-xmin) 
 c and return xc. This expression is the cumulative probability because
 c P\propto \int n_e dx = \int d/dx(\phi')+1 dx=\phi'+x+ const.
+c The "block" boundaries are non-uninformly spaced when a hole is present
+c This routine knows nothing about blocks per se, but scales density via
+c non-uniform mapping of ranf to x-position.
 c Up to nbi bisections are allowed.
 c Shortcuts are taken if potential is less than a range of relevance.
 c Version 2 with additional parameter kp2 for 3-D holes.
@@ -671,7 +673,7 @@ c Version 2 with additional parameter kp2 for 3-D holes.
       integer nbi
       real phimin
       parameter (phimin=.01)
-      real derivphiofx,intphiofx
+      real derivphiofx,intphiofx ! These two functions specify phiofx
       external derivphiofx,intphiofx
       if(abs(psi).lt.phimin.or.ranf.lt.phimin.or.1-ranf.lt.phimin)then
  ! Effectively linear shortcut.

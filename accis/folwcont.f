@@ -48,7 +48,7 @@ c Color (only) Contour of z on rectangular mesh.
      $     cldummy,0,xdummy,ydummy,48)
       call color(15)
       call axbox
-      call gradlegend(c1st,clast,-.2,0.,-.2,1.,.03,.false.) 
+      call gradlegend(c1st,clast,-.3,0.,-.3,1.,.03,.false.) 
       end
 c************************************************************************
       subroutine contourl(z,ppath,l,imax,jmax,cl,ncin,x,y,consw)
@@ -660,8 +660,9 @@ c      data laxlog/.false./
       endif
 
       th=atan2(y2-y1,x2-x1)
-c      r=sqrt((y2-y1)**2+(x2-x1)**2)
       ct=cos(th)
+c Suppress rounding errors for pure vertical legend. 
+      if(x2-x1.eq.0)ct=0  
       st=sin(th)
       if(colwidth.eq.0.)then
          cpb=0.01*(st*(wxmax-wxmin)+ct*(wymax-wymin))
