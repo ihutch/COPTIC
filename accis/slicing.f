@@ -39,25 +39,26 @@ c Needed for perspective plot
 c For testing only
       include 'plotcom.h'
 c Workspace size is problematic.
-      parameter (nwksp=1000000)
+      parameter (nwksp=1000000,iclmax=30)
       character*1 pp(nwksp)
 c Contour levels
-      real cl(30)
+      real cl(iclmax)
       real colorscale
 c Local variables:
       integer icontour,iweb
       integer jsw
-      integer iclipping,idflast,idfinlast,igradleg
+      integer iclipping,idflast,idfinlast,igradleg,icl
       integer idpa(2),idp1,idp2
       character*(30) form1
       save nf1,nf2,nff,if1,if2,iff,idfix
-      logical laspect,larrow,ltellslice
+      logical laspect,larrow,ltellslice,logcontour
       data laspect/.true./larrow/.false./
-      data ltellslice/.false./
+      data ltellslice/.false./logcontour/.false./
       data iclipping/0/idflast/-9999/jsw/0/n1/0/icontour/1/iweb/1/
       data igradleg/0/
       data idfinlast/-9999/
       data colorscale/1./
+      data icl/6/
 c Tell that we are looking from the top by default.
       data ze1/1./
       save idp1,idp2
@@ -299,10 +300,22 @@ c If we do, then we must reset jsw:
             call axproj(igetcorner())
          else
 c Set contour levels using the scaling of the box.
-            icl=6
             do ic=1,icl
                cl(ic)=wz3min+(wz3max-wz3min)*(ic-1.)/(icl-1.)
             enddo
+            if(logcontour.and.wz3min.ge.0)then  
+! Logarithmic contouring makes no sense unless >0
+               icl=max(icl,10)
+               ilmax=nint(alog10(abs(wz3max))+0.5)
+               do ic=2,icl-1
+                  cl(icl-ic+1)=10.**(ilmax)*10**(-float((ic-1)/5))
+     $                 *(1.-0.2*mod(ic+4,5))
+               enddo
+               cl(1)=wz3min
+               cl(icl)=wz3max
+            endif
+!               write(*,*)icl,wz3max,wz3min,ilmax
+!               write(*,*)(cl(ic),ic=1,icl)
          endif
 c Get back current eye position xe1 etc.
          call trn32(xe,ye,ze,xe1,ye1,ze1,-1)
@@ -359,7 +372,7 @@ c the pfnextsw set by pfset to zero.
 c User interface
       call ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping,ips,if1,if2
      $     ,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice,igradleg
-     $     ,colorscale)
+     $     ,colorscale,icl,logcontour)
       if(iquit.eq.0)goto 21
       call prtend(' ')
       idflast=idfix
@@ -368,7 +381,7 @@ c User interface
 c******************************************************************
       subroutine ui3d(n1,iuds,idfix,iquit,laspect,jsw,iclipping,ips,if1
      $     ,if2,nf1,nf2,idp1,idp2,icontour,iweb,ltellslice,igradleg
-     $     ,colorscale)
+     $     ,colorscale,icl,logcontour)
 c Encapsulated routine for controlling a 3-D plot.
 c But many things have to be passed at present. A proper API needs
 c to be designed but here's the approximate description.
@@ -383,7 +396,7 @@ c iquit is returned as non-zero to command an end to the display.
       integer iuds(3)
       include 'world3.h'
 
-      logical laspect,ltellslice
+      logical laspect,ltellslice,logcontour
 c 3d display user interface.
 c-----------------------------------
       iquit=0
@@ -408,6 +421,8 @@ c      write(*,*)'isw',isw
       if(isw.eq.ichar('1')) read(*,*)ax3chars(1)
       if(isw.eq.ichar('2')) read(*,*)ax3chars(2)
       if(isw.eq.ichar('3')) read(*,*)ax3chars(3)
+      if(isw.eq.ichar('4')) logcontour=.not.logcontour
+      if(isw.eq.ichar('n')) read(*,*)icl
       if(isw.eq.ichar('p'))then
          call pfset(3)
          ips=3
@@ -499,6 +514,8 @@ c         write(*,*)char(isw)
      $        ' depress f: to interrupt running.'
          write(*,*)' 1, 2, 3: Enter new label for axis 1,2,3'
      $        ,' (type in terminal window)'
+         write(*,*)' n: Enter new number of contours.',
+     $       ' 4: toggle logarithmic contours'
       endif
       call rotatezoom(isw)
 c End of user interface.
