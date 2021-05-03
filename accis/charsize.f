@@ -1,15 +1,21 @@
 c*********************************************************************
-c       Set character width and height in NORMAL units. 0 resets.
+c     Set character width and height in NORMAL units. 0 resets.
       subroutine charsize(wd, ht)
       real wd,ht
       include 'plotcom.h'
       pchrswdth=chrswdth
       pchrshght=chrshght
       chrswdth=wd
-      if(abs(wd) .le. 0.)chrswdth=0.015
+      if(abs(wd) .le. 0.)chrswdth=chrsdef
       chrshght=ht
-      if(abs(ht) .le. 0.)chrshght=0.015
+      if(abs(ht) .le. 0.)chrshght=chrsdef
       return
+      end
+c*********************************************************************
+c Set default charsize. This is value used to reset charsize.
+      subroutine dcharsize(sz)
+      include 'plotcom.h'
+      chrsdef=sz
       end
 c*********************************************************************
 c Restore immediate prior charsize

@@ -160,6 +160,13 @@
      $                 *ndims)
                   write(*,'(''In region'',l2,''  iLs=''
      $,4i8)')linregion(ibool_part,ndims,x_part(1,i)),iLs
+                  im=0
+                  do m=1,3
+                     im=im+iLs(m)*nint(x_part(ndimsx2+m,i))
+                  enddo
+                  write(*,*)'u(x)=',im,u(im-1),u(im),u(im+1)  
+                  write(*,*)'u(y)=',im,u(im-iLs(2)),u(im),u(im+iLs(2))
+                  write(*,*)'u(z)=',im,u(im-iLs(3)),u(im),u(im+iLs(3))
                   stop
                endif
             else
@@ -390,7 +397,7 @@
 !----------- Reinjection treatment -----------
  200     continue
          x_part(iflag,i)=1
-!         write(*,*)'Calling reinject',i,ispecies
+         write(*,*)'Calling reinject',i,ispecies
          call reinject(x_part(1,i),ilaunch,ispecies)
          call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
          if(.not.linmesh)then
@@ -457,7 +464,6 @@
 ! End of this particle's advance.
  400     continue
       enddo
-      write(*,*)'nrein=',nrein
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  102  continue
 ! -------------- End of cycle through particles ----------

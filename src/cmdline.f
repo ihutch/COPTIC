@@ -664,8 +664,8 @@
      $     //' Leave no gap before value. Defaults or set values [ddd'
       write(*,301)'[-of]<filename>  set name of object data file.'
      $     //'   ['//objfilename(1:30)
-      write(*,310)' -ni   set No of particles/node   ['
-     $     ,(nparta(ispecies),ispecies=1,1),'     zero => unset.'
+      write(*,*)'-ni   set No of particles/node   ['
+     $     ,(nparta(ispecies),ispecies=1,nspecies),' zero => unset.'
       write(*,301)' -rn   set Reinjection number     [',ninjcomp
      $     ,'     fixed/step => parts/node unset.'
       write(*,304)' -ri   set rhoinfinity/node       [',ripernode

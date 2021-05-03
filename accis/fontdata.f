@@ -4,6 +4,7 @@
       include 'plotcom.h'
       equivalence (ca,chrsfont)
       equivalence (a,chrsaddr)
+      data chrsdef/0.015/
       data chrscos,chrssin,chrsslnt,chrswdth
      $   ,chrshght/ 1.,0.,0.,.015,.015 /
        data (a(j),j=   1,   4)/ 58181, 58181, 58181, 58181/

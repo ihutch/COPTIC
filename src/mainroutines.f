@@ -218,7 +218,7 @@
       logical lplot,ldensac
       real u(ifull(1),ifull(2),ifull(3))
       character*(*) restartpath
-      integer id,thespecies
+      integer id,thespecies,ilab
       real vrange,phirange,umin,umax,psnmax
       real wx2nx,wy2ny
       parameter (id=1,vrange=3.)
@@ -232,8 +232,10 @@
 ! Only if this is a one-dimensional problem (for now)
       if(iuds(2).ge.4 .and. iuds(3).ge.4) return
       ldensac=.true.
-c psaccum must be asked for by all processes
+c thespecies is 1 if nspecies=1, 2 if nspecies=2 (assumes e is 2)
       thespecies=mod(thespecies,nspecies)+1
+      if(hspecies.ne.0)thespecies=hspecies ! Or just use the hole species
+c psaccum must be asked for by all processes
       call psaccum(thespecies,1)
       write(string,'(f10.3)')nstep*dt
 c but writing and plotting only by top process
@@ -269,8 +271,12 @@ c but writing and plotting only by top process
                   call color(thespecies+4)
                   psn=psn/psnmax
                   call polyline(psx,psn,npsx)
-                  if(nspecies.gt.1)call legendline(0.8,0.05+0.08
-     $                 *thespecies,0,nlabel(thespecies))
+                  if(nspecies.gt.1)then !Label species by charge sign.
+                     ilab=1
+                     if(eoverms(thespecies).lt.0)ilab=2
+                     call legendline(0.8,0.05+0.08*thespecies,0
+     $                    ,nlabel(ilab))
+                  endif
                enddo
 !               call color(15)
                call legendline(1.04,0.3,258,'!Bn!@')

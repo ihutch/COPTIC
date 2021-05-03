@@ -303,15 +303,15 @@ c Set contour levels using the scaling of the box.
             do ic=1,icl
                cl(ic)=wz3min+(wz3max-wz3min)*(ic-1.)/(icl-1.)
             enddo
-            if(logcontour.and.wz3min.ge.0)then  
-! Logarithmic contouring makes no sense unless >0
+            if(logcontour)then  
                icl=max(icl,10)
                ilmax=nint(alog10(abs(wz3max))+0.5)
                do ic=2,icl-1
                   cl(icl-ic+1)=10.**(ilmax)*10**(-float((ic-1)/5))
      $                 *(1.-0.2*mod(ic+4,5))
                enddo
-               cl(1)=wz3min
+! Logarithmic contouring makes no sense unless >0
+               if(wz3min.gt.0)cl(1)=wz3min
                cl(icl)=wz3max
             endif
 !               write(*,*)icl,wz3max,wz3min,ilmax

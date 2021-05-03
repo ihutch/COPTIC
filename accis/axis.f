@@ -247,9 +247,9 @@ c           if((gw-(ain-0.0001*(aax-ain)))*ams.lt.0.)goto 5
      $              ,tcos,tsin,axcos,axsin,lpara)
             else
                if(lpara)then
-                lfac=.11*(chrswdth/0.015)*0.6/dl
+                lfac=.11*(chrswdth/chrsdef)*0.6/dl
                 else
-                lfac=.03*(chrshght/0.015)/dl
+                lfac=.03*(chrshght/chrsdef)/dl
                 endif
                if((gw-((1.-lfac)*aax+lfac*ain))*ams.lt.0.) then
                   call gtic(gw,1,xgmin+dx*(gw-ain),ygmin+dy*(gw-ain)

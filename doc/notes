@@ -16173,3 +16173,85 @@ down to the noise level. Maybe we need to run some on a substantial
 number of processors. The laptop is beginning to struggle. If anything
 the potential is elongated in the x-direction i.e. parallel. Also, 
 even an elliptical boundary rapidly circularizes (as expected).
+
+29 Apr 2021
+
+Exploring the idea of using two ion species to represent a two beam
+distribution, in the context of an electron hole. Currently nspeciesmax
+is 2, but looks as if it could be increased to 3. Initialization is the
+main issue to begin with.
+
+qinit does not appear to be correctly set up for more than one species
+with an electron hole present. It does not seem to deal differently with
+each species. This might be the main immediate problem, and probably 
+should be dealt with for 2 species before moving on to 3. Normally 
+ions are species 1 and electrons species 2. Other choices are probably
+possible. I don't think COPTIC has been used for 2-species hole simulations.
+
+It seems possible that we could use the ions as species 2 (and 3) rather
+than 1 (and 2). In that case the electron timescale would be the defining
+normalization. But for a classic (fast) electron hole the ions would have
+a speed relative to the hole that is some fraction of the electron thermal
+speed. 
+
+A periodic domain is possible, but only if the ion (reflected)
+distribution is symmetric in the rest frame of the hole, because the
+reflection is effectively ion trapping in a periodic domain. It might
+be possible to have an asymmetric passing ion population, but the
+reflected population would eventually symmetrize itself. Perhaps that
+is part of the requirement to be in the f-minimum so that the
+reflected population can readily be symmetrized. The noise difficulty with
+small amplitude holes in a PIC code is going to be a bit of a headache for
+the small amplitude limit, and slow holes.
+
+30 Apr 2021
+
+Turn off Reset normal position unless ispecies.eq.hspecies, this seems
+to allow electron hole in initially uniform ion background distribution.
+And the hole then accelerates. Got a 2-species case with electrons
+first then ions going, after several corrections about species.
+Self acceleration occurs. Adding a significant drift to ions reduces
+it considerably.
+
+1 May 2021
+Trying to use -ni with periodic particles so that I can put half of the
+ions into one species and half in another. There's a hack that prevents
+this. Bypassing the hack gives Corrupt gradlocalregion errors. Actually
+they are Corrupt shortcuts, which are hard to diagnose. 
+
+It's a bit of a mystery why this happens. cij(1+icl*iinc) is zero.
+u(1+iinc) is NAN. ixn0 and iinc are (e.g) 2  121857 which is
+the third element of ils 121856 plus 1.
+xff=   1.58384323       1.96075141       2.42574096 always.
+
+Tracked the problem down eventually to rhoinfcalc making rhoinf zero
+and producing a NAN in the q. Changed logic to avoid that.
+
+2 May 2021
+
+Increasing the nspecies to 3 and specifying two ion species with half
+the numbers of electrons, v=+-.1, gives a hole that does not immediately
+accelerate. However, it does begin to oscillate. As the oscillation grows,
+it sheds some trapped electrons. The oscillation displacement still
+grows, but not much the velocity excursion. Still that is ~+-.5, much
+larger than the ion beam difference. So the hole's velocity does not
+remain trapped between the ions' velocities. Eventually, as the ion
+fluctuations are spread out, and the hole amplitude drops from initially
+0.8 to ~0.4, the hole acquires a velocity in one direction and traverses
+the domain in one direction thereafter at speed ~0.5, after about 3000
+steps (1500/omegap). Stopped at 4000 steps. 
+
+It looks as if the advancing code is now correct. However, the initial
+state of ions is not, and that might be part of the reason for the 
+oscillation that leads the hole to fast speeds. 
+
+The ion and electron temperatures are equal, so the ion acoustic speed
+is 1/43 times the electron thermal speed. Thus v=-+.1 vte is 4.3 cs. 
+
+Ion initialization seems to be problematic. The ion density is uniform,
+but it should not be. There ought to be an ion density increase at the
+hole because of ion slowing. That would then suppress inital hole motion. 
+Instead, the ions initialized with unperturbed velocity but uniform
+density leave the hole with enhanced velocity and this seems to launch
+a negative ion fluctuation outward in both directions. Perhaps this 
+is a source of greater oscillatory instability. (Overstability.)

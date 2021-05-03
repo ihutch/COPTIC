@@ -47,6 +47,22 @@ c******************************************************************
       call fitrange(ymin,ymax,ticnum,nxfac,xfac,xdelta,ymin,ymax)
       call pltinit(xmin,xmax,ymin,ymax)
       end
+c******************************************************************
+c       Autoinit forcing no label at the top of y axis.
+      subroutine autonotop(x,y,n)
+      integer n
+      real x(n),y(n)
+      include 'plotcom.h'
+      real xmin,xmax,ymin,ymax
+      real xfac,xdelta
+      integer nxfac
+      call minmax(x,n,xmin,xmax)
+      call minmax(y,n,ymin,ymax)
+      call fitrange(xmin,xmax,ticnum,nxfac,xfac,xdelta,xmin,xmax)
+      call fitrange(ymin,ymax,ticnum,nxfac,xfac,xdelta,ymin,ymax)
+      ymax=ymax-0.05*(ymax-ymin)
+      call pltinit(xmin,xmax,ymin,ymax)
+      end
 c********************************************************************
       subroutine manautoinit(x,y,n,isw,sxmin,sxmax,symin,symax)
 c Initialize either using the autoscaling of the arrays or else
@@ -68,6 +84,54 @@ c So e.g. isw=3 sets xmin=sxmin, xmax=sxmax, symin=ymin, symax=ymax.
       call minmax(y,n,ymin,ymax)
       call fitrange(xmin,xmax,ticnum,nxfac,xfac,xdelta,xmin,xmax)
       call fitrange(ymin,ymax,ticnum,nxfac,xfac,xdelta,ymin,ymax)
+      i=1
+      if(isw/2**(i-1)-2*(isw/2**i).ne.0)then
+         xmin=sxmin
+      else
+         sxmin=xmin
+      endif
+      i=2
+      if(isw/2**(i-1)-2*(isw/2**i).ne.0)then
+         xmax=sxmax
+      else
+         sxmax=xmax
+      endif
+      i=3
+      if(isw/2**(i-1)-2*(isw/2**i).ne.0)then
+         ymin=symin
+      else
+         symin=ymin
+      endif
+      i=4
+      if(isw/2**(i-1)-2*(isw/2**i).ne.0)then
+         ymax=symax
+      else
+         symax=ymax
+      endif
+      call pltinit(xmin,xmax,ymin,ymax)
+      end
+c********************************************************************
+      subroutine manautonotop(x,y,n,isw,sxmin,sxmax,symin,symax)
+c Initialize either using the autoscaling of the arrays or else
+c override one or more of the limits using the inputs sxmin...symax.
+c INPUT x,y,n,isw
+c INOUT sxmin,sxmax,symin,symax
+c 
+c Bits 0-3 of isw when set enforce override of xmin[0]...ymax[4].
+c If a bit is not set, the corresponding limit is returned in the
+c corresponding variable sxmin...symax. 
+c So e.g. isw=3 sets xmin=sxmin, xmax=sxmax, symin=ymin, symax=ymax.
+      integer n,isw
+      real x(n),y(n),sxmin,sxmax,symin,symax
+      include 'plotcom.h'
+      real xmin,xmax,ymin,ymax
+      real xfac,xdelta
+      integer nxfac,i
+      call minmax(x,n,xmin,xmax)
+      call minmax(y,n,ymin,ymax)
+      call fitrange(xmin,xmax,ticnum,nxfac,xfac,xdelta,xmin,xmax)
+      call fitrange(ymin,ymax,ticnum,nxfac,xfac,xdelta,ymin,ymax)
+      ymax=ymax-0.05*(ymax-ymin)
       i=1
       if(isw/2**(i-1)-2*(isw/2**i).ne.0)then
          xmin=sxmin

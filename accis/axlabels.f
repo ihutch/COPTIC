@@ -12,7 +12,7 @@ c    Axis labels.   */
      $        naypt+xticoff-2.0*chrshght,xaxlab,0.)
       chrscos=0.
       chrssin=1.
-      temp=(naxpt+5.0*yticoff)
+      temp=(naxpt+yticoff+4.5*sign(chrswdth,yticoff))
       call jdrwstr(temp,(naymin+naymax)*.5,yaxlab,0.)
       chrscos=ctemp
       chrssin=stemp

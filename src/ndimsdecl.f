@@ -7,4 +7,4 @@
       parameter (ndimsmax=3)
 ! The maximum number of species
       integer nspeciesmax
-      parameter (nspeciesmax=2)
+      parameter (nspeciesmax=3)

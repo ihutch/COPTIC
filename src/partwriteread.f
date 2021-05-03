@@ -462,7 +462,8 @@
 ! If I'm the head, write it, but use shorthand mostly.
                if(iavesteps.lt.10)then
                   write(*,'(a,$)')'D'
-                  if(mod(nstep,10).eq.0)write(*,*)
+                  if(mod(nstep,10).eq.0.and.ispecies.eq.nspecies)write(*
+     $                 ,*)
                else
                   if(ispecies.eq.1)write(*,'(a,i3,a,$)')'Diags',ndiags
      $                 ,' species'

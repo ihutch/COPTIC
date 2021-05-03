@@ -79,7 +79,7 @@
             i1=1
             ied=ndiagmax
 ! Create label and read istep
-            label=diagfilename(istrstr(diagfilename,'dia')+3
+            label=diagfilename(istrstr(diagfilename,'.d')+4
      $           :lentrim(diagfilename))
             read(label,*)istep 
 ! Read the file whose name we have found in the arguments.
@@ -1194,7 +1194,7 @@ c$$$         = 20 input error returned by lower level routine
       open(15,file=lwstring,status='unknown',err=101)
       stepnostring=lwstring(4:istrstr(lwstring,'.dat')-1)
       read(stepnostring,*)istepno
-      write(15,*)'istepno,t=',istepno,dt*istepno
+      write(15,'(a,i6,f8.4)')'# istepno,t=',istepno,dt*istepno
       idir=0
       do i=1,3
          index(i)=linevec(i)
@@ -1202,11 +1202,12 @@ c$$$         = 20 input error returned by lower level routine
       enddo
       if(idir.eq.0)stop 'linewrite error no zero linevec component'
       
-      write(15,*)'Lineout at',linevec,' total values:'
+      write(15,'(a,3i5,a)')'# Lineout at',linevec,' total values:'
       write(15,*)iuds(idir)
       do i=1,iuds(idir)
          index(idir)=i
         write(15,*)xn(ixnp(idir)+i),diagsumN(index(1),index(2),index(3))
+!        write(*,*)index,diagsumN(index(1),index(2),index(3))
       enddo
       close(15)
       write(*,'(a,3i4,2a)')'Wrote lineout',linevec,' to:  ',lwstring

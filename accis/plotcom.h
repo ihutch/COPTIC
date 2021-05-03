@@ -29,12 +29,12 @@ c
 c  Characters
       integer BUFFER,NOCHARS
       parameter (BUFFER=110000,NOCHARS=2000)
-      real chrscos,chrssin,chrswdth,chrshght,chrsslnt
+      real chrscos,chrssin,chrswdth,chrshght,chrsslnt,chrsdef
       real pchrswdth,pchrshght,pchrscos,pchrssin
       integer chrsaddr
       character*1 chrsfont
       common/chrcter/chrscos,chrssin,chrswdth,chrshght,chrsslnt,
-     & pchrswdth,pchrshght,pchrscos,pchrssin
+     & pchrswdth,pchrshght,pchrscos,pchrssin,chrsdef
       common/ac_chrfnt/chrsaddr(NOCHARS),chrsfont(BUFFER)
 c
 c  Plot-to-file control

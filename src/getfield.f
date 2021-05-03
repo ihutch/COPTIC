@@ -124,6 +124,9 @@
             f(ii)= ((2.*xfidf+1.) * (up-u0)
      $           +(1.-2.*xfidf) * (u0-um))/(dx0+dx1)
             ix=1
+            if(.not.abs(f(ii)).lt.1e20)then
+               write(*,*)'Corrupt shortcut',ixn0,iinc,f(ii)
+            endif
          else
             call gradlocalregion(
      $           cij(1+ic1*iinc),u(1+iinc)

@@ -229,7 +229,7 @@
       save
 
 !----------------------------------------
-      if(ispecies.ne.lastspecies)then !Initialization of non-hole species
+      if(ispecies.ne.lastspecies)then ! First call Initialization
 ! These values must be set even for zero hole depth.
          idebug=0
          do i=1,ndims
@@ -237,6 +237,7 @@
          enddo
          i=1
  2       id=i
+! The tisq numbers are really thermal velocities accounting for mass.
          tisq=sqrt(Ts(ispecies)*abs(eoverms(ispecies)))
          tisq2=sqrt(2.)*tisq
          tisqperp=sqrt(Tperps(ispecies)*abs(eoverms(ispecies)))
@@ -306,7 +307,7 @@ c The flattop length holetoplen. Negligible for large negative values.
          endif
       enddo
       psiradfac=1.
-      if(holepsi.ne.0)then     ! Reset normal position
+      if(holepsi.ne.0.and.ispecies.eq.hspecies)then  ! Reset normal position
          kp2find=0.
          if(holerad.ne.0)then  ! Account for transverse variation
             psiradfac=exp(-r2/holerad**2)
@@ -319,10 +320,11 @@ c The flattop length holetoplen. Negligible for large negative values.
       phi=psiradfac*phiofx(x_part(id,islot),psi,coshlen,holetoplen)
 
 ! Hole normal (parallel) velocity setting
-      if(abs(phi).lt.phimin.or.fp.lt.phimin.or.1-fp.lt.phimin)then
-! In non-hole region. Shortcut to external distrib.
+      if(abs(phi).lt.phimin.or.fp.lt.phimin.or.1-fp.lt.phimin !)then
+     $     .or.ispecies.ne.hspecies)then
+! If non-hole region/species. Shortcut to external distrib.
          x_part(ndims+id,islot)=tisq*gasdev(myid)
-     $        +vds(ispecies)*vdrift(id)
+     $        +vds(ispecies)*vdrifts(id,ispecies)
       else
 ! Use cumf interpolation. We use the central psi value, but local phi.
          call GetDistribAtPhi(psi,um,nphi,f0,u0,phi,nu,u,f,cumf)
@@ -350,7 +352,7 @@ c The flattop length holetoplen. Negligible for large negative values.
 ! Add background drift.
       do i=mod(id,ndims)+1,mod(id+1,ndims)+1
             x_part(ndims+i,islot)=x_part(ndims+i,islot)            
-     $           +vds(ispecies)*vdrift(i)
+     $           +vds(ispecies)*vdrifts(i,ispecies)
       enddo
 
 

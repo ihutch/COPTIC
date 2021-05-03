@@ -180,7 +180,7 @@ C       Gaps for x and y are denoted by bit 0 and 1 of multype.
       xsp=multype-ysp*2
       ytop=yoverx*0.95
 c Adjust the labeling
-      call charsize(0.015*csl,0.015*csl)
+      call charsize(chrsdef*csl,chrsdef*csl)
 c Try crunching up the y-labels for better clearance
 c was     call ticset(.015*csl,0.15*csl,-.03*csl,-.02*csl,0,0,0,0)
 c also made the xsp 0.22 instead of 0.2
