@@ -361,8 +361,11 @@ c The flattop length holetoplen. Negligible for large negative values.
 ! Initialize the mesh fraction data in x_part.
       call partlocate(x_part(1,islot),ixp,xfrac,iregion,linmesh)
 ! This test rejects particles exactly on mesh boundary:
-      if(.not.linmesh)then
-         write(*,*)'Particle',islot,' outside mesh',x_part(1,islot)
+! It is broken when -fbounds-check is used!!!!!
+      if(.not.linmesh)then 
+         write(*,*)'qinit Particle',islot,' outside mesh',x_part(1
+     $        ,islot),linmesh
+!         stop
          goto 1
       endif
       x_part(iflag,islot)=1

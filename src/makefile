@@ -113,10 +113,9 @@ export VECX
 # Cray compilers don't recognize -Wall and optimize by default
 ifneq ("$(G77)","ftn")
 	OPTIMIZE=-O3
-        COMPILE-SWITCHES=-Wall $(OPTIMIZE) -I.
+        COMPILE-SWITCHES:=$(COMPILE-SWITCHES) -Wall $(OPTIMIZE) -I.
 else
 # -fPIC Not needed. All that's needed is the  -dynamic switch for link.
-	COMPILE-SWITCHES=
 endif
 ##########################################################################
 # Decide on various compiler options based on compiler name.

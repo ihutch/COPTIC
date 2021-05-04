@@ -63,7 +63,7 @@ c Not for velocity beyond the vrange or x beyond x-range.
          endif
       enddo
 c All reduce to sum the distributions from all processes.
-      call mpiallreducesum(psfxv,npsx*npsv,ierr)
+      call mpiallreducesum(psfxv(1,1,ispecies),npsx*npsv,ierr)
       end
 c***********************************************************************
       subroutine psnaccum(ispecies,id)
@@ -87,7 +87,7 @@ c Accumulate the densities of ispecies into phasespace x-bins psn
       call mpiallreducesum(psn(1,ispecies),npsx,ierr)
       end
 c***********************************************************************
-      subroutine phasewrite(phasefilename,nu,x,u,t)
+      subroutine phasewrite(phasefilename,nu,x,u,t,ispecies)
 c Write file with phasespace data plus u(x) if length nu != 0.
       character*(*) phasefilename
       integer nu
@@ -98,7 +98,7 @@ c Write file with phasespace data plus u(x) if length nu != 0.
       open(12,file=phasefilename,status='unknown',form='unformatted',err
      $     =101)
       write(12)npsx,npsv,nu
-      write(12)psfxv,psvmax,psvmin,psxmax,psxmin,psx,psv
+      write(12)psfxv(:,:,ispecies),psvmax,psvmin,psxmax,psxmin,psx,psv
       if(nu.ne.0)write(12)(x(i),u(i),i=1,nu),t
       close(12)
       return
@@ -134,7 +134,7 @@ c***********************************************************************
       nu=0
       end
 c***********************************************************************
-      subroutine phaseplot
+      subroutine phaseplot(ispecies)
       include 'ndimsdecl.f'
       include 'phasecom.f'
       real cworka(npsx,npsv),zclv(2)
@@ -143,15 +143,16 @@ c***********************************************************************
       call blueredgreenwhite()
       call axlabels('x','v')
 c If unset, set psfmax for less than full range. But better set earlier.
-      call minmax2(psfxv,npsx,npsx,npsv,pmin,pmax)
-      if(pmax.gt.psfmax*1.1)call psfmaxset(1.5)
+      call minmax2(psfxv(1,1,ispecies),npsx,npsx,npsv,pmin,pmax)
+      if(pmax.gt.psfmax*1.1)call psfmaxset(1.5,ispecies)
 c Set extrema of coloring range from psfmax.
       zclv(1)=0.
       zclv(2)=psfmax
       icl=2
       icsw=1+16+32+ipsftri
 c Using triangular gradients +64 gives too large ps output.
-      call contourl(psfxv,cworka,npsx,npsx,npsv,zclv,icl,psx,psv,icsw) 
+      call contourl(psfxv(1,1,ispecies),cworka,npsx,npsx,npsv,zclv,icl
+     $     ,psx,psv(1,ispecies),icsw) 
       call axis()
       call axis2
       call color(ilightgray())
@@ -160,12 +161,12 @@ c Using triangular gradients +64 gives too large ps output.
 c If needed, do pltend externally.
       end
 c**********************************************************************
-      subroutine psfmaxset(fac)
+      subroutine psfmaxset(fac,ispecies)
 c Set the value of psfmax to fac times the maximum in the current array.
       real fac
       include 'ndimsdecl.f'
       include 'phasecom.f'
-      call minmax2(psfxv,npsx,npsx,npsv,pmin,pmax)
+      call minmax2(psfxv(1,1,ispecies),npsx,npsx,npsv,pmin,pmax)
       psfmax=pmax*fac
       end
 c**********************************************************************

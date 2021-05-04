@@ -218,7 +218,7 @@
       logical lplot
       real u(ifull(1),ifull(2),ifull(3))
       character*(*) restartpath
-      integer id,thespecies,ilab
+      integer id,thespecies,ilab,ispecies
       real vrange,phirange,umin,umax,psnmax
       real wx2nx,wy2ny
       parameter (id=1,vrange=3.)
@@ -234,6 +234,7 @@
 c thespecies is 1 if nspecies=1, 2 if nspecies=2 (assumes e is 2)
       thespecies=mod(thespecies,nspecies)+1
       if(hspecies.ne.0)thespecies=hspecies ! Or just use the hole species
+! Testing       thespecies=3
 c psaccum must be asked for by all processes for initialization.
       call psaccum(thespecies,id)
 !      do i=1,nspecies
@@ -246,8 +247,8 @@ c but writing and plotting only by top process
          call nameconstruct(phasefilename)
          write(phasefilename(lentrim(phasefilename)+1:)
      $        ,'(''.pps'',i5.5)')nstep
-         call phasewrite(phasefilename,
-     $        ixnp(2)-ixnp(1),xn(ixnp(1)+1),u(1,2,2),nstep*dt)
+         call phasewrite(phasefilename, ixnp(2)-ixnp(1),xn(ixnp(1)+1)
+     $        ,u(1,2,2),nstep*dt,thespecies)
          if(lplot)then
             call minmax(u(1,2,2),iuds(1),umin,umax)
             phirange=max(phirange,umax*.95)
@@ -271,17 +272,17 @@ c but writing and plotting only by top process
          endif
       endif
       if(lplot)then
-         do thespecies=1,nspecies
-            psnmax=numprocs*nparta(thespecies)/npsx
-            call psnaccum(thespecies,id)
-            psn(:,thespecies)=psn(:,thespecies)/psnmax
+         do ispecies=1,nspecies
+            psnmax=numprocs*nparta(ispecies)/npsx
+            call psnaccum(ispecies,id)
+            psn(:,ispecies)=psn(:,ispecies)/psnmax
             if(myid.eq.nprocs-1)then
-               call color(thespecies+4)
-               call polyline(psx,psn(1,thespecies),npsx)
+               call color(ispecies+4)
+               call polyline(psx,psn(1,ispecies),npsx)
                if(nspecies.gt.1)then !Label species by charge sign.
                   ilab=1
-                  if(eoverms(thespecies).lt.0)ilab=2
-                  call legendline(0.8,0.05+0.08*thespecies,0
+                  if(eoverms(ispecies).lt.0)ilab=2
+                  call legendline(0.8,0.05+0.08*ispecies,0
      $                 ,nlabel(ilab))
                endif
             endif
@@ -289,7 +290,7 @@ c but writing and plotting only by top process
       endif
       if(myid.eq.nprocs-1)then
          if(lplot)then
-            call phaseplot
+            call phaseplot(thespecies)
             call color(15)
             call vecw(xmeshstart(id),vds(1),0)
             call vecw(xmeshend(id),vds(1),1)
