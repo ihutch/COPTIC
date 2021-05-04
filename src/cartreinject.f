@@ -727,8 +727,8 @@
                write(*,*)'rhoinf',rhoinf,ninjcompa(1),pinjcompa(1),flux
             else
                rhoinf=numprocs*n_part/volume
-               write(*,*)'Rhoinf from npart',rhoinf
-     $              ,numprocs,n_part,volume
+!               write(*,*)'Rhoinf from npart',rhoinf
+!     $              ,numprocs,n_part,volume
             endif
          endif
       else

@@ -16255,3 +16255,24 @@ Instead, the ions initialized with unperturbed velocity but uniform
 density leave the hole with enhanced velocity and this seems to launch
 a negative ion fluctuation outward in both directions. Perhaps this 
 is a source of greater oscillatory instability. (Overstability.)
+
+Second test with v=+-.02 shows immediate splitting of hole into 2. Each
+heads off in the opposite direction, but once it escapes the initial
+negative ion density region different things happen. One of the holes
+stops and reverses direction following the other. They both move along
+at maybe vh=.2, which is higher than either ion stream. Note that the
+potential drop (initially 0.8) is enough to accelerate a zero velocity
+ion to v=sqrt(2\psi/m) ~= 1.3 c_s. Also v=0.02 is 0.86 c_s. So the 
+ions initialized in the hole are very strongly accelerated. Maybe I
+should use Ti>>T_e, to reduce this effect. It seems as if the left hand 
+hole tries to catch up with the other, but then an ion fluctuation
+pushes it back. After 3000 steps still they have not merged.
+
+Instead with v=+-.1 and -t10 much hotter ions: the hole remains at zero
+velocity/position till about step 300 (t=150), then heads off in one
+direction. There is no oscillation, and the ion perturbation appears
+to be concentrated in the near wake of the hole. I'm not clear whether
+losing velocity trapping was a noise effect, or genuine instability. 
+Trying with mpiexec -n2 to decrease noise. If anything the escape is
+quicker. With -t5 instead the oscillatory instability occurs but takes
+quite a long time to get going. Then escapes at about step 800.

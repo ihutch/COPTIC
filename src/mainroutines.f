@@ -215,7 +215,7 @@
       include 'phasecom.f'
       include 'plascom.f'
       integer ifull(ndims),iuds(ndims),nstep
-      logical lplot,ldensac
+      logical lplot
       real u(ifull(1),ifull(2),ifull(3))
       character*(*) restartpath
       integer id,thespecies,ilab
@@ -231,12 +231,14 @@
       data nlabel/' !Bn!di!d!@',' !Bn!de!d!@'/
 ! Only if this is a one-dimensional problem (for now)
       if(iuds(2).ge.4 .and. iuds(3).ge.4) return
-      ldensac=.true.
 c thespecies is 1 if nspecies=1, 2 if nspecies=2 (assumes e is 2)
       thespecies=mod(thespecies,nspecies)+1
       if(hspecies.ne.0)thespecies=hspecies ! Or just use the hole species
-c psaccum must be asked for by all processes
-      call psaccum(thespecies,1)
+c psaccum must be asked for by all processes for initialization.
+      call psaccum(thespecies,id)
+!      do i=1,nspecies
+!         call psaccum(i,1)
+!      enddo
       write(string,'(f10.3)')nstep*dt
 c but writing and plotting only by top process
       if(myid.eq.nprocs-1)then
@@ -256,51 +258,44 @@ c but writing and plotting only by top process
             call polyline(xn(ixnp(1)+1),u(1,2,2),ixnp(2)-ixnp(1))
             call jdrwstr(wx2nx(xmeshend(id)),wy2ny(.9*phirange),
      $           string,-1.)
-            if(ldensac)then
-! Plot density in the same frame
-               psnmax=numprocs*nparta(thespecies)/npsx
-               call scalewn(xmeshstart(id),xmeshend(id),
-     $              0.8,1.35,.false.,.false.)
-               call axptset(1.,1.)
-               call ticrev
-               call axis
-               call ticrev
-               call axptset(0.,0.)
-               do thespecies=1,nspecies
-                  call psnaccum(thespecies,id)
-                  call color(thespecies+4)
-                  psn=psn/psnmax
-                  call polyline(psx,psn,npsx)
-                  if(nspecies.gt.1)then !Label species by charge sign.
-                     ilab=1
-                     if(eoverms(thespecies).lt.0)ilab=2
-                     call legendline(0.8,0.05+0.08*thespecies,0
-     $                    ,nlabel(ilab))
-                  endif
-               enddo
-!               call color(15)
-               call legendline(1.04,0.3,258,'!Bn!@')
-               call color(15)
-               call phaseplot
-               call color(15)
-               call vecw(xmeshstart(id),vds(1),0)
-               call vecw(xmeshend(id),vds(1),1)
-            else
-               call axis2
-               call phaseplot
-               call color(15)
-               write(string,'(''sp='',i1)')thespecies
-               call jdrwstr(wx2nx(xmeshend(id)),wy2ny(0.),string,-1.)
+!           Plot density in the same frame
+            call scalewn(xmeshstart(id),xmeshend(id),
+     $           0.8,1.35,.false.,.false.)
+            call axptset(1.,1.)
+            call ticrev
+            call axis
+            call ticrev
+            call axptset(0.,0.)
+            call legendline(1.04,0.3,258,'!Bn!@')
+            call color(15)
+         endif
+      endif
+      if(lplot)then
+         do thespecies=1,nspecies
+            psnmax=numprocs*nparta(thespecies)/npsx
+            call psnaccum(thespecies,id)
+            psn(:,thespecies)=psn(:,thespecies)/psnmax
+            if(myid.eq.nprocs-1)then
+               call color(thespecies+4)
+               call polyline(psx,psn(1,thespecies),npsx)
+               if(nspecies.gt.1)then !Label species by charge sign.
+                  ilab=1
+                  if(eoverms(thespecies).lt.0)ilab=2
+                  call legendline(0.8,0.05+0.08*thespecies,0
+     $                 ,nlabel(ilab))
+               endif
             endif
-            call multiframe(0,0,0)
+         enddo
+      endif
+      if(myid.eq.nprocs-1)then
+         if(lplot)then
+            call phaseplot
+            call color(15)
+            call vecw(xmeshstart(id),vds(1),0)
+            call vecw(xmeshend(id),vds(1),1)
             call accisflush()
             call prtend(' ')
          endif
-      elseif(lplot.and.ldensac)then
-! Non-plotting nodes must still do psnaccum. If it's called at all. 
-         do thespecies=1,nspecies
-            call psnaccum(thespecies,id)
-         enddo
       endif
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

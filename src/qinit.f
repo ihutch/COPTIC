@@ -64,8 +64,8 @@
          if(abs(theta).gt.thetamax)Tperps(ispecies)=1.e-24
 ! This version requires separable velocity distributions.
 ! Perhaps some safety checks for this here.
-! Scale the number of particles for higher slots to the ions(?)
-         nparta(ispecies)=nparta(1)/numratioa(ispecies)
+! Scale the number of particles for higher slots to first(? NOT)
+         nparta(ispecies)=nparta(ispecies)/numratioa(ispecies)
          islotmax=nparta(ispecies)+iicparta(ispecies)-1
          if((islotmax+1)*slotsurplus.gt.n_partmax)then
             write(*,*)'Too few particle slots',n_partmax
