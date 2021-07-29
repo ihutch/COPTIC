@@ -456,7 +456,7 @@
                if(.not.ldistshow)then
                   if(lphiplot)then
                      if(myid.eq.0)write(*,*
-     $                 )'1-d does not plot potential; use both -gn -gp'
+     $                 )'1-d plots combined potential, phasespace.'
                      ldistshow=.true.
                   endif
                endif

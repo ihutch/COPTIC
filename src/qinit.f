@@ -443,14 +443,21 @@ c The flattop length holetoplen. Negligible for large negative values.
       real den(0:NPHI),denuntrap(0:NPHI),dentrap(0:NPHI)
       real tilden(0:NPHI)
       real f0(-2*nphi:2*nphi),u0(-2*nphi:2*nphi)
+      external denionfun
 
       du=(4.-sqrt(psi))/nphi
       sqpi=sqrt(3.1415926)
 c Call BGKint in such a way as to put into the negative trapped section
 c because it returns f0 u0 in reverse order.
+      if(.false.)then  ! Zero ion response version.
       call BGKint(nphi,psi,-um,xmax,coshlen,tl,
      $     phiarray,us,xofphi,den,denuntrap,dentrap,tilden
      $     ,f0(-nphi),u0(-nphi),kp2)
+      else
+      call BGKintnew(nphi,psi,-um,xmax,coshlen,tl,
+     $     phiarray,us,xofphi,den,denuntrap,dentrap,tilden
+     $     ,f0(-nphi),u0(-nphi),kp2,denionfun)
+      endif
 c Copy across to the positive trapped section.
       do i=1,nphi
 c         write(*,*)i,u0(-i),f0(-i)
@@ -471,6 +478,99 @@ c Now f0(-2*nphi:2*nphi) is the entire distribution at phi=psi.
 
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+c**********************************************************************
+c BGKintnew solves the integral equation to find the trapped and hence
+c entire distribution function for an electron hole.
+c The potential shape is specified via a function phiofx(x) which can
+c be made whatever one wishes. Arrays are constructed from nphi,psi.
+c Ion density is specified by external function denionfun(phi)
+c Units of x are debyelengths, of potential Te/e, of time omega_p^{-1}
+c But u is v/sqrt(2), i.e. normalized to sqrt(2Te/me).
+
+      subroutine BGKintnew(nphi,psi,um,xmax,coshlen,tl,phi,us,xofphi
+     $     ,den,denuntrap,dentrap,tilden,f,u0,kp2,denionfun)
+c In:
+c  (0:nphi) is the array length of phi (i.e. u^2) positions.
+c  psi the maximum, zero the minimum potential.
+c  um the maxwellian shift in units of sqrt(2Te/me).
+
+c  coshlen and t1 are parameters passed to the routine phiofx 
+c  for calculating: phi, the potential (grid). 
+c  denionfun: the function that returns ion density (phi)
+c Out:
+c  phi is the equally spaced potential array, running from 0 to psi.
+c  us is the sqrt of phi, the separatrix velocity.
+c  xofphi is the corresponding (positive) position.
+c  den is total electron density, denuntrap is the untrapped e-density,
+c  dentrap the trapped e-density, tilden the difference between trapped 
+c  density and a flat-top. 
+c  f(u) is the electron distribution function, as a function of u at x=0:
+c  u0=sqrt(psi-i*phistep) 
+c Calls:
+c  function denionfun(phi)
+c  function phiofx(x,psi,...)
+c  function findxofphi(phi,psi,...)
+c  function untrapden(phi,um)
+      integer NPHI
+      real psi,um,xmax
+      real phi(0:NPHI),us(0:NPHI),xofphi(0:NPHI)
+      real den(0:NPHI),denuntrap(0:NPHI),dentrap(0:NPHI),tilden(0:NPHI)
+      real f(0:NPHI),u0(0:NPHI),kp2
+      real pi
+      parameter (pi=3.1415926)
+      parameter (nbi=20)
+      real delx
+      external denionfun
+
+      phistep=psi/(NPHI)
+      delx=4.*xmax/nphi
+      sphistep=sqrt(phistep)
+      flatf=exp(-um**2)/sqrt(pi)
+c 
+      do i=0,NPHI
+         phi(i)=i*phistep
+      enddo
+      do i=0,NPHI
+c Find the xofphi by bisection.
+         xofphi(i)=findxofphi(phi(i),psi,coshlen,tl,0.,xmax,nbi)
+c Calculate the total density -d^2\phi/dx^2 as a function of potential,
+c at the nodes.
+         xc=xofphi(i)
+c ne=ni+d^2\phi/dx^2
+         den(i)=denionfun(phi(i))+(phiofx(xc+delx,psi,coshlen,tl)
+     $        +phiofx(xc-delx,psi,coshlen,tl)
+     $        -2.*phiofx(xc,psi,coshlen,tl))/delx**2
+     $        -2.*kp2*phi(i)  ! Transverse k term set from holerad.
+         us(i)=sqrt(phi(i))
+c Get the untrapped electron density at this potential and drift.
+         denuntrap(i)=untrappeddensimple(phi(i),um)
+         dentrap(i)=den(i)-denuntrap(i)
+c Density difference c.f. flat:
+         tilden(i)=dentrap(i)-2*us(i)*flatf
+      enddo
+
+c f(u) = (1/pi) \int_0^{psi-u^2} dn/d\phi d\phi/sqrt(\psi-u^2-phi).
+c u^2=psi-i*phistep, phi=j*phistep, so sqrt -> (i-j)*psistep.
+      u0(0)=sqrt(psi)
+      f(0)=flatf
+      do i=1,NPHI
+         u0(i)=sqrt((nphi-i)*phistep)
+         fi=0.
+         do j=1,i
+c We calculate the dndphi based upon \tilde f's density rather than on the
+c total density, because this avoids big errors near the separatrix.
+            dndphi=(tilden(j)-tilden(j-1))/phistep
+            fi=fi+dndphi*2.*sphistep*(sqrt(i-j+1.)-sqrt(float(i-j)))
+         enddo
+         f(i)=fi/pi+flatf
+      enddo
+      end
+
+c*********************************************************************
+      real function denionfun(phi)
+c Dummy function that just returns 1.
+      denionfun=1.+0.*phi
+      end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 c**********************************************************************
 c BGKint solves the integral equation to find the trapped
@@ -481,8 +581,8 @@ c The untrapped density is given by function untrappeddensimple(phi,um)
 c Units of x are debyelengths, of potential Te/e, of time omega_p^{-1}
 c But u is v/sqrt(2), i.e. normalized to sqrt(2Te/me).
 
-      subroutine BGKint(nphi,psi,um,xmax,coshlen,tl,
-     $     phi,us,xofphi,den,denuntrap,dentrap,tilden,f,u0,kp2)
+      subroutine BGKint(nphi,psi,um,xmax,coshlen,tl,phi,us,xofphi,den
+     $     ,denuntrap,dentrap,tilden,f,u0,kp2)
 c In:
 c nphi is the number of phi (i.e. u^2) positions.
 c psi the maximum, zero the minimum. um the maxwellian shift,
@@ -589,7 +689,7 @@ c Derivative of phiofx
       end
 c********************************************************************
 c Integral of phiofx, assumed symmetric, using trapezoidal interpolation.
-c It use external phiofx function
+c It uses external phiofx function
       real function intphiofx(x,psi,coshlen,toplen)
       real x,psi,coshlen,toplen
       integer nx
@@ -932,5 +1032,5 @@ c*********************************************************************
 c*********************************************************************
 c Optional main test.
 c      call testintphiofx
-C      end
+c      end
 c*********************************************************************

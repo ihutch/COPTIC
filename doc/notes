@@ -16276,3 +16276,32 @@ losing velocity trapping was a noise effect, or genuine instability.
 Trying with mpiexec -n2 to decrease noise. If anything the escape is
 quicker. With -t5 instead the oscillatory instability occurs but takes
 quite a long time to get going. Then escapes at about step 800.
+
+4 May 2021
+On ihutchws using 8 processes. v=+-1. -t5. A couple of oscillations
+then lost from trapping by step 700. 
+
+A big part of the startup problem is that it produces a negative ion
+density perturbation moving in the direction of the drift velocity
+(opposite for two-stream). It takes quite a while for that to be
+overcome by the positive density perturbation of the streams that
+is expected in steady state. If the hole is sufficiently perturbed
+to leave the velocity trapping region before that, it becomes fast.
+The amplitude of the oscillatory instability is sufficient to move
+the hole out of the ion f-minimum. v+-.1 -t5 with -ih.4 (half amplitude)
+still escapes at about step 800. v.05, -t5 -ih.4 escapes in negative
+direction by about step 200. 
+
+If we adjusted only the velocity of initialization in the hole so as
+to be consistent with conserved energy, then instead of an initial
+negative density, there would be (I think) an initial positive ion
+density during startup. This would help avoid the initial loss of
+the hole that defeats ion distributions with very small vb. It might
+be a way to demonstrate sustained slow holes in a mildly double humped
+ion distribution.
+
+29 Jul 2021
+Imported a new BGKintnew from the asymhole directory that has the facility
+to call a function denionfun to determine the ion (density) response,
+which by default is just unity. It appears to give the same result
+for a test case hole as the old one (once some corrections are applied).
