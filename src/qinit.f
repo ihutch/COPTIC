@@ -436,6 +436,9 @@ c The flattop length holetoplen. Negligible for large negative values.
 ! Construct the distribution f0 at u0, using BGKint.
       subroutine f0Construct(nphi,psi,um,xmax,coshlen,tl,
      $     phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0,kp2)
+      include 'ndimsdecl.f'
+      include 'fvcom.f'   
+      include 'partcom.f' ! Needed for nspecies.
 
       integer nphi
       real psi,um,xmax,kp2
@@ -443,20 +446,27 @@ c The flattop length holetoplen. Negligible for large negative values.
       real den(0:NPHI),denuntrap(0:NPHI),dentrap(0:NPHI)
       real tilden(0:NPHI)
       real f0(-2*nphi:2*nphi),u0(-2*nphi:2*nphi)
+      logical lfv
       external denionfun
+      data lfv/.false./
 
       du=(4.-sqrt(psi))/nphi
       sqpi=sqrt(3.1415926)
 c Call BGKint in such a way as to put into the negative trapped section
 c because it returns f0 u0 in reverse order.
-      if(.false.)then  ! Zero ion response version.
-      call BGKint(nphi,psi,-um,xmax,coshlen,tl,
-     $     phiarray,us,xofphi,den,denuntrap,dentrap,tilden
-     $     ,f0(-nphi),u0(-nphi),kp2)
-      else
-      call BGKintnew(nphi,psi,-um,xmax,coshlen,tl,
-     $     phiarray,us,xofphi,den,denuntrap,dentrap,tilden
-     $     ,f0(-nphi),u0(-nphi),kp2,denionfun)
+      do i=1,nspecies
+         if(i.ne.hspecies.and.nc(i).ne.0)lfv=.true.
+      enddo
+      if(lfv)then
+         write(*,*)'               f0construct non-Maxwellian version'
+         call BGKintnew(nphi,psi,-um,xmax,coshlen,tl,
+     $        phiarray,us,xofphi,den,denuntrap,dentrap,tilden
+     $        ,f0(-nphi),u0(-nphi),kp2,denionfun)
+      else  ! Zero ion response version.
+         write(*,*)'               f0construct ions uniform'
+         call BGKint(nphi,psi,-um,xmax,coshlen,tl,
+     $        phiarray,us,xofphi,den,denuntrap,dentrap,tilden
+     $        ,f0(-nphi),u0(-nphi),kp2)
       endif
 c Copy across to the positive trapped section.
       do i=1,nphi
@@ -568,10 +578,125 @@ c total density, because this avoids big errors near the separatrix.
 
 c*********************************************************************
       real function denionfun(phi)
+      include 'ndimsdecl.f'
+      include 'fvcom.f'
+      include 'partcom.f'
+
+      logical linit,ldummy
+      data linit/.false./
+
+      ldummy=.true.
+      do i=1,nspecies ! Might not be necessary if not called.
+         if(i.ne.hspecies.and.nc(i).ne.0)ldummy=.false.
+      enddo
+      if(ldummy)then
 c Dummy function that just returns 1.
-      denionfun=1.+0.*phi
+         denionfun=1.
+         return
+      else
+         if(.not.linit)then
+! Initialize velocity range supposing hole is stationary. (vh=0.)
+            vh=0.
+            vmax=4.4*maxval(vtc)
+     $           +max(abs(maxval(vsc)-vh),abs(minval(vsc)-vh))
+            do i=1,nofv
+               vofv(i)=-vmax+2.*vmax*(i-1.)/(nofv-1.)
+            enddo
+         endif
+         denionfun=0.
+         delphi=0
+         isigma=1               ! For now ignore asymmetry.
+         do i=1,nspecies
+            if(i.ne.hspecies.and.nc(i).ne.0)then
+               call fvhill(nc(i),dcc(1,i),vsc(1,i),vtc(1,i),holepsi
+     $              ,delphi,phi,isigma,.true.,nofv,vofv,fofv,Pfofv)
+               denionfun=denionfun+Pfofv(nofv)
+               write(*,*)'Species',i,' phi',phi,' denionfun',denionfun
+            endif
+         enddo
+      endif
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Calculate velocity distributions and densities for shifted Maxwellian
+! distant distributions on a single-humped repelling potential hill of
+! maximum potential phimax, at potential phi, on side isigma of the hill.
+! Also return \int fdv in Pfofv. 
+! On entry:
+! nc is the number of Maxwellian components 
+! dc(nc), vs(nc), vt(nc) is each component's density, vshift, sqrt(T/M)
+! phimax is hill's peak potential relative to mean distant potential
+! delphi is potential difference phi(+inf)-phi(-inf) across the hill. 
+! phi is the potential at which to find the distribution.
+! isigma is the side of the hill on which this potential lies.
+! vofv(nofv) is the monotonic array of velocities to use.
+! All velocities are relative to the hill's rest frame.
+! On exit:
+! fofv(nofv) is the total velocity distribution at vofv
+! Pfofv(nofv) is the integral of fofv dv. 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine fvhill(nc,dc,vs,vt,phimax,delphi,phi,isigma,local,nofv
+     $     ,vofv,fofv,Pfofv)
+      real :: dc(nc),vs(nc),vt(nc),phimax,phi,delphi
+      integer :: isigma, nofv
+      real, dimension(nofv) :: vofv, fofv, Pfofv
+      logical :: local
+      
+      if(isigma.ne.1.and.isigma.ne.-1)stop 'isigma must be +-1'
+!     Decide the meaning of f(v) when delphi !=0.  
+      if(local)then             ! f(v) is relative to different phi_infty
+         phix2=2.*(phi    -isigma*delphi/2.) ! 2*(phi   -phiinf)
+         phimx2=2.*(phimax-isigma*delphi/2.) ! 2*(phimax-phiinf)
+         delphix2=2.*isigma*delphi  
+         if(phix2.lt.0)then
+            write(*,*)'Impossible phi (<phiinf)',phi,isigma,delphi
+            stop
+         endif
+      else                      ! f(v)= f( sigma*sqrt(v^2+2*phi) )
+         phix2=2.*phi
+         phimx2=2.*phimax
+         delphix2=0.
+      endif
+      if(phimx2.lt.phix2)then   ! Move the threshold far away.
+         vthresh=40.*(vofv(nofv)-vofv(1))
+      else
+         vthresh=isigma*sqrt(phimx2-phix2)
+      endif
+      Pfofv=0.
+      fofv=0.
+      vdiffm=vofv(1)-vthresh
+      fim=0.
+      pam=0.
+      pa=0.
+      sqtwopi=sqrt(2.*3.1415926)
+      do i=1,nofv
+         vsign=sign(1.,vofv(i))
+         vdiff=vofv(i)-vthresh
+         enx2=phix2+vofv(i)**2
+         if(int(vsign).ne.isigma)then ! Moving inward
+            vinf=vsign*sqrt(max(0.,enx2))
+         elseif((phix2+vofv(i)**2).gt.phimx2)then ! Passing
+            vinf=vsign*sqrt(max(0.,delphix2+enx2))
+         else                   ! Reflected
+            vinf=-vsign*sqrt(max(0.,enx2))
+         endif
+         fi=0.
+         do j=1,nc              ! f(v)=finf(vinf)
+            fi=fi+dc(j)*exp(-0.5*(vinf-vs(j))**2/vt(j)**2)
+     $           /(vt(j)*sqtwopi)
+         enddo
+         fofv(i)=fi
+         if(i.gt.1)pa=pam+ (abs(vdiffm)*fim+abs(vdiff)*fi)
+     $        /(abs(vdiffm)+abs(vdiff))*(vofv(i)-vofv(i-1))
+!        Actually using this interpolation always smooths ftrapped glitches.
+!        But I am not 100% certain it is always justified.
+         Pfofv(i)=Pfofv(i)+pa
+         pam=pa
+         vdiffm=vdiff
+         fim=fi
+      enddo
+      end
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 c**********************************************************************
 c BGKint solves the integral equation to find the trapped
 c distribution function for an electron hole. 

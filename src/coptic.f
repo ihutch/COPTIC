@@ -52,6 +52,8 @@
       include 'ptaccom.f'
 ! Debugging
       include 'dbgcom.f'
+! Non-Maxwellian parameters
+      include 'fvcom.f'
       integer idebug
       external bdyshare,bdyset,cijroutine,cijedge,psumtoq
      $     ,quasineutral,fadcomp,qvary
@@ -124,8 +126,7 @@
       call mpibarrier(ierr)
 !--------------------------------------------------------------
 ! Deal with command-line arguments and geometry/object file.
-      call parametersetting
-     $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
+      call parametersetting (lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
      $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
@@ -136,7 +137,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,holegfac,wavespec,LNPF,ifull,ierr)
+     $     ,holegfac,wavespec,LNPF,ifull,ncmax,nc,vsc,vtc,dcc,ierr)
 ! Hack to prevent incompatible particles
 !      if(nparta(1).ne.0 .and.
 !     $     (ipartperiod(1).ne.0.or.ipartperiod(2).ne.0

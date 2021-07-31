@@ -11,7 +11,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,holegfac,wavespec,LNPF,ifull,ierr)
+     $     ,holegfac,wavespec,LNPF,ifull,ncmax,nc,vsc,vtc,dcc,ierr)
       implicit none
       integer ifull,ierr
       include 'myidcom.f'
@@ -38,6 +38,9 @@
       real vpars(*)
       real vperps(ndims,*),vdrifts(ndims,*)
       integer nspecies,nspeciesmax
+      integer ncmax,nc(nspeciesmax)
+      real vsc(ncmax,nspeciesmax),vtc(ncmax,nspeciesmax)
+      real dcc(ncmax,nspeciesmax),vscs(ncmax,nspeciesmax)
 
 !----------------------------------------------------------------------
 ! Deal with command-line arguments and geometry/object file.
@@ -54,7 +57,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,holegfac,wavespec,LNPF,ierr)
+     $     ,holegfac,wavespec,LNPF,ncmax,nc,vsc,vtc,dcc,ierr)
 ! Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
@@ -72,7 +75,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,holegfac,wavespec,LNPF,ierr)
+     $     ,holegfac,wavespec,LNPF,ncmax,nc,vsc,vtc,dcc,ierr)
 ! The double call enables cmdline switches to override objfile settings.
 !----------------------------------------------------------------------
       end
@@ -90,7 +93,7 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,holegfac,wavespec,LNPF,ierr)
+     $     ,holegfac,wavespec,LNPF,ncmax,nc,vsc,vtc,dcc,ierr)
 
       implicit none
 
@@ -117,6 +120,9 @@
       real vperps(ndims,*),vdrifts(ndims,*)
       integer nspecies,nspeciesmax,hspecies
       integer ierr
+      integer ncmax,nc(nspeciesmax)
+      real vsc(ncmax,nspeciesmax),vtc(ncmax,nspeciesmax)
+      real dcc(ncmax,nspeciesmax),vscs(ncmax,nspeciesmax)
 
 ! Local variables:
       integer lentrim,iargc,ipfset
@@ -147,6 +153,7 @@
             vdrifts(id,nspecies)=0.
          enddo
          vdrifts(ndims,nspecies)=1.
+         nc(nspecies)=0
 ! Default edge-potential (chi) relaxation rate.     
 !         crelax=1.*Ts(nspecies)/(1.+Ts(nspecies))
          crelax=0.
@@ -453,7 +460,11 @@
          if(argument(1:3).eq.'-fn')then
             read(argument(4:),'(a)',end=201)restartpath
          endif
-         if(argument(1:3).eq.'-fp')then
+         if(argument(1:3).eq.'-fp')then  ! Add a Gaussian f(v) compnt.
+            nc(nspecies)=nc(nspecies)+1
+            dcc(nc(nspecies),nspecies)=0.  ! Zero density unless read.
+            read(argument(4:),*,end=201)vsc(nc(nspecies),nspecies)
+     $           ,vtc(nc(nspecies),nspecies),dcc(nc(nspecies),nspecies)
          endif         
          if(argument(1:10).eq.'--extfield')then
             read(argument(11:),*,end=201)extfield
@@ -503,10 +514,12 @@
             endif
          endif
          if(argument(1:3).eq.'-ho')then
+            write(*,*)
             call geomdocument()
             call exit(0)
          endif
          if(argument(1:3).eq.'-hg')goto 402
+         if(argument(1:3).eq.'-hf')goto 602
 ! Help text options
          if(argument(1:2).eq.'-h')goto 203
          if(argument(1:3).eq.'--h')goto 203
@@ -659,6 +672,7 @@
  310  format(a,i8,a,i8)
  311  format(a,7f6.2)
  312  format(a,L3,a)
+      write(*,*)
       write(*,301)'Usage: coptic [objectfile] [-switches]'
       write(*,301)'Parameter switches.'
      $     //' Leave no gap before value. Defaults or set values [ddd'
@@ -682,21 +696,7 @@
       write(*,304)' -dd   set Drop-ion impulse/step  [',dropaccel
      $     ,'  greater impulse => drop this ion.'
       write(*,301)' -s    set No of steps.           [',nsteps
-      write(*,302)' -t    set (Ion) Temperature.     [',(Ts(ispecies)
-     $     ,ispecies=1,nspecies)
-      write(*,302)' -tp   set Perp. Temperature.     ['
-     $     ,(Tperps(ispecies),ispecies=1,nspecies)
-      write(*,306)' -tge  set Elec Temp Center&Grad  [',gp0,gt
-      write(*,306)' -ng   set Density gradient       [',gn
       write(*,302)' -l    set Debye Length.          [',debyelen
-      write(*,302)' -v    set Drift speed.           [',(vds(ispecies)
-     $     ,ispecies=1,nspecies)
-      write(*,306)' -vx -vy -vz set velocity cosines [',((vdrifts(id
-     $     ,ispecies),id=1,3),ispecies=1,min(2,nspecies))
-      write(*,302)' -ct   set Collision time.        [',colntime
-      write(*,302)' -vn   set Neutral drift velocity [',vneutral
-      write(*,302)' -Ef   set Ext v-drive fraction   [',Enfrac
-      write(*,302)' -cp   set v-power coln freq      [',colpow
       write(*,308)' -sp   add a Particle species     [',nspecies
       write(*,302)' -sb   Boltzmann fraction         [',boltzamp
       write(*,307)' -zm   set Z/mass ratio           ['
@@ -748,6 +748,7 @@
       write(*,301)' -ea --  end argument parsing. Skip succeeding.'
       goto 401
  402  continue
+      write(*,*)
       write(*,301)'Debugging switches for testing and sequential plots'
       write(*,301)' -gt   Plot regions and solution tests.'
       write(*,301)' -gi   Plot injection accumulated diagnostics.'
@@ -782,7 +783,35 @@
      $     //' but does not display.'
      $ ,'  -gn -gp2 -gx3 outputs pps and ps files'
      $     //' and displays every 2 steps.'
- 401  write(*,301)' -h -?   Print usage.'
+      goto 401
+ 602  continue
+      write(*,*)
+      write(*,*)'Particle physical parameter setting'
+      write(*,302)' -t    set (Ion) Temperature.     [',(Ts(ispecies)
+     $     ,ispecies=1,nspecies)
+      write(*,302)' -tp   set Perp. Temperature.     ['
+     $     ,(Tperps(ispecies),ispecies=1,nspecies)
+      write(*,306)' -tge  set Elec Temp Center&Grad  [',gp0,gt
+      write(*,306)' -ng   set Density gradient       [',gn
+      write(*,302)' -v    set Drift speed.           [',(vds(ispecies)
+     $     ,ispecies=1,nspecies)
+      write(*,306)' -vx -vy -vz set velocity cosines [',((vdrifts(id
+     $     ,ispecies),id=1,3),ispecies=1,min(2,nspecies))
+      write(*,*)'-fp<vs>,<vt>,<dc>      Add a shifted Gaussian for'
+     $     ,' this species'
+      do id=1,nspecies
+         do i=1,nc(id)
+            write(*,'(a,i2,3f7.3)')'   v-shift,v-thermal,n            ['
+     $           ,id,vsc(i,nspecies),vtc(i,nspecies),dcc(i,nspecies)
+         enddo
+      enddo
+      write(*,302)' -ct   set Collision time.        [',colntime
+      write(*,302)' -vn   set Neutral drift velocity [',vneutral
+      write(*,302)' -Ef   set Ext v-drive fraction   [',Enfrac
+      write(*,302)' -cp   set v-power coln freq      [',colpow
+
+ 401  write(*,301)' -h -?   Print this help.'
+      write(*,301)' -hf     Print particle v-distribution setting usage'
       write(*,301)' -hg     Print debugging/plotting switch usage.'
       write(*,301)' -ho     Print geomobj file format description'
       if(lentrim(message).gt.1)write(*,'(a)')message(1:lentrim(message))
