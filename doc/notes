@@ -16307,3 +16307,6 @@ to call a function denionfun to determine the ion (density) response,
 which by default is just unity. It appears to give the same result
 for a test case hole as the old one (once some corrections are applied).
 
+30 Jul 2021 Got denionfun working and BGKintnew.
+
+31 Jul 2021 Change denionfun to have second argument isigma.

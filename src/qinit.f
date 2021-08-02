@@ -166,15 +166,15 @@
       if(myid.eq.0.and.nremain/float(islotmax).gt.0.01)
      $     write(*,'(8i10)')ispecies,nfills,islot,nqblks,nfills*nqbt
       nremain=nremain-nfills*nqbt
-      do i=1,nfills
 ! Fill using iterator
-         icomplete=mditerator(ndims,iview,indi,4,nqblks)
- 1       continue
+      icomplete=mditerator(ndims,iview,indi,4,nqblks)
+ 1     continue
+       do i=1,nfills
 ! Place one particle in block indi.
-           call placeqblk(nqblks,indi,islot,ispecies,ldouble)
-           islot=islot+1
-         if(mditerator(ndims,iview,indi,0,nqblks).eq.0)goto 1
-      enddo
+         call placeqblk(nqblks,indi,islot,ispecies,ldouble)
+         islot=islot+1
+       enddo
+       if(mditerator(ndims,iview,indi,0,nqblks).eq.0)goto 1
       if(nremain.le.nper-1)return
 ! Else reduce nqblks by 2, and iterate
       nqbt=nper
@@ -506,7 +506,7 @@ c  um the maxwellian shift in units of sqrt(2Te/me).
 
 c  coshlen and t1 are parameters passed to the routine phiofx 
 c  for calculating: phi, the potential (grid). 
-c  denionfun: the function that returns ion density (phi)
+c  denionfun: the function of (phi,isigma) that returns ion density
 c Out:
 c  phi is the equally spaced potential array, running from 0 to psi.
 c  us is the sqrt of phi, the separatrix velocity.
@@ -517,7 +517,7 @@ c  density and a flat-top.
 c  f(u) is the electron distribution function, as a function of u at x=0:
 c  u0=sqrt(psi-i*phistep) 
 c Calls:
-c  function denionfun(phi)
+c  function denionfun(phi,isigma)
 c  function phiofx(x,psi,...)
 c  function findxofphi(phi,psi,...)
 c  function untrapden(phi,um)
@@ -536,6 +536,7 @@ c  function untrapden(phi,um)
       delx=4.*xmax/nphi
       sphistep=sqrt(phistep)
       flatf=exp(-um**2)/sqrt(pi)
+      isigma=1 ! Ignoring asymmetries for now.
 c 
       do i=0,NPHI
          phi(i)=i*phistep
@@ -547,7 +548,7 @@ c Calculate the total density -d^2\phi/dx^2 as a function of potential,
 c at the nodes.
          xc=xofphi(i)
 c ne=ni+d^2\phi/dx^2
-         den(i)=denionfun(phi(i))+(phiofx(xc+delx,psi,coshlen,tl)
+         den(i)=denionfun(phi(i),isigma)+(phiofx(xc+delx,psi,coshlen,tl)
      $        +phiofx(xc-delx,psi,coshlen,tl)
      $        -2.*phiofx(xc,psi,coshlen,tl))/delx**2
      $        -2.*kp2*phi(i)  ! Transverse k term set from holerad.
@@ -577,7 +578,7 @@ c total density, because this avoids big errors near the separatrix.
       end
 
 c*********************************************************************
-      real function denionfun(phi)
+      real function denionfun(phi,isigma)
       include 'ndimsdecl.f'
       include 'fvcom.f'
       include 'partcom.f'
@@ -605,7 +606,7 @@ c Dummy function that just returns 1.
          endif
          denionfun=0.
          delphi=0
-         isigma=1               ! For now ignore asymmetry.
+!         isigma=1               ! For now ignore asymmetry.
          do i=1,nspecies
             if(i.ne.hspecies.and.nc(i).ne.0)then
                call fvhill(nc(i),dcc(1,i),vsc(1,i),vtc(1,i),holepsi
@@ -886,6 +887,7 @@ c Allow a value beyond the xmax range so long as phiv is non-negative.
  1    continue
       findxofphi=xc
       end
+c********************************************************************
 c********************************************************************
       real function findxofran(ranf,psi,coshlen,tl,xmin,xmax,nbi
      $     ,kp2)

@@ -143,7 +143,7 @@ else
 endif
 PROFILE= -mcmodel=medium $(PROFILING)
 ##########################################################################
-FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate.o padvnc.o chargetomesh.o slicesect.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o cmdline.o fsects.o bdyshare.o toms659.o ranlux.o intersects.o trapinit.o mainroutines.o phasespace.o qinit.o $(FFTWSOLVE)
+FIXEDOBJECTS=sormpi.o sorrelaxgen.o cijroutine.o cijplot.o 3dobjects.o mditerate.o padvnc.o chargetomesh.o slicesect.o reindiag.o pinit.o phisoluplot.o orbit3plot.o volint.o fluxdata.o stringsnames.o meshconstruct.o partwriteread.o partaccum.o checkcode.o stress.o average.o objplot.o cmdline.o fsects.o bdyshare.o toms659.o ranlux.o intersects.o trapinit.o mainroutines.o phasespace.o qinit.o $(FFTWSOLVE) xofcum.o
 MPIOBJECTS=reduce.o mpibbdy.o
 DUMMYMPIOBJECTS=nonmpibbdy.o dummyreduce.o
 export DUMMYMPIOBJECTS
