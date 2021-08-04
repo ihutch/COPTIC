@@ -34,8 +34,8 @@ c   y   is the fraction of the interval at which to interpolate.
             cum(i)=cum(i-1)+0.5*(p(i-1)+p(i))*(x(i)-x(i-1))
          enddo
          do i=1,np     ! Ensure proper normalization.
-            cum(i)=cum(i)/(0.999999*cum(np))
             p(i)=p(i)/cum(np)
+            cum(i)=cum(i)/(0.999999*cum(np))
          enddo
       endif
 ! Now cum is initialized (or ought to be).       
@@ -66,10 +66,21 @@ c   y   is the fraction of the interval at which to interpolate.
       delta=x(im+1)-x(im)
       pim=p(im)
       pip=p(im+1)
-      y=(sqrt(pim**2+(pip-pim)*2.*(r-cm)/delta)-pim)/(pip-pim)
+      pdiff=pip-pim
+      prat=pdiff*2.*(r-cm)/(delta*pim**2)
+      if(.not.abs(prat).gt.3.e-3)then ! Likely or actual overflow
+         y=(r-cm)/(cum(im+1)-cm) ! Linear approx.
+      else
+         y=(sqrt(1.+prat)-1.)*pim/pdiff
+      endif
+!      y=(sqrt(pim**2+pdiff*2.*(r-cm)/delta)-pim)/pdiff
       xofcum=x(im)+y*delta
       if(y.gt.1.or..not.y.ge.0)then
-         write(*,*)'Xofcum ERROR. Exceeded fractional value',y
+         write(*,*)'Xofcum PROBLEM. Exceeded fractional value',y
+         write(*,*)im,pim,pip,delta,x(im),cm,r,cum(im+1),pdiff,prat
+         y=(r-cm)/(cum(im+1)-cm) ! Linear approx.
+         write(*,*)'Fixed!',y
+         if(y-1..gt.1.e-5)stop
       else
          isw=1
       endif
@@ -79,6 +90,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       integer npmax,np
       parameter (npmax=100,ntest=20)
       real p(npmax),x(npmax),cum(npmax),r
+      real p2(npmax),x2(npmax),cum2(npmax)
       xmax=5.
       np=npmax
       do j=1,2
@@ -106,6 +118,24 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             call polymark(cp,r,1,j)
          enddo
          call polyline(x,cum,np)
+      enddo
+      call pltend
+
+      write(*,*)'Second case. Gaussian.'
+      np=npmax
+      do i=1,np
+         x2(i)=xmax*(-(np-i)+(i-1.))/(np-1.)
+         p2(i)=exp(-x2(i)**2/4.)
+      enddo
+      isw=0
+      do i=1,ntest
+         r=0.999*i/ntest
+         cp=xofcum(np,p2,x2,cum2,r,isw,im,y)
+         if(i.eq.1)then
+            call autoplot(x2,cum2,np)
+            call axlabels('x','p(x), !AJ!@pdx')
+         endif
+         call polymark(cp,r,1,j)
       enddo
       call pltend
       end

@@ -206,6 +206,7 @@
       include 'partcom.f'
       include 'plascom.f'
       include 'myidcom.f'
+      include 'fvcom.f'
       integer nqblks(ndims),indi(ndims),islot,ispecies
       logical linmesh,ldouble
       integer nbi
@@ -218,7 +219,9 @@
       real psi,um,xmax
       real phiarray(0:NPHI),us(0:NPHI),xofphi(0:NPHI)
       real den(0:NPHI),denuntrap(0:NPHI),dentrap(0:NPHI)
-      real tilden(0:NPHI)
+      real tilden(0:NPHI),denion(0:nphi)
+      real pden(-nphi-1:nphi+1),cump(-nphi-1:nphi+1)
+      real xpden(-nphi-1:nphi+1)
       real f0(-2*nphi:2*nphi),u0(-2*nphi:2*nphi),cumf(-nu:nu)
 !      real f1(-2*nphi:2*nphi),u1(-2*nphi:2*nphi),cumf1(-nu:nu)
       real u(-nu:nu),f(-nu:nu),du
@@ -231,7 +234,7 @@
 !----------------------------------------
       if(ispecies.ne.lastspecies)then ! First call Initialization
 ! These values must be set even for zero hole depth.
-         idebug=0
+         idebug=1
          do i=1,ndims
             if(Bfield(i).ne.0.)goto 2
          enddo
@@ -269,11 +272,27 @@ c The flattop length holetoplen. Negligible for large negative values.
             xmax=12.
             call f0Construct(nphi,psi,um,xmax,coshlen,holetoplen,
      $           phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0
-     $           ,kp2)
+     $           ,kp2,denion)
+            write(*,*)'xofphi  phiarray  den  denion  denuntrap',
+     $           ' dentrap  tilden'
+            write(*,'(7f8.4)')(xofphi(ik),phiarray(ik),den(ik)
+     $           ,denion(ik),denuntrap(ik),dentrap(ik),tilden(ik),ik=0
+     $           ,nphi)
             if(idebug.eq.1.and.myid.eq.0)then
+            write(*,*)'idebug,myid',idebug,myid
+               call multiframe(2,1,3)
                call autoplot(u0(-2*nphi),f0(-2*nphi),4*nphi+1)
                call axlabels('u0','f0')
+               call autoplot(xofphi,den,nphi+1)
+               call axis2
+               call axlabels('x','n')
+               call dashset(1)
+               call polyline(xofphi,denion,nphi+1)
+               call dashset(2)
+               call polyline(xofphi,denuntrap+dentrap,nphi+1)
+               call dashset(0)
                call pltend
+               call multiframe(0,0,0)
             endif
          endif
       endif
@@ -307,18 +326,34 @@ c The flattop length holetoplen. Negligible for large negative values.
          endif
       enddo
       psiradfac=1.
-      if(holepsi.ne.0.and.ispecies.eq.hspecies)then  ! Reset normal position
-         kp2find=0.
-         if(holerad.ne.0)then  ! Account for transverse variation
-            psiradfac=exp(-r2/holerad**2)
-            kp2find=(4./holerad**2)*(1-r2/holerad**2)
-         endif
+      if(holepsi.ne.0)then     ! Maybe Reset normal position
+         if(ispecies.eq.hspecies)then
+            kp2find=0.
+            if(holerad.ne.0)then ! Account for transverse variation
+               psiradfac=exp(-r2/holerad**2)
+               kp2find=(4./holerad**2)*(1-r2/holerad**2)
+            endif
 ! Hole parallel nonuniformity at transverse local value of peak potential.
-         x_part(id,islot)=findxofran(fpid,psiradfac*psi,coshlen
-     $        ,holetoplen,xmeshstart(id),xmeshend(id),nbi,kp2find)
+            x_part(id,islot)=findxofran(fpid,psiradfac*psi,coshlen
+     $           ,holetoplen,xmeshstart(id),xmeshend(id),nbi,kp2find)
+!           Test of new placement algorithm.
+            isw=0
+            foundx=findxofcum(fpid,nphi,den,pden,cump,xpden,xofphi,isw
+     $           ,im,xf,xmeshstart(id),xmeshend(id))
+           x_part(id,islot)=foundx
+!           if(mod(islot+1,1000).eq.0)write(*,*)islot+1,fpid,x_part(id
+!           $        ,islot),foundx
+!           if(mod(islot+1,100000).eq.0)write(*,'(i3,3f10.4)')(k,xpden(k)
+!           $        ,cump(k),pden(k),k=-nphi-1,nphi+1)
+         elseif(lfv)then     ! Ion distribution nonuniform. 
+            isw=0
+            foundx=findxofcum(fpid,nphi,denion,pden,cump,xpden,xofphi
+     $           ,isw,im,xf,xmeshstart(id),xmeshend(id))
+            x_part(id,islot)=foundx
+         endif
       endif
-      phi=psiradfac*phiofx(x_part(id,islot),psi,coshlen,holetoplen)
 
+      phi=psiradfac*phiofx(x_part(id,islot),psi,coshlen,holetoplen)
 ! Hole normal (parallel) velocity setting
       if(abs(phi).lt.phimin.or.fp.lt.phimin.or.1-fp.lt.phimin !)then
      $     .or.ispecies.ne.hspecies)then
@@ -434,34 +469,29 @@ c The flattop length holetoplen. Negligible for large negative values.
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Construct the distribution f0 at u0, using BGKint.
-      subroutine f0Construct(nphi,psi,um,xmax,coshlen,tl,
-     $     phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0,kp2)
+      subroutine f0Construct(nphi,psi,um,xmax,coshlen,tl, phiarray,us
+     $     ,xofphi,den,denuntrap,dentrap,tilden,f0,u0,kp2,denion)
       include 'ndimsdecl.f'
       include 'fvcom.f'   
       include 'partcom.f' ! Needed for nspecies.
 
       integer nphi
       real psi,um,xmax,kp2
-      real phiarray(0:NPHI),us(0:NPHI),xofphi(0:NPHI)
+      real phiarray(0:NPHI),us(0:NPHI),xofphi(0:NPHI),denion(0:nphi)
       real den(0:NPHI),denuntrap(0:NPHI),dentrap(0:NPHI)
       real tilden(0:NPHI)
       real f0(-2*nphi:2*nphi),u0(-2*nphi:2*nphi)
-      logical lfv
       external denionfun
-      data lfv/.false./
 
       du=(4.-sqrt(psi))/nphi
       sqpi=sqrt(3.1415926)
 c Call BGKint in such a way as to put into the negative trapped section
 c because it returns f0 u0 in reverse order.
-      do i=1,nspecies
-         if(i.ne.hspecies.and.nc(i).ne.0)lfv=.true.
-      enddo
       if(lfv)then
          write(*,*)'               f0construct non-Maxwellian version'
          call BGKintnew(nphi,psi,-um,xmax,coshlen,tl,
      $        phiarray,us,xofphi,den,denuntrap,dentrap,tilden
-     $        ,f0(-nphi),u0(-nphi),kp2,denionfun)
+     $        ,f0(-nphi),u0(-nphi),kp2,denionfun,denion)
       else  ! Zero ion response version.
          write(*,*)'               f0construct ions uniform'
          call BGKint(nphi,psi,-um,xmax,coshlen,tl,
@@ -498,7 +528,7 @@ c Units of x are debyelengths, of potential Te/e, of time omega_p^{-1}
 c But u is v/sqrt(2), i.e. normalized to sqrt(2Te/me).
 
       subroutine BGKintnew(nphi,psi,um,xmax,coshlen,tl,phi,us,xofphi
-     $     ,den,denuntrap,dentrap,tilden,f,u0,kp2,denionfun)
+     $     ,den,denuntrap,dentrap,tilden,f,u0,kp2,denionfun,denion)
 c In:
 c  (0:nphi) is the array length of phi (i.e. u^2) positions.
 c  psi the maximum, zero the minimum potential.
@@ -514,6 +544,7 @@ c  xofphi is the corresponding (positive) position.
 c  den is total electron density, denuntrap is the untrapped e-density,
 c  dentrap the trapped e-density, tilden the difference between trapped 
 c  density and a flat-top. 
+c  denion is the ion density
 c  f(u) is the electron distribution function, as a function of u at x=0:
 c  u0=sqrt(psi-i*phistep) 
 c Calls:
@@ -523,7 +554,7 @@ c  function findxofphi(phi,psi,...)
 c  function untrapden(phi,um)
       integer NPHI
       real psi,um,xmax
-      real phi(0:NPHI),us(0:NPHI),xofphi(0:NPHI)
+      real phi(0:NPHI),us(0:NPHI),xofphi(0:NPHI),denion(0:nphi)
       real den(0:NPHI),denuntrap(0:NPHI),dentrap(0:NPHI),tilden(0:NPHI)
       real f(0:NPHI),u0(0:NPHI),kp2
       real pi
@@ -548,7 +579,8 @@ c Calculate the total density -d^2\phi/dx^2 as a function of potential,
 c at the nodes.
          xc=xofphi(i)
 c ne=ni+d^2\phi/dx^2
-         den(i)=denionfun(phi(i),isigma)+(phiofx(xc+delx,psi,coshlen,tl)
+         denion(i)=denionfun(phi(i),isigma)
+         den(i)=denion(i)+(phiofx(xc+delx,psi,coshlen,tl)
      $        +phiofx(xc-delx,psi,coshlen,tl)
      $        -2.*phiofx(xc,psi,coshlen,tl))/delx**2
      $        -2.*kp2*phi(i)  ! Transverse k term set from holerad.
@@ -612,7 +644,7 @@ c Dummy function that just returns 1.
                call fvhill(nc(i),dcc(1,i),vsc(1,i),vtc(1,i),holepsi
      $              ,delphi,phi,isigma,.true.,nofv,vofv,fofv,Pfofv)
                denionfun=denionfun+Pfofv(nofv)
-               write(*,*)'Species',i,' phi',phi,' denionfun',denionfun
+!               write(*,*)'Species',i,' phi',phi,' denionfun',denionfun
             endif
          enddo
       endif
@@ -888,9 +920,36 @@ c Allow a value beyond the xmax range so long as phiv is non-negative.
       findxofphi=xc
       end
 c********************************************************************
+      real function findxofcum(ranf,nphi,den,pden,cump,xpden,xofphi,isw
+     $     ,im,xf,xmin,xmax)
+c Replacement for findxofran that uses a specified den(phi).
+c and NOT the potential profile implied by psi, coshlen, tl.
+      real ranf,xf,xmin,xmax
+      integer nphi,isw,im
+      real den(0:nphi),xofphi(0:nphi)
+      real pden(-nphi-1:nphi+1),cump(-nphi-1:nphi+1),xpden(-nphi-1:nphi
+     $     +1)
+
+c Local variables
+c      integer np
+c      parameter (np=100)
+c      real p(np),x(np),cum(np),r
+      
+      if(isw.eq.0)then   ! Set up arrays.
+         do i=-nphi,nphi
+            pden(i)=den(nphi-abs(i))
+            xpden(i)=sign(xofphi(nphi-abs(i)),float(i))
+!            write(*,*)'i,pden(i),xpden(i)',i,pden(i),xpden(i)
+         enddo
+         pden(-nphi-1)=1.
+         xpden(-nphi-1)=xmin
+         pden(nphi+1)=1.
+         xpden(nphi+1)=xmax
+      endif
+      findxofcum=xofcum(2*nphi+3,pden,xpden,cump,ranf,isw,im,xf)
+      end
 c********************************************************************
-      real function findxofran(ranf,psi,coshlen,tl,xmin,xmax,nbi
-     $     ,kp2)
+      real function findxofran(ranf,psi,coshlen,tl,xmin,xmax,nbi,kp2)
 c Find by bisection the x-position given the range fraction ranf s.t.
 c   ranf=(xc-xmin+derivphiofx(xc...))/(xmax-xmin) 
 c and return xc. This expression is the cumulative probability because
