@@ -276,8 +276,8 @@ c The flattop length holetoplen. Negligible for large negative values.
             write(*,*)'xofphi  phiarray  den  denion  denuntrap',
      $           ' dentrap  tilden'
             write(*,'(7f8.4)')(xofphi(ik),phiarray(ik),den(ik)
-     $           ,denion(ik),denuntrap(ik),dentrap(ik),tilden(ik),ik=0
-     $           ,nphi)
+     $           ,denion(ik),denuntrap(ik),dentrap(ik),tilden(ik)
+     $           ,ik=0 ,nphi)
             if(idebug.eq.1.and.myid.eq.0)then
             write(*,*)'idebug,myid',idebug,myid
                call multiframe(2,1,3)
@@ -291,6 +291,7 @@ c The flattop length holetoplen. Negligible for large negative values.
                call dashset(2)
                call polyline(xofphi,denuntrap+dentrap,nphi+1)
                call dashset(0)
+               call polyline([0.,xofphi(0)],[1.,1.],2)
                call pltend
                call multiframe(0,0,0)
             endif
@@ -564,11 +565,14 @@ c  function untrapden(phi,um)
       external denionfun
 
       phistep=psi/(NPHI)
+!      delx=4.*xmax/nphi
       delx=4.*xmax/nphi
       sphistep=sqrt(phistep)
       flatf=exp(-um**2)/sqrt(pi)
       isigma=1 ! Ignoring asymmetries for now.
 c 
+      denionint=0.
+      denint=0.
       do i=0,NPHI
          phi(i)=i*phistep
       enddo
@@ -590,8 +594,20 @@ c Get the untrapped electron density at this potential and drift.
          dentrap(i)=den(i)-denuntrap(i)
 c Density difference c.f. flat:
          tilden(i)=dentrap(i)-2*us(i)*flatf
+!         if(i.eq.nphi)xofphi(i)=0.
+         if(i.gt.0)then
+            denint=denint-0.5*(den(i)+den(i-1))*(xofphi(i)-xofphi(i-1))
+            denionint=denionint-0.5*(denion(i)+denion(i-1))*(xofphi(i)
+     $           -xofphi(i-1))
+         endif
       enddo
-
+      write(*,*)'denint,denionint',denint,denionint
+      endcont=abs(xofphi(0)-xofphi(1))*0.5
+      adjfac=(denionint-endcont)/(denint-endcont*den(0))
+      do i=1,nphi  ! Rescale den to denion
+         den(i)=den(i)*adjfac
+      enddo
+      den(0)=1.
 c f(u) = (1/pi) \int_0^{psi-u^2} dn/d\phi d\phi/sqrt(\psi-u^2-phi).
 c u^2=psi-i*phistep, phi=j*phistep, so sqrt -> (i-j)*psistep.
       u0(0)=sqrt(psi)
