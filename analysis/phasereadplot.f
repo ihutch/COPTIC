@@ -3,7 +3,8 @@ c If switch -t is given do triangular contouring.
 c Trouble is, it gives too many colors for ps2gif, and pnmquant has
 c problems with the colorscale legend. So use makepnganim
       implicit none
-      include 'phasecom.f'
+      include '../src/ndimsdecl.f'
+      include '../src/phasecom.f'
       include '../accis/plotcom.h'
       character*100 phasefilename
       real x(npsbuf),u(npsbuf),uave(npsbuf)
