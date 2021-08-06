@@ -397,7 +397,7 @@
 !----------- Reinjection treatment -----------
  200     continue
          x_part(iflag,i)=1
-         write(*,*)'Calling reinject',i,ispecies
+!         write(*,*)'Calling reinject',i,ispecies
          call reinject(x_part(1,i),ilaunch,ispecies)
          call partlocate(x_part(1,i),ixp,xfrac,iregion,linmesh)
          if(.not.linmesh)then
