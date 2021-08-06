@@ -100,6 +100,7 @@ c Write file with phasespace data plus u(x) if length nu != 0.
       write(12)npsx,npsv,nu
       write(12)psfxv(:,:,ispecies),psvmax,psvmin,psxmax,psxmin,psx,psv
       if(nu.ne.0)write(12)(x(i),u(i),i=1,nu),t
+      write(12)psn(:,ispecies) ! Save the density as fn of x
       close(12)
       return
  101  write(*,*)'Error opening file:',
@@ -123,15 +124,20 @@ c***********************************************************************
      $        npsx,npsv,' file requires',npsxf,npsvf
          stop
       else
-         read(13)psfxv,psvmax,psvmin,psxmax,psxmin,psx,psv
+         read(13)psfxv(:,:,1),psvmax,psvmin,psxmax,psxmin,psx,psv
          if(nu.gt.nuin)stop 'phaseread file nu length too great'
          if(nu.ne.0)read(13)(x(i),u(i),i=1,nu),t
       endif
+      read(13,err=102,end=102)psn(:,1)
       close(13)
       return
  101  write(*,*)'Phase read ERROR opening file:',
      $     phasefilename(1:lentrim(phasefilename))
       nu=0
+      return
+ 102  write(*,*)'NO PSN IN THIS FILE'
+      psn(1,1)=0.
+      close(13)
       end
 c***********************************************************************
       subroutine phaseplot(ispecies)

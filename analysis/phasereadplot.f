@@ -11,7 +11,7 @@ c problems with the colorscale legend. So use makepnganim
       real phirange,phirangeinit
       parameter (phirangeinit=0.5)
       character*10 string
-      integer i,ii,n,Np,Nave,Nastep
+      integer i,ii,n,Np,Nave,Nastep,thespecies
       real t,umin,umax,wx2nx,wy2ny
 
       Nave=1
@@ -67,7 +67,8 @@ c Set the starting number of filewriting to be N
             else
                call polyline(x,u,n)
             endif
-            call phaseplot
+            thespecies=1
+            call phaseplot(thespecies)
             call pltend
          endif
  1       continue
