@@ -157,7 +157,7 @@
       include 'partcom.f'
       real CFin(3+ndims,2*ndims)
       logical LPF(ndims)
-      character*256 argline
+      character*2048 argline
 ! Common data containing the object geometric information. 
 ! Each object, i < 64 has: type, data(odata).
 !      integer ngeomobjmax,odata,ngeomobj

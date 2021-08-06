@@ -212,7 +212,7 @@
       integer nbi
       parameter (nbi=16)
 ! Hole-related parameters:
-      real phimin
+      real phimin,phiprev
       parameter (phimin=.01)
       integer nphi,nu,nup
       parameter (nphi=50,nu=100,nup=2*nu+1)
@@ -227,14 +227,19 @@
       real u(-nu:nu),f(-nu:nu),du
       real tisq,tisq2,tisqperp,umax,coshlen,kp2,kp2find
       real rhov(ndims)
+      character*30 string
       integer lastspecies,id
       data lastspecies/0/
       save
 
 !----------------------------------------
-      if(ispecies.ne.lastspecies)then ! First call Initialization
+      if(ispecies.ne.lastspecies)then 
+! First call Initialization of this species.
 ! These values must be set even for zero hole depth.
-         idebug=1
+         phiprev=-1.   ! Never skip the first fvhill call.
+         idebug=0
+!         idebug=2      ! Plot distribution setup
+!         idebug=1      ! Write out setup arrays.
          do i=1,ndims
             if(Bfield(i).ne.0.)goto 2
          enddo
@@ -273,23 +278,45 @@ c The flattop length holetoplen. Negligible for large negative values.
             call f0Construct(nphi,psi,um,xmax,coshlen,holetoplen,
      $           phiarray,us,xofphi,den,denuntrap,dentrap,tilden,f0,u0
      $           ,kp2,denion)
-            write(*,*)'xofphi  phiarray  den  denion  denuntrap',
-     $           ' dentrap  tilden'
-            write(*,'(7f8.4)')(xofphi(ik),phiarray(ik),den(ik)
-     $           ,denion(ik),denuntrap(ik),dentrap(ik),tilden(ik)
-     $           ,ik=0 ,nphi)
             if(idebug.eq.1.and.myid.eq.0)then
-            write(*,*)'idebug,myid',idebug,myid
+               write(*,*)'xofphi  phiarray  den  denion  denuntrap',
+     $              ' dentrap  tilden'
+               write(*,'(7f8.4)')(xofphi(ik),phiarray(ik),den(ik)
+     $              ,denion(ik),denuntrap(ik),dentrap(ik),tilden(ik)
+     $              ,ik=0 ,nphi)
+            endif
+            if(idebug.eq.2.and.myid.eq.0)then
                call multiframe(2,1,3)
-               call autoplot(u0(-2*nphi),f0(-2*nphi),4*nphi+1)
-               call axlabels('u0','f0')
+               call autoplot(sqrt(2.)*u0,f0/sqrt(2.),4
+     $              *nphi+1)
+               call axis2
+               call axlabels('v!ds!d/(T!ds!d/m!ds!d)!u1/2!u',
+     $              'f(v)!AX!@(T!ds!d/m!ds!d)!u1/2!u')
+               call legendline(.7,.9,0,' electrons(1)')
+               if(nc(2).ne.0)call legendline(.05,.9,258,' ions, s=')
+               call winset(.true.)
+               do is=2,3
+                  if(nc(is).ne.0)then
+                     call dashset(is)
+                     call fvhill(nc(is),dcc(1,is),vsc(1,is),vtc(1,is),0.
+     $                    ,delphi,0.,1,.true.,nofv,vofv,fofv,Pfofv)
+                     call polyline(vofv,fofv,nofv)
+                     call iwrite(is,iwidth,string)
+                     call legendline(.05,1.-.1*is,0,' '
+     $                    //string(1:iwidth))
+                  endif
+               enddo
+               call dashset(0)
                call autoplot(xofphi,den,nphi+1)
+               call legendline(.7,.8,0,' n!de!d (adj)')
                call axis2
                call axlabels('x','n')
                call dashset(1)
+               if(nc(2).ne.0)call legendline(.7,.9,0,' n!di!d')
                call polyline(xofphi,denion,nphi+1)
                call dashset(2)
                call polyline(xofphi,denuntrap+dentrap,nphi+1)
+               call legendline(.7,.7,0,' n!det!d+n!dep!d')
                call dashset(0)
                call polyline([0.,xofphi(0)],[1.,1.],2)
                call pltend
@@ -311,7 +338,7 @@ c The flattop length holetoplen. Negligible for large negative values.
 ! v=x^qB/m => v^qB/m=-x(qB/m)^2; so gyro-vector rhov=-v^Bt/(eoverm*Bt^2)
       rhov(i1)=-x_part(ndims+i2,islot)/(eoverms(ispecies)*Bt) 
       rhov(i2)= x_part(ndims+i1,islot)/(eoverms(ispecies)*Bt)
-
+!----------------------------------------
 ! Position setting, all dims (reset x_id later if necessary)
       do i=1,ndims
          call ranlux(ran,1)
@@ -326,6 +353,7 @@ c The flattop length holetoplen. Negligible for large negative values.
             fpid=fp   ! Save the random position for parallel
          endif
       enddo
+!----------------------------------------
       psiradfac=1.
       if(holepsi.ne.0)then     ! Maybe Reset normal position
          if(ispecies.eq.hspecies)then
@@ -335,32 +363,61 @@ c The flattop length holetoplen. Negligible for large negative values.
                kp2find=(4./holerad**2)*(1-r2/holerad**2)
             endif
 ! Hole parallel nonuniformity at transverse local value of peak potential.
-            x_part(id,islot)=findxofran(fpid,psiradfac*psi,coshlen
-     $           ,holetoplen,xmeshstart(id),xmeshend(id),nbi,kp2find)
-!           Test of new placement algorithm.
-            isw=0
-            foundx=findxofcum(fpid,nphi,den,pden,cump,xpden,xofphi,isw
-     $           ,im,xf,xmeshstart(id),xmeshend(id))
-           x_part(id,islot)=foundx
-!           if(mod(islot+1,1000).eq.0)write(*,*)islot+1,fpid,x_part(id
-!           $        ,islot),foundx
-!           if(mod(islot+1,100000).eq.0)write(*,'(i3,3f10.4)')(k,xpden(k)
-!           $        ,cump(k),pden(k),k=-nphi-1,nphi+1)
-         elseif(lfv)then     ! Ion distribution nonuniform. 
+            if(.not.lfv)then  ! Set electrons for Ion distrib uniform
+               x_part(id,islot)=findxofran(fpid,psiradfac*psi,coshlen
+     $              ,holetoplen,xmeshstart(id),xmeshend(id),nbi,kp2find)
+            else        ! Set electrons accounting for ions non-uniform
+               isw=0
+               foundx=findxofcum(fpid,nphi,den,pden,cump,xpden,xofphi
+     $              ,isw,im,xf,xmeshstart(id),xmeshend(id))
+               x_part(id,islot)=foundx
+            endif
+         elseif(lfv)then   ! Ion distribution nonuniform. (MultiGaussian).
             isw=0
             foundx=findxofcum(fpid,nphi,denion,pden,cump,xpden,xofphi
      $           ,isw,im,xf,xmeshstart(id),xmeshend(id))
             x_part(id,islot)=foundx
          endif
       endif
-
+!----------------------------------------
+! Hole normal (i.e. parallel) velocity setting
       phi=psiradfac*phiofx(x_part(id,islot),psi,coshlen,holetoplen)
-! Hole normal (parallel) velocity setting
-      if(abs(phi).lt.phimin.or.fp.lt.phimin.or.1-fp.lt.phimin !)then
-     $     .or.ispecies.ne.hspecies)then
-! If non-hole region/species. Shortcut to external distrib.
-         x_part(ndims+id,islot)=tisq*gasdev(myid)
-     $        +vds(ispecies)*vdrifts(id,ispecies)
+      if(ispecies.ne.hspecies)then  ! Ions
+!         if(.false.)then            ! No MultiGaussian
+         if(nc(ispecies).ne.0)then  ! MultiGausian
+            if(phiprev.eq.-1.and.myid.eq.0)then
+               write(*,'(a,i2,a,i2)')'MultiGaussian Species:',ispecies
+     $              ,' components:',nc(ispecies)
+            endif
+            if(abs(phi-phiprev).gt.phimin)then ! Construct Pofv
+               isigma=int(sign(1.,x_part(id,islot))) ! Strange result.
+               isigma=1
+               delphi=0.
+               call fvhill(nc(ispecies),dcc(1,ispecies),vsc(1,ispecies)
+     $              ,vtc(1,ispecies),holepsi,delphi,phi,isigma,.true.
+     $              ,nofv,vofv,fofv,Pfofv)
+               isw=0     ! Need to recalculate cumulative distrib.
+               phiprev=phi
+            endif
+            call ranlux(fp,1)
+            fp=fp*Pfofv(nofv)
+            ixp=interp(Pfofv,nofv,fp,p)
+            if(ixp.gt.0.and.ixp.lt.nofv)then
+               x_part(ndims+id,islot)=tisq*((1-p+ixp)*vofv(-1+ixp)+(p
+     $              -ixp)*vofv(ixp)) +holespeed
+            else
+               write(*,*)'placeqblk MultiGauss interp error',ixp,p
+               stop
+            endif
+            
+         else                       ! Shifted Single Gaussian
+               x_part(ndims+id,islot)=tisq*(gasdev(myid)
+     $              +vds(ispecies)*vdrifts(id,ispecies))
+         endif
+      elseif(abs(phi).lt.phimin.or.fp.lt.phimin.or.1-fp.lt.phimin)then
+! Hole species but non-hole region. Shortcut to external distrib.
+            x_part(ndims+id,islot)=tisq*(gasdev(myid)
+     $           +vds(ispecies)*vdrifts(id,ispecies))
       else
 ! Use cumf interpolation. We use the central psi value, but local phi.
          call GetDistribAtPhi(psi,um,nphi,f0,u0,phi,nu,u,f,cumf)
@@ -375,23 +432,23 @@ c The flattop length holetoplen. Negligible for large negative values.
             write(*,*)'placeqblk interpolation error',ixp,p
             stop
          endif
-! Add transverse ExB velocity
-         if(holerad.ne.0)then
-            Etot=(2./holerad**2)*sqrt(r2)*phi ! Gradient of Gaussian
-            E1=Etot*x_part(i1,islot)/sqrt(r2) ! Project transverse
-            E2=Etot*x_part(i2,islot)/sqrt(r2)
-            x_part(ndims+i1,islot)=x_part(ndims+i1,islot)+E2/Bt            
-            x_part(ndims+i2,islot)=x_part(ndims+i2,islot)-E1/Bt            
-         endif
 
       endif
-! Add background drift.
+! Add transverse ExB velocity  Was only on holespecies. Now on all.
+      if(holerad.ne.0)then
+         Etot=(2./holerad**2)*sqrt(r2)*phi ! Gradient of Gaussian
+         E1=Etot*x_part(i1,islot)/sqrt(r2) ! Project transverse
+         E2=Etot*x_part(i2,islot)/sqrt(r2)
+         x_part(ndims+i1,islot)=x_part(ndims+i1,islot)+E2/Bt            
+         x_part(ndims+i2,islot)=x_part(ndims+i2,islot)-E1/Bt            
+      endif
+! Add background transverse drift.
       do i=mod(id,ndims)+1,mod(id+1,ndims)+1
             x_part(ndims+i,islot)=x_part(ndims+i,islot)            
-     $           +vds(ispecies)*vdrifts(i,ispecies)
+     $           +tisq*vds(ispecies)*vdrifts(i,ispecies)
       enddo
-
-
+! End of parallel velocity initialization.
+!----------------------------------------
 ! The previous timestep length.
       x_part(idtp,islot)=0.
 ! Initialize the mesh fraction data in x_part.
@@ -601,7 +658,8 @@ c Density difference c.f. flat:
      $           -xofphi(i-1))
          endif
       enddo
-      write(*,*)'denint,denionint',denint,denionint
+! This section ensures ni=ne in the rest of the plasma.
+!      write(*,*)'denint,denionint',denint,denionint
       endcont=abs(xofphi(0)-xofphi(1))*0.5
       adjfac=(denionint-endcont)/(denint-endcont*den(0))
       do i=1,nphi  ! Rescale den to denion
@@ -630,7 +688,6 @@ c*********************************************************************
       include 'ndimsdecl.f'
       include 'fvcom.f'
       include 'partcom.f'
-
       logical linit,ldummy
       data linit/.false./
 

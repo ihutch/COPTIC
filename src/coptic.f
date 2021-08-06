@@ -61,7 +61,7 @@
       external volnode,linregion
       character*100 partfilename,phifilename,fluxfilename,objfilename
       character*100 restartpath,phafilename
-      character*256 argline
+      character*2048 argline
 !      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
       logical lmyidhead,lphiplot,ldenplot,lfftsucceeded

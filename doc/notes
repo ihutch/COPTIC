@@ -16310,3 +16310,30 @@ for a test case hole as the old one (once some corrections are applied).
 30 Jul 2021 Got denionfun working and BGKintnew.
 
 31 Jul 2021 Change denionfun to have second argument isigma.
+
+6 Aug 2021
+
+Considerable progress on implementing MultiGaussian ion response and
+initialization. During this coding I notice that in qinit.f the ExB
+drift of a 2-D hole is added only to the electrons (hole species) and
+not to the ions. I don't see why that is. Both species should drift
+at the same rate. So I change "Add transverse ExB velocity" to apply 
+to all species. 
+
+Another issue I discover is that for multiple species holes there are
+inconsistencies in the velocity scaling. tisq is decided per species
+in initialization according to eoverm. But velocity was being set as
+tisq*gasdev(myid)+vds(ispecies)*vdrifts(id,ispecies) 
+
+That means the vds are all in the same units regardless of mass.  But
+really ions are way heavier and it makes little sense to do what I
+have been doing and giving two species velocity shifts of order
+unity. With this convention I would have to specify far smaller
+shifts. I change the setting therefore to
+tisq*(gasdev(myid)+vds(ispecies)*vdrifts(id,ispecies))
+so both velocity width and shift are in thermal units for the species
+under consideration. 
+
+A similar problem exists for the MultiGaussian treatment. 
+Straightened that out using tisq multiplication. Now the MultiGaussian
+ion treatment works fine. 

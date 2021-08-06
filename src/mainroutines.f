@@ -290,6 +290,7 @@ c but writing and plotting only by top process
       endif
       if(myid.eq.nprocs-1)then
          if(lplot)then
+            call color(7)
             call phaseplot(thespecies)
             call color(15)
             call vecw(xmeshstart(id),vds(1),0)

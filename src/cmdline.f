@@ -31,7 +31,7 @@
       real Bfield(ndims),Bt,CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
-      character*256 argline
+      character*2048 argline
       real gt(ndims),gp0(ndims),gtt,gn(ndims),gnt
       real Ts(*),vds(*),eoverms(*),Tperps(*)
       integer nparta(*),numratioa(*)
@@ -40,7 +40,7 @@
       integer nspecies,nspeciesmax
       integer ncmax,nc(nspeciesmax)
       real vsc(ncmax,nspeciesmax),vtc(ncmax,nspeciesmax)
-      real dcc(ncmax,nspeciesmax),vscs(ncmax,nspeciesmax)
+      real dcc(ncmax,nspeciesmax)
 
 !----------------------------------------------------------------------
 ! Deal with command-line arguments and geometry/object file.
@@ -110,7 +110,7 @@
       real Bfield(ndims),Bt,CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
       character*100 restartpath,objfilename
-      character*256 argline
+      character*2048 argline
       real gt(ndims),gp0(ndims),gtt,gn(ndims),gnt
 ! Multiple species can have these things different.
 ! Only the first species is possibly collisional.
@@ -122,7 +122,7 @@
       integer ierr
       integer ncmax,nc(nspeciesmax)
       real vsc(ncmax,nspeciesmax),vtc(ncmax,nspeciesmax)
-      real dcc(ncmax,nspeciesmax),vscs(ncmax,nspeciesmax)
+      real dcc(ncmax,nspeciesmax)
 
 ! Local variables:
       integer lentrim,iargc,ipfset
@@ -131,6 +131,7 @@
       real vwork,bdotgn,vdotgn
       character*100 argument,message
       logical lfirst
+      real denfp
       data lfirst/.true./
       save argument,message
 
@@ -217,6 +218,7 @@
 ! End of first time through setting
 ! ---------------------------------------
 ! Deal with arguments
+      denfp=0.
       iargcount=iargc()
       iargpos=1
       do i=0,iargcount
@@ -465,6 +467,7 @@
             dcc(nc(nspecies),nspecies)=0.  ! Zero density unless read.
             read(argument(4:),*,end=201)vsc(nc(nspecies),nspecies)
      $           ,vtc(nc(nspecies),nspecies),dcc(nc(nspecies),nspecies)
+            denfp=denfp+dcc(nc(nspecies),nspecies)
          endif         
          if(argument(1:10).eq.'--extfield')then
             read(argument(11:),*,end=201)extfield
@@ -644,6 +647,8 @@
       enddo
 ! Consistency checks for holes
       if(holepsi.ne.0)then
+         if(denfp.ne.0.and.denfp.ne.1)write(*,*
+     $        )'DANGER inconsistent denfp=',denfp
          do i=1,ndims
             if(gn(i).ne.0)then ! bgn is not yet functional.
                if(lmyidhead)
@@ -669,7 +674,7 @@
  307  format(a,6f8.1)
  308  format(a,6i8)
  309  format(a,7f6.2)
- 310  format(a,i8,a,i8)
+! 310  format(a,i8,a,i8)
  311  format(a,7f6.2)
  312  format(a,L3,a)
       write(*,*)
