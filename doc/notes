@@ -16337,3 +16337,13 @@ under consideration.
 A similar problem exists for the MultiGaussian treatment. 
 Straightened that out using tisq multiplication. Now the MultiGaussian
 ion treatment works fine. 
+
+Issues exist with the phaseread and phasewrite. Only one species is
+written to the pps file. It would be better to have the pns for all
+species. That would enable postprocessing to do a plot similar to
+what is done in real time. That needs editing src/phasespace.f in
+several different routines.
+
+7 Aug 2021
+Rationalize phasepscont by always accumulating psaccum and psnaccum
+for all species.

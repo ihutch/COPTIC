@@ -234,12 +234,15 @@
 c thespecies is 1 if nspecies=1, 2 if nspecies=2 (assumes e is 2)
       thespecies=mod(thespecies,nspecies)+1
       if(hspecies.ne.0)thespecies=hspecies ! Or just use the hole species
-! Testing       thespecies=3
 c psaccum must be asked for by all processes for initialization.
-      call psaccum(thespecies,id)
-!      do i=1,nspecies
-!         call psaccum(i,1)
-!      enddo
+!      call psaccum(thespecies,id)
+! Accumulate all the species and both phase-space and n(x).
+      do ispecies=1,nspecies
+         call psaccum(ispecies,id)
+         psnmax=numprocs*nparta(ispecies)/npsx
+         call psnaccum(ispecies,id)
+         psn(:,ispecies)=psn(:,ispecies)/psnmax
+      enddo
       write(string,'(f10.3)')nstep*dt
 c but writing and plotting only by top process
       if(myid.eq.nprocs-1)then
@@ -248,7 +251,7 @@ c but writing and plotting only by top process
          write(phasefilename(lentrim(phasefilename)+1:)
      $        ,'(''.pps'',i5.5)')nstep
          call phasewrite(phasefilename, ixnp(2)-ixnp(1),xn(ixnp(1)+1)
-     $        ,u(1,2,2),nstep*dt,thespecies)
+     $        ,u(1,2,2),nstep*dt)
          if(lplot)then
             call minmax(u(1,2,2),iuds(1),umin,umax)
             phirange=max(phirange,umax*.95)
@@ -269,14 +272,7 @@ c but writing and plotting only by top process
             call axptset(0.,0.)
             call legendline(1.04,0.3,258,'!Bn!@')
             call color(15)
-         endif
-      endif
-      if(lplot)then
-         do ispecies=1,nspecies
-            psnmax=numprocs*nparta(ispecies)/npsx
-            call psnaccum(ispecies,id)
-            psn(:,ispecies)=psn(:,ispecies)/psnmax
-            if(myid.eq.nprocs-1)then
+            do ispecies=1,nspecies
                call color(ispecies+4)
                call polyline(psx,psn(1,ispecies),npsx)
                if(nspecies.gt.1)then !Label species by charge sign.
@@ -285,11 +281,7 @@ c but writing and plotting only by top process
                   call legendline(0.8,0.05+0.08*ispecies,0
      $                 ,nlabel(ilab))
                endif
-            endif
-         enddo
-      endif
-      if(myid.eq.nprocs-1)then
-         if(lplot)then
+            enddo
             call color(7)
             call phaseplot(thespecies)
             call color(15)

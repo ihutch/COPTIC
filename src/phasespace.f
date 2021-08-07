@@ -36,14 +36,15 @@ c The bins are uniform from psvmin to psvmax and xmeshstart to end.
 c Ensure the limits etc of the phase space array are set.
       psxmin=xmeshstart(id)
       psxmax=xmeshend(id)
-      psvmax=3.*sqrt(abs(eoverms(ispecies))*Ts(ispecies))
-      psvmin=-psvmax
+      psvmax(ispecies)=3.*sqrt(abs(eoverms(ispecies))*Ts(ispecies))
+      psvmin(ispecies)=-psvmax(ispecies)
 c The centers of the bins in phase space (redundancy negligible).
       do i=1,npsx
          psx(i)=psxmin+(i-0.5)*(psxmax-psxmin)/npsx
       enddo
       do i=1,npsv
-         psv(i,ispecies)=psvmin+(i-0.5)*(psvmax-psvmin)/npsv
+         psv(i,ispecies)=psvmin(ispecies)+(i-0.5)*(psvmax(ispecies)
+     $        -psvmin(ispecies))/npsv
       enddo
 
 c Accumulate
@@ -52,7 +53,8 @@ c Accumulate
             v=x_part(id+ndims,i)
             x=x_part(id,i)-0.5*x_part(idtp,i)*v
             ixbin=int(.99999*(x-psxmin)/(psxmax-psxmin)*float(npsx)+1)
-            ivbin=int(.99999*(v-psvmin)/(psvmax-psvmin)*float(npsv)+1)
+            ivbin=int(.99999*(v-psvmin(ispecies))/(psvmax(ispecies)
+     $           -psvmin(ispecies))*float(npsv)+1)
 c Wrap periodically the x-position bins in case of exit.
             if(ixbin.lt.1)ixbin=npsx+ixbin
             if(ixbin.gt.npsx)ixbin=ixbin-npsx
@@ -87,20 +89,21 @@ c Accumulate the densities of ispecies into phasespace x-bins psn
       call mpiallreducesum(psn(1,ispecies),npsx,ierr)
       end
 c***********************************************************************
-      subroutine phasewrite(phasefilename,nu,x,u,t,ispecies)
+      subroutine phasewrite(phasefilename,nu,x,u,t)
 c Write file with phasespace data plus u(x) if length nu != 0.
       character*(*) phasefilename
       integer nu
       real x(nu),u(nu),t
       include 'ndimsdecl.f'
       include 'phasecom.f'
+      include 'partcom.f' ! For nspecies
 
       open(12,file=phasefilename,status='unknown',form='unformatted',err
      $     =101)
-      write(12)npsx,npsv,nu
-      write(12)psfxv(:,:,ispecies),psvmax,psvmin,psxmax,psxmin,psx,psv
+      write(12)npsx,npsv,nu,nspecies
+      write(12)psfxv(:,:,1:nspecies),psvmax,psvmin,psxmax,psxmin,psx,psv
+      write(12)psn(:,1:nspecies) ! Save the density as fn of x
       if(nu.ne.0)write(12)(x(i),u(i),i=1,nu),t
-      write(12)psn(:,ispecies) ! Save the density as fn of x
       close(12)
       return
  101  write(*,*)'Error opening file:',
@@ -113,31 +116,34 @@ c***********************************************************************
       real x(nu),u(nu)
       include 'ndimsdecl.f'
       include 'phasecom.f'
+      include 'partcom.f'
 
       nuin=nu
       open(13,file=phasefilename,status='old',form='unformatted',err
      $     =101)
-      read(13)npsxf,npsvf,nu
+      read(13)npsxf,npsvf,nu,nspecies
       if(npsx.ne.npsxf.or.npsv.ne.npsvf)then
          write(*,'(a,2i4,a,2i4)')
      $        'Incorrect phase-space array length allocation npsx,npsv',
      $        npsx,npsv,' file requires',npsxf,npsvf
          stop
       else
-         read(13)psfxv(:,:,1),psvmax,psvmin,psxmax,psxmin,psx,psv
+         read(13,err=102,end=102)psfxv(:,:,1:nspecies),psvmax,psvmin
+     $        ,psxmax,psxmin,psx,psv
+         read(13,err=102,end=102)psn(:,1:nspecies)
          if(nu.gt.nuin)stop 'phaseread file nu length too great'
          if(nu.ne.0)read(13)(x(i),u(i),i=1,nu),t
       endif
-      read(13,err=102,end=102)psn(:,1)
       close(13)
       return
  101  write(*,*)'Phase read ERROR opening file:',
      $     phasefilename(1:lentrim(phasefilename))
       nu=0
       return
- 102  write(*,*)'NO PSN IN THIS FILE'
+ 102  write(*,*)'Reading Error for file',phasefilename
       psn(1,1)=0.
       close(13)
+      stop
       end
 c***********************************************************************
       subroutine phaseplot(ispecies)
@@ -145,7 +151,7 @@ c***********************************************************************
       include 'phasecom.f'
       real cworka(npsx,npsv),zclv(2)
 
-      call pltinit(psxmin,psxmax,psvmin,psvmax)
+      call pltinit(psxmin,psxmax,psvmin(ispecies),psvmax(ispecies))
       call blueredgreenwhite()
       call axlabels('x','v')
 c If unset, set psfmax for less than full range. But better set earlier.

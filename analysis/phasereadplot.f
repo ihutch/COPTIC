@@ -5,6 +5,7 @@ c problems with the colorscale legend. So use makepnganim
       implicit none
       include '../src/ndimsdecl.f'
       include '../src/phasecom.f'
+      include '../src/partcom.f'
       include '../accis/plotcom.h'
       character*100 phasefilename
       real x(npsbuf),u(npsbuf),uave(npsbuf)
@@ -12,8 +13,10 @@ c problems with the colorscale legend. So use makepnganim
       parameter (phirangeinit=0.5)
       character*10 string
       integer i,ii,n,Np,Nave,Nastep,thespecies
+      integer ilab,ispecies
       real t,umin,umax,wx2nx,wy2ny
-
+      character*12 nlabel(2)
+      data nlabel/' !Bn!di!d!@',' !Bn!de!d!@'/
       Nave=1
       Nastep=1
       phirange=phirangeinit
@@ -54,7 +57,7 @@ c Set the starting number of filewriting to be N
      $           +phirangeinit
             write(string,'(f10.2)')t
             call pfset(3)      ! Just output the files; don't plot?
-            call multiframe(2,1,0)
+            call multiframe(2,1,1)
             call pltinit(x(1),x(n),-phirange,phirange)
             call axis()
             call axlabels(' ','  !Af!@')
@@ -67,6 +70,26 @@ c Set the starting number of filewriting to be N
             else
                call polyline(x,u,n)
             endif
+!           Plot density in the same frame
+            call scalewn(x(1),x(n),0.8,1.35,.false.,.false.)
+            call axptset(1.,1.)
+            call ticrev
+            call axis
+            call ticrev
+            call axptset(0.,0.)
+            call legendline(1.04,0.3,258,'!Bn!@')
+            call color(15)
+            do ispecies=1,nspecies
+               call color(ispecies+4)
+               call polyline(psx,psn(1,ispecies),npsx)
+               if(nspecies.gt.1)then !Assume electrons are first species
+                  ilab=1
+                  if(ispecies.eq.1)ilab=2
+                  call legendline(0.8,0.05+0.08*ispecies,0
+     $                 ,nlabel(ilab))
+               endif
+            enddo
+            call color(7)
             thespecies=1
             call phaseplot(thespecies)
             call pltend
