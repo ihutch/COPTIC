@@ -156,7 +156,7 @@ c***********************************************************************
       call axlabels('x','v')
 c If unset, set psfmax for less than full range. But better set earlier.
       call minmax2(psfxv(1,1,ispecies),npsx,npsx,npsv,pmin,pmax)
-      if(pmax.gt.psfmax*1.1)call psfmaxset(1.5,ispecies)
+      if(pmax.gt.psfmax*1.1)call psfmaxset(1.1,ispecies)
 c Set extrema of coloring range from psfmax.
       zclv(1)=0.
       zclv(2)=psfmax

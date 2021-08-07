@@ -255,7 +255,8 @@ c but writing and plotting only by top process
          if(lplot)then
             call minmax(u(1,2,2),iuds(1),umin,umax)
             phirange=max(phirange,umax*.95)
-            call multiframe(2,1,1)
+            call multiframe(nspecies+1,1,1)
+            call dcharsize(.018,.018)
             call pltinit(xmeshstart(id),xmeshend(id),-phirange,phirange)
             call axis()
             call axlabels(' ','  !Af!@')
@@ -278,15 +279,17 @@ c but writing and plotting only by top process
                if(nspecies.gt.1)then !Label species by charge sign.
                   ilab=1
                   if(eoverms(ispecies).lt.0)ilab=2
-                  call legendline(0.8,0.05+0.08*ispecies,0
+                  call legendline(0.8,0.35-0.08*ispecies,0
      $                 ,nlabel(ilab))
                endif
             enddo
             call color(7)
-            call phaseplot(thespecies)
-            call color(15)
-            call vecw(xmeshstart(id),vds(1),0)
-            call vecw(xmeshend(id),vds(1),1)
+            do thespecies=1,nspecies
+               call phaseplot(thespecies)
+               call color(15)
+               call vecw(xmeshstart(id),vds(thespecies),0)
+               call vecw(xmeshend(id),vds(thespecies),1)
+            enddo
             call accisflush()
             call prtend(' ')
          endif
