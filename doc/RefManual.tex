@@ -895,24 +895,6 @@ number-ratio, so the number of depositions of electrons and ions is
 equal (for the background).  Setting -nr1 uses equal numbers of
 particles and no substepping.
 
-\paragraph{-sb...} Set Boltzmann fraction $f_b$
-(\verb!boltzamp!). When both electrons and ions are being modelled as
-particles (more than one particle species is present) this switch
-should occur \emph{after} the -sp switch [because -sp reinitializes
-\verb!boltzamp! to zero.] It is physically equivalent
-to adding an additional species whose density is equal to
-$f_b\exp(e\phi/T_e)$. That is, like Boltzmann electrons.  It is
-implemented through the function \verb!faddcomp!. The charge of
-particle-species 2 is reduced by the factor \verb!1-boltzamp!, which
-is the fraction of that species (by default electrons) represented by
-particles, but their number density remains the same as species 1.  The
-addition helps to stabilize long-wave-length fluctuations in regions
-that are much larger than the Debye length. The fraction required is
-of order the ratio of the Debye length to the domain size, when this
-is small. If either there is more than one species or \verb!holepsi!
-is non-zero (switch \verb!-ih! is set nonzero), then \verb!boltzamp!
-is ramped down to zero in the first third of the timesteps.
-
 \paragraph{-sb0} When only one species is present, the role of species
 2 is taken by a uniform background and a Boltzmann responding
 fluid. The switch usage -sb0, setting \verb!boltzamp! to zero, removes
@@ -937,33 +919,57 @@ extremely small (in COPTIC's case a very weak $\gamma \sim -10^{-5}$
 damping as contrasted with standard field interpretation's very weak
 instability). COPTIC can tolerate substantially larger mesh spacing
 without ill effects, but much smaller spacing leads to stronger
-damping.
+damping. Whenever there is more than one species, the unity background
+subtraction is disabled.
+
+\paragraph{-sb...} Set Boltzmann fraction $f_b$
+(\verb!boltzamp!). When both electrons and ions are being modelled as
+particles (more than one particle species is present) this switch
+should occur \emph{after} the -sp switch [because -sp reinitializes
+\verb!boltzamp! to zero.] It is physically equivalent
+to adding an additional species whose density is equal to
+$f_b\exp(e\phi/T_e)$. That is, like Boltzmann electrons.  It is
+implemented through the function \verb!faddcomp!. The charge of
+particle-species 2 is reduced by the factor \verb!1-boltzamp!, which
+is the fraction of that species (by default electrons) represented by
+particles, but their number density remains the same as species 1.  The
+addition helps to stabilize long-wave-length fluctuations in regions
+that are much larger than the Debye length. The fraction required is
+of order the ratio of the Debye length to the domain size, when this
+is small. If either there is more than one species or \verb!holepsi!
+is non-zero (switch \verb!-ih! is set nonzero), then \verb!boltzamp!
+is ramped down to zero in the first third of the timesteps.
 
 \paragraph{-ih[...]} Set parameters of a phase-space hole in particle
 initialization for the current species. Only one species can be
 initialized as a hole; so this switch overrules and disables hole
 settings for any previous species. Up to seven parameters are set by
 succeeding values separated by commas (no spaces) but see next entry
-{\bf -pi} for variations. The parameters and
-their defaults are \verb!holepsi! [0.1] the hole (peak) potential,
-\verb!holeum! [0.]\ the speed of the hole relative to the mean of the
-untrapped Maxwellian distribution, \verb!holelen! [4.]\ the length of
-the hole in Debye lengths, \verb!holeeta! [2.]\ the power that
-determines the hole shape (2 is a parabola), \verb!holepow! [0.5]
-which governs the interpolation power when the hole transverse trapped
-temperature is other than the external, and \verb!holerad! [0.] the
-radius of the hole in the transverse plane.  The spatial direction of
-the velocity trapping of the hole must be one of the axes, and is
-determined by the B-field direction (unless it is not axis-aligned, in
-which case axis 1 is chosen). When plasma drift is present, its
-component in the trapping direction is added to \verb!holeum! to give
-the net hole speed relative to the mesh; so setting \verb!holeum! equal to
-minus the drift gives a hole stationary in the mesh.  In the other directions
-uniform Maxwellian initialization is used. A hole is incompatible with
-non-zero collisions. Single-species holes typically use \verb!-sb0!
-(or small), a uniform neutralizing background. Then \verb!-zm-1!,
-negative charge particles means the particles can be considered to be
-electrons and the velocity units $\sqrt{T_e/m_e}$ (assuming $T=1$).
+{\bf -pi} for variations:
+
+\textbf{-ih[holepsi,holeum,holelen,holeeta,holepow,holerad,holegfac]}. 
+
+\noindent The
+parameters and their defaults are \verb!holepsi! [0.1] the hole (peak)
+potential, \verb!holeum! [0.]\ the speed of the hole relative to the
+mean of the untrapped Maxwellian distribution, \verb!holelen! [4.]\
+the length of the hole in Debye lengths, \verb!holeeta! [2.]\ the
+power that determines the hole shape (2 is a parabola), \verb!holepow!
+[0.5] which governs the interpolation power when the hole transverse
+trapped temperature is other than the external, and \verb!holerad!
+[0.] the radius of the hole in the transverse plane.  The spatial
+direction of the velocity trapping of the hole must be one of the
+axes, and is determined by the B-field direction (unless it is not
+axis-aligned, in which case axis 1 is chosen). When plasma drift is
+present, its component in the trapping direction is added to
+\verb!holeum! to give the net hole speed relative to the mesh; so
+setting \verb!holeum! equal to minus the drift gives a hole stationary
+in the mesh.  In the other directions uniform Maxwellian
+initialization is used. A hole is incompatible with non-zero
+collisions. Single-species holes typically use \verb!-sb0!  (or
+small), a uniform neutralizing background. Then \verb!-zm-1!, negative
+charge particles means the particles can be considered to be electrons
+and the velocity units $\sqrt{T_e/m_e}$ (assuming $T=1$).
 
 A non-zero seventh numerical value of the \verb!-ih! switch sets
 \verb!holegfac! which is sometimes used to flatten the particle
@@ -974,7 +980,7 @@ and \verb!holetoplen! (the same parameter as \verb!holepow! when using
 quiet start \verb!-pi!).
 
 
-\paragraph{-pi...} Quiet particle initialization, if used, ought to be
+\paragraph{-pi[nqblkmax]} Quiet particle initialization, if used, ought to be
 set before any hole setting switch. Reads an integer
 argument from the switch, which gives the maximum number of qblocks in
 each dimension, and if greater than zero causes the qinit code (rather
@@ -986,17 +992,20 @@ When this parameter \verb!nqblkmax! is greater than zero, so the qinit
 code is used, the meaning of the parameters in the \textbf{-ih} switch
 is changed. \verb!holeeta! is not used; and \verb!holepow! instead
 sets the parameter \verb!holetoplen!  which is used for the stretched
-${\rm sech}^4$ shaped hole. By default if \verb!holegfac=0!,
-\verb!holelen! is set equal to $4+\psi/2$ and \verb!holetoplen! to
-$-1/\psi$ for \verb!holepsi>0.6! and to $4$ and $-10$ (no distortion)
-otherwise. Thus holes shallower than $\psi=0.6$ have default holelen
-and holetoplen. If \verb!holegfac!$\not=0$ then $4+\psi/10$ and
-$\psi-1/\psi$ are used. These permit deep holes $\psi\gg1$ to be
-initialized.  [This change means that using {\bf -ih} without {\bf
-  -pi} one must now give enough arguments to {\bf -ih} to specify a
-nonzero \verb!holepow!. Eventually this ought to be rationalized.]
+${\rm sech}^4$ shaped hole. By default if \verb!holegfac=0!, then for
+\verb!holepsi>0.6!, the parameter \verb!holelen! is set equal to
+$4+\psi/2$ and \verb!holetoplen! to $-1/\psi$, otherwise they are set
+to to $4$ and $-10$ (no distortion). Thus holes shallower than
+$\psi=0.6$ have fixed standard default holelen and holetoplen. If
+\verb!holegfac!$\not=0$ then $4+\psi/10$ and $\psi-1/\psi$ are
+used. These permit deep holes $\psi\gg1$ to be initialized.  [This
+change means that using {\bf -ih} without {\bf -pi} one must now give
+enough arguments to {\bf -ih} to specify a nonzero
+\verb!holepow!. Eventually this ought to be rationalized.]
 
-Finite radius holes are initialized as follows. For any transverse
+\textbf{-ih[holepsi,holeum,holelen,unused,holetoplen,holerad,holegfac]}. 
+
+\noindent Finite radius holes are initialized as follows. For any transverse
 position (chosen uniformly) the peak potential $\psi$, at parallel
 position zero, is multiplied by a transverse shape factor currently
 $\exp(-(r/\verb!holerad!)^2)$, and the parallel position and velocity
@@ -1004,6 +1013,30 @@ is chosen as if the hole was one dimensional except with that scaled
 $\psi$. This algorithm does not normally give a fully self-consistent
 3D hole. Consequently initial transient perturbations associated with
 this fact are generated.
+
+\paragraph{-fp[vsc,vtc,dcc]} Multigaussian ion distribution
+initialization. Add a component to the multigaussian distribution of
+the current species, having shift velocity \verb!vsc!, thermal
+velocity ($\sqrt{T/m}$) \verb!vtc!, and relative density
+\verb!dcc!. The main current use is to construct initial solitary
+structures like electron holes that interact with a non-Maxwellian ion
+distribution. When this initialization is used it over-rides ion
+temperature and velocity shifts prescribed by previous switches, and
+invokes instead an initialization of both electrons and ions that
+represents a self-consistent equilibrium of the electron hole
+prescribed by the \textbf{-ih} switch. The initial ion density spatial
+distribution and velocity distribution is consistent with a distant
+distribution equal to the sum of the (multiple \textbf{-fp})
+prescriptions. The electron trapped distribution is consistent with
+the prescribed hole potential. Since this type of switch is generally
+used when the first species is electrons (\textbf{-zm-1} mass unity)
+and the second is ions (\textbf{-zm0.0005447} mass 1836); the COPTIC
+reference velocity is then the electron thermal velocity
+$\sqrt{T_r/m_e}$. Since it is inconvenient to prescribe the ion
+components' velocities using tiny numbers, \verb!vsc! and \verb!vtc!
+are instead specified in \emph{ion acoustic units} $\sqrt{T_r/m_i}$
+(in a sense breaking the rule that arguments are all in the code
+normalized units).
 
 \subsubsection*{Neutrals, Collisions, Magnetic Field}
 

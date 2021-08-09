@@ -403,8 +403,10 @@ c The flattop length holetoplen. Negligible for large negative values.
             fp=fp*Pfofv(nofv)
             ixp=interp(Pfofv,nofv,fp,p)
             if(ixp.gt.0.and.ixp.lt.nofv)then
-               x_part(ndims+id,islot)=tisq*((1-p+ixp)*vofv(-1+ixp)+(p
-     $              -ixp)*vofv(ixp)) +holespeed
+! Multigauss velocity is in units of sqrt(Tr/ms) convert to sqrt(Tr/m1)
+!               x_part(ndims+id,islot)=tisq*((1-p+ixp)*vofv(-1+ixp)+(p
+               x_part(ndims+id,islot)=sqrt(abs(eoverms(ispecies)))*((1-p
+     $              +ixp)*vofv(-1+ixp)+(p-ixp) *vofv(ixp)) +holespeed
             else
                write(*,*)'placeqblk MultiGauss interp error',ixp,p
                stop
@@ -546,12 +548,12 @@ c The flattop length holetoplen. Negligible for large negative values.
 c Call BGKint in such a way as to put into the negative trapped section
 c because it returns f0 u0 in reverse order.
       if(lfv)then
-         write(*,*)'               f0construct non-Maxwellian version'
+!         write(*,*)'               f0construct non-Maxwellian version'
          call BGKintnew(nphi,psi,-um,xmax,coshlen,tl,
      $        phiarray,us,xofphi,den,denuntrap,dentrap,tilden
      $        ,f0(-nphi),u0(-nphi),kp2,denionfun,denion)
       else  ! Zero ion response version.
-         write(*,*)'               f0construct ions uniform'
+!         write(*,*)'               f0construct ions uniform'
          call BGKint(nphi,psi,-um,xmax,coshlen,tl,
      $        phiarray,us,xofphi,den,denuntrap,dentrap,tilden
      $        ,f0(-nphi),u0(-nphi),kp2)

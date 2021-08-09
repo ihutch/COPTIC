@@ -16346,4 +16346,23 @@ several different routines.
 
 7 Aug 2021
 Rationalize phasepscont by always accumulating psaccum and psnaccum
-for all species.
+for all species. Improve the plots to include all species' phase
+spaces.
+
+This shows there is a problem with the approach. The ion distribution
+does not seem to behave as expected for energy conservation. My 
+assumption is that this is because the ion temperature was used 
+in contradiction with the multigaussian settings.
+
+Need instead to use eoverms directly. This raises the question about
+whether the eoverms of species 1 is what defines the
+non-dimensionalization and does it need to be accounted for here?
+Is it eoverms(ispecies)/eoverms(1)? I think not because coptic has
+one reference temperature Tr, which defines the Debye length.
+According to Refmanual, input specifications are normalized values
+for potential velocity time T charge-to-mass ration and B-field, and
+defining the Debye length is a free choice, generally unity. However
+I seem to be breaking that convention by the multigaussian specification
+because -fp<vshift>,<vthermal>,<n> regards the v's as being in ion
+units, not reference units. Electrons are in reference units because their 
+eoverms is -1. 
