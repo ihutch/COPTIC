@@ -1404,19 +1404,21 @@ c The used dimensions of each are
       integer iuds(ndims)
       real u(ifull(1),ifull(2),ifull(3))
       real starts(ndims),ends(ndims)
+      real vp(nw,nw,2)
       integer nw
       real zp(nw*nw)
       integer ixnpv(ndims+1)
       parameter (nx=2000)
       real xnv(nx)
+      real svec(ifull(1),ifull(2),ifull(3),3)
       character*20 utitle
 
       call simpleixnp(ndims,iuds,starts,ends,ixnpv,xnv,nx)
       idfixp=1
       utitle=''
 !      write(*,*)ifull,iuds,nw,ixnpv
-      call sliceGweb(ifull,iuds,u,nw,zp,ixnpv,xnv,idfixp,utitle)
-!     ,svec,vp)
+      call sliceGweb(ifull,iuds,u,nw,zp,ixnpv,xnv,idfixp,utitle,svec
+     $     ,vp)
 
       end
 c*********************************************************************

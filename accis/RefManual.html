@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
            "http://www.w3.org/TR/REC-html40/loose.dtd">
 <html>
-<meta name="GENERATOR" content="TtH 4.13">
+<meta name="GENERATOR" content="TtH 4.12">
  <style type="text/css"> div.p { margin-top: 7pt;}</style>
  <style type="text/css"><!--
  td div.comp { margin-top: -0.6ex; margin-bottom: -1ex;}
@@ -69,7 +69,8 @@ fortran program, you can compile the accis routines.
 
 <div class="p"><!----></div>
 The best way to get into using accis is by example. So I recommend
-looking at the routine plottest.f, and others in the directory testing.
+looking at the routine <tt>plottest.f</tt>, and others in the directory
+<tt>testing</tt>.
 
 <div class="p"><!----></div>
  <a id="tth_sEc2"></a><h2>
@@ -879,20 +880,19 @@ getrgbcolor are public, for calling by higher level routines, and
 possibly the user.
 
 <div class="p"><!----></div>
-For X window systems, the X11 driver (vecx.c) requires linking against
-the Xlib library using compiler/linker arguments such as
--L/usr/X11R6/lib/ -lX11.  The OpenGL driver vecglx.c requires in
+For X window systems, the X11 driver (vecx.c=vecX11.c) requires
+linking against the Xlib library using compiler/linker arguments such
+as -L/usr/X11R6/lib/ -lX11.  The OpenGL driver vecglx.c requires in
 addition -lGL and -lGLU. The development versions of the X11 and
 OpenGL packages may be required to provide these. The driver can be
-selected by e.g. <tt>$&nbsp;make&nbsp;VECX=vecx</tt> or  <tt>$&nbsp;make&nbsp;VECX=vecglx</tt>. 
-These drivers reside in the library <tt>libaccisX.a</tt>.
-Non-X drivers reside in <tt>libaccis.a</tt> which normally needs no
-additional libraries. 
-The make command <tt>$&nbsp;make&nbsp;VECX=noscreen</tt>  like <tt>$&nbsp;make&nbsp;VECX=vec4014</tt>
-makes a version which requires only a fortran
-compiler (no C). The noscreen option outputs no graphics to screen and does not
-wait for any input. It will however generate postscript plot files if the code
-calls for them.
+selected by e.g. <tt>$&nbsp;make&nbsp;VECX=vecx</tt> or <tt>$&nbsp;make&nbsp;VECX=vecglx</tt>.
+These drivers reside in the library <tt>libaccisX.a</tt>.  Non-X drivers
+reside in <tt>libaccis.a</tt> which normally needs no additional
+libraries.  The make command <tt>$&nbsp;make&nbsp;VECX=noscreen</tt>  like
+<tt>$&nbsp;make&nbsp;VECX=vec4014</tt>  makes a version which requires only a
+fortran compiler (no C). The noscreen option outputs no graphics to
+screen and does not wait for any input. It will however generate
+postscript plot files if the code calls for them.
 
 <div class="p"><!----></div>
 All the ACCIS code with the exception of the drivers is fortran 77.
@@ -910,10 +910,20 @@ erroneous argument parameters to subroutine calls. It is not necessary
 for operation of debugged correct code.
 
 <div class="p"><!----></div>
+Displayed window size is by default 800x600 pixels. This default can be
+overridden by command line arguments of the form (e.g.)
+<tt>-geometry&nbsp;1600x1200</tt>, or by providing Xresources (in files
+.Xdefaults or .Xresources) of the standard form
+<tt>Accis.Geometry:&nbsp;1600x1200+400+0</tt> (case matters). On large
+screens, wider than 2400 pixels, the drawn line width is automatically
+increased to improve readability. None of these display settings
+influences the postscript file output.
+
+<div class="p"><!----></div>
 
 <br /><br /><hr /><small>File translated from
 T<sub><span class="small">E</span></sub>X
 by <a href="http://hutchinson.belmont.ma.us/tth/">
 T<sub><span class="small">T</span></sub>H</a>,
-version 4.13.<br />On 15 May 2020, 12:23.</small>
+version 4.12.</small>
 </html>
