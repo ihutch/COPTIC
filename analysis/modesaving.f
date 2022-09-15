@@ -36,12 +36,14 @@ c********************************************************************
          write(*,*)'incompatible with',nff,nfx,nmodes,' declared.'
          stop
       endif
+      write(*,*)'       nfiles        nx        nmodes   ',
+     $     '   nfmax       nxmax'
       write(*,*)nuf,nux,nmr,nff,nfx
       read(9)(((phimodes(i,j,m),i=1,nuf),j=1,nux),m=1,nmr)
       read(9)(time(i),i=1,nuf)
       read(9)(xn(j),j=1,nux)
       close(9)
-      write(*,*)'Read phimode(10,5,2)',phimodes(10,5,2)
+!      write(*,*)'Read phimode(10,5,2)',phimodes(10,5,2)
       return
  101  continue
       write(*,*)'No file savedmodes.dat. Creating modes'

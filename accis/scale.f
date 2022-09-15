@@ -19,6 +19,13 @@ c Don't switch immediately. Just set the value at the next pltinit.
       return
       end
 C********************************************************************
+      subroutine pfget(isw)
+c Get the plot-to-file mode.
+      integer isw
+      include 'plotcom.h'
+      isw=pfsw
+      end
+C********************************************************************
 c   Set world to normalized scalings.
 c   If min and max are both zero, leave as before.
       subroutine scalewn(wxmi,wxma,wymi,wyma,lx,ly)

@@ -43,7 +43,8 @@ Win32 graphics driver which need C) so if you can compile your
 fortran program, you can compile the accis routines.
 
 The best way to get into using accis is by example. So I recommend
-looking at the routine plottest.f, and others in the directory testing.
+looking at the routine \verb!plottest.f!, and others in the directory
+\verb!testing!.
 
 \section{Conventions}
 
@@ -674,20 +675,19 @@ svga, txtmode, vec, vecfill, scolor, accisgraddef, acgradcolor,
 getrgbcolor are public, for calling by higher level routines, and
 possibly the user.
 
-For X window systems, the X11 driver (vecx.c) requires linking against
-the Xlib library using compiler/linker arguments such as
--L/usr/X11R6/lib/ -lX11.  The OpenGL driver vecglx.c requires in
+For X window systems, the X11 driver (vecx.c=vecX11.c) requires
+linking against the Xlib library using compiler/linker arguments such
+as -L/usr/X11R6/lib/ -lX11.  The OpenGL driver vecglx.c requires in
 addition -lGL and -lGLU. The development versions of the X11 and
 OpenGL packages may be required to provide these. The driver can be
-selected by e.g. \verb!$ make VECX=vecx! or  \verb!$ make VECX=vecglx!. 
-These drivers reside in the library \verb!libaccisX.a!.
-Non-X drivers reside in \verb!libaccis.a! which normally needs no
-additional libraries. 
-The make command \verb!$ make VECX=noscreen!  like \verb!$ make VECX=vec4014!
-makes a version which requires only a fortran
-compiler (no C). The noscreen option outputs no graphics to screen and does not
-wait for any input. It will however generate postscript plot files if the code
-calls for them.
+selected by e.g. \verb!$ make VECX=vecx! or \verb!$ make VECX=vecglx!.
+These drivers reside in the library \verb!libaccisX.a!.  Non-X drivers
+reside in \verb!libaccis.a! which normally needs no additional
+libraries.  The make command \verb!$ make VECX=noscreen!  like
+\verb!$ make VECX=vec4014!  makes a version which requires only a
+fortran compiler (no C). The noscreen option outputs no graphics to
+screen and does not wait for any input. It will however generate
+postscript plot files if the code calls for them.
 
 
 All the ACCIS code with the exception of the drivers is fortran 77.
@@ -703,6 +703,16 @@ and can then be included in fortran code compiled with a F90 (or
 later) compiler. The explicit interface helps the compiler detect
 erroneous argument parameters to subroutine calls. It is not necessary
 for operation of debugged correct code.
+
+Displayed window size is by default 800x600 pixels. This default can be
+overridden by command line arguments of the form (e.g.)
+\verb!-geometry 1600x1200!, or by providing Xresources (in files
+.Xdefaults or .Xresources) of the standard form
+\verb!Accis.Geometry: 1600x1200+400+0! (case matters). On large
+screens, wider than 2400 pixels, the drawn line width is automatically
+increased to improve readability. None of these display settings
+influences the postscript file output.
+
 
 
 \end{document}

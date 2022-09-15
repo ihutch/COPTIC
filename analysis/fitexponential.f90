@@ -5,7 +5,7 @@
 subroutine fitexponential(n,z,A,B,ierr)
 ! To a complex trace z of length n, use FFT to fit a complex exponential form
 ! to find A and B such that z(j)~=A*exp(i B*(j-1)).
-! Uses fftpack routines, or fftw3 routines.
+! Uses fftpack routines
   integer :: n,ierr
   complex :: z(n),A,B
 
@@ -74,6 +74,8 @@ subroutine fitexponential(n,z,A,B,ierr)
   ! However, there is ambiguity 2pi in the value of Br, and probably one
   ! should insist that |B|<=pi. So if Br>pi Br=Br-2pi
   if(real(B).gt.3.1415926)B=B-2.*3.1415926
+! The growth rate (imaginary part of B, is sometimes rather poorly estimated
+! by the prior algorithm. Adjust it to give correct rms values maybe?
   if(idebug.ne.0)then
      write(*,*)'kw=',kw
      write(*,*)'F,G',F,G

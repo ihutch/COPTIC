@@ -82,6 +82,9 @@ libanalcoptic.a : modesaving.o diststat.o
 modeplot : modeplot.f fitexponential.o modesaving.f examdecl.f $(ACCISLIB)
 	$(G77)  -o modeplot $(COMPILE-SWITCHES) $(PROFILING) modeplot.f dummyreduce.o fitexponential.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(LIBRARIES)
 
+modeshape : modeshape.f fitexponential.o modesaving.f examdecl.f $(ACCISLIB)
+	$(G77)  -o modeshape $(COMPILE-SWITCHES) $(PROFILING) modeshape.f dummyreduce.o fitexponential.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(LIBRARIES)
+
 ########################################################
 $(ACCISLIB) : ${COPTIC_ROOT}/accis/*.f ${COPTIC_ROOT}/accis/*.c ${COPTIC_ROOT}/accis/*.h
 	make -C ${COPTIC_ROOT}/accis

@@ -26,10 +26,13 @@ static XSetWindowAttributes    accis_swa;
 static GC                      accis_gc;
 static XGCValues               accis_gcvalues;
 static XWindowAttributes       accis_gwa;
+static XWindowAttributes       accis_rgwa;
 static XEvent                  accis_xev;
 static Visual                  *accis_visual;
 static Colormap accis_colormap;
-static unsigned long accis_valuemask=0x0000;
+/*static unsigned long accis_valuemask=0x0000;*/
+static unsigned long accis_valuemask=GCLineStyle;
+
 static int accis_depth;
 static int accis_screen;
 static int accis_listing=0;
@@ -223,13 +226,14 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
     XMapWindow(accis_display, accis_window);
     XStoreName(accis_display, accis_window, "Accis");
     /* printf("Finished initializing, and mapped window\n"); */
-
     accis_gc=XCreateGC(accis_display,accis_window,
 		       accis_valuemask,&accis_gcvalues);
     accis_colormap=accis_cmap;
     initDefaultColors();
     second++;
-    /* printf("Created GC\n"); */
+    XGetWindowAttributes(accis_display,accis_root,&accis_rgwa);
+    /*printf("Root Width=%d\n",accis_rgwa.width);*/
+    XSetLineAttributes(accis_display,accis_gc,accis_rgwa.width/1200,0,0,0);
   }
   /* Get the possibly new values of wdth/height*/
   XGetWindowAttributes(accis_display,accis_window, &accis_gwa);

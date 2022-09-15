@@ -110,7 +110,7 @@
       call dashset(0)
       call pltend
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if(.false.)then   
+      if(.true.)then   
       write(*,*)'rphimodes(i,j,2)'
       do i=1,4
          write(*,'(6g10.2)')(rphimodes(i,j,2),j=1,4)

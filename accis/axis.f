@@ -47,6 +47,7 @@ c  Draw yaxis using the general axis routine.
       real wy2ny
       integer nyfac,tog
       tog=0
+c If no x-space and we are not on the first column turn off y-labels 
       if(ncolumns.gt.1)then
          if( ((multype-2*(multype/2)) .eq. 0) .and.
      $        (nframe.gt.nrows .or. nframe.eq.0) .and.

@@ -100,6 +100,9 @@ c Set the starting number of filewriting to be N
             do thespecies=1,nspecies
                call color(7)
                call phaseplot(thespecies)
+               call color(15)
+               call vecw(psx(1),0.,0)
+               call vecw(psx(npsx),0.,1)
             enddo
             idone=idone+1
             call accisflush

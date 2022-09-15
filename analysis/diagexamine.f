@@ -21,6 +21,7 @@
       data xmodenums/0,1,2,3,4,5,6,7,8,9,10/
       integer ifullphi(3),iudsphi(3)
       complex phimodes(nfiles,na_m,nmodes)
+!      complex meanmodes(na_m,nmodes)
       real rphimodes(nfiles,na_m,nmodes),iphimodes(nfiles,na_m,nmodes)
       real theta(nfiles,nmodes)
       real dt
@@ -234,7 +235,7 @@
          
 ! Project at the maximum complex argument (phase angle).
          call projectphi2(nfiles,na_m,nmodes,maxfile,ix1,ix2
-     $     ,phimodes,rphimodes,theta)
+     $     ,phimodes,rphimodes,iphimodes,theta)
          dx=xn(2)-xn(1)
          call leadmode(nfiles,na_m,nmodes,maxfile,ix1,ix2,dx,
      $           rphimodes,xcentroids)
@@ -1346,13 +1347,15 @@ c$$$         = 20 input error returned by lower level routine
       end
 !***********************************************************************
       subroutine projectphi2(nfiles,na_m,nmodes,ifile,ix1,ix2
-     $     ,phimodes,rphimodes,theta)
+     $     ,phimodes,rphimodes,iphimodes,theta)
+
 ! Combine real and imaginary parts: choose a phase angle theta such
 ! that averaged over time we maximize the mode amplitude squared averaged
 ! over all relevant x. theta must be the same for all x AND t.
       complex phimodes(nfiles,na_m,nmodes)
-      real rphimodes(nfiles,na_m,nmodes)
+      real rphimodes(nfiles,na_m,nmodes),iphimodes(nfiles,na_m,nmodes)
       real theta(nfiles,nmodes)
+!      complex meanmodes(na_m,nmodes)
 
 !      write(*,*)nfiles,na_m,nmodes,ifile,ix1,ix2
       thetathis=0.
@@ -1377,6 +1380,8 @@ c$$$         = 20 input error returned by lower level routine
             do ix=ix1,ix2
                rphimodes(i,ix,m)=ct*real(phimodes(i,ix,m))
      $              +st*imag(phimodes(i,ix,m))
+               iphimodes(i,ix,m)=-st*real(phimodes(i,ix,m))
+     $              +ct*imag(phimodes(i,ix,m))
             enddo
          enddo
       enddo
