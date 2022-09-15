@@ -31,7 +31,7 @@ ifeq ("$(G77)","")
  COMPILER:=\
 $(shell \
  if which mpif77 >/dev/null 2>&1; then \
-  echo -n "mpif77";else\
+  echo -n "mpif77 -fallow-argument-mismatch";else\
   if which ftn >/dev/null 2>&1 ; then echo -n "ftn";else\
     if which g77 >/dev/null 2>&1 ; then echo -n "g77";else\
      if which f77 >/dev/null 2>&1 ; then echo -n "f77";else\

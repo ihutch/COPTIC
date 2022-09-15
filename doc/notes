@@ -16403,3 +16403,17 @@ v1.7dt.25 takes timesteps a factor of 2 smaller than vs1.7. It is
 superficially very similar. Reaches an excursion of ~-9 at time 965
 but has not escaped. That's slightly less excursion than the dt.5 case.
 As before, the oscillations cause a big change in the ion phase space.
+
+15 Sep 2022
+
+Got errors with MPICH reduce calls because of calling the same routine
+with different types of arguments as per the fortran interface
+definitions, on ihutchws with ubuntu 22.04, which has gcc version
+11.2.0 (Ubuntu 11.2.0-19ubuntu1).
+
+After some struggling, I found that could be fixed by using a compile
+flag -fallow-argument-mismatch. However, the 20.04 ubuntu has
+gcc version 9.4.0, which has no such flag. AARRGGHH.
+It appears that one only needs the makefile to be modified. But I
+have not updated it in the distribution. Instead I add makefilefallow
+that has the needed modification. 
