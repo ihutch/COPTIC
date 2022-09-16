@@ -30,8 +30,7 @@ ifeq ("$(G77)","")
 # Preference order mpif77, ftn, g77, f77, gfortran
  COMPILER:=\
 $(shell \
- if which mpif77 >/dev/null 2>&1; then \
-  echo -n "mpif77";else\
+ if which mpif77 >/dev/null 2>&1; then echo -n "mpif77";else\
   if which ftn >/dev/null 2>&1 ; then echo -n "ftn";else\
     if which g77 >/dev/null 2>&1 ; then echo -n "g77";else\
      if which f77 >/dev/null 2>&1 ; then echo -n "f77";else\
@@ -114,10 +113,12 @@ export VECX
 # Cray compilers don't recognize -Wall and optimize by default
 ifneq ("$(G77)","ftn")
 	OPTIMIZE=-O3
-        COMPILE-SWITCHES:=$(COMPILE-SWITCHES) -Wall $(OPTIMIZE) -I.
+        COMPILE-SWITCHES:=$(COMPILE-SWITCHES) -Wall $(OPTIMIZE) -I. -Wno-unused-dummy-argument -Wno-integer-division -Wno-align-commons
 else
 # -fPIC Not needed. All that's needed is the  -dynamic switch for link.
 endif
+FALLOW=$(shell $(G77) -v --help 2>&1 | grep  allow-argument-mismatch | awk '{print $$1}')
+COMPILE-SWITCHES:=$(COMPILE-SWITCHES) $(FALLOW)
 ##########################################################################
 # Decide on various compiler options based on compiler name.
 # -fno-bounds-check is not recognized reliably except by g77 and gfortran
