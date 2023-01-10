@@ -160,7 +160,8 @@ c Font shift: \G
       elseif(sw.eq.92.or.sw.eq.33)then
 c Not a switch literal: \\, or \!, or !!.
          isw=0
-      elseif(sw.eq.100.or.sw.eq.117.or.sw.eq.111.or.sw.eq.110)then
+      elseif(sw.eq.100.or.sw.eq.117.or.sw.eq.111.or.sw.eq.110
+     $        .or.sw.eq.108.or.sw.eq.115)then
 c /* Toggle sUper/sub-script mode or Overbar/uNderbar mode */
          if(su.eq.0)then
             if(sw.eq.ichar('u').or.sw.eq.ichar('o'))then
@@ -174,6 +175,14 @@ c /* Toggle sUper/sub-script mode or Overbar/uNderbar mode */
             elseif(sw.eq.111.or.sw.eq.110)then
                dxc=1.
                hs=1.
+            elseif(sw.eq.115)then
+               sgn=1.
+               dxc=-0.12
+               hs=0.68
+            elseif(sw.eq.108)then
+               sgn=1.
+               dxc=0.15
+               hs=1.42
             endif
             dx=-chrshght*dxc*chrssin*sgn
             dy= chrshght*dxc*chrscos*sgn

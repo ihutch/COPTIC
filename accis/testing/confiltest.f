@@ -20,15 +20,15 @@ c      read(*,*)nl,icolsmooth
       nl=abs(nl)
       space=1.
       do 100 i=1,nx
-	 do 200 j=1,ny
-	    x(i,j)=0.7*float(i-4)
-	    y(i,j)=j-4
-	    z(i,j)=sin(space*(x(i,j)-.3*y(i,j))/2.)
+         do 200 j=1,ny
+            x(i,j)=0.7*float(i-4)
+            y(i,j)=j-4
+            z(i,j)=sin(space*(x(i,j)-.3*y(i,j))/2.)
      $           *sin(space*y(i,j)/4.)
- 200	 continue
+ 200     continue
  100  continue
       do 300 n=1,nl
-	 cl(n)=(-1.+ 2.*(n-1)/(nl-1))*1.
+         cl(n)=(-1.+ 2.*(n-1)/(nl-1))*1.
  300  continue
 c      call pfPSset(1)
 c      call pfset(3)

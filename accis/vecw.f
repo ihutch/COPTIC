@@ -333,7 +333,8 @@ c New approach set truncation at the screen boundary plus20%, Not infinity.
       end
 
 c**********************************************************************
-c*   Truncate within the rectangle given by xma,yma,xmi,ymi in trunc.
+c* Truncate within the rectangle given by trcxma,yma,xmi,ymi in trunc
+c* the vector xy1-xy2, returning them as the truncated ends.
 c* Return 99 if whole vector outside, 
 c* ptrunc bits 0-4 set if x1,y1 is moved; bits 5-7 set if x2,y2 moved
       function ptrunc(x1,y1,x2,y2)

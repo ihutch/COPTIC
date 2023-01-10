@@ -1,4 +1,4 @@
-	program hidtest
+        program hidtest
       integer nx,ny,ud,i,j,iLx
       parameter (iLx=100,ny=99)
       real z,x,y,r,yy
@@ -10,22 +10,22 @@ c contour storage.
       character pp(4,iLx,ny)
       parameter (ht=.02)
 c      include '\fortran\graph\hid\world3.h'
-	include 'world3.h'
+        include 'world3.h'
       nx=30
       do 10 i=1,nl
-	 cl(i)=ht*(-1.+i*2./nl)
+         cl(i)=ht*(-1.+i*2./nl)
    10 continue
       call pfset(-1)
       do 1 j=1,ny
-	 y(j)=float(j)-ny/3. +0.5
-	 yy=y(j)*y(j)
-	 do 2 i=1,nx
-	    x(i)=float(i)-nx/3.+0.5
-	    r=sqrt(x(i)*x(i)+yy)/2.
-c	    z(i,j)=ht*sin(x(i))*sin(y(j))/(x(i)*y(j))
-	    z(i,j)=ht*sin(r)/r
-	    ud=i-1
-    2	 continue
+         y(j)=float(j)-ny/3. +0.5
+         yy=y(j)*y(j)
+         do 2 i=1,nx
+            x(i)=float(i)-nx/3.+0.5
+            r=sqrt(x(i)*x(i)+yy)/2.
+c           z(i,j)=ht*sin(x(i))*sin(y(j))/(x(i)*y(j))
+            z(i,j)=ht*sin(r)/r
+            ud=i-1
+    2    continue
     1 continue
       call pltinit(0.,1.,0.,1.)
 c       Plot the surface. With axes. Web color 10, axis color 7.

@@ -4,6 +4,9 @@
 SHELL=/bin/bash
 #########################################################################
 # Include the make commands to define compiler and locations.
+# But in this accis directory specify the parent so we find ourselves
+# This disables library tests.
+ACCISPARENT=../
 include ACCIS.mk
 #########################################################################
 # Cross-compiling definitions obviously need these executables.

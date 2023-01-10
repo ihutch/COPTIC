@@ -25,7 +25,7 @@ c Segments alternate pen down, pen up.
 
       if(npts.le.0) return
       call vecw(x(1),y(1),0)
-      do 3 i=2,npts
+      do i=2,npts
          if(.not.ldash) then
             call vecw(x(i),y(i),1)
          else
@@ -48,14 +48,13 @@ c Lengths of total vector:
             cy=ny
             dx=nx- crsrx
             dy=ny- crsry
-            vlen=sqrt(DX*DX+DY*DY)
+            vlen=sqrt(dx*dx+dy*dy)
 c Partial length remaining:
             plen=vlen
-            if(vlen.eq.0)return
+!            if(vlen.eq.0)return ! Because we divide by it maybe?
 c Distance to end of segment
     1       dlen=(dashlen(jmask)-dashdist)
             if(plen.gt.dlen)then
-c               write(*,*)plen,dlen,nx,ny,iptrunc
 c Vector longer than this segment. Draw segment and iterate.
                dashdist=0
                plen=plen-dlen
@@ -76,11 +75,14 @@ c Vector ends before segment. Draw to end of vector and quit.
                nx=cx
                ny=cy
                cud=dashmask(jmask)
-c              call optvecn(nx,ny,cud)
                call vecn(nx,ny,cud)
+! Because vecn does not always draw all the way we must do explicitly:
+               crsrx=wx2nx(x(i))
+               crsry=wy2ny(y(i))               
             endif
          endif
     3 continue
+      enddo
       end
 C********************************************************************
       subroutine dashset(i)

@@ -12,14 +12,14 @@ c  Test of contouring routine.
       snl=nl
       nl=abs(nl)
       do 100 i=1,nx
-	 do 200 j=1,ny
-	    x(i,j)=0.7*float(i-4)
-	    y(i,j)=j-4
-	    z(i,j)=sin((x(i,j)-.3*y(i,j))/2.)*sin(y(i,j)/4.)
- 200	 continue
+         do 200 j=1,ny
+            x(i,j)=0.7*float(i-4)
+            y(i,j)=j-4
+            z(i,j)=sin((x(i,j)-.3*y(i,j))/2.)*sin(y(i,j)/4.)
+ 200     continue
  100  continue
       do 300 n=1,nl
-	 cl(n)=-1.+ 2.*n/nl
+         cl(n)=-1.+ 2.*n/nl
  300  continue
 c      call pfPSset(1)
 c      call glback()

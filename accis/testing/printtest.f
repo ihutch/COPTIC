@@ -12,10 +12,10 @@ c PS print some figures without stopping.
 
 c Make test arrays.
       do 2 i=1,length
-	 x(i)=float(i)*1.
-	 y(i)=1.*(1.4+sin(0.2*x(i)))
-	 err(i)=0.4*sin(x(i)*sin(x(i)))
-	 ym(i)=y(i)-0.5*err(i)
+         x(i)=float(i)*1.
+         y(i)=1.*(1.4+sin(0.2*x(i)))
+         err(i)=0.4*sin(x(i)*sin(x(i)))
+         ym(i)=y(i)-0.5*err(i)
     2 continue
 
 c Plot 1. Simplest one-call plot.
@@ -79,9 +79,9 @@ c But with reversed tics and axes
       call ticrev
 c Make the axis point at the top right. Arguments are fractions of axregion.
       call axptset(1.,1.)
-	call dashset(4)
+        call dashset(4)
       call lautoplot(x,y,length,.true.,.true.)
-	call dashset(0)
+        call dashset(0)
       call axptset(0.,0.)
       call ticrev
 c Draw additional axes in standard position, illustrating first,delta.
@@ -92,27 +92,27 @@ c
       call togminor()
 c Plot 5 Simplest automatic scatter plot
 c Illustrating the use of a general character as the marker.
-	call automark(x,y,length,ichar('m'))
+        call automark(x,y,length,ichar('m'))
 c Overplot some error bars.
-	call polyerrs(x,y,err,length,.5,1.)
-	call pltend
+        call polyerrs(x,y,err,length,.5,1.)
+        call pltend
 c
 c Plot 6 Multiple Frame Plot
 c (nrows,ncolumns,multype: x,y plot space from bits 0 and 1)
-c	write(*,*)' Enter nrows and ncolumns,itype'
-c	read(*,*)irows,icolumns,itype
+c       write(*,*)' Enter nrows and ncolumns,itype'
+c       read(*,*)irows,icolumns,itype
         irows=3
         icolumns=4
         itype=3
-	call multiframe(irows,icolumns,itype)
-	do 10 i=1,irows*icolumns
-	   if((i/2)*2.ne.i)then
-	      call autoplot(x,y,length)
-	   else
-	      call autoplot(x,ym,length)
-	   endif
-   10	continue
-	call pltend
+        call multiframe(irows,icolumns,itype)
+        do 10 i=1,irows*icolumns
+           if((i/2)*2.ne.i)then
+              call autoplot(x,y,length)
+           else
+              call autoplot(x,ym,length)
+           endif
+   10   continue
+        call pltend
 
       end
 

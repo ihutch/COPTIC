@@ -9,16 +9,16 @@ c
       call pfset(-1)
       call pltinit(0.,1.,0.,1.)
       do 8 k=1,3
-	 if(k.eq.3)then
-	    noff=1
-	 else
-	    noff=0
-	 endif
-	 do 9 j=1,3
-	    js=0.
-	    do 10 i=1,32
-	       py=0.6-(4*(k-1)+j)*0.043
-	       px=0.02+.03*i
+         if(k.eq.3)then
+            noff=1
+         else
+            noff=0
+         endif
+         do 9 j=1,3
+            js=0.
+            do 10 i=1,32
+               py=0.6-(4*(k-1)+j)*0.043
+               px=0.02+.03*i
                if(char(31+32*(j-1)+i).eq.'\\'
      $              .or.char(31+32*(j-1)+i).eq.'!')then 
                   str1='!'//char(63+k)//'!'//
@@ -27,9 +27,9 @@ c
                   str1='!'//char(63+k)//char(31+32*(j-1)+i)
      $                 //'!@'//char(0)
                endif
-	       call drwstr(px,py,str1)
-   10	    continue
-    9	 continue
+               call drwstr(px,py,str1)
+   10       continue
+    9    continue
     8 continue
       do 11 i=1,15
          call color(i)
