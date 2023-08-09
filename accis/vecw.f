@@ -266,7 +266,7 @@ c  Draw a vector in normalized coordinates.
       real nx,ny
       integer ud
       include 'plotcom.h'
-      real*4 prx,pry,crx,cry
+      real prx,pry,crx,cry
       integer ret,ret1,ret2,sx,sy,ptrunc
       crx=nx
       cry=ny

@@ -8,7 +8,7 @@ c If x=0. set it to default, 0.3. If ipen.ne.0 then draw line.
       integer npts,nlabel
       real x(npts),y(npts)
       character*(*) label
-      character llstr*10
+      character llstr*20
       integer i,nlab1
       include 'plotcom.h'
 c
@@ -16,8 +16,9 @@ c
       real vlen,dx,dy,cx,cy,plen,flen,dlen
       real wx2nx, wy2ny
       integer ncmax
-      parameter (ncmax=40)
+      parameter (ncmax=100)
       real clen(ncmax)
+      integer lclen(ncmax)
       real linlen,curdist
 c clen is the arc length in normalized units of the the ith line
 c segment. curdist is the starting fractional part of the ith arc.
@@ -64,10 +65,14 @@ c store current character direction.
       lstr=1
       nlab1=min(nlabel,ncmax-1)+1
       call vecn(wx2nx(x(1)),wy2ny(y(1)),0)
-      do 4 i=1,nlab1-1
+      i=1 ! do loop whose index can be internally incremented.
+ 12   if(i.gt.nlab1-1)goto 11
          llstr=label(i:i)//char(0)
          clen(i)=wstr(llstr)
-    4 continue
+         lclen(i)=1
+         i=i+1
+         goto 12
+ 11   continue
       clen(nlab1)=linlen
 c Start with line.
       j=nlab1
@@ -101,10 +106,11 @@ c Character writing:
                if(clen(j).gt.0)then
                   llstr(lstr:lstr)=label(j:j)
                   llstr(lstr+1:lstr+1)=char(0)
+!                  write(*,*)label,llstr(1:lstr),lstr,j,nlab1
                   call drcstr(llstr)
                   lstr=1
                else
-c Store zero length characters. May be controls.
+c                 Non toggle, just store.
                   llstr(lstr:lstr)=label(j:j)
                   lstr=lstr+1
                endif
@@ -144,7 +150,6 @@ c Replaces this undashed line:
             j=j+1
             if(j.gt.nlab1)j=1
             goto 1
-
          elseif(j.eq.nlab1)then
 c Vector ends before segment. If this is the line segment draw to end
 c of vector and quit. Else do nothing.

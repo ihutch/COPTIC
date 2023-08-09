@@ -180,6 +180,7 @@ int svga_(scrxpix, scrypix, vmode, ncolor)
 FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
 {  
   static int second=0;
+  static double oversize=0;
   extern void initDefaultColors();
   XSizeHints hints;
   int x_size,y_size,x_off,y_off,gravity;
@@ -211,11 +212,22 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
 /* Simple way to use the Xresources */
     if(accis_geometry==NULL)
       accis_geometry=XGetDefault(accis_display,"Accis","Geometry");
+    XGetWindowAttributes(accis_display,accis_root,&accis_rgwa);
     /* Combine specified and program default size info; parse and return */
     hints.flags= USPosition | PPosition | USSize | PSize;
     XWMGeometry(accis_display,0,accis_geometry,"800x600+100+40",0,
-		&hints,&x_off,&y_off,&x_size,&y_size,&gravity);
-
+     		&hints,&x_off,&y_off,&x_size,&y_size,&gravity);
+    /* Decide if the window size asked for is too big and fix it. */
+    oversize=(double) y_size/accis_rgwa.height;
+    if (oversize>1.) {
+      printf("Root Wdth=%d Root Height=%d\n"
+	     ,accis_rgwa.width,accis_rgwa.height);
+      printf("Requested x_size=%d y_size=%d\n",x_size,y_size); 
+      printf("Oversize=%f at y_size=%d\n",oversize,y_size);
+      y_size=accis_rgwa.height*.75;
+      x_size=accis_rgwa.height*.75*4/3;
+      printf("Reset to 0.75*Height: x_size=%d y_size=%d\n",x_size,y_size); 
+    }
     accis_window=XCreateWindow(accis_display, accis_root, 
  			       x_off, y_off, x_size, y_size, 0,
 			       accis_depth, 
@@ -231,8 +243,6 @@ FORT_INT *scrxpix, *scrypix, *vmode, *ncolor;
     accis_colormap=accis_cmap;
     initDefaultColors();
     second++;
-    XGetWindowAttributes(accis_display,accis_root,&accis_rgwa);
-    /*printf("Root Width=%d\n",accis_rgwa.width);*/
     XSetLineAttributes(accis_display,accis_gc,accis_rgwa.width/1200,0,0,0);
   }
   /* Get the possibly new values of wdth/height*/

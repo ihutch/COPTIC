@@ -43,12 +43,14 @@ $(shell if [ "${CURDIR}" != "$(ACCISHOME)" ];\
    if [ -d "${ACCISHOME}" ] ; then echo>&2 "accis directory exists. ";\
      else if cd ${ACCISPARENT}; then\
 	git clone https://github.com/ihutch/accis.git; cd - >/dev/null; fi;fi;\
-   if cd ${ACCISHOME}; then pwd >&2; make >&2; cd - >/dev/null; fi;\
+   if cd ${ACCISHOME}; then echo>&2 -n "Moving to "; pwd >&2;\
+        make COMPILE-SWITCHES="${COMPILE-SWITCHES}" >&2;\
+	cd - >/dev/null; fi;\
    if [ -f "${ACCISX}" ] ; then echo>&2 "Made ${ACCISX}";\
      else echo>&2 "Error making ${ACCISX}"; fi;\
+   fi;\
+ else echo >&2 "${CURDIR}" is the ACCISHOME: "$(ACCISHOME)".No library tests.;\
  fi;\
-else echo >&2 "${CURDIR}" is the ACCISHOME: "$(ACCISHOME)".\
-No library tests. ; fi;\
 )
 ##########################################################################
 ifneq ("$(FORTRAN)","")
