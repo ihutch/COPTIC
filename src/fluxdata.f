@@ -597,6 +597,7 @@
 
       idebug=idbug
       ierr=0
+      ijbin=0 ! silence warnings.
 ! Do nothing for untracked objects and report no error.
       infobj=nf_map(iobj)
       if(infobj.eq.0)return

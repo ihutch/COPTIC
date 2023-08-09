@@ -395,7 +395,7 @@
 ! Possibly adjust q for variable background
          if(bckgd.ne.0.and.bgn(1)+bgn(2)+bgn(3).gt.0) call
      $        mditerarg(qvary,ndims,ifull,ium2,0,q(2,2,2),bckgd
-     $        ,boltzamp)         
+     $        ,boltzamp,dum,dum)         
 
 ! -------------- Solve for the new potential:-------------------
          if(idebug.gt.0)write(*,*)'Calling solver',iuds,bckgd,boltzamp

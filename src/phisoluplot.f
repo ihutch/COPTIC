@@ -145,6 +145,7 @@
       parameter (ifmax=300,Li=ifmax)
       real cijp(2*ndims+1,ifmax,ifmax)
       real zp(ifmax,ifmax)
+      save cijp,zp ! Suppress warnings about size.
       include 'meshcom.f'
       include '3dcom.f'
 

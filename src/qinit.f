@@ -209,7 +209,7 @@
       include 'fvcom.f'
       integer nqblks(ndims),indi(ndims),islot,ispecies
       logical linmesh,ldouble
-      integer nbi
+      integer nbi,ixp(ndims)
       parameter (nbi=16)
 ! Hole-related parameters:
       real phimin,phiprev
@@ -401,14 +401,14 @@ c The flattop length holetoplen. Negligible for large negative values.
             endif
             call ranlux(fp,1)
             fp=fp*Pfofv(nofv)
-            ixp=interp(Pfofv,nofv,fp,p)
-            if(ixp.gt.0.and.ixp.lt.nofv)then
+            ixpx=interp(Pfofv,nofv,fp,p)
+            if(ixpx.gt.0.and.ixpx.lt.nofv)then
 ! Multigauss velocity is in units of sqrt(Tr/ms) convert to sqrt(Tr/m1)
-!               x_part(ndims+id,islot)=tisq*((1-p+ixp)*vofv(-1+ixp)+(p
+!               x_part(ndims+id,islot)=tisq*((1-p+ixpx)*vofv(-1+ixpx)+(p
                x_part(ndims+id,islot)=sqrt(abs(eoverms(ispecies)))*((1-p
-     $              +ixp)*vofv(-1+ixp)+(p-ixp) *vofv(ixp)) +holespeed
+     $             +ixpx)*vofv(-1+ixpx)+(p-ixpx) *vofv(ixpx)) +holespeed
             else
-               write(*,*)'placeqblk MultiGauss interp error',ixp,p
+               write(*,*)'placeqblk MultiGauss interp error',ixpx,p
                stop
             endif
             
@@ -425,13 +425,13 @@ c The flattop length holetoplen. Negligible for large negative values.
          call GetDistribAtPhi(psi,um,nphi,f0,u0,phi,nu,u,f,cumf)
          call ranlux(fp,1)
          fp=fp*cumf(nu)
-         ixp=interp(cumf,nup,fp,p)
-         if(ixp.gt.0.and.ixp.lt.nup)then
+         ixpx=interp(cumf,nup,fp,p)
+         if(ixpx.gt.0.and.ixpx.lt.nup)then
             x_part(ndims+id,islot)=
-     $           tisq2*((1-p+ixp)*u(-nu-1+ixp)+(p-ixp)*u(-nu+ixp))
+     $           tisq2*((1-p+ixpx)*u(-nu-1+ixpx)+(p-ixpx)*u(-nu+ixpx))
      $           +holespeed
          else
-            write(*,*)'placeqblk interpolation error',ixp,p
+            write(*,*)'placeqblk interpolation error',ixpx,p
             stop
          endif
 
@@ -1216,7 +1216,8 @@ c If converged, break
       real kw(ndims)
       logical linmesh
       real cosphase,phase,xfrac(ndims)
-      integer i,id,iregion,ixp(ndims),js
+      integer i,id,iregion,js
+      integer ixp(ndims)
       integer savedipartperiod
 
 !      write(*,*)'Applying initial wave',wavespec

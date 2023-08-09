@@ -321,7 +321,9 @@ testanal :
 geometry : $(COPTIC_ROOT)/geometry/*.cks
 	@echo 'Geometry Tests completed or up to date' >&2
 	@rm -f T1*
-	@if [ -z "`tail -n1 GeometryTests | grep EST`" ] ; then echo "****** Differences were found. Check file GeometryTests ********"; else echo "All OK"; fi
+	@if [ -z "`tail -n1 GeometryTests | egrep 'EST|EDT'`" ] ; then\
+  echo "****** Differences were found. Check file GeometryTests ********";\
+  else echo "All OK"; fi
 	@date >>GeometryTests
 #	tail GeometryTests
 #	cd $(COPTIC_ROOT)/src/; ./coptic; cd -

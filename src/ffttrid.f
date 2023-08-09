@@ -114,8 +114,9 @@
 !      parameter (M=na_i-2,N=na_j-2,O=na_k-2)      ! Mesh counts
       parameter (M=126,N=126,O=4)      ! Alternative Mesh counts
       parameter (MP2=M+2,NP2=N+2,OP2=O+2)
-      double complex cscratch(N+2,O+2,M+4) ! Reordered!      
+      double complex cscratch(N+2,O+2,M+4) ! Reordered
       real uinout(MP2,NP2,OP2), qin(MP2,NP2,OP2)
+      save cscratch,uinout,qin   ! Suppress warnings
       real worka(M,N),workb(M,N),workc(M,N)
       real xL,yL,zL   ! Lengths of domain
       real starts(3),ends(3)

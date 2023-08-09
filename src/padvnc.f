@@ -583,6 +583,7 @@
       include 'plascom.f'
 ! Here a segfault was caused if na_m2 was used.
       real zp(na_m,na_m)
+      save zp   ! Supress size warnings
       integer ipoint,ifix
       real dum
       external ucrhoset

@@ -20,7 +20,6 @@
       end
 !**********************************************************************
       subroutine bdysetfree(mdims,ifull,iuds,cij,u,q)
-!      integer mdims,ifull(mdims),iuds(mdims)
       real u(*),cij(*),q(*)
 ! Specify external the boundary setting routine.
 ! If    Bit-0 of islp is not set, then use logarithmic derivative.
@@ -481,6 +480,23 @@
 !      write(*,*)'BDYFACEINIT',idn,CFpin
       end
 
+!**********************************************************************
+      subroutine bdyslope0(mdims,ifull,iuds,cij,u,q)
+! Set the boundary normal slope to zero.
+!      integer ndims,ifull(ndims),iuds(ndims)
+      include 'ndimsdecl.f'
+      real cij(*),u(*),q(*)
+! Specify external the boundary setting routine.
+      external bdyslopeDh,bdyslopescreen,bdymach
+      include 'slpcom.f'
+! Silence warnings about unused arguments
+      use=cij(1)
+      use=q(1)
+      ipoint=0
+      islp=0
+      slpD=0.
+      call mditerarg(bdyslopeDh,ndims,ifull,iuds,ipoint,u)
+      end
 !********************************************************************
 
 !********************************************************************
