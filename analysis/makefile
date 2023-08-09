@@ -29,6 +29,7 @@ OPTIMIZE=
 COMPILE-SWITCHES=-I.
 ifeq ("$(G77)","mpif77")	
   COMPILE-SWITCHES = -Wall $(OPTIMIZE) -I. -mcmodel=medium
+  COMPILE-SWITCHES:=$(COMPILE-SWITCHES) -fallow-argument-mismatch
   OPTIMIZE=-O3
 endif	
 COMPILE-SWITCHES := $(COMPILE-SWITCHES) -g -fbounds-check
@@ -72,7 +73,7 @@ libvtkwrite.a : vtkwritewrap.o visit_writer.o
 	@ar -rs libvtkwrite.a vtkwritewrap.o visit_writer.o
 
 libfftpack5.1.a : fftpack5.1.f
-	$(G77) -c -w fftpack5.1.f
+	$(G77) $(COMPILE-SWITCHES) -c -w fftpack5.1.f
 	ar cr libfftpack5.1.a fftpack5.1.o
 	rm -f fftpack5.1.o
 
