@@ -806,8 +806,8 @@
      $     ,' this species'
       do id=1,nspecies
          do i=1,nc(id)
-            write(*,'(a,i2,3f7.3)')'   v-shift,v-thermal,n            ['
-     $           ,id,vsc(i,nspecies),vtc(i,nspecies),dcc(i,nspecies)
+            write(*,'(a,i2,3f7.3)')'   isp,v-shift,v-thermal,n        ['
+     $           ,id,vsc(i,id),vtc(i,id),dcc(i,id)
          enddo
       enddo
       write(*,302)' -ct   set Collision time.        [',colntime

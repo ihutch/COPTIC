@@ -129,6 +129,7 @@
       include 'myidcom.f'
       include 'plascom.f'
       include 'partcom.f'
+      include 'fvcom.f'
       integer nqblks(ndims),islot,islotmax,ispecies
 
       integer iview(3,ndims),indi(ndims)     !Iterator
@@ -144,7 +145,8 @@
 ! At the moment we disallow double if any drift is non-zero.
 ! Double helps by forcing the electron drift to exactly zero.
 ! So it might help to generalize this to allow ldouble with vds!=0.
-         if(vds(ispecies).ne.0.or.holeum.ne.0..or.holerad.ne.0.)then
+         if(vds(ispecies).ne.0.or.holeum.ne.0..or.holerad.ne.0.
+     $        .or.nc(ispecies).ne.1)then
             ldouble=.false.
             if(myid.eq.0)then
                write(*,*)'Finite drift. No double particle placement.'
@@ -401,6 +403,7 @@ c The flattop length holetoplen. Negligible for large negative values.
             endif
             call ranlux(fp,1)
             fp=fp*Pfofv(nofv)
+            fps=fp
             ixpx=interp(Pfofv,nofv,fp,p)
             if(ixpx.gt.0.and.ixpx.lt.nofv)then
 ! Multigauss velocity is in units of sqrt(Tr/ms) convert to sqrt(Tr/m1)
@@ -408,7 +411,9 @@ c The flattop length holetoplen. Negligible for large negative values.
                x_part(ndims+id,islot)=sqrt(abs(eoverms(ispecies)))*((1-p
      $             +ixpx)*vofv(-1+ixpx)+(p-ixpx) *vofv(ixpx)) +holespeed
             else
-               write(*,*)'placeqblk MultiGauss interp error',ixpx,p
+               write(*,'(a,i5,7f8.4)')'placeqblk MultiGauss intp error'
+     $              ,ixpx,fps,p,fp,phiprev
+!               write(*,'(10f8.4)')Pofv
                stop
             endif
             
@@ -702,15 +707,10 @@ c Dummy function that just returns 1.
          denionfun=1.
          return
       else
-         if(.not.linit)then
-! Initialize velocity range supposing hole is stationary. (vh=0.)
-            vh=0.
-            vmax=4.4*maxval(vtc)
-     $           +max(abs(maxval(vsc)-vh),abs(minval(vsc)-vh))
-            do i=1,nofv
-               vofv(i)=-vmax+2.*vmax*(i-1.)/(nofv-1.)
-            enddo
-         endif
+! Not now needed. vofvinit is called in coptic at start.
+!         if(.not.linit)then
+!            call vofvinit(2)
+!         endif
          denionfun=0.
          delphi=0
 !         isigma=1               ! For now ignore asymmetry.
@@ -725,6 +725,19 @@ c Dummy function that just returns 1.
       endif
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine vofvinit(isp)
+! Initialize velocity range supposing hole is stationary. (vh=0.)
+      include 'ndimsdecl.f'
+      include 'fvcom.f'
+      include 'partcom.f'
+      integer isp
+      vh=0.
+      vmax=4.4*maxval(vtc(:,isp))
+     $   +max(abs(maxval(vsc(:,isp))-vh),abs(minval(vsc(:,isp))-vh))
+      do i=1,nofv
+         vofv(i)=-vmax+2.*vmax*(i-1.)/(nofv-1.)
+      enddo
+      end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Calculate velocity distributions and densities for shifted Maxwellian
 ! distant distributions on a single-humped repelling potential hill of
@@ -799,6 +812,11 @@ c Dummy function that just returns 1.
 !        Actually using this interpolation always smooths ftrapped glitches.
 !        But I am not 100% certain it is always justified.
          Pfofv(i)=Pfofv(i)+pa
+         if(.not.Pfofv(i).lt.1.e30)then
+            write(*,*)'fvhill Bad Pfofv',i,Pfofv(i),pam,pa,vdiffm,vdiff
+     $           ,vofv(i),vofv(i-1)
+            stop
+         endif
          pam=pa
          vdiffm=vdiff
          fim=fi

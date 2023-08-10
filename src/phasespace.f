@@ -28,16 +28,29 @@ c The bins are uniform from psvmin to psvmax and xmeshstart to end.
       include 'meshcom.f'
       include 'partcom.f'
       include 'plascom.f'
+      include 'fvcom.f'
       integer ispecies,id
-      integer i,ierr,ixbin,ivbin
-      real v,x
+      integer i,ierr,ixbin,ivbin,isp
+      real v,x,vs,vt
 
       call pszero(ispecies)
 c Ensure the limits etc of the phase space array are set.
       psxmin=xmeshstart(id)
       psxmax=xmeshend(id)
-      psvmax(ispecies)=3.*sqrt(abs(eoverms(ispecies))*Ts(ispecies))
-      psvmin(ispecies)=-psvmax(ispecies)
+      if(nc(ispecies).ne.0)then
+         isp=ispecies
+         vs=max(maxval(vsc(1:nc(isp),isp))
+     $        ,maxval(vsc(1:nc(isp),isp)))
+         vt=maxval(vtc(1:nc(isp),isp))
+         psvmax(isp)=sqrt(abs(eoverms(isp)))*(3*vt+vs)
+!         write(*,'(a,i3,9f6.2)')'isp,psfvmax',isp,psvmax(isp)
+!     $        ,vtc(1:nc(isp),isp),vsc(1:nc(isp),isp),vt,vs
+         vs=min(minval(vsc(1:nc(isp),isp))
+     $        ,minval(vsc(1:nc(isp),isp)))
+         psvmin(isp)=sqrt(abs(eoverms(isp)))*(-3*vt+vs)
+      else
+         psvmax(ispecies)=3.*sqrt(abs(eoverms(ispecies))*Ts(ispecies))
+      endif
 c The centers of the bins in phase space (redundancy negligible).
       do i=1,npsx
          psx(i)=psxmin+(i-0.5)*(psxmax-psxmin)/npsx

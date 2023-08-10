@@ -142,6 +142,8 @@
       lfv=.false.
       do i=1,nspecies  !If there are any non-hspecies nc cases use BGKintnew
          if(i.ne.hspecies.and.nc(i).ne.0)lfv=.true.
+         ! And initialize their velocity arrays.
+         if(nc(i).ne.0)call vofvinit(i)
       enddo
 !-----------------------------------------------------------------
 ! Finalize initial parameters after switch and geometry reading.
@@ -470,8 +472,12 @@
             endif
 ! Phase space done by all processes, even though only one of them plots.
             if(ldistshow.and.iuds(2).eq.3.and.iuds(3).eq.3)then
-               call phasepscont(ifull,iuds,u,nstep,lphiplot
-     $              ,restartpath)
+               if(.true.)then
+                  call phasepscont(ifull,iuds,u,nstep,lphiplot
+     $                 ,restartpath)
+               else
+                  if(lmyidhead)call phasescatter(ifull,iuds,u)
+               endif
             endif
          endif
 
