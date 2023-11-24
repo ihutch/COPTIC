@@ -228,7 +228,7 @@
 !      real f1(-2*nphi:2*nphi),u1(-2*nphi:2*nphi),cumf1(-nu:nu)
       real u(-nu:nu),f(-nu:nu),du
       real tisq,tisq2,tisqperp,umax,coshlen,kp2,kp2find
-      real rhov(ndims)
+      real rhov(ndims),xfrac(ndims)
       character*30 string
       integer lastspecies,id
       data lastspecies/0/
