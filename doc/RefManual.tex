@@ -1959,7 +1959,35 @@ dimensions are given by \verb!isuds(3)!, which is initialized in
 passed to \verb!partdistup! prevents reinitialization). When reading a
 pex file, the used dimensions are set from the file values.
 
+\subsection{One-dimensional diagnostics}
 
+COPTIC can be used as an effectively one-dimensional code by
+specifying the other dimensions as possessing only 3 cells
+and making them periodic, which means that excluding the guard cells
+there is only one active cell in the transverse dimensions. For
+example to make the $x$ direction the only active one use 
+\begin{verbatim}
+91,1,128,0,-63.5,63.5
+92,1,3,0,-118.5,118.5
+93,1,3,0,-100.,100.
+\end{verbatim}
+When runs like this are carried out, diagnostics of the
+one-dimensional phase space $f(x,v)$ are available built into COPTIC.
+These consist of the output of a phase-space diagnostic (pps) file, and,
+sometimes more usefully, a graphics file plotting the phase-space
+directly. These plots are activated using the debugging switches in
+combinations as follows.
+\begin{verbatim}
+Examples of 1-d output controls.
+  -gn outputs just a pps file every step, no display.
+  -gp outputs a pps file and displays every -a steps.
+  -gn -gp outputs a pps file and displays every step.
+  -gn -gp5 outputs a pps file and displays every 5 steps.
+  -gn -gp -gx outputs a pps file and a ps file each step but does not display.
+  -gn -gp2 -gx3 outputs pps and ps files and displays every 2 steps.
+\end{verbatim}
+They are not active and cannot be used when either of mesh dimension 2
+or 3 has length greater than 3.
 
 \subsection{Final Output}
 

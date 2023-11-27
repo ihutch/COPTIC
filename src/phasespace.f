@@ -162,11 +162,23 @@ c***********************************************************************
       subroutine phaseplot(ispecies)
       include 'ndimsdecl.f'
       include 'phasecom.f'
+      character*30 string
       real cworka(npsx,npsv),zclv(2)
 
       call pltinit(psxmin,psxmax,psvmin(ispecies),psvmax(ispecies))
+      call color(15)
+      call fvinfincalc(ispecies)
+c      write(*,*)
+c      write(*,'(i2,10f7.4)')ispecies,(finfofv(i,ispecies),i=1,npsv,10)
+c      write(*,'(i2,10f7.4)')ispecies,(psv(i,ispecies),i=1,npsv,10)
+      call polyline(psxmax+.3*psxmax*finfofv(:,ispecies),psv(1,ispecies)
+     $     ,npsv)
+      write(string,'('' f!d'',i1,''!d'')')ispecies
+      call jdrwstr(wx2nx(psxmax),wy2ny(psv(40,ispecies))
+     $     ,string(1:lentrim(string)),1.)
       call blueredgreenwhite()
-      call axlabels('x','v')
+      write(string,'(''v!d'',i1,''!d'')')ispecies
+      call axlabels('x',string(1:lentrim(string)))
 c If unset, set psfmax for less than full range. But better set earlier.
       call minmax2(psfxv(1,1,ispecies),npsx,npsx,npsv,pmin,pmax)
       if(pmax.gt.psfmax*1.1)call psfmaxset(1.1,ispecies)
@@ -204,4 +216,23 @@ c Toggle the phase contour triangular gradients
       else
          ipsftri=0
       endif
+      end
+c*********************************************************************
+      subroutine fvinfincalc(ispecies)
+      include 'ndimsdecl.f'
+      include 'fvcom.f'
+      include 'phasecom.f'
+      include 'plascom.f'
+c      write(*,'(a,i2,9f10.4)')'species,dcc,vsc,vtc',ispecies ,(dcc(i
+c     $     ,ispecies),vsc(i,ispecies),vtc(i,ispecies),i=1,nc(ispecies))
+      do i=1,npsv
+         fi=0.
+         vinf=psv(i,ispecies)/sqrt(abs(eoverms(ispecies)))
+         do j=1,nc(ispecies)
+            fi=fi+dcc(j,ispecies)*exp(-0.5*(vinf-vsc(j,ispecies))**2
+     $           /vtc(j,ispecies)**2)/(vtc(j,ispecies)*sqrt(2.
+     $           *3.1415926))
+         enddo
+         finfofv(i,ispecies)=fi
+      enddo
       end
