@@ -32,34 +32,38 @@ c The bins are uniform from psvmin to psvmax and xmeshstart to end.
       integer ispecies,id
       integer i,ierr,ixbin,ivbin,isp
       real v,x,vs,vt
+      logical linitedps(nspeciesmax)
+      data linitedps/nspeciesmax*.false./
+
+      if(.not.linitedps(ispecies))then
+c Ensure the limits etc of the phase space array are set.
+         psxmin=xmeshstart(id)
+         psxmax=xmeshend(id)
+         if(nc(ispecies).ne.0)then
+            isp=ispecies
+            vs=max(maxval(vsc(1:nc(isp),isp))
+     $           ,maxval(vsc(1:nc(isp),isp)))
+            vt=maxval(vtc(1:nc(isp),isp))
+            psvmax(isp)=sqrt(abs(eoverms(isp)))*(3*vt+vs)
+            vs=min(minval(vsc(1:nc(isp),isp))
+     $           ,minval(vsc(1:nc(isp),isp)))
+            psvmin(isp)=sqrt(abs(eoverms(isp)))*(-3*vt+vs)
+         else
+            psvmax(ispecies)=3.*sqrt(abs(eoverms(ispecies))
+     $           *Ts(ispecies))
+         endif
+c The centers of the bins in phase space (redundancy negligible).
+         do i=1,npsx
+            psx(i)=psxmin+(i-0.5)*(psxmax-psxmin)/npsx
+         enddo
+         do i=1,npsv
+            psv(i,ispecies)=psvmin(ispecies)+(i-0.5)*(psvmax(ispecies)
+     $           -psvmin(ispecies))/npsv
+         enddo
+         call fvinfincalc(ispecies)
+      endif
 
       call pszero(ispecies)
-c Ensure the limits etc of the phase space array are set.
-      psxmin=xmeshstart(id)
-      psxmax=xmeshend(id)
-      if(nc(ispecies).ne.0)then
-         isp=ispecies
-         vs=max(maxval(vsc(1:nc(isp),isp))
-     $        ,maxval(vsc(1:nc(isp),isp)))
-         vt=maxval(vtc(1:nc(isp),isp))
-         psvmax(isp)=sqrt(abs(eoverms(isp)))*(3*vt+vs)
-!         write(*,'(a,i3,9f6.2)')'isp,psfvmax',isp,psvmax(isp)
-!     $        ,vtc(1:nc(isp),isp),vsc(1:nc(isp),isp),vt,vs
-         vs=min(minval(vsc(1:nc(isp),isp))
-     $        ,minval(vsc(1:nc(isp),isp)))
-         psvmin(isp)=sqrt(abs(eoverms(isp)))*(-3*vt+vs)
-      else
-         psvmax(ispecies)=3.*sqrt(abs(eoverms(ispecies))*Ts(ispecies))
-      endif
-c The centers of the bins in phase space (redundancy negligible).
-      do i=1,npsx
-         psx(i)=psxmin+(i-0.5)*(psxmax-psxmin)/npsx
-      enddo
-      do i=1,npsv
-         psv(i,ispecies)=psvmin(ispecies)+(i-0.5)*(psvmax(ispecies)
-     $        -psvmin(ispecies))/npsv
-      enddo
-
 c Accumulate
       do i=iicparta(ispecies),iocparta(ispecies)
          if(x_part(iflag,i).ne.0)then
@@ -110,6 +114,7 @@ c Write file with phasespace data plus u(x) if length nu != 0.
       include 'ndimsdecl.f'
       include 'phasecom.f'
       include 'partcom.f' ! For nspecies
+      include 'fvcom.f'   ! For nc
 
       open(12,file=phasefilename,status='unknown',form='unformatted',err
      $     =101)
@@ -117,6 +122,12 @@ c Write file with phasespace data plus u(x) if length nu != 0.
       write(12)psfxv(:,:,1:nspecies),psvmax,psvmin,psxmax,psxmin,psx,psv
       write(12)psn(:,1:nspecies) ! Save the density as fn of x
       if(nu.ne.0)write(12)(x(i),u(i),i=1,nu),t
+      do isp=1,nspecies
+         if(nc(isp).ne.0)then
+            write(12)nc(isp)
+            write(12)(finfofv(i,isp),i=1,npsv)
+         endif
+      enddo
       close(12)
       return
  101  write(*,*)'Error opening file:',
@@ -130,6 +141,7 @@ c***********************************************************************
       include 'ndimsdecl.f'
       include 'phasecom.f'
       include 'partcom.f'
+      include 'fvcom.f'   ! For nc
 
       nuin=nu
       open(13,file=phasefilename,status='old',form='unformatted',err
@@ -146,6 +158,11 @@ c***********************************************************************
          read(13,err=102,end=102)psn(:,1:nspecies)
          if(nu.gt.nuin)stop 'phaseread file nu length too great'
          if(nu.ne.0)read(13)(x(i),u(i),i=1,nu),t
+         do isp=1,nspecies
+            read(13,end=103)nc(isp)
+            if(nc(isp).ne.0)read(13)(finfofv(i,isp),i=1,npsv)
+         enddo
+ 103  continue
       endif
       close(13)
       return
@@ -164,15 +181,10 @@ c***********************************************************************
       include 'phasecom.f'
       character*30 string
       real cworka(npsx,npsv),zclv(2)
+      integer ifcolor(npsv)
 
       call pltinit(psxmin,psxmax,psvmin(ispecies),psvmax(ispecies))
       call color(15)
-      call fvinfincalc(ispecies)
-c      write(*,*)
-c      write(*,'(i2,10f7.4)')ispecies,(finfofv(i,ispecies),i=1,npsv,10)
-c      write(*,'(i2,10f7.4)')ispecies,(psv(i,ispecies),i=1,npsv,10)
-      call polyline(psxmax+.3*psxmax*finfofv(:,ispecies),psv(1,ispecies)
-     $     ,npsv)
       write(string,'('' f!d'',i1,''!d'')')ispecies
       call jdrwstr(wx2nx(psxmax),wy2ny(psv(40,ispecies))
      $     ,string(1:lentrim(string)),1.)
@@ -195,6 +207,17 @@ c Using triangular gradients +64 gives too large ps output.
       call color(ilightgray())
       call gradlegend(zclv(1),zclv(2),.3,.94,.7,.94,.05,.true.)
       call color(15)
+      call polyline(psxmax+.3*psxmax*finfofv(:,ispecies),psv(1,ispecies)
+     $     ,npsv)
+      if(.false.)then
+! The hard part is scaling the colors (cfac) to what is being used in 
+! the histogram plot. The histogram just plots the number of particles
+! whereas the side plot is the f(v), normalized to unity integral. 
+! Not yet figured out.
+         ifcolor=nint(finfofv(:,ispecies)*cfac)
+         call polycolorline(psxmax+.3*psxmax*finfofv(:,ispecies),psv(1
+     $        ,ispecies),npsv,ifcolor)
+      endif
 c If needed, do pltend externally.
       end
 c**********************************************************************
