@@ -88,6 +88,7 @@
       do id=1,ndims
          do i=1,nptdiag
             fv(i,id)=0.
+            ifv(i,id)=0
             px(i,id)=0.
             vdiag(i,id)=vlimit(1,id)
      $           +(vlimit(2,id)-vlimit(1,id))*(i-0.5)/nptdiag
@@ -127,11 +128,15 @@
             write(*,*)'For id ',id,' erroneous ibin',ibin,v
             write(*,*)nptdiag,vlimit(1,id),vlimit(2,id)
          endif
-         fv(ibin,id)=fv(ibin,id)+1.
+         ifv(ibin,id)=ifv(ibin,id)+1
+         fv(ibin,id)=real(ifv(ibin,id)) ! Avoid real rounding loss.
+!         fv(ibin,id)=fv(ibin,id)+1.
          if(csbin(1,1).ne.-1.)then
 ! Doing summed bin accumulation
             ibs=ibinmap(ibin,id)
-            fsv(ibs,id)=fsv(ibs,id)+1.
+            ifsv(ibs,id)=ifsv(ibs,id)+1
+            fsv(ibs,id)=real(ifsv(ibs,id))
+!            fsv(ibs,id)=fsv(ibs,id)+1.
          endif
 ! Assign positions to bins
          x=(xr(id)-xmeshstart(id))/(xmeshend(id)-xmeshstart(id))
@@ -338,6 +343,7 @@
             vsbin(j,id)=0.
             csbin(j,id)=0.
             fsv(j,id)=0.
+            ifsv(j,id)=0
          enddo
          dv=(vdiag(nptdiag,id)-vdiag(1,id))/(nptdiag-1)
          vhbin(0,id)=vdiag(1,id)-dv*0.5
@@ -564,7 +570,7 @@
       do i=1,ndims
          isftot=isftot*isfull(i)
       enddo
-! Check if the nsbins is correct and there's enough storage.
+! Check id the nsbins is correct and there's enough storage.
       if(nsbf.ne.nsbins)goto 103
       if(isftot.gt.nsub_tot)goto 103
       read(25)(((fvx(i,j,k),i=1,nsbins),j=1,ndims),k=1,isftot)
@@ -948,6 +954,7 @@
       do id=1,ndims
          do jj=1,nsbins
             fsv(jj,id)=0.
+            ifsv(jj,id)=0
          enddo
       enddo
       end

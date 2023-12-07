@@ -12,7 +12,7 @@
 !      real sliceclip(4)
       character*20 mname(ndiagmax+1)
       integer nfiles,nmodes
-      parameter (nfiles=2003,nmodes=11)
+      parameter (nfiles=4000,nmodes=11)
       real xmean(nfiles),xvar(nfiles),xmax(nfiles),xmin(nfiles)
       real xms(nfiles),xmcent(nfiles)
       real time(nfiles),xamp(nfiles),work(nfiles)
@@ -31,11 +31,12 @@
       real xns(nxns),xclip
       integer mcell,icontour
       logical lvtk,ldebug,nopause
-      character*70 xtitle,ytitle,label
+      character*70 xtitle,ytitle,label,timelabel
       integer iuphi(ndims),iurs(ndims),isrs(ndims)
       integer iunp,i1d,isingle,i1,iwr,istd,linevec(3)
       real tot,cent(ndims),var(ndims)
       integer iused(ndims)
+      real dum
       data iunp/0/i1d/0/iwr/0/zminmax/0.,0./icontour/0/istd/1/
       data ierr/0/ldebug/.false./nopause/.false./
       data mname(1)/'Cellcount'/mname(2)/'v!d1!d'/mname(3)/'v!d2!d'/
@@ -82,7 +83,7 @@
 ! Create label and read istep
             label=diagfilename(istrstr(diagfilename,'.d')+4
      $           :lentrim(diagfilename))
-            read(label,*)istep 
+            read(label,*)istep
 ! Read the file whose name we have found in the arguments.
             call array3read(diagfilename,ifull,iuds,ied,diagsum,ierr)
             if(ierr.eq.1)stop 'Error reading diag file'
@@ -91,6 +92,9 @@
 ! The first data file only, get dt and volumes data.
             if(ifile.le.1) call getrundata(dt,istd,ndiags,ldebug)
             time(ifile)=dt*istep
+            write(timelabel,'(f6.1)')time(ifile) ! Fixed length for movies
+! Variable length, requiring passing timelabel(1:iwidth)
+!            call fwrite(time(ifile),iwidth,1,timelabel)
 !-------------------------------------
 ! Maybe Get up to two additional quantities \phi and n for separate plotting
             call readextra(iuphi)
@@ -177,7 +181,8 @@
      $                 +2) ,dum,dum)
                endif
                call examineall(diagsum,zminmax,mname,i1,isingle,istd
-     $              ,ndiags,icontour,label,ifix)
+     $              ,ndiags,icontour,timelabel,ifix)
+!     $              ,ndiags,icontour,label,ifix)
             endif
 !----------------------------------------------------------------
          else   ! iworking.lt.0
@@ -475,36 +480,43 @@
       real zminmax(2)
       integer i1,isingle,istd,ndiags,icontour,ifix
       character*20 mname(ndiagmax+1)
-      character*70 label
+      character*(*) label
       integer lentrim
       external lentrim
 
 ! Local variables
       real dum
-      integer k
+      integer k,i
       do k=i1,ndiags
          zp(1,1,1)=99
-!            write(fluxfilename,'(''diagnorm('',i1,'')'')')k
          fluxfilename=mname(k)(1:lentrim(mname(k)))
      $        //'('//label(1:lentrim(label))//')'
-!            write(*,*)k,isingle
+!         write(*,'(2a,i5)')'exall label:'
+!     $        ,label(1:lentrim(label)),lentrim(label)
+!         write(*,'(10i5)')(ichar(label(i:i)),i=1,len(label))
          if(k.eq.ndiags)
      $        fluxfilename='!Af!@('//label(1:lentrim(label))//')'
+! doesn't work     $        fluxfilename='!p!o!Af!@ at t=!o!q'
+!     $        //label(1:lentrim(label))
          if(istd.gt.0.and.(k.eq.isingle.or.isingle.eq.0))write(*,*)k,
      $        fluxfilename(1:lentrim(fluxfilename))
+!         write(*,'(a,i5,a,2i5)')'diaexall utitle len:',len(fluxfilename)
+!     $        ,fluxfilename,lentrim(fluxfilename),len_trim(fluxfilename)
+!      write(*,'(10i5)')(ichar(fluxfilename(i:i)),i=1,len(fluxfilename))
          if(isingle.eq.0.or.isingle.eq.k)then
             if(zminmax(1).lt.zminmax(2))then
                write(*,*)'zminmax',zminmax
                call scale3(0.,1.,0.,1.,zminmax(1),zminmax(2))
+               i=lentrim(fluxfilename)
+               fluxfilename(i+3:i+3)=char(31) !Extra space
                call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
      $              ixnp,xn,ifix+256+icontour*16+512
      $              ,fluxfilename(1:lentrim(fluxfilename)+2) ,dum
-     $              ,dum)   
+     $              ,dum)
             elseif(zminmax(1).gt.zminmax(2))then
 ! If limits are crossed on entry. Find minimum and maximum.
                call minmaxM(ndims,ifull,iuds,diagsum(1,1,1,k),
      $              zminmax(1),zminmax(2))
-               write(*,*)zminmax,'=zmin/max'
                call exit(0)
             else
                call sliceGweb(ifull,iuds,diagsum(1,1,1,k),na_m,zp,
@@ -1223,6 +1235,7 @@ c$$$         = 20 input error returned by lower level routine
       logical ldebug
       real dt
       integer istat,istd,ndiags
+      save diagsum
 ! Attempt to read dt from the copticgeom.dat file.
             call findargvalue('-dt',dt,istat,ldebug)
             if(dt.eq.0)then

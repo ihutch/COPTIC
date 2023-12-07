@@ -29,7 +29,8 @@ OPTIMIZE=
 COMPILE-SWITCHES=-I.
 ifeq ("$(G77)","mpif77")	
   COMPILE-SWITCHES = -Wall $(OPTIMIZE) -I. -mcmodel=medium
-  COMPILE-SWITCHES:=$(COMPILE-SWITCHES) -fallow-argument-mismatch
+  COMPILE-SWITCHES:=$(COMPILE-SWITCHES)
+#-fallow-argument-mismatch this broke on engaging 4 Dec 2023.
   OPTIMIZE=-O3
 endif	
 COMPILE-SWITCHES := $(COMPILE-SWITCHES) -g -fbounds-check

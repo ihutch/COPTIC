@@ -2,11 +2,13 @@
       integer nptdiagmax,nptdiag
       parameter (nptdiagmax=400)
       real fv(nptdiagmax,ndimsmax),cumfv(0:nptdiagmax,ndimsmax)
+      integer ifv(nptdiagmax,ndimsmax)
       real px(nptdiagmax,ndimsmax)
       real vdiag(nptdiagmax,ndimsmax)
       real xdiag(nptdiagmax,ndimsmax)
       integer nfvaccum,ivproj
-      common /cartdiag/fv,px,vdiag,xdiag,cumfv,nfvaccum,ivproj,nptdiag
+      common /cartdiag/fv,ifv,px,vdiag,xdiag,cumfv,nfvaccum,ivproj
+     $     ,nptdiag
 ! In this section there is an assumption that we are in 3 dimensions.
       integer nsub_i,nsub_j,nsub_k
 ! These determine the number of sub-divisions of the three directions
@@ -25,6 +27,7 @@
       integer ibinmap(nptdiagmax,ndimsmax)
       real vsbin(nsbins,ndimsmax),csbin(nsbins,ndimsmax)
       real fsv(nsbins,ndimsmax)
+      integer ifsv(nsbins,ndimsmax)
       real vhbin(0:nsbins,ndimsmax)
       real fvx(nsbins,ndimsmax,nsub_tot)
       real f2vx(nsbins,nsbins,ndimsmax,nsub_tot)
@@ -40,5 +43,5 @@
 ! f2vx is the 2-D distribution normal to 3 directions ditto.
 ! All of these must be common to all processes.
 
-      common /subdiag/ibinmap,isfull,isuds,vsbin,csbin,vhbin,fsv,fvx
-     $     ,denfvx,f2vx,vtkudata
+      common /subdiag/ibinmap,isfull,isuds,vsbin,csbin,vhbin,fsv,ifsv
+     $     ,fvx,denfvx,f2vx,vtkudata

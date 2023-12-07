@@ -280,7 +280,10 @@ c Use this scaling until explicitly reset.
       endif
       call ax3labels(ax3chars(idp1)(1:lentrim(ax3chars(idp1)))
      $     ,ax3chars(idp2)(1:lentrim(ax3chars(idp2))),utitle)
-
+!      write(*,'(a,i5,a,2i5)')'slicing utitle len:',len(utitle),utitle
+!     $     ,lentrim(utitle),len_trim(utitle)
+!      write(*,'(10i5)')(ichar(utitle(i:i)),i=1,len(utitle))
+!      call ax3labels(ax3chars(idp1),ax3chars(idp2),utitle)
 c Projected contouring.
       if(mod(icontour,4).ne.0.and.nf1.gt.if1.and.nf2.gt.if2)then
          if(iweb.eq.0)call cubed(igetcubecorner())
