@@ -12,7 +12,7 @@
 !      real sliceclip(4)
       character*20 mname(ndiagmax+1)
       integer nfiles,nmodes
-      parameter (nfiles=4000,nmodes=11)
+      parameter (nfiles=4010,nmodes=11)
       real xmean(nfiles),xvar(nfiles),xmax(nfiles),xmin(nfiles)
       real xms(nfiles),xmcent(nfiles)
       real time(nfiles),xamp(nfiles),work(nfiles)
@@ -301,7 +301,10 @@
          if(argument(1:1).eq.'-')then
             if(argument(1:13).eq.'--objfilename')
      $           read(argument(14:),'(a)',err=201)objfilename
-            if(argument(1:2).eq.'-p')then
+            if(argument(1:3).eq.'-pf')then
+               read(argument(4:),*)ipfilno
+               call pfilnoset(ipfilno-1)
+            elseif(argument(1:2).eq.'-p')then
                if(lentrim(phifilename).gt.1)then
                   read(argument(3:),'(a)',err=201)denfilename
                else
@@ -400,6 +403,7 @@
       write(*,302)' -dt  set time-step for multiple steps     [',dt
       write(*,303)' -l<x,y,z> set linevec (+ve=choice,0=direc)[',linevec
       write(*,*)'-g<i>   print ps-graphics files to unit i [3,-3]'
+      write(*,*)'-pf<i>  set initial plot-file number'
       write(*,*)'-r   run without pausing'
       write(*,*)'-i   toggle debugging information'
       write(*,*)'-w<name> toggle vtk file writing,'

@@ -26,6 +26,13 @@ c Get the plot-to-file mode.
       isw=pfsw
       end
 C********************************************************************
+      subroutine pfilnoset(ino)
+      integer ino
+      include 'plotcom.h'
+c Set the plotfile number. The next pltinit will increment it. 
+      pfilno=ino
+      end
+C********************************************************************
 c   Set world to normalized scalings.
 c   If min and max are both zero, leave as before.
       subroutine scalewn(wxmi,wxma,wymi,wyma,lx,ly)

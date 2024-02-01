@@ -116,6 +116,9 @@ PFSET(inum) Set file plotting for hardcopy. inum=(0:no, 1:hp, 2:ps, 3:eps).
 If inum.eq.-1, then prompt for choice. If inum.lt.-1 output to file
 only, not screen.
 
+PFILNOSET(inum) Set the plot file number so that the next plot
+initialization will use the file number inum+1.
+
 PFPSSET(ips) Set the use of postscript character fonts (ips=1) or vector
 drawn fonts (0, default), or (3) use the value previous to current.
 Can be turned on and off during the plot. Has no effect on screen
@@ -356,7 +359,7 @@ determine mesh; bit 5 (16) sets coloring; bit 6 (32) omits contour
 lines; bit 7 (64) color-fills with triangle gradients, in which case
 non-zero second byte (*256) determines the step size of the gradients
 (1 by default). Color gradient contouring should be done with icl
-.ge. 2 and the maximum and minimum values in zclv(1) and
+.ge. 2 and the minimum and maximum values in zclv(1) and
 zclv(icl). Then a gradlegend can be constructed with these values.
 Third byte (*65536) if non-zero sets filling of (usually one level of)
 closed contour by the integer color to which it corresponds, and turns

@@ -54,25 +54,27 @@
 ! Indicate csbin not initialized and start initialization
          csbin(1,1)=-1.
          call partacinit(vlimit)
+!         write(*,*)'partsaccum0',fsv(10,1),ifsv(10,1)
 
 ! Do the accumulation for this file up to maximum relevant slot. 
          nfvaccum=0
-         call partsaccum(xlimit ,vlimit,xnewlim,nfvaccum,ispecies)
-         if(myid.eq.0)write(*,*)'Accumulated',nfvaccum,' of',ioc_part
-     $        ,' total',' in',xlimit
+         call partsaccum(xlimit,vlimit,xnewlim,nfvaccum,ispecies)
+         if(myid.eq.0)write(*,'(a,i8,a,i8,a,6f6.1)')' Accumulated'
+     $        ,nfvaccum,' of',ioc_part,' total in',xlimit
 ! Reduce back the data for MPI cases.
          call ptdiagreduce()
          call minmaxreduce(ndims,xnewlim)
-         if(myid.eq.0)write(*,'(a,i8,a,6f8.3)')'Reduced',nfvaccum
+         if(myid.eq.0)write(*,'(a,i8,a,6f8.3)')' Reduced',nfvaccum
      $        ,' Xnewlim=',xnewlim
 ! Should do this only the first time.
          call bincalc()
+! Clean up by reinitializing everything.         
          call fvxinit(xnewlim,cellvol,ibinit)
+         call fsvzero()
+         call partacinit(vlimit)
       else
-         call partsaccum(xlimit ,vlimit,xnewlim,nfvaccum,ispecies)
+         call partsaccum(xlimit,vlimit,xnewlim,nfvaccum,ispecies)
       endif
-!         write(*,*)'isfull',isfull,cellvol
-!         write(*,*)'calling subaccum'
       call subaccum(isuds,vlimit,xnewlim,ispecies)
       end
 !****************************************************************
@@ -129,11 +131,12 @@
             write(*,*)nptdiag,vlimit(1,id),vlimit(2,id)
          endif
          ifv(ibin,id)=ifv(ibin,id)+1
-         fv(ibin,id)=real(ifv(ibin,id)) ! Avoid real rounding loss.
-!         fv(ibin,id)=fv(ibin,id)+1.
+!         fv(ibin,id)=real(ifv(ibin,id)) ! Avoid real rounding loss.
+         fv(ibin,id)=fv(ibin,id)+1.
          if(csbin(1,1).ne.-1.)then
 ! Doing summed bin accumulation
             ibs=ibinmap(ibin,id)
+! Avoid floating underflow miscounting by using integers.
             ifsv(ibs,id)=ifsv(ibs,id)+1
             fsv(ibs,id)=real(ifsv(ibs,id))
 !            fsv(ibs,id)=fsv(ibs,id)+1.
@@ -671,10 +674,10 @@
       integer jicell,jjcell,jkcell,ii,jj,kk,ip3,idw
       integer iup,isw,iwidth
       real xylim(4)
-      integer ips,itrace,ies,level
+      integer ips,itrace,ies,level,ics
       logical loverplot
 !      data ndfirst/3/ndlast/3/
-      data ips/0/itrace/0/loverplot/.false./
+      data ips/0/itrace/-1/loverplot/.false./
       data idw/0/level/1/
       data iup/1/jicell/0/jjcell/0/jkcell/0/
 !------------------------------------------
@@ -690,13 +693,14 @@
       write(*,*)'Adjust cell position with arrow keys.'
       write(*,*)'Toggle integration over direction with x,y,z.'
       write(*,*)'Adjust axis ends with a'
+      if(ndfirst.eq.ndlast)write(*,*)'For single frame overplot hit o'
  1    ip=ip3index(isuds,icell,jcell,kcell)+1
       wicell=(xnewlim(2,1)-xnewlim(1,1))/isuds(1)
       wjcell=(xnewlim(2,2)-xnewlim(1,2))/isuds(2)
       wkcell=(xnewlim(2,3)-xnewlim(1,3))/isuds(3)
       if(ivproj.eq.0)then
-      write(cellstring,'(''Cell'',3i3,''  x=('',f6.2,'','',f6.2,'')'//
-     $     ' y=('',f6.2,'','',f6.2,'') z=('',f6.2,'','',f6.2,'')'')')
+      write(cellstring,'(''Cell'',3i3,''  x=('',f6.1,'','',f6.1,'')'//
+     $     ' y=('',f6.1,'','',f6.1,'') z=('',f6.1,'','',f6.1,'')'')')
      $     icell*(1-jicell),jcell*(1-jjcell),kcell*(1-jkcell)
      $     ,xnewlim(1,1)+(icell-1)*wicell*(1-jicell)
      $        ,xnewlim(1,1)+wicell*(icell*(1-jicell)+jicell*isuds(1))
@@ -754,7 +758,8 @@
          enddo
 !         write(*,'('','',2f10.5,$)')vtot/ftot,sqrt(v2tot/ftot-(vtot/ftot
 !     $        )**2)
-         if(loverplot.and.ndlast-ndfirst.eq.0)then
+!         write(*,*)'itrace',itrace,loverplot,ndlast-ndfirst,id
+         if(loverplot.and.ndlast-ndfirst.eq.0.and.itrace.ne.-1)then
             itrace=itrace+1
             call color(itrace)
             call polymark(vsbin(1,id),fvplt,nsbins,1)
@@ -762,6 +767,10 @@
             call manautoinit(vsbin(1,id),fvplt,nsbins,isw,xylim(1)
      $           ,xylim(2),xylim(3),xylim(4))
             call axis()
+!            write(*,*)'Called manauto',id,ndfirst,loverplot
+            if(id.eq.ndfirst.and..not.loverplot)call
+     $           boxtitle(cellstring(1:lentrim(cellstring)))
+            itrace=0
          endif
          if(btest(idw,id-1))then
 !         if(id.eq.3)then
@@ -771,8 +780,9 @@
             write(*,'(2g14.6)')(vsbin(kk,id),fvplt(kk),kk=1,nsbins)
          endif
 
-         if(id.eq.ndfirst)call
-     $        boxtitle(cellstring(1:lentrim(cellstring)))
+         ics=18*ndfirst
+         if(loverplot)call legendline(.05,1.-.05*(itrace+1),258,
+     $        cellstring(ics-2:ics+14))
          if(ivproj.eq.0)then
             write(string,'(a,i1,a)')'f(v!d',id,'!d)'
          else
@@ -788,7 +798,7 @@
             if(string(1:1).eq.' ')
      $           write(string,'(a,i1,a)')'f(v!dz!d)'
          endif
-         call axlabels(' ',string(1:lentrim(string)))
+         if(itrace.eq.0)call axlabels(' ',string(1:lentrim(string)))
          call winset(.true.)
          call polymark(vsbin(1,id),fvplt,nsbins,1)
 !         call polybox(vhbin(0,id),fvx(1,id,ip),nsbins)
@@ -799,7 +809,7 @@
          endif
       enddo
       call winset(.false.)
-      call axlabels('Velocity',' ')
+      if(itrace.eq.0)call axlabels('Velocity',' ')
       call eye3d(ip)
 ! ------------ End of 1-d distribution drawing.
       if(nsbins.eq.nptdiag)then
@@ -862,8 +872,10 @@
          jkcell=1-jkcell
 ! Control overplotting
       elseif(ip.eq.ichar('o'))then
-         if(loverplot)itrace=0
          loverplot=.not.loverplot
+         if(loverplot)itrace=-1
+!         write(*,*)'loverplot=',loverplot,itrace
+!         if(loverplot)call prtend(' ')
       elseif(ip.eq.ichar('p'))then
          if(ips.eq.0)then
             write(*,*)'Postscript output on'
@@ -903,6 +915,7 @@
 !------------------------------
       else
 !         write(*,*)ip
+         call prtend(' ')
          return
       endif
       goto 1

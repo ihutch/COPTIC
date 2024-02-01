@@ -98,26 +98,29 @@
             write(theformat,'(a,i1,a,i1,a)')'(''.'',i',il,'.',il,')'
             write(chartemp,theformat)i
             name=partfilename(1:lentrim(partfilename))//chartemp
-            write(*,'(2a,$)')' Reading ',name(1:lentrim(name))
+            write(*,'(3a,$)')' Reading ',name(1:lentrim(name)),' '
          endif
          Bt=0.
          call partread(name,ierr)
          if(ierr.ne.0.and.i.eq.0)
      $        write(*,*)'partread returns error:',ierr
-         if(ierr-4*(ierr/4).ne.0)goto 11
+         if(ierr-4*(ierr/4).ne.0)then
+            goto 11
+         endif
          if(ispecies.gt.nspecies)then
             ispecies=nspecies
             write(*,*)'nspecies=',nspecies,'  Reset ispecies',ispecies
          endif
          if(ldoc)then
-            write(*,*)'debyelen,Ti,vd,rs,phip=',debyelen,Ti,vd,rs,phip
-            write(*,*)'iregion_part,n_part,dt,ldiags,rhoinf,nrein,',
-     $           'phirein,numprocs='
-            write(*,*)iregion_part,n_part,dt,ldiags,rhoinf,nrein,phirein
-     $           ,numprocs
-            write(*,*)'eoverm,Bt,Bfield,vpar,vperp=',eoverm,Bt,Bfield
-     $           ,vpar,vperp
-            write(*,*)'nspecies',nspecies
+            write(*,'(a,5f9.4)')' debyelen,Ti,vd,rs,phip=',debyelen,Ti
+     $           ,vd,rs,phip
+!            write(*,*)'iregion_part,n_part,dt,ldiags,rhoinf,nrein,',
+!     $           'phirein,numprocs='
+!            write(*,*)iregion_part,n_part,dt,ldiags,rhoinf,nrein,phirein
+!     $           ,numprocs
+!            write(*,*)'eoverm,Bt,Bfield,vpar,vperp=',eoverm,Bt,Bfield
+!     $           ,vpar,vperp
+!            write(*,*)'nspecies',nspecies
 !            stop
          endif
          if(Bdirs(4).gt.0. .or. Bt.eq.0)then
@@ -129,8 +132,7 @@
          if(cellvol.eq.-1)write(*,*)'Bfield (projection)',Bfield
 ! The cellvol==-1 call will set ivproj=1 in ptaccom.
          call partdistup(xlimit,vlimit,xnewlim,cellvol,0,isuds,ispecies)
-         write(*,*)   ! 'partdistup completed',i
-
+!         write(*,*)'partdistup completed',i,fsv(10,1),ifsv(10,1)
       enddo
  11   continue
       il=il+1
@@ -366,6 +368,8 @@
                read(argument(3:),*,err=201) vlimit(1,2),vlimit(2,2)
             elseif(argument(1:2).eq.'-w')then
                read(argument(3:),*,err=201) vlimit(1,3),vlimit(2,3)
+            elseif(argument(1:3).eq.'-pf')then
+               call pfset(3)
             elseif(argument(1:3).eq.'-pu')then
                nptdiag=nsbins
             elseif(argument(1:2).eq.'-p')then
@@ -427,6 +431,7 @@
       write(*,301)' -sp     Increment species number to examine'
       write(*,301)' -pu     Set nptdiag for uniform bins   [',nptdiag
      $     ,'  (Hence 2-D f plots)'
+      write(*,301)' -pf     Output ps files of plots'
       write(*,301)' -q      Output diagnostics of file reading'
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [copticgeom.dat'

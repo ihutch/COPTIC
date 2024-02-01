@@ -142,8 +142,6 @@
       lfv=.false.
       do i=1,nspecies  !If there are any non-hspecies nc cases use BGKintnew
          if(i.ne.hspecies.and.nc(i).ne.0)lfv=.true.
-         ! And initialize their velocity arrays.
-         if(nc(i).ne.0)call vofvinit(i)
       enddo
 !-----------------------------------------------------------------
 ! Finalize initial parameters after switch and geometry reading.

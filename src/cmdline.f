@@ -132,7 +132,7 @@
       character*100 argument,message
       logical lfirst
       real denfp
-      data lfirst/.true./
+      data lfirst/.true./ipfset/0/
       save argument,message
 
 ! Set defaults and objfilename only the first time, subsequently skip.
@@ -226,7 +226,7 @@
  502     continue
          if(i.eq.0)then
 ! First time through, deal with argline arguments (from the objfile). 
-            if(lentrim(argline(iargpos:)).ne.0)then
+           if(lentrim(argline(iargpos:)).ne.0)then
 ! Write them.
                if(lmyidhead.and.iargpos.eq.1)write(*,'(a,a)'
      $              )'File Arguments:',argline(iargpos:lentrim(argline))
@@ -760,7 +760,8 @@
       write(*,*)'-gn   Plot collisional reinjection distribution.'
      $     ,' Or 1-d phase space (clnless)'
       write(*,301)' -gg   Run continuously without pausing.'
-      write(*,301)' -gx[i]Graphics filing [alone if i<0 or absent].'
+      write(*,301)' -gx[i]Graphics filing [i<0 or absent: no display].'
+     $     //' i.e. call pfset(i). [',ipfset
       write(*,301)
      $      ' -gp -gd[] Plot slices of setup; plus potential, '
      $     //'density. [At step n]. [',ipstep
@@ -788,6 +789,8 @@
      $     //' but does not display.'
      $ ,'  -gn -gp2 -gx3 outputs pps and ps files'
      $     //' and displays every 2 steps.'
+     $ ,'  -gn -gp4 -gx0 outputs pps files every 4 steps, no ps files.'
+     $     //' Screen display.'
       goto 401
  602  continue
       write(*,*)

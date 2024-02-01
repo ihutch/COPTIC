@@ -300,6 +300,7 @@ c The flattop length holetoplen. Negligible for large negative values.
                do is=2,3
                   if(nc(is).ne.0)then
                      call dashset(is)
+                     call vofvinit(is)
                      call fvhill(nc(is),dcc(1,is),vsc(1,is),vtc(1,is),0.
      $                    ,delphi,0.,1,.true.,nofv,vofv,fofv,Pfofv)
                      call polyline(vofv,fofv,nofv)
@@ -385,7 +386,6 @@ c The flattop length holetoplen. Negligible for large negative values.
 ! Hole normal (i.e. parallel) velocity setting
       phi=psiradfac*phiofx(x_part(id,islot),psi,coshlen,holetoplen)
       if(ispecies.ne.hspecies)then  ! Ions
-!         if(.false.)then            ! No MultiGaussian
          if(nc(ispecies).ne.0)then  ! MultiGausian
             if(phiprev.eq.-1.and.myid.eq.0)then
                write(*,'(a,i2,a,i2)')'MultiGaussian Species:',ispecies
@@ -395,6 +395,7 @@ c The flattop length holetoplen. Negligible for large negative values.
                isigma=int(sign(1.,x_part(id,islot))) ! Strange result.
                isigma=1
                delphi=0.
+               call vofvinit(ispecies)
                call fvhill(nc(ispecies),dcc(1,ispecies),vsc(1,ispecies)
      $              ,vtc(1,ispecies),holepsi,delphi,phi,isigma,.true.
      $              ,nofv,vofv,fofv,Pfofv)
@@ -716,6 +717,7 @@ c Dummy function that just returns 1.
 !         isigma=1               ! For now ignore asymmetry.
          do i=1,nspecies
             if(i.ne.hspecies.and.nc(i).ne.0)then
+               call vofvinit(i)
                call fvhill(nc(i),dcc(1,i),vsc(1,i),vtc(1,i),holepsi
      $              ,delphi,phi,isigma,.true.,nofv,vofv,fofv,Pfofv)
                denionfun=denionfun+Pfofv(nofv)
@@ -734,6 +736,7 @@ c Dummy function that just returns 1.
       vh=0.
       vmax=4.4*maxval(vtc(:,isp))
      $   +max(abs(maxval(vsc(:,isp))-vh),abs(minval(vsc(:,isp))-vh))
+      write(*,*)'isp=',isp,' vmax=',vmax
       do i=1,nofv
          vofv(i)=-vmax+2.*vmax*(i-1.)/(nofv-1.)
       enddo

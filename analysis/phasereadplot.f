@@ -44,6 +44,8 @@ c Set the starting number of filewriting to be N
             call psftri
          elseif(phasefilename(1:2).eq.'-r')then
             irun=1
+         elseif(phasefilename(1:2).eq.'-h')then
+            goto 4
          elseif(phasefilename(1:2).eq.'-q')then
             irun=1
             call pfset(-3)
@@ -114,10 +116,10 @@ c Set the starting number of filewriting to be N
       else 
          call prtend(' ')
       endif
-      if(i.lt.2)then
-         write(*,*)'Usage phasereadplot [Options] file1 [file2 ....]'
-         write(*,*)'Options: -Annn average-number',' -N starting-number'
-         write(*,*)'-r run continuously','  -q no screen plots.'
-      endif
+      if(i.ge.2)return
+ 4    continue
+      write(*,*)'Usage phasereadplot [Options] file1 [file2 ....]'
+      write(*,*)'Options: -Annn average-number',' -N starting-number'
+      write(*,*)'-r run continuously','  -q no screen plots.'
       end
  
