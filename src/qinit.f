@@ -736,7 +736,7 @@ c Dummy function that just returns 1.
       vh=0.
       vmax=4.4*maxval(vtc(:,isp))
      $   +max(abs(maxval(vsc(:,isp))-vh),abs(minval(vsc(:,isp))-vh))
-      write(*,*)'isp=',isp,' vmax=',vmax
+!      write(*,*)'isp=',isp,' vmax=',vmax
       do i=1,nofv
          vofv(i)=-vmax+2.*vmax*(i-1.)/(nofv-1.)
       enddo

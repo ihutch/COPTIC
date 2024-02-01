@@ -49,8 +49,10 @@ c Ensure the limits etc of the phase space array are set.
      $           ,minval(vsc(1:nc(isp),isp)))
             psvmin(isp)=sqrt(abs(eoverms(isp)))*(-3*vt+vs)
          else
+! Assumed unshifted maxwellian when not using -fp argument
             psvmax(ispecies)=3.*sqrt(abs(eoverms(ispecies))
      $           *Ts(ispecies))
+            psvmin=-psvmax
          endif
 c The centers of the bins in phase space (redundancy negligible).
          do i=1,npsx
