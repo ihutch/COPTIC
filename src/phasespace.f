@@ -3,7 +3,7 @@ c**********************************************************************
       block data phaseblockdata
       include 'ndimsdecl.f'
       include 'phasecom.f'
-      data psfmax/0./ipsftri/0/
+      data psfmax/nspeciesmax*0./ipsftri/0/
       end
 c**********************************************************************
       subroutine pszero(ispecies)
@@ -29,16 +29,20 @@ c The bins are uniform from psvmin to psvmax and xmeshstart to end.
       include 'partcom.f'
       include 'plascom.f'
       include 'fvcom.f'
+      include 'myidcom.f'
       integer ispecies,id
       integer i,ierr,ixbin,ivbin,isp
-      real v,x,vs,vt
+      real v,x,vs,vt,sv
       logical linitedps(nspeciesmax)
+      real vplim(2,nspeciesmax)
       data linitedps/nspeciesmax*.false./
+      save vplim
 
       if(.not.linitedps(ispecies))then
 c Ensure the limits etc of the phase space array are set.
          psxmin=xmeshstart(id)
          psxmax=xmeshend(id)
+         vplim(:,ispecies)=-1.e5
          if(nc(ispecies).ne.0)then
             isp=ispecies
             vs=max(maxval(vsc(1:nc(isp),isp))
@@ -54,6 +58,10 @@ c Ensure the limits etc of the phase space array are set.
      $           *Ts(ispecies))
             psvmin=-psvmax
          endif
+      endif
+
+ 1    continue
+      if(.not.linitedps(ispecies))then
 c The centers of the bins in phase space (redundancy negligible).
          do i=1,npsx
             psx(i)=psxmin+(i-0.5)*(psxmax-psxmin)/npsx
@@ -63,13 +71,18 @@ c The centers of the bins in phase space (redundancy negligible).
      $           -psvmin(ispecies))/npsv
          enddo
          call fvinfincalc(ispecies)
+         linitedps(ispecies)=.true.
       endif
 
+      sv=1.5
       call pszero(ispecies)
 c Accumulate
       do i=iicparta(ispecies),iocparta(ispecies)
          if(x_part(iflag,i).ne.0)then
             v=x_part(id+ndims,i)
+! Auto-upscaling information
+            if(v.gt. sv*vplim(1,ispecies))vplim(1,ispecies)= v/sv
+            if(v.lt.-sv*vplim(2,ispecies))vplim(2,ispecies)=-v/sv
             x=x_part(id,i)-0.5*x_part(idtp,i)*v
             ixbin=int(.99999*(x-psxmin)/(psxmax-psxmin)*float(npsx)+1)
             ivbin=int(.99999*(v-psvmin(ispecies))/(psvmax(ispecies)
@@ -85,6 +98,24 @@ c Not for velocity beyond the vrange or x beyond x-range.
       enddo
 c All reduce to sum the distributions from all processes.
       call mpiallreducesum(psfxv(1,1,ispecies),npsx*npsv,ierr)
+! Upscaling 
+      call mpiallreducemax(vplim(1,ispecies),2,ierr)
+      if(vplim(1,ispecies).gt.psvmax(ispecies))then
+         if(myid.eq.0)write(*,'(/,a,i2,2f8.4)')'Rescale vmax',ispecies
+     $        ,vplim(1,ispecies),psvmax(ispecies)
+         psvmax(ispecies)=vplim(1,ispecies)+(psvmax(ispecies)
+     $        -psvmin(ispecies))*.1
+         linitedps(ispecies)=.false.
+         goto 1
+      endif
+      if(vplim(2,ispecies).gt.-psvmin(ispecies))then
+         if(myid.eq.0)write(*,'(/,a,i2,2f8.4)')'Rescale vmin',ispecies,
+     $        -vplim(2,ispecies),psvmin(ispecies)
+         psvmin(ispecies)=-vplim(2,ispecies)-(psvmax(ispecies)
+     $        -psvmin(ispecies))*.1
+         linitedps(ispecies)=.false.
+         goto 1
+      endif
       end
 c***********************************************************************
       subroutine psnaccum(ispecies,id)
@@ -193,12 +224,16 @@ c***********************************************************************
       call blueredgreenwhite()
       write(string,'(''v!d'',i1,''!d'')')ispecies
       call axlabels('x',string(1:lentrim(string)))
-c If unset, set psfmax for less than full range. But better set earlier.
+! Set adjust f-scale if necessary
       call minmax2(psfxv(1,1,ispecies),npsx,npsx,npsv,pmin,pmax)
-      if(pmax.gt.psfmax*1.1)call psfmaxset(1.1,ispecies)
+      if(pmax.lt.psfmax(ispecies)*0.9)then
+         psfmax(ispecies)=pmax
+      elseif(pmax.gt.psfmax(ispecies)*1.03)then
+         psfmax(ispecies)=pmax
+      endif
 c Set extrema of coloring range from psfmax.
       zclv(1)=0.
-      zclv(2)=psfmax
+      zclv(2)=psfmax(ispecies)
       icl=2
       icsw=1+16+32+ipsftri
 c Using triangular gradients +64 gives too large ps output.
@@ -209,8 +244,13 @@ c Using triangular gradients +64 gives too large ps output.
       call color(ilightgray())
       call gradlegend(zclv(1),zclv(2),.3,.94,.7,.94,.05,.true.)
       call color(15)
-      call polyline(psxmax+.3*psxmax*finfofv(:,ispecies),psv(1,ispecies)
-     $     ,npsv)
+      if(.false.)then   ! Old version does not normalize height
+         call polyline(psxmax+.3*psxmax*finfofv(:,ispecies)
+     $        ,psv(1,ispecies),npsv)
+      else
+         call polyline(psxmax+.3*(psxmax-psxmin)*finfofv(:,ispecies)
+     $        /finfmax(ispecies),psv(1,ispecies),npsv)
+      endif
       if(.false.)then
 ! The hard part is scaling the colors (cfac) to what is being used in 
 ! the histogram plot. The histogram just plots the number of particles
@@ -250,6 +290,7 @@ c*********************************************************************
       include 'plascom.f'
 c      write(*,'(a,i2,9f10.4)')'species,dcc,vsc,vtc',ispecies ,(dcc(i
 c     $     ,ispecies),vsc(i,ispecies),vtc(i,ispecies),i=1,nc(ispecies))
+      finfmax(ispecies)=0.
       do i=1,npsv
          fi=0.
          vinf=psv(i,ispecies)/sqrt(abs(eoverms(ispecies)))
@@ -257,6 +298,7 @@ c     $     ,ispecies),vsc(i,ispecies),vtc(i,ispecies),i=1,nc(ispecies))
             fi=fi+dcc(j,ispecies)*exp(-0.5*(vinf-vsc(j,ispecies))**2
      $           /vtc(j,ispecies)**2)/(vtc(j,ispecies)*sqrt(2.
      $           *3.1415926))
+            if(fi.gt.finfmax(ispecies))finfmax(ispecies)=fi
          enddo
          finfofv(i,ispecies)=fi
       enddo

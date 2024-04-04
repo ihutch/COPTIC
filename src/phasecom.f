@@ -4,6 +4,7 @@ c Phase space accumulation variables
       parameter (npsx=200,npsv=50,npsbuf=10000)
       real psfxv(npsx,npsv,nspeciesmax),psx(npsx),psn(npsx,nspeciesmax)
      $     ,psv(npsv,nspeciesmax),finfofv(npsv,nspeciesmax)
-      real psvmax(nspeciesmax),psvmin(nspeciesmax),psxmax,psxmin,psfmax
+      real psvmax(nspeciesmax),psvmin(nspeciesmax),psxmax,psxmin
+      real finfmax(nspeciesmax),psfmax(nspeciesmax)
       common /phasespace/psfxv,psvmax,psvmin,psxmax,psxmin,psx,psv
-     $     ,psn,psfmax,ipsftri,finfofv
+     $     ,psn,psfmax,ipsftri,finfofv,finfmax

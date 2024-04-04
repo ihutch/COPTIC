@@ -317,6 +317,17 @@
      $     MPI_COMM_WORLD,ierr)
       end
 !**************************************************************
+! Generic All Reduce Max Inplace Real. 
+! For contiguous real array (of any actual shape).
+      subroutine mpiallreducemax(array,nsize,ierr)
+      include 'mpif.h'
+      include 'myidcom.f'
+      integer nsize,ierr
+      real array(*)
+      call MPI_ALLREDUCE(MPI_IN_PLACE,array,nsize,MPI_REAL,MPI_MAX,
+     $     MPI_COMM_WORLD,ierr)
+      end
+!**************************************************************
 ! Generic Reduce Sum Inplace Real. Single destination: iddest 
 ! For contiguous real array (of any actual shape).
       subroutine mpireducesum(array,nsize,iddest,ierr)
