@@ -43,15 +43,20 @@ TARGETS=partexamine denexamine phiexamine diagexamine fluxexamine philineread ph
 
 all: $(TARGETS)
 
+# Work around the inability to have multiple definitions in modern gfortran
+libcoptic.a : ${COPTIC_ROOT/${SRC}/libcoptic.a
+	cp ${COPTIC_ROOT}/${SRC}/libcoptic.a libcoptic.a
+	ar d libcoptic.a reduce.o
+
 # We presume that all these routines are serial not parallel.
 dummyreduce.o : ${COPTIC_ROOT}/${SRC}/dummyreduce.f
 	$(G77) -c ${COPTIC_ROOT}/${SRC}/dummyreduce.f
 
-% : %.f  makefile modesaving.f examdecl.f $(ACCISLIB) dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(HEADERS) libvtkwrite.a libfftpack5.1.a libanalcoptic.a
-	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(LIBRARIES)
+% : %.f  makefile modesaving.f examdecl.f $(ACCISLIB) dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(HEADERS) libvtkwrite.a libfftpack5.1.a libanalcoptic.a libcoptic.a
+	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f dummyreduce.o libcoptic.a $(LIBRARIES)
 
-% : %.f90  makefile modesaving.f examdecl.f $(ACCISLIB) dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(HEADERS) libvtkwrite.a libfftpack5.1.a libanalcoptic.a
-	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f90 dummyreduce.o ${COPTIC_ROOT}/${SRC}/libcoptic.a $(LIBRARIES)
+% : %.f90  makefile modesaving.f examdecl.f $(ACCISLIB) dummyreduce.o libcoptic.a $(HEADERS) libvtkwrite.a libfftpack5.1.a libanalcoptic.a libcoptic.a
+	$(G77)  -o $* $(COMPILE-SWITCHES) $(PROFILING) $*.f90 dummyreduce.o ${COPTIC_ROOT}/${SRC}/coptic.a $(LIBRARIES)
 
 # Don't recompile accis every time the makefile is changed.
 ${COPTIC_ROOT}/accis/%.o : ${COPTIC_ROOT}/accis/%.f $(HEADERS)
@@ -74,7 +79,7 @@ libvtkwrite.a : vtkwritewrap.o visit_writer.o
 	@ar -rs libvtkwrite.a vtkwritewrap.o visit_writer.o
 
 libfftpack5.1.a : fftpack5.1.f
-	$(G77) $(COMPILE-SWITCHES) -c -w fftpack5.1.f
+	$(G77) $(COMPILE-SWITCHES) -c -w -fallow-argument-mismatch fftpack5.1.f
 	ar cr libfftpack5.1.a fftpack5.1.o
 	rm -f fftpack5.1.o
 

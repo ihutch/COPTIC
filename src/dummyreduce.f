@@ -23,4 +23,6 @@
       end
       subroutine  mpiallreducesum()
       end
+      subroutine  mpiallreducemax()
+      end
 

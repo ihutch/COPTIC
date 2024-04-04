@@ -101,7 +101,7 @@ c All reduce to sum the distributions from all processes.
 ! Upscaling 
       call mpiallreducemax(vplim(1,ispecies),2,ierr)
       if(vplim(1,ispecies).gt.psvmax(ispecies))then
-         if(myid.eq.0)write(*,'(/,a,i2,2f8.4)')'Rescale vmax',ispecies
+         if(myid.eq.0)write(*,'(/,a,i2,2f10.5)')'Rescale vmax',ispecies
      $        ,vplim(1,ispecies),psvmax(ispecies)
          psvmax(ispecies)=vplim(1,ispecies)+(psvmax(ispecies)
      $        -psvmin(ispecies))*.1
@@ -109,7 +109,7 @@ c All reduce to sum the distributions from all processes.
          goto 1
       endif
       if(vplim(2,ispecies).gt.-psvmin(ispecies))then
-         if(myid.eq.0)write(*,'(/,a,i2,2f8.4)')'Rescale vmin',ispecies,
+         if(myid.eq.0)write(*,'(/,a,i2,2f10.5)')'Rescale vmin',ispecies,
      $        -vplim(2,ispecies),psvmin(ispecies)
          psvmin(ispecies)=-vplim(2,ispecies)-(psvmax(ispecies)
      $        -psvmin(ispecies))*.1
@@ -214,6 +214,7 @@ c***********************************************************************
       include 'phasecom.f'
       character*30 string
       real cworka(npsx,npsv),zclv(2)
+      real faveofv(npsv)
       integer ifcolor(npsv)
 
       call pltinit(psxmin,psxmax,psvmin(ispecies),psvmax(ispecies))
@@ -251,6 +252,34 @@ c Using triangular gradients +64 gives too large ps output.
          call polyline(psxmax+.3*(psxmax-psxmin)*finfofv(:,ispecies)
      $        /finfmax(ispecies),psv(1,ispecies),npsv)
       endif
+! Integrate wrt x to get fave as a function of v.
+      fapeak=0.
+      do i=1,npsv
+         faveofv(i)=0.
+         do j=1,npsx
+            faveofv(i)=faveofv(i)+psfxv(j,i,ispecies)
+         enddo
+         if(faveofv(i).gt.fapeak)fapeak=faveofv(i)
+      enddo
+      vbar=0.
+      tot=0.
+      do i=1,npsv
+         faveofv(i)=faveofv(i)/fapeak
+         vbar=vbar+psv(i,ispecies)*faveofv(i)
+         v2bar=v2bar+psv(i,ispecies)**2*faveofv(i)
+         tot=tot+faveofv(i)
+      enddo 
+      vbar=vbar/tot
+      v2bar=v2bar/tot
+      tbar=v2bar-vbar**2
+! And plot it.
+      call color(4)
+      call polyline(psxmax+.3*(psxmax-psxmin)*faveofv,psv(1,ispecies)
+     $     ,npsv)
+!      write(*,*)'vbar',vbar
+      call polyline([psxmax,psxmax*1.04],[vbar,vbar],2)
+      call drcstr('!pv!q!o-!o')
+      call color(15)
       if(.false.)then
 ! The hard part is scaling the colors (cfac) to what is being used in 
 ! the histogram plot. The histogram just plots the number of particles
