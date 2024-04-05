@@ -98,8 +98,8 @@ c Set the starting number of filewriting to be N
      $                 ,nlabel(ilab))
                endif
             enddo
-!            thespecies=1
             do thespecies=1,nspecies
+               finfmax=maxval(finfofv(1:npsv,thespecies))
                call color(7)
                call phaseplot(thespecies)
                call color(15)
