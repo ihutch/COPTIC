@@ -225,6 +225,7 @@
       include 'myidcom.f'
       include 'phasecom.f'
       include 'plascom.f'
+      include 'fvcom.f'
       integer ifull(ndims),iuds(ndims),nstep
       logical lplot
       real u(ifull(1),ifull(2),ifull(3))
@@ -298,8 +299,12 @@ c but writing and plotting only by top process
             do thespecies=1,nspecies
                call phaseplot(thespecies)
                call color(15)
-               call vecw(xmeshstart(id),vds(thespecies),0)
-               call vecw(xmeshend(id),vds(thespecies),1)
+               if(nc(thespecies).eq.0)then
+! The following is inappropriate when multigaussian distributions are
+! being used because they over-rule vds.
+                  call vecw(xmeshstart(id),vds(thespecies),0)
+                  call vecw(xmeshend(id),vds(thespecies),1)
+               endif
             enddo
             call accisflush()
             call prtend(' ')
