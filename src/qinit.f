@@ -106,6 +106,9 @@
          i1=1
       enddo             ! End of species iteration
 
+! Test of mean velocity of initialized particles
+!      call meanvelocity
+
 ! Set flag of unused slots to 0
       do i=iicparta(ispecies),n_partmax
          x_part(iflag,i)=0
@@ -401,6 +404,20 @@ c The flattop length holetoplen. Negligible for large negative values.
      $              ,nofv,vofv,fofv,Pfofv)
                isw=0     ! Need to recalculate cumulative distrib.
                phiprev=phi
+               if(.false.)then
+! Testing
+               vsum=0.
+               fsum=0
+               do k=1,nofv
+                  fsum=fsum+fofv(k)
+                  vsum=vsum+fofv(k)*vofv(k)
+               enddo
+               vave=vsum/fsum
+               write(*,*)ispecies,vave
+               write(*,'(i5,4f8.4)')(k,vofv(k),fofv(k),Pfofv(k),
+     $              (Pfofv(k+1)-Pfofv(k-1))/(vofv(k+1)-vofv(k-1))
+     $              ,k=2,nofv-1)
+               endif
             endif
             call ranlux(fp,1)
             fp=fp*Pfofv(nofv)
@@ -408,9 +425,12 @@ c The flattop length holetoplen. Negligible for large negative values.
             ixpx=interp(Pfofv,nofv,fp,p)
             if(ixpx.gt.0.and.ixpx.lt.nofv)then
 ! Multigauss velocity is in units of sqrt(Tr/ms) convert to sqrt(Tr/m1)
-!               x_part(ndims+id,islot)=tisq*((1-p+ixpx)*vofv(-1+ixpx)+(p
-               x_part(ndims+id,islot)=sqrt(abs(eoverms(ispecies)))*((1-p
-     $             +ixpx)*vofv(-1+ixpx)+(p-ixpx) *vofv(ixpx)) +holespeed
+! Old erroneous version:
+!               x_part(ndims+id,islot)=sqrt(abs(eoverms(ispecies)))*((1-p
+!     $             +ixpx)*vofv(-1+ixpx)+(p-ixpx) *vofv(ixpx)) +holespeed
+               x_part(ndims+id,islot)=sqrt(abs(eoverms(ispecies)))
+     $              *((-p+ixpx+1)*vofv(ixpx)+(p-ixpx)*vofv(ixpx+1))
+     $              +holespeed
             else
                write(*,'(a,i5,7f8.4)')'placeqblk MultiGauss intp error'
      $              ,ixpx,fps,p,fp,phiprev
@@ -1311,6 +1331,31 @@ c*********************************************************************
       call dashset(0)
       call color(15)
       call pltend
+      end
+c*********************************************************************
+      subroutine meanvelocity
+      include 'ndimsdecl.f'
+      include 'partcom.f'
+      include 'plascom.f'
+      include 'myidcom.f'
+      include 'meshcom.f'
+      double precision vsum(ndims)
+      real vave(ndims)
+
+      write(*,*)'Mean velocity check:'
+      do isp=1,nspecies
+         write(*,*)iicparta(isp),iocparta(isp)
+         vsum=0.
+         do idim=1,ndims
+            isum=0
+            do ip=iicparta(isp),iocparta(isp)
+               vsum(idim)=vsum(idim)+x_part(idim+ndims,ip)
+               isum=isum+1
+            enddo
+            vave(idim)=real(vsum(idim)/isum)
+         enddo
+         write(*,'(a,i3,a,3f10.7)')'species:',isp,' v-average',vave
+      enddo
       end
 c*********************************************************************
 c Optional main test.
