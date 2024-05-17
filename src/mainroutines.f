@@ -231,7 +231,9 @@
       real u(ifull(1),ifull(2),ifull(3))
       character*(*) restartpath
       integer id,thespecies,ilab,ispecies
-      real vrange,phirange,umin,umax,psnmax
+      real vrange,phirange,umin,umax,psntot,psnmin,psnmax,phirangeinit
+      parameter (phirangeinit=0.5)
+      real p1min,p1max,p2min,p2max,pbmax,pbmin      
       real wx2nx,wy2ny
       parameter (id=1,vrange=3.)
       character*100 phasefilename
@@ -240,6 +242,7 @@
       integer lentrim
       external lentrim
       data phirange/0.5/thespecies/1/
+      data psnmin/0.8/psnmax/1.35/
       data nlabel/' !Bn!di!d!@',' !Bn!de!d!@'/
 ! Only if this is a one-dimensional problem (for now)
       if(iuds(2).ge.4 .and. iuds(3).ge.4) return
@@ -251,9 +254,9 @@ c psaccum must be asked for by all processes for initialization.
 ! Accumulate all the species and both phase-space and n(x).
       do ispecies=1,nspecies
          call psaccum(ispecies,id)
-         psnmax=numprocs*nparta(ispecies)/npsx
+         psntot=numprocs*nparta(ispecies)/npsx
          call psnaccum(ispecies,id)
-         psn(:,ispecies)=psn(:,ispecies)/psnmax
+         psn(:,ispecies)=psn(:,ispecies)/psntot
       enddo
       write(string,'(f10.3)')nstep*dt
 c but writing and plotting only by top process
@@ -266,7 +269,15 @@ c but writing and plotting only by top process
      $        ,u(1,2,2),nstep*dt)
          if(lplot)then
             call minmax(u(1,2,2),iuds(1),umin,umax)
-            phirange=max(phirange,umax*.95)
+!            phirange=max(phirange,umax*.95)
+ 10         if(max(umax,abs(umin)).gt.phirange*1.2)then
+               phirange=phirange+phirangeinit
+               goto 10
+            endif
+ 11         if(max(umax,abs(umin),phirangeinit).lt.phirange*0.6)then
+               phirange=phirange-phirangeinit
+               goto 11
+            endif
             call multiframe(nspecies+1,1,1)
             call dcharsize(.018,.018)
             call pltinit(xmeshstart(id),xmeshend(id),-phirange,phirange)
@@ -276,14 +287,35 @@ c but writing and plotting only by top process
             call jdrwstr(wx2nx(xmeshend(id)),wy2ny(.9*phirange),
      $           string,-1.)
 !           Plot density in the same frame
+            call minmax(psn(1,1),npsx,p1min,p1max)
+            call minmax(psn(2,1),npsx,p2min,p2max)
+            pbmin=min(p1min,p2min)
+            pbmax=max(p1max,p2max)
+ 12         if(pbmax.gt.psnmax*1.3)then
+               psnmax=psnmax*1.1
+               goto 12
+            endif
+ 13         if(max(pbmax,1.3).lt.psnmax*0.75)then
+               psnmax=psnmax*.9
+               goto 13
+            endif
+ 14         if(pbmin.lt.psnmin*.9)then
+               psnmin=psnmin*.9
+               goto 14
+            endif
+ 15         if(min(pbmin,0.8).gt.psnmin*1.3)then
+               psnmin=psnmin*1.1
+               goto 15
+            endif
+
             call scalewn(xmeshstart(id),xmeshend(id),
-     $           0.8,1.35,.false.,.false.)
+     $           psnmin,psnmax,.false.,.false.)
             call axptset(1.,1.)
             call ticrev
             call axis
             call ticrev
             call axptset(0.,0.)
-            call legendline(1.04,0.3,258,'!Bn!@')
+            call legendline(1.04,0.3,258,'    !Bn!@')
             call color(15)
             do ispecies=1,nspecies
                call color(ispecies+4)
@@ -304,6 +336,9 @@ c but writing and plotting only by top process
 ! being used because they over-rule vds.
                   call vecw(xmeshstart(id),vds(thespecies),0)
                   call vecw(xmeshend(id),vds(thespecies),1)
+               else
+                  call vecw(psx(1),0.,0)
+                  call vecw(psx(npsx),0.,1)
                endif
             enddo
             call accisflush()

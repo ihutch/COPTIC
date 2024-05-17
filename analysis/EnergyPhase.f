@@ -7,16 +7,20 @@ c At the same time get the potential u, and calculate energy \int E^2dx
       include '../accis/plotcom.h'
       character*100 phasefilename
       real x(npsbuf),u(npsbuf)!,uave(npsbuf)
-      integer j,k,nsmooth,knmax,idk,nxmax,ixstep,nxua,icl,icsw
+      integer j,k,nsmooth,knmax,idk,nxmax,ixstep,nxua,icl,icsw,jx,iv
       parameter (nxmax=512)
       real energy(npsbuf),time(npsbuf),xlen,dlnen(npsbuf),smooth(npsbuf)
       real uarray(npsbuf,nxmax),xuarray(nxmax),worka(npsbuf,nxmax)
-      real umin,umax,zclv(2)
+      real faveofv(npsbuf,npsv),varrayoft(npsbuf,npsv),tarr(npsbuf,npsv)
+      real umin,umax,zclv(2),pmin,pmax
+      real tbar,tot,v2bar,vbar
+      integer ispecies,iwidth
       real t,slope,enl,enkn,enu,tknl,tknmax,tknu
       real phirange,phirangeinit
       parameter (phirangeinit=0.5)
       integer i,ii,n,Np,Nave,Nastep,idone,irun
       character*12 nlabel(2)
+      character*20 string
       logical ldebug
       data nlabel/' !Bn!di!d!@',' !Bn!de!d!@'/
       data idone/0/irun/0/
@@ -26,6 +30,7 @@ c At the same time get the potential u, and calculate energy \int E^2dx
       Nastep=1
       phirange=phirangeinit
       j=0
+      ispecies=1
       call pfset(3)
       do i=1,iargc()
          call getarg(i,phasefilename)
@@ -87,8 +92,31 @@ c Set the starting number of plot file writing to be N
             time(j)=t
          endif
  1       continue
+! Integrate wrt x to get fave as a function of t and v.
+         do iv=1,npsv
+            faveofv(j,iv)=0.
+            do jx=1,npsx
+               faveofv(j,iv)=faveofv(j,iv)+psfxv(jx,iv,ispecies)
+            enddo
+            varrayoft(j,iv)=psv(iv,ispecies)
+            tarr(j,iv)=time(j)
+         enddo
+         if(.false.)then
+         vbar=0.
+         tot=0.
+         do iv=1,npsv
+            vbar=vbar+psv(iv,ispecies)*faveofv(j,iv)
+            v2bar=v2bar+psv(iv,ispecies)**2*faveofv(j,iv)
+            tot=tot+faveofv(j,iv)
+         enddo 
+         vbar=vbar/tot
+         v2bar=v2bar/tot
+         tbar=v2bar-vbar**2
+         endif
+!         call autoplot(psv(:,ispecies),faveofv(j,:),npsv)
+!         call pltend
       enddo
-      write(*,'(10f8.2)')(xuarray(k),k=1,nxua) ! Check xuarray.
+!      write(*,'(10f8.2)')(xuarray(k),k=1,nxua) ! Check xuarray.
       if(j.eq.0)goto 4
  5    continue  
 ! Calculate the time derivative of ln(energy)
@@ -99,6 +127,7 @@ c Set the starting number of plot file writing to be N
 ! Smooth dlnen over a range of nsmooth+1 points. (Should be adjustable.)
 ! And find the peak smoothed value. 
       knmax=1
+      if(nsmooth.gt.j)nsmooth=j-1
       do i=1+nsmooth/2,j-nsmooth/2  ! Triangular smoothing
          smooth(i)=0.
          do k=i-nsmooth/2,i+nsmooth/2
@@ -127,7 +156,9 @@ c Set the starting number of plot file writing to be N
          call axlabels('time','smoothed dln<E!u2!u>/dt')
          call pltend
       endif
-      call multiframe(2,1,1)
+
+
+      call multiframe(3,1,1)
 ! Do the growth plot
       call lautoplot(time,energy,j,.false.,.true.)
       call axlabels('time','field energy density <E!u2!u>')
@@ -135,6 +166,8 @@ c Set the starting number of plot file writing to be N
 ! Overplot the slope line
       call color(4)
       call polyline([tknl,tknu],[enl,enu],2)
+      call fwrite(1/slope,iwidth,1,string)
+      call legendline(.05,.92,258,'Growth time '//string(1:iwidth))
       call color(15)
 !      call pltend
 ! Put contour plot of uarray(t,x) here.
@@ -151,10 +184,29 @@ c Set the starting number of plot file writing to be N
       call axis
       call axis2
       call axlabels('time','x')
-      call gradlegend(zclv(1),zclv(2),1.04,0.,1.04,.9,.02,.true.)
-      call legendline(1.03,.95,258,'!Af!@')
+      call gradlegend(zclv(1),zclv(2),1.04,0.06,1.04,.9,.02,.true.)
+      call legendline(1.02,.97,258,'!Af!@')
+!      call pltend
+! Plot contours of the evolution of the ispecies distribution function.
+      call pltinit(time(1),time(j),psv(1,ispecies),psv(npsv,ispecies))
+      call minmax2(faveofv,npsbuf,j,npsv,pmin,pmax)
+!      write(*,*)'pmin,pmax',pmin,pmax
+      zclv(1)=pmin
+      zclv(2)=pmax
+      icl=2
+      icsw=2+16+32
+      call contourl(faveofv,worka,npsbuf,j,npsv,zclv,icl,
+     $    tarr,varrayoft,icsw)
+      call color(2)
+      call axis
+      call axis2
+      call axlabels('time','v')
+      call gradlegend(zclv(1),zclv(2),1.04,0.,1.04,.8,.02,.true.)
+      call legendline(1.01,.92,258,'f!de!d(v)dv')
       call pltend
-      call multiframe(0,0,0)
+!      call multiframe(0,0,0)
+
+
       call exit
  4    continue
       write(*,*)'Obtain the evolution of the field energy from',

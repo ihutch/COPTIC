@@ -9,7 +9,8 @@ c problems with the colorscale legend. So use makepnganim
       include '../accis/plotcom.h'
       character*100 phasefilename
       real x(npsbuf),u(npsbuf),uave(npsbuf)
-      real phirange,phirangeinit
+      real phirange,phirangeinit,psnmin,psnmax,p1min,p1max,p2min,p2max
+      real pbmax,pbmin
       parameter (phirangeinit=0.5)
       character*10 string
       integer i,ii,n,Np,Nave,Nastep,thespecies,idone,irun
@@ -18,6 +19,7 @@ c problems with the colorscale legend. So use makepnganim
       character*12 nlabel(2)
       data nlabel/' !Bn!di!d!@',' !Bn!de!d!@'/
       data idone/0/irun/0/
+      data psnmin/0.8/psnmax/1.35/
       Nave=1
       Nastep=1
       phirange=phirangeinit
@@ -62,8 +64,14 @@ c Set the starting number of filewriting to be N
                if(Nastep.lt.Nave)Nastep=Nastep+1
             endif
             call minmax(u,n,umin,umax)
-            if(max(umax,abs(umin)).gt.phirange*1.2)phirange=phirange
-     $           +phirangeinit
+ 10         if(max(umax,abs(umin)).gt.phirange*1.2)then
+               phirange=phirange+phirangeinit
+               goto 10
+            endif
+ 11         if(max(umax,abs(umin),phirangeinit).lt.phirange*0.6)then
+               phirange=phirange-phirangeinit
+               goto 11
+            endif
             write(string,'(f10.2)')t
             call multiframe(nspecies+1,1,1)
             call dcharsize(.018,.018)
@@ -80,13 +88,33 @@ c Set the starting number of filewriting to be N
                call polyline(x,u,n)
             endif
 !           Plot density in the same frame
-            call scalewn(x(1),x(n),0.8,1.35,.false.,.false.)
+            call minmax(psn(1,1),npsx,p1min,p1max)
+            call minmax(psn(2,1),npsx,p2min,p2max)
+            pbmin=min(p1min,p2min)
+            pbmax=max(p1max,p2max)
+ 12         if(pbmax.gt.psnmax*1.3)then
+               psnmax=psnmax*1.1
+               goto 12
+            endif
+ 13         if(max(pbmax,1.1).lt.psnmax*0.75)then
+               psnmax=psnmax*.9
+               goto 13
+            endif
+ 14         if(pbmin.lt.psnmin*.9)then
+               psnmin=psnmin*.9
+               goto 14
+            endif
+ 15         if(min(pbmin,0.8).gt.psnmin*1.3)then
+               psnmin=psnmin*1.1
+               goto 15
+            endif
+            call scalewn(x(1),x(n),psnmin,psnmax,.false.,.false.)
             call axptset(1.,1.)
             call ticrev
             call axis
             call ticrev
             call axptset(0.,0.)
-            call legendline(1.04,0.3,258,'!Bn!@')
+            call legendline(1.04,0.3,258,'    !Bn!@')
             call color(15)
             do ispecies=1,nspecies
                call color(ispecies+4)
