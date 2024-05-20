@@ -217,7 +217,7 @@
       call multiframe(0,0,0)
       end
 !***********************************************************************
-      subroutine phasepscont(ifull,iuds,u,nstep,lplot,restartpath)
+      subroutine phasepscont(ifull,iuds,u,nstep,lplot,restartpath,q)
       implicit none
       include 'ndimsdecl.f'
       include 'meshcom.f'
@@ -228,9 +228,9 @@
       include 'fvcom.f'
       integer ifull(ndims),iuds(ndims),nstep
       logical lplot
-      real u(ifull(1),ifull(2),ifull(3))
+      real u(ifull(1),ifull(2),ifull(3)),q(ifull(1),ifull(2),ifull(3))
       character*(*) restartpath
-      integer id,thespecies,ilab,ispecies
+      integer id,thespecies,ilab,ispecies !,kk
       real vrange,phirange,umin,umax,psntot,psnmin,psnmax,phirangeinit
       parameter (phirangeinit=0.5)
       real p1min,p1max,p2min,p2max,pbmax,pbmin      
@@ -288,26 +288,25 @@ c but writing and plotting only by top process
      $           string,-1.)
 !           Plot density in the same frame
             call minmax(psn(1,1),npsx,p1min,p1max)
-            call minmax(psn(2,1),npsx,p2min,p2max)
+            call minmax(psn(1,2),npsx,p2min,p2max)
             pbmin=min(p1min,p2min)
             pbmax=max(p1max,p2max)
- 12         if(pbmax.gt.psnmax*1.3)then
-               psnmax=psnmax*1.1
+ 12         if(pbmax-pbmin.gt.(psnmax-pbmin)*1.3)then
+               psnmax=(psnmax-pbmin)*1.25+pbmin
                goto 12
             endif
- 13         if(max(pbmax,1.3).lt.psnmax*0.75)then
-               psnmax=psnmax*.9
+ 13         if(pbmax-pbmin.lt.(psnmax-pbmin)*0.7.and.psnmax.gt.1.3)then
+               psnmax=(psnmax-pbmin)*.75+pbmin
                goto 13
             endif
- 14         if(pbmin.lt.psnmin*.9)then
-               psnmin=psnmin*.9
+ 14         if(pbmin.lt.psnmin)then
+               psnmin=psnmin*.1
                goto 14
             endif
- 15         if(min(pbmin,0.8).gt.psnmin*1.3)then
-               psnmin=psnmin*1.1
+ 15         if(pbmin.gt.psnmin*1.4)then
+               psnmin=min(psnmin*1.1,.9)
                goto 15
             endif
-
             call scalewn(xmeshstart(id),xmeshend(id),
      $           psnmin,psnmax,.false.,.false.)
             call axptset(1.,1.)
@@ -327,6 +326,11 @@ c but writing and plotting only by top process
      $                 ,nlabel(ilab))
                endif
             enddo
+            call color(11)
+! Extra line for the charge + 1. Mostly for debugging.
+! Assume the one dimension is x (i.e. id=1) and other dims are length 3
+!            call polyline(xn(ixnp(id)+2),q(2:,2,2)+1.,ixnp(id+1)-2
+!     $           -ixnp(id))
             call color(7)
             do thespecies=1,nspecies
                call phaseplot(thespecies)

@@ -19,7 +19,7 @@ c problems with the colorscale legend. So use makepnganim
       character*12 nlabel(2)
       data nlabel/' !Bn!di!d!@',' !Bn!de!d!@'/
       data idone/0/irun/0/
-      data psnmin/0.8/psnmax/1.35/
+      data psnmin/0.9/psnmax/1.3/
       Nave=1
       Nastep=1
       phirange=phirangeinit
@@ -89,23 +89,23 @@ c Set the starting number of filewriting to be N
             endif
 !           Plot density in the same frame
             call minmax(psn(1,1),npsx,p1min,p1max)
-            call minmax(psn(2,1),npsx,p2min,p2max)
+            call minmax(psn(1,2),npsx,p2min,p2max)
             pbmin=min(p1min,p2min)
             pbmax=max(p1max,p2max)
- 12         if(pbmax.gt.psnmax*1.3)then
-               psnmax=psnmax*1.1
+ 12         if(pbmax-pbmin.gt.(psnmax-pbmin)*1.3)then
+               psnmax=(psnmax-pbmin)*1.25+pbmin
                goto 12
             endif
- 13         if(max(pbmax,1.1).lt.psnmax*0.75)then
-               psnmax=psnmax*.9
+ 13         if(pbmax-pbmin.lt.(psnmax-pbmin)*0.7.and.psnmax.gt.1.3)then
+               psnmax=(psnmax-pbmin)*.75+pbmin
                goto 13
             endif
- 14         if(pbmin.lt.psnmin*.9)then
-               psnmin=psnmin*.9
+ 14         if(pbmin.lt.psnmin)then
+               psnmin=psnmin*.1
                goto 14
             endif
- 15         if(min(pbmin,0.8).gt.psnmin*1.3)then
-               psnmin=psnmin*1.1
+ 15         if(pbmin.gt.psnmin*1.4)then
+               psnmin=min(psnmin*1.1,.9)
                goto 15
             endif
             call scalewn(x(1),x(n),psnmin,psnmax,.false.,.false.)

@@ -472,7 +472,7 @@
             if(ldistshow.and.iuds(2).eq.3.and.iuds(3).eq.3)then
                if(.true.)then
                   call phasepscont(ifull,iuds,u,nstep,lphiplot
-     $                 ,restartpath)
+     $                 ,restartpath,q)
                else
                   if(lmyidhead)call phasescatter(ifull,iuds,u)
                endif
@@ -484,6 +484,9 @@
          if(idebug.gt.0)write(*,*)'Calling padvnc',nspecies
          do ispecies=1,nspecies
             call padvnc(iLs,cij,u,ndiags,psum,diagsum,ispecies,ndiagmax)
+!            if(lmyidhead)write(*,*)'padvnc',j,ispecies
+!     $           ,eoverms(ispecies)
+!            if(lmyidhead)write(*,'(10f8.1)')psum(2:iuds(1)-1,2,2)
          enddo
 !------------------------------------------------
 ! Optional checking step. Used for restart testing.
@@ -521,7 +524,7 @@
 ! If we have not already written phaseplot, but we are writing distribs
 ! and it is a 1-d calculation:
                call phasepscont(ifull,iuds,u,nstep,lphiplot
-     $              ,restartpath)
+     $              ,restartpath,q)
             endif
          endif
 ! Particle distribution diagnostics.

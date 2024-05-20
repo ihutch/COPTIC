@@ -109,7 +109,7 @@
       real wavespec(2*ndims+1)
       real Bfield(ndims),Bt,CFin(3+ndims,6)
       integer iCFcount,ipartperiod(ndims),idims(ndims)
-      character*100 restartpath,objfilename
+      character*100 restartpath,objfilename,string
       character*2048 argline
       real gt(ndims),gp0(ndims),gtt,gn(ndims),gnt
 ! Multiple species can have these things different.
@@ -656,6 +656,17 @@
                stop
             endif
          enddo
+      endif
+! Consistency check for particle number setting
+      if(nspecies.gt.1.and.nparta(1).ne.0.and.nparta(2).ne.nparta(1)
+     $        )then
+         write(*,*)'WARNING NUMBERS OF PARTICLES DIFFER',nparta(1:2)
+         write(*,*)'Do you want to continue?'
+         if(lmyidhead)then
+            read(*,*)string
+            if(.not.(string(1:1).eq.'y'.or.string(1:1).eq.'Y'))
+     $          call exit
+         endif
       endif
       return
 !------------------------------------------------------------
