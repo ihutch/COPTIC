@@ -48,9 +48,9 @@
       real xprior(2*ndims)
       real xn1(ndims),xn2(ndims)
       logical linmesh
-      logical lcollided,ltlyerr,lbtoolarge
+      logical lcollided,ltlyerr,lbtoolarge(nspeciesmax)
       save adfield,lbtoolarge
-      data lbtoolarge/.false./
+      data lbtoolarge/nspeciesmax*.false./
 
 ! Make this always last to use the checks.
       include 'partcom.f'
@@ -304,12 +304,17 @@
      $           ,dtpos,dtaccel,driftfields(1,ispecies)
      $           ,eoverms(ispecies))
          else
-            if(.not.lbtoolarge)then
-               if(myid.eq.0)write(*,*)'Large field drift motion',Bt,dt
-               lbtoolarge=.true.
+            if(.not.lbtoolarge(ispecies))then
+               if(myid.eq.0)write(*,*)'Large field drift motion'
+     $              ,ispecies,Bt,dt
+               lbtoolarge(ispecies)=.true.
             endif
-            do j=1,ndims            
-! E-kick. Why do we do this? And why not in driftparticle?
+            do j=1,ndims
+! Drift case accel here to avoid having to pass dtaccel to driftparticle.
+! This increments vparallel AND perp. But when drifting, E should act
+! only along B; so incrementing perpendicular v is improper. However,
+! driftparticle resets perp v-components to just v_{ExB}. So the 
+! perp increment is removed in driftparticle.  
                x_part(j+ndims,i)=x_part(j+ndims,i)+eoverms(ispecies)
      $              *Efield(j)*dtaccel
             enddo
@@ -1074,7 +1079,7 @@
          xr(j)=xr(j)
      $        +(vp*Bfield(j)+EB(j))*dtpos
 ! Reset perp velocity to just the drift. Effectively we remove the 
-! perpendicular energy forcing the magnetic moment to zero. This
+! perpendicular energy, forcing the magnetic moment to zero. This
 ! is necessary because the perpendicular acceleration has been applied
 ! improperly for the whole timestep.
          xr(j+ndims)=vp*Bfield(j)+EB(j)

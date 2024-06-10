@@ -242,7 +242,7 @@
       integer lentrim
       external lentrim
       data phirange/0.5/thespecies/1/
-      data psnmin/0.8/psnmax/1.35/
+      data psnmin/0.9/psnmax/1.3/
       data nlabel/' !Bn!di!d!@',' !Bn!de!d!@'/
 ! Only if this is a one-dimensional problem (for now)
       if(iuds(2).ge.4 .and. iuds(3).ge.4) return

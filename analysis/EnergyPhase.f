@@ -12,7 +12,7 @@ c At the same time get the potential u, and calculate energy \int E^2dx
       real energy(npsbuf),time(npsbuf),xlen,dlnen(npsbuf),smooth(npsbuf)
       real uarray(npsbuf,nxmax),xuarray(nxmax),worka(npsbuf,nxmax)
       real faveofv(npsbuf,npsv),varrayoft(npsbuf,npsv),tarr(npsbuf,npsv)
-      real umin,umax,zclv(2),pmin,pmax
+      real umin,umax,zclv(2),pmin,pmax,emin,emax
       real tbar,tot,v2bar,vbar
       integer ispecies,iwidth
       real t,slope,enl,enkn,enu,tknl,tknmax,tknu
@@ -112,9 +112,9 @@ c Set the starting number of plot file writing to be N
          vbar=vbar/tot
          v2bar=v2bar/tot
          tbar=v2bar-vbar**2
-         endif
 !         call autoplot(psv(:,ispecies),faveofv(j,:),npsv)
 !         call pltend
+         endif
       enddo
 !      write(*,'(10f8.2)')(xuarray(k),k=1,nxua) ! Check xuarray.
       if(j.eq.0)goto 4
@@ -160,16 +160,18 @@ c Set the starting number of plot file writing to be N
 
       call multiframe(3,1,1)
 ! Do the growth plot
+      call minmax(energy,j,emin,emax)
       call lautoplot(time,energy,j,.false.,.true.)
       call axlabels('time','field energy density <E!u2!u>')
       call axis2
+      if(emax/emin.gt.20.)then
 ! Overplot the slope line
-      call color(4)
-      call polyline([tknl,tknu],[enl,enu],2)
-      call fwrite(1/slope,iwidth,1,string)
-      call legendline(.05,.92,258,'Growth time '//string(1:iwidth))
-      call color(15)
-!      call pltend
+         call color(4)
+         call polyline([tknl,tknu],[enl,enu],2)
+         call fwrite(1/slope,iwidth,1,string)
+         call legendline(.05,.92,258,'Growth time '//string(1:iwidth))
+         call color(15)
+      endif
 ! Put contour plot of uarray(t,x) here.
       call pltinit(time(1),time(j),xuarray(1),xuarray(nxua))
       call minmax2(uarray,npsbuf,j,nxua,umin,umax)
