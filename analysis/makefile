@@ -44,7 +44,8 @@ TARGETS=partexamine denexamine phiexamine diagexamine fluxexamine philineread ph
 all: $(TARGETS)
 
 # Work around the inability to have multiple definitions in modern gfortran
-libcoptic.a : ${COPTIC_ROOT/${SRC}/libcoptic.a
+libcoptic.a : ${COPTIC_ROOT}/${SRC}/libcoptic.a
+	echo Copying libcoptic.a from coptic root
 	cp ${COPTIC_ROOT}/${SRC}/libcoptic.a libcoptic.a
 	ar d libcoptic.a reduce.o
 

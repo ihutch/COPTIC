@@ -84,8 +84,9 @@ c Accumulate
             if(v.gt. sv*vplim(1,ispecies))vplim(1,ispecies)= v/sv
             if(v.lt.-sv*vplim(2,ispecies))vplim(2,ispecies)=-v/sv
             x=x_part(id,i)-0.5*x_part(idtp,i)*v
-            ixbin=int(.99999*(x-psxmin)/(psxmax-psxmin)*float(npsx)+1)
-            ivbin=int(.99999*(v-psvmin(ispecies))/(psvmax(ispecies)
+            ixbin=ceiling(.99999*(x-psxmin)/(psxmax-psxmin)*float(npsx)
+     $           +1)
+            ivbin=floor(.99999*(v-psvmin(ispecies))/(psvmax(ispecies)
      $           -psvmin(ispecies))*float(npsv)+1)
 c Wrap periodically the x-position bins in case of exit.
             if(ixbin.lt.1)ixbin=npsx+ixbin
@@ -237,6 +238,7 @@ c Set extrema of coloring range from psfmax.
       zclv(2)=psfmax(ispecies)
       icl=2
       icsw=1+16+32+ipsftri
+!      write(*,'(10f8.0)')(psfxv(i,38,ispecies),i=1,npsx)
 c Using triangular gradients +64 gives too large ps output.
       call contourl(psfxv(1,1,ispecies),cworka,npsx,npsx,npsv,zclv,icl
      $     ,psx,psv(1,ispecies),icsw) 
