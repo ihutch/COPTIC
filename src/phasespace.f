@@ -221,7 +221,7 @@ c***********************************************************************
       call pltinit(psxmin,psxmax,psvmin(ispecies),psvmax(ispecies))
       call color(15)
       write(string,'('' f!d'',i1,''!d'')')ispecies
-      call jdrwstr(wx2nx(psxmax),wy2ny(psv(40,ispecies))
+      if(lsideplot)call jdrwstr(wx2nx(psxmax),wy2ny(psv(40,ispecies))
      $     ,string(1:lentrim(string)),1.)
       call blueredgreenwhite()
       write(string,'(''v!d'',i1,''!d'')')ispecies
@@ -255,6 +255,7 @@ c Using triangular gradients +64 gives too large ps output.
      $        /finfmax(ispecies),psv(1,ispecies),npsv)
       endif
 ! Integrate wrt x to get fave as a function of v.
+      if(lsideplot)then
       fapeak=0.
       do i=1,npsv
          faveofv(i)=0.
@@ -282,6 +283,7 @@ c Using triangular gradients +64 gives too large ps output.
       call polyline([psxmax,psxmax*1.04],[vbar,vbar],2)
       call drcstr('!pv!q!o-!o')
       call color(15)
+      endif
       if(.false.)then
 ! The hard part is scaling the colors (cfac) to what is being used in 
 ! the histogram plot. The histogram just plots the number of particles

@@ -23,6 +23,7 @@ c problems with the colorscale legend. So use makepnganim
       Nave=1
       Nastep=1
       phirange=phirangeinit
+      lsideplot=.true. !default
       call pfset(3)
       do i=1,iargc()
          call getarg(i,phasefilename)
@@ -51,6 +52,8 @@ c Set the starting number of filewriting to be N
          elseif(phasefilename(1:2).eq.'-q')then
             irun=1
             call pfset(-3)
+         elseif(phasefilename(1:2).eq.'-s')then
+            lsideplot=.not.lsideplot
          else
             if(idone.gt.0)call prtend(' ')
             n=npsbuf
@@ -114,7 +117,11 @@ c Set the starting number of filewriting to be N
             call axis
             call ticrev
             call axptset(0.,0.)
-            call legendline(1.04,0.3,258,'    !Bn!@')
+            if(lsideplot)then
+               call legendline(1.04,0.3,258,'    !Bn!@')
+            else
+               call legendline(1.04,0.3,258,'!Bn!@')
+            endif
             call color(15)
             do ispecies=1,nspecies
                call color(ispecies+4)
@@ -148,6 +155,7 @@ c Set the starting number of filewriting to be N
  4    continue
       write(*,*)'Usage phasereadplot [Options] file1 [file2 ....]'
       write(*,*)'Options: -Annn average-number',' -N starting-number'
-      write(*,*)'-r run continuously','  -q no screen plots.'
+      write(*,*)'-r run continuously','  -q no screen plots',
+     $     '  -s toggle sideways plot of f(v)'
       end
  
