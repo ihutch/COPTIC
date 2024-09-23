@@ -271,7 +271,6 @@ c but writing and plotting only by top process
      $        ,u(1,2,2),nstep*dt)
          if(lplot)then
             call minmax(u(1,2,2),iuds(1),umin,umax)
-!            phirange=max(phirange,umax*.95)
  10         if(max(umax,abs(umin)).gt.phirange*1.2)then
                phirange=phirange+phirangeinit
                goto 10
@@ -309,6 +308,13 @@ c but writing and plotting only by top process
                psnmin=min(psnmin*1.1,.9)
                goto 15
             endif
+ 16         if(pbmax-pbmin.lt.(psnmax-psnmin)*0.2)then
+               write(*,'(4f8.4)')psnmax,psnmin,pbmax,pbmin
+               psnmin=pbmin-.3*(pbmax-pbmin)
+               psnmax=pbmax+1.8*(pbmax-pbmin)
+               write(*,'(4f8.4)')psnmax,psnmin
+               goto 16
+            endif
             call scalewn(xmeshstart(id),xmeshend(id),
      $           psnmin,psnmax,.false.,.false.)
             call axptset(1.,1.)
@@ -324,7 +330,7 @@ c but writing and plotting only by top process
                if(nspecies.gt.1)then !Label species by charge sign.
                   ilab=1
                   if(eoverms(ispecies).lt.0)ilab=2
-                  call legendline(0.8,0.35-0.08*ispecies,0
+                  call legendline(0.05,0.95-0.08*ispecies,0
      $                 ,nlabel(ilab))
                endif
             enddo
@@ -334,6 +340,7 @@ c but writing and plotting only by top process
 !            call polyline(xn(ixnp(id)+2),q(2:,2,2)+1.,ixnp(id+1)-2
 !     $           -ixnp(id))
             call color(7)
+            lsideplot=.true.  ! Change default from zero
             do thespecies=1,nspecies
                call phaseplot(thespecies)
                call color(15)
