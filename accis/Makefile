@@ -192,7 +192,8 @@ vec4014 : libaccis.a
 	rm -f noscreen
 
 # Make the windows driver and a test executable.
-vecwin libaccisWin.a : 
+vecwintesting : libaccisWin.a
+libaccisWin.a : *.f vecwin.c
 	make clean
 	make GCC="i686-w64-mingw32-gcc -H -mwindows -mconsole" vecwin.o
 	make FORTRAN="i686-w64-mingw32-gfortran -H -mwindows -mconsole --static" GCC="i686-w64-mingw32-gcc -H -mwindows -mconsole" libaccis.a
@@ -201,6 +202,7 @@ vecwin libaccisWin.a :
 	i686-w64-mingw32-gcc-ar -q libaccisWin.a vecwin.o
 # Use this as the template for windows executables
 	i686-w64-mingw32-gfortran -H -mwindows -mconsole --static -o testing/plottest.exe testing/plottest.f -L. -laccisWin
+# Don't keep cross-compiled versions
 	rm -f *.o libaccis.a
 
 noscreen : libaccis.a

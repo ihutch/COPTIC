@@ -54,6 +54,8 @@ c Set the starting number of filewriting to be N
             call pfset(-3)
          elseif(phasefilename(1:2).eq.'-s')then
             lsideplot=.not.lsideplot
+         elseif(phasefilename(1:2).eq.'-l')then
+            read(phasefilename(3:),*,err=5,end=5)ilogspec
          else
             if(idone.gt.0)call prtend(' ')
             n=npsbuf
@@ -111,6 +113,13 @@ c Set the starting number of filewriting to be N
                psnmin=min(psnmin*1.1,.9)
                goto 15
             endif
+ 16         if(pbmax-pbmin.lt.(psnmax-psnmin)*0.2)then
+               write(*,'(4f8.4)')psnmax,psnmin,pbmax,pbmin
+               psnmin=pbmin-.3*(pbmax-pbmin)
+               psnmax=pbmax+1.8*(pbmax-pbmin)
+               write(*,'(4f8.4)')psnmax,psnmin
+               goto 16
+            endif
             call scalewn(x(1),x(n),psnmin,psnmax,.false.,.false.)
             call axptset(1.,1.)
             call ticrev
@@ -129,7 +138,7 @@ c Set the starting number of filewriting to be N
                if(nspecies.gt.1)then !Assume electrons are first species
                   ilab=1
                   if(ispecies.eq.1)ilab=2
-                  call legendline(0.8,0.35-0.08*ispecies,0
+                  call legendline(0.05,0.95-0.08*ispecies,0
      $                 ,nlabel(ilab))
                endif
             enddo
@@ -152,10 +161,12 @@ c Set the starting number of filewriting to be N
          call prtend(' ')
       endif
       if(i.ge.2)return
+ 5    write(*,*)'Could not read ilogspec'
  4    continue
       write(*,*)'Usage phasereadplot [Options] file1 [file2 ....]'
       write(*,*)'Options: -Annn average-number',' -N starting-number'
       write(*,*)'-r run continuously','  -q no screen plots',
      $     '  -s toggle sideways plot of f(v)'
+      write(*,*)'-lnn set species for log phase contours (before files)'
       end
  

@@ -1,9 +1,11 @@
-c Main program to get (not plot) phasespace data from file[s] on command line.
+c Main program to get phasespace data from file[s] on command line.
 c At the same time get the potential u, and calculate energy \int E^2dx
+c Then contour plot phi(x,t), f(v,t) with energy.
       implicit none
       include '../src/ndimsdecl.f'
       include '../src/phasecom.f'
       include '../src/partcom.f'
+      include '../src/fvcom.f'
       include '../accis/plotcom.h'
       character*100 phasefilename
       real x(npsbuf),u(npsbuf)!,uave(npsbuf)
@@ -13,15 +15,18 @@ c At the same time get the potential u, and calculate energy \int E^2dx
       real uarray(npsbuf,nxmax),xuarray(nxmax),worka(npsbuf,nxmax)
       real faveofv(npsbuf,npsv),varrayoft(npsbuf,npsv),tarr(npsbuf,npsv)
       real umin,umax,zclv(2),pmin,pmax,emin,emax
-      real tbar,tot,v2bar,vbar
+!      real tbar,tot,v2bar,vbar
       integer ispecies,iwidth
       real t,slope,enl,enkn,enu,tknl,tknmax,tknu
       real phirange,phirangeinit
+      real vrange,vrange1
       parameter (phirangeinit=0.5)
-      integer i,ii,n,Np,Nave,Nastep,idone,irun
+      integer i,ii,n,Np,Nave,Nastep,idone,irun,lentrim
       character*12 nlabel(2)
       character*20 string
-      logical ldebug
+      character*100 title
+      logical ldebug,lrgb
+      real wx2nx,wy2ny
       data nlabel/' !Bn!di!d!@',' !Bn!de!d!@'/
       data idone/0/irun/0/
       ldebug=.false.
@@ -64,6 +69,13 @@ c Set the starting number of plot file writing to be N
          elseif(phasefilename(1:2).eq.'-q')then
             irun=1
             call pfset(-3)
+            goto 1
+         elseif(phasefilename(1:2).eq.'-t')then
+            read(phasefilename(3:),*)title
+            goto 1
+         elseif(phasefilename(1:2).eq.'-c')then
+            lrgb=.true.
+            goto 1
          else
 ! Not a known switch. Interpret as a file name, and read it.
             j=j+1
@@ -91,31 +103,23 @@ c Set the starting number of plot file writing to be N
             energy(j)=energy(j)/xlen  ! Thus energy density
             time(j)=t
          endif
- 1       continue
 ! Integrate wrt x to get fave as a function of t and v.
          do iv=1,npsv
             faveofv(j,iv)=0.
+            varrayoft(j,iv)=psv(iv,ispecies)
+            tarr(j,iv)=time(j)
             do jx=1,npsx
                faveofv(j,iv)=faveofv(j,iv)+psfxv(jx,iv,ispecies)
             enddo
-            varrayoft(j,iv)=psv(iv,ispecies)
-            tarr(j,iv)=time(j)
          enddo
-         if(.false.)then
-         vbar=0.
-         tot=0.
-         do iv=1,npsv
-            vbar=vbar+psv(iv,ispecies)*faveofv(j,iv)
-            v2bar=v2bar+psv(iv,ispecies)**2*faveofv(j,iv)
-            tot=tot+faveofv(j,iv)
-         enddo 
-         vbar=vbar/tot
-         v2bar=v2bar/tot
-         tbar=v2bar-vbar**2
-!         call autoplot(psv(:,ispecies),faveofv(j,:),npsv)
-!         call pltend
-         endif
+! Rescale?
+         if(j.eq.1)vrange1=varrayoft(j,npsv)-varrayoft(j,1)
+         vrange=varrayoft(j,npsv)-varrayoft(j,1)
+         faveofv(j,:)=(faveofv(j,:)*vrange1/vrange)
+!         faveofv(j,:)=alog10(faveofv(j,:)*vrange1/vrange+1000.)
+ 1       continue
       enddo
+! End of command line arguments 
 !      write(*,'(10f8.2)')(xuarray(k),k=1,nxua) ! Check xuarray.
       if(j.eq.0)goto 4
  5    continue  
@@ -146,8 +150,8 @@ c Set the starting number of plot file writing to be N
       enkn=energy(knmax)
       enl=enkn*exp(-slope*(tknmax-tknl))
       enu=enkn*exp(-slope*(tknmax-tknu))
-      write(*,'(a,f10.5a,f7.2)')'Peak growth rate:',slope
-     $ ,'   Growth time:',1/slope
+      write(*,'(aa,f10.5a,f7.2)')title(1:lentrim(title))
+     $     ,'  Peak growth rate:',slope,'   Growth time:',1/slope
       if(ldebug)then
          write(*,*)'knmax=',knmax,' idk=',idk,' slope=',slope
          write(*,*)'tknl,tknu',tknl,tknu
@@ -161,11 +165,14 @@ c Set the starting number of plot file writing to be N
       call multiframe(3,1,1)
 ! Do the growth plot
       call minmax(energy,j,emin,emax)
+      call dcharsize(0.02,0.02)
       call lautoplot(time,energy,j,.false.,.true.)
       call axlabels('time','field energy density <E!u2!u>')
       call axis2
+      call legendline(.1,1.1,258,title(1:lentrim(title)))
       if(emax/emin.gt.20.)then
 ! Overplot the slope line
+         call winset(.true.)
          call color(4)
          call polyline([tknl,tknu],[enl,enu],2)
          call fwrite(1/slope,iwidth,1,string)
@@ -177,22 +184,39 @@ c Set the starting number of plot file writing to be N
       call minmax2(uarray,npsbuf,j,nxua,umin,umax)
       zclv(1)=umin/2
       zclv(2)=umax/2
+! Contour uarray^1/3 to enhance sensitivity near zero. 
+      zclv(2)=umax**.3333
+      zclv(1)=-abs(umin)**.3333
       icl=2
       icsw=1+16+32
-!      call blueredgreenwhite()
-      call contourl(uarray,worka,npsbuf,j,nxua,zclv,icl,
-     $    time,xuarray,icsw)
+      if(lrgb)call blueredgreenwhite()
+!      call contourl(uarray,worka,npsbuf,j
+      call contourl(sign(abs(uarray)**.3333,uarray),worka,npsbuf,j
+     $     ,nxua,zclv,icl,time,xuarray,icsw)
       call color(2)
       call axis
       call axis2
       call axlabels('time','x')
       call gradlegend(zclv(1),zclv(2),1.04,0.06,1.04,.9,.02,.true.)
-      call legendline(1.02,.97,258,'!Af!@')
+      call legendline(1.02,.97,258,'!Af!@!u1/3!u')
+      call color(10)
+      call jdrwstr(wx2nx(time(j)),wy2ny(0.)-.01,'-c!ds0!d',-1.5)
+      call winset(.true.)
+      call polyline([time(j)-xuarray(nxua)*sqrt(1836.),time(j)]
+     $     ,[xuarray(nxua),0.],2)
+      call color(6)
+      call polyline([time(j)-xuarray(nxua),time(j)]
+     $     ,[xuarray(nxua),0.],2)
+      call winset(.false.)
+      call jdrwstr(wx2nx(time(j)-xuarray(nxua)),wy2ny(xuarray(nxua))+.02
+     $     ,'-v!dte!d',-0.5)
+
 !      call pltend
 ! Plot contours of the evolution of the ispecies distribution function.
+      call blueredgreenwhite()
       call pltinit(time(1),time(j),psv(1,ispecies),psv(npsv,ispecies))
       call minmax2(faveofv,npsbuf,j,npsv,pmin,pmax)
-!      write(*,*)'pmin,pmax',pmin,pmax
+      write(*,*)'pmin,pmax',pmin,pmax
       zclv(1)=pmin
       zclv(2)=pmax
       icl=2
@@ -203,7 +227,7 @@ c Set the starting number of plot file writing to be N
       call axis
       call axis2
       call axlabels('time','v')
-      call gradlegend(zclv(1),zclv(2),1.04,0.,1.04,.8,.02,.true.)
+      call gradlegend(zclv(1),zclv(2),1.04,0.,1.04,.75,.02,.true.)
       call legendline(1.01,.92,258,'f!de!d(v)dv')
       call pltend
 !      call multiframe(0,0,0)
@@ -213,9 +237,10 @@ c Set the starting number of plot file writing to be N
  4    continue
       write(*,*)'Obtain the evolution of the field energy from',
      $     ' one dimensional pps files'
+      write(*,*)'and plot t,x contours of phi, t,v contours of f' 
       write(*,*)'Usage:  EnergyPhase [Options] file1 [file2 ....]'
       write(*,*)'Options: -A<nnn> average-number',' -N starting-number'
-      write(*,*)' -ns<nnn> smoothing range -q no screen plots or halts.'
-      write(*,*)' -d toggle debugging'
+      write(*,*)' -ns<nnn> smoothing range. -q no screen plot or halt.'
+      write(*,*)' -d toggle debugging. -t<Title> set title. -c color'
       end
  

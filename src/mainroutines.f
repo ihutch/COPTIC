@@ -11,6 +11,7 @@
       include 'plascom.f'
       include 'ptchcom.f'
       include 'myidcom.f'
+      include 'phasecom.f'
       integer ifull(ndimsmax),iuds(ndimsmax)
       real xlimit(2,ndimsmax),vlimit(2,ndimsmax)
       real xnewlim(2,ndimsmax)
@@ -45,6 +46,7 @@
       boltzsign=sign(1.,eoverms(1))
       if(nptdiag.eq.0)nptdiag=nsbins
       if(n_part.ne.0)ripernode=0.
+      ilogspec=0
 
       call initdriftfield
 

@@ -4,9 +4,11 @@
       include 'plotcom.h'
       equivalence (ca,chrsfont)
       equivalence (a,chrsaddr)
-      data chrsdef/0.015/
+      parameter (defchar=0.018)
+c original default was 0.015.
+      data chrsdef/defchar/
       data chrscos,chrssin,chrsslnt,chrswdth
-     $   ,chrshght/ 1.,0.,0.,.015,.015 /
+     $   ,chrshght/ 1.,0.,0.,defchar,defchar/
        data (a(j),j=   1,   4)/ 58181, 58181, 58181, 58181/
        data (a(j),j=   5,   8)/ 58181, 58181, 58181, 58181/
        data (a(j),j=   9,  12)/ 58181, 58181, 58181, 58181/

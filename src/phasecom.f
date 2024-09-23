@@ -1,6 +1,6 @@
 c Phase space accumulation variables
       integer npsx,npsv,npsbuf
-      integer ipsftri
+      integer ipsftri,ilogspec
       parameter (npsx=200,npsv=50,npsbuf=10000)
       logical lsideplot
       real psfxv(npsx,npsv,nspeciesmax),psx(npsx),psn(npsx,nspeciesmax)
@@ -8,4 +8,4 @@ c Phase space accumulation variables
       real psvmax(nspeciesmax),psvmin(nspeciesmax),psxmax,psxmin
       real finfmax(nspeciesmax),psfmax(nspeciesmax)
       common /phasespace/psfxv,psvmax,psvmin,psxmax,psxmin,psx,psv
-     $     ,psn,psfmax,ipsftri,finfofv,finfmax,lsideplot
+     $     ,psn,psfmax,ipsftri,finfofv,finfmax,lsideplot,ilogspec

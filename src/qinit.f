@@ -145,14 +145,17 @@
          iworkspecies=ispecies
 ! Double particle initialization is possible only if the distribution
 ! has reflectional symmetry, which requires vdrift and vhole to be equal.
-! At the moment we disallow double if any drift is non-zero.
+! At the moment we disallow double if any hole/background drift is non-zero
+! or if more than one multigaussian component is present. 
+! A single multigaussian (nc=1) has symmetry relative to vsc(1,ispecies)
 ! Double helps by forcing the electron drift to exactly zero.
 ! So it might help to generalize this to allow ldouble with vds!=0.
          if(vds(ispecies).ne.0.or.holeum.ne.0..or.holerad.ne.0.
-     $        .or.nc(ispecies).ne.1)then
+     $        .or.nc(ispecies).gt.1)then
             ldouble=.false.
             if(myid.eq.0)then
                write(*,*)'Finite drift. No double particle placement.'
+               write(*,*)vds(ispecies),holeum,holerad,nc(ispecies)
             endif
          endif
       endif
@@ -425,9 +428,6 @@ c The flattop length holetoplen. Negligible for large negative values.
             ixpx=interp(Pfofv,nofv,fp,p)
             if(ixpx.gt.0.and.ixpx.lt.nofv)then
 ! Multigauss velocity is in units of sqrt(Tr/ms) convert to sqrt(Tr/m1)
-! Old erroneous version:
-!               x_part(ndims+id,islot)=sqrt(abs(eoverms(ispecies)))*((1-p
-!     $             +ixpx)*vofv(-1+ixpx)+(p-ixpx) *vofv(ixpx)) +holespeed
                x_part(ndims+id,islot)=sqrt(abs(eoverms(ispecies)))
      $              *((-p+ixpx+1)*vofv(ixpx)+(p-ixpx)*vofv(ixpx+1))
      $              +holespeed
@@ -437,7 +437,6 @@ c The flattop length holetoplen. Negligible for large negative values.
 !               write(*,'(10f8.4)')Pofv
                stop
             endif
-            
          else                       ! Shifted Single Gaussian
                x_part(ndims+id,islot)=tisq*(gasdev(myid)
      $              +vds(ispecies)*vdrifts(id,ispecies))
@@ -495,11 +494,19 @@ c The flattop length holetoplen. Negligible for large negative values.
          islot=islot+1
          do i=1,ndims
             x_part(i,islot)=x_part(i,islot-1)
-! Reverse velocity accounting for drift possible only when there
-! is no drift of the hole relative to the background.
+! Reverse velocity accounting for drift is excluded via ldouble when
+! there is a hole drifting wrt to the background. 
 !            x_part(i+ndims,islot)=
 !     $           2.*vds(ispecies)*vdrift(i)-x_part(i+ndims,islot-1)
-            x_part(i+ndims,islot)=-x_part(i+ndims,islot-1)
+! If nc=1 (single multigaussian) and there's no hole we can use double
+! velocity setting relative to its shift, but we need to use the
+! correct vsc normalization.
+            if(nc(ispecies).eq.1)then
+               x_part(i+ndims,islot)=sqrt(abs(eoverms(ispecies)))*
+     $              2.*vsc(1,ispecies) -x_part(i+ndims,islot-1)
+            else
+               x_part(i+ndims,islot)=-x_part(i+ndims,islot-1)
+            endif
             x_part(i+2*ndims,islot)=x_part(i+2*ndims,islot-1)
             x_part(iflag,islot)=1                        
          enddo

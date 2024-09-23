@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#include "vecwin.h"
+
 #define accis_path_max 4000
 POINT accis_path[accis_path_max];
 int accis_pathlen=0;
@@ -53,12 +55,13 @@ char *accis_colornames[accis_maxPixels]=
 };
 */
 
-#define ACCIS_DEFWIDTH 800
-#define ACCIS_DEFHEIGHT 600
-
 static char g_szClassName[] = "MyWindowClass";
 static HINSTANCE g_hInst = NULL;
-static int wWidth, wHeight; /* Window width and height */
+static int wWidth= ACCIS_DEFWIDTH;
+static int wHeight= ACCIS_DEFHEIGHT; /* Window width and height */
+static int screenscale=SCREENSCALE;
+   /* If screenscale==0, no internal DPI scaling. If 1, scale. */
+static int linewidth=0;
 static RECT wRect;
 PAINTSTRUCT ps;
 HDC hdcMemory, hdcWindow;
@@ -68,11 +71,11 @@ int first=1;
 static HBRUSH hbr;
 static HBRUSH accis_brush;
 static HPEN accis_pen;
-  
 static WNDCLASSEX WndClass;
 static HWND hwnd;
 static MSG Msg;
 static int accis_eye3d=9999;
+int scolor_(long *li);
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
@@ -164,9 +167,6 @@ int svga_(int *scrxpix, int *scrypix, int *vmode, int *ncolor)
      even though they do not seem to be used. Without them the window does
      not pop up.
   */
-  HINSTANCE hInstance;
-  HINSTANCE hPrevInstance; 
-  LPSTR lpCmdLine; 
   /*nCmdShow tells how to open window */
   int nCmdShow=SW_SHOWNORMAL;
 
@@ -193,14 +193,24 @@ int svga_(int *scrxpix, int *scrypix, int *vmode, int *ncolor)
 		   MB_ICONEXCLAMATION | MB_OK | MB_SYSTEMMODAL);
 	return 0;
       }
-    
+      int Xscreensize = GetSystemMetrics( SM_CXSCREEN );
+      int Yscreensize = GetSystemMetrics( SM_CYSCREEN );
+      printf("Screensize=%d,%d\n",Xscreensize,Yscreensize);
+    if(screenscale){ /* Ought not to be necessary but wine DPI does not work*/
+      screenscale=Xscreensize/wWidth;
+      linewidth=min(screenscale,2);
+    }
+    if(screenscale>0){
+      wWidth=2*wWidth;
+      wHeight=2*wHeight;
+    }
     hwnd = CreateWindowEx(
 			  WS_EX_CLIENTEDGE,
 			  g_szClassName,
 			  "Accis Window",
 			  WS_OVERLAPPEDWINDOW,
 			  CW_USEDEFAULT, CW_USEDEFAULT,
-			  ACCIS_DEFWIDTH+12, ACCIS_DEFHEIGHT+31,
+			  wWidth+12, wHeight+31,
 			  NULL, NULL, g_hInst, NULL);
     
     if(hwnd == NULL)
@@ -209,8 +219,7 @@ int svga_(int *scrxpix, int *scrypix, int *vmode, int *ncolor)
 		   MB_ICONEXCLAMATION | MB_OK | MB_SYSTEMMODAL);
 	return 0;
       }
-    
-    /*      printf("About to show window\n"); */
+        /*      printf("About to show window\n"); */
     ShowWindow(hwnd, nCmdShow);
 /*      printf("About to update window\n"); */
     UpdateWindow(hwnd);
@@ -233,6 +242,7 @@ int svga_(int *scrxpix, int *scrypix, int *vmode, int *ncolor)
   *ncolor=15;
   *scrxpix=wWidth;
   *scrypix=wHeight;
+  scolor_((long int *)ncolor);
   
   return Msg.wParam;
 }
@@ -249,12 +259,10 @@ int txtmode_()
 /* ******************************************************************** */
 int vec_(long *px,long *py,long *ud)
 { /*  Draw vector on screen, with pen up or down. */
-    static int px1=0,py1=0,px2=0,py2=0;
+  static int px2=0,py2=0;
     extern POINT accis_path[];
     extern int accis_pathlen;
 
-    px1=px2;
-    py1=py2;
     px2 = *px;
     py2 = *py;
     if( *ud != 0) {
@@ -281,7 +289,7 @@ int scolor_(long *li)
 {
   if((*li < accis_maxPixels) && (*li >= 0)){
     DeleteObject(accis_pen);
-    accis_pen=CreatePen(PS_SOLID,0,accis_pixels[(int)(*li)]);
+    accis_pen=CreatePen(PS_SOLID,linewidth,accis_pixels[(int)(*li)]);
     DeleteObject(accis_brush);
     accis_brush=CreateSolidBrush(accis_pixels[(int)(*li)]);
     SelectObject(hdcWindow,accis_pen);
@@ -447,7 +455,7 @@ static int ilimit(b,i,t)
 /*****************Set the color gradient from arrays**************************/
 int accisgradset_(red,green,blue,npixel)
    int *red,*green,*blue,*npixel;
-{  unsigned long i,j;
+{  unsigned long i;
   if(*npixel!=a_gradPixno) 
     fprintf(stderr,"accisgradset ERROR: Incorrect array length:%d\n",*npixel);
      /* RGB are specified in the range 0 to 65535 */
@@ -483,7 +491,7 @@ void accisgraddef_(red,green,blue,npixel)
 	   printf("a_gradPix[%d]=%6x\n",i,a_gradPix[i]);  */
   }
   a_grad_inited=1;
-  return 0;
+  return;
 }
 
 /**********************************************************************/
@@ -492,7 +500,7 @@ int acgradcolor_(long *li)
   if(!a_grad_inited)accisgraddef_();
   if((*li < a_gradPixno) && (*li >= 0)){
     DeleteObject(accis_pen);
-    accis_pen=CreatePen(PS_SOLID,0,a_gradPix[(int)(*li)]);
+    accis_pen=CreatePen(PS_SOLID,linewidth,a_gradPix[(int)(*li)]);
     DeleteObject(accis_brush);
     accis_brush=CreateSolidBrush(a_gradPix[(int)(*li)]);
     SelectObject(hdcWindow,accis_pen);
@@ -578,13 +586,9 @@ BOOLEAN nanosleep(LONGLONG ns){
 void usleep_(usecs)
      long *usecs;
 {
-  int msecs;
   int nsecs;
-  msecs=*usecs/1000;
   nsecs=*usecs*10;
-
   nanosleep(nsecs);
-  /*Sleep(msecs);*/
 }
 /* ******************************************************************** */
 /* Externally callable routine to set noeye3d return value.

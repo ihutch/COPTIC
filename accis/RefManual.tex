@@ -326,11 +326,18 @@ string.
 
 WSTR(cstring) Real function: normal-units length of string at current size.
 
-CHARSIZE(width,height) Set character size. (0,0) sets default (.015,.015).
+CHARSIZE(width,height) Set character size. (0,0) sets default.
+
+PCHARSIZE Restore character size prior to the last CHARSIZE call.
 
 CHARANGL(theta) Set character angle to horizontal in degrees.
 
+PCHARANGL Restore character angle prior to the last CHARANGL call. 
+
 GETCANGL(theta) Get character angle to horizontal in degrees.
+
+DCHARSIZE(size) Set new default height and width size for characters; 
+prior to the first such call, default size is 0.018. 
 
 ANNOTE [DOS only] Enter interactive annotation mode. Type help for help.
 

@@ -214,14 +214,14 @@ c***********************************************************************
       include 'ndimsdecl.f'
       include 'phasecom.f'
       character*30 string
-      real cworka(npsx,npsv),zclv(2)
       real faveofv(npsv)
       integer ifcolor(npsv)
+      logical logspec
 
       call pltinit(psxmin,psxmax,psvmin(ispecies),psvmax(ispecies))
       call color(15)
       write(string,'('' f!d'',i1,''!d'')')ispecies
-      if(lsideplot)call jdrwstr(wx2nx(psxmax),wy2ny(psv(40,ispecies))
+      call jdrwstr(wx2nx(psxmax),wy2ny(psv(40,ispecies))
      $     ,string(1:lentrim(string)),1.)
       call blueredgreenwhite()
       write(string,'(''v!d'',i1,''!d'')')ispecies
@@ -233,27 +233,12 @@ c***********************************************************************
       elseif(pmax.gt.psfmax(ispecies)*1.03)then
          psfmax(ispecies)=pmax
       endif
-c Set extrema of coloring range from psfmax.
-      zclv(1)=0.
-      zclv(2)=psfmax(ispecies)
-      icl=2
-      icsw=1+16+32+ipsftri
-!      write(*,'(10f8.0)')(psfxv(i,38,ispecies),i=1,npsx)
-c Using triangular gradients +64 gives too large ps output.
-      call contourl(psfxv(1,1,ispecies),cworka,npsx,npsx,npsv,zclv,icl
-     $     ,psx,psv(1,ispecies),icsw) 
-      call axis()
-      call axis2
-      call color(ilightgray())
-      call gradlegend(zclv(1),zclv(2),.3,.94,.7,.94,.05,.true.)
+      logspec=.false.
+      if(ispecies.eq.ilogspec)logspec=.true.
+      call logphasecont(ispecies,logspec)
       call color(15)
-      if(.false.)then   ! Old version does not normalize height
-         call polyline(psxmax+.3*psxmax*finfofv(:,ispecies)
-     $        ,psv(1,ispecies),npsv)
-      else
-         call polyline(psxmax+.3*(psxmax-psxmin)*finfofv(:,ispecies)
+      call polyline(psxmax+.3*(psxmax-psxmin)*finfofv(:,ispecies)
      $        /finfmax(ispecies),psv(1,ispecies),npsv)
-      endif
 ! Integrate wrt x to get fave as a function of v.
       if(lsideplot)then
       fapeak=0.
@@ -335,4 +320,34 @@ c     $     ,ispecies),vsc(i,ispecies),vtc(i,ispecies),i=1,nc(ispecies))
          enddo
          finfofv(i,ispecies)=fi
       enddo
+      end
+c*********************************************************************
+      subroutine logphasecont(ispecies,llog)
+      integer ispecies
+      logical llog
+      include 'ndimsdecl.f'
+      include 'phasecom.f'
+      real cworka(npsx,npsv),zclv(2)
+      icl=2
+      icsw=1+16+32
+      if(.not.llog)then
+c Set extrema of coloring range from psfmax.
+         zclv(1)=0.
+         zclv(2)=psfmax(ispecies)
+         call contourl(psfxv(1,1,ispecies),cworka,npsx,npsx,npsv,zclv
+     $        ,icl,psx,psv(1,ispecies),icsw)
+         call color(ilightgray())
+      else
+         zclv(1)=alog10(psfmax(ispecies)/1.e3)
+         zclv(2)=alog10(psfmax(ispecies))
+         call contourl(alog10(psfxv(:,:,ispecies)+.5),cworka,npsx,npsx
+     $        ,npsv,zclv,icl,psx,psv(1,ispecies),icsw)
+         call color(ilightgray())
+         call legendline(.17,.94,258,'log!d10!d(!Bf!@)')
+      endif
+      call gradlegend(zclv(1),zclv(2),.3,.94,.7,.94,.05,.true.)
+      call color(15)
+      call axis()
+      call axis2
+
       end

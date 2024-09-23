@@ -16,6 +16,8 @@ c Set default charsize. This is value used to reset charsize.
       subroutine dcharsize(sz)
       include 'plotcom.h'
       chrsdef=sz
+      chrswdth=chrsdef
+      chrshght=chrsdef
       end
 c*********************************************************************
 c Restore immediate prior charsize
