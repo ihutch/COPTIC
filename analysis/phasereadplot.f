@@ -70,7 +70,7 @@ c Set the starting number of filewriting to be N
             endif
             call minmax(u,n,umin,umax)
  10         if(max(umax,abs(umin)).gt.phirange*1.2)then
-               phirange=phirange+phirangeinit
+               phirange=phirange+0.5*phirangeinit
                goto 10
             endif
  11         if(max(umax,abs(umin),phirangeinit).lt.phirange*0.6)then
