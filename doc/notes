@@ -16417,3 +16417,30 @@ gcc version 9.4.0, which has no such flag. AARRGGHH.
 It appears that one only needs the makefile to be modified. But I
 have not updated it in the distribution. Instead I add makefilefallow
 that has the needed modification. 
+
+25 Sep 2024
+
+Restarting for more than 10000 steps seems to be broken. Why?
+Well, the number of prior steps is obtained from the .flx file, 
+which needs to be present. But the 3dcom.f file defines
+ parameter nf_maxsteps=10001, and the dimensions of various things
+like ff_rho, nf_npart, ff_dt, ff_address are determined by it. 
+
+Flux reading and writing, for example of ff_rho and ff_dt
+is (1,nf_step) so clearly one can't write a flux file with nf_step
+greater than nf_maxsteps. 
+
+However, nstep, the writefluxfile argument, is passed from the
+datawrite with the actual step number, which could be greater
+than nf_step (or maxsteps), and it is what is written to the
+flx file, and read back into ierr. What prevents nf_step from 
+becoming gt maxsteps? Seems to be in coptic.f main iteration:
+         nf_step=min(nf_maxsteps-1,nf_step+1) 
+However, I think that just prevents one from writing beyond the allocation
+of ff_rho etc. 
+
+It seems to be that there is a contrary ierr=0 at the end of
+readfluxfile, which prevents it returning the prior step. Anyway if it
+is commented out the step can exceed maxsteps, and repetitive restarts
+continue to rachet up the pps output number. So I suspect that is
+the problem. 

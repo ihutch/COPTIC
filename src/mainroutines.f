@@ -118,6 +118,7 @@
          if(lrestart/2-2*(lrestart/4).ne.0)then
             iferr=0
             call readfluxfile(fluxfilename,iferr)
+            if(lmyidhead)write(*,*)'Restartread: iferr/step=',iferr
             if(iferr.gt.10)nstep=iferr
          else
             iferr=1
@@ -126,15 +127,16 @@
             call partread(partfilename,ierr)
             if(ierr-4*(ierr/4).eq.0)then 
 ! We succeeded in reading the part-file. Relocate the particles.
-               write(*,'(a,i4,a,a,i3)')' cpu',myid
+               if(myid.eq.0)write(*,'(a,i4,a,a,i3)')' cpu',myid
      $              ,' Restart file read: '
      $              ,partfilename(1:lentrim(partfilename)+1),lrestart
                call locateinit()
                if(nsteps+nstep.gt.nf_maxsteps)then
-                  if(lmyidhead)write(*,*)'Asked for',
-     $                 nsteps,' in addition to',nstep,
-     $                 ' Total',nsteps+nstep,
-     $                 ' will exceed flux storage',nf_maxsteps
+                  if(lmyidhead)write(*,'(a,i6,a,i6,a,i6,a,i6,/,a,i6)'
+     $                 )'Asked for',nsteps,' in addition to',nstep
+     $                 ,' Total',nsteps+nstep
+     $                 ,' will exceed flux storage',nf_maxsteps
+     $                 ,'Warning: Fluxes will no longer be recorded.'
                endif
                ied=1
 ! Only read the phi-file if the flux file was present. Full restart.

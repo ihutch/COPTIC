@@ -1293,10 +1293,9 @@
       enddo
 
 ! Now one might have to reconstruct nf_faceind from nf_dimlens.
-      if(ierr.ne.0)write(*,*)'Read back flux data from '
-     $     ,name(1:lentrim(name))
-!      write(*,*)charout(1:lentrim(charout))
-      ierr=0
+!      if(ierr.ne.0)write(*,*)'Read back flux data from '
+!     $     ,name(1:lentrim(name)),' ierr=',ierr
+!      ierr=0 ! This prevents the step number being returned. 
       return
  101  write(*,*)'Error opening file:',name(1:lentrim(name))
       ierr=1

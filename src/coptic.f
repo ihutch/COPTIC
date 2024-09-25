@@ -369,7 +369,7 @@
          if(nspecies.gt.1.or.holepsi.ne.0.)
      &        boltzamp=max(0.,boltzamp0*(mbzero-nf_step+2)/(mbzero+1.))
          nstep=nstep+1
-         nf_step=min(nf_maxsteps-1,nf_step+1) 
+         nf_step=min(nf_maxsteps-1,nf_step+1)
 ! Don't increment nf_step beyond its allowed maximum.
          istepave=min(nstep,iavesteps)
 ! Transfer deposits periodically or from ghost cells.
