@@ -1,4 +1,4 @@
-c Main program to get phasespace data from file[s] on command line.
+C MAIN9999 program to get phasespace data from file[s] on command line.
 c At the same time get the potential u, and calculate energy \int E^2dx
 c Then contour plot phi(x,t), f(v,t) with energy.
       implicit none
@@ -85,6 +85,10 @@ c Set the starting number of plot file writing to be N
             endif
             n=npsbuf
             call phaseread(phasefilename,n,x,u,t)
+            if(n.le.0)then
+               write(*,*)'Read failed for ', phasefilename
+               goto 1
+            endif
 ! Store in possibly limited x-range x,u versus time arrays.
             ixstep=1+(n-1)/nxmax
             k=0
@@ -93,9 +97,11 @@ c Set the starting number of plot file writing to be N
                uarray(j,k)=u(ii)
                if(j.eq.1)xuarray(k)=x(ii)
             enddo
+!            if(j.eq.1)write(*,'(10f8.3)')x(1:n)
             nxua=k
 ! Find total average energy density at this time.
             energy(j)=0.
+!            write(*,*)'n,npsbuf',n,npsbuf
             xlen=abs(x(n)-x(1))
             do ii=2,n
                energy(j)=energy(j)+(u(ii)-u(ii-1))**2/(x(ii)-x(ii-1))
@@ -120,6 +126,8 @@ c Set the starting number of plot file writing to be N
  1       continue
       enddo
 ! End of command line arguments 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!      write(*,'(10f8.3)')time(1:j)
 !      write(*,'(10f8.2)')(xuarray(k),k=1,nxua) ! Check xuarray.
       if(j.eq.0)goto 4
  5    continue  
@@ -166,7 +174,12 @@ c Set the starting number of plot file writing to be N
 ! Do the growth plot
       call minmax(energy,j,emin,emax)
       call dcharsize(0.02,0.02)
-      call lautoplot(time,energy,j,.false.,.true.)
+      call pltinit(time(1),time(j),emin,emax)
+      emin=10.**(nint(log10(emin)-0.49999))
+      emax=10.**(nint(log10(emax)+0.49999))      
+      call scalewn(time(1),time(j),emin,emax,.false.,.true.)
+      call axis
+      call polyline(time,energy,j)
       call axlabels('time','field energy density <E!u2!u>')
       call axis2
       call legendline(.1,1.1,258,title(1:lentrim(title)))
