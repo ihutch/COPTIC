@@ -792,12 +792,12 @@
       write(*,301)' -ck   set checking timestep No. [',ickst
       write(*,'(a)')
      $ 'Examples of 1-d output controls.'
-     $ ,'  -gn outputs just a pps file every step, no display.'
-     $ ,'  -gp outputs a pps file and displays every -a steps.'
-     $ ,'  -gn -gp outputs a pps file and displays every step.'
-     $ ,'  -gn -gp5 outputs a pps file and displays every 5 steps.'
+     $ ,'  -gn outputs just a pps file every step, no plots.'
+     $ ,'  -gp outputs a pps file and plots every -a steps.'
+     $ ,'  -gp3 -gx outputs a pps file every 3 steps, no plots.'
+     $ ,'  -gn -gp5 outputs a pps file and plots every 5 steps.'
      $ ,'  -gn -gp -gx outputs a pps file and a ps file each step'
-     $     //' but does not display.'
+     $     //'; no screen display.'
      $ ,'  -gn -gp2 -gx3 outputs pps and ps files'
      $     //' and displays every 2 steps.'
      $ ,'  -gn -gp4 -gx0 outputs pps files every 4 steps, no ps files.'

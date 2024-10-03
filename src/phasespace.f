@@ -36,8 +36,9 @@ c The bins are uniform from psvmin to psvmax and xmeshstart to end.
       logical linitedps(nspeciesmax)
       real vplim(2,nspeciesmax)
       data linitedps/nspeciesmax*.false./
-      save vplim
+      save vplim,linitedps
 
+!      write(*,*)ispecies,linitedps(ispecies)
       if(.not.linitedps(ispecies))then
 c Ensure the limits etc of the phase space array are set.
          psxmin=xmeshstart(id)
@@ -52,13 +53,15 @@ c Ensure the limits etc of the phase space array are set.
             vs=min(minval(vsc(1:nc(isp),isp))
      $           ,minval(vsc(1:nc(isp),isp)))
             psvmin(isp)=sqrt(abs(eoverms(isp)))*(-3*vt+vs)
-         else
+         elseif(.false.)then ! problematic.
 ! Assumed unshifted maxwellian when not using -fp argument
             psvmax(ispecies)=3.*sqrt(abs(eoverms(ispecies))
      $           *Ts(ispecies))
             psvmin=-psvmax
          endif
       endif
+!      write(*,*)'psaccum',ispecies,psvmin(1:2),psvmin(1:2)
+
 
  1    continue
       if(.not.linitedps(ispecies))then
@@ -117,6 +120,8 @@ c All reduce to sum the distributions from all processes.
          linitedps(ispecies)=.false.
          goto 1
       endif
+!      write(*,*)'psaccumfinal',ispecies,psvmax(1:2),psvmin(1:2)
+!     $     ,linitedps
       end
 c***********************************************************************
       subroutine psnaccum(ispecies,id)
@@ -136,8 +141,11 @@ c Accumulate the densities of ispecies into phasespace x-bins psn
          x=x_part(id,i)
          ixbin=int(.99999*(x-psxmin)/(psxmax-psxmin)*float(npsx)+1)
          psn(ixbin,ispecies)=psn(ixbin,ispecies)+1.
+         psvave(ixbin,ispecies)=
+     $        psvave(ixbin,ispecies)+x_part(id+ndims,i)
       enddo
       call mpiallreducesum(psn(1,ispecies),npsx,ierr)
+      call mpiallreducesum(psvave(1,ispecies),npsx,ierr)
       end
 c***********************************************************************
       subroutine phasewrite(phasefilename,nu,x,u,t)
@@ -162,6 +170,8 @@ c Write file with phasespace data plus u(x) if length nu != 0.
             write(12)(finfofv(i,isp),i=1,npsv)
          endif
       enddo
+! Addition 3 Oct 2024 of average velocity as a fn of position.
+      write(12)psvave(:,1:nspecies)
       close(12)
       return
  101  write(*,*)'Error opening file:',
@@ -176,7 +186,7 @@ c***********************************************************************
       include 'phasecom.f'
       include 'partcom.f'
       include 'fvcom.f'   ! For nc
-
+      ipsversion=0
       nuin=nu
       open(13,file=phasefilename,status='old',form='unformatted',err
      $     =101)
@@ -196,18 +206,26 @@ c***********************************************************************
             read(13,end=103)nc(isp)
             if(nc(isp).ne.0)read(13)(finfofv(i,isp),i=1,npsv)
          enddo
+! Incremental version expansion.
+         read(13,err=104,end=104)psvave(:,1:nspecies)
+         ipsversion=1
  103  continue
       endif
       close(13)
       return
- 101  write(*,*)'Phase read ERROR opening file:',
+ 101  write(*,*)'Phase read ERROR opening file: ',
      $     phasefilename(1:lentrim(phasefilename))
       nu=0
       return
- 102  write(*,*)'Reading Error for file',phasefilename
+ 102  write(*,*)'Fatal Read Error for file ',phasefilename
       psn(1,1)=0.
       close(13)
       stop
+ 104  continue
+      write(*,'(a,i3,2a)')'PS-Version',ipsversion,' No psvave in file '
+     $     ,phasefilename(1:lentrim(phasefilename))
+      psvave=0.
+      close(13)
       end
 c***********************************************************************
       subroutine phaseplot(ispecies)
@@ -218,6 +236,8 @@ c***********************************************************************
       integer ifcolor(npsv)
       logical logspec
 
+!      write(*,*)'phaseplot psvmin,psvmax',ispecies,psvmin(ispecies)
+!     $     ,psvmax(ispecies)
       call pltinit(psxmin,psxmax,psvmin(ispecies),psvmax(ispecies))
       call color(15)
       write(string,'('' f!d'',i1,''!d'')')ispecies
@@ -237,6 +257,7 @@ c***********************************************************************
       if(ispecies.eq.ilogspec)logspec=.true.
       call logphasecont(ispecies,logspec)
       call color(15)
+      if(ipsversion.ge.1)call polyline(psx,psvave(1,ispecies),npsx)
       call polyline(psxmax+.3*(psxmax-psxmin)*finfofv(:,ispecies)
      $        /finfmax(ispecies),psv(1,ispecies),npsv)
 ! Integrate wrt x to get fave as a function of v.

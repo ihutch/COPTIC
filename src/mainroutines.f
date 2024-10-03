@@ -259,14 +259,15 @@ c psaccum must be asked for by all processes for initialization.
       do ispecies=1,nspecies
          call psaccum(ispecies,id)
          psntot=numprocs*nparta(ispecies)/npsx
+!         write(*,*)'i,psvmax,psvmin=',ispecies,psvmax(1:2),psvmin(1:2)
          call psnaccum(ispecies,id)
          psn(:,ispecies)=psn(:,ispecies)/psntot
+         psvave(:,ispecies)=psvave(:,ispecies)/psntot
       enddo
       write(string,'(f10.3)')nstep*dt
 c but writing and plotting only by top process
       if(myid.eq.nprocs-1)then
          phasefilename=restartpath
-         call nameconstruct(phasefilename)
          write(phasefilename(lentrim(phasefilename)+1:)
      $        ,'(''.pps'',i5.5)')nstep
          call phasewrite(phasefilename, ixnp(2)-ixnp(1),xn(ixnp(1)+1)
@@ -344,6 +345,7 @@ c but writing and plotting only by top process
             call color(7)
             lsideplot=.true.  ! Change default from zero
             do thespecies=1,nspecies
+!         write(*,*)'i,psvmax,psvmin=',ispecies,psvmax(1:2),psvmin(1:2)
                call phaseplot(thespecies)
                call color(15)
                if(nc(thespecies).eq.0)then

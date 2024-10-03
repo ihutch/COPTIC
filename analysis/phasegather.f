@@ -1,4 +1,4 @@
-      program phasespace
+      program phasegather
 ! Analysis. Not to be confused with routines in src/phasespace.f.
 ! Read particle data and construct phase space plots.
       include 'examdecl.f' 
@@ -7,6 +7,7 @@
       include '../src/partcom.f'
       include '../src/ptaccom.f'
       include '../src/myidcom.f'
+      include '../src/phasecom.f'
  
       character*10 chartemp
       character*100 name
@@ -192,9 +193,9 @@
      $     *(elimit(2)-elimit(1))/ne
 !      epeak=epeak-.002 ! hack adjustment
       epeak=0.         ! no adjustment
-      write(*,'(a,i8,3f8.4)')'nehist,emin,emax,epeak='
-     $     ,nehist,elimit(1),elimit(2),epeak
-      write(*,'(a,10f8.4)')'xl,wp=',xl,wp
+!      write(*,'(a,i8,3f8.4)')'nehist,emin,emax,epeak='
+!     $     ,nehist,elimit(1),elimit(2),epeak
+!      write(*,'(a,10f8.4)')'xl,wp=',xl,wp
       eh(0)=elimit(1)
       twoqum1=sqrt(sqrt(2.))-1
       G1=twoqum1*sqrt(-eh(0)/potentialmax)
@@ -217,6 +218,7 @@
             ehistscaled(i)=ehist(i)/(sf1+2.*sqrt(2.)*xl*sqrt(eh(i)))
          endif
       enddo
+      if(.false.)then
 ! Plot the energy histogram.
       call pfset(3)
       call autoplot(ev,ehist,ne)
@@ -252,6 +254,9 @@
       call polybox(20.*eh,ehistscaled,ne)
       call pltend()
       call pfset(0)
+      else
+         write(*,*)'Not plotting energy information'
+      endif
 
 ! Color Contour of Phase space Histogram.
       call minmax2(hist,nx,nx,nv,hmin,hmax)
@@ -280,7 +285,7 @@
       endif
 ! Plot using the coptic code, needs xmeshstart/end set correctly.
       nstep=0
-      call phasepscont(ifull,iuds,u,nstep,.true.,'')
+      call phasepscont(ifull,iuds,u,nstep,.true.,'',q)
       call pltend()
 
       end

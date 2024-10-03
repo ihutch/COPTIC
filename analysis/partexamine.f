@@ -64,7 +64,7 @@
          write(*,*)'Too many blocks requested. Reduce or recompile.'
          stop
       endif
-!      write(*,*)'nptdiag,nsbins',nptdiag,nsbins
+      write(*,*)'nptdiag,nsbins',nptdiag,nsbins
       if(nptdiag.lt.nsbins)then
          write(*,*)'WARNING nptdiags=',nptdiag,' smaller than nsbins='
      $        ,nsbins,' Incorrect array size choice.'
