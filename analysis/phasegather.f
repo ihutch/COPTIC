@@ -38,6 +38,7 @@
       nfmax=nfilemax
 
 ! Defaults
+      ipsversion=1
       nprocs=1
       ndfirst=1
       ndlast=3
@@ -113,7 +114,7 @@
             else
                name=partfilename
             endif
-            write(*,*)'Reading file ',name(1:lentrim(name))
+            write(*,'(2a,$)')'Reading file ',name(1:lentrim(name))
             Bt=0.
             call partread(name,ierr)
             if(ispecies.gt.nspecies)then

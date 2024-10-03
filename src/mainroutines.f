@@ -256,10 +256,10 @@ c thespecies is 1 if nspecies=1, 2 if nspecies=2 (assumes e is 2)
 c psaccum must be asked for by all processes for initialization.
 !      call psaccum(thespecies,id)
 ! Accumulate all the species and both phase-space and n(x).
+      ipsversion=1
       do ispecies=1,nspecies
          call psaccum(ispecies,id)
          psntot=numprocs*nparta(ispecies)/npsx
-!         write(*,*)'i,psvmax,psvmin=',ispecies,psvmax(1:2),psvmin(1:2)
          call psnaccum(ispecies,id)
          psn(:,ispecies)=psn(:,ispecies)/psntot
          psvave(:,ispecies)=psvave(:,ispecies)/psntot
@@ -268,6 +268,7 @@ c psaccum must be asked for by all processes for initialization.
 c but writing and plotting only by top process
       if(myid.eq.nprocs-1)then
          phasefilename=restartpath
+         call nameconstruct(phasefilename)
          write(phasefilename(lentrim(phasefilename)+1:)
      $        ,'(''.pps'',i5.5)')nstep
          call phasewrite(phasefilename, ixnp(2)-ixnp(1),xn(ixnp(1)+1)
