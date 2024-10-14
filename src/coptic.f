@@ -450,8 +450,6 @@
 ! ------------------------------------------------
          if(ipstep.eq.0.or.mod(j,ipstep).eq.0)then
 ! Slice plots
-!            write(*,*)'lsliceplot,ldenplot,ldistshow,lphiplot'
-!     $           ,lsliceplot,ldenplot,ldistshow,lphiplot
             if(lsliceplot.and.ldenplot)call sliceGweb(ifull,iuds,q,na_m
      $           ,zp,ixnp,xn,ifix,'density: n'//char(0),dum,dum)
             if((iuds(2).eq.3.and.iuds(3).eq.3))then

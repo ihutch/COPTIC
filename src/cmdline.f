@@ -259,8 +259,10 @@
          if(argument(1:3).eq.'-gx')then
             read(argument(4:),*,err=201,end=213)ipfset
             call pfset(ipfset)
+            write(*,'('' Set pfset('',i3,'')'')')ipfset
             goto 240
- 213        call pfset(-3)
+ 213        call pfset(0)
+            write(*,*)'Set pfset(0)'
          endif
          if(argument(1:3).eq.'-at')then
             read(argument(4:),*,end=201)thetain
@@ -792,16 +794,16 @@
       write(*,301)' -ck   set checking timestep No. [',ickst
       write(*,'(a)')
      $ 'Examples of 1-d output controls.'
-     $ ,'  -gn outputs just a pps file every step, no plots.'
+     $ ,'  -gn outputs just a pps file every step, no plots/displays.'
      $ ,'  -gp outputs a pps file and plots every -a steps.'
-     $ ,'  -gp3 -gx outputs a pps file every 3 steps, no plots.'
-     $ ,'  -gn -gp5 outputs a pps file and plots every 5 steps.'
-     $ ,'  -gn -gp -gx outputs a pps file and a ps file each step'
+     $ ,'  -gp4 outputs pps files every 4 steps, no ps files,'
+     $     //' but screen display.'
+     $ ,'  -gp -gp3 outputs a pps file every 3 steps, no plots/displ.'
+!     $ ,'  -gn -gp5 outputs a pps file and displays every 5 steps'
+     $ ,'  -gn -gp -gx-3 outputs a pps file and a ps file each step'
      $     //'; no screen display.'
      $ ,'  -gn -gp2 -gx3 outputs pps and ps files'
      $     //' and displays every 2 steps.'
-     $ ,'  -gn -gp4 -gx0 outputs pps files every 4 steps, no ps files.'
-     $     //' Screen display.'
       goto 401
  602  continue
       write(*,*)

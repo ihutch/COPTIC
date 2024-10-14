@@ -16444,3 +16444,48 @@ readfluxfile, which prevents it returning the prior step. Anyway if it
 is commented out the step can exceed maxsteps, and repetitive restarts
 continue to rachet up the pps output number. So I suspect that is
 the problem. 
+
+14 Oct 2024
+Trying to sort out the annoyingly confusing -g. switches for phase space.
+Currently:
+
+In cmdline
+         if(argument(1:3).eq.'-gn')ldistshow=.not.ldistshow
+         if(argument(1:3).eq.'-gd'.or.argument(1:3).eq.'-gp')then
+            lsliceplot=.true.
+            read(argument(4:),*,err=211,end=211)ipstep
+         if(argument(1:3).eq.'-gp')lphiplot=.not.lphiplot
+         if(argument(1:3).eq.'-gx')then
+            read(argument(4:),*,err=201,end=213)ipfset
+            call pfset(ipfset)
+            goto 240
+ 213        call pfset(-3)
+         endif
+
+In coptic:
+   if ipstep or mod(j,ipstep)=0 then
+       if lphiplot, then set ldistshow true.
+   if ldistshow, then call phasepscont
+   At iavesteps
+   if .not.ldistshow, but idistp.ne.0 (and 1d) call phasepscont
+           idistp 0 by default is set by switch -gp, to 1 or integer
+   lsliceplot controls only sliceGweb, nothing in phasespace.
+
+In mainroutines:
+   ldistshow does not appear
+   lphiplot does not appear
+   In phasepscont:
+      phasewrite is always called by process myid=nprocs-1
+      if lplot (passed from lphiplot) then a plot is done. 
+
+It seems the problem is trying to use pfset(-3) to turn off file
+writing.  That's incorrect. It needs to be 0 to prevent file
+writing. pfsw -3 (or negative) writes files but does no screen
+drawing. In order to turn off display, one needs to call svganodisplay
+which sets a C integer flag, but that happens only if pfsw.lt.0. These
+two things seem to be incompatible, since in pltinit svga is called 
+when pfsw is 0 (no displaying). If we want to do neither displaying
+nor writing, what do we do? We need to turn off plotting entirely,
+that seems to be lphiplot false. Since we need to use its toggle
+switch to set the ipstep, maybe we just call (e.g.) -gp -gp2. 
+Yes that seems right.
