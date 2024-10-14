@@ -105,7 +105,7 @@ c All reduce to sum the distributions from all processes.
 ! Upscaling 
       call mpiallreducemax(vplim(1,ispecies),2,ierr)
       if(vplim(1,ispecies).gt.psvmax(ispecies))then
-         if(myid.eq.0)write(*,'(/,a,i2,2f10.5)')'Rescale vmax',ispecies
+         if(myid.eq.0)write(*,'(a,i2,2f10.5)')' Rescale vmax',ispecies
      $        ,vplim(1,ispecies),psvmax(ispecies)
          psvmax(ispecies)=vplim(1,ispecies)+(psvmax(ispecies)
      $        -psvmin(ispecies))*.1
@@ -113,7 +113,7 @@ c All reduce to sum the distributions from all processes.
          goto 1
       endif
       if(vplim(2,ispecies).gt.-psvmin(ispecies))then
-         if(myid.eq.0)write(*,'(/,a,i2,2f10.5)')'Rescale vmin',ispecies,
+         if(myid.eq.0)write(*,'(a,i2,2f10.5)')' Rescale vmin',ispecies,
      $        -vplim(2,ispecies),psvmin(ispecies)
          psvmin(ispecies)=-vplim(2,ispecies)-(psvmax(ispecies)
      $        -psvmin(ispecies))*.1

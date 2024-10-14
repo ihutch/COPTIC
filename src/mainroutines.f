@@ -313,10 +313,10 @@ c but writing and plotting only by top process
                goto 15
             endif
  16         if(pbmax-pbmin.lt.(psnmax-psnmin)*0.2)then
-               write(*,'(4f8.4)')psnmax,psnmin,pbmax,pbmin
+!               write(*,'(4f8.4)')psnmax,psnmin,pbmax,pbmin
                psnmin=pbmin-.3*(pbmax-pbmin)
                psnmax=pbmax+1.8*(pbmax-pbmin)
-               write(*,'(4f8.4)')psnmax,psnmin
+!               write(*,'(4f8.4)')psnmax,psnmin
                goto 16
             endif
             call scalewn(xmeshstart(id),xmeshend(id),

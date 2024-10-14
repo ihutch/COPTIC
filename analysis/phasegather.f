@@ -52,12 +52,9 @@
          vlimit(2,id)=3.5
       enddo
 
-      elimit(2)=1.5
-      elimit(1)=-1.
-! Make box join at e=0. Decide how many boxes e<0
-      ne0=int(ne*(-elimit(1))/(elimit(2)-elimit(1)))
-      de=-elimit(1)/ne0
-      elimit(2)=ne*de+elimit(1)
+      elimit(2)=3
+      elimit(1)=-2.
+      vframe=0.
 
       nfvaccum=0
       nhist=0
@@ -65,10 +62,15 @@
       iworking=0
 ! Iterate over possibly multiple file definitions.
       do ifile=1,nfilemax
+! Read arguments from iworking+1 up to the next filename argument:
          call partexamargs(xlimit,vlimit,iuin,cellvol,Bdirs,ldoc,ivtk
-     $        ,ispecies,ndfirst,ndlast,iworking)
+     $        ,ispecies,ndfirst,ndlast,iworking,elimit,vframe)
          if(iworking.eq.-1)goto 11 ! Exhausted arguments/files
          if(ifile.eq.1)then
+! Make box join at e=0. Decide how many boxes e<0
+            ne0=int(ne*(-elimit(1))/(elimit(2)-elimit(1)))
+            de=-elimit(1)/ne0
+            elimit(2)=ne*de+elimit(1)
 ! On first return, base filename is in partfilename.
 ! Do the file naming calculations.
             ip=lentrim(partfilename)-3
@@ -78,7 +80,7 @@
                name=partfilename
                if(partfilename(ip:ip+3).eq.'.pex')then
                   write(*,*)'Using stored distribution file'
-                  nfmax=-1
+                  nfmax=-1 ! Don't read any other files
                endif
                phifilename=partfilename(1:ip)//'phi'
             elseif(partfilename(ip-4:ip-1).eq.'.pex')then
@@ -165,7 +167,7 @@
 ! Increment the total energy histogram. Use all axes if iexis=0
             iexis=1
             call ehistinc(xlimit,elimit,ispecies,nehist,ehist,ne,u,ifull
-     $           ,iused,iexis,potentialmax)
+     $           ,iused,iexis,potentialmax,vframe)
          enddo                  ! of multiple file reading
       enddo  ! of argument reading
  11   continue
@@ -219,7 +221,7 @@
             ehistscaled(i)=ehist(i)/(sf1+2.*sqrt(2.)*xl*sqrt(eh(i)))
          endif
       enddo
-      if(.false.)then
+      if(.true.)then
 ! Plot the energy histogram.
       call pfset(3)
       call autoplot(ev,ehist,ne)
@@ -237,8 +239,12 @@
       call winset(.true.)
       call polybox(20.*eh,ehist,ne)
       call pltend()
+      else
+         write(*,*)'Not plotting energy information'
+      endif
 
-! The scaled version that's supposed to give f(v)
+      if(.false.)then
+! The scaled version that's supposed to give f(v). Not correct yet. 
       call autoplot(ev,ehistscaled,ne)
       call axis()
 !      call axis2()
@@ -255,8 +261,6 @@
       call polybox(20.*eh,ehistscaled,ne)
       call pltend()
       call pfset(0)
-      else
-         write(*,*)'Not plotting energy information'
       endif
 
 ! Color Contour of Phase space Histogram.
@@ -277,12 +281,12 @@
       call pltend()
 ! Second example to illustrate autocolcont.
       if(.false.)then
-      call pltinit(1.,float(nx),1.,float(nv))
-      call autocolcont(hist,nx,nx,nv)
-      call scalewn(xlimit(1,iaxis),xlimit(2,iaxis),vlimit(1,iaxis)
-     $     ,vlimit(2,iaxis),.false.,.false.)
-      call axis
-      call pltend()
+         call pltinit(1.,float(nx),1.,float(nv))
+         call autocolcont(hist,nx,nx,nv)
+         call scalewn(xlimit(1,iaxis),xlimit(2,iaxis),vlimit(1,iaxis)
+     $        ,vlimit(2,iaxis),.false.,.false.)
+         call axis
+         call pltend()
       endif
 ! Plot using the coptic code, needs xmeshstart/end set correctly.
       nstep=0
@@ -395,7 +399,7 @@
       end
 !*************************************************************
       subroutine ehistinc(xlimit,elimit,ispecies
-     $     ,nhist,ehist,ne,u,ifull,iused,iexis,potentialmax)
+     $     ,nhist,ehist,ne,u,ifull,iused,iexis,potentialmax,vframe)
 ! Increment the histogram of total energy distribution using current
 ! particle data. 
 ! iexis if non-zero restricts the kinetic energy to that axis. 
@@ -449,7 +453,8 @@
                endif
                x_part(2*ndims+id,j)=xm  ! For getpotential
 ! Sum the kinetic energy for all directions if iexis=0.
-               if(iexis.eq.0.or.iexis.eq.id)v2=v2+x_part(id+ndims,j)**2
+               vrel=(x_part(id+ndims,j)-vframe)
+               if(iexis.eq.0.or.iexis.eq.id)v2=v2+vrel**2
             enddo            
 ! This is a wanted particle. Add its energy to histogram.
             potential=getpotential(u,cij,iLs,x_part(2*ndims+1,j),iregion
@@ -474,10 +479,10 @@
 !*************************************************************
       subroutine partexamargs(xlimit,vlimit
      $           ,iuin,cellvol,Bdirs,ldoc,ivtk,ispecies,ndfirst,ndlast
-     $           ,iworking)
+     $           ,iworking,elimit,vframe)
       include 'examdecl.f'
       include '../src/ptaccom.f'
-      real xlimit(2,3),vlimit(2,3),Bdirs(4)
+      real xlimit(2,3),vlimit(2,3),Bdirs(4),elimit(2)
       integer iuin(3)
       logical ldoc
       integer ivtk
@@ -521,6 +526,8 @@
                read(argument(3:),*,err=201) vlimit(1,1),vlimit(2,1)
             elseif(argument(1:4).eq.'-vtk')then
                ivtk=1
+            elseif(argument(1:3).eq.'-vf')then
+               read(argument(4:),*,err=201) vframe
             elseif(argument(1:2).eq.'-v')then
                read(argument(3:),*,err=201) vlimit(1,2),vlimit(2,2)
             elseif(argument(1:2).eq.'-w')then
@@ -552,6 +559,8 @@
                ispecies=ispecies+1
             elseif(argument(1:2).eq.'-d')then
                read(argument(3:),*,err=201)ndfirst,ndlast
+            elseif(argument(1:2).eq.'-e')then
+               read(argument(3:),*,err=201)elimit(1),elimit(2)
             endif
             if(argument(1:13).eq.'--objfilename')
      $        read(argument(14:),'(a)',err=201)objfilename
@@ -575,18 +584,20 @@
  301  format(a,i5,a)
  302  format(a,4f8.3)
  303  format(a,5i5)
-      write(*,301)'Usage: phasespace [switches] <partfile> (no ext)'
+      write(*,301)'Usage: phasegather [switches] <partfile> (no ext)'
       write(*,302)' -x -y -z<fff,fff>  set position range. [',
      $     xlimit(1,1),xlimit(2,1)
       write(*,302)' -u -v -w<fff,fff>  set velocity range. ['
      $     ,vlimit(1,1),vlimit(2,1)
       write(*,303)' -b<nx,ny,nz>  set spatial block range. [',iuin
       write(*,302)' -p[bx,by,bz]  project [in direction]   [',Bdirs
+      write(*,302)' -e<min>,<max> Set min,max energy range [',elimit
+      write(*,302)' -vf     Set reference frame velocity   [',vframe
       write(*,'(a,$)')' -d<i,i> Set first,last v-index'
       write(*,303)' to plot [',ndfirst,ndlast
-      write(*,301)' -sp     Increment species number to examine'
       write(*,301)' -pu     Set nptdiag for uniform bins   [',nptdiag
      $     ,'  (Hence 2-D f plots)'
+      write(*,301)' -sp     Increment species number to examine'
       write(*,301)' -q      Output diagnostics of file reading'
       write(*,301)' --objfile<filename>  set name of object data file.'
      $     //' [copticgeom.dat'
