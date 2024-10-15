@@ -248,7 +248,7 @@
             lsliceplot=.true.
             read(argument(4:),*,err=211,end=211)ipstep
  211        continue
-            if(lmyidhead)write(*,*)'Plotting ipstep=',ipstep
+            if(lmyidhead)write(*,*)'Phaseplot ipstep=',ipstep,lphiplot
          endif
          if(argument(1:3).eq.'-gd')ldenplot=.not.ldenplot
          if(argument(1:3).eq.'-gp')lphiplot=.not.lphiplot
@@ -798,8 +798,7 @@
      $ ,'  -gp outputs a pps file and plots every -a steps.'
      $ ,'  -gp4 outputs pps files every 4 steps, no ps files,'
      $     //' but screen display.'
-     $ ,'  -gp -gp3 outputs a pps file every 3 steps, no plots/displ.'
-!     $ ,'  -gn -gp5 outputs a pps file and displays every 5 steps'
+     $ ,'  -gn -gp -gp3 outputs a pps file every 3 steps, no plots/ps.'
      $ ,'  -gn -gp -gx-3 outputs a pps file and a ps file each step'
      $     //'; no screen display.'
      $ ,'  -gn -gp2 -gx3 outputs pps and ps files'

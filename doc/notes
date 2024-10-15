@@ -16488,4 +16488,7 @@ when pfsw is 0 (no displaying). If we want to do neither displaying
 nor writing, what do we do? We need to turn off plotting entirely,
 that seems to be lphiplot false. Since we need to use its toggle
 switch to set the ipstep, maybe we just call (e.g.) -gp -gp2. 
-Yes that seems right.
+Yes that seems right. 
+
+15 Oct. No it does not seem to be right. -gp -gp2 by itself does not work
+but  -gp -gp2 -gn does. Fix the help. 
