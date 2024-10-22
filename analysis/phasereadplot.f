@@ -109,8 +109,8 @@ c Set the starting number of filewriting to be N
                psnmin=psnmin*.1
                goto 14
             endif
- 15         if(pbmin.gt.psnmin*1.4)then
-               psnmin=min(psnmin*1.1,.9)
+ 15         if(pbmin.gt.psnmin+0.3*(psnmax-psnmin))then
+               psnmin=psnmin+0.2*(psnmax-psnmin)
                goto 15
             endif
  16         if(pbmax-pbmin.lt.(psnmax-psnmin)*0.2)then
