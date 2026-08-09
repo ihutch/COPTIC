@@ -756,17 +756,45 @@ c Dummy function that just returns 1.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine vofvinit(isp)
 ! Initialize velocity range supposing hole is stationary. (vh=0.)
+! No. Trouble with that is that when a species is moving rapidly, the
+! resolution of its distribution will be compromised. This is 
+! most important when there is no initial hole. It makes sense to
+! pass the hole velocity and to choose the vofv-range with knowledge of 
+! both hole and distribution speeds. For now just expect the hole
+! to be traveling within the v-range of this distribution.   
       include 'ndimsdecl.f'
       include 'fvcom.f'
       include 'partcom.f'
+      include 'plascom.f'
+      include 'myidcom.f'
       integer isp
-      vh=0.
+      if(nc(isp).ne.0)then
+         isp=isp
+         vs=max(maxval(vsc(1:nc(isp),isp))
+     $        ,maxval(vsc(1:nc(isp),isp)))
+         vt=maxval(vtc(1:nc(isp),isp))
+         vmax=(3*vt+vs)
+         vs=min(minval(vsc(1:nc(isp),isp))
+     $        ,minval(vsc(1:nc(isp),isp)))
+         vmin=(-3*vt+vs)
+      else
+!        Use single Gausian parameters, assuming x-direction velocity.
+!        Convert to electron-velocity units. 
+         vmin=sqrt(abs(eoverms(isp))) *(-3*sqrt(2*Ts(isp))
+     $        +vds(isp))
+         vmax=sqrt(abs(eoverms(isp))) *( 3*sqrt(2*Ts(isp))
+     $        +vds(isp))            
+      endif
+      vh=0.!
       vmax=4.4*maxval(vtc(:,isp))
-     $   +max(abs(maxval(vsc(:,isp))-vh),abs(minval(vsc(:,isp))-vh))
+!     $   +max(abs(maxval(vsc(:,isp))-vh),abs(minval(vsc(:,isp))-vh))
 !      write(*,*)'isp=',isp,' vmax=',vmax
+!      vmin=-vmax
+
       do i=1,nofv
-         vofv(i)=-vmax+2.*vmax*(i-1.)/(nofv-1.)
+         vofv(i)=vmin+(vmax-vmin)*(i-1.)/(nofv-1.)
       enddo
+!      if(myid.eq.0) write(*,'(i5,G15.8)') (i, vofv(i),i=1,nofv)
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Calculate velocity distributions and densities for shifted Maxwellian
@@ -841,10 +869,11 @@ c Dummy function that just returns 1.
      $        /(abs(vdiffm)+abs(vdiff))*(vofv(i)-vofv(i-1))
 !        Actually using this interpolation always smooths ftrapped glitches.
 !        But I am not 100% certain it is always justified.
+         !pa=pa+1.e-30 !Prevent interpolation solution errors. 
          Pfofv(i)=Pfofv(i)+pa
-         if(.not.Pfofv(i).lt.1.e30)then
+         if(i.gt.1.and.(.not.Pfofv(i).lt.1.e30.or.Pfofv(i).lt.0))then
             write(*,*)'fvhill Bad Pfofv',i,Pfofv(i),pam,pa,vdiffm,vdiff
-     $           ,vofv(i),vofv(i-1)
+     $           ,vofv(i),vofv(i-1),fofv(i)
             stop
          endif
          pam=pa

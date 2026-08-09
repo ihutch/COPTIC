@@ -349,6 +349,7 @@ c but writing and plotting only by top process
 !         write(*,*)'i,psvmax,psvmin=',ispecies,psvmax(1:2),psvmin(1:2)
                call phaseplot(thespecies)
                call color(15)
+               call winset(.true.)
                if(nc(thespecies).eq.0)then
 ! The following is inappropriate when multigaussian distributions are
 ! being used because they over-rule vds.
@@ -358,6 +359,7 @@ c but writing and plotting only by top process
                   call vecw(psx(1),0.,0)
                   call vecw(psx(npsx),0.,1)
                endif
+               call winset(.false.)
             enddo
             call accisflush()
             call prtend(' ')

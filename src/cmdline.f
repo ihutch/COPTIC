@@ -262,7 +262,7 @@
             write(*,'('' Set pfset('',i3,'')'')')ipfset
             goto 240
  213        call pfset(0)
-            write(*,*)'Set pfset(0)'
+c            write(*,*)'Set pfset(0)'
          endif
          if(argument(1:3).eq.'-at')then
             read(argument(4:),*,end=201)thetain

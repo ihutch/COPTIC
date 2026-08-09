@@ -1,7 +1,7 @@
 c Main program to get and plot phasespace data from file[s] on command line.
 c If switch -t is given do triangular contouring.
 c Trouble is, it gives too many colors for ps2gif, and pnmquant has
-c problems with the colorscale legend. So use makepnganim
+c problems with the colorscale legend. So probably avoid.
       implicit none
       include '../src/ndimsdecl.f'
       include '../src/phasecom.f'
@@ -25,6 +25,10 @@ c problems with the colorscale legend. So use makepnganim
       phirange=phirangeinit
       lsideplot=.true. !default
       call pfset(3)
+      if(iargc().eq.0)then
+         write(*,*)'No arguments'
+         goto 4
+      endif
       do i=1,iargc()
          call getarg(i,phasefilename)
          if(phasefilename(1:2).eq.'-N')then
@@ -114,10 +118,11 @@ c Set the starting number of filewriting to be N
                goto 15
             endif
  16         if(pbmax-pbmin.lt.(psnmax-psnmin)*0.2)then
-               write(*,'(4f8.4)')psnmax,psnmin,pbmax,pbmin
+               write(*,'(''Resetting both psnmax,psnmin'',$)')
+               write(*,'(4f8.4,$)')psnmax,psnmin,pbmax,pbmin
                psnmin=pbmin-.3*(pbmax-pbmin)
                psnmax=pbmax+1.8*(pbmax-pbmin)
-               write(*,'(4f8.4)')psnmax,psnmin
+               write(*,'(''->'',4f8.4)')psnmax,psnmin
                goto 16
             endif
             call scalewn(x(1),x(n),psnmin,psnmax,.false.,.false.)
@@ -147,26 +152,35 @@ c Set the starting number of filewriting to be N
                call color(7)
                call phaseplot(thespecies)
                call color(15)
+! Draw zero velocity line only if it is in this window. 
+               call winset(.true.)
                call vecw(psx(1),0.,0)
                call vecw(psx(npsx),0.,1)
+               call winset(.false.)
             enddo
             idone=idone+1
             call accisflush
          endif
  1       continue
       enddo
+      if(n.eq.0)then
+         write(*,*)'No filename.'
+         goto 4
+      endif
       if(irun.eq.0)then 
          call pltend
       else 
          call prtend(' ')
       endif
       if(i.ge.2)return
+      goto 4
  5    write(*,*)'Could not read ilogspec'
  4    continue
       write(*,*)'Usage phasereadplot [Options] file1 [file2 ....]'
       write(*,*)'Options: -Annn average-number',' -N starting-number'
       write(*,*)'-r run continuously','  -q no screen plots',
      $     '  -s toggle sideways plot of f(v)'
-      write(*,*)'-lnn set species for log phase contours (before files)'
+      write(*,*)'-l<n> set species for log phase contours (before ',
+     $     'files, bits 1 & 2 of <n>)'
       end
  

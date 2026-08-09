@@ -33,12 +33,13 @@ c The bins are uniform from psvmin to psvmax and xmeshstart to end.
       integer ispecies,id
       integer i,ierr,ixbin,ivbin,isp
       real v,x,vs,vt,sv
+      real vtop,vbot,vrng
       logical linitedps(nspeciesmax)
       real vplim(2,nspeciesmax)
       data linitedps/nspeciesmax*.false./
       save vplim,linitedps
 
-!      write(*,*)ispecies,linitedps(ispecies)
+!     if(myid.eq.0)write(*,*)ispecies,linitedps(ispecies)
       if(.not.linitedps(ispecies))then
 c Ensure the limits etc of the phase space array are set.
          psxmin=xmeshstart(id)
@@ -47,20 +48,23 @@ c Ensure the limits etc of the phase space array are set.
          if(nc(ispecies).ne.0)then
             isp=ispecies
             vs=max(maxval(vsc(1:nc(isp),isp))
-     $           ,maxval(vsc(1:nc(isp),isp)))
+     $            ,maxval(vsc(1:nc(isp),isp)))
             vt=maxval(vtc(1:nc(isp),isp))
             psvmax(isp)=sqrt(abs(eoverms(isp)))*(3*vt+vs)
             vs=min(minval(vsc(1:nc(isp),isp))
-     $           ,minval(vsc(1:nc(isp),isp)))
+     $            ,minval(vsc(1:nc(isp),isp)))
             psvmin(isp)=sqrt(abs(eoverms(isp)))*(-3*vt+vs)
-         elseif(.false.)then ! problematic.
-! Assumed unshifted maxwellian when not using -fp argument
-            psvmax(ispecies)=3.*sqrt(abs(eoverms(ispecies))
-     $           *Ts(ispecies))
-            psvmin=-psvmax
+!            if(myid.eq.0)write(*,*)'Species',isp,' psvmax=',psvmax(isp)
+!     $           ,' psvmin=',psvmin(isp)
+         else
+! Use single Gausian parameters, assuming x-direction velocity.
+            isp=ispecies
+            psvmin(isp)=sqrt(abs(eoverms(isp))) *(-3*sqrt(Ts(isp))
+     $           +vds(isp))
+            psvmax(isp)=sqrt(abs(eoverms(isp))) *( 3*sqrt(Ts(isp))
+     $           +vds(isp))            
          endif
       endif
-!      write(*,*)'psaccum',ispecies,psvmin(1:2),psvmin(1:2)
 
 
  1    continue
@@ -73,19 +77,36 @@ c The centers of the bins in phase space (redundancy negligible).
             psv(i,ispecies)=psvmin(ispecies)+(i-0.5)*(psvmax(ispecies)
      $           -psvmin(ispecies))/npsv
          enddo
+!         if(myid.eq.0)write(*,*)psv(:,ispecies)
          call fvinfincalc(ispecies)
          linitedps(ispecies)=.true.
       endif
 
       sv=1.5
       call pszero(ispecies)
+      vrng=(vplim(1,ispecies)-vplim(2,ispecies))/2.
+      vtop=vplim(1,ispecies)+.5*vrng
+      vbot=vplim(2,ispecies)-.5*vrng
 c Accumulate
       do i=iicparta(ispecies),iocparta(ispecies)
          if(x_part(iflag,i).ne.0)then
             v=x_part(id+ndims,i)
 ! Auto-upscaling information
-            if(v.gt. sv*vplim(1,ispecies))vplim(1,ispecies)= v/sv
-            if(v.lt.-sv*vplim(2,ispecies))vplim(2,ispecies)=-v/sv
+! This version assumes the upper and lower limits are + and -
+! but that's not necessarily true. If the upper vplim is -ve, 
+! the test is wrong. 
+!            if(v.gt. sv*vplim(1,ispecies))vplim(1,ispecies)= v/sv
+!            if(v.lt.-sv*vplim(2,ispecies))vplim(2,ispecies)=-v/sv
+            if(v.gt.vtop)then
+               vplim(1,ispecies)=vtop
+               vrng=(vplim(1,ispecies)-vplim(2,ispecies))/2.
+               vtop=vplim(1,ispecies)+.5*vrng
+            endif
+            if(v.lt.vbot)then
+               vplim(2,ispecies)=vbot
+               vrng=(vplim(1,ispecies)-vplim(2,ispecies))/2.
+               vbot=vplim(2,ispecies)-.5*vrng
+            endif
             x=x_part(id,i)-0.5*x_part(idtp,i)*v
             ixbin=ceiling(.99999*(x-psxmin)/(psxmax-psxmin)*float(npsx)
      $           +1)
@@ -102,6 +123,7 @@ c Not for velocity beyond the vrange or x beyond x-range.
       enddo
 c All reduce to sum the distributions from all processes.
       call mpiallreducesum(psfxv(1,1,ispecies),npsx*npsv,ierr)
+! The following upscaling does not do possibly required downscaling. 
 ! Upscaling 
       call mpiallreducemax(vplim(1,ispecies),2,ierr)
       if(vplim(1,ispecies).gt.psvmax(ispecies))then
@@ -120,8 +142,6 @@ c All reduce to sum the distributions from all processes.
          linitedps(ispecies)=.false.
          goto 1
       endif
-!      write(*,*)'psaccumfinal',ispecies,psvmax(1:2),psvmin(1:2)
-!     $     ,linitedps
       end
 c***********************************************************************
       subroutine psnaccum(ispecies,id)
@@ -165,10 +185,8 @@ c Write file with phasespace data plus u(x) if length nu != 0.
       write(12)psn(:,1:nspecies) ! Save the density as fn of x
       if(nu.ne.0)write(12)(x(i),u(i),i=1,nu),t
       do isp=1,nspecies
-         if(nc(isp).ne.0)then
-            write(12)nc(isp)
-            write(12)(finfofv(i,isp),i=1,npsv)
-         endif
+         write(12)nc(isp)
+         write(12)(finfofv(i,isp),i=1,npsv)
       enddo
 ! Addition 3 Oct 2024 of average velocity as a fn of position.
       write(12)psvave(:,1:nspecies)
@@ -204,7 +222,7 @@ c***********************************************************************
          if(nu.ne.0)read(13)(x(i),u(i),i=1,nu),t
          do isp=1,nspecies
             read(13,end=103)nc(isp)
-            if(nc(isp).ne.0)read(13)(finfofv(i,isp),i=1,npsv)
+            read(13)(finfofv(i,isp),i=1,npsvf)
          enddo
 ! Incremental version expansion.
          read(13,err=104,end=104)psvave(:,1:nspecies)
@@ -254,10 +272,11 @@ c***********************************************************************
          psfmax(ispecies)=pmax
       endif
       logspec=.false.
-      if(ispecies.eq.ilogspec)logspec=.true.
+!      if(ispecies.eq.ilogspec)logspec=.true.
+      logspec=btest(ilogspec,ispecies-1)
       call logphasecont(ispecies,logspec)
       call color(15)
-      if(ipsversion.ge.1)call polyline(psx,psvave(1,ispecies),npsx)
+!      if(ipsversion.ge.1)call polyline(psx,psvave(1,ispecies),npsx)
       call polyline(psxmax+.3*(psxmax-psxmin)*finfofv(:,ispecies)
      $        /finfmax(ispecies),psv(1,ispecies),npsv)
 ! Integrate wrt x to get fave as a function of v.
@@ -327,7 +346,6 @@ c*********************************************************************
       include 'fvcom.f'
       include 'phasecom.f'
       include 'plascom.f'
-c      write(*,'(a,i2,9f10.4)')'species,dcc,vsc,vtc',ispecies ,(dcc(i
 c     $     ,ispecies),vsc(i,ispecies),vtc(i,ispecies),i=1,nc(ispecies))
       finfmax(ispecies)=0.
       do i=1,npsv
