@@ -58,6 +58,8 @@ c Set the starting number of filewriting to be N
             call pfset(-3)
          elseif(phasefilename(1:2).eq.'-s')then
             lsideplot=.not.lsideplot
+         elseif(phasefilename(1:3).eq.'-lr')then
+            read(phasefilename(4:),*,err=5,end=5)logrange
          elseif(phasefilename(1:2).eq.'-l')then
             read(phasefilename(3:),*,err=5,end=5)ilogspec
          else
@@ -182,5 +184,6 @@ c Set the starting number of filewriting to be N
      $     '  -s toggle sideways plot of f(v)'
       write(*,*)'-l<n> set species for log phase contours (before ',
      $     'files, bits 1 & 2 of <n>)'
+      write(*,*)'-lr<real> set logarithmic range factor.'
       end
  

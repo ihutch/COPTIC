@@ -3,7 +3,7 @@ c**********************************************************************
       block data phaseblockdata
       include 'ndimsdecl.f'
       include 'phasecom.f'
-      data psfmax/nspeciesmax*0./ipsftri/0/
+      data psfmax/nspeciesmax*0./ipsftri/0/logrange/1.e3/
       end
 c**********************************************************************
       subroutine pszero(ispecies)
@@ -204,7 +204,6 @@ c***********************************************************************
       include 'phasecom.f'
       include 'partcom.f'
       include 'fvcom.f'   ! For nc
-      ipsversion=0
       nuin=nu
       open(13,file=phasefilename,status='old',form='unformatted',err
      $     =101)
@@ -240,6 +239,7 @@ c***********************************************************************
       close(13)
       stop
  104  continue
+      ipsversion=0
       write(*,'(a,i3,2a)')'PS-Version',ipsversion,' No psvave in file '
      $     ,phasefilename(1:lentrim(phasefilename))
       psvave=0.
@@ -276,7 +276,7 @@ c***********************************************************************
       logspec=btest(ilogspec,ispecies-1)
       call logphasecont(ispecies,logspec)
       call color(15)
-!      if(ipsversion.ge.1)call polyline(psx,psvave(1,ispecies),npsx)
+      if(ipsversion.ge.1)call polyline(psx,psvave(1,ispecies),npsx)
       call polyline(psxmax+.3*(psxmax-psxmin)*finfofv(:,ispecies)
      $        /finfmax(ispecies),psv(1,ispecies),npsv)
 ! Integrate wrt x to get fave as a function of v.
@@ -377,7 +377,7 @@ c Set extrema of coloring range from psfmax.
      $        ,icl,psx,psv(1,ispecies),icsw)
          call color(ilightgray())
       else
-         zclv(1)=alog10(psfmax(ispecies)/1.e3)
+         zclv(1)=alog10(psfmax(ispecies)/logrange)
          zclv(2)=alog10(psfmax(ispecies))
          call contourl(alog10(psfxv(:,:,ispecies)+.5),cworka,npsx,npsx
      $        ,npsv,zclv,icl,psx,psv(1,ispecies),icsw)
