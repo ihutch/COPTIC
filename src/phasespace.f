@@ -18,7 +18,7 @@ c**********************************************************************
       end
 c**********************************************************************
       subroutine psaccum(ispecies,id)
-      implicit none
+      implicit none 
 c Accumulate all particles of species ispecies
 c into phase-space x,v for dimension id
 c Summed over the other dimensions. 
@@ -155,8 +155,14 @@ c Accumulate the densities of ispecies into phasespace x-bins psn
       integer ispecies,id
       integer i,ixbin,ierr
       real x
-      psn(:,ispecies)=0. ! zero density array. Then check that psx params set:
       if(psxmin.ne.xmeshstart(id))Stop 'psnaccum called before psaccum'
+      if(psxmin.ne.xmeshstart(id))then
+!         Stop 'psnaccum called before psaccum'
+         write(*,*)'psxmin/max problem',psxmin,psxmax,xmeshstart(id)
+     $        ,xmeshend(id),id
+         psxmin=xmeshstart(id)
+         psxmax=xmeshend(id)
+      endif
       do i=iicparta(ispecies),iocparta(ispecies)
          x=x_part(id,i)
          ixbin=int(.99999*(x-psxmin)/(psxmax-psxmin)*float(npsx)+1)

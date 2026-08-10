@@ -235,7 +235,7 @@
       real u(ifull(1),ifull(2),ifull(3)),q(ifull(1),ifull(2),ifull(3))
       character*(*) restartpath
       integer id,thespecies,ilab,ispecies !,kk
-      real vrange,phirange,umin,umax,psntot,psnmin,psnmax,phirangeinit
+      real vrange,phirange,umin,umax,psnmin,psnmax,phirangeinit
       parameter (phirangeinit=0.5)
       real p1min,p1max,p2min,p2max,pbmax,pbmin      
       real wx2nx,wy2ny
@@ -249,20 +249,18 @@
       data psnmin/0.9/psnmax/1.3/
       data nlabel/' !Bn!di!d!@',' !Bn!de!d!@'/
 ! Only if this is a one-dimensional problem (for now)
-      if(iuds(2).ge.4 .and. iuds(3).ge.4) return
+      if(.not.lonedim) return
 c thespecies is 1 if nspecies=1, 2 if nspecies=2 (assumes e is 2)
       thespecies=mod(thespecies,nspecies)+1
       if(hspecies.ne.0)thespecies=hspecies ! Or just use the hole species
-c psaccum must be asked for by all processes for initialization.
-!      call psaccum(thespecies,id)
 ! Accumulate all the species and both phase-space and n(x).
       ipsversion=1
       do ispecies=1,nspecies
-         call psaccum(ispecies,id)
-         psntot=numprocs*nparta(ispecies)/npsx
-         call psnaccum(ispecies,id)
-         psn(:,ispecies)=psn(:,ispecies)/psntot
-         psvave(:,ispecies)=psvave(:,ispecies)/psntot
+! Now the psnaccum is done separately by a dummy call in the main. 
+! It is necessary in order to initialize the psx array, which was
+! why removing this call causes a crash. 
+!         call psnaccum(ispecies,id)
+! But the normalization is done here?
       enddo
       write(string,'(f10.3)')nstep*dt
 c but writing and plotting only by top process
@@ -346,7 +344,6 @@ c but writing and plotting only by top process
             call color(7)
             lsideplot=.true.  ! Change default from zero
             do thespecies=1,nspecies
-!         write(*,*)'i,psvmax,psvmin=',ispecies,psvmax(1:2),psvmin(1:2)
                call phaseplot(thespecies)
                call color(15)
                call winset(.true.)

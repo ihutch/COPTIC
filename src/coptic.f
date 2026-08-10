@@ -54,6 +54,8 @@
       include 'dbgcom.f'
 ! Non-Maxwellian parameters
       include 'fvcom.f'
+! One dimensional Phase-space parameters
+      include 'phasecom.f'
       integer idebug
       external bdyshare,bdyset,cijroutine,cijedge,psumtoq
      $     ,quasineutral,fadcomp,qvary
@@ -80,11 +82,11 @@
       real wavespec(nwspec)
 ! Various local parameters
       real bckgd,bdt,bdtnow,boltzamp0,cellvol,dtf
-      real dum,dum2,dum3,dum4,dum5
+      real dum,dum2,dum3,dum4,dum5,psntot
       real error,pinjcomp0(nspeciesmax),rc,rcij,rinf,rs1,thetain
       integer i,iavesteps,ibinit,iCFcount,ickst,ictl,id,idiag,idn
-      integer ied,ierr,ierrsor,ifix,ifobj,ifplot,iobpl
-      integer ipoint,ispecies,istat,istepave,iobpsw,j,k,maccel
+      integer ied,ierr,ierrsor,ifix,ifobj,ifplot,iobpl,ionedim
+      integer ipoint,ispecies,istat,istepave,iobpsw,j,k,maccel,ispc
       integer mbzero,ninjcomp0(nspeciesmax),nstep,nsteps,nth,ndiags
 ! And Functions
       integer lentrim,nbcat,nameappendint,oicijfunc
@@ -361,9 +363,26 @@
             call mditerset(diagsum(1,1,1,idiag,ispecies)
      $           ,ndims,ifull,iuds,0,0.)
          enddo
+         call psaccum(ispecies,1)
       enddo
       nstep=nf_step
 !----------------------------------------------------------
+! Set the one-dimension logical and zero psn,psvave
+      lonedim=iuds(2).eq.3.and.iuds(3).eq.3
+!      write(*,*)'lonedim',lonedim,iuds(2),iuds(3)
+! To initialize the psx arrays. 
+      psn=0.
+      psvave=0.
+      if(lonedim)then
+         ionedim=1
+         if(.not.ldistshow)then
+            if(lphiplot)then
+               if(myid.eq.0)write(*,*
+     $              )'1-d plots combined potential, phasespace.'
+               ldistshow=.true.
+            endif
+         endif
+      endif
 ! #### Main step iteration ##########################################
       do j=1,nsteps
          if(nspecies.gt.1.or.holepsi.ne.0.)
@@ -448,35 +467,36 @@
 ! ------------------------------------------------
          call calculateforces(ndims,iLs,cij,u)
 ! ------------------------------------------------
+! If we are doing psn accumulation, do it before each step here 
+         psxmin=xmeshstart(ionedim)
+         psxmax=xmeshend(ionedim)
+         do ispc=1,nspecies
+           call psnaccum(ispc,ionedim)
+!           write(*,'(a,6f8.0)')'psn(1:6) unnorm',psn(1:6,ispc)
+         enddo
          if(ipstep.eq.0.or.mod(j,ipstep).eq.0)then
 ! Slice plots
             if(lsliceplot.and.ldenplot)call sliceGweb(ifull,iuds,q,na_m
      $           ,zp,ixnp,xn,ifix,'density: n'//char(0),dum,dum)
-            if((iuds(2).eq.3.and.iuds(3).eq.3))then
-               if(.not.ldistshow)then
-                  if(lphiplot)then
-                     if(myid.eq.0)write(*,*
-     $                 )'1-d plots combined potential, phasespace.'
-                     ldistshow=.true.
-                  endif
-               endif
-            else
+            if(.not.lonedim)then
                if(lsliceplot.and.lphiplot)then
                   call sliceGweb(ifull,iuds,u,na_m,zp,ixnp,
      $                 xn,ifix,'potential:'//'!Af!@'//char(0),dum,dum)
                endif
             endif
 ! Phase space done by all processes, even though only one of them plots.
-            if(ldistshow.and.iuds(2).eq.3.and.iuds(3).eq.3)then
-               if(.true.)then
-                  call phasepscont(ifull,iuds,u,nstep,lphiplot
-     $                 ,restartpath,q)
-               else
-                  if(lmyidhead)call phasescatter(ifull,iuds,u)
-               endif
+            if(ldistshow.and.lonedim)then
+               do ispc=1,nspecies
+! Normalize the psn and psvave
+                  psntot=max(ipstep,1)*numprocs*nparta(ispc)/npsx
+                  psn(:,ispc)=psn(:,ispc)/psntot
+                  psvave(:,ispc)=psvave(:,ispc)/psntot
+               enddo
+               call phasepscont(ifull,iuds,u,nstep,lphiplot,restartpath
+     $              ,q)
+!                  if(lmyidhead)call phasescatter(ifull,iuds,u)
             endif
          endif
-
          if(nf_step.eq.ickst)call checkuqcij(ifull,u,q,psum,volumes,cij)
 !----------- Particle advance:------------------------------
          if(idebug.gt.0)write(*,*)'Calling padvnc',nspecies
@@ -517,8 +537,7 @@
                write(*,'(a,f8.2,3f8.4)')'injcomp,rhoinf,phirein,bckgd='
      $              ,dum,rhoinf,phirein,bckgd
             endif
-            if(.not.ldistshow.and.idistp.ne.0.and.
-     $           iuds(2).eq.3.and.iuds(3).eq.3)then
+            if(.not.ldistshow.and.idistp.ne.0.and.lonedim)then
 ! If we have not already written phaseplot, but we are writing distribs
 ! and it is a 1-d calculation:
                call phasepscont(ifull,iuds,u,nstep,lphiplot
