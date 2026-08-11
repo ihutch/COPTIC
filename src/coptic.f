@@ -363,6 +363,7 @@
             call mditerset(diagsum(1,1,1,idiag,ispecies)
      $           ,ndims,ifull,iuds,0,0.)
          enddo
+         call pszero(ispecies)
          call psaccum(ispecies,1)
       enddo
       nstep=nf_step
@@ -472,6 +473,7 @@
             psxmin=xmeshstart(ionedim)
             psxmax=xmeshend(ionedim)
             do ispc=1,nspecies
+               call psaccum(ispc,ionedim)
                call psnaccum(ispc,ionedim)
 !              write(*,'(a,6f8.0)')'psn(1:6) unnorm',psn(1:6,ispc)
             enddo
@@ -498,6 +500,10 @@
      $              ,q)
 !                  if(lmyidhead)call phasescatter(ifull,iuds,u)
             endif
+! After plotting, zero the psarrays to restart accumulation.
+            do ispc=1,nspecies
+              call pszero(ispc)
+            enddo
          endif
          if(nf_step.eq.ickst)call checkuqcij(ifull,u,q,psum,volumes,cij)
 !----------- Particle advance:------------------------------

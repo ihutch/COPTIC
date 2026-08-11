@@ -10,11 +10,13 @@ c**********************************************************************
       integer ispecies
       include 'ndimsdecl.f'
       include 'phasecom.f'
+      include 'myidcom.f'
       do i=1,npsx
          do j=1,npsv
             psfxv(i,j,ispecies)=0.
          enddo
       enddo
+!      if(myid.eq.0)write(*,*)'Zeroed phasespace',ispecies
       end
 c**********************************************************************
       subroutine psaccum(ispecies,id)
@@ -31,63 +33,31 @@ c The bins are uniform from psvmin to psvmax and xmeshstart to end.
       include 'fvcom.f'
       include 'myidcom.f'
       integer ispecies,id
-      integer i,ierr,ixbin,ivbin,isp
-      real v,x,vs,vt,sv
+      integer i,ierr,ixbin,ivbin
+      real v,x,sv
       real vtop,vbot,vrng
       logical linitedps(nspeciesmax)
       real vplim(2,nspeciesmax)
       data linitedps/nspeciesmax*.false./
       save vplim,linitedps
 
-!     if(myid.eq.0)write(*,*)ispecies,linitedps(ispecies)
       if(.not.linitedps(ispecies))then
-c Ensure the limits etc of the phase space array are set.
-         psxmin=xmeshstart(id)
-         psxmax=xmeshend(id)
-         vplim(:,ispecies)=-1.e5
-         if(nc(ispecies).ne.0)then
-            isp=ispecies
-            vs=max(maxval(vsc(1:nc(isp),isp))
-     $            ,maxval(vsc(1:nc(isp),isp)))
-            vt=maxval(vtc(1:nc(isp),isp))
-            psvmax(isp)=sqrt(abs(eoverms(isp)))*(3*vt+vs)
-            vs=min(minval(vsc(1:nc(isp),isp))
-     $            ,minval(vsc(1:nc(isp),isp)))
-            psvmin(isp)=sqrt(abs(eoverms(isp)))*(-3*vt+vs)
-!            if(myid.eq.0)write(*,*)'Species',isp,' psvmax=',psvmax(isp)
-!     $           ,' psvmin=',psvmin(isp)
-         else
-! Use single Gausian parameters, assuming x-direction velocity.
-            isp=ispecies
-            psvmin(isp)=sqrt(abs(eoverms(isp))) *(-3*sqrt(Ts(isp))
-     $           +vds(isp))
-            psvmax(isp)=sqrt(abs(eoverms(isp))) *( 3*sqrt(Ts(isp))
-     $           +vds(isp))            
-         endif
+c Set limits etc of the phase space array from background information.
+            call pslimits(ispecies,id,vplim)
       endif
-
-
  1    continue
       if(.not.linitedps(ispecies))then
-c The centers of the bins in phase space (redundancy negligible).
-         do i=1,npsx
-            psx(i)=psxmin+(i-0.5)*(psxmax-psxmin)/npsx
-         enddo
-         do i=1,npsv
-            psv(i,ispecies)=psvmin(ispecies)+(i-0.5)*(psvmax(ispecies)
-     $           -psvmin(ispecies))/npsv
-         enddo
-!         if(myid.eq.0)write(*,*)psv(:,ispecies)
+c Set the psx, psv arrays using psvmax/min (and the background distribution).
+c The psvmax/min may have been adjusted relative to what fvinfin implies.
          call fvinfincalc(ispecies)
-         linitedps(ispecies)=.true.
       endif
 
       sv=1.5
-      call pszero(ispecies)
       vrng=(vplim(1,ispecies)-vplim(2,ispecies))/2.
       vtop=vplim(1,ispecies)+.5*vrng
       vbot=vplim(2,ispecies)-.5*vrng
-c Accumulate
+!      call pszero(ispecies) Now done (sometimes) in coptic main. 
+c Accumulate particle data
       do i=iicparta(ispecies),iocparta(ispecies)
          if(x_part(iflag,i).ne.0)then
             v=x_part(id+ndims,i)
@@ -150,7 +120,6 @@ c Accumulate the densities of ispecies into phasespace x-bins psn
       integer ispecies,id
       integer i,ixbin,ierr
       real x
-      if(psxmin.ne.xmeshstart(id))Stop 'psnaccum called before psaccum'
       if(psxmin.ne.xmeshstart(id))then
 !         Stop 'psnaccum called before psaccum'
          write(*,*)'psxmin/max problem',psxmin,psxmax,xmeshstart(id)
@@ -277,6 +246,8 @@ c***********************************************************************
       logspec=btest(ilogspec,ispecies-1)
       call logphasecont(ispecies,logspec)
       call color(15)
+      write(*,'(a,2f10.4,i4)')'vmin,vmax ',minval(psvave(:,ispecies))
+     $     ,maxval(psvave(:,ispecies)),ispecies
       if(ipsversion.ge.1)call polyline(psx,psvave(1,ispecies),npsx)
       call polyline(psxmax+.3*(psxmax-psxmin)*finfofv(:,ispecies)
      $        /finfmax(ispecies),psv(1,ispecies),npsv)
@@ -347,7 +318,16 @@ c*********************************************************************
       include 'fvcom.f'
       include 'phasecom.f'
       include 'plascom.f'
-c     $     ,ispecies),vsc(i,ispecies),vtc(i,ispecies),i=1,nc(ispecies))
+c The centers of the bins in phase space
+c Might be redundant but negligible cost.
+      do i=1,npsx
+         psx(i)=psxmin+(i-0.5)*(psxmax-psxmin)/npsx
+      enddo
+      do i=1,npsv
+         psv(i,ispecies)=psvmin(ispecies)+(i-0.5)*(psvmax(ispecies)
+     $        -psvmin(ispecies))/npsv
+      enddo
+c Now the finfofv distribution. 
       finfmax(ispecies)=0.
       do i=1,npsv
          fi=0.
@@ -389,5 +369,39 @@ c Set extrema of coloring range from psfmax.
       call color(15)
       call axis()
       call axis2
-
       end
+c*********************************************************************
+c Ensure the limits etc of the phase space array are set.
+      subroutine pslimits(ispecies,id,vplim)
+      implicit none 
+      include 'ndimsdecl.f'
+      include 'phasecom.f'
+      include 'meshcom.f'
+      include 'plascom.f'
+      include 'fvcom.f'
+      integer ispecies,id,isp
+      real vplim(2,nspeciesmax),vs,vt
+      psxmin=xmeshstart(id)
+      psxmax=xmeshend(id)
+      vplim(:,ispecies)=-1.e5
+      if(nc(ispecies).ne.0)then
+         isp=ispecies
+         vs=max(maxval(vsc(1:nc(isp),isp))
+     $        ,maxval(vsc(1:nc(isp),isp)))
+         vt=maxval(vtc(1:nc(isp),isp))
+         psvmax(isp)=sqrt(abs(eoverms(isp)))*(3*vt+vs)
+         vs=min(minval(vsc(1:nc(isp),isp))
+     $        ,minval(vsc(1:nc(isp),isp)))
+         psvmin(isp)=sqrt(abs(eoverms(isp)))*(-3*vt+vs)
+!        if(myid.eq.0)write(*,*)'Species',isp,' psvmax=',psvmax(isp)
+!        $           ,' psvmin=',psvmin(isp)
+      else
+! Use single Gausian parameters, assuming x-direction velocity.
+            isp=ispecies
+            psvmin(isp)=sqrt(abs(eoverms(isp))) *(-3*sqrt(Ts(isp))
+     $           +vds(isp))
+            psvmax(isp)=sqrt(abs(eoverms(isp))) *( 3*sqrt(Ts(isp))
+     $           +vds(isp))            
+      endif
+      end
+c*********************************************************************
