@@ -468,12 +468,14 @@
          call calculateforces(ndims,iLs,cij,u)
 ! ------------------------------------------------
 ! If we are doing psn accumulation, do it before each step here 
-         psxmin=xmeshstart(ionedim)
-         psxmax=xmeshend(ionedim)
-         do ispc=1,nspecies
-           call psnaccum(ispc,ionedim)
-!           write(*,'(a,6f8.0)')'psn(1:6) unnorm',psn(1:6,ispc)
-         enddo
+         if(ldistshow.and.lonedim)then
+            psxmin=xmeshstart(ionedim)
+            psxmax=xmeshend(ionedim)
+            do ispc=1,nspecies
+               call psnaccum(ispc,ionedim)
+!              write(*,'(a,6f8.0)')'psn(1:6) unnorm',psn(1:6,ispc)
+            enddo
+         endif
          if(ipstep.eq.0.or.mod(j,ipstep).eq.0)then
 ! Slice plots
             if(lsliceplot.and.ldenplot)call sliceGweb(ifull,iuds,q,na_m

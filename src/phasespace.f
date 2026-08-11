@@ -92,11 +92,6 @@ c Accumulate
          if(x_part(iflag,i).ne.0)then
             v=x_part(id+ndims,i)
 ! Auto-upscaling information
-! This version assumes the upper and lower limits are + and -
-! but that's not necessarily true. If the upper vplim is -ve, 
-! the test is wrong. 
-!            if(v.gt. sv*vplim(1,ispecies))vplim(1,ispecies)= v/sv
-!            if(v.lt.-sv*vplim(2,ispecies))vplim(2,ispecies)=-v/sv
             if(v.gt.vtop)then
                vplim(1,ispecies)=vtop
                vrng=(vplim(1,ispecies)-vplim(2,ispecies))/2.
