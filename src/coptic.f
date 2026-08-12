@@ -85,7 +85,7 @@
       real dum,dum2,dum3,dum4,dum5,psntot
       real error,pinjcomp0(nspeciesmax),rc,rcij,rinf,rs1,thetain
       integer i,iavesteps,ibinit,iCFcount,ickst,ictl,id,idiag,idn
-      integer ied,ierr,ierrsor,ifix,ifobj,ifplot,iobpl,ionedim
+      integer ied,ierr,ierrsor,ifix,ifobj,ifplot,iobpl,ionedim,ips
       integer ipoint,ispecies,istat,istepave,iobpsw,j,k,maccel,ispc
       integer mbzero,ninjcomp0(nspeciesmax),nstep,nsteps,nth,ndiags
 ! And Functions
@@ -493,8 +493,13 @@
                do ispc=1,nspecies
 ! Normalize the psn and psvave
                   psntot=max(ipstep,1)*numprocs*nparta(ispc)/npsx
-                  psn(:,ispc)=psn(:,ispc)/psntot
-                  psvave(:,ispc)=psvave(:,ispc)/psntot
+                  do ips=1,npsx
+! Normalization by the actual particle number in xbin is essential.
+! Before correction, fluctuations in psn were greatly magnified
+! into significant psvave fluctuations for large psvave. 
+                     psvave(ips,ispc)=psvave(ips,ispc)/psn(ips,ispc)
+                     psn(ips,ispc)=psn(ips,ispc)/psntot
+                  enddo
                enddo
                call phasepscont(ifull,iuds,u,nstep,lphiplot,restartpath
      $              ,q)

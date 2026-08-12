@@ -56,7 +56,8 @@ c The psvmax/min may have been adjusted relative to what fvinfin implies.
       vrng=(vplim(1,ispecies)-vplim(2,ispecies))/2.
       vtop=vplim(1,ispecies)+.5*vrng
       vbot=vplim(2,ispecies)-.5*vrng
-!      call pszero(ispecies) Now done (sometimes) in coptic main. 
+! This removed call does not correct the fluctuations if reinserted.
+!      call pszero(ispecies) !  Now done (sometimes) in coptic main. 
 c Accumulate particle data
       do i=iicparta(ispecies),iocparta(ispecies)
          if(x_part(iflag,i).ne.0)then
@@ -75,8 +76,8 @@ c Accumulate particle data
             x=x_part(id,i)-0.5*x_part(idtp,i)*v
             ixbin=ceiling(.99999*(x-psxmin)/(psxmax-psxmin)*float(npsx)
      $           +1)
-            ivbin=floor(.99999*(v-psvmin(ispecies))/(psvmax(ispecies)
-     $           -psvmin(ispecies))*float(npsv)+1)
+            ivbin=floor(.99999*(v-psvmin(ispecies))/
+     $           (psvmax(ispecies)-psvmin(ispecies))*float(npsv)+1)
 c Wrap periodically the x-position bins in case of exit.
             if(ixbin.lt.1)ixbin=npsx+ixbin
             if(ixbin.gt.npsx)ixbin=ixbin-npsx
@@ -89,9 +90,9 @@ c Not for velocity beyond the vrange or x beyond x-range.
 c All reduce to sum the distributions from all processes.
       call mpiallreducesum(psfxv(1,1,ispecies),npsx*npsv,ierr)
 ! The following upscaling does not do possibly required downscaling. 
-! Upscaling 
+! Upscaling. Turning it off does not suppress noise. 
       call mpiallreducemax(vplim(1,ispecies),2,ierr)
-      if(vplim(1,ispecies).gt.psvmax(ispecies))then
+      if(.false..and.vplim(1,ispecies).gt.psvmax(ispecies))then
          if(myid.eq.0)write(*,'(a,i2,2f10.5)')' Rescale vmax',ispecies
      $        ,vplim(1,ispecies),psvmax(ispecies)
          psvmax(ispecies)=vplim(1,ispecies)+(psvmax(ispecies)
@@ -99,7 +100,7 @@ c All reduce to sum the distributions from all processes.
          linitedps(ispecies)=.false.
          goto 1
       endif
-      if(vplim(2,ispecies).gt.-psvmin(ispecies))then
+      if(.false..and.vplim(2,ispecies).gt.-psvmin(ispecies))then
          if(myid.eq.0)write(*,'(a,i2,2f10.5)')' Rescale vmin',ispecies,
      $        -vplim(2,ispecies),psvmin(ispecies)
          psvmin(ispecies)=-vplim(2,ispecies)-(psvmax(ispecies)
@@ -117,20 +118,29 @@ c Accumulate the densities of ispecies into phasespace x-bins psn
       include 'meshcom.f'
       include 'partcom.f'
       include 'plascom.f'
+      include 'myidcom.f'
       integer ispecies,id
-      integer i,ixbin,ierr
-      real x
+      integer i,ixbin,ierr,irn
+      real x,v
       if(psxmin.ne.xmeshstart(id))then
-!         Stop 'psnaccum called before psaccum'
          write(*,*)'psxmin/max problem',psxmin,psxmax,xmeshstart(id)
      $        ,xmeshend(id),id
          psxmin=xmeshstart(id)
          psxmax=xmeshend(id)
+         Stop 'psnaccum called before psaccum'
       endif
+      irn=0
       do i=iicparta(ispecies),iocparta(ispecies)
          x=x_part(id,i)
+         v=x_part(id+ndims,i)
          ixbin=int(.99999*(x-psxmin)/(psxmax-psxmin)*float(npsx)+1)
          psn(ixbin,ispecies)=psn(ixbin,ispecies)+1.
+         if(.false..and.(
+     $        v.gt.psvmax(ispecies).or.v.lt.psvmin(ispecies)))then
+            irn=irn+1
+            write(*,*)'Vrange exceeded:',psvmax(ispecies)
+     $           ,psvmin(ispecies),v,irn
+         endif
          psvave(ixbin,ispecies)=
      $        psvave(ixbin,ispecies)+x_part(id+ndims,i)
       enddo
@@ -246,8 +256,8 @@ c***********************************************************************
       logspec=btest(ilogspec,ispecies-1)
       call logphasecont(ispecies,logspec)
       call color(15)
-      write(*,'(a,2f10.4,i4)')'vmin,vmax ',minval(psvave(:,ispecies))
-     $     ,maxval(psvave(:,ispecies)),ispecies
+!      write(*,'(a,2f10.4,i4)')'vavemin,vavemax ',minval(psvave(:
+!     $     ,ispecies)),maxval(psvave(:,ispecies)),ispecies
       if(ipsversion.ge.1)call polyline(psx,psvave(1,ispecies),npsx)
       call polyline(psxmax+.3*(psxmax-psxmin)*finfofv(:,ispecies)
      $        /finfmax(ispecies),psv(1,ispecies),npsv)
