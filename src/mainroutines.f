@@ -255,13 +255,6 @@ c thespecies is 1 if nspecies=1, 2 if nspecies=2 (assumes e is 2)
       if(hspecies.ne.0)thespecies=hspecies ! Or just use the hole species
 ! Accumulate all the species and both phase-space and n(x).
       ipsversion=1
-      do ispecies=1,nspecies
-! Now the psnaccum is done separately by a dummy call in the main. 
-! It is necessary in order to initialize the psx array, which was
-! why removing this call causes a crash. 
-!         call psnaccum(ispecies,id)
-! But the normalization is done here?
-      enddo
       write(string,'(f10.3)')nstep*dt
 c but writing and plotting only by top process
       if(myid.eq.nprocs-1)then

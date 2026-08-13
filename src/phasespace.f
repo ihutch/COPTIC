@@ -230,7 +230,7 @@ c***********************************************************************
       include 'ndimsdecl.f'
       include 'phasecom.f'
       character*30 string
-      real faveofv(npsv)
+      real faveofv(npsv),pmax
       integer ifcolor(npsv)
       logical logspec
 
@@ -244,11 +244,13 @@ c***********************************************************************
       call blueredgreenwhite()
       write(string,'(''v!d'',i1,''!d'')')ispecies
       call axlabels('x',string(1:lentrim(string)))
-! Set adjust f-scale if necessary
+! Set adjust f-scale if necessary pmax is of psfxv array
       call minmax2(psfxv(1,1,ispecies),npsx,npsx,npsv,pmin,pmax)
       if(pmax.lt.psfmax(ispecies)*0.9)then
+!         write(*,*)'pmaxold,pmaxnew',psfmax(ispecies),pmax,ispecies
          psfmax(ispecies)=pmax
       elseif(pmax.gt.psfmax(ispecies)*1.03)then
+!         write(*,*)'pmaxold,pmaxnew',psfmax(ispecies),pmax,ispecies
          psfmax(ispecies)=pmax
       endif
       logspec=.false.

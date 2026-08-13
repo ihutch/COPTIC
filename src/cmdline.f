@@ -1,8 +1,7 @@
 ! Combination of the two calls to copticcmdline. 
-      subroutine parametersetting
-     $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
-     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-     $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
+      subroutine parametersetting (lmyidhead,ltestplot,iobpl,iobpsw,rcij
+     $     ,lsliceplot,ipstep,ipac,ldenplot,lphiplot,linjplot,ifplot
+     $     ,norbits ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
      $     ,ninjcomp,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax
      $     ,debyelen,Ts,iwstep,idistp,lrestart,restartpath,extfield
@@ -16,7 +15,7 @@
       integer ifull,ierr
       include 'myidcom.f'
 
-      integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps
+      integer iobpl,iobpsw,ipstep,ipac,ifplot,norbits,nth,iavesteps
      $     ,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
      $     ,iwstep,idistp,ndims,islp,lrestart,nptdiag,nqblkmax
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
@@ -45,10 +44,9 @@
 !----------------------------------------------------------------------
 ! Deal with command-line arguments and geometry/object file.
 ! First time this routine just sets defaults and the object file name.
-      call copticcmdline
-     $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
-     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-     $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
+      call copticcmdline (lmyidhead,ltestplot,iobpl,iobpsw,rcij
+     $     ,lsliceplot,ipstep,ipac,ldenplot,lphiplot,linjplot,ifplot
+     $     ,norbits ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
      $     ,ninjcomp,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax
      $     ,debyelen,Ts,iwstep,idistp,lrestart,restartpath,extfield
@@ -63,10 +61,9 @@
      $     ,argline)
       if(ierr.ne.0.and.lmyidhead)write(*,*) 'Error in readgeom call'
 ! Second time: deal with any other command line parameters.
-      call copticcmdline
-     $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
-     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-     $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
+      call copticcmdline (lmyidhead,ltestplot,iobpl,iobpsw,rcij
+     $     ,lsliceplot,ipstep,ipac,ldenplot,lphiplot,linjplot,ifplot
+     $     ,norbits ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
      $     ,ninjcomp,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax
      $     ,debyelen,Ts,iwstep,idistp,lrestart,restartpath,extfield
@@ -81,10 +78,9 @@
       end
 *********************************************************************
 ! Encapsulation of parameter setting.
-      subroutine copticcmdline
-     $     (lmyidhead,ltestplot,iobpl,iobpsw,rcij
-     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-     $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
+      subroutine copticcmdline (lmyidhead,ltestplot,iobpl,iobpsw,rcij
+     $     ,lsliceplot,ipstep,ipac,ldenplot,lphiplot,linjplot,ifplot
+     $     ,norbits ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
      $     ,ninjcomp,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax
      $     ,debyelen,Ts,iwstep,idistp,lrestart,restartpath,extfield
@@ -97,7 +93,7 @@
 
       implicit none
 
-      integer iobpl,iobpsw,ipstep,ifplot,norbits,nth,iavesteps
+      integer iobpl,iobpsw,ipstep,ipac,ifplot,norbits,nth,iavesteps
      $     ,ickst,ninjcomp,nsteps,nf_maxsteps,ndiags,ndiagmax
      $     ,iwstep,idistp,ndims,islp,lrestart,nptdiag,nqblkmax
       logical lmyidhead,ltestplot,lsliceplot,ldenplot,lphiplot,linjplot
@@ -249,6 +245,11 @@
             read(argument(4:),*,err=211,end=211)ipstep
  211        continue
             if(lmyidhead)write(*,*)'Phaseplot ipstep=',ipstep,lphiplot
+            if(ipstep.lt.0)then
+! Negative ipstep indicates don't do multistep ps accumulation. 
+               ipac=1
+               ipstep=-ipstep
+            endif
          endif
          if(argument(1:3).eq.'-gd')ldenplot=.not.ldenplot
          if(argument(1:3).eq.'-gp')lphiplot=.not.lphiplot
@@ -776,8 +777,10 @@ c            write(*,*)'Set pfset(0)'
       write(*,301)' -gx[i]Graphics filing [i<0 or absent: no display].'
      $     //' i.e. call pfset(i). [',ipfset
       write(*,301)
-     $      ' -gp -gd[] Plot slices of setup; plus potential, '
+     $      ' -gp -gd[n] Plot slices of setup; plus potential, '
      $     //'density. [At step n]. [',ipstep
+      write(*,301)'            if n<0, skip intermediate accumulation'
+     $     //' of phasespace. ipac: [',ipac
       write(*,301)' -gf   set quantity plotted for flux evolution and'//
      $     ' final distribution. [',ifplot
       write(*,301)' -gw   set objplot sw. [+256:intercepts]'//

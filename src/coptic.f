@@ -67,7 +67,7 @@
 !      common /ctl_sor/mi_sor,xjac_sor,eps_sor,del_sor,k_sor
       logical ltestplot,lcijplot,lsliceplot,lorbitplot,linjplot
       logical lmyidhead,lphiplot,ldenplot,lfftsucceeded
-      integer ipstep,iwstep,idistp,idcount,icijcount,lrestart
+      integer ipstep,iwstep,idistp,idcount,icijcount,lrestart,ipac
 ! Diagnostics etc
       real zp(na_m,na_m)
       real xlimit(2,ndimsmax),vlimit(2,ndimsmax)
@@ -105,7 +105,7 @@
       data lphiplot,ldenplot/.false.,.false./
       data lfftsucceeded/.false./
       data lrestart/0/cv/0.,0.,0./
-      data ipstep/1/idistp/0/idcount/0/icijcount/0/
+      data ipstep/1/idistp/0/idcount/0/icijcount/0/ipac/0/
       data wavespec/nwspec*0/  ! Default no wave
 ! End of declarations      ###################################
 !-------------------------------------------------------------
@@ -129,8 +129,8 @@
 !--------------------------------------------------------------
 ! Deal with command-line arguments and geometry/object file.
       call parametersetting (lmyidhead,ltestplot,iobpl,iobpsw,rcij
-     $     ,lsliceplot,ipstep,ldenplot,lphiplot,linjplot,ifplot,norbits
-     $     ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
+     $     ,lsliceplot,ipstep,ipac,ldenplot,lphiplot,linjplot,ifplot
+     $     ,norbits ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
      $     ,colntime,dt,bdt,subcycle,dropaccel,eoverms,Bfield,Bt
      $     ,ninjcomp,nsteps,nf_maxsteps,vneutral,vds,ndiags,ndiagmax
      $     ,debyelen,Ts,iwstep,idistp,lrestart,restartpath,extfield
@@ -468,13 +468,17 @@
 ! ------------------------------------------------
          call calculateforces(ndims,iLs,cij,u)
 ! ------------------------------------------------
-! If we are doing psn accumulation, do it before each step here 
+! Phasespace: if we are doing it
          if(ldistshow.and.lonedim)then
             psxmin=xmeshstart(ionedim)
             psxmax=xmeshend(ionedim)
+!            write(*,*)'ipstep,ipac',ipstep,ipac
             do ispc=1,nspecies
-               call psaccum(ispc,ionedim)
-               call psnaccum(ispc,ionedim)
+! If all steps accumulation, or this is the plot/save step:
+               if(ipac.eq.0.or.(ipstep.eq.0.or.mod(j,ipstep).eq.0))then
+                  call psaccum(ispc,ionedim)
+                  call psnaccum(ispc,ionedim)
+               endif
 !              write(*,'(a,6f8.0)')'psn(1:6) unnorm',psn(1:6,ispc)
             enddo
          endif
@@ -492,7 +496,8 @@
             if(ldistshow.and.lonedim)then
                do ispc=1,nspecies
 ! Normalize the psn and psvave
-                  psntot=max(ipstep,1)*numprocs*nparta(ispc)/npsx
+                  psntot=numprocs*nparta(ispc)/npsx
+                  if(ipac.eq.0)psntot=psntot*max(1,ipstep)
                   do ips=1,npsx
 ! Normalization by the actual particle number in xbin is essential.
 ! Before correction, fluctuations in psn were greatly magnified
