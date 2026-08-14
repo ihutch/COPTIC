@@ -729,7 +729,7 @@ void accisgradset_(red,green,blue,npixel)
   XColor theRGBcolor;
   if(*npixel!=a_gradPixno) 
     fprintf(stderr,"accisgradset ERROR: Incorrect array length:%d\n",*npixel);
-  for (i=0;i<a_gradPixno;i++){
+  for (i=0;i<a_gradPixno;i++){ /* a_grad = *(red+i) */
     a_gradred[i]=theRGBcolor.red=ilimit(0,*(red+i),65535);
     a_gradgreen[i]=theRGBcolor.green=ilimit(0,*(green+i),65535);
     a_gradblue[i]=theRGBcolor.blue=ilimit(0,*(blue+i),65535);

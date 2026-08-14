@@ -337,6 +337,29 @@ c Unfortunately because of gs weighting, green has to be above red.
       call accisgradset(red,green,blue,ngcol)
       end
 c********************************************************************
+      subroutine accisgradmod(p,a)
+c Modulate an existing accisgradient by modulation. Number of periods p
+c and amplitude a. Does not give a useful result.
+      real p,a
+      parameter (ngcol=240)
+      integer red(ngcol),green(ngcol),blue(ngcol)
+      if(a.gt.1..or.a.lt.0.)then
+         write(*,*)'accisgradmod error. amplitude out of range',a
+         stop
+      endif
+      do i=1,ngcol
+         factor=1
+         if(mod(i,nint(240./p)).lt.2)factor=0
+         call getrgbcolor(i,red(i),green(i),blue(i))
+         write(*,*)red(i),green(i),blue(i)
+         green(i)=green(i)*factor
+         red(i)=red(i)*factor
+         blue(i)=blue(i)*factor
+         write(*,*)i,factor,red(i),green(i),blue(i)
+      enddo
+      call accisgradset(red,green,blue,ngcol)
+      end
+c********************************************************************
       subroutine blueredgreenwhite()
       call brgwscaled(0.,1.)
       end

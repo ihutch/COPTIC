@@ -139,7 +139,8 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,holegfac,wavespec,LNPF,ifull,ncmax,nc,vsc,vtc,dcc,ierr)
+     $     ,holegfac,wavespec,LNPF,ifull,ncmax,nc,vsc,vtc,dcc,ierr,
+     $     flogscale)
 ! Hack to prevent incompatible particles
       lfv=.false.
       do i=1,nspecies  !If there are any non-hspecies nc cases use BGKintnew

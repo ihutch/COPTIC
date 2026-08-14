@@ -234,7 +234,7 @@ c***********************************************************************
       integer ifcolor(npsv)
       logical logspec
 
-!      write(*,*)'phaseplot psvmin,psvmax',ispecies,psvmin(ispecies)
+!     write(*,*)'phaseplot psvmin,psvmax',ispecies,psvmin(ispecies)
 !     $     ,psvmax(ispecies)
       call pltinit(psxmin,psxmax,psvmin(ispecies),psvmax(ispecies))
       call color(15)
@@ -244,69 +244,83 @@ c***********************************************************************
       call blueredgreenwhite()
       write(string,'(''v!d'',i1,''!d'')')ispecies
       call axlabels('x',string(1:lentrim(string)))
-! Set adjust f-scale if necessary pmax is of psfxv array
+!     Set adjust f-scale if necessary pmax is of psfxv array
       call minmax2(psfxv(1,1,ispecies),npsx,npsx,npsv,pmin,pmax)
       if(pmax.lt.psfmax(ispecies)*0.9)then
-!         write(*,*)'pmaxold,pmaxnew',psfmax(ispecies),pmax,ispecies
+!        write(*,*)'pmaxold,pmaxnew',psfmax(ispecies),pmax,ispecies
          psfmax(ispecies)=pmax
       elseif(pmax.gt.psfmax(ispecies)*1.03)then
-!         write(*,*)'pmaxold,pmaxnew',psfmax(ispecies),pmax,ispecies
+!        write(*,*)'pmaxold,pmaxnew',psfmax(ispecies),pmax,ispecies
          psfmax(ispecies)=pmax
       endif
+!     Adjusting the top of contour range if flogscale!= 1
+      psfmax(ispecies)=psfmax(ispecies)*flogscale(ispecies)
       logspec=.false.
-!      if(ispecies.eq.ilogspec)logspec=.true.
       logspec=btest(ilogspec,ispecies-1)
       call logphasecont(ispecies,logspec)
       call color(15)
-!      write(*,'(a,2f10.4,i4)')'vavemin,vavemax ',minval(psvave(:
+!     write(*,'(a,2f10.4,i4)')'vavemin,vavemax ',minval(psvave(:
 !     $     ,ispecies)),maxval(psvave(:,ispecies)),ispecies
       if(ipsversion.ge.1)call polyline(psx,psvave(1,ispecies),npsx)
       call polyline(psxmax+.3*(psxmax-psxmin)*finfofv(:,ispecies)
-     $        /finfmax(ispecies),psv(1,ispecies),npsv)
-! Integrate wrt x to get fave as a function of v.
+     $     /finfmax(ispecies),psv(1,ispecies),npsv)
+!     Integrate wrt x to get fave as a function of v.
       if(lsideplot)then
-      fapeak=0.
-      do i=1,npsv
-         faveofv(i)=0.
-         do j=1,npsx
-            faveofv(i)=faveofv(i)+psfxv(j,i,ispecies)
+         fapeak=0.
+         ipk=0
+         do i=1,npsv
+            faveofv(i)=0.
+            do j=1,npsx
+               faveofv(i)=faveofv(i)+psfxv(j,i,ispecies)
+            enddo
+            if(faveofv(i).gt.fapeak)then
+               fapeak=faveofv(i)
+               ipk=i
+            endif
          enddo
-         if(faveofv(i).gt.fapeak)fapeak=faveofv(i)
-      enddo
-      vbar=0.
-      tot=0.
-      do i=1,npsv
-         faveofv(i)=faveofv(i)/fapeak
-         vbar=vbar+psv(i,ispecies)*faveofv(i)
-         v2bar=v2bar+psv(i,ispecies)**2*faveofv(i)
-         tot=tot+faveofv(i)
-      enddo 
-      vbar=vbar/tot
-      v2bar=v2bar/tot
-      tbar=v2bar-vbar**2
-! And plot it.
-      call color(4)
-      call polyline(psxmax+.3*(psxmax-psxmin)*faveofv,psv(1,ispecies)
-     $     ,npsv)
-!      write(*,*)'vbar',vbar
-      call polyline([psxmax,psxmax*1.04],[vbar,vbar],2)
-      call drcstr('!pv!q!o-!o')
-      call color(15)
+         vbar=0.
+         tot=0.
+         do i=1,npsv
+            faveofv(i)=faveofv(i)/fapeak
+            vbar=vbar+psv(i,ispecies)*faveofv(i)
+            v2bar=v2bar+psv(i,ispecies)**2*faveofv(i)
+            tot=tot+faveofv(i)
+         enddo 
+         vbar=vbar/tot
+         v2bar=v2bar/tot
+         tbar=v2bar-vbar**2
+!        And plot it.
+         call color(4)
+         call polyline(psxmax+.3*(psxmax-psxmin)*faveofv,psv(1,ispecies)
+     $        ,npsv)
+!        write(*,*)'vbar',vbar
+         call polyline([psxmax,psxmax*1.04],[vbar,vbar],2)
+         call drcstr('!pv!q!o-!o')
+         call color(15)
+!        If the fmax of the contour has been changed indicate its height.
+         if(flogscale(ispecies).ne.1)then
+            fspnlen=(psv(npsv,ispecies)-psv(1,ispecies))*0.25
+            vspnmin=psv(ipk,ispecies)-fspnlen
+            vspnmax=psv(ipk,ispecies)+fspnlen
+            fspn=psxmax+.3*(psxmax-psxmin)*flogscale(ispecies)
+!            write(*,*)ispecies,ipk,psv(ipk,ispecies),vspnmax
+            call polyline([fspn,fspn],[vspnmin,vspnmax],2)
+         endif
       endif
       if(.false.)then
-! The hard part is scaling the colors (cfac) to what is being used in 
-! the histogram plot. The histogram just plots the number of particles
-! whereas the side plot is the f(v), normalized to unity integral. 
-! Not yet figured out.
+!        The hard part is scaling the colors (cfac) to what is being used in 
+!        the histogram plot. The histogram just plots the number of particles
+!        whereas the side plot is the f(v), normalized to unity integral. 
+!        Not yet figured out.
          ifcolor=nint(finfofv(:,ispecies)*cfac)
          call polycolorline(psxmax+.3*psxmax*finfofv(:,ispecies),psv(1
      $        ,ispecies),npsv,ifcolor)
       endif
-c If needed, do pltend externally.
+c     If needed, do pltend externally.
       end
 c**********************************************************************
       subroutine psfmaxset(fac,ispecies)
-c Set the value of psfmax to fac times the maximum in the current array.
+c     Set the value of psfmax to fac times the maximum in the current array.
       real fac
       include 'ndimsdecl.f'
       include 'phasecom.f'

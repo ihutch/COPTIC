@@ -1,4 +1,4 @@
-! Combination of the two calls to copticcmdline. 
+!     Combination of the two calls to copticcmdline. 
       subroutine parametersetting (lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ipac,ldenplot,lphiplot,linjplot,ifplot
      $     ,norbits ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
@@ -10,7 +10,8 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,holegfac,wavespec,LNPF,ifull,ncmax,nc,vsc,vtc,dcc,ierr)
+     $     ,holegfac,wavespec,LNPF,ifull,ncmax,nc,vsc,vtc,dcc,ierr,
+     $     flogscale)
       implicit none
       integer ifull,ierr
       include 'myidcom.f'
@@ -39,11 +40,11 @@
       integer nspecies,nspeciesmax
       integer ncmax,nc(nspeciesmax)
       real vsc(ncmax,nspeciesmax),vtc(ncmax,nspeciesmax)
-      real dcc(ncmax,nspeciesmax)
+      real dcc(ncmax,nspeciesmax),flogscale(nspeciesmax)
 
 !----------------------------------------------------------------------
-! Deal with command-line arguments and geometry/object file.
-! First time this routine just sets defaults and the object file name.
+!     Deal with command-line arguments and geometry/object file.
+!     First time this routine just sets defaults and the object file name.
       call copticcmdline (lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ipac,ldenplot,lphiplot,linjplot,ifplot
      $     ,norbits ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
@@ -55,12 +56,13 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,holegfac,wavespec,LNPF,ncmax,nc,vsc,vtc,dcc,ierr)
-! Read in object file information.
+     $     ,holegfac,wavespec,LNPF,ncmax,nc,vsc,vtc,dcc,ierr,
+     $     flogscale)
+!     Read in object file information.
       call readgeom(objfilename,myid,ifull,CFin,iCFcount,LPF,ierr
      $     ,argline)
       if(ierr.ne.0.and.lmyidhead)write(*,*) 'Error in readgeom call'
-! Second time: deal with any other command line parameters.
+!     Second time: deal with any other command line parameters.
       call copticcmdline (lmyidhead,ltestplot,iobpl,iobpsw,rcij
      $     ,lsliceplot,ipstep,ipac,ldenplot,lphiplot,linjplot,ifplot
      $     ,norbits ,thetain,nth,iavesteps,nparta,ripernode,crelax,ickst
@@ -72,8 +74,9 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,holegfac,wavespec,LNPF,ncmax,nc,vsc,vtc,dcc,ierr)
-! The double call enables cmdline switches to override objfile settings.
+     $     ,holegfac,wavespec,LNPF,ncmax,nc,vsc,vtc,dcc,ierr,
+     $     flogscale)
+!     The double call enables cmdline switches to override objfile settings.
 !----------------------------------------------------------------------
       end
 *********************************************************************
@@ -89,7 +92,8 @@
      $     ,idims,argline,vdrifts,ldistshow,gp0,gt,gtt,gn,gnt,nspecies
      $     ,nspeciesmax,numratioa,Tperps,boltzamp,nptdiag,nqblkmax
      $     ,holelen,holepsi,holeum,holeeta,holepow,holerad,hspecies
-     $     ,holegfac,wavespec,LNPF,ncmax,nc,vsc,vtc,dcc,ierr)
+     $     ,holegfac,wavespec,LNPF,ncmax,nc,vsc,vtc,dcc,ierr,
+     $     flogscale)
 
       implicit none
 
@@ -118,7 +122,7 @@
       integer ierr
       integer ncmax,nc(nspeciesmax)
       real vsc(ncmax,nspeciesmax),vtc(ncmax,nspeciesmax)
-      real dcc(ncmax,nspeciesmax)
+      real dcc(ncmax,nspeciesmax),flogscale(nspeciesmax)
 
 ! Local variables:
       integer lentrim,iargc,ipfset
@@ -264,6 +268,10 @@
             goto 240
  213        call pfset(0)
 c            write(*,*)'Set pfset(0)'
+         endif
+         if(argument(1:3).eq.'-gb')then
+            read(argument(4:),*,end=201)flogscale(1:nspecies)
+            write(*,*)'flogscale(1:nspecies)',flogscale(1:nspecies)
          endif
          if(argument(1:3).eq.'-at')then
             read(argument(4:),*,end=201)thetain
@@ -796,7 +804,7 @@ c            write(*,*)'Set pfset(0)'
      $     //' -an   set No of angles. '
       write(*,301)' -ck   set checking timestep No. [',ickst
       write(*,'(a)')
-     $ 'Examples of 1-d output controls.'
+     $ 'Examples of 1-d phasespace output controls.'
      $ ,'  -gn outputs just a pps file every step, no plots/displays.'
      $ ,'  -gp outputs a pps file and plots every -a steps.'
      $ ,'  -gp4 outputs pps files every 4 steps, no ps files,'

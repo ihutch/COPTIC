@@ -6,6 +6,7 @@
       include '3dcom.f'
       include 'partcom.f' 
       include 'dbgcom.f'
+      include 'phasecom.f'
       idbug=0
       ngeomobj=0
 ! Default track no objects.
@@ -52,7 +53,8 @@
             bga(i,j)=0.
          enddo
       enddo
-
+! Default scaling of phasespace log top-of-range.
+      flogscale=1.
       end
 
 !**********************************************************************

@@ -6,10 +6,10 @@ c Phase space accumulation variables
 
       real psfxv(npsx,npsv,nspeciesmax),psx(npsx),psn(npsx,nspeciesmax)
      $     ,psv(npsv,nspeciesmax),finfofv(npsv,nspeciesmax)
-     $     ,psvave(npsx,nspeciesmax)
+     $     ,psvave(npsx,nspeciesmax),flogscale(nspeciesmax)
       real psvmax(nspeciesmax),psvmin(nspeciesmax),psxmax,psxmin
       real finfmax(nspeciesmax),psfmax(nspeciesmax)
       real logrange
       common /phasespace/psfxv,psvmax,psvmin,psxmax,psxmin,psx,psv,psn
      $     ,psvave,psfmax,ipsftri,finfofv,finfmax,ipsversion,lsideplot
-     $     ,ilogspec,logrange,lonedim
+     $     ,ilogspec,logrange,lonedim,flogscale
